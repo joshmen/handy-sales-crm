@@ -608,9 +608,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
         )}
 
         {!showLabels && (
-          <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap">
+          <div className="absolute left-full ml-3 px-3 py-2 bg-foreground text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap">
             {tl(item.label)}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-foreground rotate-45"></div>
           </div>
         )}
       </>

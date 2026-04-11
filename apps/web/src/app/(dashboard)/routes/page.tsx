@@ -224,7 +224,7 @@ export default function RoutesPage() {
       label: t('columns.date'),
       sortable: true,
       width: 100,
-      cellRenderer: (route) => <span className="text-[13px] text-gray-900">{formatDateOnly(route.fecha)}</span>,
+      cellRenderer: (route) => <span className="text-[13px] text-foreground">{formatDateOnly(route.fecha)}</span>,
     },
     {
       key: 'horario',
@@ -284,7 +284,7 @@ export default function RoutesPage() {
             <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
           )}
           {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-foreground/70 hover:text-gray-800 bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-foreground/70 hover:text-foreground bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
           )}
           {route.estado === 2 && (
             <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
@@ -430,7 +430,7 @@ export default function RoutesPage() {
           <button
             data-tour="routes-export-btn"
             onClick={async () => { try { await exportToCsv('rutas'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">{tc('export')}</span>
@@ -558,7 +558,7 @@ export default function RoutesPage() {
                       <Path className="w-5 h-5 text-teal-600" weight="duotone" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{route.nombre}</div>
+                      <div className="text-sm font-medium text-foreground truncate">{route.nombre}</div>
                       <div className="text-xs text-muted-foreground truncate">{route.zonaNombre || t('noZone')}</div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
@@ -606,7 +606,7 @@ export default function RoutesPage() {
             <button
               onClick={() => drawerRef.current?.requestClose()}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               {tc('cancel')}
             </button>
@@ -628,7 +628,7 @@ export default function RoutesPage() {
 
             {/* Nombre */}
             <div data-tour="routes-drawer-nombre">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <Map className="w-3.5 h-3.5 text-teal-500" />
                 {t('columns.name')} <span className="text-red-500">*</span>
               </label>
@@ -644,7 +644,7 @@ export default function RoutesPage() {
 
             {/* Usuario */}
             <div data-tour="routes-drawer-vendedor">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <User className="w-3.5 h-3.5 text-blue-500" />
                 {t('drawer.vendor')} <span className="text-red-500">*</span>
               </label>
@@ -658,7 +658,7 @@ export default function RoutesPage() {
 
             {/* Zona */}
             <div data-tour="routes-drawer-zona">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <MapPinned className="w-3.5 h-3.5 text-violet-500" />
                 {t('columns.zone')}
               </label>
@@ -674,7 +674,7 @@ export default function RoutesPage() {
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-border-subtle" />
 
           {/* ── Programación ── */}
           <div className="space-y-4">
@@ -682,7 +682,7 @@ export default function RoutesPage() {
 
             {/* Fecha */}
             <div data-tour="routes-drawer-fecha">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 {t('columns.date')} <span className="text-red-500">*</span>
               </label>
@@ -697,7 +697,7 @@ export default function RoutesPage() {
             {/* Hora inicio / Hora fin (2 columnas) */}
             <div data-tour="routes-drawer-horario" className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
                   {t('drawer.startTime')}
                 </label>
@@ -708,7 +708,7 @@ export default function RoutesPage() {
                 />
               </div>
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
                   {t('drawer.endTime')}
                 </label>
@@ -721,7 +721,7 @@ export default function RoutesPage() {
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-border-subtle" />
 
           {/* ── Detalles adicionales ── */}
           <div className="space-y-4">
@@ -729,7 +729,7 @@ export default function RoutesPage() {
 
             {/* Descripción */}
             <div data-tour="routes-drawer-descripcion">
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
                 {tc('description')}
               </label>
               <textarea
@@ -742,7 +742,7 @@ export default function RoutesPage() {
 
             {/* Notas */}
             <div data-tour="routes-drawer-notas">
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
                 {tc('notes')}
               </label>
               <textarea

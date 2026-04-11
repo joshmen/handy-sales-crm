@@ -26,7 +26,7 @@ interface DiscountModalProps {
 
 const statusColors = {
   [DiscountStatus.ACTIVE]: 'bg-green-100 text-green-800',
-  [DiscountStatus.INACTIVE]: 'bg-gray-100 text-gray-800',
+  [DiscountStatus.INACTIVE]: 'bg-surface-3 text-foreground',
   [DiscountStatus.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
 
@@ -69,7 +69,7 @@ export function DiscountModal({
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">{discount?.name}</h3>
-                  <p className="text-gray-600">{discount?.description}</p>
+                  <p className="text-foreground/70">{discount?.description}</p>
                 </div>
               </div>
               <Badge className={statusColors[discount?.status || DiscountStatus.INACTIVE]}>
@@ -81,40 +81,40 @@ export function DiscountModal({
               {/* Información básica */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">{t('basicInfo')}</h4>
+                  <h4 className="font-medium text-foreground mb-3">{t('basicInfo')}</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('type')}</span>
+                      <span className="text-foreground/70">{t('type')}</span>
                       <span>{typeLabels[discount?.type || DiscountType.GLOBAL]}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('method')}</span>
+                      <span className="text-foreground/70">{t('method')}</span>
                       <span>{methodLabels[discount?.method || DiscountMethod.PERCENTAGE]}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('stackable')}</span>
+                      <span className="text-foreground/70">{t('stackable')}</span>
                       <span>{discount?.isStackable ? tc('yes') : tc('no')}</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">{t('settings')}</h4>
+                  <h4 className="font-medium text-foreground mb-3">{t('settings')}</h4>
                   <div className="space-y-2">
                     {discount?.minimumAmount && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">{t('minimumAmount')}</span>
+                        <span className="text-foreground/70">{t('minimumAmount')}</span>
                         <span>${discount.minimumAmount.toLocaleString()}</span>
                       </div>
                     )}
                     {discount?.maximumDiscount && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">{t('maximumDiscount')}</span>
+                        <span className="text-foreground/70">{t('maximumDiscount')}</span>
                         <span>${discount.maximumDiscount.toLocaleString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('validity')}</span>
+                      <span className="text-foreground/70">{t('validity')}</span>
                       <span>
                         {discount?.isPermanent
                           ? t('permanent')
@@ -127,8 +127,8 @@ export function DiscountModal({
 
               {/* Rangos de descuento */}
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">{t('discountRanges')}</h4>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-foreground mb-3">{t('discountRanges')}</h4>
+                <div className="bg-surface-1 rounded-lg p-4">
                   <div className="space-y-2">
                     {discount?.quantityRanges.map((range, index) => (
                       <div
@@ -151,7 +151,7 @@ export function DiscountModal({
 
               {/* Estadísticas */}
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">{t('usageStats')}</h4>
+                <h4 className="font-medium text-foreground mb-3">{t('usageStats')}</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-green-50 p-4 rounded-lg text-center">
                     <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg mx-auto mb-2">
@@ -160,7 +160,7 @@ export function DiscountModal({
                     <div className="text-lg font-bold text-green-600">
                       ${discount?.totalSavings?.toLocaleString() || '0'}
                     </div>
-                    <div className="text-sm text-gray-600">{t('savingsGenerated')}</div>
+                    <div className="text-sm text-foreground/70">{t('savingsGenerated')}</div>
                   </div>
 
                   <div className="bg-blue-50 p-4 rounded-lg text-center">
@@ -170,7 +170,7 @@ export function DiscountModal({
                     <div className="text-lg font-bold text-blue-600">
                       {discount?.totalUsed || 0}
                     </div>
-                    <div className="text-sm text-gray-600">{t('timesUsed')}</div>
+                    <div className="text-sm text-foreground/70">{t('timesUsed')}</div>
                   </div>
 
                   <div className="bg-purple-50 p-4 rounded-lg text-center">
@@ -180,14 +180,14 @@ export function DiscountModal({
                     <div className="text-lg font-bold text-purple-600">
                       {discount?.lastUsed?.toLocaleDateString() || t('never')}
                     </div>
-                    <div className="text-sm text-gray-600">{t('lastUsage')}</div>
+                    <div className="text-sm text-foreground/70">{t('lastUsage')}</div>
                   </div>
                 </div>
               </div>
 
               {/* Auditoría */}
               <div className="border-t pt-4">
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="grid grid-cols-2 gap-4 text-sm text-foreground/70">
                   <div>
                     <span className="font-medium">{t('createdBy')}</span> {discount?.createdBy}
                   </div>
@@ -231,7 +231,7 @@ export function DiscountModal({
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{t('deleteDiscount')}</h3>
-                <p className="text-gray-600">{t('cannotUndo')}</p>
+                <p className="text-foreground/70">{t('cannotUndo')}</p>
               </div>
             </div>
 
@@ -271,15 +271,15 @@ export function DiscountModal({
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{t('importTitle')}</h3>
-                <p className="text-gray-600">{t('importDescription')}</p>
+                <p className="text-foreground/70">{t('importDescription')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <div className="border-2 border-dashed border-border-default rounded-lg p-8 text-center">
                 <SbDownload size={48} className="mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">{t('dragFileHere')}</p>
-                <p className="text-gray-500 mb-4">{t('orClickToSelect')}</p>
+                <p className="text-lg font-medium text-foreground/80 mb-2">{t('dragFileHere')}</p>
+                <p className="text-muted-foreground mb-4">{t('orClickToSelect')}</p>
                 <Button variant="outline">{t('selectFile')}</Button>
               </div>
 
@@ -311,13 +311,13 @@ export function DiscountModal({
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{t('exportTitle')}</h3>
-                <p className="text-gray-600">{t('exportDescription')}</p>
+                <p className="text-foreground/70">{t('exportDescription')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
                   {t('fileFormat')}
                 </label>
                 <SearchableSelect
@@ -333,7 +333,7 @@ export function DiscountModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
                   {t('dataToInclude')}
                 </label>
                 <div className="space-y-2">

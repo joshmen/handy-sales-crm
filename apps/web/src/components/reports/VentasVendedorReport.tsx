@@ -94,7 +94,7 @@ export function VentasVendedorReport() {
       )}
 
       {!loading && data.length === 0 && (
-        <div className="text-center py-12 text-sm text-gray-500">{tc('noData')}</div>
+        <div className="text-center py-12 text-sm text-muted-foreground">{tc('noData')}</div>
       )}
     </div>
   );

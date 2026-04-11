@@ -326,7 +326,7 @@ export default function TenantsPage() {
   const getPlanBadgeColor = (plan: string | null) => {
     switch (plan) {
       case 'free':
-        return 'bg-surface-3 text-gray-800';
+        return 'bg-surface-3 text-foreground';
       case 'basic':
         return 'bg-blue-100 text-blue-800';
       case 'pro':
@@ -534,7 +534,7 @@ export default function TenantsPage() {
                       <Building2 className="h-4 w-4 text-blue-600" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-medium text-gray-900 truncate">
+                      <div className="text-[13px] font-medium text-foreground truncate">
                         {tenant.nombreEmpresa}
                       </div>
                       {tenant.identificadorFiscal && (
@@ -720,7 +720,7 @@ export default function TenantsPage() {
 
               {/* Name */}
               <div className="flex-1 min-w-0" onClick={() => navigateToDetail(tenant.id)}>
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-foreground truncate">
                   {tenant.nombreEmpresa}
                 </div>
                 {tenant.identificadorFiscal && (

@@ -203,12 +203,12 @@ export default function ClientsPage() {
       width: 'flex',
       cellRenderer: (client) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded bg-gray-900 flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded bg-foreground flex items-center justify-center flex-shrink-0">
             <span className="text-white text-[11px] font-medium">{getInitials(client.name)}</span>
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[13px] font-medium text-gray-900 truncate">{client.name} ({client.code})</span>
+              <span className="text-[13px] font-medium text-foreground truncate">{client.name} ({client.code})</span>
               {client.esProspecto && (
                 <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">{tc('prospect')}</span>
               )}
@@ -223,14 +223,14 @@ export default function ClientsPage() {
       label: t('columns.zone'),
       sortable: true,
       width: 100,
-      cellRenderer: (client) => <span className="text-[13px] text-gray-900">{client.zoneName || t('noZone')}</span>,
+      cellRenderer: (client) => <span className="text-[13px] text-foreground">{client.zoneName || t('noZone')}</span>,
     },
     {
       key: 'categoryName',
       label: t('columns.category'),
       sortable: true,
       width: 130,
-      cellRenderer: (client) => <span className="text-[13px] text-gray-900">{client.categoryName || t('noCategory')}</span>,
+      cellRenderer: (client) => <span className="text-[13px] text-foreground">{client.categoryName || t('noCategory')}</span>,
     },
     {
       key: 'balance',
@@ -351,7 +351,7 @@ export default function ClientsPage() {
             <div className="relative" data-tour="clients-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
                 <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -363,14 +363,14 @@ export default function ClientsPage() {
                   <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                     <button
                       onClick={async () => { setShowDataMenu(false); try { await exportToCsv('clientes'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                     >
                       <Download className="w-3.5 h-3.5 text-emerald-500" />
                       {tc('exportCsv')}
                     </button>
                     <button
                       onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                     >
                       <Upload className="w-3.5 h-3.5 text-blue-500" />
                       {tc('importCsv')}
@@ -500,12 +500,12 @@ export default function ClientsPage() {
             mobileCardRenderer={(client) => (
               <div className={`${!client.isActive ? 'opacity-60' : ''}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded bg-gray-900 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                  <div className="w-10 h-10 rounded bg-foreground text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
                     {getInitials(client.name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-gray-900 truncate">{client.name}</span>
+                      <span className="text-sm font-medium text-foreground truncate">{client.name}</span>
                       {client.esProspecto && (
                         <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">{tc('prospect')}</span>
                       )}

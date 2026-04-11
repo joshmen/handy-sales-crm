@@ -38,7 +38,7 @@ interface DiscountTableProps {
 
 const statusColors = {
   [DiscountStatus.ACTIVE]: 'bg-green-100 text-green-800',
-  [DiscountStatus.INACTIVE]: 'bg-gray-100 text-gray-800',
+  [DiscountStatus.INACTIVE]: 'bg-surface-3 text-foreground',
   [DiscountStatus.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
 
@@ -114,10 +114,10 @@ export function DiscountTable({
                     <Percent className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-foreground">
                       {discount.name}
                     </div>
-                    <div className="text-sm text-gray-500 truncate max-w-xs">
+                    <div className="text-sm text-muted-foreground truncate max-w-xs">
                       {discount.description}
                     </div>
                   </div>
@@ -129,14 +129,14 @@ export function DiscountTable({
                   <Badge variant="outline">
                     {typeLabels[discount.type]}
                   </Badge>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     {methodLabels[discount.method]}
                   </span>
                 </div>
               </TableCell>
 
               <TableCell>
-                <div className="text-sm text-gray-600 max-w-xs">
+                <div className="text-sm text-foreground/70 max-w-xs">
                   {formatDiscountRanges(discount.quantityRanges)}
                 </div>
               </TableCell>
@@ -152,7 +152,7 @@ export function DiscountTable({
                   <div className="font-medium text-green-600">
                     ${discount.totalSavings?.toLocaleString() || '0'}
                   </div>
-                  <div className="text-gray-500">
+                  <div className="text-muted-foreground">
                     {discount.totalUsed || 0} usos
                   </div>
                 </div>
@@ -165,7 +165,7 @@ export function DiscountTable({
                       Permanente
                     </Badge>
                   ) : (
-                    <div className="text-gray-600">
+                    <div className="text-foreground/70">
                       <div>Desde: {discount.validFrom?.toLocaleDateString()}</div>
                       <div>Hasta: {discount.validTo?.toLocaleDateString()}</div>
                     </div>
@@ -227,10 +227,10 @@ export function DiscountTable({
       {discounts.length === 0 && (
         <div className="text-center py-12">
           <Percent className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Sin descuentos configurados
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             Crea tu primer descuento por cantidad para comenzar
           </p>
           {onCreate && (

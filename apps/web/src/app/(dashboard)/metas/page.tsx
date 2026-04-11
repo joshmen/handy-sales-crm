@@ -365,7 +365,7 @@ export default function MetasPage() {
       <ErrorBanner error={error} onRetry={loadMetas} />
 
       {/* Filters */}
-      <div className="px-6 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2 sm:gap-3">
+      <div className="px-6 py-3 border-b border-border-subtle flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBar
           dataTour="metas-search"
           value={searchTerm}
@@ -378,7 +378,7 @@ export default function MetasPage() {
           data-tour="metas-tipo-filter"
           value={filterTipo}
           onChange={e => { setFilterTipo(e.target.value); setCurrentPage(1); }}
-          className="h-9 border border-border-default rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="h-9 border border-border-default rounded-lg text-sm px-3 text-foreground/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="">{t('allTypes')}</option>
           {TIPO_OPTIONS.map(t => (
@@ -407,14 +407,14 @@ export default function MetasPage() {
       <div className="flex-1 overflow-auto px-4 sm:px-6 py-4" data-tour="metas-table">
         <DataGrid<MetaVendedor>
           columns={[
-            { key: 'usuarioNombre', label: t('vendor'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.usuarioNombre || `#${item.usuarioId}`}</span> },
+            { key: 'usuarioNombre', label: t('vendor'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.usuarioNombre || `#${item.usuarioId}`}</span> },
             { key: 'tipo', label: tc('type'), width: 100, sortable: true, cellRenderer: (item) => (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[item.tipo] ?? 'bg-surface-3 text-gray-700'}`}>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[item.tipo] ?? 'bg-surface-3 text-foreground/80'}`}>
                 {TIPO_LABELS[item.tipo] ?? item.tipo}
               </span>
             )},
             { key: 'periodo', label: t('period'), width: 100, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-foreground/70">{PERIODO_LABELS[item.periodo] ?? item.periodo}</span> },
-            { key: 'monto', label: t('title'), width: 120, sortable: true, align: 'right', cellRenderer: (item) => <span className="font-semibold text-gray-900">{item.tipo === 'ventas' ? formatCurrency(item.monto) : formatNumber(item.monto)}</span> },
+            { key: 'monto', label: t('title'), width: 120, sortable: true, align: 'right', cellRenderer: (item) => <span className="font-semibold text-foreground">{item.tipo === 'ventas' ? formatCurrency(item.monto) : formatNumber(item.monto)}</span> },
             { key: 'fechaInicio', label: t('validity'), width: 180, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => (
               <div className="flex items-center gap-1.5 text-muted-foreground text-xs whitespace-nowrap">
                 <span>{formatDate(item.fechaInicio)} - {formatDate(item.fechaFin)}</span>
@@ -455,15 +455,15 @@ export default function MetasPage() {
           sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
           loading={loading}
           loadingMessage={t('loadingGoals')}
-          emptyIcon={<Target className="w-8 h-8 text-gray-300" weight="duotone" />}
+          emptyIcon={<Target className="w-8 h-8 text-muted-foreground/60" weight="duotone" />}
           emptyTitle={searchTerm || filterTipo ? t('emptyFiltered') : t('emptyDefault')}
           mobileCardRenderer={(meta) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{meta.usuarioNombre || `#${meta.usuarioId}`}</p>
+                  <p className="font-medium text-foreground truncate">{meta.usuarioNombre || `#${meta.usuarioId}`}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-surface-3 text-gray-700'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-surface-3 text-foreground/80'}`}>
                       {TIPO_LABELS[meta.tipo] ?? meta.tipo}
                     </span>
                     <span className="text-xs text-muted-foreground">{PERIODO_LABELS[meta.periodo]}</span>
@@ -474,7 +474,7 @@ export default function MetasPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground mb-0.5">{t('objective')}</p>
-                  <p className="font-semibold text-gray-900">{meta.tipo === 'ventas' ? formatCurrency(meta.monto) : formatNumber(meta.monto)}</p>
+                  <p className="font-semibold text-foreground">{meta.tipo === 'ventas' ? formatCurrency(meta.monto) : formatNumber(meta.monto)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground mb-0.5">{t('validity')}</p>
@@ -485,7 +485,7 @@ export default function MetasPage() {
                 </div>
               </div>
               {isAdmin && (
-                <div className="flex gap-2 pt-1 border-t border-gray-100">
+                <div className="flex gap-2 pt-1 border-t border-border-subtle">
                   <button onClick={() => openEdit(meta)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                     <Edit2 className="w-3.5 h-3.5" /> {tc('edit')}
                   </button>
@@ -513,7 +513,7 @@ export default function MetasPage() {
 
           {/* Vendedor */}
           <div data-tour="metas-drawer-vendedor">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground/80 mb-1.5">
               {t('vendor')} {!editingMeta && <span className="text-red-500">*</span>}
             </label>
             {!editingMeta ? (
@@ -521,7 +521,7 @@ export default function MetasPage() {
                 <select
                   value={watchedUsuarioId || ''}
                   onChange={e => setValue('usuarioId', Number(e.target.value), { shouldValidate: true })}
-                  className="w-full h-10 border border-border-default rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full h-10 border border-border-default rounded-lg text-sm px-3 text-foreground/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">{t('selectVendor')}</option>
                   {usuarios.map(u => (
@@ -541,12 +541,12 @@ export default function MetasPage() {
 
           {/* Tipo */}
           <div data-tour="metas-drawer-tipo">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground/80 mb-1.5">
               {t('goalType')} <span className="text-red-500">*</span>
             </label>
             <select
               {...register('tipo')}
-              className="w-full h-10 border border-border-default rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full h-10 border border-border-default rounded-lg text-sm px-3 text-foreground/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {TIPO_OPTIONS.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -557,7 +557,7 @@ export default function MetasPage() {
 
           {/* Período */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground/80 mb-1.5">
               {t('period')} <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-2">
@@ -569,7 +569,7 @@ export default function MetasPage() {
                   className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-colors ${
                     watchedPeriodo === p.value
                       ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-border-default text-foreground/70 hover:border-gray-400'
+                      : 'border-border-default text-foreground/70 hover:border-border-strong'
                   }`}
                 >
                   {p.label}
@@ -580,7 +580,7 @@ export default function MetasPage() {
 
           {/* Monto */}
           <div data-tour="metas-drawer-monto">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground/80 mb-1.5">
               {watchedTipo === 'ventas'
                 ? t('targetAmountMoney')
                 : watchedTipo === 'pedidos'
@@ -602,7 +602,7 @@ export default function MetasPage() {
           {/* Fechas */}
           <div className="grid grid-cols-2 gap-3" data-tour="metas-drawer-fechas">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground/80 mb-1.5">
                 {t('startDate')} <span className="text-red-500">*</span>
               </label>
               <DateTimePicker
@@ -615,7 +615,7 @@ export default function MetasPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground/80 mb-1.5">
                 {t('endDate')} <span className="text-red-500">*</span>
               </label>
               <DateTimePicker
@@ -639,7 +639,7 @@ export default function MetasPage() {
               className="mt-0.5 h-4 w-4 rounded border-border-default text-blue-600 focus:ring-blue-500"
             />
             <label htmlFor="autoRenovar" className="text-sm">
-              <span className="font-medium text-gray-700">{t('autoRenew')}</span>
+              <span className="font-medium text-foreground/80">{t('autoRenew')}</span>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {t('autoRenewDesc')}
               </p>
@@ -663,7 +663,7 @@ export default function MetasPage() {
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-surface-2 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 page-animate">
-            <h3 className="font-semibold text-gray-900 mb-2">{t('deleteTitle')}</h3>
+            <h3 className="font-semibold text-foreground mb-2">{t('deleteTitle')}</h3>
             <p className="text-sm text-foreground/70 mb-6">{t('deleteConfirm')}</p>
             <div className="flex gap-3">
               <Button type="button" variant="outline" onClick={() => setConfirmDeleteId(null)} className="flex-1">

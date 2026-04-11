@@ -46,18 +46,18 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-6 h-6 text-amber-600" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-foreground">
                 Error al mostrar este contenido
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Ocurrió un problema inesperado. Intente de nuevo.
               </p>
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-2 text-left">
-                  <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70">
                     Detalles
                   </summary>
-                  <pre className="mt-1 p-2 bg-gray-100 rounded text-xs text-red-700 overflow-auto max-h-32">
+                  <pre className="mt-1 p-2 bg-surface-3 rounded text-xs text-red-700 overflow-auto max-h-32">
                     {this.state.error.message}
                   </pre>
                 </details>

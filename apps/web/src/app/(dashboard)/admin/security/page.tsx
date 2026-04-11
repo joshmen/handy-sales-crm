@@ -135,10 +135,10 @@ export default function SecurityConfigPage() {
         <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
           <span>Administracion</span>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">Seguridad</span>
+          <span className="text-foreground font-medium">Seguridad</span>
         </nav>
         <div className="bg-surface-2 rounded-xl border border-border-subtle p-12 shadow-sm text-center">
-          <Shield size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
+          <Shield size={48} weight="duotone" className="mx-auto text-muted-foreground/60 mb-3" />
           <p className="text-muted-foreground text-sm">{error || t('loadError')}</p>
         </div>
       </div>
@@ -151,12 +151,12 @@ export default function SecurityConfigPage() {
       <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
         <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">{t('breadcrumb')}</span>
+        <span className="text-foreground font-medium">{t('breadcrumb')}</span>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Shield size={28} weight="duotone" className="text-blue-500" />
           {t('title')}
         </h1>
@@ -167,14 +167,14 @@ export default function SecurityConfigPage() {
 
       {/* Rate Limiting Section */}
       <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-2">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-cyan-100">
             <WifiHigh size={18} weight="duotone" className="text-cyan-600" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">{t('rateLimiting')}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('rateLimiting')}</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-1">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">
@@ -194,7 +194,7 @@ export default function SecurityConfigPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-surface-2 divide-y divide-gray-100">
+            <tbody className="bg-surface-2 divide-y divide-border-subtle">
               {config.rateLimiting.map((policy, idx) => (
                 <tr key={idx} className="hover:bg-surface-1 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -202,7 +202,7 @@ export default function SecurityConfigPage() {
                       {policy.api}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                     {policy.policyName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/70">
@@ -230,29 +230,29 @@ export default function SecurityConfigPage() {
 
       {/* Authentication Section */}
       <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-2">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-amber-100">
             <Lock size={18} weight="duotone" className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">{t('authentication')}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('authentication')}</h2>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-muted-foreground mb-1">{t('jwtExpiration')}</p>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-foreground">
                 {config.authentication.jwtExpirationMinutes} {t('minutes')}
               </p>
             </div>
             <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-muted-foreground mb-1">{t('refreshTokenExpiration')}</p>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-foreground">
                 {config.authentication.refreshTokenExpirationDays} {t('days')}
               </p>
             </div>
             <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-muted-foreground mb-1">{t('passwordMinLength')}</p>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-foreground">
                 {config.authentication.passwordMinLength} {t('characters')}
               </p>
             </div>
@@ -262,7 +262,7 @@ export default function SecurityConfigPage() {
             </div>
             <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-muted-foreground mb-1">{t('hashingAlgorithm')}</p>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-foreground">
                 {config.authentication.hashingAlgorithm}
               </p>
             </div>
@@ -272,11 +272,11 @@ export default function SecurityConfigPage() {
 
       {/* Sessions Section */}
       <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-2">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-violet-100">
             <Monitor size={18} weight="duotone" className="text-violet-600" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">{t('sessions')}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('sessions')}</h2>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -477,16 +477,16 @@ export default function GettingStartedPage() {
       <div className="bg-surface-2 px-4 py-4 sm:px-8 sm:py-6 border-b border-border-subtle">
         <div className="page-animate">
           <div className="flex items-center gap-2 text-sm mb-3">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-gray-700 transition-colors">
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground/80 transition-colors">
               {tc('home')}
             </Link>
             <span className="text-muted-foreground">/</span>
-            <span className="text-gray-900 font-medium">{t('breadcrumbTitle')}</span>
+            <span className="text-foreground font-medium">{t('breadcrumbTitle')}</span>
           </div>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between page-animate page-animate-delay-1">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               {t('title')}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -532,7 +532,7 @@ export default function GettingStartedPage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="font-semibold text-gray-900">
+                  <h2 className="font-semibold text-foreground">
                     {allDone ? t('progressComplete') : t('progressTitle')}
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -632,7 +632,7 @@ export default function GettingStartedPage() {
                             {step.completed ? (
                               <CheckCircle2 className="w-5 h-5 text-green-500" />
                             ) : (
-                              <Circle className="w-5 h-5 text-gray-300" />
+                              <Circle className="w-5 h-5 text-muted-foreground/60" />
                             )}
                           </div>
 
@@ -643,7 +643,7 @@ export default function GettingStartedPage() {
 
                           {/* Text */}
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${step.completed ? 'text-muted-foreground line-through' : 'text-gray-900'}`}>
+                            <p className={`text-sm font-medium ${step.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                               {step.title}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">{step.description}</p>

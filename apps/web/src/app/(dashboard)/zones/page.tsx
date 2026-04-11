@@ -376,7 +376,7 @@ export default function ZonesPage() {
           <button
             data-tour="zones-map-btn"
             onClick={handleViewMap}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
           >
             <Map className="w-3.5 h-3.5 text-blue-500" />
             <span className="hidden sm:inline">{t('mapTitle')}</span>
@@ -384,7 +384,7 @@ export default function ZonesPage() {
           <div className="relative" data-tour="zones-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -396,14 +396,14 @@ export default function ZonesPage() {
                 <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={() => { setShowDataMenu(false); exportToCsv('zonas'); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
                     {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
                     {tc('importCsv')}
@@ -470,7 +470,7 @@ export default function ZonesPage() {
             {!loading && zones.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MapPin className="w-12 h-12 text-teal-300 mb-4" />
-                <p className="text-lg font-medium text-gray-900">{t('emptyTitle')}</p>
+                <p className="text-lg font-medium text-foreground">{t('emptyTitle')}</p>
                 <p className="text-sm text-muted-foreground mb-4">
                   {searchTerm ? t('emptyFiltered') : t('emptyDefault')}
                 </p>
@@ -506,7 +506,7 @@ export default function ZonesPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                    <div className="text-sm font-medium text-foreground truncate">
                       {zone.name}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
@@ -636,7 +636,7 @@ export default function ZonesPage() {
                     </div>
 
                     {/* Clientes */}
-                    <div className="w-[100px] text-[13px] text-gray-700 text-center">
+                    <div className="w-[100px] text-[13px] text-foreground/80 text-center">
                       {zone.clientCount || 0}
                     </div>
 
@@ -655,7 +655,7 @@ export default function ZonesPage() {
                       ) : (
                         <>
                           <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
-                          <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
+                          <CaretRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" weight="bold" />
                         </>
                       )}
                     </div>
@@ -695,9 +695,9 @@ export default function ZonesPage() {
                   return (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <div className="w-16 h-16 rounded-full bg-surface-3 flex items-center justify-center mb-4">
-                        <Map className="w-8 h-8 text-gray-300" />
+                        <Map className="w-8 h-8 text-muted-foreground/60" />
                       </div>
-                      <p className="text-sm font-medium text-gray-700">Sin zonas geolocalizadas</p>
+                      <p className="text-sm font-medium text-foreground/80">Sin zonas geolocalizadas</p>
                       <p className="text-xs text-muted-foreground mt-1.5 max-w-xs">
                         Edita una zona y agrega latitud, longitud y radio para verla en el mapa.
                       </p>
@@ -715,7 +715,7 @@ export default function ZonesPage() {
                     <div className="min-w-[160px]">
                       <p className="font-semibold text-sm">{z.name}</p>
                       {z.description && <p className="text-xs text-muted-foreground mt-0.5">{z.description}</p>}
-                      <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border-subtle">
                         <span className="text-xs text-foreground/70">
                           {z.clientCount || 0} cliente{(z.clientCount || 0) !== 1 ? 's' : ''}
                         </span>
@@ -772,7 +772,7 @@ export default function ZonesPage() {
                           title={`Editar ${z.name}`}
                         >
                           <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: z.color }} />
-                          <span className="text-xs text-foreground/70 group-hover:text-gray-900">{z.name}</span>
+                          <span className="text-xs text-foreground/70 group-hover:text-foreground">{z.name}</span>
                           {z.boundaries?.[0]?.radius && (
                             <span className="text-[11px] text-muted-foreground">{z.boundaries[0].radius} km</span>
                           )}
@@ -829,7 +829,7 @@ export default function ZonesPage() {
               {/* Name + Color on same row */}
               <div className="flex gap-4 items-start" data-tour="zones-drawer-name">
                 <div className="flex-1">
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                     <Map className="w-3.5 h-3.5 text-green-600" />
                     {tc('name')} <span className="text-red-500">*</span>
                   </label>
@@ -845,7 +845,7 @@ export default function ZonesPage() {
                 </div>
 
                 <div data-tour="zones-drawer-color">
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                     <span
                       className="w-3 h-3 rounded-full border border-border-subtle"
                       style={{ backgroundColor: watchedColor || '#EC4899' }}
@@ -876,7 +876,7 @@ export default function ZonesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                <label className="block text-xs font-medium text-foreground/80 mb-1.5">
                   {tc('description')}
                 </label>
                 <textarea
@@ -891,7 +891,7 @@ export default function ZonesPage() {
               </div>
             </div>
 
-            <hr className="border-gray-100" />
+            <hr className="border-border-subtle" />
 
             {/* ── Ubicación ── */}
             <div data-tour="zones-drawer-map" className="space-y-4">
@@ -984,7 +984,7 @@ export default function ZonesPage() {
                   {/* Radius + Coordinates */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('drawer.radiusKm')}</label>
+                      <label className="block text-xs font-medium text-foreground/80 mb-1.5">{t('drawer.radiusKm')}</label>
                       <input
                         type="number"
                         step="0.1"
@@ -1023,7 +1023,7 @@ export default function ZonesPage() {
               )}
             </div>
 
-            <hr className="border-gray-100" />
+            <hr className="border-border-subtle" />
 
             {/* ── Estado ── */}
             <div className="space-y-3">
@@ -1036,7 +1036,7 @@ export default function ZonesPage() {
                   className="mt-0.5 w-4 h-4 text-green-600 border-border-default rounded focus:ring-green-600"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                  <span className="text-sm font-medium text-foreground/80 group-hover:text-foreground transition-colors">
                     {t('drawer.activeZone')}
                   </span>
                   <p className="text-xs text-muted-foreground mt-0.5">

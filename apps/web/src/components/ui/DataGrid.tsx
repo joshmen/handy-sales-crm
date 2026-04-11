@@ -104,10 +104,10 @@ export function DataGrid<T>({
   }, [sort]);
 
   const getSortIcon = (key: string) => {
-    if (!sort || sort.key !== key) return <ArrowUpDown className="w-3 h-3 text-gray-400" />;
+    if (!sort || sort.key !== key) return <ArrowUpDown className="w-3 h-3 text-muted-foreground" />;
     return sort.direction === 'asc'
-      ? <ArrowUp className="w-3 h-3 text-gray-700" />
-      : <ArrowDown className="w-3 h-3 text-gray-700" />;
+      ? <ArrowUp className="w-3 h-3 text-foreground/80" />
+      : <ArrowDown className="w-3 h-3 text-foreground/80" />;
   };
 
   const getColumnStyle = (col: DataGridColumn<T>): React.CSSProperties => {
@@ -131,7 +131,7 @@ export function DataGrid<T>({
                 checked={allSelected || false}
                 ref={(el) => { if (el) el.indeterminate = !allSelected && (someSelected || false); }}
                 onChange={handleHeaderCheckbox}
-                className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                className="h-4 w-4 rounded border-border-default text-green-600 focus:ring-green-500 cursor-pointer"
               />
             </div>
           )}
@@ -162,10 +162,10 @@ export function DataGrid<T>({
           {loading && data.length === 0 ? (
             <div>
               {Array.from({ length: pagination?.pageSize || 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 animate-pulse" style={{ animationDelay: `${i * 75}ms` }}>
+                <div key={i} className="flex items-center gap-3 px-5 py-3.5 border-b border-border-subtle animate-pulse" style={{ animationDelay: `${i * 75}ms` }}>
                   {columns.map(col => (
                     <div key={col.key} style={getColumnStyle(col)} className={col.hiddenOnMobile ? 'hidden md:block' : ''}>
-                      <div className={`h-4 bg-gray-200 rounded ${col.key === 'status' ? 'w-16' : 'w-3/4'}`} />
+                      <div className={`h-4 bg-surface-3 rounded ${col.key === 'status' ? 'w-16' : 'w-3/4'}`} />
                     </div>
                   ))}
                 </div>
@@ -173,9 +173,9 @@ export function DataGrid<T>({
             </div>
           ) : data.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              {emptyIcon && <div className="mb-3 text-gray-300">{emptyIcon}</div>}
-              <p className="text-sm font-medium text-gray-500">{resolvedEmptyTitle}</p>
-              {emptyMessage && <p className="text-xs text-gray-400 mt-1">{emptyMessage}</p>}
+              {emptyIcon && <div className="mb-3 text-muted-foreground/60">{emptyIcon}</div>}
+              <p className="text-sm font-medium text-muted-foreground">{resolvedEmptyTitle}</p>
+              {emptyMessage && <p className="text-xs text-muted-foreground mt-1">{emptyMessage}</p>}
             </div>
           ) : (
             data.map((item, idx) => {
@@ -197,7 +197,7 @@ export function DataGrid<T>({
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => selection.onToggle(id)}
-                        className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                        className="h-4 w-4 rounded border-border-default text-green-600 focus:ring-green-500 cursor-pointer"
                       />
                     </div>
                   )}
@@ -206,7 +206,7 @@ export function DataGrid<T>({
                       key={col.key}
                       style={getColumnStyle(col)}
                       className={`
-                        text-[13px] text-gray-900 truncate
+                        text-[13px] text-foreground truncate
                         ${col.hiddenOnMobile ? 'hidden md:block' : ''}
                         ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : ''}
                       `}
@@ -232,16 +232,16 @@ export function DataGrid<T>({
           </div>
         ) : data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
-            {emptyIcon && <div className="mb-3 text-gray-300">{emptyIcon}</div>}
-            <p className="text-sm font-medium text-gray-500">{resolvedEmptyTitle}</p>
-            {emptyMessage && <p className="text-xs text-gray-400 mt-1">{emptyMessage}</p>}
+            {emptyIcon && <div className="mb-3 text-muted-foreground/60">{emptyIcon}</div>}
+            <p className="text-sm font-medium text-muted-foreground">{resolvedEmptyTitle}</p>
+            {emptyMessage && <p className="text-xs text-muted-foreground mt-1">{emptyMessage}</p>}
           </div>
         ) : (
-          <div className={`divide-y divide-gray-100 ${loading ? 'opacity-50' : ''}`}>
+          <div className={`divide-y divide-border-subtle ${loading ? 'opacity-50' : ''}`}>
             {data.map(item => (
               <div
                 key={String(keyExtractor(item))}
-                className={`p-4 ${onRowClick ? 'cursor-pointer active:bg-gray-50' : ''}`}
+                className={`p-4 ${onRowClick ? 'cursor-pointer active:bg-surface-1' : ''}`}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
               >
                 {mobileCardRenderer
@@ -250,8 +250,8 @@ export function DataGrid<T>({
                     <div className="space-y-1">
                       {columns.filter(c => !c.hiddenOnMobile).map(col => (
                         <div key={col.key} className="flex items-center justify-between">
-                          <span className="text-[11px] text-gray-500 uppercase">{col.label}</span>
-                          <span className="text-[13px] text-gray-900">
+                          <span className="text-[11px] text-muted-foreground uppercase">{col.label}</span>
+                          <span className="text-[13px] text-foreground">
                             {col.cellRenderer
                               ? col.cellRenderer(item, 0)
                               : String((item as Record<string, unknown>)[col.key] ?? '')
@@ -270,7 +270,7 @@ export function DataGrid<T>({
 
       {/* ─── Pagination ─── */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="px-5 py-3 border-t border-gray-200 bg-gray-50/50">
+        <div className="px-5 py-3 border-t border-border-subtle bg-surface-1/50">
           <ListPagination
             currentPage={pagination.currentPage}
             totalPages={pagination.totalPages}
@@ -283,8 +283,8 @@ export function DataGrid<T>({
 
       {/* ─── Single page footer ─── */}
       {pagination && pagination.totalPages <= 1 && pagination.totalItems > 0 && (
-        <div className="px-5 py-2.5 border-t border-gray-200 bg-gray-50/50">
-          <span className="text-[12px] text-gray-500">
+        <div className="px-5 py-2.5 border-t border-border-subtle bg-surface-1/50">
+          <span className="text-[12px] text-muted-foreground">
             {tg('showingTotal', { total: pagination.totalItems, plural: pagination.totalItems !== 1 ? 's' : '' })}
           </span>
         </div>

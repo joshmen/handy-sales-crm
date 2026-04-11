@@ -220,7 +220,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       <Card>
         <CardHeader>
           <CardTitle>{t('applicationProducts')}</CardTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-foreground/70">
             {t('applicationProductsDesc')}
           </p>
         </CardHeader>
@@ -248,7 +248,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                       onChange={(e) => updateApplicationProduct(index, 'productId', e.target.value)}
                       placeholder={t('searchProductPlaceholder')}
                     />
-                    <Search className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
+                    <Search className="absolute right-3 top-3 w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
                 
@@ -290,7 +290,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       <Card>
         <CardHeader>
           <CardTitle>{t('rewardProducts')}</CardTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-foreground/70">
             {t('rewardProductsDesc')}
           </p>
         </CardHeader>
@@ -318,7 +318,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                       onChange={(e) => updateRewardProduct(index, 'productId', e.target.value)}
                       placeholder={t('searchProductPlaceholder')}
                     />
-                    <Search className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
+                    <Search className="absolute right-3 top-3 w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
                 

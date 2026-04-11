@@ -65,15 +65,15 @@ function translateInsight(text: string): string {
 
 function InsightCard({ insight, index }: { insight: Insight; index: number }) {
   const Icon = TIPO_ICONS[insight.tipo] || Lightbulb;
-  const accent = TIPO_ACCENTS[insight.tipo] || { bar: "bg-gray-300", iconBg: "bg-gray-50", icon: "text-gray-500" };
+  const accent = TIPO_ACCENTS[insight.tipo] || { bar: "bg-surface-3", iconBg: "bg-surface-1", icon: "text-muted-foreground" };
   const TrendIcon =
     insight.tendencia === "up" ? TrendingUp : insight.tendencia === "down" ? TrendingDown : Minus;
   const trendColor =
-    insight.tendencia === "up" ? "text-emerald-600" : insight.tendencia === "down" ? "text-red-500" : "text-gray-400";
+    insight.tendencia === "up" ? "text-emerald-600" : insight.tendencia === "down" ? "text-red-500" : "text-muted-foreground";
 
   return (
     <div
-      className="relative overflow-hidden bg-white border border-gray-200 rounded-xl p-5 motion-safe:opacity-0 motion-safe:animate-card-enter hover:shadow-lg transition-shadow duration-300"
+      className="relative overflow-hidden bg-white border border-border-subtle rounded-xl p-5 motion-safe:opacity-0 motion-safe:animate-card-enter hover:shadow-lg transition-shadow duration-300"
       style={{ animationDelay: `${index * 80}ms` }}
     >
       <div className={`absolute top-0 left-0 right-0 h-1 ${accent.bar}`} />
@@ -88,8 +88,8 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
           </div>
         )}
       </div>
-      <h3 className="text-[13px] font-semibold text-gray-900 mb-1">{translateInsight(insight.titulo)}</h3>
-      <p className="text-[11px] text-gray-500 leading-relaxed">{translateInsight(insight.descripcion)}</p>
+      <h3 className="text-[13px] font-semibold text-foreground mb-1">{translateInsight(insight.titulo)}</h3>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">{translateInsight(insight.descripcion)}</p>
     </div>
   );
 }
@@ -127,8 +127,8 @@ export function AutoInsightsReport() {
       {data && (
         <>
           {data.insights.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <Lightbulb className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-12 text-muted-foreground">
+              <Lightbulb className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
               <p className="text-sm">{t("noInsights")}</p>
               <p className="text-xs mt-1">{t("tryWiderRange")}</p>
             </div>

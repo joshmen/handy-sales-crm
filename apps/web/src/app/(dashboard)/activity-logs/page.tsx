@@ -27,7 +27,7 @@ const actionColors: Record<string, string> = {
   update: 'bg-yellow-100 text-yellow-700',
   delete: 'bg-red-100 text-red-700',
   login: 'bg-blue-100 text-blue-700',
-  logout: 'bg-surface-3 text-gray-700',
+  logout: 'bg-surface-3 text-foreground/80',
   view: 'bg-indigo-100 text-indigo-700',
   export: 'bg-emerald-100 text-emerald-700',
   error: 'bg-red-100 text-red-700',
@@ -211,7 +211,7 @@ export default function ActivityLogsPage() {
         <button
           data-tour="logs-export-btn"
           onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-foreground/80 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
         >
           <Download className="w-4 h-4" />
           <span>{tc('exportCsv')}</span>
@@ -299,7 +299,7 @@ export default function ActivityLogsPage() {
               ) : logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 py-20">
                   <FileText className="w-10 h-10 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('noRecords')}</h3>
+                  <h3 className="text-lg font-semibold text-foreground/80 mb-2">{t('noRecords')}</h3>
                   <p className="text-sm text-muted-foreground text-center">
                     {t('noRecordsDesc')}
                   </p>
@@ -326,13 +326,13 @@ export default function ActivityLogsPage() {
                     {logs.map((log) => (
                       <div
                         key={log.id}
-                        className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
+                        className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
                       >
                         <div className="w-[160px] flex items-center gap-2">
                           <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium shrink-0`}>
                             {getInitials(log.userName)}
                           </div>
-                          <span className="text-[13px] text-gray-900 truncate">{log.userName}</span>
+                          <span className="text-[13px] text-foreground truncate">{log.userName}</span>
                         </div>
 
                         {isSuperAdmin && (
@@ -342,12 +342,12 @@ export default function ActivityLogsPage() {
                         )}
 
                         <div className="w-[100px]">
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-gray-700'}`}>
+                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-foreground/80'}`}>
                             {actionLabels[log.activityType] || log.activityType}
                           </span>
                         </div>
 
-                        <div className="w-[110px] text-[13px] text-gray-700">
+                        <div className="w-[110px] text-[13px] text-foreground/80">
                           {categoryLabels[log.activityCategory] || log.activityCategory}
                         </div>
 
@@ -357,7 +357,7 @@ export default function ActivityLogsPage() {
                           </span>
                         </div>
 
-                        <div className="flex-1 text-[13px] text-gray-700 truncate pr-4">
+                        <div className="flex-1 text-[13px] text-foreground/80 truncate pr-4">
                           {log.description || '-'}
                         </div>
 
@@ -381,13 +381,13 @@ export default function ActivityLogsPage() {
                             <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium`}>
                               {getInitials(log.userName)}
                             </div>
-                            <span className="text-[13px] font-medium text-gray-900">{log.userName}</span>
+                            <span className="text-[13px] font-medium text-foreground">{log.userName}</span>
                           </div>
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-gray-700'}`}>
+                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-foreground/80'}`}>
                             {actionLabels[log.activityType] || log.activityType}
                           </span>
                         </div>
-                        <p className="text-[13px] text-gray-700">{log.description || '-'}</p>
+                        <p className="text-[13px] text-foreground/80">{log.description || '-'}</p>
                         <div className="flex items-center justify-between text-[12px] text-muted-foreground">
                           <span>{categoryLabels[log.activityCategory] || log.activityCategory}</span>
                           <span>{formatDateTime(log.createdAt)}</span>

@@ -381,14 +381,14 @@ export default function ProductsPage() {
       label: t('columns.name'),
       sortable: true,
       width: 'flex',
-      cellRenderer: (product) => <span className="text-[13px] font-medium text-gray-900 truncate block">{product.name}</span>,
+      cellRenderer: (product) => <span className="text-[13px] font-medium text-foreground truncate block">{product.name}</span>,
     },
     {
       key: 'price',
       label: t('columns.price'),
       sortable: true,
       width: 90,
-      cellRenderer: (product) => <span className="text-[13px] font-medium text-gray-900">{formatCurrency(product.price)}</span>,
+      cellRenderer: (product) => <span className="text-[13px] font-medium text-foreground">{formatCurrency(product.price)}</span>,
     },
     {
       key: 'stock',
@@ -396,7 +396,7 @@ export default function ProductsPage() {
       sortable: true,
       width: 90,
       cellRenderer: (product) => (
-        <span className={`text-[13px] font-medium ${product.stock <= product.minStock ? 'text-red-600' : 'text-gray-900'}`}>
+        <span className={`text-[13px] font-medium ${product.stock <= product.minStock ? 'text-red-600' : 'text-foreground'}`}>
           {product.stock}
         </span>
       ),
@@ -506,7 +506,7 @@ export default function ProductsPage() {
             <div className="relative" data-tour="products-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
                 <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -518,14 +518,14 @@ export default function ProductsPage() {
                   <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                     <button
                       onClick={async () => { setShowDataMenu(false); try { await exportToCsv('productos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                     >
                       <Download className="w-3.5 h-3.5 text-emerald-500" />
                       {tc('exportCsv')}
                     </button>
                     <button
                       onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                     >
                       <Upload className="w-3.5 h-3.5 text-blue-500" />
                       {tc('importCsv')}
@@ -644,7 +644,7 @@ export default function ProductsPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{product.name}</p>
                         <p className="text-xs text-muted-foreground font-mono">{product.code}</p>
                       </div>
                     </div>
@@ -654,11 +654,11 @@ export default function ProductsPage() {
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">{formatCurrency(product.price)}</span>
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock <= product.minStock ? 'bg-red-50 text-red-600' : 'bg-surface-3 text-gray-700'}`}>Stock: {product.stock}</span>
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock <= product.minStock ? 'bg-red-50 text-red-600' : 'bg-surface-3 text-foreground/80'}`}>Stock: {product.stock}</span>
                     {product.family && <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{product.family}</span>}
                     {product.category && <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">{product.category}</span>}
                   </div>
-                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
                       <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                     </button>
@@ -727,7 +727,7 @@ export default function ProductsPage() {
           <form id="product-form" onSubmit={handleSaveProduct} className="space-y-4 p-6" data-tour="product-form">
               {/* Nombre */}
               <div data-tour="product-drawer-name">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.nameLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -741,7 +741,7 @@ export default function ProductsPage() {
 
               {/* Codigo de Barras */}
               <div data-tour="product-drawer-barcode">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.barcode')} <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -755,7 +755,7 @@ export default function ProductsPage() {
 
               {/* Descripcion */}
               <div data-tour="product-drawer-description">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.description')}
                 </label>
                 <textarea
@@ -768,7 +768,7 @@ export default function ProductsPage() {
 
               {/* Imagen del producto */}
               <div data-tour="product-drawer-image">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.productImage')}
                 </label>
                 <ImageUpload
@@ -804,7 +804,7 @@ export default function ProductsPage() {
 
               {/* Familia de Productos */}
               <div data-tour="product-drawer-family">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.productFamily')} <span className="text-red-500">*</span>
                 </label>
                 {loadingCatalogs ? (
@@ -828,7 +828,7 @@ export default function ProductsPage() {
 
               {/* Categoria de Productos */}
               <div data-tour="product-drawer-category">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.category')} <span className="text-red-500">*</span>
                 </label>
                 {loadingCatalogs ? (
@@ -852,7 +852,7 @@ export default function ProductsPage() {
 
               {/* Unidad de Medida */}
               <div data-tour="product-drawer-unit">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.unit')} <span className="text-red-500">*</span>
                 </label>
                 {loadingCatalogs ? (
@@ -876,7 +876,7 @@ export default function ProductsPage() {
 
               {/* Precio Base */}
               <div data-tour="product-drawer-price">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   {t('drawer.basePrice')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">

@@ -174,7 +174,7 @@ export default function CloseRoutePage() {
   }
 
   const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
-  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-gray-800';
+  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-foreground';
   const diferencia = montoRecibido ? parseFloat(montoRecibido) - resumen.aRecibir : null;
 
   return (
@@ -189,7 +189,7 @@ export default function CloseRoutePage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Cierre de ruta
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
@@ -262,13 +262,13 @@ export default function CloseRoutePage() {
 
         {/* Section: Route Details */}
         <div data-tour="routes-close-details" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Detalles de la ruta</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Detalles de la ruta</h2>
           <div className="flex items-center gap-4 p-3 bg-surface-1 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
               <User className="w-5 h-5 text-green-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">{ruta.usuarioNombre}</p>
+              <p className="text-sm font-medium text-foreground">{ruta.usuarioNombre}</p>
               <p className="text-xs text-muted-foreground">
                 Ruta: {ruta.nombre} | Zona: {ruta.zonaNombre || 'Sin zona'} | Creado: {formatDate(ruta.creadoEn)}
               </p>
@@ -282,7 +282,7 @@ export default function CloseRoutePage() {
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="w-4 h-4 text-green-600" />
-              <h3 className="text-xs font-semibold text-gray-700">Efectivo entrante</h3>
+              <h3 className="text-xs font-semibold text-foreground/80">Efectivo entrante</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -304,7 +304,7 @@ export default function CloseRoutePage() {
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="w-4 h-4 text-blue-600" />
-              <h3 className="text-xs font-semibold text-gray-700">Movimientos a saldo</h3>
+              <h3 className="text-xs font-semibold text-foreground/80">Movimientos a saldo</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -326,7 +326,7 @@ export default function CloseRoutePage() {
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <Package className="w-4 h-4 text-foreground/70" />
-              <h3 className="text-xs font-semibold text-gray-700">Otros movimientos</h3>
+              <h3 className="text-xs font-semibold text-foreground/80">Otros movimientos</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -345,7 +345,7 @@ export default function CloseRoutePage() {
         <div className="grid grid-cols-2 gap-4">
           {/* Al inicio */}
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-gray-700 mb-3">Al inicio</h3>
+            <h3 className="text-xs font-semibold text-foreground/80 mb-3">Al inicio</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Valor de la ruta</span>
@@ -360,7 +360,7 @@ export default function CloseRoutePage() {
 
           {/* Al cierre */}
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-gray-700 mb-3">Al cierre</h3>
+            <h3 className="text-xs font-semibold text-foreground/80 mb-3">Al cierre</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">A recibir</span>
@@ -384,7 +384,7 @@ export default function CloseRoutePage() {
               {diferencia !== null && (
                 <div className="flex justify-between text-xs pt-1 border-t">
                   <span className="text-muted-foreground">Diferencia</span>
-                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-foreground'}`}>
                     {diferencia >= 0 ? '+' : ''}{formatCurrency(diferencia)}
                   </span>
                 </div>
@@ -396,7 +396,7 @@ export default function CloseRoutePage() {
         {/* Inventario de retorno */}
         <div data-tour="routes-close-inventory" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-900">Inventario de retorno</h2>
+            <h2 className="text-sm font-semibold text-foreground">Inventario de retorno</h2>
             {!isReadonly && (
               <div data-tour="routes-close-actions" className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Diferencia a:</span>
@@ -437,14 +437,14 @@ export default function CloseRoutePage() {
                 </thead>
                 <tbody>
                   {retorno.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-50 hover:bg-surface-1">
+                    <tr key={item.id} className="border-b border-border-subtle hover:bg-surface-1">
                       <td className="py-2 px-2">
-                        <span className="text-[12px] text-gray-900">{item.productoNombre}</span>
+                        <span className="text-[12px] text-foreground">{item.productoNombre}</span>
                       </td>
                       <td className="py-2 px-2 text-right text-[12px] text-foreground/70">
                         {formatCurrency(item.ventasMonto)}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-900 font-medium">
+                      <td className="py-2 px-2 text-center text-[12px] text-foreground font-medium">
                         {item.cantidadInicial}
                       </td>
                       <td className="py-2 px-2 text-center text-[12px] text-foreground/70">

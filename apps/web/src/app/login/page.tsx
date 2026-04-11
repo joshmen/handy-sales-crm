@@ -485,7 +485,7 @@ function LoginContent() {
                     signIn('google', { callbackUrl: safe });
                   }}
                   disabled={isDisabled}
-                  className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-surface-1 hover:border-gray-400 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
+                  className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-surface-1 hover:border-border-strong transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -505,7 +505,7 @@ function LoginContent() {
               </p>
 
               {process.env.NODE_ENV === 'development' && (
-                <div className="p-3 bg-surface-1 rounded-lg border border-gray-100 auth-animate auth-animate-delay-7">
+                <div className="p-3 bg-surface-1 rounded-lg border border-border-subtle auth-animate auth-animate-delay-7">
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">{t('testCredentials')}</p>
                   <div className="space-y-0.5">
                     <p className="text-xs text-muted-foreground">

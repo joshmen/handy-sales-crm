@@ -250,7 +250,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
           <div className="space-y-3 py-2">
             {/* Buscador */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={tenantSearch}
                 onChange={(e) => setTenantSearch(e.target.value)}
@@ -263,10 +263,10 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
             <div className="max-h-72 overflow-y-auto space-y-1 border rounded-lg p-1">
               {tenantsLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : filteredTenants.length === 0 ? (
-                <div className="text-center py-6 text-gray-500 text-sm">
+                <div className="text-center py-6 text-muted-foreground text-sm">
                   {tenantSearch ? t('noCompaniesFound') : t('noCompaniesAvailable')}
                 </div>
               ) : (
@@ -274,17 +274,17 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                   <button
                     key={t.id}
                     type="button"
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-surface-1 transition-colors text-left"
                     onClick={() => setSelectedTenant({ id: t.id, nombre: t.nombre })}
                   >
                     <div className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0">
                       <SbBuildings size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm truncate">{t.nombre}</p>
-                      <p className="text-xs text-gray-500">ID: {t.id}</p>
+                      <p className="font-medium text-foreground text-sm truncate">{t.nombre}</p>
+                      <p className="text-xs text-muted-foreground">ID: {t.id}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   </button>
                 ))
               )}
@@ -325,8 +325,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                     <SbBuildings size={24} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{existingSession.tenant.name}</p>
-                    <p className="text-sm text-gray-500">Tenant ID: {existingSession.tenant.id}</p>
+                    <p className="font-medium text-foreground">{existingSession.tenant.name}</p>
+                    <p className="text-sm text-muted-foreground">Tenant ID: {existingSession.tenant.id}</p>
                   </div>
                 </div>
               )}
@@ -354,7 +354,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
             </div>
 
             {/* Mensaje */}
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-foreground/70">
               {t('endExistingMessage')}
             </p>
           </div>
@@ -419,8 +419,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 <SbBuildings size={24} />
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{tenant.nombre}</p>
-                <p className="text-sm text-gray-500">ID: {tenant.id}</p>
+                <p className="font-medium text-foreground">{tenant.nombre}</p>
+                <p className="text-sm text-muted-foreground">ID: {tenant.id}</p>
               </div>
               {needsTenantSelection && (
                 <Button
@@ -445,13 +445,13 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-colors ${
                   accessLevel === 'READ_ONLY'
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-border-subtle hover:border-border-default'
                 }`}
               >
                 <Eye className="h-4 w-4" />
                 <div className="text-left">
                   <p className="font-medium text-sm">{t('readOnly')}</p>
-                  <p className="text-xs text-gray-500">{t('recommended')}</p>
+                  <p className="text-xs text-muted-foreground">{t('recommended')}</p>
                 </div>
               </button>
               <button
@@ -460,13 +460,13 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-colors ${
                   accessLevel === 'READ_WRITE'
                     ? 'border-amber-500 bg-amber-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-border-subtle hover:border-border-default'
                 }`}
               >
                 <Edit className="h-4 w-4" />
                 <div className="text-left">
                   <p className="font-medium text-sm">{t('readWrite')}</p>
-                  <p className="text-xs text-gray-500">{t('requiresJustification')}</p>
+                  <p className="text-xs text-muted-foreground">{t('requiresJustification')}</p>
                 </div>
               </button>
             </div>
@@ -478,7 +478,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               {t('justification')} {accessLevel === 'READ_WRITE' ? (
                 <span className="text-red-500">*</span>
               ) : (
-                <span className="text-gray-400 font-normal">(opcional)</span>
+                <span className="text-muted-foreground font-normal">(opcional)</span>
               )}
             </label>
             <textarea
@@ -488,10 +488,10 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 ? t('justificationPlaceholderRequired')
                 : t('justificationPlaceholderOptional')
               }
-              className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full min-h-[80px] px-3 py-2 border border-border-default rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
             {accessLevel === 'READ_WRITE' && (
-              <p className="text-xs text-gray-500">{t('minCharsCount', { count: reason.length })}</p>
+              <p className="text-xs text-muted-foreground">{t('minCharsCount', { count: reason.length })}</p>
             )}
           </div>
 
@@ -499,14 +499,14 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-1">
               <FileText className="h-4 w-4" />
-              {t('ticketReference')} <span className="text-gray-400 font-normal">(opcional)</span>
+              {t('ticketReference')} <span className="text-muted-foreground font-normal">(opcional)</span>
             </label>
             <Input
               value={ticketNumber}
               onChange={(e) => setTicketNumber(e.target.value)}
               placeholder={t('ticketPlaceholder')}
             />
-            <p className="text-xs text-gray-400">{t('ticketHelp')}</p>
+            <p className="text-xs text-muted-foreground">{t('ticketHelp')}</p>
           </div>
 
           {/* Aceptar política */}
@@ -515,9 +515,9 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               type="checkbox"
               checked={agreedToPolicy}
               onChange={(e) => setAgreedToPolicy(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="mt-1 h-4 w-4 rounded border-border-default text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-foreground/70">
               {t('policyConfirmation')}{' '}
               <a
                 href="/docs/impersonation-policy"

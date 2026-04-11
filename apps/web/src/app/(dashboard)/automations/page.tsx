@@ -271,14 +271,14 @@ export default function AutomationsPage() {
                 <p className="text-[11px] opacity-70 mt-0.5">{t('activeOf', { total: templates.length })}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-gray-700">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-foreground/80">
               <Sparkle size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none">{loading ? '—' : totalExecutions}</p>
                 <p className="text-[11px] opacity-70 mt-0.5">{t('totalExecutions')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-gray-700">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-foreground/80">
               <Clock size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none truncate">
@@ -331,7 +331,7 @@ export default function AutomationsPage() {
               <div className="w-10 h-10 bg-surface-3 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Robot size={20} className="text-muted-foreground" />
               </div>
-              <p className="font-semibold text-gray-700 mb-1">{t('noCategory')}</p>
+              <p className="font-semibold text-foreground/80 mb-1">{t('noCategory')}</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 {activeCategory !== 'Todas'
                   ? t('noCategoryDesc', { category: CATEGORY_LABELS[activeCategory] || activeCategory })
@@ -374,7 +374,7 @@ export default function AutomationsPage() {
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <h3 className="font-medium text-gray-900 text-[13px] leading-tight truncate">
+                              <h3 className="font-medium text-foreground text-[13px] leading-tight truncate">
                                 {template.nombre}
                               </h3>
 
@@ -462,7 +462,7 @@ export default function AutomationsPage() {
             >
               <div className="flex items-center gap-2">
                 <Lightning size={18} className="text-amber-500" />
-                <span className="font-semibold text-sm text-gray-900">{t('historyTitle')}</span>
+                <span className="font-semibold text-sm text-foreground">{t('historyTitle')}</span>
                 {historialTotal > 0 && (
                   <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-md">
                     {historialTotal}
@@ -473,17 +473,17 @@ export default function AutomationsPage() {
             </button>
 
             {showHistorial && (
-              <div className="border-t border-gray-100">
+              <div className="border-t border-border-subtle">
                 {historialLoading ? (
                   <div className="py-12 text-center">
-                    <RefreshCw className="w-6 h-6 mx-auto mb-2 text-gray-300 animate-spin" />
+                    <RefreshCw className="w-6 h-6 mx-auto mb-2 text-muted-foreground/60 animate-spin" />
                     <p className="text-sm text-muted-foreground">{tc('loading')}</p>
                   </div>
                 ) : historial.length === 0 ? (
                   <div className="py-12 text-center">
-                    <Clock size={32} className="mx-auto mb-2 text-gray-200" />
+                    <Clock size={32} className="mx-auto mb-2 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">{t('emptyHistoryTitle')}</p>
-                    <p className="text-xs text-gray-300 mt-1">{t('emptyHistoryDesc')}</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">{t('emptyHistoryDesc')}</p>
                   </div>
                 ) : (
                   <>
@@ -491,7 +491,7 @@ export default function AutomationsPage() {
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-surface-1 border-b border-gray-100">
+                          <tr className="bg-surface-1 border-b border-border-subtle">
                             <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.date')}</th>
                             <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.automation')}</th>
                             <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.result')}</th>
@@ -500,11 +500,11 @@ export default function AutomationsPage() {
                         </thead>
                         <tbody>
                           {historial.map(exec => (
-                            <tr key={exec.id} className="border-b border-gray-50 hover:bg-surface-1/50 transition-colors">
+                            <tr key={exec.id} className="border-b border-border-subtle hover:bg-surface-1/50 transition-colors">
                               <td className="px-5 py-2.5 text-foreground/70 whitespace-nowrap">
                                 {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </td>
-                              <td className="px-5 py-2.5 font-medium text-gray-900">
+                              <td className="px-5 py-2.5 font-medium text-foreground">
                                 {exec.templateNombre}
                               </td>
                               <td className="px-5 py-2.5">
@@ -520,11 +520,11 @@ export default function AutomationsPage() {
                     </div>
 
                     {/* Mobile cards */}
-                    <div className="sm:hidden divide-y divide-gray-50">
+                    <div className="sm:hidden divide-y divide-border-subtle">
                       {historial.map(exec => (
                         <div key={exec.id} className="px-4 py-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm text-gray-900">{exec.templateNombre}</span>
+                            <span className="font-medium text-sm text-foreground">{exec.templateNombre}</span>
                             <StatusBadge status={exec.status} size="xs" />
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{exec.errorMessage || exec.actionTaken}</p>
@@ -537,11 +537,11 @@ export default function AutomationsPage() {
 
                     {/* Pagination */}
                     {historialTotal > 10 && (
-                      <div className="flex items-center justify-center gap-2 px-5 py-3 border-t border-gray-100">
+                      <div className="flex items-center justify-center gap-2 px-5 py-3 border-t border-border-subtle">
                         <button
                           onClick={() => loadHistorial(historialPage - 1)}
                           disabled={historialPage <= 1}
-                          className="text-xs text-muted-foreground hover:text-gray-700 disabled:opacity-50 transition-colors"
+                          className="text-xs text-muted-foreground hover:text-foreground/80 disabled:opacity-50 transition-colors"
                         >
                           {tc('previous')}
                         </button>
@@ -551,7 +551,7 @@ export default function AutomationsPage() {
                         <button
                           onClick={() => loadHistorial(historialPage + 1)}
                           disabled={historialPage >= Math.ceil(historialTotal / 10)}
-                          className="text-xs text-muted-foreground hover:text-gray-700 disabled:opacity-50 transition-colors"
+                          className="text-xs text-muted-foreground hover:text-foreground/80 disabled:opacity-50 transition-colors"
                         >
                           {tc('next')}
                         </button>
@@ -610,7 +610,7 @@ export default function AutomationsPage() {
             if (config.type === 'boolean') {
               return (
                 <label key={key} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{config.label}</span>
+                  <span className="text-sm text-foreground/80">{config.label}</span>
                   <Switch
                     checked={Boolean(value)}
                     onCheckedChange={(checked: boolean) =>
@@ -624,7 +624,7 @@ export default function AutomationsPage() {
             if (config.type === 'time') {
               return (
                 <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{config.label}</label>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">{config.label}</label>
                   <input
                     type="time"
                     value={String(value || '')}
@@ -638,7 +638,7 @@ export default function AutomationsPage() {
             if (config.type === 'select') {
               return (
                 <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{config.label}</label>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">{config.label}</label>
                   <select
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
@@ -654,7 +654,7 @@ export default function AutomationsPage() {
 
             return (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{config.label}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{config.label}</label>
                 <input
                   type="number"
                   value={Number(value) || 0}

@@ -13,12 +13,12 @@ export default function PrivacidadPage() {
       <LandingNav />
 
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">Aviso de Privacidad</h1>
+        <h1 className="text-3xl font-bold text-foreground">Aviso de Privacidad</h1>
         <p className="mt-2 text-sm text-muted-foreground">Última actualización: febrero 2026</p>
 
-        <div className="mt-8 space-y-8 text-gray-700 leading-relaxed">
+        <div className="mt-8 space-y-8 text-foreground/80 leading-relaxed">
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">1. Responsable del tratamiento</h2>
+            <h2 className="text-xl font-semibold text-foreground">1. Responsable del tratamiento</h2>
             <p className="mt-2">
               Handy Suites® (en adelante &quot;el Responsable&quot;), con domicilio en Guadalajara, Jalisco, México,
               es responsable del tratamiento de los datos personales que nos proporcione, los cuales serán protegidos
@@ -28,7 +28,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">2. Datos personales recabados</h2>
+            <h2 className="text-xl font-semibold text-foreground">2. Datos personales recabados</h2>
             <p className="mt-2">Para las finalidades señaladas, recabamos las siguientes categorías de datos:</p>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>Datos de identificación: nombre completo, correo electrónico, teléfono.</li>
@@ -44,7 +44,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">3. Finalidades del tratamiento</h2>
+            <h2 className="text-xl font-semibold text-foreground">3. Finalidades del tratamiento</h2>
             <p className="mt-2"><strong>Finalidades primarias (necesarias):</strong></p>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>Crear y administrar su cuenta de usuario.</li>
@@ -66,7 +66,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">4. Transferencias de datos</h2>
+            <h2 className="text-xl font-semibold text-foreground">4. Transferencias de datos</h2>
             <p className="mt-2">
               Sus datos personales pueden ser transferidos y tratados dentro y fuera del país, por las siguientes
               personas y para los siguientes fines:
@@ -80,7 +80,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">5. Derechos ARCO</h2>
+            <h2 className="text-xl font-semibold text-foreground">5. Derechos ARCO</h2>
             <p className="mt-2">
               Usted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos personales
               (derechos ARCO). Para ejercer cualquiera de estos derechos, envíe su solicitud a{' '}
@@ -98,7 +98,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">6. Revocación del consentimiento y portabilidad</h2>
+            <h2 className="text-xl font-semibold text-foreground">6. Revocación del consentimiento y portabilidad</h2>
             <p className="mt-2">
               Usted puede revocar su consentimiento para el tratamiento de sus datos personales en cualquier
               momento, sin efectos retroactivos, enviando su solicitud a{' '}
@@ -114,7 +114,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">7. Uso de cookies y tecnologías de rastreo</h2>
+            <h2 className="text-xl font-semibold text-foreground">7. Uso de cookies y tecnologías de rastreo</h2>
             <p className="mt-2">
               Utilizamos cookies y tecnologías similares para mejorar su experiencia de navegación, recordar sus
               preferencias y analizar el uso de nuestro sitio. Las cookies que utilizamos son:
@@ -129,7 +129,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">8. Cambios al aviso de privacidad</h2>
+            <h2 className="text-xl font-semibold text-foreground">8. Cambios al aviso de privacidad</h2>
             <p className="mt-2">
               Nos reservamos el derecho de modificar este aviso de privacidad. Cualquier cambio será notificado
               a través de nuestra plataforma o por correo electrónico. Le recomendamos revisar periódicamente
@@ -138,7 +138,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">9. Contacto</h2>
+            <h2 className="text-xl font-semibold text-foreground">9. Contacto</h2>
             <p className="mt-2">
               Para cualquier duda o aclaración sobre este aviso de privacidad, puede contactarnos en:
             </p>

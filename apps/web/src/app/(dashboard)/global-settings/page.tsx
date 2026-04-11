@@ -141,7 +141,7 @@ export default function GlobalSettingsPage() {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Settings className="h-6 w-6 text-purple-600" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{t('title')}</h1>
             </div>
             <p className="text-foreground/70">
               {t('subtitle')}
@@ -157,13 +157,13 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Palette className="h-5 w-5 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">{t('branding.title')}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{t('branding.title')}</h2>
                 <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">{t('branding.activeHint')}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div data-tour="settings-platform">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {t('branding.platformName')}
                   </label>
                   <Input
@@ -174,7 +174,7 @@ export default function GlobalSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {t('branding.platformLogo')}
                   </label>
                   <div className="flex items-center space-x-4">
@@ -195,7 +195,7 @@ export default function GlobalSettingsPage() {
                 </div>
 
                 <div data-tour="settings-colors">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {t('branding.primaryColor')}
                   </label>
                   <div className="flex space-x-2">
@@ -219,7 +219,7 @@ export default function GlobalSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {t('branding.secondaryColor')}
                   </label>
                   <div className="flex space-x-2">
@@ -248,13 +248,13 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Globe className="h-5 w-5 text-green-600" />
-                <h2 className="text-xl font-semibold text-gray-900">{t('regional.title')}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{t('regional.title')}</h2>
                 <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-full">{t('regional.comingSoon')}</span>
               </div>
 
               <div data-tour="settings-regional" className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {t('regional.defaultLanguage')}
                   </label>
                   <SearchableSelect
@@ -269,7 +269,7 @@ export default function GlobalSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {t('regional.defaultTimezone')}
                   </label>
                   <SearchableSelect
@@ -291,13 +291,13 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Shield className="h-5 w-5 text-orange-600" />
-                <h2 className="text-xl font-semibold text-gray-900">{t('security.title')}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{t('security.title')}</h2>
               </div>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900">{t('security.selfRegistration')}</h3>
+                    <h3 className="text-sm font-medium text-foreground">{t('security.selfRegistration')}</h3>
                     <p className="text-sm text-muted-foreground">
                       {t('security.selfRegistrationDesc')}
                     </p>
@@ -312,7 +312,7 @@ export default function GlobalSettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900">
+                    <h3 className="text-sm font-medium text-foreground">
                       {t('security.emailVerification')}
                     </h3>
                     <p className="text-sm text-muted-foreground">{t('security.emailVerificationDesc')}</p>
@@ -327,7 +327,7 @@ export default function GlobalSettingsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground/80 mb-2">
                       {t('security.maxUsers')}
                       <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">{t('security.maxUsersNotEnforced')}</span>
                     </label>
@@ -346,7 +346,7 @@ export default function GlobalSettingsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground/80 mb-2">
                       {t('security.maxStorage')}
                       <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">{t('security.maxStorageNotEnforced')}</span>
                     </label>
@@ -370,12 +370,12 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
-                <h2 className="text-xl font-semibold text-gray-900">{t('maintenance.title')}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{t('maintenance.title')}</h2>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-surface-1 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-foreground/80">
                     {t('maintenance.description')}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">

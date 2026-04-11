@@ -19,7 +19,7 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   Trial: { label: "Prueba", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
   Active: { label: "Activo", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
   PastDue: { label: "Pago pendiente", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
-  Cancelled: { label: "Cancelado", color: "bg-surface-3 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
+  Cancelled: { label: "Cancelado", color: "bg-surface-3 text-foreground dark:bg-foreground dark:text-muted-foreground/60" },
   Expired: { label: "Expirado", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
 };
 
@@ -146,7 +146,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
                   {currentPlan.incluyeReportes ? (
                     <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
                   ) : (
-                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-foreground/70" />
+                    <X className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-foreground/70" />
                   )}
                   <span className={`text-xs ${currentPlan.incluyeReportes ? "text-foreground" : "text-muted-foreground"}`}>Reportes</span>
                 </div>
@@ -154,7 +154,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
                   {currentPlan.incluyeSoportePrioritario ? (
                     <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
                   ) : (
-                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-foreground/70" />
+                    <X className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-foreground/70" />
                   )}
                   <span className={`text-xs ${currentPlan.incluyeSoportePrioritario ? "text-foreground" : "text-muted-foreground"}`}>Soporte prioritario</span>
                 </div>

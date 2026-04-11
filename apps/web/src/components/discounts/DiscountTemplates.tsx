@@ -78,7 +78,7 @@ export function DiscountTemplates({
         <CardTitle>Plantillas predefinidas</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="text-sm text-gray-600 mb-4">
+        <div className="text-sm text-foreground/70 mb-4">
           Selecciona una plantilla para aplicar rangos predefinidos:
         </div>
         
@@ -89,14 +89,14 @@ export function DiscountTemplates({
             className={`w-full text-left p-3 border rounded-lg transition-all ${
               selectedTemplate === template.id
                 ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
+                : 'border-border-subtle hover:border-border-default'
             }`}
           >
             <div className="font-medium text-sm">{template.name}</div>
-            <div className="text-xs text-gray-600 mt-1">{template.description}</div>
+            <div className="text-xs text-foreground/70 mt-1">{template.description}</div>
             <div className="mt-2 space-y-1">
               {template.ranges.map((range, index) => (
-                <div key={index} className="text-xs text-gray-500">
+                <div key={index} className="text-xs text-muted-foreground">
                   {range.description}
                 </div>
               ))}
@@ -104,8 +104,8 @@ export function DiscountTemplates({
           </button>
         ))}
 
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <div className="text-xs text-gray-600">
+        <div className="mt-4 p-3 bg-surface-1 rounded-lg">
+          <div className="text-xs text-foreground/70">
             <strong>Nota:</strong> Las plantillas son puntos de partida. Puedes personalizar 
             los rangos y valores después de seleccionar una plantilla.
           </div>

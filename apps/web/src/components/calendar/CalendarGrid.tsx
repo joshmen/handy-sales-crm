@@ -130,7 +130,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
       case "in_progress":
         return "bg-warning-200 text-warning-900 border border-warning-300";
       default:
-        return "bg-gray-200 text-gray-900 border border-gray-300";
+        return "bg-surface-3 text-foreground border border-border-default";
     }
   };
 
@@ -159,13 +159,13 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
     return (
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border border-border-subtle rounded-lg overflow-hidden">
         {/* Encabezados de días */}
-        <div className="grid grid-cols-7 bg-gray-50">
+        <div className="grid grid-cols-7 bg-surface-1">
           {weekDays.map((day) => (
             <div
               key={day}
-              className="p-4 text-center font-semibold text-sm text-gray-700 border-r border-gray-200 last:border-r-0"
+              className="p-4 text-center font-semibold text-sm text-foreground/80 border-r border-border-subtle last:border-r-0"
             >
               {day}
             </div>
@@ -180,9 +180,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             return (
               <div
                 key={index}
-                className={`min-h-[120px] p-2 border-r border-b border-gray-200 last:border-r-0 cursor-pointer hover:bg-blue-50 transition-colors ${
+                className={`min-h-[120px] p-2 border-r border-b border-border-subtle last:border-r-0 cursor-pointer hover:bg-blue-50 transition-colors ${
                   !dayInfo.isCurrentMonth
-                    ? "bg-gray-50 text-gray-400"
+                    ? "bg-surface-1 text-muted-foreground"
                     : "bg-white"
                 } ${dayInfo.isToday ? "bg-blue-100 ring-2 ring-blue-300" : ""}`}
                 onClick={() => onDateClick(dayInfo.date)}
@@ -193,8 +193,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     dayInfo.isToday
                       ? "bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center"
                       : !dayInfo.isCurrentMonth
-                      ? "text-gray-400"
-                      : "text-gray-800"
+                      ? "text-muted-foreground"
+                      : "text-foreground"
                   }`}
                 >
                   {dayInfo.date.getDate()}
@@ -205,7 +205,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   {dayVisits.slice(0, 3).map(renderVisitItem)}
 
                   {dayVisits.length > 3 && (
-                    <div className="text-xs text-gray-600 px-2 py-1 bg-gray-100 rounded font-medium">
+                    <div className="text-xs text-foreground/70 px-2 py-1 bg-surface-3 rounded font-medium">
                       +{dayVisits.length - 3} más
                     </div>
                   )}
@@ -230,24 +230,24 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     ];
 
     return (
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="grid grid-cols-7 bg-gray-50">
+      <div className="border border-border-subtle rounded-lg overflow-hidden">
+        <div className="grid grid-cols-7 bg-surface-1">
           {days.map((dayInfo, index) => (
             <div
               key={index}
-              className={`p-4 text-center border-r border-gray-200 last:border-r-0 cursor-pointer hover:bg-blue-50 ${
+              className={`p-4 text-center border-r border-border-subtle last:border-r-0 cursor-pointer hover:bg-blue-50 ${
                 dayInfo.isToday ? "bg-blue-100 ring-2 ring-blue-300" : ""
               }`}
               onClick={() => onDateClick(dayInfo.date)}
             >
-              <div className="text-sm font-medium text-gray-600">
+              <div className="text-sm font-medium text-foreground/70">
                 {weekDays[index]}
               </div>
               <div
                 className={`text-lg font-bold ${
                   dayInfo.isToday
                     ? "bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto mt-1"
-                    : "text-gray-900 mt-1"
+                    : "text-foreground mt-1"
                 }`}
               >
                 {dayInfo.date.getDate()}
@@ -263,7 +263,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             return (
               <div
                 key={index}
-                className="min-h-[200px] p-3 border-r border-gray-200 last:border-r-0 bg-white"
+                className="min-h-[200px] p-3 border-r border-border-subtle last:border-r-0 bg-white"
               >
                 <div className="space-y-2">
                   {dayVisits.map(renderVisitItem)}
@@ -280,9 +280,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     const dayVisits = getVisitsForDate(dayInfo.date);
 
     return (
-      <div className="border border-gray-200 rounded-lg bg-white p-6">
+      <div className="border border-border-subtle rounded-lg bg-white p-6">
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 className="text-2xl font-bold text-foreground">
             {dayInfo.date.toLocaleDateString("es-ES", {
               weekday: "long",
               year: "numeric",
@@ -334,7 +334,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-muted-foreground">
               <div className="text-6xl mb-4">📅</div>
               <h3 className="text-lg font-medium mb-2">
                 No hay visitas programadas

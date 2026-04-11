@@ -165,7 +165,7 @@ export function ZoneModal({
                 className={`h-12 w-full rounded-lg border-2 transition-all hover:scale-105 ${
                   formData.color === color 
                     ? 'border-gray-900 ring-2 ring-gray-900 ring-offset-2' 
-                    : 'border-gray-200 hover:border-gray-400'
+                    : 'border-border-subtle hover:border-border-strong'
                 }`}
                 style={{ backgroundColor: color }}
                 title={color}
@@ -217,7 +217,7 @@ export function ZoneModal({
                       });
                     }
                   }}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border-default rounded"
                 />
                 <div className="flex-1">
                   <Label htmlFor={`user-${option.value}`} className="text-sm font-normal cursor-pointer">
@@ -230,7 +230,7 @@ export function ZoneModal({
           </div>
           
           {userOptions.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {t('noUsersAvailable')}
             </p>
           )}
@@ -247,7 +247,7 @@ export function ZoneModal({
               id="isEnabled"
               checked={formData.isEnabled}
               onChange={(e) => updateFormData({ isEnabled: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border-default rounded"
             />
             <div>
               <Label htmlFor="isEnabled" className="text-sm font-normal cursor-pointer">

@@ -59,7 +59,7 @@ const statusLabels: Record<string, string> = {
 
 // Dot color + subtle text — no pastel backgrounds
 const statusDotColors: Record<string, string> = {
-  'draft': 'bg-gray-400 ring-2 ring-gray-200 ring-offset-1',
+  'draft': 'bg-muted-foreground ring-2 ring-border-subtle ring-offset-1',
   'confirmed': 'bg-blue-500 ring-2 ring-blue-200 ring-offset-1',
   'en_route': 'bg-cyan-500 ring-2 ring-cyan-200 ring-offset-1',
   'delivered': 'bg-emerald-500',
@@ -74,7 +74,7 @@ const statusTextColors: Record<string, string> = {
 };
 // Left border accent for rows needing attention
 const statusBorderColors: Record<string, string> = {
-  'draft': 'border-l-gray-300',
+  'draft': 'border-l-border-default',
   'confirmed': 'border-l-blue-400',
   'en_route': 'border-l-cyan-400',
   'delivered': '',
@@ -449,7 +449,7 @@ export default function OrdersPage() {
       cellRenderer: (order) => (
         <div className="flex items-center gap-2">
           <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDotColors[order.status]}`} />
-          <span className="text-[13px] text-gray-800 font-mono">{order.code}</span>
+          <span className="text-[13px] text-foreground font-mono">{order.code}</span>
         </div>
       ),
     },
@@ -459,7 +459,7 @@ export default function OrdersPage() {
       sortable: true,
       width: 'flex',
       cellRenderer: (order) => (
-        <div className="text-[13px] text-gray-900 font-medium truncate">{order.client.name}</div>
+        <div className="text-[13px] text-foreground font-medium truncate">{order.client.name}</div>
       ),
     },
     {
@@ -509,7 +509,7 @@ export default function OrdersPage() {
       width: 90,
       align: 'right',
       cellRenderer: (order) => (
-        <span className="text-[13px] text-gray-900 font-semibold whitespace-nowrap tabular-nums">
+        <span className="text-[13px] text-foreground font-semibold whitespace-nowrap tabular-nums">
           {formatCurrency(order.total)}
         </span>
       ),
@@ -634,7 +634,7 @@ export default function OrdersPage() {
               data-tour="orders-estado-filter"
               value={estadoFilter}
               onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">{t('filters.allStatuses')}</option>
               <option value="Borrador">{t('status.draft')}</option>
@@ -664,7 +664,7 @@ export default function OrdersPage() {
               data-tour="orders-tipo-filter"
               value={tipoVentaFilter}
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">{t('filters.allTypes')}</option>
               <option value="0">{t('filters.preventa')}</option>
@@ -714,7 +714,7 @@ export default function OrdersPage() {
                           <ShoppingCartIcon className="w-5 h-5 text-blue-600" weight="duotone" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">{order.code}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{order.code}</p>
                           <p className="text-xs text-muted-foreground truncate">{order.client.name}</p>
                         </div>
                         <span className="flex items-center gap-1.5">
@@ -728,13 +728,13 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2.5">
-                        <span className="font-medium text-gray-900">${formatCurrency(order.total)}</span>
+                        <span className="font-medium text-foreground">${formatCurrency(order.total)}</span>
                         <span>•</span>
                         <span>{formatDate(order.orderDate, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                         <span>•</span>
                         <span>{order.user.name}</span>
                       </div>
-                      <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => handleViewDetails(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded">
                           <Eye className="w-3.5 h-3.5 text-blue-400" /> {t('view')}
                         </button>
@@ -758,7 +758,7 @@ export default function OrdersPage() {
                         })()}
                       </div>
                       {canAdvanceOrders && (nextAction || canCancel) && (
-                        <div className="flex items-center gap-2 border-t border-gray-100 pt-2 mt-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2 border-t border-border-subtle pt-2 mt-1" onClick={(e) => e.stopPropagation()}>
                           {nextAction && (
                             <button onClick={() => handleAdvanceStatus(order.id, nextAction.action)} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}>
                               <ChevronRight className="w-3 h-3" /> {nextAction.action === 'confirmar' ? t('actions.confirm') : nextAction.action === 'en-ruta' ? t('actions.sendToRoute') : t('actions.deliver')}

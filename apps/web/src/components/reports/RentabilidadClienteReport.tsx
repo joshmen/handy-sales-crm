@@ -70,7 +70,7 @@ export function RentabilidadClienteReport() {
         <>
           {top10.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">{t("chartTitle")}</h3>
+              <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
               <Chart type="bar" options={chartOptions} series={[{ name: t("salesLabel"), data: top10.map(c => ({ x: c.nombre, y: c.totalVentas })) }]} height={Math.max(250, top10.length * 45)} />
             </Card>
           )}

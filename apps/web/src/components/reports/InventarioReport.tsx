@@ -80,7 +80,7 @@ export function InventarioReport() {
     <div className="space-y-4">
       <div className="flex items-center justify-end gap-2">
         {data && (
-          <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title={tFilters('exportPDF')}>
+          <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-foreground/80 bg-white border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50" title={tFilters('exportPDF')}>
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             {exporting ? tFilters('exporting') : 'PDF'}
           </button>

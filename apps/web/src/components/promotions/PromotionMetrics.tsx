@@ -42,8 +42,8 @@ export const PromotionMetrics: React.FC<PromotionMetricsProps> = ({ promotions }
       title: 'Promociones Finalizadas',
       value: finishedPromotions.length.toString(),
       subtitle: 'Completadas',
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-50',
+      color: 'text-foreground/70',
+      bgColor: 'bg-surface-1',
       icon: '✅'
     },
     {
@@ -79,9 +79,9 @@ export const PromotionMetrics: React.FC<PromotionMetricsProps> = ({ promotions }
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">{metric.title}</p>
+                <p className="text-sm font-medium text-foreground/70 mb-1">{metric.title}</p>
                 <p className={`text-2xl font-bold ${metric.color} mb-1`}>{metric.value}</p>
-                <p className="text-xs text-gray-500">{metric.subtitle}</p>
+                <p className="text-xs text-muted-foreground">{metric.subtitle}</p>
               </div>
               <div className="text-2xl">{metric.icon}</div>
             </div>

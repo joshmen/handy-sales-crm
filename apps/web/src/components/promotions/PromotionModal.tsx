@@ -77,21 +77,21 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">{t('nameLabel')}</label>
+                  <label className="text-sm font-medium text-foreground/70">{t('nameLabel')}</label>
                   <p className="text-sm">{promotion.name}</p>
                 </div>
                 {promotion.description && (
                   <div>
-                    <label className="text-sm font-medium text-gray-600">{t('descriptionLabel')}</label>
+                    <label className="text-sm font-medium text-foreground/70">{t('descriptionLabel')}</label>
                     <p className="text-sm">{promotion.description}</p>
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-medium text-gray-600">{t('typeLabel')}</label>
+                  <label className="text-sm font-medium text-foreground/70">{t('typeLabel')}</label>
                   <p className="text-sm">{getTypeLabel(promotion.type)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">{t('statusLabel')}</label>
+                  <label className="text-sm font-medium text-foreground/70">{t('statusLabel')}</label>
                   <div className="mt-1">{getStatusBadge(promotion.status)}</div>
                 </div>
               </CardContent>
@@ -103,22 +103,22 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">{t('totalUsage')}</label>
+                  <label className="text-sm font-medium text-foreground/70">{t('totalUsage')}</label>
                   <p className="text-sm">{promotion.totalUsed || 0}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">{t('savingsGenerated')}</label>
+                  <label className="text-sm font-medium text-foreground/70">{t('savingsGenerated')}</label>
                   <p className="text-sm">{formatCurrency(promotion.totalSavings || 0)}</p>
                 </div>
                 {promotion.currentBudgetUsed !== undefined && (
                   <div>
-                    <label className="text-sm font-medium text-gray-600">{t('budgetUsed')}</label>
+                    <label className="text-sm font-medium text-foreground/70">{t('budgetUsed')}</label>
                     <p className="text-sm">{formatCurrency(promotion.currentBudgetUsed)}</p>
                   </div>
                 )}
                 {promotion.lastUsed && (
                   <div>
-                    <label className="text-sm font-medium text-gray-600">{t('lastUsage')}</label>
+                    <label className="text-sm font-medium text-foreground/70">{t('lastUsage')}</label>
                     <p className="text-sm">{formatDate(promotion.lastUsed)}</p>
                   </div>
                 )}
@@ -265,11 +265,11 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
             </div>
           </div>
 
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-surface-1 rounded-lg">
             <h4 className="font-medium mb-2">{t('promotionToDelete')}</h4>
             <p className="text-sm"><strong>{promotion.name}</strong></p>
             {promotion.description && (
-              <p className="text-sm text-gray-600 mt-1">{promotion.description}</p>
+              <p className="text-sm text-foreground/70 mt-1">{promotion.description}</p>
             )}
           </div>
 
@@ -290,12 +290,12 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
     return (
       <Modal isOpen={isOpen} onClose={onClose} title={t('importTitle')} size="md">
         <div className="space-y-4">
-          <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center p-8 border-2 border-dashed border-border-default rounded-lg">
+            <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               {t('uploadFile')}
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-foreground/70 mb-4">
               {t('supportedFormats')}
             </p>
             <Button>
@@ -332,11 +332,11 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
       <Modal isOpen={isOpen} onClose={onClose} title={t('exportTitle')} size="md">
         <div className="space-y-4">
           <div className="text-center p-8">
-            <Download className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Download className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               {t('exportList')}
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-foreground/70 mb-4">
               {t('exportDesc')}
             </p>
           </div>

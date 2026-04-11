@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
           <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl font-bold text-foreground mb-2">
             {t('forgotPasswordSuccess')}
           </h2>
           <p className="text-sm text-foreground/70 mb-6">
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
             <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="w-7 h-7 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
+            <h2 className="text-xl font-bold text-foreground mb-1">
               {t('forgotPasswordTitle')}
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground/80 mb-1.5">
                 {t('emailLabel')}
               </label>
               <input
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
             <div className="text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gray-700"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground/80"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 {t('backToLogin')}

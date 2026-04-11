@@ -29,16 +29,16 @@ export function Checkbox({
         <label className="flex items-center gap-1.5 cursor-pointer" onClick={(e) => { e.preventDefault(); field.onChange(!field.value); }}>
           <div
             className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${
-              field.value ? 'bg-success' : 'border border-gray-300 bg-white'
+              field.value ? 'bg-success' : 'border border-border-default bg-white'
             }`}
           >
             {field.value && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
           </div>
-          <span className="text-[13px] text-gray-700">{label}</span>
+          <span className="text-[13px] text-foreground/80">{label}</span>
           {tooltip && (
             <div className="relative group" onClick={(e) => e.stopPropagation()}>
-              <HelpCircle className="w-3.5 h-3.5 text-gray-400 cursor-help" />
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg w-56 text-center opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-foreground text-white text-[11px] rounded-lg w-56 text-center opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                 {tooltip}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
               </div>
@@ -72,11 +72,11 @@ export function FormField({
     : error;
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-gray-700">
+      <label className="text-xs font-medium text-foreground/80">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
-      {hint && !translatedError && <p className="text-[11px] text-gray-400">{hint}</p>}
+      {hint && !translatedError && <p className="text-[11px] text-muted-foreground">{hint}</p>}
       {translatedError && (
         <p className="text-[11px] text-red-500 flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
@@ -91,7 +91,7 @@ export function FormField({
 
 export function inputClass(error?: { message?: string }) {
   return `w-full h-9 px-3 text-[13px] border rounded focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent ${
-    error ? 'border-red-500' : 'border-gray-300'
+    error ? 'border-red-500' : 'border-border-default'
   }`;
 }
 
@@ -100,10 +100,10 @@ export function inputClass(error?: { message?: string }) {
 export function SectionTitle({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <h2 className="text-[15px] font-bold text-gray-900">
+      <h2 className="text-[15px] font-bold text-foreground">
         {children}
       </h2>
-      {subtitle && <span className="text-xs text-gray-400">({subtitle})</span>}
+      {subtitle && <span className="text-xs text-muted-foreground">({subtitle})</span>}
     </div>
   );
 }

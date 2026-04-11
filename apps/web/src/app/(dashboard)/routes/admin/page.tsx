@@ -414,7 +414,7 @@ export default function RouteAdminPage() {
         {/* Empty state */}
         {!loading && filteredTemplates.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Route className="w-12 h-12 text-gray-300 mb-3" />
+            <Route className="w-12 h-12 text-muted-foreground/60 mb-3" />
             <p className="text-muted-foreground text-sm">
               {searchTerm || filterZone !== 'all'
                 ? t('templates.noTemplatesFiltered')
@@ -439,7 +439,7 @@ export default function RouteAdminPage() {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-base font-semibold text-gray-900 truncate">
+                      <h3 className="text-base font-semibold text-foreground truncate">
                         {template.nombre}
                       </h3>
                       {template.descripcion && (
@@ -454,14 +454,14 @@ export default function RouteAdminPage() {
                     <div className="flex items-center text-sm">
                       <MapPin size={15} className="mr-2 text-muted-foreground flex-shrink-0" />
                       <span className="text-muted-foreground">{t('templates.zone')}:</span>
-                      <span className="ml-1.5 font-medium text-gray-700 truncate">
+                      <span className="ml-1.5 font-medium text-foreground/80 truncate">
                         {template.zonaNombre || t('templates.noZone')}
                       </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Users size={15} className="mr-2 text-muted-foreground flex-shrink-0" />
                       <span className="text-muted-foreground">{t('templates.stops')}:</span>
-                      <span className="ml-1.5 font-medium text-gray-700">
+                      <span className="ml-1.5 font-medium text-foreground/80">
                         {template.totalParadas}
                       </span>
                     </div>
@@ -469,14 +469,14 @@ export default function RouteAdminPage() {
                       <div className="flex items-center text-sm">
                         <Navigation size={15} className="mr-2 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">{t('templates.distance')}:</span>
-                        <span className="ml-1.5 font-medium text-gray-700">
+                        <span className="ml-1.5 font-medium text-foreground/80">
                           {template.kilometrosEstimados} km
                         </span>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-1.5 pt-3 border-t border-gray-100">
+                  <div className="flex gap-1.5 pt-3 border-t border-border-subtle">
                     <button
                       onClick={() => handleOpenAssign(template)}
                       disabled={actionLoading}
@@ -531,7 +531,7 @@ export default function RouteAdminPage() {
             <button
               type="button"
               onClick={() => setIsDrawerOpen(false)}
-              className="px-4 py-2 text-sm text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
+              className="px-4 py-2 text-sm text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
             >
               {tc('cancel')}
             </button>
@@ -549,7 +549,7 @@ export default function RouteAdminPage() {
       >
         <form onSubmit={rhfSubmit(handleSubmitTemplate)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               {t('columns.name')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -563,7 +563,7 @@ export default function RouteAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('templates.descriptionLabel')}</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('templates.descriptionLabel')}</label>
             <textarea
               {...register('descripcion')}
               rows={3}
@@ -573,7 +573,7 @@ export default function RouteAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('columns.zone')}</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('columns.zone')}</label>
             <SearchableSelect
               options={zonaFormOptions}
               value={watch('zonaId')}
@@ -583,7 +583,7 @@ export default function RouteAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{tc('notes')}</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{tc('notes')}</label>
             <textarea
               {...register('notas')}
               rows={2}
@@ -603,7 +603,7 @@ export default function RouteAdminPage() {
         >
           <form onSubmit={rhfAssignSubmit(handleAssign)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('templates.selectedTemplate')}
               </label>
               <div className="p-3 bg-surface-1 rounded-lg">
@@ -619,7 +619,7 @@ export default function RouteAdminPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('drawer.vendor')} <span className="text-red-500">*</span>
               </label>
               <SearchableSelect
@@ -635,7 +635,7 @@ export default function RouteAdminPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('columns.date')} <span className="text-red-500">*</span>
               </label>
               <DateTimePicker
@@ -652,7 +652,7 @@ export default function RouteAdminPage() {
               <button
                 type="button"
                 onClick={() => setIsAssignOpen(false)}
-                className="px-4 py-2 text-sm text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 {tc('cancel')}
               </button>

@@ -102,12 +102,12 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   ];
 
   return (
-    <div className={`bg-white border-b border-gray-200 p-6 ${className}`}>
+    <div className={`bg-white border-b border-border-subtle p-6 ${className}`}>
       {/* Título y botones principales */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">📅 Calendario de visitas</h1>
-          <p className="text-sm text-gray-600">Gestiona y programa todas tus visitas comerciales</p>
+          <h1 className="text-2xl font-bold text-foreground mb-1">📅 Calendario de visitas</h1>
+          <p className="text-sm text-foreground/70">Gestiona y programa todas tus visitas comerciales</p>
         </div>
 
         <div className="flex gap-3">
@@ -133,7 +133,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             <Button
               variant="outline"
               onClick={onManageRules}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-border-default text-foreground/80 hover:bg-surface-1"
             >
               Reglas de prospectos
             </Button>
@@ -150,13 +150,13 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               variant="outline"
               size="sm"
               onClick={() => navigateDate('prev')}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-foreground/70 hover:text-foreground"
             >
               <ChevronLeft size={16} />
             </Button>
 
             <div className="min-w-[200px] text-center">
-              <h2 className="text-lg font-semibold text-gray-900 capitalize">
+              <h2 className="text-lg font-semibold text-foreground capitalize">
                 {formatCurrentPeriod()}
               </h2>
             </div>
@@ -165,7 +165,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               variant="outline"
               size="sm"
               onClick={() => navigateDate('next')}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-foreground/70 hover:text-foreground"
             >
               <ChevronRight size={16} />
             </Button>
@@ -184,7 +184,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         {/* Controles de vista y filtros */}
         <div className="flex items-center gap-4">
           {/* Selector de vista */}
-          <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+          <div className="flex border border-border-default rounded-lg overflow-hidden">
             {viewModeOptions.map(option => {
               const Icon = option.icon;
               return (
@@ -194,7 +194,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                   className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
                     viewMode === option.value
                       ? 'bg-primary-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      : 'bg-white text-foreground/80 hover:bg-surface-1'
                   }`}
                 >
                   <Icon size={14} />
@@ -218,7 +218,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             ))}
           </Select>
 
-          <Button size="sm" variant="outline" className="text-gray-600 hover:text-gray-900">
+          <Button size="sm" variant="outline" className="text-foreground/70 hover:text-foreground">
             🔄 Actualizar
           </Button>
         </div>

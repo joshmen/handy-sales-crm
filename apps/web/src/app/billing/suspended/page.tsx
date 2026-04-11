@@ -34,7 +34,7 @@ export default function SuspendedPage() {
             <AlertCircle className="h-10 w-10 text-red-600" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Membresía Suspendida</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Membresía Suspendida</h1>
 
           <p className="text-lg text-foreground/70">
             Tu cuenta ha sido suspendida debido a un pago pendiente
@@ -60,7 +60,7 @@ export default function SuspendedPage() {
         </div>
 
         <div className="bg-surface-2 border rounded-lg p-6 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Detalles de tu suscripción</h3>
+          <h3 className="font-semibold text-foreground mb-4">Detalles de tu suscripción</h3>
 
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -114,7 +114,7 @@ export default function SuspendedPage() {
         </div>
 
         <div className="mt-8 pt-6 border-t">
-          <h4 className="font-medium text-gray-900 mb-3">¿Necesitas ayuda?</h4>
+          <h4 className="font-medium text-foreground mb-3">¿Necesitas ayuda?</h4>
           <div className="space-y-2 text-sm">
             <a
               href="mailto:soporte@handysuites.com"

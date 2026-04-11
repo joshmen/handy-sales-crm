@@ -388,7 +388,7 @@ export default function DashboardPage() {
         <div className="bg-surface-2 border border-border-subtle rounded-xl shadow-sm page-animate page-animate-delay-4" data-tour="dashboard-goal">
           <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               {goalData
                 ? (goalData.tipo === 'ventas' ? t('goalSales', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : goalData.tipo === 'pedidos' ? t('goalOrders', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : t('goalVisits', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }))
                 : t('goalPeriod')}
@@ -409,7 +409,7 @@ export default function DashboardPage() {
               <div className="flex flex-wrap items-center gap-6 sm:gap-10 mb-6">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('goalTarget')}</p>
-                  <p className="text-2xl font-semibold text-gray-900">
+                  <p className="text-2xl font-semibold text-foreground">
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(goalData.target)}`
                       : formatNumber(goalData.target)}
@@ -425,7 +425,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('goalRemaining')}</p>
-                  <p className="text-2xl font-semibold text-gray-900">
+                  <p className="text-2xl font-semibold text-foreground">
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(Math.max(0, goalData.target - goalData.current))}`
                       : formatNumber(Math.max(0, goalData.target - goalData.current))}
@@ -448,7 +448,7 @@ export default function DashboardPage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-              <AlertCircle className="w-8 h-8 text-gray-300" />
+              <AlertCircle className="w-8 h-8 text-muted-foreground/60" />
               <p className="text-sm">{t('noActiveGoal')}</p>
               <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
             </div>
@@ -476,7 +476,7 @@ export default function DashboardPage() {
         {/* Title Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 page-animate page-animate-delay-1">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">{t('title')}</h1>
+            <h1 className="text-3xl font-semibold text-foreground tracking-tight">{t('title')}</h1>
             <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -485,7 +485,7 @@ export default function DashboardPage() {
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value as 'semana' | 'mes' | 'trimestre')}
-                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-border-subtle rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 bg-surface-2 cursor-pointer transition-colors"
+                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-border-subtle rounded-lg text-sm font-medium text-foreground/80 hover:bg-surface-1 bg-surface-2 cursor-pointer transition-colors"
               >
                 <option value="semana">{t('thisWeek')}</option>
                 <option value="mes">{t('thisMonth')}</option>
@@ -497,7 +497,7 @@ export default function DashboardPage() {
             <button
               onClick={exportPDF}
               disabled={exporting || metricCards.length === 0}
-              className="flex items-center gap-2 px-4 py-2 border border-border-subtle rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 border border-border-subtle rounded-lg text-sm font-medium text-foreground/80 hover:bg-surface-1 transition-colors disabled:opacity-50"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
@@ -579,7 +579,7 @@ export default function DashboardPage() {
           <div ref={chartRef} className="lg:col-span-2 bg-surface-2 border border-border-subtle rounded-xl p-6" data-tour="dashboard-chart">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   {periodo === 'semana' ? t('weeklySales') : periodo === 'mes' ? t('monthlySales') : t('quarterlySales')}
                 </h3>
                 <p className="text-sm text-muted-foreground">{t('revenuePerDay')}</p>
@@ -615,10 +615,10 @@ export default function DashboardPage() {
 
           {/* Activity Card */}
           <div className="bg-surface-2 border border-border-subtle rounded-xl" data-tour="dashboard-activity">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900">{t('recentActivity')}</h3>
+            <div className="flex items-center justify-between p-5 border-b border-border-subtle">
+              <h3 className="font-semibold text-foreground">{t('recentActivity')}</h3>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border-subtle">
               {activities.length > 0 ? activities.map((a) => {
                 const IconComp = activityIcons[a.type] || Clock;
                 return (
@@ -633,7 +633,7 @@ export default function DashboardPage() {
                       }`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{a.description}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{a.description}</p>
                       <p className="text-xs text-muted-foreground">{a.userName}</p>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">{a.timeAgo}</span>
@@ -654,7 +654,7 @@ export default function DashboardPage() {
             <>
               {/* Vendedor: single meta with progress */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   {goalData
                     ? (goalData.tipo === 'ventas' ? t('goalSales', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : goalData.tipo === 'pedidos' ? t('goalOrders', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : t('goalVisits', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }))
                     : t('goalPeriod')}
@@ -675,7 +675,7 @@ export default function DashboardPage() {
                   <div className="flex flex-wrap items-center gap-6 sm:gap-10 mb-6">
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">{t('goalTarget')}</p>
-                      <p className="text-2xl font-semibold text-gray-900">
+                      <p className="text-2xl font-semibold text-foreground">
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(goalData.target)}`
                           : formatNumber(goalData.target)}
@@ -691,7 +691,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">{t('goalRemaining')}</p>
-                      <p className="text-2xl font-semibold text-gray-900">
+                      <p className="text-2xl font-semibold text-foreground">
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(Math.max(0, goalData.target - goalData.current))}`
                           : formatNumber(Math.max(0, goalData.target - goalData.current))}
@@ -717,7 +717,7 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-                  <AlertCircle className="w-8 h-8 text-gray-300" />
+                  <AlertCircle className="w-8 h-8 text-muted-foreground/60" />
                   <p className="text-sm">{t('noActiveGoal')}</p>
                   <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
                 </div>
@@ -727,7 +727,7 @@ export default function DashboardPage() {
             <>
               {/* Admin: all active metas summary */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{t('periodGoals')}</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t('periodGoals')}</h3>
                 <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('viewAll')}</a>
               </div>
               {allMetasActivas.length > 0 ? (
@@ -740,20 +740,20 @@ export default function DashboardPage() {
                     return (
                       <div key={meta.id} className="flex items-center gap-3 p-3 bg-surface-1 rounded-lg">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{meta.usuarioNombre}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{meta.usuarioNombre}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${tipoColor}`}>{tipoLabel}</span>
                             <span className="text-xs text-muted-foreground">{periodoLabel}</span>
                           </div>
                         </div>
-                        <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{fmtVal}</p>
+                        <p className="text-sm font-semibold text-foreground whitespace-nowrap">{fmtVal}</p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-                  <AlertCircle className="w-8 h-8 text-gray-300" />
+                  <AlertCircle className="w-8 h-8 text-muted-foreground/60" />
                   <p className="text-sm">{t('noActiveGoals')}</p>
                   <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
                 </div>
@@ -765,35 +765,35 @@ export default function DashboardPage() {
         {/* Delivery Stats — only shown when data is available */}
         {deliveryStats && (
           <div className="page-animate page-animate-delay-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('todayDeliveries')}</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t('todayDeliveries')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTruck size={24} />
                   <span className="text-xs text-muted-foreground">{t('inRoute')}</span>
                 </div>
-                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalEnRuta}</p>
+                <p className="text-2xl font-semibold text-foreground">{deliveryStats.totalEnRuta}</p>
               </div>
               <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbCheckCircle size={24} />
                   <span className="text-xs text-muted-foreground">{t('completed')}</span>
                 </div>
-                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalCompletadas}</p>
+                <p className="text-2xl font-semibold text-foreground">{deliveryStats.totalCompletadas}</p>
               </div>
               <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbClock size={24} />
                   <span className="text-xs text-muted-foreground">{t('pending')}</span>
                 </div>
-                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalPendientes}</p>
+                <p className="text-2xl font-semibold text-foreground">{deliveryStats.totalPendientes}</p>
               </div>
               <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTrendingUp size={24} />
                   <span className="text-xs text-muted-foreground">{t('completedPct')}</span>
                 </div>
-                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.porcentajeCompletado}%</p>
+                <p className="text-2xl font-semibold text-foreground">{deliveryStats.porcentajeCompletado}%</p>
               </div>
             </div>
           </div>

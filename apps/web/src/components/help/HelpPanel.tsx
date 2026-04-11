@@ -16,29 +16,29 @@ function ArticleItem({ article, defaultExpanded = false }: { article: HelpArticl
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border-b border-gray-200 last:border-b-0">
+    <div className="border-b border-border-subtle last:border-b-0">
       <button
         type="button"
-        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-surface-1 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         {expanded ? (
-          <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         )}
         <div className="flex-1 min-w-0">
-          <span className={`text-sm font-medium ${expanded ? 'text-gray-900' : 'text-gray-600'}`}>
+          <span className={`text-sm font-medium ${expanded ? 'text-foreground' : 'text-foreground/70'}`}>
             {article.title}
           </span>
           {!expanded && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{article.summary}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{article.summary}</p>
           )}
         </div>
       </button>
       {expanded && (
         <div className="px-4 pb-4 pl-10">
-          <p className="text-sm text-gray-600 leading-relaxed">{article.body}</p>
+          <p className="text-sm text-foreground/70 leading-relaxed">{article.body}</p>
         </div>
       )}
     </div>
@@ -117,7 +117,7 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-blue-100 rounded transition-colors"
+            className="p-1 text-muted-foreground hover:text-foreground/80 hover:bg-blue-100 rounded transition-colors"
             aria-label={t('closePanel')}
           >
             <X className="w-4 h-4" />
@@ -131,8 +131,8 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
 
           {helpPage ? (
             <>
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-xs text-gray-500">{helpPage.description}</p>
+              <div className="px-4 py-3 border-b border-border-subtle">
+                <p className="text-xs text-muted-foreground">{helpPage.description}</p>
               </div>
               <div>
                 {helpPage.articles.map((article, index) => (
@@ -146,11 +146,11 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-              <BookOpen className="w-12 h-12 text-gray-300 mb-4" />
-              <p className="text-sm text-gray-500 mb-2">
+              <BookOpen className="w-12 h-12 text-muted-foreground/60 mb-4" />
+              <p className="text-sm text-muted-foreground mb-2">
                 {t('noContentTitle')}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 {t('noContentHint')}
               </p>
             </div>

@@ -40,7 +40,7 @@ export default function TenantSuspendedPage() {
         {/* Contact info */}
         <div className="bg-surface-2 border border-border-subtle rounded-lg p-4 text-left space-y-2">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Soporte</p>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-foreground/80">
             Email: <a href="mailto:soporte@handysuites.com" className="text-blue-600 hover:underline">soporte@handysuites.com</a>
           </p>
         </div>

@@ -95,14 +95,14 @@ function HelpTooltip() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-center w-8 h-8 rounded-full border border-border-subtle dark:border-gray-700 text-muted-foreground hover:text-violet-500 hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 hover:shadow-sm"
+        className="flex items-center justify-center w-8 h-8 rounded-full border border-border-subtle dark:border-border-strong text-muted-foreground hover:text-violet-500 hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 hover:shadow-sm"
         aria-label={t('helpTitle')}
       >
         <Question size={15} weight="bold" />
       </button>
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border-subtle dark:border-gray-700 bg-surface-2/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
-          <p className="font-semibold text-gray-900 dark:text-white mb-4 text-base">{t('helpTitle')}</p>
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border-subtle dark:border-border-strong bg-surface-2/95 dark:bg-foreground/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
+          <p className="font-semibold text-foreground dark:text-white mb-4 text-base">{t('helpTitle')}</p>
           <div className="space-y-3">
             {ACTION_TYPES.map((a) => {
               const Icon = a.icon;
@@ -113,8 +113,8 @@ function HelpTooltip() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-800 dark:text-gray-100">{t(a.labelKey)}</span>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-3 dark:bg-gray-700 text-muted-foreground dark:text-muted-foreground">{a.cost} cr</span>
+                      <span className="font-medium text-foreground dark:text-gray-100">{t(a.labelKey)}</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-3 dark:bg-foreground/80 text-muted-foreground dark:text-muted-foreground">{a.cost} cr</span>
                     </div>
                     <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-0.5">{t(a.descKey)}</p>
                   </div>
@@ -158,7 +158,7 @@ function WelcomeState({
 
       {/* Heading */}
       <div className="text-center mb-4 sm:mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mb-1 sm:mb-2">
           {t('howCanIHelp')}
         </h2>
         <p className="text-xs sm:text-sm text-muted-foreground dark:text-muted-foreground max-w-md mx-auto px-2">
@@ -175,7 +175,7 @@ function WelcomeState({
             <button
               key={s.textKey}
               onClick={() => onSelectSuggestion(suggestionText, s.action)}
-              className={`group text-left p-3 sm:p-4 rounded-2xl border border-border-subtle dark:border-gray-700/60 bg-surface-2/70 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-surface-2 dark:hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
+              className={`group text-left p-3 sm:p-4 rounded-2xl border border-border-subtle dark:border-border-strong/60 bg-surface-2/70 dark:bg-foreground/50 backdrop-blur-sm hover:bg-surface-2 dark:hover:bg-foreground transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
               style={{ animationDelay: `${200 + i * 80}ms`, animationFillMode: 'forwards' }}
             >
               <div className="flex items-start gap-3">
@@ -183,7 +183,7 @@ function WelcomeState({
                   {React.createElement(s.icon3d, { size: 24 })}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors line-clamp-2 leading-snug">
+                  <span className="text-sm text-foreground/80 dark:text-muted-foreground/40 group-hover:text-foreground dark:group-hover:text-white transition-colors line-clamp-2 leading-snug">
                     {suggestionText}
                   </span>
                   <div className="flex items-center gap-1.5 mt-2">
@@ -213,7 +213,7 @@ function NoPlanGate() {
           <Lightning size={32} weight="fill" className="text-white" />
         </div>
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
+      <h2 className="text-2xl font-bold text-foreground dark:text-white mb-3 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
         {t('notAvailable')}
       </h2>
       <p className="text-sm text-muted-foreground dark:text-muted-foreground max-w-md mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
@@ -295,8 +295,8 @@ function ActionButtons({
               isConfirming
                 ? 'border-amber-500 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-500/30'
                 : isExecuting
-                  ? 'border-border-default dark:border-gray-600 bg-surface-1 dark:bg-gray-800 cursor-wait'
-                  : 'border-border-subtle dark:border-gray-700 bg-surface-2 dark:bg-gray-800/80 hover:border-border-default dark:hover:border-gray-600 hover:shadow-sm'
+                  ? 'border-border-default dark:border-gray-600 bg-surface-1 dark:bg-foreground cursor-wait'
+                  : 'border-border-subtle dark:border-border-strong bg-surface-2 dark:bg-foreground/80 hover:border-border-default dark:hover:border-gray-600 hover:shadow-sm'
             } ${executing && !isExecuting ? 'opacity-40 cursor-not-allowed' : ''}`}
             style={!isConfirming && !isExecuting ? {
               borderLeftWidth: '3px',
@@ -321,7 +321,7 @@ function ActionButtons({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <div className="text-sm font-medium text-foreground dark:text-muted-foreground/40">
                 {isConfirming ? t('confirmAction') : action.label}
               </div>
               <div className="text-xs text-muted-foreground dark:text-muted-foreground truncate">
@@ -329,7 +329,7 @@ function ActionButtons({
               </div>
             </div>
             {!isConfirming && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-surface-3 dark:bg-gray-700 text-muted-foreground dark:text-muted-foreground shrink-0">
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-surface-3 dark:bg-foreground/80 text-muted-foreground dark:text-muted-foreground shrink-0">
                 {action.creditCost} cr
               </span>
             )}
@@ -370,7 +370,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
             isUser
               ? 'bg-violet-600 text-white rounded-br-md shadow-sm'
-              : 'bg-surface-2 dark:bg-gray-800/80 border border-border-subtle dark:border-gray-700/60 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm'
+              : 'bg-surface-2 dark:bg-foreground/80 border border-border-subtle dark:border-border-strong/60 text-foreground dark:text-muted-foreground/40 rounded-bl-md shadow-sm'
           }`}
         >
           <div className="whitespace-pre-wrap break-words">{message.content}</div>
@@ -420,7 +420,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
       {/* User avatar */}
       {isUser && (
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center shrink-0 mt-1 shadow-sm">
-          <UserIcon size={15} weight="fill" className="text-muted-foreground dark:text-gray-300" />
+          <UserIcon size={15} weight="fill" className="text-muted-foreground dark:text-muted-foreground/60" />
         </div>
       )}
     </div>
@@ -432,7 +432,7 @@ function TypingIndicator() {
   return (
     <div className="flex gap-3 justify-start animate-ai-fade-up">
       <AiChatAvatar />
-      <div className="bg-surface-2 dark:bg-gray-800/80 border border-border-subtle dark:border-gray-700/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
+      <div className="bg-surface-2 dark:bg-foreground/80 border border-border-subtle dark:border-border-strong/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500 animate-ai-dot-pulse" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 rounded-full bg-blue-400 dark:bg-blue-500 animate-ai-dot-pulse" style={{ animationDelay: '200ms' }} />
@@ -608,19 +608,19 @@ export default function AiPage() {
   const actionPillColors: Record<string, { active: string; inactive: string }> = {
     resumen: {
       active: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-700 shadow-sm shadow-emerald-500/10',
-      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-muted-foreground dark:text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400',
+      inactive: 'bg-surface-1 dark:bg-foreground/80 text-muted-foreground dark:text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400',
     },
     insight: {
       active: 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-violet-300 dark:ring-violet-700 shadow-sm shadow-violet-500/10',
-      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-muted-foreground dark:text-muted-foreground hover:bg-violet-50 dark:hover:bg-violet-500/5 hover:text-violet-600 dark:hover:text-violet-400',
+      inactive: 'bg-surface-1 dark:bg-foreground/80 text-muted-foreground dark:text-muted-foreground hover:bg-violet-50 dark:hover:bg-violet-500/5 hover:text-violet-600 dark:hover:text-violet-400',
     },
     pregunta: {
       active: 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-300 dark:ring-sky-700 shadow-sm shadow-sky-500/10',
-      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-muted-foreground dark:text-muted-foreground hover:bg-sky-50 dark:hover:bg-sky-500/5 hover:text-sky-600 dark:hover:text-sky-400',
+      inactive: 'bg-surface-1 dark:bg-foreground/80 text-muted-foreground dark:text-muted-foreground hover:bg-sky-50 dark:hover:bg-sky-500/5 hover:text-sky-600 dark:hover:text-sky-400',
     },
     pronostico: {
       active: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-300 dark:ring-amber-700 shadow-sm shadow-amber-500/10',
-      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-muted-foreground dark:text-muted-foreground hover:bg-amber-50 dark:hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400',
+      inactive: 'bg-surface-1 dark:bg-foreground/80 text-muted-foreground dark:text-muted-foreground hover:bg-amber-50 dark:hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400',
     },
   };
 
@@ -640,17 +640,17 @@ export default function AiPage() {
         {!noPlan && (
           <div className="flex items-center justify-end gap-2.5 pb-3">
             {!loadingCredits && credits && (
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-surface-2/80 dark:bg-gray-800/80 backdrop-blur-sm border border-border-subtle/60 dark:border-gray-700/60 text-sm shadow-sm">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-surface-2/80 dark:bg-foreground/80 backdrop-blur-sm border border-border-subtle/60 dark:border-border-strong/60 text-sm shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
                     <Lightning size={11} weight="fill" className="text-white" />
                   </div>
-                  <span className="font-bold text-gray-900 dark:text-white tabular-nums">
+                  <span className="font-bold text-foreground dark:text-white tabular-nums">
                     {credits.disponibles}
                   </span>
                   <span className="text-muted-foreground text-xs">{t('credits')}</span>
                 </div>
-                <div className="w-px h-4 bg-surface-3 dark:bg-gray-700" />
+                <div className="w-px h-4 bg-surface-3 dark:bg-foreground/80" />
                 <span className="text-xs font-medium text-violet-600 dark:text-violet-400 capitalize">{credits.plan}</span>
               </div>
             )}
@@ -715,7 +715,7 @@ export default function AiPage() {
                   : 'shadow-sm'
               }`}>
                 {/* (focus ring handled by parent shadow) */}
-                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-surface-2 dark:bg-gray-800 border border-border-subtle dark:border-gray-700 rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
+                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-surface-2 dark:bg-foreground border border-border-subtle dark:border-border-strong rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
                   <textarea
                     ref={textareaRef}
                     value={prompt}
@@ -726,7 +726,7 @@ export default function AiPage() {
                     placeholder={t(`placeholders.${selectedAction}`)}
                     rows={1}
                     maxLength={2000}
-                    className="flex-1 py-2 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none resize-none text-sm leading-relaxed"
+                    className="flex-1 py-2 bg-transparent text-foreground dark:text-white placeholder-gray-400 focus:outline-none resize-none text-sm leading-relaxed"
                   />
                   <Button
                     type="submit"
@@ -759,10 +759,10 @@ export default function AiPage() {
                 )}
               </p>
               <p className="text-[10px] sm:text-[11px] text-muted-foreground hidden sm:block">
-                <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-gray-800 text-[10px] font-mono">Enter</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-foreground text-[10px] font-mono">Enter</kbd>
                 <span className="ml-1">{t('send')}</span>
                 <span className="hidden lg:inline ml-2">
-                  <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-gray-800 text-[10px] font-mono">Shift+Enter</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-foreground text-[10px] font-mono">Shift+Enter</kbd>
                   <span className="ml-1">{t('newLine')}</span>
                 </span>
               </p>

@@ -27,7 +27,7 @@ const ESTADO_STYLE: Record<FacturaEstado, { key: string; color: string; bg: stri
 
 function StatusBadge({ estado }: { estado: FacturaEstado }) {
   const t = useTranslations('billing.invoiceDetail');
-  const cfg = ESTADO_STYLE[estado] ?? { key: estado.toLowerCase(), color: 'text-gray-700', bg: 'bg-surface-3' };
+  const cfg = ESTADO_STYLE[estado] ?? { key: estado.toLowerCase(), color: 'text-foreground/80', bg: 'bg-surface-3' };
   return (
     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cfg.color} ${cfg.bg}`}>
       {t(`status.${cfg.key}` as 'status.pending')}
@@ -50,7 +50,7 @@ function InfoRow({ label, value }: { label: string; value: string | number | nul
   return (
     <div className="flex justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-gray-900 text-right">{value ?? '-'}</span>
+      <span className="text-foreground text-right">{value ?? '-'}</span>
     </div>
   );
 }
@@ -190,7 +190,7 @@ export default function InvoiceDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Factura no encontrada</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Factura no encontrada</h2>
           <p className="text-foreground/70 mb-4">La factura que buscas no existe o no tienes acceso.</p>
           <button onClick={() => router.push('/billing/invoices')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             Volver a facturas
@@ -216,12 +216,12 @@ export default function InvoiceDetailPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/billing/invoices')}
-              className="p-1.5 rounded-md hover:bg-surface-3 text-muted-foreground hover:text-gray-700 transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-3 text-muted-foreground hover:text-foreground/80 transition-colors"
               aria-label="Volver a facturas"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-[22px] font-bold text-gray-900">
+            <h1 className="text-[22px] font-bold text-foreground">
               Factura #{folioDisplay}
             </h1>
             <StatusBadge estado={factura.estado} />
@@ -241,7 +241,7 @@ export default function InvoiceDetailPage() {
             <button
               onClick={handleDownloadPdf}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 border border-border-default text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-border-default text-foreground/80 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'pdf' && <Loader2 className="w-4 h-4 animate-spin" />}
               Descargar PDF
@@ -249,7 +249,7 @@ export default function InvoiceDetailPage() {
             <button
               onClick={handleDownloadXml}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 border border-border-default text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-border-default text-foreground/80 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'xml' && <Loader2 className="w-4 h-4 animate-spin" />}
               Descargar XML
@@ -257,7 +257,7 @@ export default function InvoiceDetailPage() {
             <button
               onClick={() => setShowEmailModal(true)}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 border border-border-default text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-border-default text-foreground/80 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               Enviar por email
             </button>
@@ -279,7 +279,7 @@ export default function InvoiceDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Emisor */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Emisor</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Emisor</h2>
             <div className="space-y-2">
               <InfoRow label="RFC" value={factura.emisorRfc} />
               <InfoRow label="Razon social" value={factura.emisorNombre} />
@@ -289,7 +289,7 @@ export default function InvoiceDetailPage() {
 
           {/* Receptor */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Receptor</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Receptor</h2>
             <div className="space-y-2">
               <InfoRow label="RFC" value={factura.receptorRfc} />
               <InfoRow label="Razon social" value={factura.receptorNombre} />
@@ -300,7 +300,7 @@ export default function InvoiceDetailPage() {
 
         {/* Line items */}
         <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Conceptos</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Conceptos</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -316,14 +316,14 @@ export default function InvoiceDetailPage() {
               </thead>
               <tbody>
                 {factura.detalles?.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-100">
+                  <tr key={item.id} className="border-b border-border-subtle">
                     <td className="py-3 text-muted-foreground font-mono text-xs">{item.claveProdServ}</td>
-                    <td className="py-3 text-gray-900">{item.descripcion}</td>
+                    <td className="py-3 text-foreground">{item.descripcion}</td>
                     <td className="py-3 text-muted-foreground">{item.claveUnidad || item.unidad || '-'}</td>
-                    <td className="py-3 text-right text-gray-900">{item.cantidad}</td>
-                    <td className="py-3 text-right text-gray-900">{formatCurrency(item.valorUnitario)}</td>
+                    <td className="py-3 text-right text-foreground">{item.cantidad}</td>
+                    <td className="py-3 text-right text-foreground">{formatCurrency(item.valorUnitario)}</td>
                     <td className="py-3 text-right text-muted-foreground">{item.descuento > 0 ? formatCurrency(item.descuento) : '-'}</td>
-                    <td className="py-3 text-right font-medium text-gray-900">{formatCurrency(item.importe)}</td>
+                    <td className="py-3 text-right font-medium text-foreground">{formatCurrency(item.importe)}</td>
                   </tr>
                 ))}
                 {(!factura.detalles || factura.detalles.length === 0) && (
@@ -339,7 +339,7 @@ export default function InvoiceDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Totals */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Totales</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Totales</h2>
             <div className="space-y-2">
               <InfoRow label="Subtotal" value={formatCurrency(factura.subtotal)} />
               {factura.descuento > 0 && (
@@ -353,8 +353,8 @@ export default function InvoiceDetailPage() {
                 <InfoRow label="Impuestos retenidos" value={formatCurrency(factura.totalImpuestosRetenidos)} />
               )}
               <div className="border-t border-border-subtle pt-2 flex justify-between">
-                <span className="text-base font-semibold text-gray-900">{tc('total')}</span>
-                <span className="text-base font-bold text-gray-900">{formatCurrency(factura.total)}</span>
+                <span className="text-base font-semibold text-foreground">{tc('total')}</span>
+                <span className="text-base font-bold text-foreground">{formatCurrency(factura.total)}</span>
               </div>
               <InfoRow label="Moneda" value={factura.moneda} />
             </div>
@@ -362,7 +362,7 @@ export default function InvoiceDetailPage() {
 
           {/* CFDI info */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Datos CFDI</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Datos CFDI</h2>
             <div className="space-y-2">
               {factura.uuid && <InfoRow label="UUID" value={factura.uuid} />}
               <InfoRow label="Serie" value={factura.serie} />
@@ -382,8 +382,8 @@ export default function InvoiceDetailPage() {
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-2 rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Enviar factura por email</h3>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electronico</label>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Enviar factura por email</h3>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">Correo electronico</label>
             <input
               type="email"
               value={emailTo}
@@ -394,7 +394,7 @@ export default function InvoiceDetailPage() {
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => { setShowEmailModal(false); setEmailTo(''); }}
-                className="px-4 py-2 text-sm text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 Cancelar
               </button>

@@ -97,7 +97,7 @@ export function CarteraVencidaReport() {
           ]} />
           {bucketChart.some(b => b.value > 0) && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">{t("chartTitle")}</h3>
+              <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
               <Chart type="bar" options={chartOptions} series={[{ name: t("balanceLabel"), data: bucketChart.map(b => b.value) }]} height={300} />
             </Card>
           )}

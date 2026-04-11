@@ -64,7 +64,7 @@ export function NuevosClientesReport() {
           <ReportKPICards cards={[{ label: t('newClients'), value: data.total, color: 'green' }]} />
           {data.porMes.length > 0 && (
             <Card>
-              <p className="text-xs font-medium text-gray-600 mb-3">{t('perMonth')}</p>
+              <p className="text-xs font-medium text-foreground/70 mb-3">{t('perMonth')}</p>
               <Chart type="bar" options={chartOptions} series={[{ name: tc('clients'), data: data.porMes.map(m => m.cantidad) }]} height={260} />
             </Card>
           )}

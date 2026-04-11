@@ -41,7 +41,7 @@ const resultadoKeys = ['pending', 'withSale', 'noSale', 'notFound', 'rescheduled
 const resultadoColorArr = [
   { color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
   { color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
-  { color: 'bg-surface-3 text-gray-800', dotColor: 'bg-gray-400' },
+  { color: 'bg-surface-3 text-foreground', dotColor: 'bg-muted-foreground' },
   { color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
   { color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
   { color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
@@ -277,7 +277,7 @@ function VisitsPageContent() {
       width: 'flex',
       cellRenderer: (visit) => (
         <div>
-          <p className="text-[13px] font-medium text-gray-900 truncate">{visit.clienteNombre}</p>
+          <p className="text-[13px] font-medium text-foreground truncate">{visit.clienteNombre}</p>
           {visit.clienteDireccion && <p className="text-[11px] text-muted-foreground truncate">{visit.clienteDireccion}</p>}
         </div>
       ),
@@ -420,7 +420,7 @@ function VisitsPageContent() {
         <button
           onClick={() => setView('list')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'list' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-muted-foreground hover:text-gray-700'
+            currentView === 'list' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
           }`}
         >
           <List className="w-4 h-4" />
@@ -429,7 +429,7 @@ function VisitsPageContent() {
         <button
           onClick={() => setView('calendar')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'calendar' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-muted-foreground hover:text-gray-700'
+            currentView === 'calendar' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
           }`}
         >
           <CalendarDays className="w-4 h-4" />
@@ -534,7 +534,7 @@ function VisitsPageContent() {
             {hasFilters && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-gray-700 border border-border-subtle rounded hover:bg-surface-1"
+                className="flex items-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-foreground/80 border border-border-subtle rounded hover:bg-surface-1"
               >
                 <X className="w-3.5 h-3.5" />
                 {t('clearFilters')}
@@ -555,7 +555,7 @@ function VisitsPageContent() {
               keyExtractor={(v) => v.id}
               loading={loading}
               loadingMessage={t('loadingVisits')}
-              emptyIcon={<MapPin className="w-12 h-12 text-gray-300" />}
+              emptyIcon={<MapPin className="w-12 h-12 text-muted-foreground/60" />}
               emptyTitle={t('emptyTitle')}
               emptyMessage={t('emptyDefault')}
               sort={{
@@ -724,7 +724,7 @@ function VisitsPageContent() {
             {visitDetail.numeroPedido && (
               <div className="flex items-center gap-2 p-3 bg-surface-1 rounded-lg text-sm">
                 <ShoppingCart className="w-4 h-4 text-green-600" />
-                <span className="text-gray-700 font-medium">{t('detail.linkedOrder', { number: visitDetail.numeroPedido })}</span>
+                <span className="text-foreground/80 font-medium">{t('detail.linkedOrder', { number: visitDetail.numeroPedido })}</span>
               </div>
             )}
 
@@ -732,7 +732,7 @@ function VisitsPageContent() {
             {visitDetail.notas && (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">Notas</p>
-                <p className="text-sm text-gray-700 bg-surface-1 rounded p-3">{visitDetail.notas}</p>
+                <p className="text-sm text-foreground/80 bg-surface-1 rounded p-3">{visitDetail.notas}</p>
               </div>
             )}
 

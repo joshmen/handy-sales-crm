@@ -221,16 +221,16 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
     <form ref={formRef} onSubmit={handleSubmit(onFormSubmit, scrollToFirstError)} className="flex flex-col gap-5 p-6" data-tour="order-form">
       {/* Tipo de Venta */}
       {!order && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
-          <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">{t('saleType')}</span>
-          <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-1 dark:bg-foreground/50 dark:border-border-strong">
+          <span className="text-[13px] font-medium text-foreground/80 dark:text-muted-foreground/60">{t('saleType')}</span>
+          <div className="flex rounded-lg overflow-hidden border border-border-default dark:border-gray-600">
             <button
               type="button"
               onClick={() => setTipoVenta(0)}
               className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
                 tipoVenta === 0
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
+                  : 'bg-white text-foreground/70 hover:bg-surface-3 dark:bg-foreground/80 dark:text-muted-foreground/60'
               }`}
             >
               {t('presale')}
@@ -241,7 +241,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
               className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
                 tipoVenta === 1
                   ? 'bg-success text-success-foreground'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
+                  : 'bg-white text-foreground/70 hover:bg-surface-3 dark:bg-foreground/80 dark:text-muted-foreground/60'
               }`}
             >
               {t('directSale')}
@@ -258,7 +258,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       {/* Información del pedido */}
       <div className="space-y-4">
         <div data-tour="order-client-selector">
-          <label className="block text-[13px] font-medium text-gray-700 mb-1">
+          <label className="block text-[13px] font-medium text-foreground/80 mb-1">
             {t('client')} <span className="text-red-500">*</span>
           </label>
           <SearchableSelect
@@ -276,7 +276,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[13px] font-medium text-gray-700 mb-1">
+            <label className="block text-[13px] font-medium text-foreground/80 mb-1">
               {t('deliveryDate')}
             </label>
             <DateTimePicker
@@ -287,7 +287,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           </div>
 
           <div>
-            <label className="block text-[13px] font-medium text-gray-700 mb-1">
+            <label className="block text-[13px] font-medium text-foreground/80 mb-1">
               {t('priority')}
             </label>
             <div data-field="priority">
@@ -303,7 +303,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[13px] font-medium text-gray-700 mb-1">
+            <label className="block text-[13px] font-medium text-foreground/80 mb-1">
               {t('paymentMethod')}
             </label>
             <div data-field="paymentMethod">
@@ -317,7 +317,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           </div>
 
           <div>
-            <label className="block text-[13px] font-medium text-gray-700 mb-1">
+            <label className="block text-[13px] font-medium text-foreground/80 mb-1">
               {t('deliveryAddress')}
             </label>
             <input
@@ -325,7 +325,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
               {...register('address')}
               placeholder={t('deliveryAddress')}
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                errors.address ? 'border-red-500' : 'border-gray-300'
+                errors.address ? 'border-red-500' : 'border-border-default'
               }`}
             />
             {errors.address && (
@@ -336,11 +336,11 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-gray-200" />
+      <div className="h-px bg-surface-3" />
 
       {/* Agregar productos */}
       <div className="space-y-3" data-tour="order-add-product">
-        <h3 className="text-sm font-semibold text-gray-800">{t('addProduct')}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t('addProduct')}</h3>
         <div className="flex gap-2">
           <div className="flex-1">
             <SearchableSelect
@@ -367,31 +367,31 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
       {/* Products table */}
       {orderItems.length > 0 ? (
-        <div className="border border-gray-200 rounded-lg overflow-hidden" data-tour="order-products-list">
+        <div className="border border-border-subtle rounded-lg overflow-hidden" data-tour="order-products-list">
           {/* Table header */}
-          <div className="flex items-center bg-gray-50 px-3 h-9 border-b border-gray-200">
-            <div className="flex-1 text-xs font-semibold text-gray-600">{t('product')}</div>
-            <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">{t('qty')}</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-right">{t('unitPrice')}</div>
-            <div className="w-[90px] text-xs font-semibold text-gray-600 text-right">{t('total')}</div>
+          <div className="flex items-center bg-surface-1 px-3 h-9 border-b border-border-subtle">
+            <div className="flex-1 text-xs font-semibold text-foreground/70">{t('product')}</div>
+            <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('qty')}</div>
+            <div className="w-[80px] text-xs font-semibold text-foreground/70 text-right">{t('unitPrice')}</div>
+            <div className="w-[90px] text-xs font-semibold text-foreground/70 text-right">{t('total')}</div>
             <div className="w-[36px]" />
           </div>
 
           {/* Table rows (scrollable when many products) */}
           <div className="max-h-[300px] overflow-y-auto">
             {orderItems.map(item => (
-              <div key={item.id} className="flex items-center px-3 py-2 border-b border-gray-100 last:border-b-0">
+              <div key={item.id} className="flex items-center px-3 py-2 border-b border-border-subtle last:border-b-0">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {item.product.images?.[0] ? (
                     <img src={item.product.images[0]} alt="" className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <Package className="w-5 h-5 text-gray-400" />
+                    <div className="w-10 h-10 rounded-md bg-surface-3 flex items-center justify-center flex-shrink-0">
+                      <Package className="w-5 h-5 text-muted-foreground" />
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-gray-900 truncate">{item.product.name}</p>
-                    <p className="text-[11px] text-gray-400">{item.product.code}</p>
+                    <p className="text-[13px] font-medium text-foreground truncate">{item.product.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{item.product.code}</p>
                   </div>
                 </div>
                 <div className="w-[60px] flex justify-center">
@@ -400,20 +400,20 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
                     value={item.quantity}
                     onChange={e => handleQuantityChange(item.id, parseInt(e.target.value) || 0)}
                     min="0"
-                    className="w-14 text-center text-[13px] border border-gray-300 rounded py-1 focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                    className="w-14 text-center text-[13px] border border-border-default rounded py-1 focus:ring-1 focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
-                <div className="w-[80px] text-[13px] text-gray-700 text-right">
+                <div className="w-[80px] text-[13px] text-foreground/80 text-right">
                   ${item.unitPrice.toFixed(2)}
                 </div>
-                <div className="w-[90px] text-[13px] font-semibold text-gray-900 text-right">
+                <div className="w-[90px] text-[13px] font-semibold text-foreground text-right">
                   ${item.total.toFixed(2)}
                 </div>
                 <div className="w-[36px] flex justify-center">
                   <button
                     type="button"
                     onClick={() => handleRemoveItem(item.id)}
-                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                    className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -423,27 +423,27 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           </div>
 
           {/* Totals */}
-          <div className="bg-gray-50 px-3 py-3 space-y-1.5">
+          <div className="bg-surface-1 px-3 py-3 space-y-1.5">
             <div className="flex justify-between text-[13px]">
-              <span className="text-gray-500">{t('subtotal')}</span>
-              <span className="text-gray-900">${subtotal.toFixed(2)}</span>
+              <span className="text-muted-foreground">{t('subtotal')}</span>
+              <span className="text-foreground">${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-[13px]">
-              <span className="text-gray-500">{t('iva')}</span>
-              <span className="text-gray-900">${tax.toFixed(2)}</span>
+              <span className="text-muted-foreground">{t('iva')}</span>
+              <span className="text-foreground">${tax.toFixed(2)}</span>
             </div>
-            <div className="h-px bg-gray-200" />
+            <div className="h-px bg-surface-3" />
             <div className="flex justify-between text-base font-bold">
-              <span className="text-gray-900">{t('total')}</span>
+              <span className="text-foreground">{t('total')}</span>
               <span className="text-green-600">${total.toFixed(2)}</span>
             </div>
           </div>
         </div>
       ) : (
-        <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg" data-tour="order-products-list">
-          <ShoppingCart className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">{t('noProductsAdded')}</p>
-          <p className="text-xs text-gray-400">{t('noProductsHint')}</p>
+        <div className="text-center py-10 border border-dashed border-border-subtle rounded-lg" data-tour="order-products-list">
+          <ShoppingCart className="w-10 h-10 text-muted-foreground/60 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">{t('noProductsAdded')}</p>
+          <p className="text-xs text-muted-foreground">{t('noProductsHint')}</p>
         </div>
       )}
       {itemsError && (
@@ -452,13 +452,13 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
       {/* Notas */}
       <div data-tour="order-notes">
-        <label className="block text-[13px] font-medium text-gray-700 mb-1">{t('orderNotes')}</label>
+        <label className="block text-[13px] font-medium text-foreground/80 mb-1">{t('orderNotes')}</label>
         <textarea
           {...register('notes')}
           placeholder={t('additionalComments')}
           rows={3}
           className={`w-full p-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-            errors.notes ? 'border-red-500' : 'border-gray-300'
+            errors.notes ? 'border-red-500' : 'border-border-default'
           }`}
         />
         {errors.notes && (

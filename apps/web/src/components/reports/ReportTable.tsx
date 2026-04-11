@@ -62,26 +62,26 @@ export function ReportTable<T extends Record<string, unknown>>({
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-gray-500">
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
         {resolvedEmptyMessage}
       </div>
     );
   }
 
   return (
-    <div className="overflow-auto border border-gray-200 rounded-lg" style={{ maxHeight }} data-tour="report-table">
+    <div className="overflow-auto border border-border-subtle rounded-lg" style={{ maxHeight }} data-tour="report-table">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 sticky top-0">
+        <thead className="bg-surface-1 sticky top-0">
           <tr>
             {showIndex && (
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 border-b border-gray-200 w-10">#</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground border-b border-border-subtle w-10">#</th>
             )}
             {columns.map(col => (
               <th
                 key={col.key}
-                className={`px-3 py-2.5 text-xs font-medium text-gray-500 border-b border-gray-200 ${
+                className={`px-3 py-2.5 text-xs font-medium text-muted-foreground border-b border-border-subtle ${
                   col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
-                } ${col.sortable ? 'cursor-pointer hover:text-gray-700 select-none' : ''}`}
+                } ${col.sortable ? 'cursor-pointer hover:text-foreground/80 select-none' : ''}`}
                 style={col.width ? { width: col.width } : undefined}
                 onClick={() => col.sortable && handleSort(col.key)}
               >
@@ -97,14 +97,14 @@ export function ReportTable<T extends Record<string, unknown>>({
         </thead>
         <tbody>
           {sortedData.map((item, i) => (
-            <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+            <tr key={i} className="border-b border-border-subtle hover:bg-surface-1">
               {showIndex && (
-                <td className="px-3 py-2 text-xs text-gray-400">{i + 1}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
               )}
               {columns.map(col => (
                 <td
                   key={col.key}
-                  className={`px-3 py-2 text-gray-700 ${
+                  className={`px-3 py-2 text-foreground/80 ${
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                   }`}
                 >
@@ -114,12 +114,12 @@ export function ReportTable<T extends Record<string, unknown>>({
             </tr>
           ))}
           {footerRow && (
-            <tr className="bg-gray-50 font-medium border-t border-gray-300">
+            <tr className="bg-surface-1 font-medium border-t border-border-default">
               {showIndex && <td className="px-3 py-2"></td>}
               {columns.map(col => (
                 <td
                   key={col.key}
-                  className={`px-3 py-2 text-gray-900 ${
+                  className={`px-3 py-2 text-foreground ${
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                   }`}
                 >

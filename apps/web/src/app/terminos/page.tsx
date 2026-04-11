@@ -13,12 +13,12 @@ export default function TerminosPage() {
       <LandingNav />
 
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">Términos de Servicio</h1>
+        <h1 className="text-3xl font-bold text-foreground">Términos de Servicio</h1>
         <p className="mt-2 text-sm text-muted-foreground">Última actualización: febrero 2026</p>
 
-        <div className="mt-8 space-y-8 text-gray-700 leading-relaxed">
+        <div className="mt-8 space-y-8 text-foreground/80 leading-relaxed">
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">1. Objeto</h2>
+            <h2 className="text-xl font-semibold text-foreground">1. Objeto</h2>
             <p className="mt-2">
               Los presentes Términos de Servicio regulan el acceso y uso de la plataforma Handy Suites®
               (en adelante &quot;la Plataforma&quot;), un sistema de gestión empresarial (ERP/CRM) ofrecido
@@ -31,7 +31,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">2. Definiciones</h2>
+            <h2 className="text-xl font-semibold text-foreground">2. Definiciones</h2>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li><strong>Usuario:</strong> toda persona que accede a la Plataforma con credenciales válidas.</li>
               <li><strong>Empresa/Tenant:</strong> la organización que contrata el servicio y crea cuentas para sus usuarios.</li>
@@ -42,7 +42,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">3. Cuentas de usuario</h2>
+            <h2 className="text-xl font-semibold text-foreground">3. Cuentas de usuario</h2>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>Cada usuario es responsable de mantener la confidencialidad de sus credenciales de acceso.</li>
               <li>Las cuentas son personales e intransferibles.</li>
@@ -55,7 +55,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">4. Planes y pagos</h2>
+            <h2 className="text-xl font-semibold text-foreground">4. Planes y pagos</h2>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>La Plataforma ofrece diferentes planes de suscripción con distintos niveles de funcionalidad.</li>
               <li>Los precios están expresados en Pesos Mexicanos (MXN) e incluyen IVA.</li>
@@ -73,7 +73,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">5. Uso aceptable</h2>
+            <h2 className="text-xl font-semibold text-foreground">5. Uso aceptable</h2>
             <p className="mt-2">El usuario se compromete a:</p>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>Utilizar la Plataforma exclusivamente para fines lícitos y comerciales legítimos.</li>
@@ -86,9 +86,9 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">6. Propiedad intelectual y licencia de uso</h2>
+            <h2 className="text-xl font-semibold text-foreground">6. Propiedad intelectual y licencia de uso</h2>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.1 Titularidad</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.1 Titularidad</h3>
             <p className="mt-2">
               Handy Suites® y todos sus componentes — incluyendo el código fuente, código objeto,
               arquitectura, bases de datos, esquemas, interfaces de usuario, logotipos, marcas,
@@ -104,7 +104,7 @@ export default function TerminosPage() {
               Contrato transfiere al Usuario derecho alguno de propiedad sobre el Software o sus componentes.
             </p>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.2 Concesión de licencia limitada</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.2 Concesión de licencia limitada</h3>
             <p className="mt-2">
               Sujeto al pago puntual de la suscripción vigente y al cumplimiento de estos Términos,
               se concede al Usuario una licencia de uso que es:
@@ -118,7 +118,7 @@ export default function TerminosPage() {
               <li><strong>Revocable</strong> — ante incumplimiento material de las obligaciones del Usuario, sin perjuicio de los demás derechos que asistan al titular.</li>
             </ul>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.3 Restricciones de uso</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.3 Restricciones de uso</h3>
             <p className="mt-2">
               El Usuario, sus empleados y cualquier tercero que actúe en su nombre, quedan expresamente
               prohibidos de:
@@ -134,7 +134,7 @@ export default function TerminosPage() {
               <li>Realizar scraping o extracción masiva automatizada de datos más allá de los límites del Plan contratado.</li>
             </ul>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.4 App Móvil</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.4 App Móvil</h3>
             <p className="mt-2">
               La App Móvil de Handy Suites® disponible en App Store y Google Play constituye un programa
               de computación en los términos del artículo 101 de la LFDA. La descarga e instalación no
@@ -143,7 +143,7 @@ export default function TerminosPage() {
               o vencimiento de la suscripción, el acceso funcional a la App Móvil quedará deshabilitado de forma remota.
             </p>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.5 Acceso API</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.5 Acceso API</h3>
             <p className="mt-2">
               El acceso a la API de Handy Suites®, cuando esté disponible en el Plan contratado, se otorga
               bajo una licencia adicional limitada para integrar los sistemas propios del Usuario con el
@@ -152,7 +152,7 @@ export default function TerminosPage() {
               exceder los límites de velocidad y volumen establecidos en el Plan.
             </p>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.6 Datos del Usuario</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.6 Datos del Usuario</h3>
             <p className="mt-2">
               Los datos del negocio que el Usuario carga, genera o almacena dentro de la Plataforma
               (clientes, productos, pedidos, facturas, etc.) son propiedad exclusiva del Usuario.
@@ -161,7 +161,7 @@ export default function TerminosPage() {
               <Link href="/privacidad" className="text-blue-600 hover:underline">Aviso de Privacidad</Link>.
             </p>
 
-            <h3 className="mt-4 text-lg font-medium text-gray-900">6.7 Violación de propiedad intelectual</h3>
+            <h3 className="mt-4 text-lg font-medium text-foreground">6.7 Violación de propiedad intelectual</h3>
             <p className="mt-2">
               El incumplimiento de las obligaciones de esta sección faculta al titular para revocar la licencia
               y suspender el acceso de forma inmediata, rescindir el Contrato, y ejercer las acciones civiles
@@ -171,7 +171,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">7. Limitación de responsabilidad</h2>
+            <h2 className="text-xl font-semibold text-foreground">7. Limitación de responsabilidad</h2>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>
                 La Plataforma se ofrece &quot;tal cual&quot; (&quot;as is&quot;). Si bien nos esforzamos por mantener
@@ -192,7 +192,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">8. Cancelación y terminación</h2>
+            <h2 className="text-xl font-semibold text-foreground">8. Cancelación y terminación</h2>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li>El usuario puede cancelar su suscripción en cualquier momento desde la configuración de su cuenta.</li>
               <li>
@@ -211,7 +211,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">9. Protección de datos personales</h2>
+            <h2 className="text-xl font-semibold text-foreground">9. Protección de datos personales</h2>
             <p className="mt-2">
               El tratamiento de datos personales se rige por nuestro{' '}
               <Link href="/privacidad" className="text-blue-600 hover:underline">Aviso de Privacidad</Link>,
@@ -221,7 +221,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">10. Ley aplicable y jurisdicción</h2>
+            <h2 className="text-xl font-semibold text-foreground">10. Ley aplicable y jurisdicción</h2>
             <p className="mt-2">
               Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Para la resolución
               de cualquier controversia, las partes se someten a la jurisdicción de los tribunales
@@ -231,7 +231,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">11. Contacto</h2>
+            <h2 className="text-xl font-semibold text-foreground">11. Contacto</h2>
             <p className="mt-2">
               Para consultas sobre estos términos:
             </p>

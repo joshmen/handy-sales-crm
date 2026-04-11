@@ -16,7 +16,7 @@ export const Loading: React.FC<LoadingProps> = ({ size = "md", className }) => {
   return (
     <div
       className={cn(
-        "animate-spin rounded-full border-2 border-gray-300 border-t-primary-600",
+        "animate-spin rounded-full border-2 border-border-default border-t-primary-600",
         sizeClasses[size],
         className
       )}
@@ -29,7 +29,7 @@ export const LoadingPage: React.FC = () => {
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
         <Loading size="lg" />
-        <p className="mt-4 text-gray-600">Cargando...</p>
+        <p className="mt-4 text-foreground/70">Cargando...</p>
       </div>
     </div>
   );

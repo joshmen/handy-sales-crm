@@ -34,12 +34,12 @@ export function ExportButton({ entity, label, params }: ExportButtonProps) {
     <button
       onClick={handleExport}
       disabled={loading}
-      className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
+      className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50"
     >
       {loading ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
       ) : (
-        <Download className="w-3.5 h-3.5 text-gray-500" />
+        <Download className="w-3.5 h-3.5 text-muted-foreground" />
       )}
       <span className="hidden sm:inline">{resolvedLabel}</span>
     </button>

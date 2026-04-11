@@ -144,12 +144,12 @@ export default function SystemDashboardPage() {
       <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
         <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">{t('breadcrumb')}</span>
+        <span className="text-foreground font-medium">{t('breadcrumb')}</span>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
         <p className="text-muted-foreground mt-1">
           {t('subtitle')}
         </p>
@@ -161,7 +161,7 @@ export default function SystemDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('totalCompanies')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {formatNumber(metrics.totalTenants)}
               </p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
@@ -179,7 +179,7 @@ export default function SystemDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('activeUsers')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {formatNumber(metrics.totalUsuarios)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -196,7 +196,7 @@ export default function SystemDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('totalOrders')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {formatNumber(metrics.totalPedidos)}
               </p>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -214,7 +214,7 @@ export default function SystemDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('totalSales')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {formatCurrency(metrics.totalVentas)}
               </p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
@@ -242,8 +242,8 @@ export default function SystemDashboardPage() {
                   onClick={() => setTrendDays(opt.value)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     trendDays === opt.value
-                      ? 'bg-surface-2 text-gray-900 shadow-sm'
-                      : 'text-muted-foreground hover:text-gray-700'
+                      ? 'bg-surface-2 text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
                   {opt.label}
@@ -255,7 +255,7 @@ export default function SystemDashboardPage() {
           {/* Revenue Chart (full width) */}
           {trends.revenueByDay.length > 0 && (
             <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
+              <h3 className="text-base font-semibold text-foreground mb-4">
                 {t('revenueByDay')}
               </h3>
               <ResponsiveContainer width="100%" height={280}>
@@ -300,7 +300,7 @@ export default function SystemDashboardPage() {
             {/* Tenant & User Growth */}
             {(trends.tenantGrowth.length > 0 || trends.userGrowth.length > 0) && (
               <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">
+                <h3 className="text-base font-semibold text-foreground mb-4">
                   {t('growth')}
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -354,7 +354,7 @@ export default function SystemDashboardPage() {
             {/* Plan Distribution */}
             {trends.planBreakdown.length > 0 && (
               <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">
+                <h3 className="text-base font-semibold text-foreground mb-4">
                   {t('planDistribution')}
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -393,7 +393,7 @@ export default function SystemDashboardPage() {
         <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Crown className="h-5 w-5 text-amber-500" />
-            <h2 className="text-lg font-semibold text-gray-900">{t('topCompanies')}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('topCompanies')}</h2>
           </div>
 
           {metrics.topTenants.length === 0 ? (
@@ -416,7 +416,7 @@ export default function SystemDashboardPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border-subtle">
                   {metrics.topTenants.map((tenant, index) => (
                     <tr key={tenant.id} className="hover:bg-surface-1 transition-colors">
                       <td className="py-3">
@@ -424,7 +424,7 @@ export default function SystemDashboardPage() {
                           <div className="flex items-center justify-center h-6 w-6 rounded-full bg-amber-50 text-amber-600 text-xs font-bold">
                             {index + 1}
                           </div>
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-foreground">
                             {tenant.nombreEmpresa}
                           </span>
                         </div>
@@ -432,7 +432,7 @@ export default function SystemDashboardPage() {
                       <td className="py-3 text-right text-foreground/70">
                         {formatNumber(tenant.pedidos)}
                       </td>
-                      <td className="py-3 text-right font-semibold text-gray-900">
+                      <td className="py-3 text-right font-semibold text-foreground">
                         {formatCurrency(tenant.ventas)}
                       </td>
                     </tr>
@@ -447,7 +447,7 @@ export default function SystemDashboardPage() {
         <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="h-5 w-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900">{t('recentCompanies')}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('recentCompanies')}</h2>
           </div>
 
           {metrics.tenantsRecientes.length === 0 ? (
@@ -459,17 +459,17 @@ export default function SystemDashboardPage() {
               {metrics.tenantsRecientes.map((tenant) => (
                 <div
                   key={tenant.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-border-subtle hover:bg-surface-1 transition-all"
+                  className="flex items-center justify-between p-4 rounded-lg border border-border-subtle hover:border-border-subtle hover:bg-surface-1 transition-all"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-gray-900">{tenant.nombreEmpresa}</p>
+                      <p className="font-medium text-foreground">{tenant.nombreEmpresa}</p>
                       {tenant.activo ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
                           {t('activeCompanies')}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-surface-3 text-gray-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-surface-3 text-foreground">
                           {t('noSubscription')}
                         </span>
                       )}

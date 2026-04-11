@@ -24,8 +24,8 @@ interface OrderCardProps {
 const statusConfig = {
   draft: {
     label: "Borrador",
-    color: "bg-gray-100 text-gray-800",
-    dotColor: "bg-gray-400",
+    color: "bg-surface-3 text-foreground",
+    dotColor: "bg-muted-foreground",
   },
   confirmed: {
     label: "Confirmado",
@@ -90,36 +90,36 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               {priority.label}
             </span>
           </div>
-          <span className="text-sm font-mono text-gray-500">#{order.code}</span>
+          <span className="text-sm font-mono text-muted-foreground">#{order.code}</span>
         </div>
 
         {/* Información del cliente */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center space-x-2">
-            <User size={16} className="text-gray-400" />
+            <User size={16} className="text-muted-foreground" />
             <span className="text-sm font-medium">{order.client.name}</span>
           </div>
 
           {order.address && (
             <div className="flex items-center space-x-2">
-              <MapPin size={16} className="text-gray-400" />
-              <span className="text-sm text-gray-600 truncate">
+              <MapPin size={16} className="text-muted-foreground" />
+              <span className="text-sm text-foreground/70 truncate">
                 {order.address}
               </span>
             </div>
           )}
 
           <div className="flex items-center space-x-2">
-            <Calendar size={16} className="text-gray-400" />
-            <span className="text-sm text-gray-600">
+            <Calendar size={16} className="text-muted-foreground" />
+            <span className="text-sm text-foreground/70">
               Pedido: {formatDate(order.orderDate)}
             </span>
           </div>
 
           {order.deliveryDate && (
             <div className="flex items-center space-x-2">
-              <Calendar size={16} className="text-gray-400" />
-              <span className="text-sm text-gray-600">
+              <Calendar size={16} className="text-muted-foreground" />
+              <span className="text-sm text-foreground/70">
                 Entrega: {formatDate(order.deliveryDate)}
               </span>
             </div>
@@ -127,19 +127,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         </div>
 
         {/* Métricas del pedido */}
-        <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-surface-1 rounded-lg">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1">
-              <Package size={14} className="text-gray-400" />
-              <span className="text-xs text-gray-500">Productos</span>
+              <Package size={14} className="text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Productos</span>
             </div>
             <p className="font-semibold text-sm">{order.items.length}</p>
           </div>
 
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1">
-              <DollarSign size={14} className="text-gray-400" />
-              <span className="text-xs text-gray-500">Total</span>
+              <DollarSign size={14} className="text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Total</span>
             </div>
             <p className="font-semibold text-sm">
               $

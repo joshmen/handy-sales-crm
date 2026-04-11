@@ -85,7 +85,7 @@ export function GoogleMapWrapper({
 
   if (loadError) {
     return (
-      <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
+      <div className="flex items-center justify-center bg-surface-3 rounded-lg" style={{ height }}>
         <p className="text-sm text-red-500">{t('loadError')}</p>
       </div>
     );
@@ -93,25 +93,25 @@ export function GoogleMapWrapper({
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">{t('loadingMap')}</span>
+      <div className="flex items-center justify-center bg-surface-3 rounded-lg" style={{ height }}>
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-sm text-muted-foreground">{t('loadingMap')}</span>
       </div>
     );
   }
 
   if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
     return (
-      <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
-        <p className="text-sm text-gray-500">
-          {t('notConfigured')} <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> {t('notConfiguredSuffix')}
+      <div className="flex items-center justify-center bg-surface-3 rounded-lg" style={{ height }}>
+        <p className="text-sm text-muted-foreground">
+          {t('notConfigured')} <code className="bg-surface-3 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> {t('notConfiguredSuffix')}
         </p>
       </div>
     );
   }
 
   return (
-    <div style={{ height }} className="rounded-lg overflow-hidden border border-gray-200">
+    <div style={{ height }} className="rounded-lg overflow-hidden border border-border-subtle">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={mapCenter}

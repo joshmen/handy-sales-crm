@@ -101,15 +101,15 @@ export function ActividadClientesReport() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {tc('showing', { from: (page - 1) * limit + 1, to: Math.min(page * limit, total), total })}
           </p>
           <div className="flex items-center gap-1">
-            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
+            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="p-1.5 rounded hover:bg-surface-3 disabled:opacity-30">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs text-gray-600 px-2">{tc('page', { page, totalPages })}</span>
-            <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
+            <span className="text-xs text-foreground/70 px-2">{tc('page', { page, totalPages })}</span>
+            <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="p-1.5 rounded hover:bg-surface-3 disabled:opacity-30">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

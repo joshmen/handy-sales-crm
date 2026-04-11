@@ -85,7 +85,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       {/* Cliente */}
       <div data-tour="visits-form-client">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground/80 mb-1">
           {t('client')} <span className="text-red-500">*</span>
         </label>
         <SearchableSelect
@@ -104,7 +104,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
 
       {/* Tipo de visita */}
       <div data-tour="visits-form-type">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground/80 mb-1">
           {t('visitType')}
         </label>
         <SearchableSelect
@@ -135,7 +135,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
 
       {/* Notas */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground/80 mb-1">
           {t('notesOptional')}
         </label>
         <textarea
@@ -143,7 +143,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
           rows={3}
           placeholder={t('notesPlaceholder')}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-            errors.notas ? 'border-red-500' : 'border-gray-300'
+            errors.notas ? 'border-red-500' : 'border-border-default'
           }`}
         />
         {errors.notas && (
@@ -152,7 +152,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       </div>
 
       {/* Botones */}
-      <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+      <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
         <Button type="button" variant="outline" onClick={onCancel}>
           {tc('cancel')}
         </Button>

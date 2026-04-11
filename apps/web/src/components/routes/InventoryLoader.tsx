@@ -63,7 +63,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
                     </div>
                     <div>
                       <p className="font-medium">{routeProduct.product.name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         ${routeProduct.product.price} • {t("stock")}{" "}
                         {routeProduct.product.stock}
                       </p>
@@ -110,7 +110,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
+                  className="flex items-center justify-between p-3 border rounded hover:bg-surface-1"
                 >
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white text-sm font-medium mr-3">
@@ -118,7 +118,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
                     </div>
                     <div>
                       <p className="font-medium">{product.name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         ${product.price} • {t("stock")} {product.stock}
                       </p>
                     </div>
@@ -136,7 +136,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
                 </div>
               ))}
               {filteredProducts.length === 0 && (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-muted-foreground text-center py-4">
                   {t("noProductsFound")}
                 </p>
               )}
@@ -145,7 +145,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
         )}
 
         {routeProducts.length === 0 && !showAddProduct && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <p>{t("noProductsAssigned")}</p>
             <p className="text-sm">
               {t("clickToAdd")}

@@ -29,7 +29,7 @@ const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
         />
         <span
           className={cn(
-            "absolute inset-0 rounded-full bg-gray-200 transition-colors",
+            "absolute inset-0 rounded-full bg-surface-3 transition-colors",
             "peer-disabled:opacity-50"
           )}
           style={checked ? { backgroundColor: 'var(--company-primary-color, #16a34a)' } : undefined}

@@ -248,7 +248,7 @@ export function ImportButton<T = unknown>({
               </div>
 
               {/* Input de archivo */}
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+              <div className="border-2 border-dashed border-border-subtle rounded-lg p-8 text-center">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -260,11 +260,11 @@ export function ImportButton<T = unknown>({
                 {isProcessing ? (
                   <div className="space-y-2">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-sm text-gray-600">Procesando archivo...</p>
+                    <p className="text-sm text-foreground/70">Procesando archivo...</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                    <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
                     <div>
                       <Button
                         variant="outline"
@@ -274,7 +274,7 @@ export function ImportButton<T = unknown>({
                         Seleccionar archivo
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Formatos soportados: {allowedFormats.map(f => f.toUpperCase()).join(', ')}
                     </p>
                   </div>
@@ -329,7 +329,7 @@ export function ImportButton<T = unknown>({
               </div>
 
               {importResult.data.length > 10 && (
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-muted-foreground text-center">
                   Mostrando 10 de {importResult.data.length} registros
                 </p>
               )}
@@ -343,7 +343,7 @@ export function ImportButton<T = unknown>({
                   <>
                     <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
                     <h3 className="font-medium">¡Importación exitosa!</h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-foreground/70">
                       {importResult.validRows} de {importResult.totalRows} registros importados
                     </p>
                   </>
@@ -351,7 +351,7 @@ export function ImportButton<T = unknown>({
                   <>
                     <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto" />
                     <h3 className="font-medium">Importación con errores</h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-foreground/70">
                       {importResult.validRows} éxitos, {importResult.errors.length} errores
                     </p>
                   </>
@@ -382,7 +382,7 @@ export function ImportButton<T = unknown>({
                     </Table>
                   </div>
                   {importResult.errors.length > 50 && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Mostrando primeros 50 errores de {importResult.errors.length}
                     </p>
                   )}

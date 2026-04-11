@@ -129,7 +129,7 @@ export function TourPrompt() {
   // Expanded: full card
   return (
     <div
-      className="fixed bottom-6 right-4 left-4 sm:left-auto sm:right-6 z-50 sm:w-[320px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+      className="fixed bottom-6 right-4 left-4 sm:left-auto sm:right-6 z-50 sm:w-[320px] bg-white rounded-xl shadow-xl border border-border-subtle overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-success/10 border-b border-success/20">
@@ -142,7 +142,7 @@ export function TourPrompt() {
         <button
           type="button"
           onClick={handleCollapse}
-          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-success/10 rounded transition-colors"
+          className="p-1 text-muted-foreground hover:text-foreground/70 hover:bg-success/10 rounded transition-colors"
           aria-label={tc('close')}
         >
           <X className="w-4 h-4" />
@@ -151,7 +151,7 @@ export function TourPrompt() {
 
       {/* Body */}
       <div className="px-4 py-3">
-        <p className="text-sm text-gray-600 leading-relaxed">
+        <p className="text-sm text-foreground/70 leading-relaxed">
           {tourConfig.description}
         </p>
       </div>
@@ -169,7 +169,7 @@ export function TourPrompt() {
         <button
           type="button"
           onClick={handleCollapse}
-          className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground/80 hover:bg-surface-3 rounded-lg transition-colors"
         >
           {t('notNow')}
         </button>
@@ -180,7 +180,7 @@ export function TourPrompt() {
         <button
           type="button"
           onClick={handleNeverShow}
-          className="text-xs text-gray-400 hover:text-gray-500 transition-colors"
+          className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
         >
           {t('dontShowAgain')}
         </button>

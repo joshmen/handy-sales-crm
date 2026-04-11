@@ -102,11 +102,11 @@ export function DiscountForm({
               className={`p-4 border-2 rounded-lg text-left transition-all ${
                 formData.type === DiscountType.GLOBAL
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-border-subtle hover:border-border-default'
               }`}
             >
               <div className="font-medium">{t('globalDiscount')}</div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-foreground/70">
                 {t('globalDiscountDesc')}
               </div>
             </button>
@@ -116,11 +116,11 @@ export function DiscountForm({
               className={`p-4 border-2 rounded-lg text-left transition-all ${
                 formData.type === DiscountType.PRODUCT_SPECIFIC
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-border-subtle hover:border-border-default'
               }`}
             >
               <div className="font-medium">{t('productDiscount')}</div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-foreground/70">
                 {t('productDiscountDesc')}
               </div>
             </button>
@@ -185,7 +185,7 @@ export function DiscountForm({
               <Label>{t('productLabel')}</Label>
               <div className="relative">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder={t('searchProductPlaceholder')}
                     value={productSearch}
@@ -199,7 +199,7 @@ export function DiscountForm({
                 </div>
                 
                 {showProductSearch && filteredProducts.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-border-subtle rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {filteredProducts.map(product => (
                       <button
                         key={product.id}
@@ -208,18 +208,18 @@ export function DiscountForm({
                           setProductSearch(`${product.code} - ${product.name}`);
                           setShowProductSearch(false);
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3"
+                        className="w-full text-left px-4 py-3 hover:bg-surface-1 border-b border-border-subtle last:border-b-0 flex items-center gap-3"
                       >
                         {product.images?.[0] ? (
                           <img src={product.images[0]} alt="" className="w-11 h-11 rounded-md object-cover flex-shrink-0" />
                         ) : (
-                          <div className="w-11 h-11 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
-                            <Package className="w-5 h-5 text-gray-400" />
+                          <div className="w-11 h-11 rounded-md bg-surface-3 flex items-center justify-center flex-shrink-0">
+                            <Package className="w-5 h-5 text-muted-foreground" />
                           </div>
                         )}
                         <div>
                           <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">{t('codeLabel')} {product.code}</div>
+                          <div className="text-sm text-muted-foreground">{t('codeLabel')} {product.code}</div>
                         </div>
                       </button>
                     ))}
@@ -245,7 +245,7 @@ export function DiscountForm({
         </CardHeader>
         <CardContent className="space-y-4">
           {formData.quantityRanges.map((range, index) => (
-            <div key={index} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
+            <div key={index} className="flex items-center gap-4 p-4 border border-border-subtle rounded-lg">
               <div className="flex-1 grid grid-cols-3 gap-4">
                 <div>
                   <Label>{t('minQuantity')}</Label>

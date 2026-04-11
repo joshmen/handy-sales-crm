@@ -383,9 +383,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+            className="rounded-full hover:bg-surface-3 dark:hover:bg-foreground transition-colors duration-200"
           >
-            <LayoutGrid className="h-[18px] w-[18px] text-gray-400" strokeWidth={2} />
+            <LayoutGrid className="h-[18px] w-[18px] text-muted-foreground" strokeWidth={2} />
           </Button>
 
           {/* Divider */}

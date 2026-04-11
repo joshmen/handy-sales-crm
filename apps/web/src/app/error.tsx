@@ -23,7 +23,7 @@ export default function GlobalError({
           <AlertTriangle className="w-8 h-8 text-red-600" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">Algo salió mal</h1>
+          <h1 className="text-2xl font-bold text-foreground">Algo salió mal</h1>
           <p className="text-sm text-muted-foreground">
             Ocurrió un error inesperado. Puedes intentar recargar la página o volver al inicio.
           </p>
@@ -42,7 +42,7 @@ export default function GlobalError({
           </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-foreground/80 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
             Ir al inicio

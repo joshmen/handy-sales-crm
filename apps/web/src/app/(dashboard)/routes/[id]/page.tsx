@@ -406,7 +406,7 @@ export default function RouteDetailPage() {
             <button onClick={() => router.push('/routes')} className="p-1 text-muted-foreground hover:text-foreground/70 rounded">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               {route.nombre}
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[11px] font-medium rounded-full ${badge.cls}`}>
@@ -524,21 +524,21 @@ export default function RouteDetailPage() {
               <User className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-[11px] text-muted-foreground">{t('columns.user')}</p>
-                <p className="text-[13px] font-medium text-gray-900">{route.usuarioNombre}</p>
+                <p className="text-[13px] font-medium text-foreground">{route.usuarioNombre}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-[11px] text-muted-foreground">{t('columns.zone')}</p>
-                <p className="text-[13px] font-medium text-gray-900">{route.zonaNombre || t('noZone')}</p>
+                <p className="text-[13px] font-medium text-foreground">{route.zonaNombre || t('noZone')}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-[11px] text-muted-foreground">{t('columns.date')}</p>
-                <p className="text-[13px] font-medium text-gray-900">
+                <p className="text-[13px] font-medium text-foreground">
                   {formatDateOnly(route.fecha)}
                 </p>
               </div>
@@ -547,19 +547,19 @@ export default function RouteDetailPage() {
               <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-[11px] text-muted-foreground">{t('columns.schedule')}</p>
-                <p className="text-[13px] font-medium text-gray-900">
+                <p className="text-[13px] font-medium text-foreground">
                   {route.horaInicioEstimada || '--:--'} - {route.horaFinEstimada || '--:--'}
                 </p>
               </div>
             </div>
           </div>
           {route.notas && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="mt-3 pt-3 border-t border-border-subtle">
               <p className="text-[11px] text-muted-foreground mb-1">{tc('notes')}</p>
-              <p className="text-[13px] text-gray-700">{route.notas}</p>
+              <p className="text-[13px] text-foreground/80">{route.notas}</p>
             </div>
           )}
-          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-6">
+          <div className="mt-3 pt-3 border-t border-border-subtle flex items-center gap-6">
             <div>
               <span className="text-[11px] text-muted-foreground">{t('columns.stops')}: </span>
               <span className="text-[13px] font-medium">
@@ -584,7 +584,7 @@ export default function RouteDetailPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-foreground">
                 {t('detail.assignedOrders')}
               </h2>
               <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700">
@@ -618,8 +618,8 @@ export default function RouteDetailPage() {
             {/* Table Body */}
             {pedidos.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <Package className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-700 mb-1">{t('detail.noOrders')}</p>
+                <Package className="w-12 h-12 text-muted-foreground/60 mb-3" />
+                <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noOrders')}</p>
                 <p className="text-xs text-muted-foreground mb-3">{t('detail.assignConfirmedOrders')}</p>
                 {isEditable && (
                   <button
@@ -635,13 +635,13 @@ export default function RouteDetailPage() {
               pedidos.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
                 >
                   <div className="w-[100px]">
-                    <span className="text-[13px] font-medium text-gray-900">#{p.pedidoId}</span>
+                    <span className="text-[13px] font-medium text-foreground">#{p.pedidoId}</span>
                   </div>
                   <div className="flex-1 min-w-[160px]">
-                    <p className="text-[13px] font-medium text-gray-900 truncate">{p.clienteNombre}</p>
+                    <p className="text-[13px] font-medium text-foreground truncate">{p.clienteNombre}</p>
                   </div>
                   <div className="w-[120px] text-right">
                     <span className="text-[13px] text-foreground/70">{formatCurrency(p.montoTotal)}</span>
@@ -674,7 +674,7 @@ export default function RouteDetailPage() {
         {/* Stops Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-foreground">
               {t('columns.stops')} ({route.totalParadas})
             </h2>
             {isEditable && sortedStops.length > 0 && (
@@ -704,8 +704,8 @@ export default function RouteDetailPage() {
             {/* Table Body */}
             {sortedStops.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <MapPin className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-700 mb-1">{t('detail.noStops')}</p>
+                <MapPin className="w-12 h-12 text-muted-foreground/60 mb-3" />
+                <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noStops')}</p>
                 <p className="text-xs text-muted-foreground mb-3">{t('detail.addClientsHint')}</p>
                 {isEditable && (
                   <button
@@ -723,7 +723,7 @@ export default function RouteDetailPage() {
                 return (
                   <div
                     key={stop.id}
-                    className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
                   >
                     <div className="w-[50px] text-center">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-3 text-[11px] font-medium text-foreground/70">
@@ -731,7 +731,7 @@ export default function RouteDetailPage() {
                       </span>
                     </div>
                     <div className="flex-1 min-w-[160px]">
-                      <p className="text-[13px] font-medium text-gray-900 truncate">{stop.clienteNombre}</p>
+                      <p className="text-[13px] font-medium text-foreground truncate">{stop.clienteNombre}</p>
                       {stop.notas && <p className="text-[11px] text-muted-foreground truncate">{stop.notas}</p>}
                     </div>
                     <div className="w-[200px]">
@@ -790,7 +790,7 @@ export default function RouteDetailPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               {t('detail.client')} <span className="text-red-500">*</span>
             </label>
             <SearchableSelect
@@ -801,7 +801,7 @@ export default function RouteDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               {t('detail.estimatedDuration')}
             </label>
             <input
@@ -812,7 +812,7 @@ export default function RouteDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{tc('notes')}</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{tc('notes')}</label>
             <textarea
               value={stopForm.notas}
               onChange={(e) => setStopForm({ ...stopForm, notas: e.target.value })}
@@ -825,7 +825,7 @@ export default function RouteDetailPage() {
             <button
               onClick={() => setIsAddStopOpen(false)}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -852,7 +852,7 @@ export default function RouteDetailPage() {
             {t('detail.cancelConfirm')}
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('detail.reasonOptional')}</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('detail.reasonOptional')}</label>
             <textarea
               value={cancelMotivo}
               onChange={(e) => setCancelMotivo(e.target.value)}
@@ -865,7 +865,7 @@ export default function RouteDetailPage() {
             <button
               onClick={() => setIsCancelOpen(false)}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               {tc('back')}
             </button>
@@ -893,7 +893,7 @@ export default function RouteDetailPage() {
         onSave={editRhfSubmit(handleSaveEdit)}
         footer={
           <div className="flex justify-end gap-3">
-            <button onClick={() => editDrawerRef.current?.requestClose()} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50">
+            <button onClick={() => editDrawerRef.current?.requestClose()} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50">
               {tc('cancel')}
             </button>
             <button onClick={editRhfSubmit(handleSaveEdit)} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2">
@@ -907,7 +907,7 @@ export default function RouteDetailPage() {
           <div className="space-y-4">
             <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.generalInfo')}</h4>
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <Map className="w-3.5 h-3.5 text-teal-500" />
                 {t('columns.name')} <span className="text-red-500">*</span>
               </label>
@@ -915,7 +915,7 @@ export default function RouteDetailPage() {
               {editErrors.nombre && <FieldError message={editErrors.nombre?.message} />}
             </div>
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <User className="w-3.5 h-3.5 text-blue-500" />
                 {t('drawer.vendor')} <span className="text-red-500">*</span>
               </label>
@@ -927,7 +927,7 @@ export default function RouteDetailPage() {
               />
             </div>
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <MapPinned className="w-3.5 h-3.5 text-violet-500" />
                 {t('columns.zone')}
               </label>
@@ -939,11 +939,11 @@ export default function RouteDetailPage() {
               />
             </div>
           </div>
-          <hr className="border-gray-100" />
+          <hr className="border-border-subtle" />
           <div className="space-y-4">
             <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.scheduling')}</h4>
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 {t('columns.date')} <span className="text-red-500">*</span>
               </label>
@@ -952,14 +952,14 @@ export default function RouteDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
                   {t('drawer.startTime')}
                 </label>
                 <input type="time" {...editRegister('horaInicioEstimada')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
               </div>
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
                   {t('drawer.endTime')}
                 </label>
@@ -967,15 +967,15 @@ export default function RouteDetailPage() {
               </div>
             </div>
           </div>
-          <hr className="border-gray-100" />
+          <hr className="border-border-subtle" />
           <div className="space-y-4">
             <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.additionalDetails')}</h4>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">{tc('description')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1.5">{tc('description')}</label>
               <textarea {...editRegister('descripcion')} rows={2} placeholder={t('drawer.descriptionPlaceholder')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">{tc('notes')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1.5">{tc('notes')}</label>
               <textarea {...editRegister('notas')} rows={2} placeholder={t('drawer.notesPlaceholder')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
             </div>
           </div>
@@ -1020,10 +1020,10 @@ export default function RouteDetailPage() {
                 .map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-surface-1"
+                    className="flex items-center justify-between px-3 py-2 border border-border-subtle rounded-lg hover:bg-surface-1"
                   >
                     <div>
-                      <span className="text-[13px] font-medium text-gray-900">
+                      <span className="text-[13px] font-medium text-foreground">
                         #{p.numeroPedido || p.id}
                       </span>
                       <span className="text-xs text-muted-foreground ml-2">

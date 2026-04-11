@@ -60,9 +60,9 @@ export function ZoneList({
 
   if (zones.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400">
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
         <div className="text-center">
-          <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground/60" />
           <p>{t('noZonesCreated')}</p>
           <p className="text-sm">{t('createFirstZone')}</p>
         </div>
@@ -94,7 +94,7 @@ export function ZoneList({
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div
-                      className="h-6 w-6 rounded-full border border-gray-300"
+                      className="h-6 w-6 rounded-full border border-border-default"
                       style={{ backgroundColor: zone.color }}
                       title={zone.color}
                     />
@@ -116,7 +116,7 @@ export function ZoneList({
                 {/* Usuarios */}
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-gray-400" />
+                    <Users className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm">{getUserNames(zone)}</p>
                       <p className="text-xs text-muted-foreground">
@@ -198,7 +198,7 @@ export function ZoneList({
                       title={t('editZone')}
                       className="h-8 w-8 p-0"
                     >
-                      <Edit className="h-4 w-4 text-gray-600" />
+                      <Edit className="h-4 w-4 text-foreground/70" />
                     </Button>
 
                     {/* Delete */}
@@ -212,7 +212,7 @@ export function ZoneList({
                     >
                       <Trash2 className={`h-4 w-4 ${
                         zone.userIds.length > 0 
-                          ? 'text-gray-300' 
+                          ? 'text-muted-foreground/60' 
                           : 'text-red-500 hover:text-red-700'
                       }`} />
                     </Button>

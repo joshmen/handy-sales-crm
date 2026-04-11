@@ -29,14 +29,14 @@ export function HelpTooltip({ tooltipKey, className }: HelpTooltipProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none ${className ?? ''}`}
+          className={`inline-flex items-center justify-center text-muted-foreground hover:text-foreground/70 transition-colors focus:outline-none ${className ?? ''}`}
           aria-label={t('moreInfo')}
         >
           <Info className="w-3.5 h-3.5" />
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-72 p-3 text-sm text-gray-700 leading-relaxed"
+        className="w-72 p-3 text-sm text-foreground/80 leading-relaxed"
         sideOffset={6}
       >
         {text}

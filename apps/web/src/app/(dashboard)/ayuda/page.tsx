@@ -256,7 +256,7 @@ function PlatformBadge({ platform, t }: { platform: 'web' | 'app' | 'ambos'; t: 
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-3 text-foreground/70 text-xs font-medium dark:bg-gray-800 dark:text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-3 text-foreground/70 text-xs font-medium dark:bg-foreground dark:text-muted-foreground">
       {role === 'Admin' || role === 'Supervisor' ? <ShieldCheck size={12} /> : <UserCircle size={12} />}
       {role}
     </span>
@@ -284,7 +284,7 @@ function StepRow({ step, index, phaseColor, t }: { step: FlowStep; index: number
       {step.href && (
         <Link
           href={step.href}
-          className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-surface-3 dark:bg-gray-800 hover:bg-surface-3 dark:hover:bg-gray-700 transition-colors`}
+          className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-surface-3 dark:bg-foreground hover:bg-surface-3 dark:hover:bg-foreground/80 transition-colors`}
           style={{ color: colors ? undefined : '#16A34A' }}
         >
           <span className="text-primary">{step.href}</span>
@@ -404,7 +404,7 @@ export default function AyudaPage() {
                   {phase.number}. {isVendedor && phase.vendedorTitle ? phase.vendedorTitle : phase.title.split(' ')[0]}
                 </div>
                 {i < arr.length - 1 && (
-                  <ArrowRight size={14} className="text-gray-300 dark:text-foreground/70 flex-shrink-0" />
+                  <ArrowRight size={14} className="text-muted-foreground/60 dark:text-foreground/70 flex-shrink-0" />
                 )}
               </React.Fragment>
             );

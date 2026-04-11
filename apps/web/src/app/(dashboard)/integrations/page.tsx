@@ -24,7 +24,7 @@ import {
 const estadoBadgeStyles: Record<string, string> = {
   DISPONIBLE: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   PROXIMO: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  DESCONTINUADO: "bg-surface-3 text-gray-800 dark:bg-gray-800 dark:text-muted-foreground",
+  DESCONTINUADO: "bg-surface-3 text-foreground dark:bg-foreground dark:text-muted-foreground",
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -65,21 +65,21 @@ function IntegrationCard({
   const icon = iconMap[integration.icono || ""] || <Zap className="h-6 w-6" />;
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 border-border-subtle dark:border-gray-700">
+    <Card className="group hover:shadow-md transition-all duration-200 border-border-subtle dark:border-border-strong">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className={`p-3 rounded-xl ${
             integration.isActivated
               ? "bg-green-100 dark:bg-green-900/30 text-green-600"
               : isAvailable
-                ? "bg-surface-3 dark:bg-gray-800 text-foreground/70 dark:text-muted-foreground"
+                ? "bg-surface-3 dark:bg-foreground text-foreground/70 dark:text-muted-foreground"
                 : "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
           }`}>
             {icon}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-gray-900 dark:text-white">{integration.nombre}</h3>
+              <h3 className="font-semibold text-foreground dark:text-white">{integration.nombre}</h3>
               <Badge className={badgeClassName}>{badgeLabel}</Badge>
               {integration.isActivated && (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
@@ -95,7 +95,7 @@ function IntegrationCard({
                 {categoryLabelMap[integration.categoria] || integration.categoria}
               </span>
               {integration.precioMXN > 0 && (
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                <span className="text-xs font-semibold text-foreground/80 dark:text-muted-foreground/60">
                   ${integration.precioMXN.toLocaleString("es-MX")} MXN
                   {integration.tipoPrecio === "MENSUAL" ? t("perMonth") : ""}
                 </span>
@@ -134,7 +134,7 @@ function IntegrationCard({
         </div>
 
         {integration.isActivated && integration.fechaActivacion && (
-          <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border-subtle dark:border-gray-800">
             {t("activatedOn", { date: new Date(integration.fechaActivacion).toLocaleDateString() })}
           </p>
         )}

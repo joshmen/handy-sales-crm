@@ -26,8 +26,8 @@ export default async function NotFound() {
           <FileQuestion className="w-8 h-8 text-muted-foreground" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-5xl font-bold text-gray-300">404</h1>
-          <h2 className="text-xl font-semibold text-gray-900">{t.title}</h2>
+          <h1 className="text-5xl font-bold text-muted-foreground/60">404</h1>
+          <h2 className="text-xl font-semibold text-foreground">{t.title}</h2>
           <p className="text-sm text-muted-foreground">{t.description}</p>
         </div>
         <a

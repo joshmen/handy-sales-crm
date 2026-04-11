@@ -24,7 +24,7 @@ function formatDate(dateStr: string) {
 }
 
 const ORDER_STATUS_STYLES: Record<string, { statusKey: string; color: string; bg: string }> = {
-  PENDIENTE:      { statusKey: 'draft',      color: 'text-gray-700',  bg: 'bg-surface-3' },
+  PENDIENTE:      { statusKey: 'draft',      color: 'text-foreground/80',  bg: 'bg-surface-3' },
   CONFIRMADA:     { statusKey: 'confirmed',  color: 'text-blue-700',  bg: 'bg-blue-100' },
   EN_PREPARACION: { statusKey: 'inPrep',     color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { statusKey: 'readyToShip', color: 'text-purple-700', bg: 'bg-purple-100' },
@@ -90,7 +90,7 @@ export default function ClientDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('notFound')}</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
           <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             {t('backToClients')}
@@ -117,8 +117,8 @@ export default function ClientDetailPage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold text-gray-900">{client.name}</h1>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-surface-3'}`}>
+            <h1 className="text-[22px] font-bold text-foreground">{client.name}</h1>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-foreground/80 bg-surface-3'}`}>
               {client.isActive ? tc('active') : tc('inactive')}
             </span>
             {client.esProspecto && (
@@ -143,61 +143,61 @@ export default function ClientDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
             <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalOrders')}</p>
-            <p className="text-2xl font-bold text-gray-900">{totalPedidos}</p>
+            <p className="text-2xl font-bold text-foreground">{totalPedidos}</p>
           </div>
           <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
             <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalSales')}</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalVentas)}</p>
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalVentas)}</p>
           </div>
           <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
             <p className="text-xs font-medium text-muted-foreground mb-1">{t('pendingOrders')}</p>
-            <p className="text-2xl font-bold text-gray-900">{pedidosPendientes}</p>
+            <p className="text-2xl font-bold text-foreground">{pedidosPendientes}</p>
           </div>
         </div>
 
         {/* Client info card */}
         <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clientInfo')}</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('clientInfo')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('rfc')}</span>
-              <span className="text-gray-900 font-mono">{client.code || '-'}</span>
+              <span className="text-foreground font-mono">{client.code || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('phone')}</span>
-              <span className="text-gray-900">{client.phone || '-'}</span>
+              <span className="text-foreground">{client.phone || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('email')}</span>
-              <span className="text-gray-900">{client.email || '-'}</span>
+              <span className="text-foreground">{client.email || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('manager')}</span>
-              <span className="text-gray-900">{client.encargado || '-'}</span>
+              <span className="text-foreground">{client.encargado || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('address')}</span>
-              <span className="text-gray-900 text-right max-w-[200px]">{client.address || '-'}</span>
+              <span className="text-foreground text-right max-w-[200px]">{client.address || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('zone')}</span>
-              <span className="text-gray-900">{client.zoneName || '-'}</span>
+              <span className="text-foreground">{client.zoneName || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('category')}</span>
-              <span className="text-gray-900">{client.categoryName || '-'}</span>
+              <span className="text-foreground">{client.categoryName || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('balance')}</span>
-              <span className="text-gray-900">{formatCurrency(client.saldo ?? 0)}</span>
+              <span className="text-foreground">{formatCurrency(client.saldo ?? 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('creditLimit')}</span>
-              <span className="text-gray-900">{formatCurrency(client.limiteCredito ?? 0)}</span>
+              <span className="text-foreground">{formatCurrency(client.limiteCredito ?? 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('creditDays')}</span>
-              <span className="text-gray-900">{client.diasCredito ?? 0}</span>
+              <span className="text-foreground">{client.diasCredito ?? 0}</span>
             </div>
           </div>
         </div>
@@ -205,27 +205,27 @@ export default function ClientDetailPage() {
         {/* Fiscal data section */}
         {client.facturable && (
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('fiscalData')}</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t('fiscalData')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('rfc')}</span>
-                <span className="text-gray-900 font-mono">{client.code || '-'}</span>
+                <span className="text-foreground font-mono">{client.code || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('businessName')}</span>
-                <span className="text-gray-900">{client.razonSocial || '-'}</span>
+                <span className="text-foreground">{client.razonSocial || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('taxRegime')}</span>
-                <span className="text-gray-900">{client.regimenFiscal || '-'}</span>
+                <span className="text-foreground">{client.regimenFiscal || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('fiscalPostalCode')}</span>
-                <span className="text-gray-900">{client.codigoPostalFiscal || '-'}</span>
+                <span className="text-foreground">{client.codigoPostalFiscal || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('defaultCfdiUse')}</span>
-                <span className="text-gray-900">{client.usoCFDIPredeterminado || '-'}</span>
+                <span className="text-foreground">{client.usoCFDIPredeterminado || '-'}</span>
               </div>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function ClientDetailPage() {
                   className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.key
                       ? 'border-green-600 text-green-600'
-                      : 'border-transparent text-muted-foreground hover:text-gray-700'
+                      : 'border-transparent text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
                   {tab.label}
@@ -273,24 +273,24 @@ export default function ClientDetailPage() {
                       </thead>
                       <tbody>
                         {orders.map((order) => {
-                          const style = ORDER_STATUS_STYLES[order.estado] ?? { statusKey: '', color: 'text-gray-700', bg: 'bg-surface-3' };
+                          const style = ORDER_STATUS_STYLES[order.estado] ?? { statusKey: '', color: 'text-foreground/80', bg: 'bg-surface-3' };
                           const statusLabel = style.statusKey ? t(`orderStatus.${style.statusKey}` as Parameters<typeof t>[0]) : order.estado;
                           const cfg = { label: statusLabel, color: style.color, bg: style.bg };
                           return (
                             <tr
                               key={order.id}
-                              className="border-b border-gray-100 cursor-pointer hover:bg-surface-1"
+                              className="border-b border-border-subtle cursor-pointer hover:bg-surface-1"
                               onClick={() => router.push(`/orders/${order.id}`)}
                             >
                               <td className="py-3 font-mono text-xs text-blue-600 hover:underline">{order.numeroPedido}</td>
-                              <td className="py-3 text-gray-900">{formatDate(order.fechaPedido)}</td>
+                              <td className="py-3 text-foreground">{formatDate(order.fechaPedido)}</td>
                               <td className="py-3">
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${cfg.color} ${cfg.bg}`}>
                                   {cfg.label}
                                 </span>
                               </td>
                               <td className="py-3 text-muted-foreground">{order.usuarioNombre}</td>
-                              <td className="py-3 text-right font-medium text-gray-900">{formatCurrency(order.total)}</td>
+                              <td className="py-3 text-right font-medium text-foreground">{formatCurrency(order.total)}</td>
                             </tr>
                           );
                         })}
@@ -302,7 +302,7 @@ export default function ClientDetailPage() {
             )}
 
             {activeTab === 'info' && (
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-foreground/80">
                 {client.comentarios ? (
                   <p>{client.comentarios}</p>
                 ) : (

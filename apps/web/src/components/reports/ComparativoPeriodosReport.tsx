@@ -107,16 +107,16 @@ export function ComparativoPeriodosReport() {
   return (
     <div className="space-y-4">
       {/* Custom filters for 4 date pickers */}
-      <div className="flex flex-wrap items-end gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div className="flex flex-wrap items-end gap-3 p-4 bg-surface-1 rounded-lg border border-border-subtle">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-gray-500 uppercase">{tCommon("period1")}</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase">{tCommon("period1")}</span>
           <div className="flex gap-2">
             <DateTimePicker mode="date" label="Desde" value={p1Desde} onChange={setP1Desde} />
             <DateTimePicker mode="date" label="Hasta" value={p1Hasta} onChange={setP1Hasta} />
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-gray-500 uppercase">{tCommon("period2")}</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase">{tCommon("period2")}</span>
           <div className="flex gap-2">
             <DateTimePicker mode="date" label="Desde" value={p2Desde} onChange={setP2Desde} />
             <DateTimePicker mode="date" label="Hasta" value={p2Hasta} onChange={setP2Hasta} />
@@ -134,7 +134,7 @@ export function ComparativoPeriodosReport() {
           <button
             onClick={exportPDF}
             disabled={exporting}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 ml-auto"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-foreground/80 bg-white border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50 ml-auto"
           >
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             {exporting ? tFilters("exporting") : "PDF"}
@@ -158,7 +158,7 @@ export function ComparativoPeriodosReport() {
 
           {chartData.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">{t("chartTitle")}</h3>
+              <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
               <ApexChart
                 type="bar"
                 options={{
@@ -182,15 +182,15 @@ export function ComparativoPeriodosReport() {
           )}
 
           {/* Delta table */}
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-white border border-border-subtle rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t("metricLabel")}</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{tCommon("period1")}</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{tCommon("period2")}</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("difference")}</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("changePercent")}</th>
+                <tr className="bg-surface-1 border-b border-border-subtle">
+                  <th className="text-left px-4 py-3 font-semibold text-foreground/70">{t("metricLabel")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-foreground/70">{tCommon("period1")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-foreground/70">{tCommon("period2")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-foreground/70">{t("difference")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-foreground/70">{t("changePercent")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,19 +202,19 @@ export function ComparativoPeriodosReport() {
                       ? "text-green-600"
                       : d.porcentajeCambio < 0
                       ? "text-red-600"
-                      : "text-gray-500";
+                      : "text-muted-foreground";
                   return (
-                    <tr key={key} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                    <tr key={key} className="border-b border-border-subtle hover:bg-surface-1">
+                      <td className="px-4 py-3 font-medium text-foreground">
                         {METRIC_LABELS[key] || key}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
+                      <td className="px-4 py-3 text-right text-foreground/70">
                         {isMoney ? fmt(d.valor1) : d.valor1}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
+                      <td className="px-4 py-3 text-right text-foreground/70">
                         {isMoney ? fmt(d.valor2) : d.valor2}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
+                      <td className="px-4 py-3 text-right text-foreground/70">
                         {isMoney ? fmt(d.diferencia) : d.diferencia}
                       </td>
                       <td className={`px-4 py-3 text-right font-semibold ${trendColor}`}>

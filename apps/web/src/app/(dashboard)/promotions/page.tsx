@@ -178,7 +178,7 @@ export default function PromotionsPage() {
       width: 'flex',
       cellRenderer: (promo) => (
         <div className={`${!promo.activo ? 'opacity-50' : ''}`}>
-          <div className="text-[13px] font-medium text-gray-900 truncate">{promo.nombre}</div>
+          <div className="text-[13px] font-medium text-foreground truncate">{promo.nombre}</div>
           {promo.descripcion && <div className="text-xs text-muted-foreground truncate mt-0.5">{promo.descripcion}</div>}
         </div>
       ),
@@ -191,14 +191,14 @@ export default function PromotionsPage() {
         <div className="group relative">
           <div className="flex items-center gap-1.5">
             <Package className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-            <span className="text-[13px] text-gray-700">
+            <span className="text-[13px] text-foreground/80">
               {promo.productos.length === 1 ? promo.productos[0].productoNombre : t('productsCount', { count: promo.productos.length, plural: 's' })}
             </span>
           </div>
-          <div className="invisible group-hover:visible absolute z-20 left-0 top-full mt-1 w-56 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-2 max-h-[200px] overflow-y-auto">
-            <div className="font-medium text-gray-300 mb-1 px-1">{t('productsCount', { count: promo.productos.length, plural: promo.productos.length !== 1 ? 's' : '' })}:</div>
+          <div className="invisible group-hover:visible absolute z-20 left-0 top-full mt-1 w-56 bg-foreground text-white text-xs rounded-lg shadow-lg p-2 max-h-[200px] overflow-y-auto">
+            <div className="font-medium text-muted-foreground/60 mb-1 px-1">{t('productsCount', { count: promo.productos.length, plural: promo.productos.length !== 1 ? 's' : '' })}:</div>
             {promo.productos.map((prod) => (
-              <div key={prod.productoId} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-gray-800">
+              <div key={prod.productoId} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-foreground">
                 <Package className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 <span className="truncate">{prod.productoNombre}</span>
               </div>
@@ -406,7 +406,7 @@ export default function PromotionsPage() {
           <div className="relative" data-tour="promotions-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -418,14 +418,14 @@ export default function PromotionsPage() {
                 <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={async () => { setShowDataMenu(false); try { await exportToCsv('promociones'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
                     {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
                     {tc('importCsv')}
@@ -520,7 +520,7 @@ export default function PromotionsPage() {
                       <Megaphone className="w-5 h-5 text-purple-600" weight="duotone" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{promo.nombre}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{promo.nombre}</p>
                       {promo.descripcion && <p className="text-xs text-muted-foreground truncate">{promo.descripcion}</p>}
                     </div>
                   </div>
@@ -537,7 +537,7 @@ export default function PromotionsPage() {
                   <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
                   {isExpired(promo.fechaFin) && <span className="text-red-500 ml-1">{t('expired')}</span>}
                 </div>
-                <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
+                <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                   </button>
@@ -593,7 +593,7 @@ export default function PromotionsPage() {
       >
         <form onSubmit={handleSubmit} data-tour="promotion-form" className="px-6 py-6 space-y-4">
           <div data-tour="promotions-drawer-name">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('name')} <span className="text-red-500">*</span></label>
             <input
               type="text"
               {...register('nombre')}
@@ -604,7 +604,7 @@ export default function PromotionsPage() {
           </div>
 
           <div data-tour="promotions-drawer-description">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('description')}</label>
             <input
               type="text"
               {...register('descripcion')}
@@ -614,7 +614,7 @@ export default function PromotionsPage() {
           </div>
 
           <div data-tour="promotions-drawer-products">
-            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('products')} <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-products" /></label>
+            <label className="flex items-center gap-1 text-sm font-medium text-foreground/80 mb-1">{t('products')} <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-products" /></label>
             {/* Selected product chips */}
             {watch('productoIds').length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2 max-h-[120px] overflow-y-auto p-1">
@@ -666,7 +666,7 @@ export default function PromotionsPage() {
           </div>
 
           <div data-tour="promotions-drawer-discount">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('discountPercent')} <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('discountPercent')} <span className="text-red-500">*</span></label>
             <input
               type="number"
               min="1"
@@ -680,7 +680,7 @@ export default function PromotionsPage() {
 
           <div className="grid grid-cols-2 gap-4" data-tour="promotions-drawer-dates">
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('startDate')} <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-dates" /></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-foreground/80 mb-1">{t('startDate')} <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-dates" /></label>
               <DateTimePicker
                 mode="date"
                 value={watch('fechaInicio')}
@@ -689,7 +689,7 @@ export default function PromotionsPage() {
               {errors.fechaInicio && <FieldError message={errors.fechaInicio.message} />}
             </div>
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('endDate')} <span className="text-red-500">*</span></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-foreground/80 mb-1">{t('endDate')} <span className="text-red-500">*</span></label>
               <DateTimePicker
                 mode="date"
                 value={watch('fechaFin')}

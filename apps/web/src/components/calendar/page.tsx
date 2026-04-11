@@ -157,10 +157,10 @@ export default function CalendarPage() {
       <div className="p-6">
         <Card className="shadow-lg">
           {/* 🎨 HEADER MEJORADO CON MEJORES COLORES */}
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="p-6 border-b border-border-subtle bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="flex justify-between items-center mb-6">
               {/* 🎨 TÍTULO CON MEJOR CONTRASTE */}
-              <h2 className="text-2xl font-bold text-gray-900">📅 Calendario de visitas</h2>
+              <h2 className="text-2xl font-bold text-foreground">📅 Calendario de visitas</h2>
 
               {/* 🎨 BOTONES PRINCIPALES CON MEJOR VISIBILIDAD */}
               <div className="flex gap-3">
@@ -179,7 +179,7 @@ export default function CalendarPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100 font-medium"
+                  className="border-2 border-border-strong text-foreground/80 hover:bg-surface-3 font-medium"
                 >
                   📋 Reglas de nuevos prospectos
                 </Button>
@@ -193,7 +193,7 @@ export default function CalendarPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-gray-700 hover:bg-gray-100 border-gray-300"
+                  className="text-foreground/80 hover:bg-surface-3 border-border-default"
                   onClick={() => navigateMonth('prev')}
                 >
                   ← Anterior
@@ -208,7 +208,7 @@ export default function CalendarPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-gray-700 hover:bg-gray-100 border-gray-300"
+                  className="text-foreground/80 hover:bg-surface-3 border-border-default"
                   onClick={() => navigateMonth('next')}
                 >
                   Siguiente →
@@ -220,21 +220,21 @@ export default function CalendarPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-gray-700 hover:bg-blue-100 border-gray-300"
+                  className="text-foreground/80 hover:bg-blue-100 border-border-default"
                 >
                   📅 Mes
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-gray-700 hover:bg-blue-100 border-gray-300"
+                  className="text-foreground/80 hover:bg-blue-100 border-border-default"
                 >
                   📊 Semana
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-gray-700 hover:bg-blue-100 border-gray-300"
+                  className="text-foreground/80 hover:bg-blue-100 border-border-default"
                 >
                   📋 Día
                 </Button>

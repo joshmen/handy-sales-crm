@@ -272,7 +272,7 @@ export default function EditClientPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('clientNotFound')}</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('clientNotFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('clientNotFoundMessage')}</p>
           <button
             onClick={() => router.push('/clients')}
@@ -296,14 +296,14 @@ export default function EditClientPage() {
         ]} />
 
         <div className="flex items-center justify-between">
-          <h1 className="text-[22px] font-bold text-gray-900">
+          <h1 className="text-[22px] font-bold text-foreground">
             Editar cliente
           </h1>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-border-default rounded hover:bg-surface-1 transition-colors"
+              className="px-4 py-2 text-[13px] font-medium text-foreground/80 border border-border-default rounded hover:bg-surface-1 transition-colors"
             >
               Cancelar
             </button>
@@ -492,7 +492,7 @@ export default function EditClientPage() {
               </div>
 
               {watch('facturable') ? (
-                <div className="flex flex-col gap-4 border-t border-gray-100 pt-4">
+                <div className="flex flex-col gap-4 border-t border-border-subtle pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField label={t("businessNameLabel")} required error={errors.razonSocial?.message} hint={t("businessNameHint")}>
                       <input

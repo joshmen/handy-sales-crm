@@ -110,7 +110,7 @@ function getEstadoBadge(resuelto: boolean) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
       <Clock size={14} weight="fill" className="text-muted-foreground" />
       Pendiente
     </span>
@@ -148,7 +148,7 @@ const LOG_GROUP_COLORS: Record<string, { bg: string; text: string; dot: string }
 };
 
 function getLogGroupBadge(logGroup: string) {
-  const colors = LOG_GROUP_COLORS[logGroup] || { bg: 'bg-surface-3', text: 'text-gray-700', dot: '#6b7280' };
+  const colors = LOG_GROUP_COLORS[logGroup] || { bg: 'bg-surface-3', text: 'text-foreground/80', dot: '#6b7280' };
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full ${colors.bg} px-2.5 py-0.5 text-xs font-semibold ${colors.text}`}>
       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
@@ -249,7 +249,7 @@ function LogLevelControls() {
         onClick={() => setOpen(prev => !prev)}
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
       >
-        <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <span className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
           <GearSix size={18} weight="duotone" className="text-muted-foreground" />
           {t('logLevel')}
         </span>
@@ -261,7 +261,7 @@ function LogLevelControls() {
       </button>
 
       {open && (
-        <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+        <div className="border-t border-border-subtle px-5 py-4 space-y-4">
           {loadingLevels ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
@@ -290,7 +290,7 @@ function LogLevelControls() {
                             }
                             className="h-4 w-4 text-blue-600 border-border-default focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">{opt.label}</span>
+                          <span className="text-sm text-foreground/80">{opt.label}</span>
                         </label>
                       ))}
                     </div>
@@ -450,7 +450,7 @@ function CloudWatchTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('errors24h')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -468,7 +468,7 @@ function CloudWatchTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('warnings24h')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -486,7 +486,7 @@ function CloudWatchTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('crashes24h')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -504,7 +504,7 @@ function CloudWatchTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('apisWithErrors')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -521,7 +521,7 @@ function CloudWatchTab() {
 
       {/* Bar Chart — Errors by Hour */}
       <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('errorsByHour')}</h3>
+        <h3 className="text-sm font-semibold text-foreground/80 mb-4">{t('errorsByHour')}</h3>
         {loading ? (
           <div className="h-64 w-full bg-surface-1 rounded-lg animate-pulse" />
         ) : chartData.length === 0 ? (
@@ -547,12 +547,12 @@ function CloudWatchTab() {
 
       {/* Recent Errors Table */}
       <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">{t('recentErrors')}</h3>
+        <div className="px-6 py-4 border-b border-border-subtle">
+          <h3 className="text-sm font-semibold text-foreground/80">{t('recentErrors')}</h3>
         </div>
 
         {errorsLoading ? (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-border-subtle">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="px-6 py-4">
                 <div className="h-4 w-full bg-surface-3 rounded-md animate-pulse" />
@@ -569,7 +569,7 @@ function CloudWatchTab() {
           <>
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-border-subtle">
                 <thead className="bg-surface-1">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground w-8" />
@@ -578,7 +578,7 @@ function CloudWatchTab() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Mensaje</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border-subtle">
                   {recentErrors.map((entry, idx) => (
                     <>
                       <tr
@@ -599,7 +599,7 @@ function CloudWatchTab() {
                         <td className="px-6 py-3 whitespace-nowrap">
                           {getLogGroupBadge(entry.logGroup)}
                         </td>
-                        <td className="px-6 py-3 text-sm text-gray-900 max-w-md truncate">
+                        <td className="px-6 py-3 text-sm text-foreground max-w-md truncate">
                           {truncateText(entry.message, 100)}
                         </td>
                       </tr>
@@ -613,14 +613,14 @@ function CloudWatchTab() {
                               </div>
                               <div>
                                 <p className="text-xs font-medium text-foreground/70 mb-1">Mensaje:</p>
-                                <pre className="text-xs bg-surface-3 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
+                                <pre className="text-xs bg-surface-3 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-foreground">
 {entry.message}
                                 </pre>
                               </div>
                               {entry.exception && (
                                 <div>
                                   <p className="text-xs font-medium text-red-600 mb-1">Stack Trace:</p>
-                                  <pre className="text-xs bg-gray-900 text-red-400 rounded-lg p-4 overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-all">
+                                  <pre className="text-xs bg-foreground text-red-400 rounded-lg p-4 overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-all">
 {entry.exception}
                                   </pre>
                                 </div>
@@ -632,7 +632,7 @@ function CloudWatchTab() {
                                     {Object.entries(entry.properties).map(([k, v]) => (
                                       <div key={k} className="flex gap-1">
                                         <span className="text-muted-foreground font-medium">{k}:</span>
-                                        <span className="text-gray-700 truncate">{v}</span>
+                                        <span className="text-foreground/80 truncate">{v}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -649,7 +649,7 @@ function CloudWatchTab() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-gray-100">
+            <div className="md:hidden divide-y divide-border-subtle">
               {recentErrors.map((entry, idx) => (
                 <div
                   key={idx}
@@ -660,14 +660,14 @@ function CloudWatchTab() {
                     {getLogGroupBadge(entry.logGroup)}
                     <span className="text-xs text-muted-foreground">{formatDate(entry.timestamp)}</span>
                   </div>
-                  <p className="text-sm text-gray-900 line-clamp-2">{entry.message}</p>
+                  <p className="text-sm text-foreground line-clamp-2">{entry.message}</p>
                   {expandedRows.has(idx) && (
                     <div className="mt-2 space-y-2">
-                      <pre className="text-xs bg-surface-3 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
+                      <pre className="text-xs bg-surface-3 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-foreground">
 {entry.message}
                       </pre>
                       {entry.exception && (
-                        <pre className="text-xs text-red-400 bg-gray-900 rounded-lg p-3 overflow-x-auto max-h-40 overflow-y-auto font-mono whitespace-pre-wrap break-all">
+                        <pre className="text-xs text-red-400 bg-foreground rounded-lg p-3 overflow-x-auto max-h-40 overflow-y-auto font-mono whitespace-pre-wrap break-all">
 {entry.exception}
                         </pre>
                       )}
@@ -873,7 +873,7 @@ function MobileCrashesTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('today')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -891,7 +891,7 @@ function MobileCrashesTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('unresolved')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -909,7 +909,7 @@ function MobileCrashesTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('crashes')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -927,7 +927,7 @@ function MobileCrashesTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('errors')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
@@ -1009,7 +1009,7 @@ function MobileCrashesTab() {
       {/* Desktop Table */}
       <div className="hidden md:block bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-1">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Fecha</th>
@@ -1020,7 +1020,7 @@ function MobileCrashesTab() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Estado</th>
               </tr>
             </thead>
-            <tbody className="bg-surface-2 divide-y divide-gray-100">
+            <tbody className="bg-surface-2 divide-y divide-border-subtle">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
@@ -1035,7 +1035,7 @@ function MobileCrashesTab() {
               ) : reports.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
-                    <Bug size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
+                    <Bug size={48} weight="duotone" className="mx-auto text-muted-foreground/60 mb-3" />
                     <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
                     <p className="text-muted-foreground text-xs mt-1">Ajusta los filtros o espera a que se reporten errores</p>
                   </td>
@@ -1054,7 +1054,7 @@ function MobileCrashesTab() {
                       {getSeverityBadge(report.severity)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 font-medium max-w-xs truncate">
+                      <div className="text-sm text-foreground font-medium max-w-xs truncate">
                         {truncateText(report.errorMessage, 60)}
                       </div>
                       {report.componentName && (
@@ -1109,7 +1109,7 @@ function MobileCrashesTab() {
           ))
         ) : reports.length === 0 ? (
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-8 text-center shadow-sm">
-            <Bug size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
+            <Bug size={48} weight="duotone" className="mx-auto text-muted-foreground/60 mb-3" />
             <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
           </div>
         ) : (
@@ -1123,7 +1123,7 @@ function MobileCrashesTab() {
                 {getSeverityBadge(report.severity)}
                 {getEstadoBadge(report.resuelto)}
               </div>
-              <p className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">
+              <p className="text-sm font-medium text-foreground mb-1 line-clamp-2">
                 {report.errorMessage}
               </p>
               {report.componentName && (
@@ -1170,7 +1170,7 @@ function MobileCrashesTab() {
             <div className="flex justify-end">
               {resolverOpen ? (
                 <div className="flex flex-col w-full gap-3">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-foreground/80">
                     Nota de resolucion (opcional)
                   </label>
                   <textarea
@@ -1251,7 +1251,7 @@ function MobileCrashesTab() {
                 <Warning size={14} className="text-orange-500" />
                 Mensaje de error
               </h3>
-              <p className="text-sm text-gray-900 bg-red-50 rounded-lg p-3 border border-red-100">
+              <p className="text-sm text-foreground bg-red-50 rounded-lg p-3 border border-red-100">
                 {selectedReport.errorMessage}
               </p>
             </div>
@@ -1262,7 +1262,7 @@ function MobileCrashesTab() {
                   <Code size={14} className="text-purple-500" />
                   Componente
                 </h3>
-                <p className="text-sm text-gray-900 font-mono bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
+                <p className="text-sm text-foreground font-mono bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
                   {selectedReport.componentName}
                 </p>
               </div>
@@ -1274,7 +1274,7 @@ function MobileCrashesTab() {
                   <Code size={14} className="text-indigo-500" />
                   Stack Trace
                 </h3>
-                <pre className="text-xs text-gray-800 bg-gray-900 text-green-400 rounded-lg p-4 overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-all border border-gray-700">
+                <pre className="text-xs text-foreground bg-foreground text-green-400 rounded-lg p-4 overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-all border border-border-strong">
                   {selectedReport.stackTrace}
                 </pre>
               </div>
@@ -1288,19 +1288,19 @@ function MobileCrashesTab() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-muted-foreground">Nombre</p>
-                  <p className="text-sm text-gray-900 font-medium">{selectedReport.deviceName || '-'}</p>
+                  <p className="text-sm text-foreground font-medium">{selectedReport.deviceName || '-'}</p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-muted-foreground">Device ID</p>
-                  <p className="text-sm text-gray-900 font-mono truncate">{selectedReport.deviceId || '-'}</p>
+                  <p className="text-sm text-foreground font-mono truncate">{selectedReport.deviceId || '-'}</p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-muted-foreground">Version App</p>
-                  <p className="text-sm text-gray-900 font-medium">{selectedReport.appVersion || '-'}</p>
+                  <p className="text-sm text-foreground font-medium">{selectedReport.appVersion || '-'}</p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-muted-foreground">OS Version</p>
-                  <p className="text-sm text-gray-900 font-medium">{selectedReport.osVersion || '-'}</p>
+                  <p className="text-sm text-foreground font-medium">{selectedReport.osVersion || '-'}</p>
                 </div>
               </div>
             </div>
@@ -1316,7 +1316,7 @@ function MobileCrashesTab() {
                     <Buildings size={12} />
                     Empresa
                   </p>
-                  <p className="text-sm text-gray-900 font-medium">
+                  <p className="text-sm text-foreground font-medium">
                     {selectedReport.tenantNombre || `Tenant #${selectedReport.tenantId}`}
                   </p>
                 </div>
@@ -1325,7 +1325,7 @@ function MobileCrashesTab() {
                     <User size={12} />
                     Usuario
                   </p>
-                  <p className="text-sm text-gray-900 font-medium">
+                  <p className="text-sm text-foreground font-medium">
                     {selectedReport.userNombre ||
                       (selectedReport.userId ? `User #${selectedReport.userId}` : '-')}
                   </p>
@@ -1338,7 +1338,7 @@ function MobileCrashesTab() {
                 <CalendarDots size={14} className="text-blue-500" />
                 Fecha de reporte
               </h3>
-              <p className="text-sm text-gray-900">{formatDate(selectedReport.creadoEn)}</p>
+              <p className="text-sm text-foreground">{formatDate(selectedReport.creadoEn)}</p>
             </div>
 
             {selectedReport.resuelto && selectedReport.notaResolucion && (
@@ -1347,7 +1347,7 @@ function MobileCrashesTab() {
                   <CheckCircle size={14} className="text-green-500" />
                   Nota de resolucion
                 </h3>
-                <p className="text-sm text-gray-900 bg-green-50 rounded-lg p-3 border border-green-100">
+                <p className="text-sm text-foreground bg-green-50 rounded-lg p-3 border border-green-100">
                   {selectedReport.notaResolucion}
                 </p>
               </div>
@@ -1372,12 +1372,12 @@ export default function CrashReportsPage() {
       <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
         <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">{t('title')}</span>
+        <span className="text-foreground font-medium">{t('title')}</span>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Bug size={28} weight="duotone" className="text-red-500" />
           {t('title')}
         </h1>
@@ -1394,7 +1394,7 @@ export default function CrashReportsPage() {
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'cloudwatch'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-muted-foreground hover:text-gray-700 hover:border-border-default'
+                : 'border-transparent text-muted-foreground hover:text-foreground/80 hover:border-border-default'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -1407,7 +1407,7 @@ export default function CrashReportsPage() {
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'mobile'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-muted-foreground hover:text-gray-700 hover:border-border-default'
+                : 'border-transparent text-muted-foreground hover:text-foreground/80 hover:border-border-default'
             }`}
           >
             <span className="flex items-center gap-2">

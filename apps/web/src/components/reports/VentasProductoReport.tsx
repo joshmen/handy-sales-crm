@@ -94,9 +94,9 @@ export function VentasProductoReport() {
             { label: tr('noSale'), value: data.sinVenta.length, color: data.sinVenta.length > 0 ? 'red' : 'gray' },
           ]} />
 
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex gap-1 bg-surface-3 rounded-lg p-1">
             {tabs.map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)} className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+              <button key={t.key} onClick={() => setTab(t.key)} className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${tab === t.key ? 'bg-white text-foreground shadow-sm' : 'text-foreground/70 hover:text-foreground'}`}>
                 {t.label}
                 {t.key === 'sinVenta' && data.sinVenta.length > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-red-100 text-red-700 rounded-full">{data.sinVenta.length}</span>}
               </button>

@@ -226,13 +226,13 @@ export const VisitModal: React.FC<VisitModalProps> = ({
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground/80 mb-1">
             {t('commentsLabel')}
           </label>
           <textarea
             {...register('notes')}
             placeholder={t('commentsPlaceholder')}
-            className="w-full p-2 border border-gray-300 rounded-lg h-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full p-2 border border-border-default rounded-lg h-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
           {errors.notes && (
             <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>

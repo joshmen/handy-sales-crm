@@ -74,15 +74,15 @@ export function InventoryList({
                       className="w-8 h-8 rounded-sm object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-100 rounded-sm flex items-center justify-center">
-                      <Package className="h-4 w-4 text-gray-400" />
+                    <div className="w-8 h-8 bg-surface-3 rounded-sm flex items-center justify-center">
+                      <Package className="h-4 w-4 text-muted-foreground" />
                     </div>
                   )}
                   <div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-foreground">
                       {item.product?.name}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       {item.product?.code}
                     </div>
                   </div>

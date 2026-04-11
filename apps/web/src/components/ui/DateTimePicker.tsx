@@ -199,7 +199,7 @@ export function DateTimePicker({
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       {label && !compact && (
-        <label htmlFor={id} className="text-sm font-medium text-gray-700">
+        <label htmlFor={id} className="text-sm font-medium text-foreground/80">
           {label}
         </label>
       )}
@@ -217,11 +217,11 @@ export function DateTimePicker({
               'disabled:cursor-not-allowed disabled:opacity-50',
               error
                 ? 'border-red-500 focus-visible:ring-red-500'
-                : 'border-gray-300 hover:border-gray-400',
-              !displayText && 'text-gray-400'
+                : 'border-border-default hover:border-border-strong',
+              !displayText && 'text-muted-foreground'
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 text-gray-400 flex-shrink-0" />
+            <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="flex-1 truncate">
               {displayText || placeholder || defaultPlaceholder}
             </span>
@@ -239,18 +239,18 @@ export function DateTimePicker({
               <button
                 type="button"
                 onClick={() => setViewMonth((m) => subMonths(m, 1))}
-                className="p-1 rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+                className="p-1 rounded hover:bg-surface-3 transition-colors text-muted-foreground hover:text-foreground/80"
                 aria-label="Mes anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-semibold text-gray-800 capitalize select-none">
+              <span className="text-sm font-semibold text-foreground capitalize select-none">
                 {format(viewMonth, 'MMMM yyyy', { locale: dateLocale })}
               </span>
               <button
                 type="button"
                 onClick={() => setViewMonth((m) => addMonths(m, 1))}
-                className="p-1 rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+                className="p-1 rounded hover:bg-surface-3 transition-colors text-muted-foreground hover:text-foreground/80"
                 aria-label="Mes siguiente"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -262,7 +262,7 @@ export function DateTimePicker({
               {(appLocale === 'en' ? DAY_NAMES_EN : DAY_NAMES_ES).map((d) => (
                 <div
                   key={d}
-                  className="h-8 flex items-center justify-center text-[11px] font-medium text-gray-400 select-none"
+                  className="h-8 flex items-center justify-center text-[11px] font-medium text-muted-foreground select-none"
                 >
                   {d}
                 </div>
@@ -286,14 +286,14 @@ export function DateTimePicker({
                     className={cn(
                       'h-8 w-8 mx-auto flex items-center justify-center rounded-md text-sm tabular-nums transition-colors',
                       // Base states
-                      !inMonth && 'text-gray-300',
-                      inMonth && !selected && !today && 'text-gray-700 hover:bg-green-50 hover:text-green-700',
+                      !inMonth && 'text-muted-foreground/60',
+                      inMonth && !selected && !today && 'text-foreground/80 hover:bg-green-50 hover:text-green-700',
                       // Today ring
                       today && !selected && 'font-semibold text-green-700 ring-1 ring-inset ring-green-300',
                       // Selected
                       selected && 'bg-success text-success-foreground font-semibold hover:bg-success/90',
                       // Disabled
-                      dayDisabled && 'text-gray-200 cursor-not-allowed hover:bg-transparent'
+                      dayDisabled && 'text-muted-foreground/40 cursor-not-allowed hover:bg-transparent'
                     )}
                   >
                     {format(day, 'd')}
@@ -305,16 +305,16 @@ export function DateTimePicker({
             {/* Time picker (datetime mode only) */}
             {mode === 'datetime' && (
               <>
-                <hr className="border-gray-100 my-3" />
+                <hr className="border-border-subtle my-3" />
                 <div className="flex items-center gap-2">
-                  <label className="text-xs font-medium text-gray-500 flex-shrink-0">
+                  <label className="text-xs font-medium text-muted-foreground flex-shrink-0">
                     Hora
                   </label>
                   {/* Hour select */}
                   <select
                     value={parsedHour}
                     onChange={(e) => handleTimePartChange(Number(e.target.value), parsedMinute)}
-                    className="h-8 rounded-md border border-gray-300 bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 cursor-pointer"
+                    className="h-8 rounded-md border border-border-default bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 cursor-pointer"
                   >
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i}>
@@ -322,12 +322,12 @@ export function DateTimePicker({
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm font-semibold text-gray-400">:</span>
+                  <span className="text-sm font-semibold text-muted-foreground">:</span>
                   {/* Minute select */}
                   <select
                     value={parsedMinute}
                     onChange={(e) => handleTimePartChange(parsedHour, Number(e.target.value))}
-                    className="h-8 rounded-md border border-gray-300 bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 cursor-pointer"
+                    className="h-8 rounded-md border border-border-default bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 cursor-pointer"
                   >
                     {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
                       <option key={m} value={m}>
@@ -335,7 +335,7 @@ export function DateTimePicker({
                       </option>
                     ))}
                   </select>
-                  <span className="text-[10px] text-gray-400 flex-shrink-0">hrs</span>
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">hrs</span>
                   <button
                     type="button"
                     onClick={handleConfirm}
@@ -348,7 +348,7 @@ export function DateTimePicker({
             )}
 
             {/* Quick action: Today */}
-            <div className="mt-2 pt-2 border-t border-gray-100 flex justify-center">
+            <div className="mt-2 pt-2 border-t border-border-subtle flex justify-center">
               <button
                 type="button"
                 onClick={() => {
@@ -371,7 +371,7 @@ export function DateTimePicker({
       )}
 
       {hint && !error && (
-        <p className="text-xs text-gray-500">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       )}
       {error && (
         <p className="text-xs text-red-600">{typeof error === 'string' ? error : ''}</p>

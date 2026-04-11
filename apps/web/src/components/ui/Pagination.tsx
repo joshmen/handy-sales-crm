@@ -63,7 +63,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div className="flex items-center justify-between px-2 py-3">
-      <div className="text-sm text-gray-700">
+      <div className="text-sm text-foreground/80">
         Mostrando <span className="font-semibold">{startItem}</span> a{' '}
         <span className="font-semibold">{endItem}</span> de{' '}
         <span className="font-semibold">{totalCount}</span> resultados
@@ -85,7 +85,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           {getPageNumbers().map((page, index) => (
             <React.Fragment key={index}>
               {page === '...' ? (
-                <span className="px-3 py-2 text-gray-500">...</span>
+                <span className="px-3 py-2 text-muted-foreground">...</span>
               ) : (
                 <Button
                   variant={page === currentPage ? 'default' : 'outline'}

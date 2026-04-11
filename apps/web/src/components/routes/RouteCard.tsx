@@ -28,7 +28,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({
       case "cancelled":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-surface-3 text-foreground";
     }
   };
 
@@ -53,7 +53,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-lg font-semibold">{route.name}</h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {route.user.name} •{" "}
               {new Date(route.startDate).toLocaleDateString()}
             </p>
@@ -69,23 +69,23 @@ export const RouteCard: React.FC<RouteCardProps> = ({
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-sm text-gray-500">Ventas</p>
+            <p className="text-sm text-muted-foreground">Ventas</p>
             <p className="text-lg font-semibold">
               ${summary.totalSales.toFixed(2)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Pedidos</p>
+            <p className="text-sm text-muted-foreground">Pedidos</p>
             <p className="text-lg font-semibold">{summary.totalOrders}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Visitas</p>
+            <p className="text-sm text-muted-foreground">Visitas</p>
             <p className="text-lg font-semibold">
               {summary.completedVisits}/{summary.totalVisits}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Efectividad</p>
+            <p className="text-sm text-muted-foreground">Efectividad</p>
             <p className="text-lg font-semibold">{summary.effectiveness}%</p>
           </div>
         </div>

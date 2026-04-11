@@ -241,7 +241,7 @@ export default function UnitsPage() {
         <DataGrid<Unit>
           columns={[
             { key: 'id', label: t('columnId'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
-            { key: 'nombre', label: t('columnName'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+            { key: 'nombre', label: t('columnName'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.nombre}</span> },
             { key: 'abreviatura', label: t('abbreviationLabel'), width: 120, sortable: true, cellRenderer: (item) => <span className="text-muted-foreground font-mono">{item.abreviatura || '-'}</span> },
             { key: 'activo', label: t('columnActive'), width: 50, align: 'center', cellRenderer: (item) => (
               <div onClick={e => e.stopPropagation()}>
@@ -280,7 +280,7 @@ export default function UnitsPage() {
                   <Ruler className="w-5 h-5 text-orange-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">{unit.nombre}</div>
+                  <div className="text-sm font-medium text-foreground truncate">{unit.nombre}</div>
                   <div className="text-xs text-muted-foreground font-mono">{unit.abreviatura || '-'}</div>
                 </div>
               </div>

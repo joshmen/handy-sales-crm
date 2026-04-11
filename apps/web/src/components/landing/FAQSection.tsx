@@ -33,16 +33,16 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border-b border-gray-200 last:border-0">
+    <div className="border-b border-border-subtle last:border-0">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-5 text-left group"
       >
-        <span className="font-medium text-gray-900 dark:text-white text-[15px] pr-4 group-hover:text-indigo-600 transition-colors">
+        <span className="font-medium text-foreground dark:text-white text-[15px] pr-4 group-hover:text-indigo-600 transition-colors">
           {q}
         </span>
         <span
-          className={`text-gray-400 dark:text-gray-500 text-xl leading-none flex-shrink-0 transition-transform duration-300 ${open ? 'rotate-45' : ''}`}
+          className={`text-muted-foreground dark:text-muted-foreground text-xl leading-none flex-shrink-0 transition-transform duration-300 ${open ? 'rotate-45' : ''}`}
         >
           +
         </span>
@@ -52,7 +52,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <p className="text-sm text-gray-500 leading-relaxed pb-5 pr-8 whitespace-pre-line">
+          <p className="text-sm text-muted-foreground leading-relaxed pb-5 pr-8 whitespace-pre-line">
             {a}
           </p>
         </div>
@@ -67,12 +67,12 @@ export function FAQSection({ fontClassName }: { fontClassName: string }) {
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-12">
           <p className="text-sm font-medium text-indigo-600 mb-2">Preguntas frecuentes</p>
-          <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${fontClassName}`}>
+          <h2 className={`text-3xl lg:text-4xl font-bold text-foreground tracking-tight ${fontClassName}`}>
             ¿Tienes dudas?
           </h2>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 px-6 divide-y-0">
+        <div className="bg-white rounded-2xl border border-border-subtle px-6 divide-y-0">
           {faqs.map((faq) => (
             <FAQItem key={faq.q} q={faq.q} a={faq.a} />
           ))}

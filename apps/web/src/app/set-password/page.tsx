@@ -50,7 +50,7 @@ function SetPasswordForm() {
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="w-8 h-8 text-red-500" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           Enlace inválido
         </h2>
         <p className="text-sm text-foreground/70 mb-6">
@@ -98,7 +98,7 @@ function SetPasswordForm() {
         <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-emerald-600" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           ¡Cuenta lista!
         </h2>
         <p className="text-sm text-foreground/70 mb-6">
@@ -121,7 +121,7 @@ function SetPasswordForm() {
         <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <UserPlus className="w-7 h-7 text-green-600" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-1">
+        <h2 className="text-xl font-bold text-foreground mb-1">
           Bienvenido a Handy Suites
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -132,7 +132,7 @@ function SetPasswordForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground/80 mb-1.5">
             Contraseña
           </label>
           <div className="relative">
@@ -163,7 +163,7 @@ function SetPasswordForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground/80 mb-1.5">
             Confirmar contraseña
           </label>
           <div className="relative">

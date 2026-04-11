@@ -82,7 +82,7 @@ const metodoPagoColors: Record<number, string> = {
   2: 'bg-amber-100 text-amber-700',
   3: 'bg-purple-100 text-purple-700',
   4: 'bg-indigo-100 text-indigo-700',
-  5: 'bg-surface-3 text-gray-700',
+  5: 'bg-surface-3 text-foreground/80',
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -432,7 +432,7 @@ export default function CobranzaPage() {
                   </div>
                   <div>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.totalSold')} <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                       {formatCurrency(resumen.totalFacturado)}
                     </p>
                   </div>
@@ -443,7 +443,7 @@ export default function CobranzaPage() {
                   </div>
                   <div>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.collected')} <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                       {formatCurrency(resumen.totalCobrado)}
                     </p>
                   </div>
@@ -465,7 +465,7 @@ export default function CobranzaPage() {
                   </div>
                   <div>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.clientsOwing')} <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                       {resumen.clientesConSaldo}
                     </p>
                   </div>
@@ -555,7 +555,7 @@ export default function CobranzaPage() {
                 className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
                   tab === 'cobros'
                     ? 'text-green-600 border-green-600'
-                    : 'text-muted-foreground border-transparent hover:text-gray-700'
+                    : 'text-muted-foreground border-transparent hover:text-foreground/80'
                 }`}
               >
                 {t('tabs.payments')}
@@ -565,7 +565,7 @@ export default function CobranzaPage() {
                 className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
                   tab === 'saldos'
                     ? 'text-green-600 border-green-600'
-                    : 'text-muted-foreground border-transparent hover:text-gray-700'
+                    : 'text-muted-foreground border-transparent hover:text-foreground/80'
                 }`}
               >
                 {t('tabs.balances')}
@@ -597,7 +597,7 @@ export default function CobranzaPage() {
                             <CurrencyDollar className="w-5 h-5 text-green-600" weight="duotone" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate">
+                            <div className="text-sm font-medium text-foreground truncate">
                               {c.clienteNombre}
                             </div>
                             <div className="text-xs text-muted-foreground truncate">
@@ -605,7 +605,7 @@ export default function CobranzaPage() {
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-foreground">
                               {formatCurrency(c.monto)}
                             </div>
                           </div>
@@ -628,7 +628,7 @@ export default function CobranzaPage() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={(e) => { e.stopPropagation(); openDetail(c.clienteId); }}
-                            className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-border-default rounded hover:bg-surface-1 transition-colors"
+                            className="px-3 py-1.5 text-xs font-medium text-foreground/80 border border-border-default rounded hover:bg-surface-1 transition-colors"
                             title={t('viewAccountStatement')}
                           >
                             {tc('details')}
@@ -651,23 +651,23 @@ export default function CobranzaPage() {
                 {/* Table Header */}
                 <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle min-w-[800px]">
                   <div
-                    className="w-[100px] text-xs font-semibold text-gray-700 cursor-pointer hover:text-gray-900 select-none"
+                    className="w-[100px] text-xs font-semibold text-foreground/80 cursor-pointer hover:text-foreground select-none"
                     onClick={() => handleSort('fechaCobro')}
                   >
                     {t('columns.date')} <SortIcon col="fechaCobro" />
                   </div>
-                  <div className="flex-1 text-xs font-semibold text-gray-700">{t('columns.client')}</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700">{t('columns.order')}</div>
+                  <div className="flex-1 text-xs font-semibold text-foreground/80">{t('columns.client')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-foreground/80">{t('columns.order')}</div>
                   <div
-                    className="w-[110px] text-xs font-semibold text-gray-700 text-right cursor-pointer hover:text-gray-900 select-none"
+                    className="w-[110px] text-xs font-semibold text-foreground/80 text-right cursor-pointer hover:text-foreground select-none"
                     onClick={() => handleSort('monto')}
                   >
                     {t('columns.amount')} <SortIcon col="monto" />
                   </div>
-                  <div className="w-[120px] text-xs font-semibold text-gray-700 pl-4">{t('columns.method')}</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700">{t('columns.vendor')}</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700">{t('columns.reference')}</div>
-                  <div className="w-[80px] text-xs font-semibold text-gray-700 text-center">{tc('actions')}</div>
+                  <div className="w-[120px] text-xs font-semibold text-foreground/80 pl-4">{t('columns.method')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-foreground/80">{t('columns.vendor')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-foreground/80">{t('columns.reference')}</div>
+                  <div className="w-[80px] text-xs font-semibold text-foreground/80 text-center">{tc('actions')}</div>
                 </div>
 
                 {/* Table Body */}
@@ -678,7 +678,7 @@ export default function CobranzaPage() {
                   {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
                       <CreditCard className="w-10 h-10 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      <h3 className="text-lg font-semibold text-foreground/80 mb-2">
                         {searchCobros ? t('noResults') : t('emptyPayments')}
                       </h3>
                       <p className="text-sm text-muted-foreground text-center">
@@ -693,14 +693,14 @@ export default function CobranzaPage() {
                       {filteredCobros.map((c) => (
                         <div
                           key={c.id}
-                          className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors cursor-pointer min-w-[800px]"
+                          className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors cursor-pointer min-w-[800px]"
                           onClick={() => openDetail(c.clienteId)}
                         >
                           <div className="w-[100px] text-[13px] text-foreground/70">
                             {fmtDate(c.fechaCobro)}
                           </div>
                           <div className="flex-1">
-                            <div className="text-[13px] font-medium text-gray-900">
+                            <div className="text-[13px] font-medium text-foreground">
                               {c.clienteNombre}
                             </div>
                           </div>
@@ -709,7 +709,7 @@ export default function CobranzaPage() {
                               {c.numeroPedido}
                             </span>
                           </div>
-                          <div className="w-[110px] text-[13px] font-medium text-gray-900 text-right">
+                          <div className="w-[110px] text-[13px] font-medium text-foreground text-right">
                             {formatCurrency(c.monto)}
                           </div>
                           <div className="w-[120px] pl-4">
@@ -745,14 +745,14 @@ export default function CobranzaPage() {
                       {/* Footer total */}
                       {cobros.length > 0 && (
                         <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-border-default min-w-[800px]">
-                          <div className="w-[100px] text-xs font-semibold text-gray-700">
+                          <div className="w-[100px] text-xs font-semibold text-foreground/80">
                             {tc('total')}
                           </div>
                           <div className="flex-1 text-xs text-muted-foreground">
                             {t('paymentCount', { count: cobros.length })}
                           </div>
                           <div className="w-[100px]" />
-                          <div className="w-[110px] text-[13px] font-bold text-gray-900 text-right">
+                          <div className="w-[110px] text-[13px] font-bold text-foreground text-right">
                             {formatCurrency(totalCobros)}
                           </div>
                           <div className="w-[120px]" />
@@ -794,7 +794,7 @@ export default function CobranzaPage() {
                               <Wallet className="w-5 h-5 text-blue-600" weight="duotone" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate">
+                              <div className="text-sm font-medium text-foreground truncate">
                                 {s.clienteNombre}
                               </div>
                               <div className="text-xs text-muted-foreground truncate">
@@ -836,7 +836,7 @@ export default function CobranzaPage() {
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
-                              className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-border-default rounded hover:bg-surface-1 transition-colors"
+                              className="px-3 py-1.5 text-xs font-medium text-foreground/80 border border-border-default rounded hover:bg-surface-1 transition-colors"
                               title={t('viewAccountStatement')}
                             >
                               Ver detalles
@@ -852,13 +852,13 @@ export default function CobranzaPage() {
                 <div data-tour="cobranza-saldos-table" className="hidden sm:block bg-surface-2 border border-border-subtle rounded-lg overflow-x-auto">
                 {/* Table Header */}
                 <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle min-w-[740px]">
-                  <div className="flex-1 text-xs font-semibold text-gray-700">{t('columns.client')}</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{t('columns.orders')}</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.sold')}</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.collected')}</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.owes')}</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{t('columns.progress')}</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{tc('actions')}</div>
+                  <div className="flex-1 text-xs font-semibold text-foreground/80">{t('columns.client')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-foreground/80 text-center">{t('columns.orders')}</div>
+                  <div className="w-[130px] text-xs font-semibold text-foreground/80 text-right">{t('columns.sold')}</div>
+                  <div className="w-[130px] text-xs font-semibold text-foreground/80 text-right">{t('columns.collected')}</div>
+                  <div className="w-[130px] text-xs font-semibold text-foreground/80 text-right">{t('columns.owes')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-foreground/80 text-center">{t('columns.progress')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-foreground/80 text-center">{tc('actions')}</div>
                 </div>
 
                 {/* Table Body */}
@@ -868,7 +868,7 @@ export default function CobranzaPage() {
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
                       <DollarSign className="w-16 h-16 text-emerald-300 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('emptyBalances')}</h3>
+                      <h3 className="text-lg font-semibold text-foreground/80 mb-2">{t('emptyBalances')}</h3>
                       <p className="text-sm text-muted-foreground">{t('emptyBalancesHint')}</p>
                     </div>
                   ) : (
@@ -878,18 +878,18 @@ export default function CobranzaPage() {
                         return (
                           <div
                             key={s.clienteId}
-                            className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors cursor-pointer min-w-[740px]"
+                            className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors cursor-pointer min-w-[740px]"
                             onClick={() => openDetail(s.clienteId)}
                           >
                             <div className="flex-1">
-                              <div className="text-[13px] font-medium text-gray-900">
+                              <div className="text-[13px] font-medium text-foreground">
                                 {s.clienteNombre}
                               </div>
                             </div>
                             <div className="w-[100px] text-[13px] text-foreground/70 text-center">
                               {s.pedidosPendientes}
                             </div>
-                            <div className="w-[130px] text-[13px] text-gray-900 text-right">
+                            <div className="w-[130px] text-[13px] text-foreground text-right">
                               {formatCurrency(s.totalFacturado)}
                             </div>
                             <div className="w-[130px] text-[13px] text-green-600 text-right">
@@ -930,11 +930,11 @@ export default function CobranzaPage() {
                       {/* Footer total */}
                       {saldos.length > 0 && (
                         <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-border-default min-w-[740px]">
-                          <div className="flex-1 text-xs font-semibold text-gray-700">
+                          <div className="flex-1 text-xs font-semibold text-foreground/80">
                             {tc('total')} ({t('clientCount', { count: saldos.length })})
                           </div>
                           <div className="w-[100px]" />
-                          <div className="w-[130px] text-[13px] font-bold text-gray-900 text-right">
+                          <div className="w-[130px] text-[13px] font-bold text-foreground text-right">
                             {formatCurrency(saldos.reduce((s, x) => s + x.totalFacturado, 0))}
                           </div>
                           <div className="w-[130px] text-[13px] font-bold text-green-600 text-right">
@@ -1082,7 +1082,7 @@ export default function CobranzaPage() {
                 <h3 className="text-xs font-semibold text-muted-foreground mb-3">{t('columns.orders')}</h3>
                 {estadoCuenta.pedidos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12">
-                    <Receipt className="w-10 h-10 text-gray-300 mb-3" />
+                    <Receipt className="w-10 h-10 text-muted-foreground/60 mb-3" />
                     <p className="text-sm text-muted-foreground font-medium">{t('statement.noOrdersInPeriod')}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {estadoCuentaHistorico
@@ -1118,7 +1118,7 @@ export default function CobranzaPage() {
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-gray-900">{p.numeroPedido}</span>
+                                  <span className="text-sm font-semibold text-foreground">{p.numeroPedido}</span>
                                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                                     isPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                                   }`}>
@@ -1129,7 +1129,7 @@ export default function CobranzaPage() {
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <p className="text-sm font-bold text-gray-900 tabular-nums">{formatCurrency(p.total)}</p>
+                              <p className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(p.total)}</p>
                               {!isPaid && (
                                 <p className="text-xs text-amber-600 font-medium tabular-nums mt-0.5">
                                   {t('statement.owes')} {formatCurrency(p.saldo)}
@@ -1154,17 +1154,17 @@ export default function CobranzaPage() {
 
                         {/* Cobros timeline */}
                         {p.cobros.length > 0 && (
-                          <div className="border-t border-gray-100 px-4 py-2.5 bg-surface-1/50 rounded-b-xl">
+                          <div className="border-t border-border-subtle px-4 py-2.5 bg-surface-1/50 rounded-b-xl">
                             <div className="space-y-1.5">
                               {p.cobros.map((c) => (
                                 <div key={c.id} className="flex items-center gap-2 text-xs group">
                                   <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
                                   <span className="text-muted-foreground flex-1 min-w-0 truncate">
                                     {fmtDate(c.fechaCobro)}
-                                    <span className="mx-1.5 text-gray-300">&middot;</span>
+                                    <span className="mx-1.5 text-muted-foreground/60">&middot;</span>
                                     {c.metodoPagoNombre}
                                     {c.referencia && (
-                                      <span className="text-gray-300 ml-1.5">Ref: {c.referencia}</span>
+                                      <span className="text-muted-foreground/60 ml-1.5">Ref: {c.referencia}</span>
                                     )}
                                   </span>
                                   <span className="font-semibold text-green-600 tabular-nums flex-shrink-0">{formatCurrency(c.monto)}</span>
@@ -1176,7 +1176,7 @@ export default function CobranzaPage() {
 
                         {/* No cobros */}
                         {p.cobros.length === 0 && !isPaid && (
-                          <div className="border-t border-gray-100 px-4 py-2.5 bg-surface-1/30 rounded-b-xl">
+                          <div className="border-t border-border-subtle px-4 py-2.5 bg-surface-1/30 rounded-b-xl">
                             <p className="text-xs text-muted-foreground italic">{t('statement.noPaymentsRecorded')}</p>
                           </div>
                         )}
@@ -1225,7 +1225,7 @@ export default function CobranzaPage() {
                                 </div>
                                 {/* Row 2: Referencia */}
                                 <div>
-                                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">{t('drawer.reference')} <span className="text-gray-300">({tc('optional')})</span></label>
+                                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">{t('drawer.reference')} <span className="text-muted-foreground/60">({tc('optional')})</span></label>
                                   <input
                                     type="text"
                                     value={inlineCobroData.referencia}
@@ -1251,7 +1251,7 @@ export default function CobranzaPage() {
                                   <button
                                     onClick={() => setInlineCobroPedidoId(null)}
                                     disabled={inlineCobroSaving}
-                                    className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-gray-700 transition-colors disabled:opacity-50"
+                                    className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground/80 transition-colors disabled:opacity-50"
                                   >
                                     {tc('cancel')}
                                   </button>
@@ -1442,7 +1442,7 @@ export default function CobranzaPage() {
           <button
             onClick={() => setDeleteId(null)}
             disabled={deleting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
           >
             {tc('cancel')}
           </button>

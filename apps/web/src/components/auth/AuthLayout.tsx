@@ -123,17 +123,17 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2 lg:hidden">
             <Image src="/logo-icon.svg" alt="" width={32} height={32} />
             <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-black text-gray-900 tracking-tight">
+              <span className="text-[18px] font-black text-foreground tracking-tight">
                 Handy
               </span>
-              <span className="text-[18px] font-normal text-gray-400 tracking-tight">
-                Suites<sup className="text-[10px] text-gray-400">&reg;</sup>
+              <span className="text-[18px] font-normal text-muted-foreground tracking-tight">
+                Suites<sup className="text-[10px] text-muted-foreground">&reg;</sup>
               </span>
             </div>
           </Link>
           <Link
             href="/"
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors ml-auto"
+            className="text-sm text-muted-foreground hover:text-foreground/80 transition-colors ml-auto"
           >
             &larr; Volver al inicio
           </Link>
@@ -145,7 +145,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 text-center text-xs text-gray-500">
+        <div className="px-6 py-4 text-center text-xs text-muted-foreground">
           &copy; 2026 Handy Suites&reg; — Todos los derechos reservados
         </div>
       </div>

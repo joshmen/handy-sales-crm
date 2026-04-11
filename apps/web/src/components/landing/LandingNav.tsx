@@ -26,7 +26,7 @@ export function LandingNav() {
       aria-label="Navegación principal"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
         scrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100'
+          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-border-subtle'
           : 'bg-white/80 backdrop-blur-sm'
       }`}
     >
@@ -35,9 +35,9 @@ export function LandingNav() {
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo-icon.svg" alt="Handy Suites" width={32} height={32} />
           <div className="flex items-baseline gap-1">
-            <span className="text-lg font-black text-gray-900 tracking-tight">Handy</span>
-            <span className="text-lg font-normal text-gray-500 tracking-tight">
-              Suites<sup className="text-[9px] text-gray-500">®</sup>
+            <span className="text-lg font-black text-foreground tracking-tight">Handy</span>
+            <span className="text-lg font-normal text-muted-foreground tracking-tight">
+              Suites<sup className="text-[9px] text-muted-foreground">®</sup>
             </span>
           </div>
         </Link>
@@ -48,7 +48,7 @@ export function LandingNav() {
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              className="text-sm text-foreground/70 hover:text-foreground transition-colors"
             >
               {link.label}
             </a>
@@ -59,7 +59,7 @@ export function LandingNav() {
         <div className="hidden md:flex items-center gap-3">
           <Link
             href="/login"
-            className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
           >
             Iniciar sesión
           </Link>
@@ -74,7 +74,7 @@ export function LandingNav() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+          className="md:hidden p-2 text-foreground/70 hover:text-foreground"
           aria-label="Menú"
           aria-expanded={mobileOpen}
         >
@@ -84,21 +84,21 @@ export function LandingNav() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 space-y-3">
+        <div className="md:hidden bg-white border-t border-border-subtle px-6 py-4 space-y-3">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
               onClick={() => setMobileOpen(false)}
-              className="block text-sm text-gray-600 hover:text-gray-900 py-2"
+              className="block text-sm text-foreground/70 hover:text-foreground py-2"
             >
               {link.label}
             </a>
           ))}
-          <div className="pt-3 border-t border-gray-100 space-y-2">
+          <div className="pt-3 border-t border-border-subtle space-y-2">
             <Link
               href="/login"
-              className="block text-sm text-gray-700 hover:text-gray-900 py-2"
+              className="block text-sm text-foreground/80 hover:text-foreground py-2"
             >
               Iniciar sesión
             </Link>

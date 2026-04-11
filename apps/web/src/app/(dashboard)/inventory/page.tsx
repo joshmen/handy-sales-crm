@@ -582,7 +582,7 @@ export default function InventoryPage() {
       <div className="relative" data-tour="inventory-import-export">
         <button
           onClick={() => setShowDataMenu(!showDataMenu)}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
         >
           <Download className="w-3.5 h-3.5 text-emerald-500" />
           <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -594,14 +594,14 @@ export default function InventoryPage() {
             <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
               <button
                 onClick={async () => { setShowDataMenu(false); try { await exportToCsv('inventario'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
                 {tc('exportCsv')}
               </button>
               <button
                 onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
               >
                 <Upload className="w-3.5 h-3.5 text-blue-500" />
                 {tc('importCsv')}
@@ -626,7 +626,7 @@ export default function InventoryPage() {
       <button
         data-tour="movements-export-btn"
         onClick={() => exportToCsv('inventario')}
-        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
       >
         <Download className="w-3.5 h-3.5 text-emerald-500" />
         <span className="hidden sm:inline">{tc('exportCsv')}</span>
@@ -664,7 +664,7 @@ export default function InventoryPage() {
           <button
             onClick={() => setActiveTab('almacen')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'almacen' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-muted-foreground hover:text-gray-700'
+              activeTab === 'almacen' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {t('tabs.warehouse')}
@@ -672,7 +672,7 @@ export default function InventoryPage() {
           <button
             onClick={() => setActiveTab('movimientos')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'movimientos' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-muted-foreground hover:text-gray-700'
+              activeTab === 'movimientos' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {t('tabs.movements')}
@@ -736,25 +736,25 @@ export default function InventoryPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <div className="text-[13px] font-medium text-gray-900 truncate">{item.product?.name || `${t('drawer.productLabel')} #${item.productId}`}</div>
+                          <div className="text-[13px] font-medium text-foreground truncate">{item.product?.name || `${t('drawer.productLabel')} #${item.productId}`}</div>
                           <div className="text-[11px] text-muted-foreground">{item.product?.code || '-'}</div>
                         </div>
                       </div>
                     );
                   }},
-                  { key: 'unit', label: t('columns.unit'), width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-700">{item.product?.unit || 'PZA'}</span> },
+                  { key: 'unit', label: t('columns.unit'), width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-foreground/80">{item.product?.unit || 'PZA'}</span> },
                   { key: 'totalQuantity', label: t('columns.stock'), width: 120, align: 'center', sortable: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.stockHeader')} <HelpTooltip tooltipKey="total-quantity" /></span>, cellRenderer: (item) => {
                     const lowStock = isLowStock(item);
                     return (
                       <span>
-                        <span className={`text-[13px] font-medium ${lowStock ? 'text-red-600' : 'text-gray-700'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>
+                        <span className={`text-[13px] font-medium ${lowStock ? 'text-red-600' : 'text-foreground/80'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>
                         {lowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline-block ml-1" />}
                       </span>
                     );
                   }},
                   { key: 'minStock', label: t('columns.minStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">{t('columns.minStock')} <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground">{item.minStock || '-'}</span> },
                   { key: 'maxStock', label: t('columns.maxStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.maxStock')} <HelpTooltip tooltipKey="max-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground">{item.maxStock || '-'}</span> },
-                  { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" /> },
+                  { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" weight="bold" /> },
                 ] as DataGridColumn<InventoryItem>[]}
                 data={inventoryItems}
                 keyExtractor={(item) => item.id}
@@ -779,18 +779,18 @@ export default function InventoryPage() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name || `${t('drawer.productLabel')} #${item.productId}`}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{item.product?.name || `${t('drawer.productLabel')} #${item.productId}`}</p>
                           <p className="text-xs text-muted-foreground">{item.product?.code || '-'}</p>
                         </div>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span className={`font-medium ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.totalQuantity?.toLocaleString() || 0} {item.product?.unit || 'PZA'}</span>
+                        <span className={`font-medium ${lowStock ? 'text-red-600' : 'text-foreground'}`}>{item.totalQuantity?.toLocaleString() || 0} {item.product?.unit || 'PZA'}</span>
                         {lowStock && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full"><AlertTriangle className="w-3 h-3" />{t('warehouse.lowStock')}</span>}
                         <span>{t('columns.minStock')}: {item.minStock || '-'}</span>
                         <span>{t('columns.maxStock')}: {item.maxStock || '-'}</span>
                       </div>
-                      <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
-                        <button onClick={() => handleOpenEdit(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-surface-2 border border-border-subtle rounded hover:bg-surface-1 transition-colors">
+                      <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2">
+                        <button onClick={() => handleOpenEdit(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-foreground/80 bg-surface-2 border border-border-subtle rounded hover:bg-surface-1 transition-colors">
                           <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                         </button>
                       </div>
@@ -890,7 +890,7 @@ export default function InventoryPage() {
                               <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-sm font-medium text-foreground truncate">
                                 {movement.productName}
                               </p>
                               <p className="text-xs text-muted-foreground">{movement.productCode}</p>
@@ -913,9 +913,9 @@ export default function InventoryPage() {
                               {formatDate(movement.createdAt)}
                             </span>
                           </div>
-                          <div className="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs">
+                          <div className="mt-2.5 flex items-center justify-between border-t border-border-subtle pt-2 text-xs">
                             <span className="text-muted-foreground">
-                              {movement.previousStock ?? '-'} → <span className="font-medium text-gray-900">{movement.newStock ?? '-'}</span>
+                              {movement.previousStock ?? '-'} → <span className="font-medium text-foreground">{movement.newStock ?? '-'}</span>
                             </span>
                             {movement.userName && (
                               <span className="text-muted-foreground truncate max-w-[120px]">{movement.userName}</span>
@@ -948,7 +948,7 @@ export default function InventoryPage() {
                           className="flex items-center px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-amber-50 transition-colors min-w-[1100px]"
                         >
                           <div className="w-[130px]">
-                            <span className="text-[13px] text-gray-900">
+                            <span className="text-[13px] text-foreground">
                               {formatDate(movement.createdAt)}
                             </span>
                             <div className="text-[11px] text-muted-foreground">
@@ -956,7 +956,7 @@ export default function InventoryPage() {
                             </div>
                           </div>
                           <div className="flex-1 min-w-[180px]">
-                            <div className="text-[13px] font-medium text-gray-900 truncate">
+                            <div className="text-[13px] font-medium text-foreground truncate">
                               {movement.productName}
                             </div>
                             <div className="text-[11px] text-muted-foreground">
@@ -979,12 +979,12 @@ export default function InventoryPage() {
                             </span>
                           </div>
                           <div className="w-[80px] text-right hidden md:block">
-                            <span className="text-[13px] text-gray-900 font-medium">
+                            <span className="text-[13px] text-foreground font-medium">
                               {movement.newStock ?? '-'}
                             </span>
                           </div>
                           <div className="w-[140px] pl-4">
-                            <span className="text-[13px] text-gray-900 truncate block">
+                            <span className="text-[13px] text-foreground truncate block">
                               {movement.reason ? (reasonLabels[movement.reason] || movement.reason) : '-'}
                             </span>
                           </div>
@@ -1038,7 +1038,7 @@ export default function InventoryPage() {
         <div data-tour="inventory-form" className="p-6 space-y-4">
           {modalMode === 'create' ? (
             <div data-tour="inventory-product-selector">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('drawer.productLabel')} <span className="text-red-500">*</span>
               </label>
               {loadingProducts ? (
@@ -1072,8 +1072,8 @@ export default function InventoryPage() {
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('drawer.productLabel')}</label>
-              <div className="px-3 py-2 bg-surface-1 border border-border-subtle rounded text-sm text-gray-700">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">{t('drawer.productLabel')}</label>
+              <div className="px-3 py-2 bg-surface-1 border border-border-subtle rounded text-sm text-foreground/80">
                 {selectedItem?.product?.name || `Producto #${selectedItem?.productId}`}
                 {selectedItem?.product?.code && (
                   <span className="text-muted-foreground ml-2">({selectedItem.product.code})</span>
@@ -1085,14 +1085,14 @@ export default function InventoryPage() {
           {/* Imagen del producto */}
           {(modalMode === 'edit' || watch('productoId') > 0) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('drawer.productImage')}
               </label>
               <ImageUpload
                 variant="square"
                 src={imagePreview || currentImageUrl}
                 alt="Producto"
-                fallbackIcon={<Package className="w-8 h-8 text-gray-300" />}
+                fallbackIcon={<Package className="w-8 h-8 text-muted-foreground/60" />}
                 size="md"
                 maxSizeMB={5}
                 accept="image/jpeg,image/png,image/webp"
@@ -1108,7 +1108,7 @@ export default function InventoryPage() {
           )}
 
           <div data-tour="inventory-quantity">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               {t('drawer.currentQuantity')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -1125,7 +1125,7 @@ export default function InventoryPage() {
 
           <div data-tour="inventory-stock-fields" className="grid grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('drawer.minStock')} <HelpTooltip tooltipKey="min-stock" /></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-foreground/80 mb-1">{t('drawer.minStock')} <HelpTooltip tooltipKey="min-stock" /></label>
               <input
                 type="number"
                 min="0"
@@ -1138,7 +1138,7 @@ export default function InventoryPage() {
               )}
             </div>
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('drawer.maxStock')} <HelpTooltip tooltipKey="max-stock" /></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-foreground/80 mb-1">{t('drawer.maxStock')} <HelpTooltip tooltipKey="max-stock" /></label>
               <input
                 type="number"
                 min="0"
@@ -1155,7 +1155,7 @@ export default function InventoryPage() {
           {/* Per-product movement history */}
           {modalMode === 'edit' && selectedItem && (
             <div className="mt-6 pt-4 border-t border-border-subtle">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('drawer.recentMovements')}</h4>
+              <h4 className="text-sm font-semibold text-foreground/80 mb-3">{t('drawer.recentMovements')}</h4>
               {drawerMovementsLoading ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1169,7 +1169,7 @@ export default function InventoryPage() {
                     const badge = getTypeBadge(mov.movementType);
                     const qty = getQuantityDisplay(mov);
                     return (
-                      <div key={mov.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-gray-100 last:border-b-0">
+                      <div key={mov.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-border-subtle last:border-b-0">
                         <span className="text-muted-foreground w-[70px] flex-shrink-0">{formatDate(mov.createdAt)}</span>
                         <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${badge}`}>
                           {getTypeLabel(mov.movementType as MovementType)}
@@ -1212,7 +1212,7 @@ export default function InventoryPage() {
           <div data-tour="movements-drawer-actions" className="flex items-center justify-end gap-3">
             <button
               onClick={() => movDrawerRef.current?.requestClose()}
-              className="px-4 py-2 text-xs font-medium text-gray-700 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="px-4 py-2 text-xs font-medium text-foreground/80 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               {tc('cancel')}
             </button>
@@ -1229,7 +1229,7 @@ export default function InventoryPage() {
         <div className="px-6 py-4 space-y-4">
           {/* Product Select */}
           <div data-tour="movements-product-selector">
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.productLabel')} *</label>
+            <label className="block text-xs font-medium text-foreground/80 mb-1.5">{t('movementDrawer.productLabel')} *</label>
             <SearchableSelect
               options={movProducts.map(p => ({ value: p.id, label: p.name, description: p.code, imageUrl: p.imageUrl }))}
               value={movWatch('productoId') || null}
@@ -1250,7 +1250,7 @@ export default function InventoryPage() {
             <div>
               {stockLoading ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded border border-border-subtle">
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-400"></div>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-border-strong"></div>
                   <span className="text-xs text-muted-foreground">{t('movementDrawer.checkingStock')}</span>
                 </div>
               ) : hasInventory === false ? (
@@ -1282,7 +1282,7 @@ export default function InventoryPage() {
 
           {/* Movement Type */}
           <div data-tour="movements-type-selector">
-            <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.movementType')} * <HelpTooltip tooltipKey="movement-type" /></label>
+            <label className="flex items-center gap-1 text-xs font-medium text-foreground/80 mb-1.5">{t('movementDrawer.movementType')} * <HelpTooltip tooltipKey="movement-type" /></label>
             <div className="flex gap-2">
               {(['ENTRADA', 'SALIDA', 'AJUSTE'] as MovementType[]).map(type => {
                 const config = movementTypeConfig[type];
@@ -1304,7 +1304,7 @@ export default function InventoryPage() {
                         ? 'bg-surface-3 border-border-subtle text-muted-foreground cursor-not-allowed'
                         : isSelected
                           ? config.activeClass
-                          : 'bg-surface-2 border-border-subtle text-gray-700 hover:bg-surface-1'
+                          : 'bg-surface-2 border-border-subtle text-foreground/80 hover:bg-surface-1'
                     }`}
                     title={salidaDisabled ? t('movementDrawer.noExitPossible') : undefined}
                   >
@@ -1318,7 +1318,7 @@ export default function InventoryPage() {
 
           {/* Quantity */}
           <div data-tour="movements-quantity">
-            <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.quantity')} * <HelpTooltip tooltipKey="movement-quantity" /></label>
+            <label className="flex items-center gap-1 text-xs font-medium text-foreground/80 mb-1.5">{t('movementDrawer.quantity')} * <HelpTooltip tooltipKey="movement-quantity" /></label>
             <input
               type="number"
               min="0"
@@ -1334,7 +1334,7 @@ export default function InventoryPage() {
 
           {/* Reason */}
           <div data-tour="movements-reason">
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.reason')} *</label>
+            <label className="block text-xs font-medium text-foreground/80 mb-1.5">{t('movementDrawer.reason')} *</label>
             <SearchableSelect
               options={motivosPorTipo[watchedTipoMovimiento] || []}
               value={movWatch('motivo') || null}
@@ -1350,7 +1350,7 @@ export default function InventoryPage() {
 
           {/* Comment */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.comment')}</label>
+            <label className="block text-xs font-medium text-foreground/80 mb-1.5">{t('movementDrawer.comment')}</label>
             <textarea
               {...movRegister('comentario')}
               rows={3}

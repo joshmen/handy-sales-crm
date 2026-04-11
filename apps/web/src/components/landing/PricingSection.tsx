@@ -126,7 +126,7 @@ function PricingCard({
         className={`pricing-card group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
           plan.popular
             ? 'border-2 border-green-600 shadow-lg'
-            : 'border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300'
+            : 'border border-border-subtle shadow-sm hover:shadow-md hover:border-border-default'
         }`}
       >
 
@@ -141,20 +141,20 @@ function PricingCard({
           )}
 
           {/* Plan name */}
-          <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-          <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+          <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+          <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
 
           {/* Price */}
-          <div className="mt-6 mb-6 pb-6 border-b border-gray-100">
+          <div className="mt-6 mb-6 pb-6 border-b border-border-subtle">
             <div className="flex items-baseline gap-1 overflow-hidden">
               <span
                 key={price}
-                className="text-4xl font-extrabold text-gray-900 tracking-tight pricing-price-swap"
+                className="text-4xl font-extrabold text-foreground tracking-tight pricing-price-swap"
               >
                 {price}
               </span>
               {plan.price.monthly > 0 && (
-                <span className="text-sm text-gray-400 font-medium">MXN/mes</span>
+                <span className="text-sm text-muted-foreground font-medium">MXN/mes</span>
               )}
             </div>
             {plan.price.monthly > 0 && (
@@ -174,7 +174,7 @@ function PricingCard({
           {/* Features */}
           <ul className="space-y-3 mb-8">
             {plan.features.map((feat) => (
-              <li key={feat} className="flex items-center gap-2.5 text-sm text-gray-600">
+              <li key={feat} className="flex items-center gap-2.5 text-sm text-foreground/70">
                 <Check className="w-4 h-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
                 {feat}
               </li>
@@ -187,7 +187,7 @@ function PricingCard({
             className={`group/btn flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
               plan.popular
                 ? 'bg-success text-success-foreground hover:bg-success/90 shadow-md'
-                : 'bg-gray-900 text-white hover:bg-gray-800'
+                : 'bg-foreground text-white hover:bg-foreground'
             }`}
           >
             {plan.cta}
@@ -232,22 +232,22 @@ export function PricingSection({ fontClassName }: { fontClassName?: string }) {
           <p className="text-sm font-semibold text-green-600 mb-3">
             Precios
           </p>
-          <h2 className={`text-3xl lg:text-[40px] font-extrabold text-gray-900 tracking-tight leading-tight ${fontClassName || ''}`}>
+          <h2 className={`text-3xl lg:text-[40px] font-extrabold text-foreground tracking-tight leading-tight ${fontClassName || ''}`}>
             Invierte en crecer, no en software
           </h2>
-          <p className="text-gray-500 mt-4 max-w-md mx-auto">
+          <p className="text-muted-foreground mt-4 max-w-md mx-auto">
             14 días gratis. Sin tarjeta de crédito. Cancela cuando quieras.
           </p>
 
           {/* Billing toggle */}
           <div className="flex items-center justify-center gap-3 mt-8">
-            <span className={`text-sm font-medium transition-colors duration-300 ${!isAnnual ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium transition-colors duration-300 ${!isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}>
               Mensual
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
               className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 ${
-                isAnnual ? 'bg-green-600' : 'bg-gray-300'
+                isAnnual ? 'bg-green-600' : 'bg-surface-3'
               }`}
               aria-label="Alternar entre facturación mensual y anual"
             >
@@ -256,7 +256,7 @@ export function PricingSection({ fontClassName }: { fontClassName?: string }) {
                 style={{ left: isAnnual ? 'calc(100% - 25px)' : '3px' }}
               />
             </button>
-            <span className={`text-sm font-medium transition-colors duration-300 ${isAnnual ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium transition-colors duration-300 ${isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}>
               Anual
             </span>
             {isAnnual && (

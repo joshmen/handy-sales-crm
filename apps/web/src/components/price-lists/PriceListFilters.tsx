@@ -24,7 +24,7 @@ export const PriceListFilters: React.FC<PriceListFiltersProps> = ({
     <div className="mb-6 space-y-4">
       {/* Barra de búsqueda */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           placeholder={t('searchPlaceholder')}
           value={searchTerm}
@@ -40,7 +40,7 @@ export const PriceListFilters: React.FC<PriceListFiltersProps> = ({
           type="checkbox"
           checked={showDisabled}
           onChange={(e) => onShowDisabledChange(e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border-default rounded"
         />
         <Label 
           htmlFor="show-disabled" 

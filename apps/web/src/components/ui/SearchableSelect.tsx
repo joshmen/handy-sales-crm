@@ -76,12 +76,12 @@ export function SearchableSelect({
           className={cn(
             'flex items-center justify-between w-full px-3 py-2 text-sm border rounded-lg bg-white transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent',
-            error ? 'border-red-500' : 'border-gray-300',
+            error ? 'border-red-500' : 'border-border-default',
             disabled && 'opacity-50 cursor-not-allowed',
             className
           )}
         >
-          <span className={cn('flex items-center gap-2', selected ? 'text-gray-900' : 'text-gray-400')}>
+          <span className={cn('flex items-center gap-2', selected ? 'text-foreground' : 'text-muted-foreground')}>
             {selected?.imageUrl && (
               <img src={selected.imageUrl} alt="" className="w-5 h-5 rounded object-cover flex-shrink-0" />
             )}
@@ -93,29 +93,29 @@ export function SearchableSelect({
                 role="button"
                 aria-label={tc('clearSelection')}
                 tabIndex={0}
-                className="p-0.5 hover:bg-gray-100 rounded"
+                className="p-0.5 hover:bg-surface-3 rounded"
                 onClick={(e) => {
                   e.stopPropagation();
                   onChange(null);
                 }}
               >
-                <X className="w-3.5 h-3.5 text-gray-400" />
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
               </span>
             )}
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </div>
         </button>
       </Popover.Trigger>
 
       <Popover.Portal>
         <Popover.Content
-          className="z-[200] w-[var(--radix-popover-trigger-width)] bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+          className="z-[200] w-[var(--radix-popover-trigger-width)] bg-white border border-border-subtle rounded-lg shadow-lg overflow-hidden"
           sideOffset={4}
           align="start"
         >
           {/* Search input */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
-            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle">
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -123,22 +123,22 @@ export function SearchableSelect({
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder ?? tc('searchEllipsis')}
               aria-label={tc('searchOptions')}
-              className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-400"
+              className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="p-0.5 hover:bg-gray-100 rounded"
+                className="p-0.5 hover:bg-surface-3 rounded"
               >
-                <X className="w-3.5 h-3.5 text-gray-400" />
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             )}
           </div>
 
           {/* Bulk actions */}
           {(onSelectAll || onClearAll) && (
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border-subtle bg-surface-1">
               {onSelectAll && options.length > 0 && (
                 <button
                   type="button"
@@ -163,7 +163,7 @@ export function SearchableSelect({
           {/* Options list */}
           <div id="searchable-select-listbox" role="listbox" className="max-h-[220px] overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="px-3 py-6 text-center text-sm text-gray-400">
+              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                 {emptyMessage ?? tc('noResults')}
               </div>
             ) : (
@@ -183,7 +183,7 @@ export function SearchableSelect({
                       'flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors',
                       isSelected
                         ? 'bg-green-50 text-green-700'
-                        : 'hover:bg-gray-50 text-gray-700'
+                        : 'hover:bg-surface-1 text-foreground/80'
                     )}
                   >
                     <div className="w-4 flex-shrink-0">
@@ -193,15 +193,15 @@ export function SearchableSelect({
                       option.imageUrl ? (
                         <img src={option.imageUrl} alt="" className="w-11 h-11 rounded-md object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-11 h-11 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
-                          <Package className="w-5 h-5 text-gray-400" />
+                        <div className="w-11 h-11 rounded-md bg-surface-3 flex items-center justify-center flex-shrink-0">
+                          <Package className="w-5 h-5 text-muted-foreground" />
                         </div>
                       )
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="truncate">{option.label}</div>
                       {option.description && (
-                        <div className="text-xs text-gray-400 truncate">
+                        <div className="text-xs text-muted-foreground truncate">
                           {option.description}
                         </div>
                       )}

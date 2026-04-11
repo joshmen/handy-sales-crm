@@ -47,17 +47,17 @@ body {
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary — light blue-gray */
-    --secondary: 220 14% 93%;
-    --secondary-foreground: 220 20% 14%;
+    /* Secondary — dark navy for emphasis, headers, badges */
+    --secondary: 220 26% 18%;
+    --secondary-foreground: 210 40% 96%;
 
-    /* Muted — subtle background */
-    --muted: 220 14% 93%;
+    /* Muted — subtle background for disabled/secondary areas */
+    --muted: 220 16% 93%;
     --muted-foreground: 220 10% 46%;
 
-    /* Accent — hover tint */
-    --accent: 220 14% 93%;
-    --accent-foreground: 220 20% 14%;
+    /* Accent — blue for links, info, interactive highlights */
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
@@ -127,14 +127,14 @@ body {
     --primary: 142 64% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 14% 16%;        /* #232e34 — secondary surfaces */
-    --secondary-foreground: 200 12% 88%;
+    --secondary: 200 20% 82%;         /* light slate for dark mode badges/emphasis */
+    --secondary-foreground: 200 20% 10%;
 
     --muted: 200 14% 15%;            /* #212b31 — muted backgrounds */
     --muted-foreground: 200 10% 55%; /* #7b9099 — secondary text */
 
-    --accent: 200 16% 19%;           /* #283338 — hover, active states */
-    --accent-foreground: 200 12% 92%;
+    --accent: 217 85% 62%;           /* blue accent, slightly lighter for dark bg */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;

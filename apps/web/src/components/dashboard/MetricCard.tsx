@@ -49,10 +49,10 @@ const colorConfig = {
     accent: "bg-red-500",
   },
   gray: {
-    bg: "bg-gray-50",
-    text: "text-gray-600",
-    icon: "text-gray-500",
-    accent: "bg-gray-500",
+    bg: "bg-surface-1",
+    text: "text-foreground/70",
+    icon: "text-muted-foreground",
+    accent: "bg-surface-10",
   },
 };
 
@@ -87,12 +87,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     } else if (trend.value < 0) {
       return <TrendingDown size={16} className="text-red-500" />;
     } else {
-      return <Minus size={16} className="text-gray-400" />;
+      return <Minus size={16} className="text-muted-foreground" />;
     }
   };
 
   const getTrendColor = () => {
-    if (!trend) return "text-gray-500";
+    if (!trend) return "text-muted-foreground";
 
     // Si se especifica isPositive, usar esa lógica
     if (trend.isPositive !== undefined) {
@@ -102,7 +102,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     // Sino, usar el valor numérico
     if (trend.value > 0) return "text-green-600";
     if (trend.value < 0) return "text-red-600";
-    return "text-gray-500";
+    return "text-muted-foreground";
   };
 
   if (isLoading) {
@@ -111,11 +111,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         <CardContent className="p-6">
           <div className="animate-pulse">
             <div className="flex items-center justify-between mb-4">
-              <div className="h-4 bg-gray-200 rounded w-24"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+              <div className="h-4 bg-surface-3 rounded w-24"></div>
+              <div className="h-8 w-8 bg-surface-3 rounded-lg"></div>
             </div>
-            <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-20"></div>
+            <div className="h-8 bg-surface-3 rounded w-16 mb-2"></div>
+            <div className="h-3 bg-surface-3 rounded w-20"></div>
           </div>
         </CardContent>
       </Card>
@@ -130,7 +130,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       <CardContent className="p-6">
         {/* Header con título e icono - Estilo Google */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-medium text-gray-600 truncate">
+          <h3 className="text-sm font-medium text-foreground/70 truncate">
             {title}
           </h3>
           <div className={`p-3 rounded-full ${colors.bg} shadow-sm`}>
@@ -143,7 +143,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           <p className={`text-3xl font-normal ${colors.text} mb-1`}>
             {formatValue(value)}
           </p>
-          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
         </div>
 
         {/* Tendencia - Estilo Google */}
@@ -155,7 +155,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                 {trend.value > 0 ? '+' : ''}{trend.value}%
               </span>
             </div>
-            <span className="text-xs text-gray-500">{trend.label}</span>
+            <span className="text-xs text-muted-foreground">{trend.label}</span>
           </div>
         )}
       </CardContent>

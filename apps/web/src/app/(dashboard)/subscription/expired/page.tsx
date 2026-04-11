@@ -125,7 +125,7 @@ export default function SubscriptionExpiredPage() {
                       <p className="text-xs text-muted-foreground mb-4">
                         {te('upToUsers', { count: plan.maxUsuarios })}
                       </p>
-                      <div className="text-3xl font-bold text-gray-900">
+                      <div className="text-3xl font-bold text-foreground">
                         {formatPrice(plan.precioMensual)}
                         <span className="text-sm font-normal text-muted-foreground">{te('perMonth')}</span>
                       </div>
@@ -169,7 +169,7 @@ export default function SubscriptionExpiredPage() {
                       className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
                         isMostPopular
                           ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-gray-900 hover:bg-gray-800 text-white'
+                          : 'bg-foreground hover:bg-foreground text-white'
                       }`}
                     >
                       {checkoutLoading === plan.codigo ? (
@@ -238,7 +238,7 @@ export default function SubscriptionExpiredPage() {
         <div className="text-center pb-8">
           <button
             onClick={handleLogout}
-            className="px-6 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors"
+            className="px-6 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors"
           >
             {te('logout')}
           </button>

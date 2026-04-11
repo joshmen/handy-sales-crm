@@ -27,7 +27,7 @@ export default function Loading() {
         <div className="bg-surface-2 border border-border-subtle rounded">
           <div className="h-10 bg-surface-1 border-b border-border-subtle" />
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center px-4 py-3 border-b border-gray-100">
+            <div key={i} className="flex items-center px-4 py-3 border-b border-border-subtle">
               <div className="h-4 w-24 bg-surface-3 rounded animate-pulse mr-4" />
               <div className="h-4 w-32 bg-surface-3 rounded animate-pulse mr-4" />
               <div className="h-5 w-16 bg-surface-3 rounded animate-pulse mr-4" />

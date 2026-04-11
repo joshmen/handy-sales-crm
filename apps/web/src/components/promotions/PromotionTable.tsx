@@ -99,7 +99,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg mb-1">{promotion.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{getTypeLabel(promotion.type)}</p>
+                    <p className="text-sm text-foreground/70 mb-2">{getTypeLabel(promotion.type)}</p>
                     {getStatusBadge(promotion.status)}
                   </div>
                   <div className="flex space-x-2">
@@ -114,15 +114,15 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Productos aplicación:</span>
+                    <span className="text-foreground/70">Productos aplicación:</span>
                     <span>{promotion.applicationProducts.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Recompensas:</span>
+                    <span className="text-foreground/70">Recompensas:</span>
                     <span>{getRewardSummary(promotion)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Usos:</span>
+                    <span className="text-foreground/70">Usos:</span>
                     <span>{promotion.totalUsed || 0}</span>
                   </div>
                   {budgetProgress && (
@@ -131,13 +131,13 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                         <span>Presupuesto utilizado</span>
                         <span>{budgetProgress.percentage.toFixed(1)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-surface-3 rounded-full h-2">
                         <div 
                           className="bg-blue-600 h-2 rounded-full" 
                           style={{ width: `${budgetProgress.percentage}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-xs mt-1 text-gray-600">
+                      <div className="flex justify-between text-xs mt-1 text-foreground/70">
                         <span>{formatCurrency(budgetProgress.used)}</span>
                         <span>{formatCurrency(budgetProgress.total)}</span>
                       </div>
@@ -175,7 +175,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                     <div>
                       <div className="font-medium">{promotion.name}</div>
                       {promotion.description && (
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-sm text-muted-foreground mt-1">
                           {promotion.description.slice(0, 60)}
                           {promotion.description.length > 60 && '...'}
                         </div>
@@ -195,7 +195,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                     <div className="text-sm">
                       <div>{promotion.applicationProducts.length} productos</div>
                       {promotion.applicationProducts[0] && (
-                        <div className="text-gray-500">
+                        <div className="text-muted-foreground">
                           Min. {promotion.applicationProducts[0].minimumQuantity} unid.
                         </div>
                       )}
@@ -205,7 +205,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                   <TableCell>
                     <div className="text-sm">
                       <div>{promotion.rewardProducts.length} productos</div>
-                      <div className="text-gray-500">{getRewardSummary(promotion)}</div>
+                      <div className="text-muted-foreground">{getRewardSummary(promotion)}</div>
                     </div>
                   </TableCell>
                   
@@ -217,17 +217,17 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                       {budgetProgress && (
                         <div>
                           <div className="flex items-center space-x-2">
-                            <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                            <div className="w-16 bg-surface-3 rounded-full h-1.5">
                               <div 
                                 className="bg-blue-600 h-1.5 rounded-full" 
                                 style={{ width: `${budgetProgress.percentage}%` }}
                               />
                             </div>
-                            <span className="text-xs text-gray-600">
+                            <span className="text-xs text-foreground/70">
                               {budgetProgress.percentage.toFixed(0)}%
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-muted-foreground mt-1">
                             {formatCurrency(budgetProgress.remaining)} restante
                           </div>
                         </div>
@@ -238,7 +238,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
                   <TableCell>
                     <div className="text-sm space-y-1">
                       <div>Usos: {promotion.totalUsed || 0}</div>
-                      <div className="text-gray-500">
+                      <div className="text-muted-foreground">
                         Ahorros: {formatCurrency(promotion.totalSavings || 0)}
                       </div>
                     </div>

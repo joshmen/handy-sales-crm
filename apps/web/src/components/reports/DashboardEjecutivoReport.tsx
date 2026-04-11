@@ -83,17 +83,17 @@ export function DashboardEjecutivoReport() {
     <div className="space-y-5">
       {/* Period selector */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">{t('summary')} <span className="font-semibold text-gray-900">{periodoLabel}</span></p>
+        <p className="text-sm text-foreground/70">{t('summary')} <span className="font-semibold text-foreground">{periodoLabel}</span></p>
         <div className="flex items-center gap-2">
           {data && !loading && (
-            <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors">
+            <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground/80 bg-white border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50 transition-colors">
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               PDF
             </button>
           )}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1" role="group" aria-label="Period selector">
+          <div className="flex gap-1 bg-surface-3 rounded-lg p-1" role="group" aria-label="Period selector">
             {(['semana', 'mes', 'trimestre'] as const).map(p => (
-              <button key={p} onClick={() => setPeriodo(p)} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${periodo === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
+              <button key={p} onClick={() => setPeriodo(p)} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${periodo === p ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {p === 'semana' ? t('week') : p === 'mes' ? t('month') : t('quarter')}
               </button>
             ))}
@@ -103,12 +103,12 @@ export function DashboardEjecutivoReport() {
 
       {loading && (
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" />
         </div>
       )}
 
       {!loading && !data && (
-        <div className="text-center py-16 text-sm text-gray-400">{tCommon('noData')}</div>
+        <div className="text-center py-16 text-sm text-muted-foreground">{tCommon('noData')}</div>
       )}
 
       {data && !loading && (
@@ -121,29 +121,29 @@ export function DashboardEjecutivoReport() {
                 <div>
                   <Flex justifyContent="start" className="gap-2 mb-4">
                     <div className="p-2 rounded-lg bg-white/10"><ShoppingCart className="w-5 h-5 text-emerald-400" /></div>
-                    <Text className="!text-gray-400">{t('salesTitle')}</Text>
+                    <Text className="!text-muted-foreground">{t('salesTitle')}</Text>
                   </Flex>
                   <p className="text-5xl sm:text-6xl font-bold text-white tracking-tight">{fmt(data.ventas.total)}</p>
-                  <p className="text-sm text-gray-400 mt-2">{t('totalSales')} · {periodoLabel}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{t('totalSales')} · {periodoLabel}</p>
                 </div>
                 <div className="text-right">
                   <BadgeDelta deltaType={data.ventas.crecimientoPct >= 0 ? 'increase' : 'decrease'} size="lg">
                     {data.ventas.crecimientoPct > 0 ? '+' : ''}{data.ventas.crecimientoPct}%
                   </BadgeDelta>
-                  <p className="text-xs text-gray-500 mt-1">{t('vsPriorPeriod')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('vsPriorPeriod')}</p>
                 </div>
               </Flex>
               <div className="grid grid-cols-3 gap-6 mt-8 pt-6 border-t border-white/10">
                 <div>
-                  <p className="text-xs text-gray-500">{t('orders')}</p>
+                  <p className="text-xs text-muted-foreground">{t('orders')}</p>
                   <p className="text-2xl font-semibold text-white mt-1">{data.ventas.pedidos}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{t('avgTicket')}</p>
+                  <p className="text-xs text-muted-foreground">{t('avgTicket')}</p>
                   <p className="text-2xl font-semibold text-white mt-1">{fmt(data.ventas.ticketPromedio)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{t('newClientsTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('newClientsTitle')}</p>
                   <p className="text-2xl font-semibold text-white mt-1">{data.nuevosClientes}</p>
                 </div>
               </div>
@@ -155,15 +155,15 @@ export function DashboardEjecutivoReport() {
             <Card className="lg:col-span-2 page-animate page-animate-delay-2">
               <Flex justifyContent="start" className="gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-blue-50"><Eye className="w-4 h-4 text-blue-600" /></div>
-                <Text className="!font-semibold !text-gray-900">{t('visitsTitle')}</Text>
+                <Text className="!font-semibold !text-foreground">{t('visitsTitle')}</Text>
               </Flex>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{data.visitas.total}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{data.visitas.total}</p>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mb-4">{data.visitas.efectividadPct}%</span>
               <Chart type="donut" options={donutOptions} series={[data.visitas.conVenta, data.visitas.sinVenta || 0]} height={220} />
             </Card>
 
             <Card className="lg:col-span-3 page-animate page-animate-delay-3">
-              <Text className="!font-semibold !text-gray-900 mb-4">{t('salesTitle')} — {periodoLabel}</Text>
+              <Text className="!font-semibold !text-foreground mb-4">{t('salesTitle')} — {periodoLabel}</Text>
               <Chart type="bar" options={barOptions} series={barSeries} height={200} />
             </Card>
           </div>
@@ -173,28 +173,28 @@ export function DashboardEjecutivoReport() {
             <Card decoration="top" decorationColor="violet">
               <Flex justifyContent="start" className="gap-2">
                 <div className="p-1.5 rounded-lg bg-violet-50"><Trophy className="w-4 h-4 text-violet-600" /></div>
-                <Text className="!font-semibold !text-gray-900">{t('topVendor')}</Text>
+                <Text className="!font-semibold !text-foreground">{t('topVendor')}</Text>
               </Flex>
               {data.topVendedor ? (
                 <div className="mt-4">
-                  <Text className="!text-gray-500">{data.topVendedor.nombre}</Text>
+                  <Text className="!text-muted-foreground">{data.topVendedor.nombre}</Text>
                   <Metric className="!text-violet-600 mt-1">{fmt(data.topVendedor.totalVentas)}</Metric>
                 </div>
-              ) : <Text className="mt-4 !text-gray-400">{t('noData')}</Text>}
+              ) : <Text className="mt-4 !text-muted-foreground">{t('noData')}</Text>}
             </Card>
 
             <Card decoration="top" decorationColor="rose">
               <Flex justifyContent="start" className="gap-2">
                 <div className="p-1.5 rounded-lg bg-rose-50"><Star className="w-4 h-4 text-rose-500" /></div>
-                <Text className="!font-semibold !text-gray-900">{t('starProduct')}</Text>
+                <Text className="!font-semibold !text-foreground">{t('starProduct')}</Text>
               </Flex>
               {data.topProducto ? (
                 <div className="mt-4">
-                  <Text className="!text-gray-500">{data.topProducto.nombre}</Text>
+                  <Text className="!text-muted-foreground">{data.topProducto.nombre}</Text>
                   <Metric className="!text-rose-500 mt-1">{fmt(data.topProducto.totalVentas)}</Metric>
                   <Text className="mt-2">{data.topProducto.cantidadVendida} {t('units')}</Text>
                 </div>
-              ) : <Text className="mt-4 !text-gray-400">{t('noData')}</Text>}
+              ) : <Text className="mt-4 !text-muted-foreground">{t('noData')}</Text>}
             </Card>
 
             <Card decoration="top" decorationColor={data.alertas.inventarioBajo > 0 ? 'red' : 'green'}>
@@ -202,7 +202,7 @@ export function DashboardEjecutivoReport() {
                 <div className={`p-1.5 rounded-lg ${data.alertas.inventarioBajo > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
                   <AlertTriangle className={`w-4 h-4 ${data.alertas.inventarioBajo > 0 ? 'text-red-500' : 'text-green-500'}`} />
                 </div>
-                <Text className="!font-semibold !text-gray-900">{t('alertsTitle')}</Text>
+                <Text className="!font-semibold !text-foreground">{t('alertsTitle')}</Text>
               </Flex>
               <div className="mt-4">
                 {data.alertas.inventarioBajo > 0 ? (

@@ -148,17 +148,17 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
       <Card className={className}>
         <CardHeader>
           <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-48"></div>
+            <div className="h-6 bg-surface-3 rounded w-32 mb-2"></div>
+            <div className="h-4 bg-surface-3 rounded w-48"></div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
-                <div className="h-3 bg-gray-200 rounded w-16"></div>
+                <div className="h-4 bg-surface-3 rounded w-24"></div>
+                <div className="h-3 bg-surface-3 rounded w-full"></div>
+                <div className="h-3 bg-surface-3 rounded w-16"></div>
               </div>
             ))}
           </div>
@@ -172,14 +172,14 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-600">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            <p className="text-sm text-foreground/70">{subtitle}</p>
           </div>
 
           {/* Progreso general */}
           <div className="text-right">
-            <p className="text-xs text-gray-500">Progreso General</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-xs text-muted-foreground">Progreso General</p>
+            <p className="text-lg font-bold text-foreground">
               {getOverallProgress().toFixed(1)}%
             </p>
           </div>
@@ -207,11 +207,11 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
                       <Icon size={16} className={colors.text} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-foreground">
                         {goal.title}
                       </h4>
                       {daysRemaining && (
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           <Clock size={12} />
                           <span>{daysRemaining}</span>
                         </div>
@@ -220,7 +220,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
                   </div>
 
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-foreground">
                       {progress.toFixed(1)}%
                     </p>
                     {progress >= 100 && (
@@ -234,7 +234,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
 
                 {/* Barra de progreso */}
                 <div className="space-y-1">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-surface-3 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all duration-300 ${colors.progress}`}
                       style={{ width: `${Math.min(progress, 100)}%` }}
@@ -242,7 +242,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
                   </div>
 
                   {/* Valores */}
-                  <div className="flex justify-between items-center text-xs text-gray-600">
+                  <div className="flex justify-between items-center text-xs text-foreground/70">
                     <span>
                       {formatValue(goal.current, goal.unit)} de{" "}
                       {formatValue(goal.target, goal.unit)}
@@ -261,8 +261,8 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
           })}
 
           {goals.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Target size={48} className="mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-muted-foreground">
+              <Target size={48} className="mx-auto mb-4 text-muted-foreground/60" />
               <p className="text-sm">No hay metas configuradas</p>
               <p className="text-xs">
                 Agrega objetivos para hacer seguimiento del progreso

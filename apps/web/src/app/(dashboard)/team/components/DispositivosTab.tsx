@@ -227,7 +227,7 @@ export function DispositivosTab() {
       {!loading && !error && sessions.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-gray-700 bg-surface-1 border-border-subtle' },
+            { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-foreground/80 bg-surface-1 border-border-subtle' },
             { label: t('activeLabel'), value: stats.active, icon: Wifi, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'Android', value: stats.android, icon: Smartphone, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'iOS', value: stats.ios, icon: Smartphone, color: 'text-blue-700 bg-blue-50 border-blue-200' },
@@ -262,7 +262,7 @@ export function DispositivosTab() {
                   <div className="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center flex-shrink-0"><DeviceIcon className="w-5 h-5 text-muted-foreground" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 truncate">{session.usuarioNombre}</span>
+                      <span className="text-sm font-medium text-foreground truncate">{session.usuarioNombre}</span>
                       {session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{session.deviceName || session.deviceTypeNombre}{session.osVersion && ` - ${session.osVersion}`}</div>
@@ -290,7 +290,7 @@ export function DispositivosTab() {
 
         <div className="hidden md:block bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
           {loading ? renderSkeleton() : paginatedSessions.length === 0 ? renderEmpty() : (
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-border-subtle">
               <thead className="bg-surface-1">
                 <tr>
                   <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-foreground w-[180px]">{t('vendorCol')}</th>
@@ -301,17 +301,17 @@ export function DispositivosTab() {
                   <th scope="col" className="px-4 py-2.5 text-right text-xs font-semibold text-foreground w-[100px]">{tc('actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border-subtle">
                 {paginatedSessions.map((session) => {
                   const DeviceIcon = getDeviceIcon(session.deviceType);
                   const sKey = getStatusKey(session.status);
                   const sClass = getStatusClassName(session.status);
                   return (
                     <tr key={session.id} className={`hover:bg-amber-50 transition-colors ${session.esSesionActual ? 'bg-green-50/40' : ''}`}>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div><div className="text-sm font-medium text-gray-900">{session.usuarioNombre}</div>{session.ipAddress && <div className="text-[11px] text-muted-foreground">{session.ipAddress}</div>}</div>{session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}</div></td>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><DeviceIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" /><div><div className="text-sm text-gray-900">{session.deviceName || session.deviceTypeNombre}</div><div className="text-[11px] text-muted-foreground">{[session.osVersion, session.appVersion ? `v${session.appVersion}` : null, session.deviceModel].filter(Boolean).join(' / ')}</div></div></div></td>
-                      <td className="px-4 py-3"><div className="text-sm text-gray-700" title={formatDate(session.loggedInAt)}>{formatDate(session.loggedInAt, { day: '2-digit', month: 'short' })}</div><div className="text-[11px] text-muted-foreground">{formatDate(session.loggedInAt, { hour: '2-digit', minute: '2-digit' })}</div></td>
-                      <td className="px-4 py-3"><div className="text-sm text-gray-700" title={formatDate(session.lastActivity)}>{formatTimeAgo(session.lastActivity)}</div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div><div className="text-sm font-medium text-foreground">{session.usuarioNombre}</div>{session.ipAddress && <div className="text-[11px] text-muted-foreground">{session.ipAddress}</div>}</div>{session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}</div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><DeviceIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" /><div><div className="text-sm text-foreground">{session.deviceName || session.deviceTypeNombre}</div><div className="text-[11px] text-muted-foreground">{[session.osVersion, session.appVersion ? `v${session.appVersion}` : null, session.deviceModel].filter(Boolean).join(' / ')}</div></div></div></td>
+                      <td className="px-4 py-3"><div className="text-sm text-foreground/80" title={formatDate(session.loggedInAt)}>{formatDate(session.loggedInAt, { day: '2-digit', month: 'short' })}</div><div className="text-[11px] text-muted-foreground">{formatDate(session.loggedInAt, { hour: '2-digit', minute: '2-digit' })}</div></td>
+                      <td className="px-4 py-3"><div className="text-sm text-foreground/80" title={formatDate(session.lastActivity)}>{formatTimeAgo(session.lastActivity)}</div></td>
                       <td className="px-4 py-3"><span className={`inline-flex px-2 py-1 text-[11px] font-medium rounded-full ${sClass}`}>{t(sKey)}</span></td>
                       <td className="px-4 py-3 text-right">{session.status === 0 && !session.esSesionActual ? (
                         <button onClick={() => handleRevokeSession(session)} disabled={revokingId === session.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50">
@@ -346,7 +346,7 @@ export function DispositivosTab() {
             <p className="text-sm text-foreground/70">{t('revokeConfirm', { user: confirmAction.session.usuarioNombre, device: confirmAction.session.deviceName || confirmAction.session.deviceTypeNombre })}</p>
             <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2"><p className="text-xs text-red-700">{t('revokeWarning')}</p></div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-foreground/80 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
               <button onClick={executeRevoke} className="px-4 py-2 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors">{t('revokeSessionBtn')}</button>
             </div>
           </div>
@@ -356,7 +356,7 @@ export function DispositivosTab() {
             <p className="text-sm text-foreground/70">{t('cleanConfirm')}</p>
             <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2"><p className="text-xs text-amber-700">{t('cleanWarning')}</p></div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-foreground/80 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
               <button onClick={executeCleanExpired} className="px-4 py-2 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 transition-colors">{t('cleanExpiredBtn')}</button>
             </div>
           </div>

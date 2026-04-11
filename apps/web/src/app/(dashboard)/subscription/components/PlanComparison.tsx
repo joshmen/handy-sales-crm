@@ -255,7 +255,7 @@ function PlanCard({
         className={`group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
           isPopular
             ? "border-2 border-green-500 dark:border-green-400 shadow-lg"
-            : "border border-border-subtle dark:border-gray-700 shadow-sm hover:shadow-md hover:border-border-default dark:hover:border-gray-600"
+            : "border border-border-subtle dark:border-border-strong shadow-sm hover:shadow-md hover:border-border-default dark:hover:border-gray-600"
         } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
       >
         <div className="relative bg-card rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
@@ -269,7 +269,7 @@ function PlanCard({
           )}
 
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{plan.nombre}</h3>
+            <h3 className="text-xl font-bold text-foreground dark:text-white">{plan.nombre}</h3>
             {isCurrent && (
               <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
                 Plan actual
@@ -277,11 +277,11 @@ function PlanCard({
             )}
           </div>
 
-          <div className="mt-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="mt-4 mb-4 pb-4 border-b border-border-subtle dark:border-gray-800">
             <div className="flex items-baseline gap-1">
               <span
                 key={`${plan.codigo}-${billingInterval}`}
-                className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight animate-[subPricePop_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
+                className="text-4xl font-extrabold text-foreground dark:text-white tracking-tight animate-[subPricePop_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
               >
                 {price === 0 ? "Gratis" : `$${monthlyEquivalent.toLocaleString("es-MX")}`}
               </span>
@@ -297,31 +297,31 @@ function PlanCard({
           </div>
 
           <ul className="space-y-2.5 flex-1">
-            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-gray-300">
+            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               {plan.maxUsuarios} usuarios
             </li>
-            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-gray-300">
+            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               {plan.maxProductos.toLocaleString()} productos
             </li>
-            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-gray-300">
+            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               {plan.maxClientesPorMes} clientes/mes
             </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-foreground/70 dark:text-gray-300" : "text-muted-foreground dark:text-foreground/70"}`}>
+            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-foreground/70 dark:text-muted-foreground/60" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeReportes ? (
                 <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               ) : (
-                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
+                <X className="h-4 w-4 text-muted-foreground/60 dark:text-foreground/80 flex-shrink-0" />
               )}
               Reportes avanzados
             </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-foreground/70 dark:text-gray-300" : "text-muted-foreground dark:text-foreground/70"}`}>
+            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-foreground/70 dark:text-muted-foreground/60" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeSoportePrioritario ? (
                 <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               ) : (
-                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
+                <X className="h-4 w-4 text-muted-foreground/60 dark:text-foreground/80 flex-shrink-0" />
               )}
               Soporte prioritario
             </li>
@@ -330,7 +330,7 @@ function PlanCard({
           {isBlocked && !isCurrent && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
               downgrade.isFreeBlocked
-                ? "bg-surface-3 dark:bg-gray-800/60 border border-border-subtle dark:border-gray-700"
+                ? "bg-surface-3 dark:bg-foreground/60 border border-border-subtle dark:border-border-strong"
                 : "bg-muted/40 dark:bg-muted/30 border border-amber-200/60 dark:border-amber-800/40"
             }`}>
               <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
@@ -351,14 +351,14 @@ function PlanCard({
           <button
             className={`group/btn flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${isBlocked || isCurrent ? "mt-3" : "mt-5"} ${
               isCurrent
-                ? "bg-surface-3 dark:bg-gray-800 text-muted-foreground dark:text-muted-foreground cursor-default"
+                ? "bg-surface-3 dark:bg-foreground text-muted-foreground dark:text-muted-foreground cursor-default"
                 : isDisabled
-                  ? "bg-surface-3 dark:bg-gray-800 text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
+                  ? "bg-surface-3 dark:bg-foreground text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
                   : downgrade.isDowngrade
                     ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
                     : isPopular
                       ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
-                      : "bg-gray-900 dark:bg-surface-2 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-surface-3"
+                      : "bg-foreground dark:bg-surface-2 text-white dark:text-foreground hover:bg-foreground dark:hover:bg-surface-3"
             }`}
             disabled={isDisabled}
             onClick={onUpgrade}

@@ -74,7 +74,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       case "in_progress":
         return "bg-warning-200 text-warning-900 border border-warning-300 font-medium";
       default:
-        return "bg-gray-200 text-gray-900 border border-gray-300 font-medium";
+        return "bg-surface-3 text-foreground border border-border-default font-medium";
     }
   };
 
@@ -97,7 +97,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return (
       <div>
         {/* 🎨 TÍTULO CON MEJOR CONTRASTE */}
-        <h3 className="text-lg font-semibold mb-4 capitalize text-gray-900">
+        <h3 className="text-lg font-semibold mb-4 capitalize text-foreground">
           {monthName} (
           {currentDate.toLocaleDateString("es-ES", {
             day: "2-digit",
@@ -112,12 +112,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           )
         </h3>
 
-        <div className="grid grid-cols-7 gap-1 border border-gray-200 rounded-lg overflow-hidden">
+        <div className="grid grid-cols-7 gap-1 border border-border-subtle rounded-lg overflow-hidden">
           {/* 🎨 ENCABEZADOS CON MEJOR CONTRASTE */}
           {weekDays.map((day) => (
             <div
               key={day}
-              className="text-center font-semibold p-3 text-sm bg-gray-100 text-gray-800 border-b border-gray-200"
+              className="text-center font-semibold p-3 text-sm bg-surface-3 text-foreground border-b border-border-subtle"
             >
               {day}
             </div>
@@ -132,9 +132,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             return (
               <div
                 key={index}
-                className={`border-r border-b border-gray-200 min-h-[100px] p-2 cursor-pointer hover:bg-blue-50 transition-colors ${
+                className={`border-r border-b border-border-subtle min-h-[100px] p-2 cursor-pointer hover:bg-blue-50 transition-colors ${
                   !dayInfo.isCurrentMonth
-                    ? "bg-gray-50 text-gray-400"
+                    ? "bg-surface-1 text-muted-foreground"
                     : "bg-white"
                 } ${
                   isToday
@@ -149,8 +149,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     isToday
                       ? "text-blue-800 bg-blue-200 rounded-full w-6 h-6 flex items-center justify-center"
                       : !dayInfo.isCurrentMonth
-                      ? "text-gray-400"
-                      : "text-gray-800"
+                      ? "text-muted-foreground"
+                      : "text-foreground"
                   }`}
                 >
                   {dayInfo.date.getDate()}
@@ -178,7 +178,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   ))}
 
                   {dayVisits.length > 3 && (
-                    <div className="text-xs text-gray-700 px-2 font-medium bg-gray-100 rounded py-1">
+                    <div className="text-xs text-foreground/80 px-2 font-medium bg-surface-3 rounded py-1">
                       +{dayVisits.length - 3} más
                     </div>
                   )}
@@ -199,9 +199,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }
 
   return (
-    <div className="text-center py-12 text-gray-600">
+    <div className="text-center py-12 text-foreground/70">
       <p className="text-lg font-medium">Vista {viewMode} en desarrollo</p>
-      <p className="text-sm text-gray-500 mt-2">Próximamente disponible</p>
+      <p className="text-sm text-muted-foreground mt-2">Próximamente disponible</p>
     </div>
   );
 };

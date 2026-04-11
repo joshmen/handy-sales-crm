@@ -240,7 +240,7 @@ export default function LoadInventoryPage() {
   }
 
   const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
-  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-gray-800';
+  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-foreground';
 
   return (
     <div className="flex flex-col h-full">
@@ -254,7 +254,7 @@ export default function LoadInventoryPage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               {t('title')}
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
@@ -303,21 +303,21 @@ export default function LoadInventoryPage() {
       <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
         {/* Section 1: User & Cash */}
         <div data-tour="routes-load-user-section" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignRouteToUser')}</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">{t('assignRouteToUser')}</h2>
 
           <div className="flex items-center gap-4 mb-4 p-3 bg-surface-1 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
               <User className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">{ruta.usuarioNombre}</p>
+              <p className="text-sm font-medium text-foreground">{ruta.usuarioNombre}</p>
               <p className="text-xs text-muted-foreground">{t('assignedVendor')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">{t('initialCash')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1">{t('initialCash')}</label>
               <input
                 type="number"
                 value={efectivoInicial}
@@ -328,7 +328,7 @@ export default function LoadInventoryPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">{t('comments')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1">{t('comments')}</label>
               <input
                 type="text"
                 value={comentarios}
@@ -345,7 +345,7 @@ export default function LoadInventoryPage() {
         <div data-tour="routes-load-pedidos" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-gray-900">{t('assignOrdersForDelivery')}</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('assignOrdersForDelivery')}</h2>
               <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700">
                 {pedidos.length}
               </span>
@@ -368,7 +368,7 @@ export default function LoadInventoryPage() {
               {pedidos.map((p) => (
                 <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-surface-1 rounded-lg">
                   <div>
-                    <span className="text-[13px] font-medium text-gray-900">{t('orderNumber', { id: p.pedidoId })}</span>
+                    <span className="text-[13px] font-medium text-foreground">{t('orderNumber', { id: p.pedidoId })}</span>
                     <span className="text-xs text-muted-foreground ml-2">{p.clienteNombre}</span>
                     <span className="text-xs text-muted-foreground ml-2">{formatCurrency(p.montoTotal)}</span>
                   </div>
@@ -389,11 +389,11 @@ export default function LoadInventoryPage() {
         {/* Section 3: Add Products (hidden when read-only) */}
         {!isReadOnly && (
         <div data-tour="routes-load-add-products" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignProductsForSale')}</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">{t('assignProductsForSale')}</h2>
 
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">{t('productLabel')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1">{t('productLabel')}</label>
               <SearchableSelect
                 options={productos.map(p => ({ value: p.id.toString(), label: `${p.nombre} (${p.codigoBarra})` }))}
                 value={selectedProducto}
@@ -406,7 +406,7 @@ export default function LoadInventoryPage() {
               />
             </div>
             <div className="w-24">
-              <label className="block text-xs font-medium text-gray-700 mb-1">{t('quantity')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1">{t('quantity')}</label>
               <input
                 type="number"
                 value={cantidadVenta}
@@ -416,7 +416,7 @@ export default function LoadInventoryPage() {
               />
             </div>
             <div className="w-28">
-              <label className="block text-xs font-medium text-gray-700 mb-1">{t('price')}</label>
+              <label className="block text-xs font-medium text-foreground/80 mb-1">{t('price')}</label>
               <input
                 type="number"
                 value={precioVenta}
@@ -438,7 +438,7 @@ export default function LoadInventoryPage() {
 
         {/* Section 4: Consolidated Table */}
         <div data-tour="routes-load-consolidated" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('totalAssignedToRoute')}</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">{t('totalAssignedToRoute')}</h2>
 
           {carga.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-8">{t('noProductsLoaded')}</p>
@@ -459,9 +459,9 @@ export default function LoadInventoryPage() {
                 </thead>
                 <tbody>
                   {carga.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-50 hover:bg-surface-1">
+                    <tr key={item.id} className="border-b border-border-subtle hover:bg-surface-1">
                       <td className="py-2 px-3">
-                        <span className="text-[13px] text-gray-900">{item.productoNombre}</span>
+                        <span className="text-[13px] text-foreground">{item.productoNombre}</span>
                         {item.productoSku && (
                           <span className="text-[10px] text-muted-foreground ml-2">{item.productoSku}</span>
                         )}
@@ -472,7 +472,7 @@ export default function LoadInventoryPage() {
                       <td className="py-2 px-3 text-center text-[13px] text-foreground/70">
                         {item.cantidadVenta}
                       </td>
-                      <td className="py-2 px-3 text-center text-[13px] font-medium text-gray-900">
+                      <td className="py-2 px-3 text-center text-[13px] font-medium text-foreground">
                         {item.cantidadTotal}
                       </td>
                       <td className="py-2 px-3 text-center">
@@ -483,7 +483,7 @@ export default function LoadInventoryPage() {
                       <td className="py-2 px-3 text-right text-[13px] text-foreground/70">
                         {formatCurrency(item.precioUnitario)}
                       </td>
-                      <td className="py-2 px-3 text-right text-[13px] font-medium text-gray-900">
+                      <td className="py-2 px-3 text-right text-[13px] font-medium text-foreground">
                         {formatCurrency(item.cantidadTotal * item.precioUnitario)}
                       </td>
                       <td className="py-2 px-3 text-center">
@@ -502,7 +502,7 @@ export default function LoadInventoryPage() {
                 <tfoot>
                   <tr className="border-t-2 border-border-subtle">
                     <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold text-foreground/70">{t('totalsLabel')}</td>
-                    <td className="py-2 px-3 text-center text-[13px] font-bold text-gray-900">
+                    <td className="py-2 px-3 text-center text-[13px] font-bold text-foreground">
                       {carga.reduce((s, c) => s + c.cantidadTotal, 0)}
                     </td>
                     <td></td>
@@ -571,9 +571,9 @@ export default function LoadInventoryPage() {
                 .map((p) => {
                   const alreadyAssigned = pedidos.some(assigned => assigned.pedidoId === p.id);
                   return (
-                    <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-surface-1">
+                    <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-border-subtle rounded-lg hover:bg-surface-1">
                       <div>
-                        <span className="text-[13px] font-medium text-gray-900">#{p.numeroPedido || p.id}</span>
+                        <span className="text-[13px] font-medium text-foreground">#{p.numeroPedido || p.id}</span>
                         <span className="text-xs text-muted-foreground ml-2">{p.clienteNombre || t('noClient')}</span>
                         <span className="text-xs text-muted-foreground ml-2">{formatCurrency(p.total || 0)}</span>
                       </div>

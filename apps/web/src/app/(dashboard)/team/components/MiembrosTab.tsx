@@ -110,7 +110,7 @@ function PresenceBadge({ isOnline, lastActivity, labels }: { isOnline?: boolean;
 
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 inline-block" />
+      <span className="w-2 h-2 rounded-full bg-surface-3 dark:bg-gray-600 inline-block" />
       {labels.disconnected}
     </span>
   );
@@ -988,7 +988,7 @@ function AdminUsersView() {
             {user.name[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="text-[13px] font-medium text-gray-900">{user.name}</p>
+            <p className="text-[13px] font-medium text-foreground">{user.name}</p>
             <p className="text-[11px] text-muted-foreground">{user.email}</p>
           </div>
         </div>
@@ -1025,7 +1025,7 @@ function AdminUsersView() {
           {getInitials(user.name)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-gray-900">{user.name}</div>
+          <div className="text-sm font-semibold text-foreground">{user.name}</div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${getRoleBadgeColor(user.role)}`}>
               {getRoleLabel(user.role)}
@@ -1071,7 +1071,7 @@ function AdminUsersView() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('totalUsers')}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{totalCount}</p>
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeUsers')}</p>
@@ -1123,7 +1123,7 @@ function AdminUsersView() {
           <button
             onClick={handleCleanExpired}
             disabled={cleaningExpired}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-border-default rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
             {cleaningExpired ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1264,7 +1264,7 @@ function AdminUsersView() {
             </div>
           ) : drawerSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Smartphone className="w-12 h-12 text-gray-300 mb-3" />
+              <Smartphone className="w-12 h-12 text-muted-foreground/60 mb-3" />
               <p className="text-sm font-medium">{t("noSessions")}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("noSessionsDesc")}</p>
             </div>
@@ -1289,7 +1289,7 @@ function AdminUsersView() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 truncate">
+                          <span className="text-sm font-medium text-foreground truncate">
                             {s.deviceName || s.deviceTypeNombre}
                           </span>
                           {s.esSesionActual && (
@@ -1342,11 +1342,11 @@ function AdminUsersView() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-surface-2 dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
             <div className="px-6 py-4 border-b border-border-subtle">
-              <h2 className="text-lg font-semibold text-gray-900">{t("createUserTitle")}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t("createUserTitle")}</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("fullName")} *</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("fullName")} *</label>
                 <input
                   type="text"
                   value={formData.nombre}
@@ -1356,7 +1356,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("email")} *</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("email")} *</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -1366,7 +1366,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("password")} *</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("password")} *</label>
                 <input
                   type="password"
                   value={formData.password}
@@ -1376,7 +1376,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("phone")}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("phone")}</label>
                 <input
                   type="tel"
                   value={formData.telefono}
@@ -1386,7 +1386,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("role")}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("role")}</label>
                 <SearchableSelect
                   options={roles
                     .filter(role => isSuperAdmin || role.nombre.toUpperCase() !== 'ADMIN')
@@ -1400,7 +1400,7 @@ function AdminUsersView() {
             <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 {tc('cancel')}
               </button>
@@ -1434,11 +1434,11 @@ function AdminUsersView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-md mx-4">
             <div className="px-6 py-4 border-b border-border-subtle">
-              <h2 className="text-lg font-semibold text-gray-900">{t("editUserTitle")}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t("editUserTitle")}</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("fullName")}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("fullName")}</label>
                 <input
                   type="text"
                   value={selectedUser.name}
@@ -1447,7 +1447,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("email")}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("email")}</label>
                 <input
                   type="email"
                   value={selectedUser.email}
@@ -1456,7 +1456,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone')}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('phone')}</label>
                 <input
                   type="tel"
                   value={selectedUser.phone || ''}
@@ -1465,7 +1465,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('status')}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('status')}</label>
                 <SearchableSelect
                   options={[
                     { value: UserStatus.ACTIVE, label: t('statusActive') },
@@ -1484,7 +1484,7 @@ function AdminUsersView() {
                   setIsEditModalOpen(false);
                   setSelectedUser(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 {t('cancel')}
               </button>
@@ -1505,7 +1505,7 @@ function AdminUsersView() {
           <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">{t("vendorLocation")}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("vendorLocation")}</h2>
                 <p className="text-sm text-muted-foreground">{t("lastKnownPosition")}</p>
               </div>
               <button onClick={() => setIsLocationModalOpen(false)} className="p-2 hover:bg-surface-3 rounded-lg">
@@ -1520,7 +1520,7 @@ function AdminUsersView() {
                 </div>
               ) : ubicaciones.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
-                  <MapPin className="w-12 h-12 text-gray-300 mb-3" />
+                  <MapPin className="w-12 h-12 text-muted-foreground/60 mb-3" />
                   <p className="font-medium">{t("noLocationData")}</p>
                   <p className="text-sm">{t("vendorsNoGps")}</p>
                 </div>
@@ -1547,7 +1547,7 @@ function AdminUsersView() {
           <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">{t("vendorDistance")}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("vendorDistance")}</h2>
                 <p className="text-sm text-muted-foreground">{t("distanceFromBase")}</p>
               </div>
               <button onClick={() => setIsDistanceModalOpen(false)} className="p-2 hover:bg-surface-3 rounded-lg">
@@ -1562,7 +1562,7 @@ function AdminUsersView() {
                 </div>
               ) : distanceRows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                  <Ruler className="w-12 h-12 text-gray-300 mb-3" />
+                  <Ruler className="w-12 h-12 text-muted-foreground/60 mb-3" />
                   <p className="font-medium">{t("noLocationData")}</p>
                 </div>
               ) : (<>
@@ -1577,8 +1577,8 @@ function AdminUsersView() {
                   </thead>
                   <tbody>
                     {distanceRows.map(row => (
-                      <tr key={row.usuarioId} className="border-b border-gray-100 hover:bg-surface-1">
-                        <td className="py-3 font-medium text-gray-900">{row.nombre}</td>
+                      <tr key={row.usuarioId} className="border-b border-border-subtle hover:bg-surface-1">
+                        <td className="py-3 font-medium text-foreground">{row.nombre}</td>
                         <td className="py-3 text-foreground/70">{row.clienteNombre || '\u2014'}</td>
                         <td className="py-3 text-right font-mono">
                           <span className={row.distanciaKm > 50 ? 'text-red-600' : row.distanciaKm > 20 ? 'text-amber-600' : 'text-green-600'}>

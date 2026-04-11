@@ -34,7 +34,7 @@ export const UserAssignment: React.FC<UserAssignmentProps> = ({
             </div>
             <div>
               <p className="font-medium">{selectedUser.name}</p>
-              <p className="text-sm text-gray-600">{selectedUser.email}</p>
+              <p className="text-sm text-foreground/70">{selectedUser.email}</p>
             </div>
             <button
               onClick={() => onUserSelect(null as any)}
@@ -45,12 +45,12 @@ export const UserAssignment: React.FC<UserAssignmentProps> = ({
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-gray-600 mb-3">Selecciona un usuario:</p>
+            <p className="text-foreground/70 mb-3">Selecciona un usuario:</p>
             {users.map((user) => (
               <button
                 key={user.id}
                 onClick={() => onUserSelect(user)}
-                className="w-full flex items-center p-3 border rounded hover:bg-gray-50"
+                className="w-full flex items-center p-3 border rounded hover:bg-surface-1"
               >
                 <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-semibold mr-3">
                   {user.name
@@ -61,7 +61,7 @@ export const UserAssignment: React.FC<UserAssignmentProps> = ({
                 </div>
                 <div className="text-left">
                   <p className="font-medium">{user.name}</p>
-                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <p className="text-sm text-foreground/70">{user.email}</p>
                 </div>
               </button>
             ))}

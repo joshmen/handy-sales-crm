@@ -21,7 +21,7 @@ const colorClasses = {
   primary: 'text-primary',
   secondary: 'text-secondary',
   white: 'text-white',
-  gray: 'text-gray-500'
+  gray: 'text-muted-foreground'
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({

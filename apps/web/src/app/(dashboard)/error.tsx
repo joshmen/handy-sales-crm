@@ -23,7 +23,7 @@ export default function DashboardError({
           <AlertTriangle className="w-7 h-7 text-amber-600" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-gray-900">Error en esta página</h2>
+          <h2 className="text-xl font-bold text-foreground">Error en esta página</h2>
           <p className="text-sm text-muted-foreground">
             No se pudo cargar el contenido. Esto puede deberse a un problema temporal.
           </p>
@@ -53,7 +53,7 @@ export default function DashboardError({
           </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-foreground/80 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
             Dashboard

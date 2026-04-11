@@ -39,7 +39,7 @@ const typeColors: Record<string, { bg: string; icon: string; darkBg: string; dar
   alert: { bg: 'bg-yellow-100', icon: 'text-yellow-600', darkBg: 'dark:bg-yellow-900/30', darkIcon: 'dark:text-yellow-400' },
   route: { bg: 'bg-purple-100', icon: 'text-purple-600', darkBg: 'dark:bg-purple-900/30', darkIcon: 'dark:text-purple-400' },
   inventory: { bg: 'bg-green-100', icon: 'text-green-600', darkBg: 'dark:bg-green-900/30', darkIcon: 'dark:text-green-400' },
-  general: { bg: 'bg-surface-3', icon: 'text-foreground/70', darkBg: 'dark:bg-gray-700/50', darkIcon: 'dark:text-muted-foreground' },
+  general: { bg: 'bg-surface-3', icon: 'text-foreground/70', darkBg: 'dark:bg-foreground/80/50', darkIcon: 'dark:text-muted-foreground' },
 };
 
 // Status labels are resolved via translations at render time
@@ -48,7 +48,7 @@ const statusColors: Record<string, string> = {
   sent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  read: 'bg-surface-3 text-muted-foreground dark:bg-gray-700/50 dark:text-muted-foreground',
+  read: 'bg-surface-3 text-muted-foreground dark:bg-foreground/80/50 dark:text-muted-foreground',
 };
 
 const PAGE_SIZE = 10;
@@ -204,18 +204,18 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-surface-2 dark:bg-gray-900 px-8 py-6 border-b border-border-subtle dark:border-gray-700">
+      <div className="bg-surface-2 dark:bg-foreground px-8 py-6 border-b border-border-subtle dark:border-border-strong">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[13px] mb-4">
           <span className="text-muted-foreground dark:text-muted-foreground">{t('breadcrumbAdmin')}</span>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          <span className="text-gray-900 dark:text-gray-100 font-semibold">{t('breadcrumbNotifications')}</span>
+          <span className="text-foreground dark:text-gray-100 font-semibold">{t('breadcrumbNotifications')}</span>
         </div>
 
         {/* Title Row */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-foreground dark:text-gray-100">
               {t('title')}
             </h1>
             {unreadCount > 0 && (
@@ -247,7 +247,7 @@ export default function NotificationsPage() {
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle dark:border-gray-600 rounded-md bg-surface-2 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle dark:border-gray-600 rounded-md bg-surface-2 dark:bg-foreground text-foreground dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -288,12 +288,12 @@ export default function NotificationsPage() {
         <div className="px-8 py-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-border-subtle"></div>
             </div>
           ) : displayedNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 py-20">
-              <Bell className="w-16 h-16 text-gray-300 dark:text-foreground/70 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('emptyTitle')}</h3>
+              <Bell className="w-16 h-16 text-muted-foreground/60 dark:text-foreground/70 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground/80 dark:text-muted-foreground/60 mb-2">{t('emptyTitle')}</h3>
               <p className="text-sm text-muted-foreground dark:text-muted-foreground text-center">
                 {searchTerm
                   ? t('emptySearchMessage')
@@ -314,8 +314,8 @@ export default function NotificationsPage() {
                     key={notification.id}
                     className={`border rounded-lg p-5 hover:shadow-sm transition-shadow cursor-pointer ${
                       isUnread
-                        ? 'bg-surface-2 dark:bg-gray-800 border-border-subtle dark:border-gray-700'
-                        : 'bg-surface-1 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800'
+                        ? 'bg-surface-2 dark:bg-foreground border-border-subtle dark:border-border-strong'
+                        : 'bg-surface-1 dark:bg-foreground/50 border-border-subtle dark:border-gray-800'
                     }`}
                     onClick={() => isUnread && handleMarkAsRead(notification.id)}
                   >
@@ -332,7 +332,7 @@ export default function NotificationsPage() {
                       <div className="flex-1 min-w-0">
                         {/* Header */}
                         <div className="flex items-start justify-between gap-4 mb-2">
-                          <h3 className={`text-[15px] ${isUnread ? 'font-semibold' : 'font-medium'} text-gray-900 dark:text-gray-100`}>
+                          <h3 className={`text-[15px] ${isUnread ? 'font-semibold' : 'font-medium'} text-foreground dark:text-gray-100`}>
                             {notification.titulo}
                           </h3>
                           <span className="text-xs text-muted-foreground dark:text-muted-foreground flex-shrink-0">
@@ -394,7 +394,7 @@ export default function NotificationsPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 border border-border-subtle dark:border-gray-600 rounded-md text-foreground/70 dark:text-muted-foreground hover:bg-surface-1 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 border border-border-subtle dark:border-gray-600 rounded-md text-foreground/70 dark:text-muted-foreground hover:bg-surface-1 dark:hover:bg-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -417,7 +417,7 @@ export default function NotificationsPage() {
                       className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                         page === currentPage
                           ? 'bg-success text-success-foreground'
-                          : 'text-foreground/70 dark:text-muted-foreground hover:bg-surface-3 dark:hover:bg-gray-800'
+                          : 'text-foreground/70 dark:text-muted-foreground hover:bg-surface-3 dark:hover:bg-foreground'
                       }`}
                     >
                       {page}

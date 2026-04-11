@@ -30,7 +30,7 @@ const formatMXN = (value: number) =>
 const SOURCE_STYLES: Record<PreFacturaLineDto['mappingSource'], { bg: string; key: string }> = {
   mapping: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', key: 'sourceMapping' },
   producto: { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', key: 'sourceProduct' },
-  default: { bg: 'bg-surface-3 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300', key: 'sourceDefault' },
+  default: { bg: 'bg-surface-3 text-foreground/80 dark:bg-zinc-700 dark:text-zinc-300', key: 'sourceDefault' },
   fallback: { bg: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', key: 'sourceFallback' },
 };
 

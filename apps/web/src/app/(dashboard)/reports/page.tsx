@@ -172,13 +172,13 @@ export default function ReportsPage() {
                       <button
                         key={report.id}
                         onClick={() => handleReportClick(report.id)}
-                        className={`text-left bg-surface-2 dark:bg-gray-900 border border-border-subtle dark:border-gray-700 rounded-xl p-5 transition-all hover:bg-surface-1 dark:hover:bg-gray-800 hover:border-border-default hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
+                        className={`text-left bg-surface-2 dark:bg-foreground border border-border-subtle dark:border-border-strong rounded-xl p-5 transition-all hover:bg-surface-1 dark:hover:bg-foreground hover:border-border-default hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
                       >
                         <div className="flex items-start gap-3 mb-3">
                           <Icon size={36} />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t(report.labelKey)}</h3>
+                          <h3 className="text-sm font-semibold text-foreground dark:text-white">{t(report.labelKey)}</h3>
                           {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground" />}
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">{t(report.descKey)}</p>

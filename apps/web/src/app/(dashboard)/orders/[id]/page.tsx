@@ -12,7 +12,7 @@ import { toast } from '@/hooks/useToast';
 // ── Status helpers ──
 
 const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
-  PENDIENTE:      { color: 'text-gray-700',   bg: 'bg-surface-3' },
+  PENDIENTE:      { color: 'text-foreground/80',   bg: 'bg-surface-3' },
   CONFIRMADA:     { color: 'text-blue-700',   bg: 'bg-blue-100' },
   EN_PREPARACION: { color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { color: 'text-purple-700', bg: 'bg-purple-100' },
@@ -29,7 +29,7 @@ const STEPPER_STEPS = [
 ];
 
 function StatusBadge({ status, label }: { status: string; label: string }) {
-  const cfg = STATUS_STYLES[status] ?? { color: 'text-gray-700', bg: 'bg-surface-3' };
+  const cfg = STATUS_STYLES[status] ?? { color: 'text-foreground/80', bg: 'bg-surface-3' };
   return (
     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cfg.color} ${cfg.bg}`}>
       {label}
@@ -137,7 +137,7 @@ export default function OrderDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('notFound')}</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
           <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             Volver a pedidos
@@ -167,7 +167,7 @@ export default function OrderDetailPage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold text-gray-900">
+            <h1 className="text-[22px] font-bold text-foreground">
               Pedido #{order.numeroPedido}
             </h1>
             <StatusBadge status={order.estado} label={STATUS_LABELS[order.estado] ?? order.estado} />
@@ -238,7 +238,7 @@ export default function OrderDetailPage() {
                         ${isCurrent ? 'bg-success text-success-foreground ring-2 ring-green-200' : isCompleted ? 'bg-success text-success-foreground' : 'bg-surface-3 text-muted-foreground'}`}>
                         {isCompleted ? '\u2713' : i + 1}
                       </div>
-                      <span className={`text-xs ${isCurrent ? 'font-semibold text-gray-900' : 'text-muted-foreground'}`}>
+                      <span className={`text-xs ${isCurrent ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                         {stepLabel}
                       </span>
                     </div>
@@ -254,7 +254,7 @@ export default function OrderDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Products table */}
             <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('products')}</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t('products')}</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -269,13 +269,13 @@ export default function OrderDetailPage() {
                   </thead>
                   <tbody>
                     {order.detalles.map((item) => (
-                      <tr key={item.id} className="border-b border-gray-100">
+                      <tr key={item.id} className="border-b border-border-subtle">
                         <td className="py-3 text-muted-foreground font-mono text-xs">{item.productoCodigo}</td>
-                        <td className="py-3 text-gray-900">{item.productoNombre}</td>
-                        <td className="py-3 text-right text-gray-900">{item.cantidad}</td>
-                        <td className="py-3 text-right text-gray-900">{formatCurrency(item.precioUnitario)}</td>
+                        <td className="py-3 text-foreground">{item.productoNombre}</td>
+                        <td className="py-3 text-right text-foreground">{item.cantidad}</td>
+                        <td className="py-3 text-right text-foreground">{formatCurrency(item.precioUnitario)}</td>
                         <td className="py-3 text-right text-muted-foreground">{item.descuento > 0 ? formatCurrency(item.descuento) : '-'}</td>
-                        <td className="py-3 text-right font-medium text-gray-900">{formatCurrency(item.subtotal)}</td>
+                        <td className="py-3 text-right font-medium text-foreground">{formatCurrency(item.subtotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -285,11 +285,11 @@ export default function OrderDetailPage() {
 
             {/* Totals card */}
             <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('summary')}</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t('summary')}</h2>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('subtotalLabel')}</span>
-                  <span className="text-gray-900">{formatCurrency(order.subtotal)}</span>
+                  <span className="text-foreground">{formatCurrency(order.subtotal)}</span>
                 </div>
                 {order.descuento > 0 && (
                   <div className="flex justify-between text-sm">
@@ -299,11 +299,11 @@ export default function OrderDetailPage() {
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('ivaLabel')}</span>
-                  <span className="text-gray-900">{formatCurrency(order.impuestos)}</span>
+                  <span className="text-foreground">{formatCurrency(order.impuestos)}</span>
                 </div>
                 <div className="border-t border-border-subtle pt-2 flex justify-between">
-                  <span className="text-base font-semibold text-gray-900">{t('totalLabel')}</span>
-                  <span className="text-base font-bold text-gray-900">{formatCurrency(order.total)}</span>
+                  <span className="text-base font-semibold text-foreground">{t('totalLabel')}</span>
+                  <span className="text-base font-bold text-foreground">{formatCurrency(order.total)}</span>
                 </div>
               </div>
             </div>
@@ -311,17 +311,17 @@ export default function OrderDetailPage() {
             {/* Notes */}
             {(order.notas || order.notasInternas) && (
               <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('notesTitle')}</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{t('notesTitle')}</h2>
                 {order.notas && (
                   <div className="mb-3">
                     <p className="text-xs font-medium text-muted-foreground mb-1">{t('orderNotes')}</p>
-                    <p className="text-sm text-gray-700">{order.notas}</p>
+                    <p className="text-sm text-foreground/80">{order.notas}</p>
                   </div>
                 )}
                 {order.notasInternas && (
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1">{t('internalNotes')}</p>
-                    <p className="text-sm text-gray-700">{order.notasInternas}</p>
+                    <p className="text-sm text-foreground/80">{order.notasInternas}</p>
                   </div>
                 )}
               </div>
@@ -332,9 +332,9 @@ export default function OrderDetailPage() {
           <div className="space-y-6">
             {/* Client info */}
             <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clientTitle')}</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t('clientTitle')}</h2>
               <div className="space-y-2 text-sm">
-                <p className="font-medium text-gray-900">{order.clienteNombre}</p>
+                <p className="font-medium text-foreground">{order.clienteNombre}</p>
                 {order.clienteDireccion && (
                   <p className="text-muted-foreground">{order.clienteDireccion}</p>
                 )}
@@ -343,36 +343,36 @@ export default function OrderDetailPage() {
 
             {/* Order metadata */}
             <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('orderInfoTitle')}</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t('orderInfoTitle')}</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('dateLabel')}</span>
-                  <span className="text-gray-900">{formatDate(order.fechaPedido)}</span>
+                  <span className="text-foreground">{formatDate(order.fechaPedido)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('vendorLabel')}</span>
-                  <span className="text-gray-900">{order.usuarioNombre}</span>
+                  <span className="text-foreground">{order.usuarioNombre}</span>
                 </div>
                 {order.fechaEntregaEstimada && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('estimatedDelivery')}</span>
-                    <span className="text-gray-900">{formatDate(order.fechaEntregaEstimada)}</span>
+                    <span className="text-foreground">{formatDate(order.fechaEntregaEstimada)}</span>
                   </div>
                 )}
                 {order.fechaEntregaReal && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('actualDelivery')}</span>
-                    <span className="text-gray-900">{formatDate(order.fechaEntregaReal)}</span>
+                    <span className="text-foreground">{formatDate(order.fechaEntregaReal)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('createdLabel')}</span>
-                  <span className="text-gray-900">{formatDate(order.creadoEn)}</span>
+                  <span className="text-foreground">{formatDate(order.creadoEn)}</span>
                 </div>
                 {order.actualizadoEn && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('updatedLabel')}</span>
-                    <span className="text-gray-900">{formatDate(order.actualizadoEn)}</span>
+                    <span className="text-foreground">{formatDate(order.actualizadoEn)}</span>
                   </div>
                 )}
               </div>

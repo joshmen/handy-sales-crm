@@ -276,7 +276,7 @@ export default function ProfilePage() {
                       [UserRole.ADMIN]: 'bg-blue-100 text-blue-800',
                       [UserRole.SUPERVISOR]: 'bg-green-100 text-green-800',
                       [UserRole.VENDEDOR]: 'bg-yellow-100 text-yellow-800',
-                    }[profile.role as UserRole] || 'bg-surface-3 text-gray-800'
+                    }[profile.role as UserRole] || 'bg-surface-3 text-foreground'
                   }
                 >
                   {profile.esSuperAdmin && t('roles.superAdmin')}

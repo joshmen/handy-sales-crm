@@ -71,7 +71,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
               <Icon size={20} className={colors.icon} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">{title}</p>
+              <p className="text-sm font-medium text-foreground/70">{title}</p>
               <p className={`text-2xl font-bold ${colors.text}`}>
                 {typeof value === "number" && title.includes("$")
                   ? `$${value.toLocaleString("es-MX", {

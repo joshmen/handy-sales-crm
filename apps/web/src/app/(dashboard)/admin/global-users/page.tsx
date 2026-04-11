@@ -123,12 +123,12 @@ export default function GlobalUsersPage() {
         <div className="flex items-center gap-2 text-[13px] mb-4">
           <span className="text-muted-foreground">{ta('breadcrumb')}</span>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          <span className="text-gray-900 font-semibold">{t('breadcrumb')}</span>
+          <span className="text-foreground font-semibold">{t('breadcrumb')}</span>
         </div>
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {t('subtitle', { count: totalCount.toLocaleString() })}
             </p>
@@ -185,7 +185,7 @@ export default function GlobalUsersPage() {
               <div className="flex flex-col items-center justify-center h-64 gap-4">
                 <div className="flex items-center gap-2">
                   <img src="/logo-icon.svg" alt="Handy Suites" className="w-8 h-8" />
-                  <span className="text-lg font-semibold text-gray-700">Handy Suites<sup className="text-[8px] font-normal">®</sup></span>
+                  <span className="text-lg font-semibold text-foreground/80">Handy Suites<sup className="text-[8px] font-normal">®</sup></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4 text-[#16A34A]" fill="none" viewBox="0 0 24 24">
@@ -198,7 +198,7 @@ export default function GlobalUsersPage() {
             ) : users.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 py-20">
                 <Users className="w-10 h-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('noUsers')}</h3>
+                <h3 className="text-lg font-semibold text-foreground/80 mb-2">{t('noUsers')}</h3>
                 <p className="text-sm text-muted-foreground text-center">
                   {t('noUsersDesc')}
                 </p>
@@ -219,7 +219,7 @@ export default function GlobalUsersPage() {
                   {users.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
+                      className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
                     >
                       <div className="w-[200px] flex items-center gap-2">
                         <div
@@ -227,14 +227,14 @@ export default function GlobalUsersPage() {
                         >
                           {getInitials(user.nombre)}
                         </div>
-                        <span className="text-[13px] text-gray-900 truncate">{user.nombre}</span>
+                        <span className="text-[13px] text-foreground truncate">{user.nombre}</span>
                       </div>
 
                       <div className="w-[220px] text-[13px] text-foreground/70 truncate">
                         {user.email}
                       </div>
 
-                      <div className="w-[180px] text-[13px] text-gray-700 truncate">
+                      <div className="w-[180px] text-[13px] text-foreground/80 truncate">
                         {user.tenantNombre}
                       </div>
 
@@ -279,7 +279,7 @@ export default function GlobalUsersPage() {
                             {getInitials(user.nombre)}
                           </div>
                           <div>
-                            <span className="text-[13px] font-medium text-gray-900">{user.nombre}</span>
+                            <span className="text-[13px] font-medium text-foreground">{user.nombre}</span>
                             <p className="text-[12px] text-muted-foreground">{user.email}</p>
                           </div>
                         </div>

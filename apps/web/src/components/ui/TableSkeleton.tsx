@@ -18,10 +18,10 @@ export function TableSkeleton({
       <table className="w-full">
         {showHeader && (
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-border-subtle">
               {Array.from({ length: columns }).map((_, index) => (
                 <th key={index} className="px-4 py-3 text-left">
-                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  <div className="h-4 bg-surface-3 rounded w-20"></div>
                 </th>
               ))}
             </tr>
@@ -29,24 +29,24 @@ export function TableSkeleton({
         )}
         <tbody>
           {Array.from({ length: rows }).map((_, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-gray-100">
+            <tr key={rowIndex} className="border-b border-border-subtle">
               {Array.from({ length: columns }).map((_, colIndex) => (
                 <td key={colIndex} className="px-4 py-4">
                   {colIndex === 0 ? (
                     // Primera columna - simular usuario con avatar y texto
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                      <div className="h-10 w-10 bg-surface-3 rounded-full"></div>
                       <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-24"></div>
-                        <div className="h-3 bg-gray-200 rounded w-32"></div>
+                        <div className="h-4 bg-surface-3 rounded w-24"></div>
+                        <div className="h-3 bg-surface-3 rounded w-32"></div>
                       </div>
                     </div>
                   ) : colIndex === 1 || colIndex === 2 ? (
                     // Segunda y tercera columna - badges/pills
-                    <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                    <div className="h-6 bg-surface-3 rounded-full w-16"></div>
                   ) : (
                     // Otras columnas - texto simple
-                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                    <div className="h-4 bg-surface-3 rounded w-16"></div>
                   )}
                 </td>
               ))}

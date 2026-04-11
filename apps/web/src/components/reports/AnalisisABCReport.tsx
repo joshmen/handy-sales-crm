@@ -82,8 +82,8 @@ export function AnalisisABCReport() {
     <div className="space-y-4">
       <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">{t("analyze")}</label>
-          <select value={tipo} onChange={e => setTipo(e.target.value as "clientes" | "productos")} className="px-3 py-2 text-sm border border-gray-300 rounded-md">
+          <label className="text-xs font-medium text-foreground/70">{t("analyze")}</label>
+          <select value={tipo} onChange={e => setTipo(e.target.value as "clientes" | "productos")} className="px-3 py-2 text-sm border border-border-default rounded-md">
             <option value="clientes">{t("clients")}</option>
             <option value="productos">{t("products")}</option>
           </select>
@@ -99,7 +99,7 @@ export function AnalisisABCReport() {
           ]} />
           {top20.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">{t("chartTitle")}</h3>
+              <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
               <Chart type="line" options={chartOptions} series={[
                 { name: t("salesLabel"), type: "column", data: top20.map(i => i.totalVentas) },
                 { name: t("accumLabel"), type: "line", data: top20.map(i => i.porcentajeAcumulado) },

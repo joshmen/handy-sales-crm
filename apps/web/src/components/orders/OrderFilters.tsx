@@ -84,7 +84,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
       <div className="relative">
         <Search
           size={20}
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
         />
         <Input
           placeholder={t('searchPlaceholder')}
@@ -152,8 +152,8 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
       {/* Botón para limpiar filtros */}
       {hasActiveFilters && (
         <div className="flex justify-between items-center pt-2 border-t">
-          <span className="text-sm text-gray-500">{t('activeFilters')}</span>
-          <Button variant="outline" size="sm" onClick={onClearFilters} className="text-gray-600">
+          <span className="text-sm text-muted-foreground">{t('activeFilters')}</span>
+          <Button variant="outline" size="sm" onClick={onClearFilters} className="text-foreground/70">
             <X size={16} className="mr-1" />
             {t('clearFilters')}
           </Button>

@@ -29,7 +29,7 @@ interface VisitCardProps {
 const resultadoColorConfig: Record<ResultadoVisita, { key: string; color: string; dotColor: string }> = {
   [ResultadoVisita.Pendiente]: { key: 'pending', color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
   [ResultadoVisita.Venta]: { key: 'withSale', color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
-  [ResultadoVisita.SinVenta]: { key: 'noSale', color: 'bg-gray-100 text-gray-800', dotColor: 'bg-gray-400' },
+  [ResultadoVisita.SinVenta]: { key: 'noSale', color: 'bg-surface-3 text-foreground', dotColor: 'bg-muted-foreground' },
   [ResultadoVisita.NoEncontrado]: { key: 'notFound', color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
   [ResultadoVisita.Reprogramada]: { key: 'rescheduled', color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
   [ResultadoVisita.Cancelada]: { key: 'cancelled', color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
@@ -41,7 +41,7 @@ const tipoVisitaColorConfig: Record<TipoVisita, { key: string; color: string }> 
   [TipoVisita.Entrega]: { key: 'delivery', color: 'text-purple-600' },
   [TipoVisita.Prospeccion]: { key: 'prospecting', color: 'text-orange-600' },
   [TipoVisita.Seguimiento]: { key: 'followUp', color: 'text-cyan-600' },
-  [TipoVisita.Otro]: { key: 'other', color: 'text-gray-600' },
+  [TipoVisita.Otro]: { key: 'other', color: 'text-foreground/70' },
 };
 
 export const VisitCard: React.FC<VisitCardProps> = ({
@@ -111,14 +111,14 @@ export const VisitCard: React.FC<VisitCardProps> = ({
         {/* Información del cliente */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center space-x-2">
-            <User size={16} className="text-gray-400" />
+            <User size={16} className="text-muted-foreground" />
             <span className="text-sm font-medium">{visit.clienteNombre}</span>
           </div>
 
           {visit.clienteDireccion && (
             <div className="flex items-center space-x-2">
-              <MapPin size={16} className="text-gray-400" />
-              <span className="text-sm text-gray-600 truncate">
+              <MapPin size={16} className="text-muted-foreground" />
+              <span className="text-sm text-foreground/70 truncate">
                 {visit.clienteDireccion}
               </span>
             </div>
@@ -126,8 +126,8 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
           {visit.fechaProgramada && (
             <div className="flex items-center space-x-2">
-              <Calendar size={16} className="text-gray-400" />
-              <span className="text-sm text-gray-600">
+              <Calendar size={16} className="text-muted-foreground" />
+              <span className="text-sm text-foreground/70">
                 Programada: {formatDate(visit.fechaProgramada)}
               </span>
             </div>
@@ -135,8 +135,8 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
           {visit.fechaHoraInicio && (
             <div className="flex items-center space-x-2">
-              <Clock size={16} className="text-gray-400" />
-              <span className="text-sm text-gray-600">
+              <Clock size={16} className="text-muted-foreground" />
+              <span className="text-sm text-foreground/70">
                 Inicio: {formatTime(visit.fechaHoraInicio)}
                 {visit.fechaHoraFin && ` - Fin: ${formatTime(visit.fechaHoraFin)}`}
               </span>
@@ -146,9 +146,9 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
         {/* Métricas */}
         {visit.duracionMinutos && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="mb-4 p-3 bg-surface-1 rounded-lg">
             <div className="text-center">
-              <span className="text-xs text-gray-500">Duración</span>
+              <span className="text-xs text-muted-foreground">Duración</span>
               <p className="font-semibold text-sm">{visit.duracionMinutos} min</p>
             </div>
           </div>

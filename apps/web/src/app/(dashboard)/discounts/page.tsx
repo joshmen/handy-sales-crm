@@ -277,7 +277,7 @@ export default function DiscountsPage() {
       width: 'flex',
       cellRenderer: (d) => (
         <div>
-          <div className="text-lg font-semibold text-gray-900">{d.descuentoPorcentaje}%</div>
+          <div className="text-lg font-semibold text-foreground">{d.descuentoPorcentaje}%</div>
         </div>
       ),
     },
@@ -287,7 +287,7 @@ export default function DiscountsPage() {
       sortable: true,
       width: 'flex',
       cellRenderer: (d) => (
-        <div className="text-[13px] text-gray-900">{d.cantidadMinima} {t('units')}</div>
+        <div className="text-[13px] text-foreground">{d.cantidadMinima} {t('units')}</div>
       ),
     },
     ...(activeTab === 'product' ? [{
@@ -296,7 +296,7 @@ export default function DiscountsPage() {
       width: 'flex' as const,
       cellRenderer: (d: DescuentoPorCantidadDto) => (
         <div>
-          <div className="text-[13px] font-medium text-gray-900">{d.productoNombre || '-'}</div>
+          <div className="text-[13px] font-medium text-foreground">{d.productoNombre || '-'}</div>
           <div className="text-xs text-muted-foreground">{d.productoCodigo || ''}</div>
         </div>
       ),
@@ -415,7 +415,7 @@ export default function DiscountsPage() {
           <div className="relative" data-tour="discounts-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -427,14 +427,14 @@ export default function DiscountsPage() {
                 <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={async () => { setShowDataMenu(false); try { await exportToCsv('descuentos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
                     {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground/80 hover:bg-surface-1"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
                     {tc('importCsv')}
@@ -452,13 +452,13 @@ export default function DiscountsPage() {
             <div className="absolute right-0 top-full mt-1 w-56 bg-surface-2 border border-border-subtle rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
               <button
                 onClick={() => handleOpenCreate('Global')}
-                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-surface-1 first:rounded-t-lg"
+                className="w-full px-4 py-2.5 text-left text-[13px] text-foreground/80 hover:bg-surface-1 first:rounded-t-lg"
               >
                 {t('globalDiscount')}
               </button>
               <button
                 onClick={() => handleOpenCreate('Producto')}
-                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-surface-1 last:rounded-b-lg border-t border-gray-100"
+                className="w-full px-4 py-2.5 text-left text-[13px] text-foreground/80 hover:bg-surface-1 last:rounded-b-lg border-t border-border-subtle"
               >
                 {t('productDiscount')}
               </button>
@@ -474,7 +474,7 @@ export default function DiscountsPage() {
               className={`px-5 py-2 text-[13px] font-medium border-b-2 transition-colors ${
                 activeTab === 'global'
                   ? 'text-green-600 border-green-600'
-                  : 'text-muted-foreground border-transparent hover:text-gray-700'
+                  : 'text-muted-foreground border-transparent hover:text-foreground/80'
               }`}
             >
               {t('tabGlobal', { count: globalCount })}
@@ -484,7 +484,7 @@ export default function DiscountsPage() {
               className={`px-5 py-2 text-[13px] font-medium border-b-2 transition-colors ${
                 activeTab === 'product'
                   ? 'text-green-600 border-green-600'
-                  : 'text-muted-foreground border-transparent hover:text-gray-700'
+                  : 'text-muted-foreground border-transparent hover:text-foreground/80'
               }`}
             >
               {t('tabProduct', { count: productCount })}
@@ -575,7 +575,7 @@ export default function DiscountsPage() {
                         <PercentIcon className="w-5 h-5 text-orange-600" weight="duotone" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{discount.descuentoPorcentaje}% de descuento</p>
+                        <p className="text-sm font-medium text-foreground">{discount.descuentoPorcentaje}% de descuento</p>
                         {discount.tipoAplicacion === 'Producto' && <p className="text-xs text-muted-foreground truncate">{discount.productoNombre || '-'}</p>}
                       </div>
                     </div>
@@ -588,8 +588,8 @@ export default function DiscountsPage() {
                     <span>{t('startingFrom', { count: discount.cantidadMinima })}</span>
                     {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-muted-foreground">- {discount.productoCodigo}</span>}
                   </div>
-                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-surface-2 border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50">
+                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-foreground/80 bg-surface-2 border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50">
                       <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                     </button>
                     {deleteConfirmId === discount.id ? (
@@ -631,7 +631,7 @@ export default function DiscountsPage() {
         <form onSubmit={handleSubmit} className="p-6 space-y-4" data-tour="discount-form">
           <div className="grid grid-cols-2 gap-4" data-tour="discounts-drawer-fields">
             <div data-tour="discounts-drawer-percentage">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('percentage')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -649,7 +649,7 @@ export default function DiscountsPage() {
             </div>
 
             <div data-tour="discounts-drawer-quantity">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('minQuantity')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -665,7 +665,7 @@ export default function DiscountsPage() {
 
           {watch('tipoAplicacion') === 'Producto' && (
             <div data-tour="discounts-drawer-product">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 {t('product')} <span className="text-red-500">*</span>
               </label>
               <SearchableSelect

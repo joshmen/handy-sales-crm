@@ -76,7 +76,7 @@ export function DiscountPreview({
           <div className="space-y-3">
             <div>
               <div className="text-sm font-medium">Nombre:</div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-foreground/70">
                 {formData.name || 'Sin nombre'}
               </div>
             </div>
@@ -84,7 +84,7 @@ export function DiscountPreview({
             {formData.description && (
               <div>
                 <div className="text-sm font-medium">Descripción:</div>
-                <div className="text-sm text-gray-600">{formData.description}</div>
+                <div className="text-sm text-foreground/70">{formData.description}</div>
               </div>
             )}
             
@@ -98,7 +98,7 @@ export function DiscountPreview({
             {formData.type === DiscountType.PRODUCT_SPECIFIC && productName && (
               <div>
                 <div className="text-sm font-medium">Producto:</div>
-                <div className="text-sm text-gray-600">{productName}</div>
+                <div className="text-sm text-foreground/70">{productName}</div>
               </div>
             )}
 
@@ -115,13 +115,13 @@ export function DiscountPreview({
                 {formData.quantityRanges
                   .filter(range => range.minQuantity > 0 && range.discountValue > 0)
                   .map((range, index) => (
-                    <div key={index} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    <div key={index} className="text-xs text-foreground/70 bg-surface-1 p-2 rounded">
                       {range.minQuantity}{range.maxQuantity ? `-${range.maxQuantity}` : '+'} unidades: 
                       {' '}{range.discountValue}{formData.method === DiscountMethod.PERCENTAGE ? '%' : '$'}
                     </div>
                   ))}
                 {formData.quantityRanges.filter(r => r.minQuantity > 0 && r.discountValue > 0).length === 0 && (
-                  <div className="text-xs text-gray-400 italic">Sin rangos configurados</div>
+                  <div className="text-xs text-muted-foreground italic">Sin rangos configurados</div>
                 )}
               </div>
             </div>
@@ -129,20 +129,20 @@ export function DiscountPreview({
             {formData.minimumAmount && (
               <div>
                 <div className="text-sm font-medium">Monto mínimo:</div>
-                <div className="text-sm text-gray-600">${formData.minimumAmount}</div>
+                <div className="text-sm text-foreground/70">${formData.minimumAmount}</div>
               </div>
             )}
 
             {formData.maximumDiscount && (
               <div>
                 <div className="text-sm font-medium">Descuento máximo:</div>
-                <div className="text-sm text-gray-600">${formData.maximumDiscount}</div>
+                <div className="text-sm text-foreground/70">${formData.maximumDiscount}</div>
               </div>
             )}
 
             <div>
               <div className="text-sm font-medium">Vigencia:</div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-foreground/70">
                 {formData.isPermanent ? 'Permanente' : 
                   formData.validFrom && formData.validTo ?
                     `${formData.validFrom.toLocaleDateString()} - ${formData.validTo.toLocaleDateString()}` :
@@ -195,7 +195,7 @@ export function DiscountPreview({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-gray-600 space-y-2">
+            <div className="text-sm text-foreground/70 space-y-2">
               <p><strong>Descuentos globales:</strong> Se aplican según la cantidad total de productos en la orden.</p>
               <p><strong>Descuentos por producto:</strong> Se aplican solo al producto específico seleccionado.</p>
               <p><strong>Rangos:</strong> Define cantidad mínima y máxima para cada nivel de descuento.</p>

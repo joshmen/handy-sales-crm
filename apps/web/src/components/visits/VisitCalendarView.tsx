@@ -150,7 +150,7 @@ export function VisitCalendarView({
     <div className="relative">
       {loading && (
         <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
-          <div className="text-sm text-gray-500">{t('loadingVisits')}</div>
+          <div className="text-sm text-muted-foreground">{t('loadingVisits')}</div>
         </div>
       )}
 
@@ -159,7 +159,7 @@ export function VisitCalendarView({
         {Object.entries(VISIT_TYPE_COLORS).map(([type, color]) => (
           <div key={type} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-            <span className="text-gray-600">{tt(VISIT_TYPE_LABEL_KEYS[type] || 'other')}</span>
+            <span className="text-foreground/70">{tt(VISIT_TYPE_LABEL_KEYS[type] || 'other')}</span>
           </div>
         ))}
       </div>

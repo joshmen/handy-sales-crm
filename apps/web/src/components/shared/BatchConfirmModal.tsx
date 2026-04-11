@@ -42,7 +42,7 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
       title={tc('batchConfirmTitle', { action: actionVerb, count: selectedCount, label: entityLabel })}
     >
       <div className="py-4">
-        <p className="text-gray-500">
+        <p className="text-muted-foreground">
           {tc('batchConfirmMessage', { action: actionVerb.toLowerCase(), count: selectedCount, label: entityLabel })}{' '}
           {consequence}
         </p>
@@ -51,7 +51,7 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
         <button
           onClick={onClose}
           disabled={loading}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-foreground/80 bg-white border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
         >
           {tc('cancel')}
         </button>

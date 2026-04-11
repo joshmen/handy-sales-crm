@@ -222,7 +222,7 @@ export function InventoryModal({
               id="current-stock"
               value={currentStock}
               readOnly
-              className="bg-gray-50"
+              className="bg-surface-1"
             />
           </div>
         )}
@@ -244,7 +244,7 @@ export function InventoryModal({
                   onChange={(e) =>
                     updateAdjustmentData({ type: e.target.value as InventoryAdjustmentType })
                   }
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border-default"
                 />
                 <Label htmlFor={option.value} className="text-sm font-normal">
                   {option.label}

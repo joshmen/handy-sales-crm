@@ -71,8 +71,8 @@ export function ComisionesReport() {
     <div className="space-y-4">
       <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">{t("commissionPct")}</label>
-          <input type="number" value={porcentaje} onChange={e => setPorcentaje(Number(e.target.value))} min={0} max={100} step={0.5} className="px-3 py-2 text-sm border border-gray-300 rounded-md w-20" />
+          <label className="text-xs font-medium text-foreground/70">{t("commissionPct")}</label>
+          <input type="number" value={porcentaje} onChange={e => setPorcentaje(Number(e.target.value))} min={0} max={100} step={0.5} className="px-3 py-2 text-sm border border-border-default rounded-md w-20" />
         </div>
       </ReportFilters>
       {data && (

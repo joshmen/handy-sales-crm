@@ -111,13 +111,13 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       <Card className={className}>
         <CardHeader>
           <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-48"></div>
+            <div className="h-6 bg-surface-3 rounded w-32 mb-2"></div>
+            <div className="h-4 bg-surface-3 rounded w-48"></div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse">
-            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-surface-3 rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -129,12 +129,12 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       <Card className={className}>
         <CardHeader>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-600">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            <p className="text-sm text-foreground/70">{subtitle}</p>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64 text-gray-400">
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
             <p>No hay datos de actividad disponibles</p>
           </div>
         </CardContent>
@@ -147,22 +147,22 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-600">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            <p className="text-sm text-foreground/70">{subtitle}</p>
           </div>
 
           {/* Métricas rápidas */}
           <div className="flex space-x-6 text-right">
             <div>
-              <p className="text-xs text-gray-500">Actividades</p>
+              <p className="text-xs text-muted-foreground">Actividades</p>
               <p className="text-sm font-semibold text-blue-600">{totals.totalActivities}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Logins</p>
+              <p className="text-xs text-muted-foreground">Logins</p>
               <p className="text-sm font-semibold text-green-600">{totals.logins}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Errores</p>
+              <p className="text-xs text-muted-foreground">Errores</p>
               <p className="text-sm font-semibold text-red-600">{totals.errors}</p>
             </div>
           </div>

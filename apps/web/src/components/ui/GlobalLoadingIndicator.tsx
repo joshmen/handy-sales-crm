@@ -16,10 +16,10 @@ export const GlobalLoadingIndicator: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/20 backdrop-blur-sm transition-opacity">
-      <div className="rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+      <div className="rounded-xl bg-white p-6 shadow-2xl dark:bg-foreground">
         <div className="flex flex-col items-center gap-3">
           <Loading size="lg" className="border-teal-500 border-t-transparent" />
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+          <span className="text-sm font-medium text-foreground/70 dark:text-muted-foreground/60">
             {getLoadingText()}
           </span>
         </div>

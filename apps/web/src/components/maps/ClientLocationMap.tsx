@@ -177,12 +177,12 @@ export function ClientLocationMap({
   if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
     return (
       <div
-        className="flex items-center justify-center bg-gray-100 rounded-lg"
+        className="flex items-center justify-center bg-surface-3 rounded-lg"
         style={{ height }}
       >
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {t('notConfigured')}{' '}
-          <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{' '}
+          <code className="bg-surface-3 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{' '}
           {t('notConfiguredSuffix')}
         </p>
       </div>
@@ -192,7 +192,7 @@ export function ClientLocationMap({
   if (loadError) {
     return (
       <div
-        className="flex items-center justify-center bg-gray-100 rounded-lg"
+        className="flex items-center justify-center bg-surface-3 rounded-lg"
         style={{ height }}
       >
         <p className="text-sm text-red-500">{t('errorLoadingMaps')}</p>
@@ -203,11 +203,11 @@ export function ClientLocationMap({
   if (!isLoaded) {
     return (
       <div
-        className="flex items-center justify-center bg-gray-100 rounded-lg"
+        className="flex items-center justify-center bg-surface-3 rounded-lg"
         style={{ height }}
       >
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">{t('loadingMap')}</span>
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-sm text-muted-foreground">{t('loadingMap')}</span>
       </div>
     );
   }
@@ -216,7 +216,7 @@ export function ClientLocationMap({
     <div className="space-y-2">
       {/* Map */}
       <div
-        className={`rounded-lg overflow-hidden border ${isOutside ? 'border-red-400' : 'border-gray-200'}`}
+        className={`rounded-lg overflow-hidden border ${isOutside ? 'border-red-400' : 'border-border-subtle'}`}
         style={{ height }}
       >
         <GoogleMap
@@ -276,7 +276,7 @@ export function ClientLocationMap({
           {t('clientOutsideZone', { zone: selectedZone?.nombre ?? '' })}
         </p>
       ) : (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground">
           {t('mapInstructions')}
         </p>
       )}

@@ -80,14 +80,14 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
   return (
     <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 ${className}`}>
       {stats.map((stat, index) => (
-        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+        <div key={index} className="bg-white border border-border-subtle rounded-lg p-4">
           <div className="flex items-start justify-between mb-3">
-            <p className="text-[11px] text-gray-500">{stat.label}</p>
+            <p className="text-[11px] text-muted-foreground">{stat.label}</p>
             <div className={`p-1.5 rounded-lg ${stat.bgColor} shrink-0`}>
               <stat.icon size={14} className={stat.color} />
             </div>
           </div>
-          <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+          <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
         </div>
       ))}
     </div>

@@ -7,16 +7,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-elevation-1 hover:bg-primary/90 hover:shadow-elevation-2",
+        default: "bg-gradient-to-b from-primary to-primary/85 text-primary-foreground shadow-elevation-1 hover:shadow-elevation-2 hover:brightness-110",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-elevation-1 hover:bg-destructive/90 hover:shadow-elevation-2",
+          "bg-gradient-to-b from-destructive to-destructive/85 text-destructive-foreground shadow-elevation-1 hover:shadow-elevation-2 hover:brightness-110",
         outline:
-          "border border-border-subtle bg-surface-2 hover:bg-surface-3 hover:border-border-strong hover:text-accent-foreground",
+          "border border-border-subtle bg-surface-2 hover:bg-surface-3 hover:border-border-strong hover:shadow-elevation-1 hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-elevation-1",
         ghost: "hover:bg-surface-3 hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-success text-success-foreground shadow-elevation-1 hover:bg-success/90 hover:shadow-elevation-2",
+        success: "bg-gradient-to-b from-success to-success/85 text-success-foreground shadow-elevation-1 hover:shadow-elevation-2 hover:brightness-110",
       },
       size: {
         default: "h-10 px-4 py-2",

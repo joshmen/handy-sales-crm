@@ -197,8 +197,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
             </Command.Item>
             <Command.Item value="ir-a-configuracion" onSelect={() => navigate('/settings')} className={itemCls}>
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <Settings className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-surface-3 dark:bg-foreground">
+                <Settings className="h-4 w-4 text-foreground/70 dark:text-muted-foreground" />
               </div>
               <span>{t('goToSettings')}</span>
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
