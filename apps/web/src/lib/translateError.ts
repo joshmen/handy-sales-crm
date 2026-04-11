@@ -103,6 +103,31 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Parámetros de solicitud inválidos.': { es: 'Parámetros de solicitud inválidos.', en: 'Invalid request parameters.' },
   'Acceso no autorizado.': { es: 'Acceso no autorizado.', en: 'Unauthorized access.' },
   'Recurso no encontrado.': { es: 'Recurso no encontrado.', en: 'Resource not found.' },
+
+  // Zone validation (FluentValidation + service)
+  'El nombre de la zona es obligatorio.': { es: 'El nombre de la zona es obligatorio.', en: 'Zone name is required.' },
+  'La zona no existe.': { es: 'La zona no existe.', en: 'Zone does not exist.' },
+  'La zona no existe o no tienes permisos para editarla.': { es: 'La zona no existe o no tienes permisos para editarla.', en: 'Zone does not exist or you don\'t have permission to edit it.' },
+  'La zona no existe o no tienes permisos para eliminarla.': { es: 'La zona no existe o no tienes permisos para eliminarla.', en: 'Zone does not exist or you don\'t have permission to delete it.' },
+  'Si se especifica latitud, también se debe especificar longitud (y viceversa).': { es: 'Si se especifica latitud, también se debe especificar longitud (y viceversa).', en: 'If latitude is specified, longitude must also be specified (and vice versa).' },
+  'El radio debe ser mayor a 0 y menor o igual a 100 km.': { es: 'El radio debe ser mayor a 0 y menor o igual a 100 km.', en: 'Radius must be greater than 0 and less than or equal to 100 km.' },
+  'Si se especifica radio, también se deben especificar latitud y longitud.': { es: 'Si se especifica radio, también se deben especificar latitud y longitud.', en: 'If radius is specified, latitude and longitude must also be specified.' },
+
+  // FluentValidation common patterns
+  'El nombre es obligatorio.': { es: 'El nombre es obligatorio.', en: 'Name is required.' },
+  'El nombre de la categoría es obligatorio.': { es: 'El nombre de la categoría es obligatorio.', en: 'Category name is required.' },
+  'El nombre de la lista de precios es obligatorio.': { es: 'El nombre de la lista de precios es obligatorio.', en: 'Price list name is required.' },
+  'El nombre de la unidad es obligatorio.': { es: 'El nombre de la unidad es obligatorio.', en: 'Unit name is required.' },
+  'El nombre de la ruta es obligatorio.': { es: 'El nombre de la ruta es obligatorio.', en: 'Route name is required.' },
+  'El cliente es requerido': { es: 'El cliente es requerido', en: 'Client is required' },
+  'El producto es requerido': { es: 'El producto es requerido', en: 'Product is required' },
+  'El producto es obligatorio.': { es: 'El producto es obligatorio.', en: 'Product is required.' },
+  'La cantidad debe ser mayor a cero.': { es: 'La cantidad debe ser mayor a cero.', en: 'Quantity must be greater than zero.' },
+  'La cantidad debe ser mayor a 0': { es: 'La cantidad debe ser mayor a 0', en: 'Quantity must be greater than 0' },
+  'El monto debe ser mayor a 0': { es: 'El monto debe ser mayor a 0', en: 'Amount must be greater than 0' },
+  'El pedido debe contener al menos un producto.': { es: 'El pedido debe contener al menos un producto.', en: 'Order must contain at least one product.' },
+  'La meta debe ser mayor a 0': { es: 'La meta debe ser mayor a 0', en: 'Goal must be greater than 0' },
+  'El tipo de movimiento debe ser ENTRADA, SALIDA o AJUSTE': { es: 'El tipo de movimiento debe ser ENTRADA, SALIDA o AJUSTE', en: 'Movement type must be ENTRY, EXIT, or ADJUSTMENT' },
 };
 
 /**
@@ -162,6 +187,41 @@ export function translateError(message: string): string {
     {
       pattern: /^Stock insuficiente:/,
       replacement: { en: message.replace('Stock insuficiente:', 'Insufficient stock:') },
+    },
+    {
+      pattern: /^La zona '.+' se traslapa con la zona '.+'/,
+      replacement: { en: message
+        .replace(/^La zona '(.+)' se traslapa con la zona '(.+)' \(distancia: (.+) km, solapamiento: (.+) km\)$/,
+          "Zone '$1' overlaps with zone '$2' (distance: $3 km, overlap: $4 km)")
+      },
+    },
+    {
+      pattern: /^No se puede eliminar la zona porque tiene \d+ cliente/,
+      replacement: { en: message
+        .replace(/^No se puede eliminar la zona porque tiene (\d+) cliente\(s\) asociado\(s\)\. (.+)$/,
+          'Cannot delete zone because it has $1 associated client(s). Reassign or remove the clients first.')
+      },
+    },
+    {
+      pattern: /^No se puede desactivar la zona porque tiene \d+ cliente/,
+      replacement: { en: message
+        .replace(/^No se puede desactivar la zona porque tiene (\d+) cliente\(s\) activo\(s\) asociado\(s\)\. (.+)$/,
+          'Cannot deactivate zone because it has $1 active client(s). Deactivate or reassign the clients first.')
+      },
+    },
+    {
+      pattern: /^La latitud debe estar entre/,
+      replacement: { en: message
+        .replace(/^La latitud debe estar entre .+ \(límites de México\)\. Valor recibido: (.+)$/,
+          'Latitude must be between 14.0 and 33.0 (Mexico limits). Received: $1')
+      },
+    },
+    {
+      pattern: /^La longitud debe estar entre/,
+      replacement: { en: message
+        .replace(/^La longitud debe estar entre .+ \(límites de México\)\. Valor recibido: (.+)$/,
+          'Longitude must be between -118.0 and -86.0 (Mexico limits). Received: $1')
+      },
     },
     {
       pattern: /^Escala de descuentos inconsistente/,
