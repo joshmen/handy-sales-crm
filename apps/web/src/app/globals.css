@@ -81,6 +81,34 @@ body {
 
     /* Radius - More rounded for modern look */
     --radius: 0.75rem;
+
+    /* ═══ SURFACE ELEVATION SYSTEM ═══ */
+    --surface-1: 0 0% 98%;        /* fondo general */
+    --surface-2: 0 0% 100%;       /* cards normales */
+    --surface-3: 0 0% 96%;        /* hover / active */
+    --surface-4: 0 0% 100%;       /* modals / floating */
+
+    /* ═══ SHADOW ELEVATION SYSTEM ═══ */
+    --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px 0 rgba(0,0,0,0.02);
+    --shadow-2: 0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 6px -2px rgba(0,0,0,0.04);
+    --shadow-3: 0 12px 32px -4px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.06);
+
+    /* ═══ BORDER ELEVATION SYSTEM ═══ */
+    --border-subtle: 0 0% 93%;
+    --border-default: 0 0% 90%;
+    --border-strong: 0 0% 82%;
+
+    /* ═══ RADIUS SCALE ═══ */
+    --radius-xs: 0.25rem;         /* 4px  - pills, tiny */
+    --radius-sm: 0.375rem;        /* 6px  - badges, chips */
+    --radius-md: 0.5rem;          /* 8px  - buttons, inputs */
+    --radius-lg: 0.75rem;         /* 12px - cards, panels */
+    --radius-xl: 1rem;            /* 16px - modals, drawers */
+    --radius-2xl: 1.25rem;        /* 20px - hero cards */
+
+    /* ═══ ACCENT COLOR (info/links) ═══ */
+    --accent-color: 210 80% 56%;
+    --accent-color-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -122,6 +150,26 @@ body {
     --chart-3: 25 85% 58%;
     --chart-4: 280 60% 62%;
     --chart-5: 340 70% 58%;
+
+    /* ═══ SURFACE ELEVATION SYSTEM ═══ */
+    --surface-1: 200 20% 7%;
+    --surface-2: 200 18% 11%;
+    --surface-3: 200 16% 14%;
+    --surface-4: 200 16% 17%;
+
+    /* ═══ SHADOW ELEVATION SYSTEM ═══ */
+    --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.2), 0 1px 2px 0 rgba(0,0,0,0.12);
+    --shadow-2: 0 4px 12px -2px rgba(0,0,0,0.3), 0 2px 6px -2px rgba(0,0,0,0.15);
+    --shadow-3: 0 12px 32px -4px rgba(0,0,0,0.4), 0 8px 16px -4px rgba(0,0,0,0.2);
+
+    /* ═══ BORDER ELEVATION SYSTEM ═══ */
+    --border-subtle: 200 14% 16%;
+    --border-default: 200 14% 20%;
+    --border-strong: 200 14% 28%;
+
+    /* ═══ ACCENT COLOR ═══ */
+    --accent-color: 210 75% 62%;
+    --accent-color-foreground: 0 0% 100%;
   }
 }
 
@@ -190,9 +238,9 @@ body {
    Dark mode — remap hardcoded Tailwind grays
    One file to rule them all: fixes ~2,192 references across 200+ page files.
    ============================================ */
-.dark .bg-white { background-color: hsl(var(--card)); }
-.dark .bg-gray-50 { background-color: hsl(var(--background)); }
-.dark .bg-gray-100 { background-color: hsl(var(--muted)); }
+.dark .bg-white { background-color: hsl(var(--surface-2)); }
+.dark .bg-gray-50 { background-color: hsl(var(--surface-1)); }
+.dark .bg-gray-100 { background-color: hsl(var(--surface-3)); }
 
 .dark .text-gray-900 { color: hsl(var(--foreground)); }
 .dark .text-gray-800 { color: hsl(var(--foreground)); }

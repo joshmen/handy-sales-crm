@@ -121,6 +121,19 @@ module.exports = {
           800: "#991b1b",
           900: "#7f1d1d",
         },
+        // Surface elevation system
+        surface: {
+          1: "hsl(var(--surface-1))",
+          2: "hsl(var(--surface-2))",
+          3: "hsl(var(--surface-3))",
+          4: "hsl(var(--surface-4))",
+        },
+        "accent-color": {
+          DEFAULT: "hsl(var(--accent-color))",
+          foreground: "hsl(var(--accent-color-foreground))",
+        },
+        "border-subtle": "hsl(var(--border-subtle))",
+        "border-strong": "hsl(var(--border-strong))",
         // Tremor v3 semantic tokens
         tremor: {
           brand: {
@@ -174,20 +187,29 @@ module.exports = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xs: "var(--radius-xs)",
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
         'tremor-small': '0.375rem',
         'tremor-default': '0.5rem',
         'tremor-full': '9999px',
       },
       boxShadow: {
+        'elevation-1': 'var(--shadow-1)',
+        'elevation-2': 'var(--shadow-2)',
+        'elevation-3': 'var(--shadow-3)',
         'tremor-input': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         'tremor-card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         'tremor-dropdown': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         'dark-tremor-input': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         'dark-tremor-card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         'dark-tremor-dropdown': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+      },
+      maxWidth: {
+        page: "80rem",
       },
       fontSize: {
         'tremor-label': ['0.75rem', { lineHeight: '1rem' }],
@@ -313,11 +335,5 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("daisyui")],
-  daisyui: {
-    themes: ["light", "dark"],
-    base: false,
-    styled: true,
-    utils: true,
-  },
+  plugins: [require("tailwindcss-animate")],
 };
