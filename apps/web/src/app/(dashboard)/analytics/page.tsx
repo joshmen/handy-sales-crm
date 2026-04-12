@@ -82,6 +82,7 @@ const CHART_ICONS: { type: ChartType; icon: React.ElementType; label: string }[]
 
 export default function AnalyticsPage() {
   const t = useTranslations('analytics');
+  const tSources = useTranslations('analytics.sources');
   const tc = useTranslations('common');
 
   // Sources
@@ -121,8 +122,11 @@ export default function AnalyticsPage() {
   }, [selectedSource]);
 
   const sourceOptions: SearchableSelectOption[] = useMemo(
-    () => sources.map((s) => ({ value: s.id, label: s.name })),
-    [sources],
+    () => sources.map((s) => {
+      try { return { value: s.id, label: tSources(s.id) }; }
+      catch { return { value: s.id, label: s.name }; }
+    }),
+    [sources, tSources],
   );
 
   // Reset dimension/metric when source changes

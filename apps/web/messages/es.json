@@ -4766,7 +4766,17 @@
     "configHint": "Selecciona una fuente de datos, dimensión y métrica para crear tu gráfico",
     "noResults": "Sin resultados para esta consulta",
     "rows": "filas",
-    "exportPdf": "Exportar PDF"
+    "exportPdf": "Exportar PDF",
+    "sources": {
+      "ventas_diarias": "Ventas Diarias",
+      "ventas_vendedor": "Ventas por Vendedor",
+      "ventas_producto": "Ventas por Producto",
+      "ventas_zona": "Ventas por Zona",
+      "actividad_clientes": "Actividad de Clientes",
+      "inventario": "Estado de Inventario",
+      "cartera": "Cartera Vencida",
+      "kpis": "KPIs del Dashboard"
+    }
   },
   "backendMessages": {
     "2FA desactivado exitosamente": "2FA desactivado exitosamente",

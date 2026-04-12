@@ -4766,7 +4766,17 @@
     "configHint": "Select a data source, dimension, and metric to build your chart",
     "noResults": "No results for this query",
     "rows": "rows",
-    "exportPdf": "Export PDF"
+    "exportPdf": "Export PDF",
+    "sources": {
+      "ventas_diarias": "Daily Sales",
+      "ventas_vendedor": "Sales by Vendor",
+      "ventas_producto": "Sales by Product",
+      "ventas_zona": "Sales by Zone",
+      "actividad_clientes": "Client Activity",
+      "inventario": "Inventory Status",
+      "cartera": "Accounts Receivable",
+      "kpis": "Dashboard KPIs"
+    }
   },
   "backendMessages": {
     "2FA desactivado exitosamente": "2FA disabled successfully",

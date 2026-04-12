@@ -179,7 +179,7 @@ public static class AnalyticsEndpoints
 
             var selectParts = new List<string>();
             selectParts.AddRange(dimensions.Select(d => $"\"{d}\""));
-            selectParts.AddRange(metrics.Select(m => $"{m.Aggregate.ToUpperInvariant()}(\"{m.Column}\") AS \"{m.Label ?? m.Column}\""));
+            selectParts.AddRange(metrics.Select(m => $"{m.Aggregate.ToUpperInvariant()}(\"{m.Column}\") AS \"{m.Column}\""));
 
             if (selectParts.Count == 0)
             {
