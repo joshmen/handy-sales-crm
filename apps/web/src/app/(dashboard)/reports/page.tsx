@@ -36,6 +36,7 @@ import { EfectividadVisitasReport } from '@/components/reports/EfectividadVisita
 import { ComisionesReport } from '@/components/reports/ComisionesReport';
 import { RentabilidadClienteReport } from '@/components/reports/RentabilidadClienteReport';
 import { AnalisisABCReport } from '@/components/reports/AnalisisABCReport';
+import { ReportBuilder } from '@/components/reports/ReportBuilder';
 
 type ReportId =
   | 'ejecutivo'
@@ -102,6 +103,7 @@ export default function ReportsPage() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
   const [activeReport, setActiveReport] = useState<ReportId | null>(null);
+  const [view, setView] = useState<'reports' | 'builder'>('reports');
   const [tierInfo, setTierInfo] = useState<ReportTierInfo | null>(null);
 
   React.useEffect(() => {
@@ -159,36 +161,68 @@ export default function ReportsPage() {
             <ActiveComponent />
           </div>
         ) : (
-          <div className="space-y-6" data-tour="reports-cards">
-            {Object.entries(sections).map(([sectionKey, sectionReports]) => (
-              <div key={sectionKey}>
-                <h2 className="text-xs font-semibold text-muted-foreground mb-3 px-1">
-                  {t(sectionKey)}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {sectionReports.map(report => {
-                    const Icon = report.icon;
-                    return (
-                      <button
-                        key={report.id}
-                        onClick={() => handleReportClick(report.id)}
-                        className={`text-left bg-surface-2 dark:bg-foreground border border-border-subtle dark:border-border-strong rounded-xl p-5 transition-all hover:bg-surface-1 dark:hover:bg-foreground hover:border-border-default hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
-                      >
-                        <div className="flex items-start gap-3 mb-3">
-                          <Icon size={36} />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-semibold text-foreground dark:text-white">{t(report.labelKey)}</h3>
-                          {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground" />}
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{t(report.descKey)}</p>
-                      </button>
-                    );
-                  })}
-                </div>
+          <>
+            {/* Tabs: Reports | Report Builder */}
+            <div className="flex gap-1 bg-surface-3 rounded-lg p-1 w-fit mb-4">
+              <button
+                onClick={() => setView('reports')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  view === 'reports' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
+                }`}
+              >
+                {t('tabs.reports')}
+              </button>
+              <button
+                onClick={() => setView('builder')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  view === 'builder' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
+                }`}
+              >
+                {t('tabs.builder')}
+              </button>
+            </div>
+
+            {/* Reports grid */}
+            {view === 'reports' && (
+              <div className="space-y-6 animate-fade-in" data-tour="reports-cards">
+                {Object.entries(sections).map(([sectionKey, sectionReports]) => (
+                  <div key={sectionKey}>
+                    <h2 className="text-xs font-semibold text-muted-foreground mb-3 px-1">
+                      {t(sectionKey)}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {sectionReports.map(report => {
+                        const Icon = report.icon;
+                        return (
+                          <button
+                            key={report.id}
+                            onClick={() => handleReportClick(report.id)}
+                            className={`text-left bg-surface-2 dark:bg-foreground border border-border-subtle dark:border-border-strong rounded-xl p-5 transition-all hover:bg-surface-1 dark:hover:bg-foreground hover:border-border-default hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
+                          >
+                            <div className="flex items-start gap-3 mb-3">
+                              <Icon size={36} />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="text-sm font-semibold text-foreground dark:text-white">{t(report.labelKey)}</h3>
+                              {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground" />}
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{t(report.descKey)}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+
+            {/* Report Builder */}
+            {view === 'builder' && (
+              <div className="animate-fade-in">
+                <ReportBuilder />
+              </div>
+            )}
+          </>
         )}
     </PageHeader>
   );

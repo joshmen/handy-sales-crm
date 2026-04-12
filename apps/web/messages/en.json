@@ -2477,6 +2477,10 @@
     "title": "Reports & Analytics",
     "backToReports": "Back to reports",
     "lockedReport": "This report requires a higher plan. Your current plan: {plan}",
+    "tabs": {
+      "reports": "Reports",
+      "builder": "Report Builder"
+    },
     "sections": {
       "general": "General",
       "sales": "Sales",
