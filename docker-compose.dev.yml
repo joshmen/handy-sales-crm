@@ -279,12 +279,54 @@ services:
     profiles:
       - admin  # Solo se ejecuta si usas: docker-compose --profile admin up
 
+  # Apache Superset — Embedded Analytics (optional)
+  # Start with: docker-compose --profile superset up -d
+  # Access at: http://localhost:1084
+  # Default login: admin / admin
+  superset:
+    image: apache/superset:latest
+    container_name: handysuites_superset_dev
+    restart: unless-stopped
+    environment:
+      SUPERSET_SECRET_KEY: "handysuites-superset-dev-secret-key-change-in-production-2026"
+      SUPERSET_LOAD_EXAMPLES: "no"
+      # Use same PostgreSQL for Superset metadata
+      DATABASE_DB: superset_meta
+      DATABASE_HOST: postgres
+      DATABASE_PASSWORD: handy_pass
+      DATABASE_USER: handy_user
+      DATABASE_PORT: 5432
+      DATABASE_DIALECT: postgresql
+      # Enable embedded dashboards
+      FEATURE_FLAGS: '{"EMBEDDED_SUPERSET": true, "ENABLE_TEMPLATE_PROCESSING": true}'
+    ports:
+      - "1084:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - superset_dev_data:/app/superset_home
+    networks:
+      - handysuites_dev_network
+    profiles:
+      - superset
+    command: >
+      bash -c "
+        pip install psycopg2-binary &&
+        superset db upgrade &&
+        superset fab create-admin --username admin --firstname Admin --lastname Superset --email admin@handysuites.com --password admin 2>/dev/null || true &&
+        superset init &&
+        superset run -h 0.0.0.0 -p 8088 --with-threads
+      "
+
 volumes:
   postgres_dev_data:
     driver: local
   seq_dev_data:
     driver: local
   azurite_dev_data:
+    driver: local
+  superset_dev_data:
     driver: local
 
 networks:
