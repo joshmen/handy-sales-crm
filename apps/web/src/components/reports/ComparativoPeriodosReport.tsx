@@ -49,19 +49,19 @@ export function ComparativoPeriodosReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: "comparativo-periodos",
-    title: "Comparativo de Períodos",
+    title: t("title"),
     dateRange: { desde: p1Desde, hasta: p2Hasta },
     kpis: data
       ? [
-          { label: "Ventas P1", value: fmt(data.periodo1.totalVentas) },
-          { label: "Ventas P2", value: fmt(data.periodo2.totalVentas) },
-          { label: "Variación", value: `${data.deltas.totalVentas?.porcentajeCambio ?? 0}%` },
+          { label: `${tMetrics("totalVentas")} P1`, value: fmt(data.periodo1.totalVentas) },
+          { label: `${tMetrics("totalVentas")} P2`, value: fmt(data.periodo2.totalVentas) },
+          { label: t("salesVariation"), value: `${data.deltas.totalVentas?.porcentajeCambio ?? 0}%` },
         ]
       : undefined,
     chartRef,
     table: data
       ? {
-          headers: ["Métrica", "Período 1", "Período 2", "Diferencia", "% Cambio"],
+          headers: [t("metricLabel"), tCommon("period1"), tCommon("period2"), t("difference"), t("changePercent")],
           rows: Object.entries(data.deltas).map(([key, d]) => [
             METRIC_LABELS[key] || key,
             key.includes("Ventas") || key.includes("Cobros") || key.includes("Promedio")
@@ -111,15 +111,15 @@ export function ComparativoPeriodosReport() {
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-muted-foreground uppercase">{tCommon("period1")}</span>
           <div className="flex gap-2">
-            <DateTimePicker mode="date" label="Desde" value={p1Desde} onChange={setP1Desde} />
-            <DateTimePicker mode="date" label="Hasta" value={p1Hasta} onChange={setP1Hasta} />
+            <DateTimePicker mode="date" label={tFilters("from")} value={p1Desde} onChange={setP1Desde} />
+            <DateTimePicker mode="date" label={tFilters("to")} value={p1Hasta} onChange={setP1Hasta} />
           </div>
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-muted-foreground uppercase">{tCommon("period2")}</span>
           <div className="flex gap-2">
-            <DateTimePicker mode="date" label="Desde" value={p2Desde} onChange={setP2Desde} />
-            <DateTimePicker mode="date" label="Hasta" value={p2Hasta} onChange={setP2Hasta} />
+            <DateTimePicker mode="date" label={tFilters("from")} value={p2Desde} onChange={setP2Desde} />
+            <DateTimePicker mode="date" label={tFilters("to")} value={p2Hasta} onChange={setP2Hasta} />
           </div>
         </div>
         <button
