@@ -4755,7 +4755,18 @@
     "errorHint": "Asegúrate de que el servicio de analítica esté en funcionamiento",
     "errorToken": "No se pudo cargar el dashboard. Intenta refrescar.",
     "noDashboards": "No hay dashboards disponibles",
-    "noDashboardsHint": "Los dashboards aparecerán aquí una vez que sean creados por tu administrador. Contacta a soporte si necesitas ayuda configurando la analítica."
+    "noDashboardsHint": "Los dashboards aparecerán aquí una vez que sean creados por tu administrador. Contacta a soporte si necesitas ayuda configurando la analítica.",
+    "selectSource": "Selecciona fuente de datos",
+    "selectDimension": "Dimensión (agrupar por)",
+    "selectMetric": "Métrica (valor)",
+    "selectAggregate": "Agregación",
+    "run": "Ejecutar",
+    "running": "Ejecutando...",
+    "chartType": "Tipo de gráfico",
+    "configHint": "Selecciona una fuente de datos, dimensión y métrica para crear tu gráfico",
+    "noResults": "Sin resultados para esta consulta",
+    "rows": "filas",
+    "exportPdf": "Exportar PDF"
   },
   "backendMessages": {
     "2FA desactivado exitosamente": "2FA desactivado exitosamente",

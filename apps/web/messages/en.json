@@ -4755,7 +4755,18 @@
     "errorHint": "Make sure the analytics service is running",
     "errorToken": "Could not load dashboard. Try refreshing.",
     "noDashboards": "No dashboards available",
-    "noDashboardsHint": "Dashboards will appear here once they are created by your administrator. Contact support if you need help setting up analytics."
+    "noDashboardsHint": "Dashboards will appear here once they are created by your administrator. Contact support if you need help setting up analytics.",
+    "selectSource": "Select data source",
+    "selectDimension": "Dimension (group by)",
+    "selectMetric": "Metric (value)",
+    "selectAggregate": "Aggregate",
+    "run": "Run",
+    "running": "Running...",
+    "chartType": "Chart type",
+    "configHint": "Select a data source, dimension, and metric to build your chart",
+    "noResults": "No results for this query",
+    "rows": "rows",
+    "exportPdf": "Export PDF"
   },
   "backendMessages": {
     "2FA desactivado exitosamente": "2FA disabled successfully",

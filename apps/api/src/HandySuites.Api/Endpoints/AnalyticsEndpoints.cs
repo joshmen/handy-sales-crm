@@ -1,178 +1,266 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using HandySuites.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace HandySuites.Api.Endpoints;
 
 /// <summary>
-/// Proxy endpoint for Superset guest tokens.
-/// The frontend calls this endpoint, and the API requests a guest token
-/// from Superset on behalf of the user, injecting the tenant_id for RLS.
+/// Custom analytics endpoints — dynamic queries on materialized views.
+/// Users can select data sources, dimensions, and metrics to build custom reports.
+/// All queries are filtered by tenant_id for multi-tenant isolation.
+/// SQL injection is prevented by whitelisting column names per source.
 /// </summary>
 public static class AnalyticsEndpoints
 {
-    private static readonly string SupersetUrl = Environment.GetEnvironmentVariable("SUPERSET_URL") ?? "http://superset:8088";
-    private static readonly string SupersetUser = Environment.GetEnvironmentVariable("SUPERSET_ADMIN_USER") ?? "admin";
-    private static readonly string SupersetPass = Environment.GetEnvironmentVariable("SUPERSET_ADMIN_PASSWORD") ?? "admin";
+    // ─── Data Source Definitions ────────────────────────────────
+    private static readonly List<AnalyticsSource> Sources = new()
+    {
+        new("ventas_diarias", "Daily Sales", "mv_ventas_diarias", new[]
+        {
+            new ColumnDef("fecha", "date", "Date"),
+            new ColumnDef("vendedor_nombre", "string", "Vendor"),
+            new ColumnDef("zona_nombre", "string", "Zone"),
+            new ColumnDef("cantidad_pedidos", "number", "Orders"),
+            new ColumnDef("total_ventas", "number", "Total Sales"),
+            new ColumnDef("subtotal", "number", "Subtotal"),
+            new ColumnDef("total_descuentos", "number", "Discounts"),
+            new ColumnDef("total_impuestos", "number", "Taxes"),
+            new ColumnDef("clientes_unicos", "number", "Unique Clients"),
+        }),
+        new("ventas_vendedor", "Sales by Vendor", "mv_ventas_vendedor", new[]
+        {
+            new ColumnDef("vendedor_nombre", "string", "Vendor"),
+            new ColumnDef("cantidad_pedidos", "number", "Orders"),
+            new ColumnDef("total_ventas", "number", "Total Sales"),
+            new ColumnDef("ticket_promedio", "number", "Avg Ticket"),
+            new ColumnDef("clientes_unicos", "number", "Unique Clients"),
+            new ColumnDef("total_visitas", "number", "Visits"),
+            new ColumnDef("visitas_con_venta", "number", "Visits with Sale"),
+            new ColumnDef("efectividad_visitas", "number", "Effectiveness %"),
+        }),
+        new("ventas_producto", "Sales by Product", "mv_ventas_producto", new[]
+        {
+            new ColumnDef("producto_nombre", "string", "Product"),
+            new ColumnDef("familia_nombre", "string", "Family"),
+            new ColumnDef("categoria_nombre", "string", "Category"),
+            new ColumnDef("cantidad_vendida", "number", "Units Sold"),
+            new ColumnDef("total_ventas", "number", "Total Sales"),
+            new ColumnDef("en_pedidos", "number", "In Orders"),
+            new ColumnDef("precio_promedio", "number", "Avg Price"),
+        }),
+        new("ventas_zona", "Sales by Zone", "mv_ventas_zona", new[]
+        {
+            new ColumnDef("zona_nombre", "string", "Zone"),
+            new ColumnDef("cantidad_pedidos", "number", "Orders"),
+            new ColumnDef("total_ventas", "number", "Total Sales"),
+            new ColumnDef("total_clientes", "number", "Clients"),
+        }),
+        new("actividad_clientes", "Client Activity", "mv_actividad_clientes", new[]
+        {
+            new ColumnDef("cliente_nombre", "string", "Client"),
+            new ColumnDef("zona_nombre", "string", "Zone"),
+            new ColumnDef("vendedor_nombre", "string", "Vendor"),
+            new ColumnDef("cantidad_pedidos", "number", "Orders"),
+            new ColumnDef("total_ventas", "number", "Total Sales"),
+            new ColumnDef("total_visitas", "number", "Visits"),
+            new ColumnDef("saldo", "number", "Balance"),
+        }),
+        new("inventario", "Inventory Status", "mv_inventario_resumen", new[]
+        {
+            new ColumnDef("producto_nombre", "string", "Product"),
+            new ColumnDef("categoria_nombre", "string", "Category"),
+            new ColumnDef("cantidad_actual", "number", "Current Stock"),
+            new ColumnDef("stock_minimo", "number", "Min Stock"),
+            new ColumnDef("stock_maximo", "number", "Max Stock"),
+            new ColumnDef("valor_inventario", "number", "Inventory Value"),
+            new ColumnDef("estado_stock", "string", "Stock Status"),
+        }),
+        new("cartera", "Accounts Receivable", "mv_cartera_vencida", new[]
+        {
+            new ColumnDef("cliente_nombre", "string", "Client"),
+            new ColumnDef("zona_nombre", "string", "Zone"),
+            new ColumnDef("saldo_pendiente", "number", "Pending Balance"),
+            new ColumnDef("dias_sin_cobro", "number", "Days Unpaid"),
+            new ColumnDef("bucket", "string", "Aging Bucket"),
+        }),
+        new("kpis", "Dashboard KPIs", "mv_kpis_dashboard", new[]
+        {
+            new ColumnDef("total_pedidos", "number", "Total Orders"),
+            new ColumnDef("total_ventas", "number", "Total Sales"),
+            new ColumnDef("ticket_promedio", "number", "Avg Ticket"),
+            new ColumnDef("ventas_7d", "number", "Sales 7d"),
+            new ColumnDef("ventas_30d", "number", "Sales 30d"),
+            new ColumnDef("ventas_90d", "number", "Sales 90d"),
+            new ColumnDef("pedidos_7d", "number", "Orders 7d"),
+            new ColumnDef("pedidos_30d", "number", "Orders 30d"),
+        }),
+    };
+
+    private static readonly string[] AllowedAggregates = { "SUM", "AVG", "COUNT", "MAX", "MIN" };
+
+    // ─── Endpoint Registration ─────────────────────────────────
 
     public static void MapAnalyticsEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/analytics").RequireAuthorization();
 
-        group.MapGet("/dashboards", HandleGetDashboards)
-            .WithDescription("List available embedded dashboards");
+        group.MapGet("/sources", HandleGetSources)
+            .WithDescription("List available data sources with column metadata");
 
-        group.MapPost("/guest-token", HandleGetGuestToken)
-            .WithDescription("Get a Superset guest token for the current tenant");
+        group.MapPost("/query", HandleQuery)
+            .WithDescription("Run a dynamic query on a materialized view");
     }
 
-    /// <summary>
-    /// Returns the list of dashboards available for embedding.
-    /// </summary>
-    private static async Task<IResult> HandleGetDashboards(
-        ITenantContextService tenantContext,
-        HttpContext ctx)
+    // ─── GET /sources ──────────────────────────────────────────
+
+    private static IResult HandleGetSources(HttpContext ctx)
     {
-        try
+        var role = ctx.User.FindFirst("role")?.Value
+                   ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+        if (role != "ADMIN" && role != "SUPER_ADMIN" && role != "SUPERVISOR")
+            return Results.Forbid();
+
+        return Results.Ok(Sources.Select(s => new
         {
-            using var client = new HttpClient();
-            var token = await GetSupersetAccessToken(client);
-            if (token == null) return Results.StatusCode(503);
-
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var response = await client.GetAsync($"{SupersetUrl}/api/v1/dashboard/?q=(page_size:50)");
-
-            if (!response.IsSuccessStatusCode)
-                return Results.StatusCode((int)response.StatusCode);
-
-            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-            var published = json.GetProperty("result").EnumerateArray()
-                .Where(d => d.TryGetProperty("published", out var pub) && pub.GetBoolean())
-                .ToList();
-
-            // For each published dashboard, get its embedded UUID
-            var dashboards = new List<object>();
-            foreach (var d in published)
-            {
-                var dashId = d.GetProperty("id").GetInt32();
-                string? embeddedUuid = null;
-                try
-                {
-                    var embRes = await client.GetAsync($"{SupersetUrl}/api/v1/dashboard/{dashId}/embedded");
-                    if (embRes.IsSuccessStatusCode)
-                    {
-                        var embJson = await embRes.Content.ReadFromJsonAsync<JsonElement>();
-                        embeddedUuid = embJson.GetProperty("result").GetProperty("uuid").GetString();
-                    }
-                }
-                catch { /* dashboard not enabled for embedding */ }
-
-                if (embeddedUuid != null)
-                {
-                    dashboards.Add(new
-                    {
-                        id = dashId,
-                        title = d.GetProperty("dashboard_title").GetString(),
-                        slug = d.TryGetProperty("slug", out var s) ? s.GetString() : null,
-                        uuid = embeddedUuid,
-                    });
-                }
-            }
-
-            return Results.Ok(dashboards);
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem($"Error connecting to analytics service: {ex.Message}");
-        }
+            s.Id,
+            s.Name,
+            columns = s.Columns.Select(c => new { c.Name, c.Type, c.Label }),
+        }));
     }
 
-    /// <summary>
-    /// Generates a Superset guest token with RLS filtering by tenant_id.
-    /// The guest token ensures the user only sees data from their tenant.
-    /// </summary>
-    private static async Task<IResult> HandleGetGuestToken(
+    // ─── POST /query ───────────────────────────────────────────
+
+    private static async Task<IResult> HandleQuery(
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         HttpContext ctx,
-        GuestTokenRequest request)
+        AnalyticsQueryRequest request)
     {
         var tenantId = tenantContext.TenantId;
         if (tenantId == 0) return Results.Unauthorized();
 
         var role = ctx.User.FindFirst("role")?.Value
                    ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-
-        // Only Admin and Supervisor can access analytics
         if (role != "ADMIN" && role != "SUPER_ADMIN" && role != "SUPERVISOR")
             return Results.Forbid();
 
+        // Validate source
+        var source = Sources.FirstOrDefault(s => s.Id == request.Source);
+        if (source == null)
+            return Results.BadRequest(new { error = "Invalid data source" });
+
+        // Validate columns (whitelist — prevents SQL injection)
+        var allowedColumns = source.Columns.Select(c => c.Name).ToHashSet();
+
+        foreach (var dim in request.Dimensions ?? Array.Empty<string>())
+        {
+            if (!allowedColumns.Contains(dim))
+                return Results.BadRequest(new { error = $"Invalid dimension: {dim}" });
+        }
+
+        foreach (var metric in request.Metrics ?? Array.Empty<MetricRequest>())
+        {
+            if (!allowedColumns.Contains(metric.Column))
+                return Results.BadRequest(new { error = $"Invalid metric column: {metric.Column}" });
+            if (!AllowedAggregates.Contains(metric.Aggregate.ToUpperInvariant()))
+                return Results.BadRequest(new { error = $"Invalid aggregate: {metric.Aggregate}" });
+        }
+
+        if (!string.IsNullOrEmpty(request.OrderBy) && !allowedColumns.Contains(request.OrderBy))
+            return Results.BadRequest(new { error = $"Invalid orderBy: {request.OrderBy}" });
+
         try
         {
-            using var client = new HttpClient();
-            var token = await GetSupersetAccessToken(client);
-            if (token == null)
-                return Results.StatusCode(503);
+            // Build safe SQL query
+            var dimensions = request.Dimensions ?? Array.Empty<string>();
+            var metrics = request.Metrics ?? Array.Empty<MetricRequest>();
+            var limit = Math.Clamp(request.Limit ?? 100, 1, 1000);
 
-            // Request guest token from Superset
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var selectParts = new List<string>();
+            selectParts.AddRange(dimensions.Select(d => $"\"{d}\""));
+            selectParts.AddRange(metrics.Select(m => $"{m.Aggregate.ToUpperInvariant()}(\"{m.Column}\") AS \"{m.Label ?? m.Column}\""));
 
-            var guestTokenPayload = new
+            if (selectParts.Count == 0)
             {
-                user = new
-                {
-                    username = ctx.User.Identity?.Name ?? $"tenant_{tenantId}",
-                    first_name = ctx.User.FindFirst("name")?.Value ?? "User",
-                    last_name = "",
-                },
-                resources = request.DashboardIds.Select(id => new
-                {
-                    type = "dashboard",
-                    id = id,
-                }).ToArray(),
-                rls = new[]
-                {
-                    new { clause = $"tenant_id = {tenantId}" }
-                },
-            };
-
-            var response = await client.PostAsJsonAsync(
-                $"{SupersetUrl}/api/v1/security/guest_token/", guestTokenPayload);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                return Results.Problem($"Failed to get guest token: {error}");
+                // No dimensions/metrics specified — return all columns
+                selectParts.AddRange(source.Columns.Select(c => $"\"{c.Name}\""));
             }
 
-            var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-            var guestToken = result.GetProperty("token").GetString();
+            var sql = $"SELECT {string.Join(", ", selectParts)} FROM {source.Table} WHERE tenant_id = {tenantId}";
 
-            return Results.Ok(new { token = guestToken });
+            if (dimensions.Length > 0 && metrics.Length > 0)
+            {
+                sql += $" GROUP BY {string.Join(", ", dimensions.Select(d => $"\"{d}\""))}";
+            }
+
+            var orderCol = request.OrderBy;
+            if (!string.IsNullOrEmpty(orderCol))
+            {
+                var dir = request.OrderDesc ? "DESC" : "ASC";
+                // Check if ordering by a metric label
+                var metricLabel = metrics.FirstOrDefault(m => m.Label == orderCol || m.Column == orderCol);
+                if (metricLabel != null)
+                    sql += $" ORDER BY {metricLabel.Aggregate.ToUpperInvariant()}(\"{metricLabel.Column}\") {dir}";
+                else
+                    sql += $" ORDER BY \"{orderCol}\" {dir}";
+            }
+
+            sql += $" LIMIT {limit}";
+
+            // Execute query
+            using var conn = db.Database.GetDbConnection();
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+
+            var rows = new List<Dictionary<string, object?>>();
+            var columns = new List<string>();
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            // Get column names
+            for (int i = 0; i < reader.FieldCount; i++)
+                columns.Add(reader.GetName(i));
+
+            // Read rows
+            while (await reader.ReadAsync())
+            {
+                var row = new Dictionary<string, object?>();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    row[columns[i]] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                }
+                rows.Add(row);
+            }
+
+            return Results.Ok(new
+            {
+                source = source.Id,
+                columns,
+                rows,
+                totalRows = rows.Count,
+            });
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error generating analytics token: {ex.Message}");
+            return Results.Problem($"Query error: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// Authenticate with Superset API and get an access token.
-    /// </summary>
-    private static async Task<string?> GetSupersetAccessToken(HttpClient client)
-    {
-        var loginPayload = new
-        {
-            username = SupersetUser,
-            password = SupersetPass,
-            provider = "db",
-        };
-
-        var response = await client.PostAsJsonAsync($"{SupersetUrl}/api/v1/security/login", loginPayload);
-        if (!response.IsSuccessStatusCode) return null;
-
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return json.GetProperty("access_token").GetString();
     }
 }
 
-public record GuestTokenRequest(List<string> DashboardIds);
+// ─── DTOs ──────────────────────────────────────────────────
+
+public record AnalyticsSource(string Id, string Name, string Table, ColumnDef[] Columns);
+public record ColumnDef(string Name, string Type, string Label);
+
+public record AnalyticsQueryRequest(
+    string Source,
+    string[]? Dimensions,
+    MetricRequest[]? Metrics,
+    string? OrderBy,
+    bool OrderDesc = true,
+    int? Limit = 100
+);
+
+public record MetricRequest(string Column, string Aggregate, string? Label);

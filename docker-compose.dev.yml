@@ -81,9 +81,6 @@ services:
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
-      SUPERSET_URL: "http://superset:8088"
-      SUPERSET_ADMIN_USER: "admin"
-      SUPERSET_ADMIN_PASSWORD: "admin"
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     ports:
@@ -282,59 +279,12 @@ services:
     profiles:
       - admin  # Solo se ejecuta si usas: docker-compose --profile admin up
 
-  # Apache Superset — Embedded Analytics (optional)
-  # Start with: docker-compose --profile superset up -d
-  # Access at: http://localhost:1084
-  # Default login: admin / admin
-  superset:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.Superset.Dev
-    container_name: handysuites_superset_dev
-    restart: unless-stopped
-    environment:
-      SUPERSET_SECRET_KEY: "handysuites-superset-dev-secret-key-change-in-production-2026"
-      SUPERSET_CONFIG_PATH: "/app/superset_home/superset_config.py"
-      SUPERSET_LOAD_EXAMPLES: "no"
-      # Use same PostgreSQL for Superset metadata
-      DATABASE_DB: superset_meta
-      DATABASE_HOST: postgres
-      DATABASE_PASSWORD: handy_pass
-      DATABASE_USER: handy_user
-      DATABASE_PORT: 5432
-      DATABASE_DIALECT: postgresql
-      # Enable embedded dashboards
-      FEATURE_FLAGS: '{"EMBEDDED_SUPERSET": true, "ENABLE_TEMPLATE_PROCESSING": true}'
-    ports:
-      - "1084:8088"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - superset_dev_data:/app/superset_home
-      - ./infra/superset/superset_config.py:/app/superset_home/superset_config.py:ro
-      - ./infra/superset/bootstrap.py:/app/bootstrap.py:ro
-    networks:
-      - handysuites_dev_network
-    profiles:
-      - superset
-    command: >
-      bash -c "
-        export SUPERSET_CONFIG_PATH=/app/superset_home/superset_config.py &&
-        superset db upgrade &&
-        superset fab create-admin --username admin --firstname Admin --lastname Superset --email admin@handysuites.com --password admin 2>/dev/null || true &&
-        superset init &&
-        superset run -h 0.0.0.0 -p 8088 --with-threads --reload
-      "
-
 volumes:
   postgres_dev_data:
     driver: local
   seq_dev_data:
     driver: local
   azurite_dev_data:
-    driver: local
-  superset_dev_data:
     driver: local
 
 networks:
