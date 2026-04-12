@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { SearchableSelect, SearchableSelectOption } from '@/components/ui/SearchableSelect';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
+import { useReportExport } from '@/hooks/useReportExport';
 import { useTranslations } from 'next-intl';
 import {
   BarChart3, TrendingUp, Layers, PieChart, Table,
@@ -50,6 +51,7 @@ export function ReportBuilder() {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const selectedSource = useMemo(() => sources.find((s) => s.id === selectedSourceId) ?? null, [sources, selectedSourceId]);
 
@@ -100,6 +102,24 @@ export function ReportBuilder() {
   const chartSeriesData = useMemo(() => result ? result.rows.map((r) => Number(r[selectedMetric as string] ?? 0)) : [], [result, selectedMetric]);
   const metricLabel = useMemo(() => selectedSource?.columns.find((c) => c.name === selectedMetric)?.label ?? (selectedMetric as string) ?? '', [selectedSource, selectedMetric]);
 
+  // PDF export — same format as all other reports
+  const sourceName = useMemo(() => {
+    if (!selectedSourceId) return t('title');
+    try { return tSources(selectedSourceId as string); } catch { return selectedSource?.name ?? t('title'); }
+  }, [selectedSourceId, selectedSource, tSources, t]);
+
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'custom-report',
+    title: `${sourceName} — ${metricLabel}`,
+    chartRef: chartRef as React.RefObject<HTMLElement | null>,
+    table: result && result.rows.length > 0 ? {
+      headers: result.columns.map(c => c.label),
+      rows: result.rows.map(row => result.columns.map(col =>
+        col.type === 'number' ? Number(row[col.name] ?? 0).toLocaleString() : String(row[col.name] ?? '')
+      )),
+    } : undefined,
+  });
+
   const apexOptions: ApexCharts.ApexOptions = useMemo(() => {
     if (chartType === 'pie') {
       return { chart: { type: 'pie', background: 'transparent' }, labels: chartCategories, colors: CHART_COLORS, legend: { position: 'bottom', labels: { colors: '#9ca3af' } }, dataLabels: { enabled: true } };
@@ -137,10 +157,10 @@ export function ReportBuilder() {
             {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
             {running ? t('running') : t('run')}
           </Button>
-          {result && (
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <FileDown className="w-4 h-4 mr-2" />
-              {t('exportPdf')}
+          {result && result.rows.length > 0 && (
+            <Button variant="outline" size="sm" onClick={exportPDF} disabled={exporting}>
+              {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileDown className="w-4 h-4 mr-2" />}
+              {exporting ? t('running') : t('exportPdf')}
             </Button>
           )}
         </div>
@@ -169,7 +189,7 @@ export function ReportBuilder() {
         <div className="space-y-4 animate-fade-in">
           {result.rows.length === 0 && <div className="flex flex-col items-center justify-center py-24 text-muted-foreground"><Table className="w-12 h-12 mb-3 text-muted-foreground/30" /><p className="text-sm font-medium">{t('noResults')}</p></div>}
           {result.rows.length > 0 && chartType !== 'table' && (
-            <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-elevation-1 p-4">
+            <div ref={chartRef} className="bg-surface-2 rounded-xl border border-border-subtle shadow-elevation-1 p-4">
               <Chart options={apexOptions} series={apexSeries} type={chartType === 'pie' ? 'pie' : chartType === 'area' ? 'area' : chartType === 'line' ? 'line' : 'bar'} height={380} />
             </div>
           )}
