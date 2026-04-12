@@ -23,7 +23,7 @@ export function DashboardEjecutivoReport() {
   const contentRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'executive-dashboard',
-    title: t('summary'),
+    title: t('reportTitle'),
     kpis: data ? [
       { label: t('salesTitle'), value: fmt(data.ventas.total) },
       { label: t('orders'), value: data.ventas.pedidos },

@@ -30,7 +30,7 @@ export function ComisionesReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: "comisiones", title: t("totalCommissions"), dateRange: dates,
+    fileName: "comisiones", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalSales"), value: fmt(data.totalVentas) },
       { label: t("totalCommissions"), value: fmt(data.totalComisiones) },

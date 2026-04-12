@@ -32,7 +32,7 @@ export function CumplimientoMetasReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: "cumplimiento-metas", title: t("totalGoals"), dateRange: dates,
+    fileName: "cumplimiento-metas", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalGoals"), value: data.resumen.totalMetas },
       { label: t("achieved"), value: data.resumen.cumplidas },

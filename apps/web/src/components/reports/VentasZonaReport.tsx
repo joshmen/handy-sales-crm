@@ -29,7 +29,7 @@ export function VentasZonaReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: 'ventas-zona', title: t('totalSales'), dateRange: dates,
+    fileName: 'ventas-zona', title: t('reportTitle'), dateRange: dates,
     kpis: data ? [
       { label: t('totalSales'), value: fmt(data.totales.totalVentas) },
       { label: t('totalOrders'), value: data.totales.totalPedidos },

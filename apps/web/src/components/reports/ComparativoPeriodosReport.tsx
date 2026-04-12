@@ -49,7 +49,7 @@ export function ComparativoPeriodosReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: "comparativo-periodos",
-    title: t("title"),
+    title: t("reportTitle"),
     dateRange: { desde: p1Desde, hasta: p2Hasta },
     kpis: data
       ? [

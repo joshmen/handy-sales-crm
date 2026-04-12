@@ -2559,6 +2559,7 @@
       "class": "Clase"
     },
     "ejecutivo": {
+      "reportTitle": "Resumen del Tablero",
       "summary": "Resumen ejecutivo",
       "thisWeek": "esta semana",
       "thisMonth": "este mes",
@@ -2584,6 +2585,7 @@
       "lowStockAlert": "{count} productos con stock bajo o sin stock"
     },
     "inventario": {
+      "reportTitle": "Inventario Actual",
       "title": "Inventario Actual",
       "totalProducts": "Total Productos",
       "outOfStock": "Sin Stock",
@@ -2598,6 +2600,7 @@
       "status": "Estado"
     },
     "comparativo": {
+      "reportTitle": "Comparativo de Períodos",
       "title": "Comparativo de Períodos",
       "metricLabel": "Métrica",
       "difference": "Diferencia",
@@ -2617,6 +2620,7 @@
       }
     },
     "ventasZona": {
+      "reportTitle": "Ventas por Zona",
       "totalSales": "Total Ventas",
       "totalOrders": "Total Pedidos",
       "totalClients": "Total Clientes",
@@ -2626,6 +2630,7 @@
       "totalSalesCol": "Ventas Totales"
     },
     "actividadClientes": {
+      "reportTitle": "Actividad de Clientes",
       "clients": "Clientes",
       "totalSales": "Total Ventas",
       "totalOrders": "Total Pedidos",
@@ -2638,6 +2643,7 @@
       "lastOrder": "Últ. Pedido"
     },
     "nuevosClientes": {
+      "reportTitle": "Nuevos Clientes",
       "newClients": "Nuevos Clientes",
       "perMonth": "Nuevos clientes por mes",
       "client": "Cliente",
@@ -2649,6 +2655,7 @@
       "chartBarName": "Clientes"
     },
     "ventasPeriodo": {
+      "reportTitle": "Ventas por Período",
       "totalSales": "Total Ventas",
       "orders": "Pedidos",
       "avgTicket": "Ticket Promedio",
@@ -2660,6 +2667,7 @@
       "salesLabel": "Ventas"
     },
     "ventasProducto": {
+      "reportTitle": "Ventas por Producto",
       "totalSales": "Total Ventas",
       "productsSold": "Productos Vendidos",
       "noSale": "Sin Venta",
@@ -2671,6 +2679,7 @@
       "percentTotal": "% del Total"
     },
     "ventasVendedor": {
+      "reportTitle": "Ventas por Vendedor",
       "vendor": "Vendedor",
       "totalSales": "Total Ventas",
       "orders": "Pedidos",
@@ -2681,6 +2690,7 @@
       "salesLabel": "Ventas"
     },
     "cumplimientoMetas": {
+      "reportTitle": "Cumplimiento de Metas",
       "totalGoals": "Total Metas",
       "achieved": "Cumplidas",
       "notAchieved": "No Cumplidas",
@@ -2708,6 +2718,7 @@
       "tryWiderRange": "Intenta con un rango de fechas más amplio."
     },
     "carteraVencida": {
+      "reportTitle": "Cartera Vencida",
       "totalPortfolio": "Total Cartera",
       "clientsWithBalance": "Clientes con Saldo",
       "current030": "Corriente (0-30d)",
@@ -2728,6 +2739,7 @@
       }
     },
     "comisionesReport": {
+      "reportTitle": "Reporte de Comisiones",
       "totalSales": "Total Ventas",
       "totalCommissions": "Total Comisiones",
       "appliedPct": "% Aplicado",
@@ -2739,6 +2751,7 @@
       "chartName": "Comisión"
     },
     "rentabilidad": {
+      "reportTitle": "Rentabilidad por Cliente",
       "chartTitle": "Top Clientes por Ventas",
       "client": "Cliente",
       "totalSales": "Total Ventas",
@@ -2749,6 +2762,7 @@
       "salesLabel": "Ventas"
     },
     "analisisABC": {
+      "reportTitle": "Análisis ABC",
       "analyze": "Analizar",
       "clients": "Clientes",
       "products": "Productos",
@@ -2766,6 +2780,7 @@
       "salesLabel": "Ventas"
     },
     "efectividadVisitas": {
+      "reportTitle": "Efectividad de Visitas",
       "totalVisits": "Total Visitas",
       "withSale": "Con Venta",
       "conversionRate": "Tasa Conversión",

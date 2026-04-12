@@ -28,7 +28,7 @@ export function RentabilidadClienteReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: "rentabilidad-cliente", title: t("chartTitle"), dateRange: dates, chartRef,
+    fileName: "rentabilidad-cliente", title: t("reportTitle"), dateRange: dates, chartRef,
     table: data ? {
       headers: [t("client"), t("totalSales"), t("orders"), t("avgTicket"), t("daysBetweenOrders")],
       rows: data.clientes.map(c => [c.nombre, fmt(c.totalVentas), c.cantidadPedidos, fmt(c.ticketPromedio), c.diasEntrePedidos]),

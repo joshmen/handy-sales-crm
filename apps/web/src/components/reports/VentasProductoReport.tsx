@@ -32,7 +32,7 @@ export function VentasProductoReport() {
   const [tab, setTab] = useState<Tab>('masVendidos');
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: 'ventas-producto', title: tr('totalSales'), dateRange: dates,
+    fileName: 'ventas-producto', title: tr('reportTitle'), dateRange: dates,
     kpis: data ? [
       { label: tr('totalSales'), value: fmt(data.totalGeneral) },
       { label: tr('productsSold'), value: data.masVendidos.length },

@@ -34,7 +34,7 @@ export function ActividadClientesReport() {
   datesRef.current = dates;
   const { exportPDF, exporting } = useReportExport({
     fileName: 'actividad-clientes',
-    title: t('client'),
+    title: t('reportTitle'),
     dateRange: dates,
     kpis: data.length > 0 ? [
       { label: tc('clients'), value: total },

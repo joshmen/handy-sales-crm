@@ -26,7 +26,7 @@ export function EfectividadVisitasReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: "efectividad-visitas", title: t("totalVisits"), dateRange: dates,
+    fileName: "efectividad-visitas", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalVisits"), value: data.resumen.totalVisitas },
       { label: t("withSale"), value: data.resumen.totalConVenta },

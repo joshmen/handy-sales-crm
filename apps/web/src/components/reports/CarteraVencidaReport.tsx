@@ -34,7 +34,7 @@ export function CarteraVencidaReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: "cartera-vencida", title: t("totalPortfolio"), dateRange: dates,
+    fileName: "cartera-vencida", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalPortfolio"), value: fmt(data.totalCartera) },
       { label: t("clientsWithBalance"), value: data.totalClientes },

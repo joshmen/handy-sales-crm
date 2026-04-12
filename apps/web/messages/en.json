@@ -2559,6 +2559,7 @@
       "class": "Class"
     },
     "ejecutivo": {
+      "reportTitle": "Dashboard Summary",
       "summary": "Executive summary",
       "thisWeek": "this week",
       "thisMonth": "this month",
@@ -2584,6 +2585,7 @@
       "lowStockAlert": "{count} products with low or no stock"
     },
     "inventario": {
+      "reportTitle": "Current Inventory",
       "title": "Current Inventory",
       "totalProducts": "Total Products",
       "outOfStock": "Out of Stock",
@@ -2598,6 +2600,7 @@
       "status": "Status"
     },
     "comparativo": {
+      "reportTitle": "Period Comparison",
       "title": "Period Comparison",
       "metricLabel": "Metric",
       "difference": "Difference",
@@ -2617,6 +2620,7 @@
       }
     },
     "ventasZona": {
+      "reportTitle": "Sales by Zone",
       "totalSales": "Total Sales",
       "totalOrders": "Total Orders",
       "totalClients": "Total Clients",
@@ -2626,6 +2630,7 @@
       "totalSalesCol": "Total Sales"
     },
     "actividadClientes": {
+      "reportTitle": "Client Activity",
       "clients": "Clients",
       "totalSales": "Total Sales",
       "totalOrders": "Total Orders",
@@ -2638,6 +2643,7 @@
       "lastOrder": "Last Order"
     },
     "nuevosClientes": {
+      "reportTitle": "New Clients",
       "newClients": "New Clients",
       "perMonth": "New clients per month",
       "client": "Client",
@@ -2649,6 +2655,7 @@
       "chartBarName": "Clients"
     },
     "ventasPeriodo": {
+      "reportTitle": "Sales by Period",
       "totalSales": "Total Sales",
       "orders": "Orders",
       "avgTicket": "Average Ticket",
@@ -2660,6 +2667,7 @@
       "salesLabel": "Sales"
     },
     "ventasProducto": {
+      "reportTitle": "Sales by Product",
       "totalSales": "Total Sales",
       "productsSold": "Products Sold",
       "noSale": "No Sale",
@@ -2671,6 +2679,7 @@
       "percentTotal": "% of Total"
     },
     "ventasVendedor": {
+      "reportTitle": "Sales by Vendor",
       "vendor": "Vendor",
       "totalSales": "Total Sales",
       "orders": "Orders",
@@ -2681,6 +2690,7 @@
       "salesLabel": "Sales"
     },
     "cumplimientoMetas": {
+      "reportTitle": "Goal Achievement",
       "totalGoals": "Total Goals",
       "achieved": "Achieved",
       "notAchieved": "Not Achieved",
@@ -2708,6 +2718,7 @@
       "tryWiderRange": "Try a wider date range."
     },
     "carteraVencida": {
+      "reportTitle": "Overdue Portfolio",
       "totalPortfolio": "Total Portfolio",
       "clientsWithBalance": "Clients with Balance",
       "current030": "Current (0-30d)",
@@ -2728,6 +2739,7 @@
       }
     },
     "comisionesReport": {
+      "reportTitle": "Commissions Report",
       "totalSales": "Total Sales",
       "totalCommissions": "Total Commissions",
       "appliedPct": "% Applied",
@@ -2739,6 +2751,7 @@
       "chartName": "Commission"
     },
     "rentabilidad": {
+      "reportTitle": "Client Profitability",
       "chartTitle": "Top Clients by Sales",
       "client": "Client",
       "totalSales": "Total Sales",
@@ -2749,6 +2762,7 @@
       "salesLabel": "Sales"
     },
     "analisisABC": {
+      "reportTitle": "ABC Analysis",
       "analyze": "Analyze",
       "clients": "Clients",
       "products": "Products",
@@ -2766,6 +2780,7 @@
       "salesLabel": "Sales"
     },
     "efectividadVisitas": {
+      "reportTitle": "Visit Effectiveness",
       "totalVisits": "Total Visits",
       "withSale": "With Sale",
       "conversionRate": "Conversion Rate",

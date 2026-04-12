@@ -31,7 +31,7 @@ export function VentasVendedorReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'ventas-vendedor',
-    title: t('vendor'),
+    title: t('reportTitle'),
     dateRange: dates,
     kpis: data.length > 0 ? data.slice(0, 3).map((v, i) => ({ label: `#${i + 1} ${v.nombre}`, value: fmt(v.totalVentas) })) : undefined,
     chartRef,

@@ -28,7 +28,7 @@ export function InventarioReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'inventario',
-    title: t('title'),
+    title: t('reportTitle'),
     kpis: data ? [
       { label: t('totalProducts'), value: data.resumen.total },
       { label: t('outOfStock'), value: data.resumen.sinStock },

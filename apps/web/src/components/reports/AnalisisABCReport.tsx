@@ -32,7 +32,7 @@ export function AnalisisABCReport() {
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: "analisis-abc", title: `ABC (${tipo === 'clientes' ? t('clients') : t('products')})`, dateRange: dates,
+    fileName: "analisis-abc", title: `${t('reportTitle')} (${tipo === 'clientes' ? t('clients') : t('products')})`, dateRange: dates,
     kpis: data ? [
       { label: t("classA"), value: data.resumen.claseA },
       { label: t("classB"), value: data.resumen.claseB },
