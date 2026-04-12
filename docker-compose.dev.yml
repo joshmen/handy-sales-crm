@@ -81,6 +81,9 @@ services:
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      SUPERSET_URL: "http://superset:8088"
+      SUPERSET_ADMIN_USER: "admin"
+      SUPERSET_ADMIN_PASSWORD: "admin"
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     ports:
@@ -289,6 +292,7 @@ services:
     restart: unless-stopped
     environment:
       SUPERSET_SECRET_KEY: "handysuites-superset-dev-secret-key-change-in-production-2026"
+      SUPERSET_CONFIG_PATH: "/app/superset_home/superset_config.py"
       SUPERSET_LOAD_EXAMPLES: "no"
       # Use same PostgreSQL for Superset metadata
       DATABASE_DB: superset_meta
@@ -306,6 +310,8 @@ services:
         condition: service_healthy
     volumes:
       - superset_dev_data:/app/superset_home
+      - ./infra/superset/superset_config.py:/app/superset_home/superset_config.py:ro
+      - ./infra/superset/bootstrap.py:/app/bootstrap.py:ro
     networks:
       - handysuites_dev_network
     profiles:

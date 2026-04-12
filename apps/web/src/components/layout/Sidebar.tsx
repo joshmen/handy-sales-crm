@@ -239,6 +239,13 @@ const sidebarItems: SidebarItem[] = [
     permission: 'view_dashboard',
   },
   {
+    id: 'analytics',
+    label: 'Analítica',
+    icon: SbAI,
+    href: '/analytics',
+    permission: 'view_dashboard',
+  },
+  {
     id: 'metas',
     label: 'Metas',
     icon: SbGoals,

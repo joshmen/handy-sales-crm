@@ -4747,6 +4747,16 @@
     "amountRequired": "Amount is required",
     "notesMax2000": "Notes cannot exceed 2000 characters"
   },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Interactive dashboards and custom reports",
+    "loadingDashboards": "Loading dashboards...",
+    "errorLoading": "Could not connect to analytics service",
+    "errorHint": "Make sure the analytics service is running",
+    "errorToken": "Could not load dashboard. Try refreshing.",
+    "noDashboards": "No dashboards available",
+    "noDashboardsHint": "Dashboards will appear here once they are created by your administrator. Contact support if you need help setting up analytics."
+  },
   "backendMessages": {
     "2FA desactivado exitosamente": "2FA disabled successfully",
     "AI no disponible o sin créditos": "AI not available or no credits",

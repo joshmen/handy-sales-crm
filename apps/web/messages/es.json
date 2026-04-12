@@ -4747,6 +4747,16 @@
     "amountRequired": "El monto es requerido",
     "notesMax2000": "Las notas no pueden exceder 2000 caracteres"
   },
+  "analytics": {
+    "title": "Analítica",
+    "subtitle": "Dashboards interactivos y reportes personalizados",
+    "loadingDashboards": "Cargando dashboards...",
+    "errorLoading": "No se pudo conectar al servicio de analítica",
+    "errorHint": "Asegúrate de que el servicio de analítica esté en funcionamiento",
+    "errorToken": "No se pudo cargar el dashboard. Intenta refrescar.",
+    "noDashboards": "No hay dashboards disponibles",
+    "noDashboardsHint": "Los dashboards aparecerán aquí una vez que sean creados por tu administrador. Contacta a soporte si necesitas ayuda configurando la analítica."
+  },
   "backendMessages": {
     "2FA desactivado exitosamente": "2FA desactivado exitosamente",
     "AI no disponible o sin créditos": "AI no disponible o sin créditos",
