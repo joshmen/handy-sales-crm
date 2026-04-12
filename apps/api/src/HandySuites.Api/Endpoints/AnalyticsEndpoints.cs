@@ -234,10 +234,17 @@ public static class AnalyticsEndpoints
                 rows.Add(row);
             }
 
+            // Build column metadata for frontend
+            var columnMeta = columns.Select(colName =>
+            {
+                var def = source.Columns.FirstOrDefault(c => c.Name == colName);
+                return new { name = colName, label = def?.Label ?? colName, type = def?.Type ?? "string" };
+            }).ToList();
+
             return Results.Ok(new
             {
                 source = source.Id,
-                columns,
+                columns = columnMeta,
                 rows,
                 totalRows = rows.Count,
             });
