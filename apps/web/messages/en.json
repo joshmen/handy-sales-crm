@@ -2717,7 +2717,8 @@
     },
     "autoInsights": {
       "noInsights": "No insights found for this period.",
-      "tryWiderRange": "Try a wider date range."
+      "tryWiderRange": "Try a wider date range.",
+      "summaryChart": "Insights Overview"
     },
     "carteraVencida": {
       "reportTitle": "Overdue Portfolio",

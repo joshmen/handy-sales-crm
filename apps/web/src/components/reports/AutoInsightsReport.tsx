@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { ReportFilters } from "./ReportFilters";
 import { getInsights, InsightsResponse, Insight } from "@/services/api/reports";
 import { toast } from "@/hooks/useToast";
-import { TrendingUp, TrendingDown, Minus, Package, MapPin, Users, Eye, ShoppingCart, Lightbulb } from "lucide-react";
+import { Package, MapPin, Users, Eye, ShoppingCart, Lightbulb, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useTranslations } from "next-intl";
+
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 function defaultDates() {
   const h = new Date();
@@ -15,21 +18,17 @@ function defaultDates() {
 }
 
 const TIPO_ICONS: Record<string, React.ElementType> = {
-  ventas: ShoppingCart,
-  zona: MapPin,
-  inventario: Package,
-  visitas: Eye,
-  producto: Package,
-  clientes: Users,
+  ventas: ShoppingCart, zona: MapPin, inventario: Package,
+  visitas: Eye, producto: Package, clientes: Users,
 };
 
-const TIPO_ACCENTS: Record<string, { bar: string; iconBg: string; icon: string }> = {
-  ventas: { bar: "bg-emerald-500", iconBg: "bg-emerald-50", icon: "text-emerald-600" },
-  zona: { bar: "bg-blue-500", iconBg: "bg-blue-50", icon: "text-blue-600" },
-  inventario: { bar: "bg-red-400", iconBg: "bg-red-50", icon: "text-red-500" },
-  visitas: { bar: "bg-violet-500", iconBg: "bg-violet-50", icon: "text-violet-600" },
-  producto: { bar: "bg-amber-400", iconBg: "bg-amber-50", icon: "text-amber-600" },
-  clientes: { bar: "bg-teal-500", iconBg: "bg-teal-50", icon: "text-teal-600" },
+const TIPO_COLORS: Record<string, { bar: string; bg: string; text: string; chart: string }> = {
+  ventas:     { bar: "from-emerald-500 to-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600", chart: "#10b981" },
+  zona:       { bar: "from-blue-500 to-blue-400",      bg: "bg-blue-50",    text: "text-blue-600",    chart: "#3b82f6" },
+  inventario: { bar: "from-red-500 to-red-400",        bg: "bg-red-50",     text: "text-red-500",     chart: "#ef4444" },
+  visitas:    { bar: "from-violet-500 to-violet-400",   bg: "bg-violet-50",  text: "text-violet-600",  chart: "#8b5cf6" },
+  producto:   { bar: "from-amber-500 to-amber-400",     bg: "bg-amber-50",   text: "text-amber-600",   chart: "#f59e0b" },
+  clientes:   { bar: "from-teal-500 to-teal-400",       bg: "bg-teal-50",    text: "text-teal-600",    chart: "#14b8a6" },
 };
 
 /** Translate backend-generated insight texts (Spanish→locale) */
@@ -37,17 +36,13 @@ function translateInsight(text: string): string {
   let lang = 'es';
   try { const s = JSON.parse(localStorage.getItem('company_settings') || '{}'); lang = s.language || 'es'; } catch { /* */ }
   if (lang === 'es') return text;
-  // Title patterns
-  const titleRules: [RegExp, string][] = [
+  const rules: [RegExp, string][] = [
     [/^(\d+) productos con stock critico$/, '$1 products with critical stock'],
     [/^(\d+) nuevos clientes$/, '$1 new clients'],
     [/^Efectividad de visitas: (.+)$/, 'Visit effectiveness: $1'],
     [/^Mejor zona: (.+)$/, 'Best zone: $1'],
     [/^Zona con oportunidad: (.+)$/, 'Opportunity zone: $1'],
     [/^Producto destacado: (.+)$/, 'Featured product: $1'],
-  ];
-  // Description patterns
-  const descRules: [RegExp, string][] = [
     [/^Productos sin stock o por debajo del minimo que requieren reabastecimiento\.$/, 'Products out of stock or below minimum that need restocking.'],
     [/^(\d+) de (\d+) visitas resultaron en venta\.$/, '$1 of $2 visits resulted in a sale.'],
     [/^Aumento de (.+)% vs periodo anterior\.$/, 'Increase of $1% vs prior period.'],
@@ -58,38 +53,73 @@ function translateInsight(text: string): string {
     [/^Crecio (.+)% en ventas\.$/, 'Grew $1% in sales.'],
     [/^Cayo (.+)% en ventas\.$/, 'Dropped $1% in sales.'],
   ];
-  for (const [re, rep] of titleRules) { if (re.test(text)) return text.replace(re, rep); }
-  for (const [re, rep] of descRules) { if (re.test(text)) return text.replace(re, rep); }
+  for (const [re, rep] of rules) { if (re.test(text)) return text.replace(re, rep); }
   return text;
 }
 
 function InsightCard({ insight, index }: { insight: Insight; index: number }) {
   const Icon = TIPO_ICONS[insight.tipo] || Lightbulb;
-  const accent = TIPO_ACCENTS[insight.tipo] || { bar: "bg-surface-3", iconBg: "bg-surface-1", icon: "text-muted-foreground" };
-  const TrendIcon =
-    insight.tendencia === "up" ? TrendingUp : insight.tendencia === "down" ? TrendingDown : Minus;
-  const trendColor =
-    insight.tendencia === "up" ? "text-emerald-600" : insight.tendencia === "down" ? "text-red-500" : "text-muted-foreground";
+  const colors = TIPO_COLORS[insight.tipo] || { bar: "from-gray-400 to-gray-300", bg: "bg-surface-1", text: "text-muted-foreground", chart: "#9ca3af" };
+  const isUp = insight.tendencia === "up";
+  const isDown = insight.tendencia === "down";
+  const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
+  const trendColor = isUp ? "text-emerald-600" : isDown ? "text-red-500" : "text-muted-foreground";
+
+  // Mini sparkline for each card
+  const sparkOptions: ApexCharts.ApexOptions = {
+    chart: { type: "area", sparkline: { enabled: true }, animations: { enabled: true, speed: 800 } },
+    stroke: { curve: "smooth", width: 2 },
+    fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
+    colors: [colors.chart],
+    tooltip: { enabled: false },
+  };
+  // Generate a simple trend line based on the value
+  const base = Math.max(Math.abs(insight.valor), 10);
+  const sparkData = isUp
+    ? [base * 0.3, base * 0.4, base * 0.5, base * 0.6, base * 0.8, base]
+    : isDown
+    ? [base, base * 0.9, base * 0.7, base * 0.5, base * 0.4, base * 0.3]
+    : [base * 0.5, base * 0.6, base * 0.5, base * 0.55, base * 0.5, base * 0.52];
 
   return (
     <div
-      className="relative overflow-hidden bg-white border border-border-subtle rounded-xl p-5 motion-safe:opacity-0 motion-safe:animate-card-enter hover:shadow-lg transition-shadow duration-300"
-      style={{ animationDelay: `${index * 80}ms` }}
+      className="relative overflow-hidden bg-surface-2 border border-border-subtle rounded-xl shadow-elevation-1 hover:shadow-elevation-2 transition-all duration-300 motion-safe:opacity-0 motion-safe:animate-card-enter"
+      style={{ animationDelay: `${index * 100}ms` }}
     >
-      <div className={`absolute top-0 left-0 right-0 h-1 ${accent.bar}`} />
-      <div className="flex items-start justify-between mb-3 pt-1">
-        <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${accent.iconBg}`}>
-          <Icon className={`w-4 h-4 ${accent.icon}`} />
-        </div>
-        {insight.valor !== undefined && (
-          <div className={`flex items-center gap-1 ${trendColor}`}>
-            <TrendIcon className="w-4 h-4" />
-            <span className="text-sm font-semibold">{insight.valor}%</span>
+      {/* Gradient top bar */}
+      <div className={`h-1 bg-gradient-to-r ${colors.bar}`} />
+
+      <div className="p-5">
+        {/* Header: icon + trend */}
+        <div className="flex items-start justify-between mb-4">
+          <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${colors.bg}`}>
+            <Icon className={`w-5 h-5 ${colors.text}`} />
           </div>
-        )}
+          {insight.valor !== undefined && (
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+              isUp ? "bg-emerald-50 text-emerald-700" : isDown ? "bg-red-50 text-red-600" : "bg-surface-3 text-muted-foreground"
+            }`}>
+              <TrendIcon className="w-3.5 h-3.5" />
+              {Math.abs(insight.valor)}%
+            </div>
+          )}
+        </div>
+
+        {/* Title */}
+        <h3 className="text-sm font-semibold text-foreground mb-1 leading-snug">
+          {translateInsight(insight.titulo)}
+        </h3>
+
+        {/* Description */}
+        <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+          {translateInsight(insight.descripcion)}
+        </p>
+
+        {/* Mini sparkline chart */}
+        <div className="-mx-2 -mb-2">
+          <Chart type="area" options={sparkOptions} series={[{ data: sparkData }]} height={50} />
+        </div>
       </div>
-      <h3 className="text-[13px] font-semibold text-foreground mb-1">{translateInsight(insight.titulo)}</h3>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">{translateInsight(insight.descripcion)}</p>
     </div>
   );
 }
@@ -104,8 +134,7 @@ export function AutoInsightsReport() {
   const fetch = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getInsights(dates);
-      setData(res);
+      setData(await getInsights(dates));
     } catch {
       toast.error(tc("errorLoadingInsights"));
     } finally {
@@ -113,8 +142,25 @@ export function AutoInsightsReport() {
     }
   }, [dates]);
 
+  // Summary chart data
+  const chartInsights = data?.insights.filter(i => i.valor !== undefined) || [];
+  const summaryOptions: ApexCharts.ApexOptions = {
+    chart: { type: "bar", toolbar: { show: false }, animations: { enabled: true, speed: 800 } },
+    plotOptions: { bar: { borderRadius: 8, columnWidth: "55%", distributed: true } },
+    colors: chartInsights.map(i => TIPO_COLORS[i.tipo]?.chart || "#9ca3af"),
+    grid: { borderColor: "hsl(var(--border-subtle))", strokeDashArray: 3, padding: { bottom: -8 } },
+    dataLabels: { enabled: true, formatter: (v) => `${v}%`, style: { fontSize: "11px", fontWeight: "bold" }, offsetY: -4 },
+    xaxis: {
+      categories: chartInsights.map(i => translateInsight(i.titulo).split(":")[0].substring(0, 20)),
+      labels: { style: { fontSize: "10px", colors: "hsl(var(--muted-foreground))" }, trim: true, maxHeight: 50 },
+    },
+    yaxis: { labels: { style: { fontSize: "10px", colors: "hsl(var(--muted-foreground))" }, formatter: (v) => `${v}%` } },
+    tooltip: { y: { formatter: (v) => `${v}%` } },
+    legend: { show: false },
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <ReportFilters
         desde={dates.desde}
         hasta={dates.hasta}
@@ -124,19 +170,46 @@ export function AutoInsightsReport() {
         loading={loading}
       />
 
-      {data && (
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <Lightbulb className="w-10 h-10 mb-3 text-muted-foreground/40" />
+          <p className="text-sm">{tc("clickApply")}</p>
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+
+      {data && data.insights.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <Lightbulb className="w-12 h-12 mx-auto mb-3 text-muted-foreground/40" />
+          <p className="text-sm font-medium">{t("noInsights")}</p>
+          <p className="text-xs mt-1">{t("tryWiderRange")}</p>
+        </div>
+      )}
+
+      {data && data.insights.length > 0 && (
         <>
-          {data.insights.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Lightbulb className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
-              <p className="text-sm">{t("noInsights")}</p>
-              <p className="text-xs mt-1">{t("tryWiderRange")}</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.insights.map((insight, i) => (
-                <InsightCard key={i} insight={insight} index={i} />
-              ))}
+          {/* Insight cards grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {data.insights.map((insight, i) => (
+              <InsightCard key={i} insight={insight} index={i} />
+            ))}
+          </div>
+
+          {/* Summary bar chart */}
+          {chartInsights.length > 1 && (
+            <div className="bg-surface-2 border border-border-subtle rounded-xl shadow-elevation-1 p-5">
+              <h3 className="text-sm font-semibold text-foreground mb-4">{t("summaryChart")}</h3>
+              <Chart
+                type="bar"
+                options={summaryOptions}
+                series={[{ name: "%", data: chartInsights.map(i => i.valor) }]}
+                height={280}
+              />
             </div>
           )}
         </>

@@ -2717,7 +2717,8 @@
     },
     "autoInsights": {
       "noInsights": "No se encontraron insights para este período.",
-      "tryWiderRange": "Intenta con un rango de fechas más amplio."
+      "tryWiderRange": "Intenta con un rango de fechas más amplio.",
+      "summaryChart": "Resumen de Insights"
     },
     "carteraVencida": {
       "reportTitle": "Cartera Vencida",
