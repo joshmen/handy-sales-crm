@@ -8,6 +8,7 @@ import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getNuevosClientes, NuevoCliente } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
+import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
@@ -27,6 +28,16 @@ export function NuevosClientesReport() {
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<{ clientes: NuevoCliente[]; total: number; porMes: { mes: string; cantidad: number }[] } | null>(null);
   const [loading, setLoading] = useState(false);
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'nuevos-clientes',
+    title: t('reportTitle'),
+    dateRange: dates,
+    kpis: data ? [{ label: t('newClients'), value: data.total }] : undefined,
+    table: data ? {
+      headers: [t('client'), t('zone'), t('email'), t('phone'), tc('date'), t('createdBy')],
+      rows: data.clientes.map(c => [c.nombre, c.zona || '', c.correo || '', c.telefono || '', fmtDate(c.fechaCreacion), c.creadoPor || '']),
+    } : undefined,
+  });
 
   const loadData = useCallback(async () => {
     try { setLoading(true); setData(await getNuevosClientes(dates)); }
@@ -58,7 +69,7 @@ export function NuevosClientesReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting} />
       {data && (
         <>
           <ReportKPICards cards={[{ label: t('newClients'), value: data.total, color: 'green' }]} />
