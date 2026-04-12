@@ -21,6 +21,13 @@ const DYNAMIC_PATTERNS: Array<[RegExp, string]> = [
   [/^Se renovaron (\d+) meta.* automáticamente\.$/, '$1 goal(s) renewed automatically.'],
   [/^Cobro registrado: (.+) — (.+)$/, 'Payment registered: $1 — $2'],
   [/^Todos los vendedores están al ≥(\d+)% de su meta$/, 'All vendors are at ≥$1% of their goal'],
+  [/^Resumen enviado: (\d+) ventas, (\d+) cobros, (\d+) visitas$/, 'Summary sent: $1 sales, $2 collections, $3 visits'],
+  [/^(\d+) clientes? nuevos? notificados?$/, '$1 new client(s) notified'],
+  [/^(\d+) recordatorios? enviados? a (\d+) clientes?$/, '$1 reminder(s) sent to $2 client(s)'],
+  [/^(\d+) visitas? agendadas? para (\d+) clientes? inactivos?$/, '$1 visit(s) scheduled for $2 inactive client(s)'],
+  [/^(\d+) oportunidades? de reorden detectadas?$/, '$1 reorder opportunity(ies) detected'],
+  [/^(\d+) alertas? de meta enviadas?$/, '$1 goal alert(s) sent'],
+  [/^Se generó tu ruta para el (.+) con (\d+) paradas?.*$/, 'Your route for $1 with $2 stop(s) has been generated.'],
 ];
 
 /**
@@ -41,7 +48,10 @@ export function useBackendTranslation() {
       // 1. Try exact match in translation dictionary
       try {
         const translated = t(message);
-        return translated;
+        // next-intl returns "namespace.key" when not found — detect and skip
+        if (!translated.startsWith('backendMessages.') && translated !== message) {
+          return translated;
+        }
       } catch {
         // Key not found — continue to dynamic patterns
       }
