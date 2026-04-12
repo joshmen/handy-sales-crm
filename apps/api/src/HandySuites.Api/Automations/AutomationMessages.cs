@@ -96,6 +96,17 @@ public static class AutomationMessages
         ["cobroExitoso.notification.title"] = "Cobro registrado exitosamente",
         ["cobroExitoso.notification"] = "Cobro registrado: {0} — {1}",
 
+        // Result messages (used in AutomationResult)
+        ["result.sinClientesNuevos"] = "Sin clientes nuevos",
+        ["result.todosClientesVisitados"] = "Todos los clientes tienen visitas recientes",
+        ["result.sinCobrosNuevos"] = "Sin cobros nuevos desde la última ejecución",
+        ["result.sinSaldosVencidos"] = "Sin saldos vencidos",
+        ["result.sinMetasAutoRenovar"] = "Sin metas para auto-renovar",
+        ["result.sinMetasConfiguradas"] = "Sin metas configuradas para el período actual",
+        ["result.sinClientesRecurrentes"] = "Sin clientes con historial recurrente",
+        ["result.todosClientesCicloNormal"] = "Todos los clientes están dentro de su ciclo normal de pedido",
+        ["result.sinVendedoresActivos"] = "Sin vendedores activos",
+
         // Table Headers
         ["table.producto"] = "Producto",
         ["table.stock"] = "Stock",
@@ -202,6 +213,17 @@ public static class AutomationMessages
         // Cobro Exitoso
         ["cobroExitoso.notification.title"] = "Payment registered successfully",
         ["cobroExitoso.notification"] = "Payment registered: {0} — {1}",
+
+        // Result messages
+        ["result.sinClientesNuevos"] = "No new clients",
+        ["result.todosClientesVisitados"] = "All clients have recent visits",
+        ["result.sinCobrosNuevos"] = "No new payments since last execution",
+        ["result.sinSaldosVencidos"] = "No overdue balances",
+        ["result.sinMetasAutoRenovar"] = "No goals to auto-renew",
+        ["result.sinMetasConfiguradas"] = "No goals configured for the current period",
+        ["result.sinClientesRecurrentes"] = "No clients with recurring history",
+        ["result.todosClientesCicloNormal"] = "All clients are within their normal order cycle",
+        ["result.sinVendedoresActivos"] = "No active vendors",
 
         // Table Headers
         ["table.producto"] = "Product",

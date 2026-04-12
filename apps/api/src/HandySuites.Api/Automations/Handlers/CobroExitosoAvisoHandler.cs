@@ -41,7 +41,7 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (cobros.Count == 0)
-            return new AutomationResult(true, "Sin cobros nuevos desde la última ejecución");
+            return new AutomationResult(true, M("result.sinCobrosNuevos", lang));
 
         var totalMonto = cobros.Sum(c => c.Monto);
         var adminId = await context.GetAdminUserIdAsync(ct);
@@ -50,7 +50,9 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
         {
             var mensaje = cobros.Count == 1
                 ? string.Format(M("cobroExitoso.notification", lang), cobros[0].ClienteNombre, FormatMoney(cobros[0].Monto, culture))
-                : $"{cobros.Count} cobros — {FormatMoney(totalMonto, culture)}";
+                : lang == "en"
+                    ? $"{cobros.Count} payments — {FormatMoney(totalMonto, culture)}"
+                    : $"{cobros.Count} cobros — {FormatMoney(totalMonto, culture)}";
 
             await context.NotifyUserAsync(adminId.Value,
                 M("cobroExitoso.notification.title", lang),
@@ -59,8 +61,10 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
                 new Dictionary<string, string> { { "url", "/cobranza" } });
         }
 
-        return new AutomationResult(true,
-            $"{cobros.Count} cobro{(cobros.Count != 1 ? "s" : "")} — {FormatMoney(totalMonto, culture)}");
+        var resultMsg = lang == "en"
+            ? $"{cobros.Count} payment{(cobros.Count != 1 ? "s" : "")} — {FormatMoney(totalMonto, culture)}"
+            : $"{cobros.Count} cobro{(cobros.Count != 1 ? "s" : "")} — {FormatMoney(totalMonto, culture)}";
+        return new AutomationResult(true, resultMsg);
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);

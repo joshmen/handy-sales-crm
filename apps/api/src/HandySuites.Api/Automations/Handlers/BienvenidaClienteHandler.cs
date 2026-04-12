@@ -24,7 +24,7 @@ public class BienvenidaClienteHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (newClients.Count == 0)
-            return new AutomationResult(true, "Sin clientes nuevos");
+            return new AutomationResult(true, M("result.sinClientesNuevos", lang));
 
         // ── Push: ONE aggregated notification per vendedor ──
         var notified = 0;
@@ -110,6 +110,8 @@ public class BienvenidaClienteHandler : IAutomationHandler
             $"{newClients.Count} {M("bienvenida.kpi.nuevos", lang).ToLower()}",
             language: lang);
 
-        return new AutomationResult(true, $"Bienvenida enviada para {newClients.Count} clientes nuevos ({notified} notificaciones)");
+        return new AutomationResult(true, lang == "en"
+            ? $"Welcome sent for {newClients.Count} new clients ({notified} notifications)"
+            : $"Bienvenida enviada para {newClients.Count} clientes nuevos ({notified} notificaciones)");
     }
 }

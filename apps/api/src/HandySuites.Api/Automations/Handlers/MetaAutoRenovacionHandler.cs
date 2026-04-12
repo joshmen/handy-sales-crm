@@ -25,7 +25,7 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (expiradas.Count == 0)
-            return new AutomationResult(true, "Sin metas para auto-renovar");
+            return new AutomationResult(true, M("result.sinMetasAutoRenovar", lang));
 
         var renovadas = 0;
 
@@ -72,7 +72,8 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
                 "Info", "push", ct);
         }
 
-        return new AutomationResult(true,
-            $"{renovadas} meta{(renovadas != 1 ? "s" : "")} renovada{(renovadas != 1 ? "s" : "")}");
+        return new AutomationResult(true, lang == "en"
+            ? $"{renovadas} goal{(renovadas != 1 ? "s" : "")} renewed"
+            : $"{renovadas} meta{(renovadas != 1 ? "s" : "")} renovada{(renovadas != 1 ? "s" : "")}");
     }
 }

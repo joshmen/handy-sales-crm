@@ -40,7 +40,7 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (pedidosVencidos.Count == 0)
-            return new AutomationResult(true, "Sin saldos vencidos", null);
+            return new AutomationResult(true, M("result.sinSaldosVencidos", lang), null);
 
         // Calculate balances
         var pedidoIds = pedidosVencidos.Select(p => p.Id).ToList();
@@ -67,7 +67,7 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             .ToList();
 
         if (vencidos.Count == 0)
-            return new AutomationResult(true, "Sin saldos vencidos", null);
+            return new AutomationResult(true, M("result.sinSaldosVencidos", lang), null);
 
         // ── Push: notify vendedores ──
         var porVendedor = vencidos.GroupBy(v => v.UsuarioId);
@@ -149,7 +149,9 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             $"{vencidos.Count} cobros — {FormatMoney(totalVencido, culture)}",
             language: lang);
 
-        return new AutomationResult(true, $"Recordatorios enviados: {notificaciones} notificaciones sobre {vencidos.Count} saldos vencidos");
+        return new AutomationResult(true, lang == "en"
+            ? $"Reminders sent: {notificaciones} notifications about {vencidos.Count} overdue balances"
+            : $"Recordatorios enviados: {notificaciones} notificaciones sobre {vencidos.Count} saldos vencidos");
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);

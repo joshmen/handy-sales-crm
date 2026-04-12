@@ -36,7 +36,7 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (clienteOrders.Count == 0)
-            return new AutomationResult(true, "Sin clientes con historial recurrente");
+            return new AutomationResult(true, M("result.sinClientesRecurrentes", lang));
 
         var now = DateTime.UtcNow;
 
@@ -69,7 +69,7 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .ToList();
 
         if (clientesSugeridos.Count == 0)
-            return new AutomationResult(true, "Todos los clientes están dentro de su ciclo normal de pedido");
+            return new AutomationResult(true, M("result.todosClientesCicloNormal", lang));
 
         // ── Push: one aggregated notification per vendedor ──
         var notified = 0;
@@ -162,7 +162,8 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             $"{clientesSugeridos.Count} {M("pedidoRecurrente.kpi.oportunidades", lang).ToLower()}",
             language: lang);
 
-        return new AutomationResult(true,
-            $"Reorden: {clientesSugeridos.Count} clientes con ciclo superado ({notified} notificaciones)");
+        return new AutomationResult(true, lang == "en"
+            ? $"Reorder: {clientesSugeridos.Count} clients with overdue cycle ({notified} notifications)"
+            : $"Reorden: {clientesSugeridos.Count} clientes con ciclo superado ({notified} notificaciones)");
     }
 }

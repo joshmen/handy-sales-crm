@@ -44,7 +44,7 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (clientesInactivos.Count == 0)
-            return new AutomationResult(true, "Todos los clientes tienen visitas recientes");
+            return new AutomationResult(true, M("result.todosClientesVisitados", lang));
 
         // ── Auto-schedule visits for next business day ──
         var nextBusinessDay = GetNextBusinessDay(DateTime.UtcNow);
@@ -167,8 +167,10 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             $"{clientesInactivos.Count} {M("clienteInactivo.kpi.sinVisita", lang).ToLower()}",
             language: lang);
 
-        return new AutomationResult(true,
-            $"Clientes inactivos: {clientesInactivos.Count}, visitas agendadas: {visitasCreadas}, notificaciones: {notified}");
+        var resultMsg = lang == "en"
+            ? $"Inactive clients: {clientesInactivos.Count}, visits scheduled: {visitasCreadas}, notifications: {notified}"
+            : $"Clientes inactivos: {clientesInactivos.Count}, visitas agendadas: {visitasCreadas}, notificaciones: {notified}";
+        return new AutomationResult(true, resultMsg);
     }
 
     /// <summary>

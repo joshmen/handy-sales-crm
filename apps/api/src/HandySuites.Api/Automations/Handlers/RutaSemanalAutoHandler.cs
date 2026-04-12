@@ -22,7 +22,7 @@ public class RutaSemanalAutoHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (vendedores.Count == 0)
-            return new AutomationResult(true, "Sin vendedores activos");
+            return new AutomationResult(true, M("result.sinVendedoresActivos", lang));
 
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
@@ -147,15 +147,21 @@ public class RutaSemanalAutoHandler : IAutomationHandler
             {
                 await context.NotifyUserAsync(adminId.Value,
                     string.Format(M("rutaSemanal.routeName", lang), nextMonday.ToString("dd/MM/yyyy")),
-                    $"{rutasCreadas} rutas — {nextMonday:dd/MM/yyyy}",
+                    lang == "en"
+                        ? $"{rutasCreadas} routes — {nextMonday:dd/MM/yyyy}"
+                        : $"{rutasCreadas} rutas — {nextMonday:dd/MM/yyyy}",
                     "General", Canal, ct,
                     new Dictionary<string, string> { { "url", "/routes" } });
             }
         }
 
         return rutasCreadas > 0
-            ? new AutomationResult(true, $"{rutasCreadas} rutas semanales generadas")
-            : new AutomationResult(true, "Sin rutas nuevas por generar (ya existen o sin clientes asignados)");
+            ? new AutomationResult(true, lang == "en"
+                ? $"{rutasCreadas} weekly routes generated"
+                : $"{rutasCreadas} rutas semanales generadas")
+            : new AutomationResult(true, lang == "en"
+                ? "No new routes to generate (already exist or no assigned clients)"
+                : "Sin rutas nuevas por generar (ya existen o sin clientes asignados)");
     }
 
     /// <summary>

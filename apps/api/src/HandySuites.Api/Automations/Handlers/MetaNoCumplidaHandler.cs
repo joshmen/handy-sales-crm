@@ -42,7 +42,7 @@ public class MetaNoCumplidaHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (metas.Count == 0)
-            return new AutomationResult(true, "Sin metas configuradas para el período actual");
+            return new AutomationResult(true, M("result.sinMetasConfiguradas", lang));
 
         var alertas = new List<(string VendedorNombre, int VendedorId, string Tipo, decimal Meta, decimal Real, int Pct)>();
 
@@ -87,7 +87,9 @@ public class MetaNoCumplidaHandler : IAutomationHandler
         }
 
         if (alertas.Count == 0)
-            return new AutomationResult(true, $"Todos los vendedores están al ≥{porcentajeAlerta}% de su meta");
+            return new AutomationResult(true, lang == "en"
+                ? $"All vendors are at ≥{porcentajeAlerta}% of their goal"
+                : $"Todos los vendedores están al ≥{porcentajeAlerta}% de su meta");
 
         // ── Push to each vendedor ──
         foreach (var (nombre, vendedorId, tipo, metaMonto, real, pct) in alertas)
@@ -158,8 +160,9 @@ public class MetaNoCumplidaHandler : IAutomationHandler
                 language: lang);
         }
 
-        return new AutomationResult(true,
-            $"Alertas enviadas: {alertas.Count} vendedor{(alertas.Count != 1 ? "es" : "")} bajo el {porcentajeAlerta}%");
+        return new AutomationResult(true, lang == "en"
+            ? $"Alerts sent: {alertas.Count} vendor{(alertas.Count != 1 ? "s" : "")} below {porcentajeAlerta}%"
+            : $"Alertas enviadas: {alertas.Count} vendedor{(alertas.Count != 1 ? "es" : "")} bajo el {porcentajeAlerta}%");
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);
