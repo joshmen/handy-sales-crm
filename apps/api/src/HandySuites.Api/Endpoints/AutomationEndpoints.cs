@@ -203,9 +203,15 @@ public static class AutomationEndpoints
 
                 return Results.Ok(new { success = result.Success, action = result.ActionTaken, error = result.Error });
             }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Ok(new { success = false, action = "", error = ex.Message });
+            }
             catch (Exception ex)
             {
-                return Results.Ok(new { success = false, action = "", error = "Error al ejecutar la acción." });
+                var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
+                loggerFactory?.CreateLogger("AutomationEndpoints").LogError(ex, "Automation test failed for {Slug}", slug);
+                return Results.Ok(new { success = false, action = "", error = "Error al ejecutar la automatización." });
             }
         })
         .WithSummary("Ejecutar automatización manualmente para pruebas");
