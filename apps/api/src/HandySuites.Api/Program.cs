@@ -147,6 +147,7 @@ builder.Services.AddHttpClient("MobileApi", client =>
 builder.Services.AddHostedService<ScheduledActionProcessor>();
 builder.Services.AddHostedService<SubscriptionMonitor>();
 builder.Services.AddHostedService<AutomationEngine>();
+builder.Services.AddHostedService<MaterializedViewRefresher>();
 
 var app = builder.Build();
 

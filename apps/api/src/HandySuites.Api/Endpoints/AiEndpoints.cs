@@ -1481,6 +1481,7 @@ Reglas:
         try
         {
             await db.Database.ExecuteSqlRawAsync("SELECT refresh_ai_materialized_views()");
+            await db.Database.ExecuteSqlRawAsync("SELECT refresh_report_materialized_views()");
             return Results.Ok(new { message = "Vistas materializadas actualizadas correctamente.", refreshedAt = DateTime.UtcNow });
         }
         catch (Exception ex)
