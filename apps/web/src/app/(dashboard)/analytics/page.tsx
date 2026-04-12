@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { embedDashboard } from '@superset-ui/embedded-sdk';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
-import { BarChart3, RefreshCw, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { BarChart3, RefreshCw, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useTranslations } from 'next-intl';
 
@@ -12,7 +13,7 @@ interface Dashboard {
   id: number;
   title: string;
   slug: string | null;
-  uuid: string | null;
+  uuid: string; // embedded UUID
 }
 
 export default function AnalyticsPage() {
@@ -20,11 +21,10 @@ export default function AnalyticsPage() {
   const tc = useTranslations('common');
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
-  const [guestToken, setGuestToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tokenLoading, setTokenLoading] = useState(false);
+  const [embedding, setEmbedding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const mountRef = useRef<HTMLDivElement>(null);
 
   const supersetUrl = process.env.NEXT_PUBLIC_SUPERSET_URL || 'http://localhost:1084';
 
@@ -38,7 +38,7 @@ export default function AnalyticsPage() {
       if (res.data.length > 0 && !selectedDashboard) {
         setSelectedDashboard(res.data[0]);
       }
-    } catch (err) {
+    } catch {
       setError(t('errorLoading'));
     } finally {
       setLoading(false);
@@ -46,19 +46,49 @@ export default function AnalyticsPage() {
   }, []);
 
   // Get guest token for embedding
-  const fetchGuestToken = useCallback(async (dashboard: Dashboard) => {
+  const fetchGuestToken = useCallback(async (dashboardUuid: string): Promise<string> => {
+    const res = await api.post<{ token: string }>('/api/analytics/guest-token', {
+      dashboardIds: [dashboardUuid],
+    });
+    return res.data.token;
+  }, []);
+
+  // Embed the dashboard using Superset SDK
+  const doEmbed = useCallback(async (dashboard: Dashboard) => {
+    if (!mountRef.current) return;
+
     try {
-      setTokenLoading(true);
-      const res = await api.post<{ token: string }>('/api/analytics/guest-token', {
-        dashboardIds: [dashboard.uuid || String(dashboard.id)],
+      setEmbedding(true);
+      // Clear previous embed
+      mountRef.current.innerHTML = '';
+
+      await embedDashboard({
+        id: dashboard.uuid,
+        supersetDomain: supersetUrl,
+        mountPoint: mountRef.current,
+        fetchGuestToken: () => fetchGuestToken(dashboard.uuid),
+        dashboardUiConfig: {
+          hideTitle: true,
+          hideChartControls: false,
+          hideTab: false,
+        },
       });
-      setGuestToken(res.data.token);
+
+      // Style the iframe that Superset SDK creates
+      const iframe = mountRef.current.querySelector('iframe');
+      if (iframe) {
+        iframe.style.width = '100%';
+        iframe.style.height = 'calc(100vh - 280px)';
+        iframe.style.minHeight = '500px';
+        iframe.style.border = 'none';
+        iframe.style.borderRadius = '0.75rem';
+      }
     } catch (err) {
       toast.error(t('errorToken'));
     } finally {
-      setTokenLoading(false);
+      setEmbedding(false);
     }
-  }, []);
+  }, [supersetUrl, fetchGuestToken]);
 
   useEffect(() => {
     fetchDashboards();
@@ -66,13 +96,9 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (selectedDashboard) {
-      fetchGuestToken(selectedDashboard);
+      doEmbed(selectedDashboard);
     }
-  }, [selectedDashboard, fetchGuestToken]);
-
-  const embedUrl = selectedDashboard && guestToken
-    ? `${supersetUrl}/embedded/${selectedDashboard.uuid || selectedDashboard.id}/?standalone=true&guest_token=${guestToken}`
-    : null;
+  }, [selectedDashboard, doEmbed]);
 
   return (
     <PageHeader
@@ -83,12 +109,10 @@ export default function AnalyticsPage() {
       title={t('title')}
       subtitle={t('subtitle')}
       actions={
-        <>
-          <Button variant="outline" size="sm" onClick={fetchDashboards} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {tc('refresh')}
-          </Button>
-        </>
+        <Button variant="outline" size="sm" onClick={fetchDashboards} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          {tc('refresh')}
+        </Button>
       }
     >
       <div className="space-y-4">
@@ -131,7 +155,7 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* Empty state — no dashboards */}
+        {/* Empty state */}
         {!loading && !error && dashboards.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
             <BarChart3 className="w-16 h-16 mb-4 text-muted-foreground/30" />
@@ -140,28 +164,15 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* Embedded dashboard */}
+        {/* Embedded dashboard mount point */}
         {!loading && !error && selectedDashboard && (
           <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-elevation-1 overflow-hidden">
-            {tokenLoading ? (
+            {embedding && (
               <div className="flex items-center justify-center py-32">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : embedUrl ? (
-              <iframe
-                ref={iframeRef}
-                src={embedUrl}
-                className="w-full border-0"
-                style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}
-                title={selectedDashboard.title}
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
-                <AlertCircle className="w-8 h-8 mb-2" />
-                <p className="text-sm">{t('errorToken')}</p>
-              </div>
             )}
+            <div ref={mountRef} className={embedding ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'} />
           </div>
         )}
       </div>

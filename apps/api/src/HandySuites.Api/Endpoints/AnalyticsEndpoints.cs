@@ -46,16 +46,38 @@ public static class AnalyticsEndpoints
                 return Results.StatusCode((int)response.StatusCode);
 
             var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-            var dashboards = json.GetProperty("result").EnumerateArray()
+            var published = json.GetProperty("result").EnumerateArray()
                 .Where(d => d.TryGetProperty("published", out var pub) && pub.GetBoolean())
-                .Select(d => new
-                {
-                    id = d.GetProperty("id").GetInt32(),
-                    title = d.GetProperty("dashboard_title").GetString(),
-                    slug = d.TryGetProperty("slug", out var s) ? s.GetString() : null,
-                    uuid = d.TryGetProperty("uuid", out var u) ? u.GetString() : null,
-                })
                 .ToList();
+
+            // For each published dashboard, get its embedded UUID
+            var dashboards = new List<object>();
+            foreach (var d in published)
+            {
+                var dashId = d.GetProperty("id").GetInt32();
+                string? embeddedUuid = null;
+                try
+                {
+                    var embRes = await client.GetAsync($"{SupersetUrl}/api/v1/dashboard/{dashId}/embedded");
+                    if (embRes.IsSuccessStatusCode)
+                    {
+                        var embJson = await embRes.Content.ReadFromJsonAsync<JsonElement>();
+                        embeddedUuid = embJson.GetProperty("result").GetProperty("uuid").GetString();
+                    }
+                }
+                catch { /* dashboard not enabled for embedding */ }
+
+                if (embeddedUuid != null)
+                {
+                    dashboards.Add(new
+                    {
+                        id = dashId,
+                        title = d.GetProperty("dashboard_title").GetString(),
+                        slug = d.TryGetProperty("slug", out var s) ? s.GetString() : null,
+                        uuid = embeddedUuid,
+                    });
+                }
+            }
 
             return Results.Ok(dashboards);
         }
