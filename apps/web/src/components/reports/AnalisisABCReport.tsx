@@ -74,7 +74,7 @@ export function AnalisisABCReport() {
       { title: { text: t("salesLabel"), style: { fontSize: "11px", color: "#9ca3af" } }, labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: "#9ca3af" } } },
       { opposite: true, title: { text: t("accumLabel"), style: { fontSize: "11px", color: "#9ca3af" } }, labels: { formatter: (v) => `${v}%`, style: { fontSize: "11px", colors: "#9ca3af" } }, min: 0, max: 100 },
     ],
-    tooltip: { shared: true },
+    tooltip: { shared: true, intersect: false },
     legend: { position: "top", fontSize: "12px" },
   };
 
@@ -89,7 +89,23 @@ export function AnalisisABCReport() {
           </select>
         </div>
       </ReportFilters>
-      {data && (
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm">{tc("clickApply")}</p>
+        </div>
+      )}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+      {data && data.items.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm font-medium">{tc("noData")}</p>
+          <p className="text-xs mt-1">{tc("tryDifferentDates")}</p>
+        </div>
+      )}
+      {data && data.items.length > 0 && (
         <>
           <ReportKPICards cards={[
             { label: t("classA"), value: data.resumen.claseA, color: "green" },

@@ -142,7 +142,23 @@ export function ComparativoPeriodosReport() {
         )}
       </div>
 
-      {data && (
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm">{tCommon("clickApply")}</p>
+        </div>
+      )}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+      {data && Object.keys(data.deltas).length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm font-medium">{tCommon("noData")}</p>
+          <p className="text-xs mt-1">{tCommon("tryDifferentDates")}</p>
+        </div>
+      )}
+      {data && Object.keys(data.deltas).length > 0 && (
         <>
           <ReportKPICards
             cards={[
@@ -170,7 +186,7 @@ export function ComparativoPeriodosReport() {
                   xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "10px", colors: "#9ca3af" }, rotate: -20 } },
                   yaxis: { labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
                   legend: { position: "top", fontSize: "12px" },
-                  tooltip: { shared: true },
+                  tooltip: { shared: true, intersect: false },
                 }}
                 series={[
                   { name: tCommon("period1"), data: chartData.map(c => c.periodo1) },

@@ -25,7 +25,7 @@ export function ActividadClientesReport() {
   const fmt = (n: number) => formatCurrency(n);
   const fmtDate = (d: string | null) => d ? formatDate(d, { day: '2-digit', month: 'short' }) : '-';
   const [dates, setDates] = useState(defaultDates);
-  const [data, setData] = useState<ActividadCliente[]>([]);
+  const [data, setData] = useState<ActividadCliente[] | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -36,12 +36,12 @@ export function ActividadClientesReport() {
     fileName: 'actividad-clientes',
     title: t('reportTitle'),
     dateRange: dates,
-    kpis: data.length > 0 ? [
+    kpis: data && data.length > 0 ? [
       { label: tc('clients'), value: total },
       { label: t('totalSales'), value: fmt(data.reduce((s, c) => s + c.ventasTotales, 0)) },
       { label: t('totalOrders'), value: data.reduce((s, c) => s + c.pedidos, 0) },
     ] : undefined,
-    table: data.length > 0 ? {
+    table: data && data.length > 0 ? {
       headers: [t('client'), t('zone'), t('orders'), t('sales'), t('visits'), t('lastVisit'), t('lastOrder')],
       rows: data.map(c => [c.nombre, c.zona || '-', c.pedidos, fmt(c.ventasTotales), c.visitas, fmtDate(c.ultimaVisita), fmtDate(c.ultimoPedido)]),
     } : undefined,
@@ -51,7 +51,7 @@ export function ActividadClientesReport() {
     try {
       setLoading(true);
       const res = await getActividadClientes({ ...datesRef.current, page: p, limit });
-      setData(res.clientes);
+      setData(res.clientes ?? []);
       setTotal(res.total);
     } catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
@@ -77,15 +77,34 @@ export function ActividadClientesReport() {
     { key: 'ultimoPedido', header: t('lastOrder'), sortable: true, render: (r) => fmtDate(r.ultimoPedido) },
   ];
 
-  const totalVentas = data.reduce((s, c) => s + c.ventasTotales, 0);
-  const totalPedidos = data.reduce((s, c) => s + c.pedidos, 0);
+  const totalVentas = data?.reduce((s, c) => s + c.ventasTotales, 0) ?? 0;
+  const totalPedidos = data?.reduce((s, c) => s + c.pedidos, 0) ?? 0;
 
   const handleApply = () => { setPage(1); fetchData(1); };
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} onExportPDF={data.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} onExportPDF={data && data.length > 0 ? exportPDF : undefined} exporting={exporting} />
 
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm">{tc("clickApply")}</p>
+        </div>
+      )}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+      {data && data.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm font-medium">{tc("noData")}</p>
+          <p className="text-xs mt-1">{tc("tryDifferentDates")}</p>
+        </div>
+      )}
+
+      {data && data.length > 0 && (
+        <>
       <ReportKPICards cards={[
         { label: tc('clients'), value: total, color: 'blue' },
         { label: t('totalSales'), value: fmt(totalVentas), color: 'green' },
@@ -114,6 +133,8 @@ export function ActividadClientesReport() {
             </button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

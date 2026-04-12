@@ -2536,6 +2536,8 @@
       "errorLoadingInventory": "Error al cargar inventario",
       "errorLoadingInsights": "Error al cargar insights",
       "noData": "Sin datos para el período seleccionado",
+      "clickApply": "Selecciona un rango de fechas y haz clic en Consultar para generar el reporte",
+      "tryDifferentDates": "Intenta seleccionar un rango de fechas diferente",
       "total": "TOTAL",
       "refresh": "Actualizar",
       "period": "Período",

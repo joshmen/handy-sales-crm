@@ -26,23 +26,23 @@ export function VentasVendedorReport() {
   const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
-  const [data, setData] = useState<VentaVendedor[]>([]);
+  const [data, setData] = useState<VentaVendedor[] | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'ventas-vendedor',
     title: t('reportTitle'),
     dateRange: dates,
-    kpis: data.length > 0 ? data.slice(0, 3).map((v, i) => ({ label: `#${i + 1} ${v.nombre}`, value: fmt(v.totalVentas) })) : undefined,
+    kpis: data && data.length > 0 ? data.slice(0, 3).map((v, i) => ({ label: `#${i + 1} ${v.nombre}`, value: fmt(v.totalVentas) })) : undefined,
     chartRef,
-    table: data.length > 0 ? {
+    table: data && data.length > 0 ? {
       headers: [t('vendor'), t('totalSales'), t('orders'), t('avgTicket'), t('visits'), t('withSale'), t('effectiveness')],
       rows: data.map(v => [v.nombre, fmt(v.totalVentas), v.cantidadPedidos, fmt(v.ticketPromedio), v.totalVisitas, v.visitasConVenta, `${v.efectividadVisitas}%`]),
     } : undefined,
   });
 
   const loadData = useCallback(async () => {
-    try { setLoading(true); const res = await getVentasVendedor(dates); setData(res.vendedores); }
+    try { setLoading(true); const res = await getVentasVendedor(dates); setData(res.vendedores ?? []); }
     catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates]);
@@ -72,9 +72,25 @@ export function VentasVendedorReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.length > 0 ? exportPDF : undefined} exporting={exporting} />
 
-      {data.length > 0 && (
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm">{tc("clickApply")}</p>
+        </div>
+      )}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+      {data && data.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm font-medium">{tc("noData")}</p>
+          <p className="text-xs mt-1">{tc("tryDifferentDates")}</p>
+        </div>
+      )}
+      {data && data.length > 0 && (
         <>
           <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
             <Chart
@@ -91,10 +107,6 @@ export function VentasVendedorReport() {
             showIndex
           />
         </>
-      )}
-
-      {!loading && data.length === 0 && (
-        <div className="text-center py-12 text-sm text-muted-foreground">{tc('noData')}</div>
       )}
     </div>
   );

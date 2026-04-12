@@ -75,7 +75,23 @@ export function ComisionesReport() {
           <input type="number" value={porcentaje} onChange={e => setPorcentaje(Number(e.target.value))} min={0} max={100} step={0.5} className="px-3 py-2 text-sm border border-border-default rounded-md w-20" />
         </div>
       </ReportFilters>
-      {data && (
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm">{tc("clickApply")}</p>
+        </div>
+      )}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+      {data && data.vendedores.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm font-medium">{tc("noData")}</p>
+          <p className="text-xs mt-1">{tc("tryDifferentDates")}</p>
+        </div>
+      )}
+      {data && data.vendedores.length > 0 && (
         <>
           <ReportKPICards cards={[
             { label: t("totalSales"), value: fmt(data.totalVentas), color: "blue" },

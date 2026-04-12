@@ -2536,6 +2536,8 @@
       "errorLoadingInventory": "Error loading inventory",
       "errorLoadingInsights": "Error loading insights",
       "noData": "No data for the selected period",
+      "clickApply": "Select a date range and click Apply to generate the report",
+      "tryDifferentDates": "Try selecting a different date range",
       "total": "TOTAL",
       "refresh": "Refresh",
       "period": "Period",

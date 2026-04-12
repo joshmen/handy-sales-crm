@@ -103,7 +103,23 @@ export function VentasPeriodoReport() {
         </div>
       </ReportFilters>
 
-      {data && (
+      {!data && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm">{tc("clickApply")}</p>
+        </div>
+      )}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      )}
+      {data && data.periodos.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <p className="text-sm font-medium">{tc("noData")}</p>
+          <p className="text-xs mt-1">{tc("tryDifferentDates")}</p>
+        </div>
+      )}
+      {data && data.periodos.length > 0 && (
         <>
           <ReportKPICards cards={[
             { label: t('totalSales'), value: fmt(data.totales.totalVentas), color: 'green' },
