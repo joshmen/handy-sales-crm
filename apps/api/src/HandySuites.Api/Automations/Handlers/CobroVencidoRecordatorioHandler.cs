@@ -146,7 +146,7 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             M("cobroVencido.subject", lang),
             content.ToString(),
             ct,
-            $"{vencidos.Count} cobros — {FormatMoney(totalVencido, culture)}",
+            $"{vencidos.Count} {(lang == "en" ? "overdue payments" : "cobros")} — {FormatMoney(totalVencido, culture)}",
             language: lang);
 
         return new AutomationResult(true, lang == "en"

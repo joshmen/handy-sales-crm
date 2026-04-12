@@ -64,7 +64,7 @@ public class InventarioCriticoHandler : IAutomationHandler
             (M("inventarioCritico.kpi.afectados", lang), productosEnCero.Count.ToString(), "🔴")
         ));
         content.Append(EmailTemplateBuilder.Callout(
-            $"<strong>{productosEnCero.Count} producto{(productosEnCero.Count != 1 ? "s" : "")}</strong> — " +
+            $"<strong>{productosEnCero.Count} {(lang == "en" ? (productosEnCero.Count != 1 ? "products" : "product") : (productosEnCero.Count != 1 ? "productos" : "producto"))}</strong> — " +
             M("inventarioCritico.callout", lang),
             "error"));
 
