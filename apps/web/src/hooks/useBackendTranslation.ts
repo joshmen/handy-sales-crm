@@ -14,6 +14,13 @@ const DYNAMIC_PATTERNS: Array<[RegExp, string]> = [
   [/^La longitud debe estar entre .+ Valor recibido: (.+)$/, 'Longitude must be between -118.0 and -86.0 (Mexico limits). Received value: $1'],
   [/^Ya existe una zona con nombre '(.+)'$/, "A zone with name '$1' already exists"],
   [/^Zona '(.+)' no encontrada\. Zonas disponibles: (.+)$/, "Zone '$1' not found. Available zones: $2"],
+  // Automation handler messages with interpolation
+  [/^Alerta enviada: (\d+) productos con stock bajo$/, 'Alert sent: $1 products with low stock'],
+  [/^Alerta enviada: (\d+) productos sin inventario$/, 'Alert sent: $1 products with zero inventory'],
+  [/^Se generaron (\d+) rutas para la semana del (.+)\. Ver rutas →$/, '$1 routes generated for the week of $2. View routes →'],
+  [/^Se renovaron (\d+) meta.* automáticamente\.$/, '$1 goal(s) renewed automatically.'],
+  [/^Cobro registrado: (.+) — (.+)$/, 'Payment registered: $1 — $2'],
+  [/^Todos los vendedores están al ≥(\d+)% de su meta$/, 'All vendors are at ≥$1% of their goal'],
 ];
 
 /**

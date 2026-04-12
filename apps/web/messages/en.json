@@ -2108,8 +2108,53 @@
     "configurePrefix": "Configure: {name}",
     "allCategories": "All",
     "operationCategory": "Operations",
+    "statusSuccess": "Successful",
+    "statusError": "Error",
+    "statusSkipped": "Skipped",
+    "recipientAdmin": "Admin",
+    "recipientVendors": "Vendors",
+    "recipientAll": "All",
     "testError": "Error testing",
-    "unknownError": "Unknown error"
+    "unknownError": "Unknown error",
+    "categories": {
+      "cobranza": "Collections",
+      "ventas": "Sales",
+      "inventario": "Inventory",
+      "operacion": "Operations"
+    },
+    "params": {
+      "umbralPorcentaje": "Alert threshold (%)",
+      "diasVencimiento": "Days before expiration to warn",
+      "frecuenciaDias": "Reminder frequency (days)",
+      "maxRecordatorios": "Maximum reminders",
+      "hora": "Send time",
+      "incluirCobros": "Include collections in summary",
+      "incluirVentas": "Include sales in summary",
+      "incluirVisitas": "Include visits in summary",
+      "diasInactividad": "Days without activity",
+      "diasSeguimiento": "Days for follow-up",
+      "diasSinPedido": "Days without order",
+      "minPedidosHistoricos": "Minimum historical orders",
+      "dia": "Execution day",
+      "maxParadas": "Maximum stops",
+      "porcentajeAlerta": "Minimum achievement percentage",
+      "destinatario": "Who to notify?",
+      "days": { "monday": "Monday", "tuesday": "Tuesday", "wednesday": "Wednesday", "thursday": "Thursday", "friday": "Friday", "saturday": "Saturday", "sunday": "Sunday" },
+      "recipientOptions": { "admin": "Admin only", "vendors": "Vendors only", "both": "Admin + vendors" }
+    },
+    "templates": {
+      "stockBajo": { "name": "Low Stock Alert", "desc": "Periodically reviews inventory and sends notification when a product falls below minimum stock.", "short": "Notifies when a product has low stock" },
+      "resumenDiario": { "name": "Daily Summary", "desc": "Generates an automatic daily summary of sales, collections, and visits.", "short": "Daily summary of sales, collections, and visits" },
+      "bienvenida": { "name": "New Client Welcome", "desc": "Sends a follow-up notification to the assigned vendor when a new client is registered.", "short": "Follow-up notification when creating a client" },
+      "cobroVencido": { "name": "Overdue Payment Reminder", "desc": "Detects overdue balances and sends periodic reminders to collect pending payments.", "short": "Reminds to collect overdue balances" },
+      "clienteInactivo": { "name": "Schedule Visit for Inactive Client", "desc": "Identifies clients without recent activity and suggests scheduling a visit.", "short": "Suggests visiting clients without recent activity" },
+      "pedidoRecurrente": { "name": "Suggest Automatic Reorder", "desc": "Analyzes purchase patterns and suggests reordering when a client hasn't ordered in their usual cycle.", "short": "Detects recurring orders and suggests reorder" },
+      "rutaSemanal": { "name": "Weekly Automatic Route", "desc": "Every Monday generates optimized routes for each vendor based on assigned clients.", "short": "Generates weekly route automatically" },
+      "metaNoCumplida": { "name": "Unmet Weekly Goal Alert", "desc": "Evaluates vendor goals at the end of each week and alerts those below the threshold.", "short": "Alerts if the sales goal was not reached" },
+      "cobroExitoso": { "name": "Payment Confirmation", "desc": "Detects registered payments and notifies the administrator.", "short": "Confirms to admin when a payment is registered" },
+      "inventarioCritico": { "name": "Zero Inventory Alert", "desc": "Monitors inventory and sends an urgent alert when a product reaches zero stock.", "short": "Urgent alert when a product reaches 0" },
+      "metaAutoRenovacion": { "name": "Goal Auto-Renewal", "desc": "Daily checks for expired goals and automatically renews them if enabled.", "short": "Automatically renews goals when they expire" }
+    }
   },
   "billing": {
     "title": "Billing",
@@ -5262,6 +5307,21 @@
     "Ya existe una lista de precios con ese nombre.": "A price list with that name already exists.",
     "Ya existe una promoción con ese nombre.": "A promotion with that name already exists.",
     "Ya existe una unidad de medida con ese nombre.": "A unit of measure with that name already exists.",
-    "Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.": "You already have an active impersonation session. End it before starting another."
+    "Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.": "You already have an active impersonation session. End it before starting another.",
+    "Sin productos con stock bajo": "No products with low stock",
+    "Sin saldos vencidos": "No overdue balances",
+    "Sin clientes nuevos": "No new clients",
+    "Todos los clientes tienen visitas recientes": "All clients have recent visits",
+    "Sin clientes con historial recurrente": "No clients with recurring history",
+    "Todos los clientes están dentro de su ciclo normal de pedido": "All clients are within their normal order cycle",
+    "Sin vendedores activos": "No active vendors",
+    "Sin metas configuradas para el período actual": "No goals configured for the current period",
+    "Sin cobros nuevos desde la última ejecución": "No new payments since last execution",
+    "Sin productos con inventario en cero": "No products with zero inventory",
+    "Sin metas para auto-renovar": "No goals to auto-renew",
+    "Sin rutas nuevas por generar (ya existen o sin clientes asignados)": "No new routes to generate (already exist or no assigned clients)",
+    "Cobro registrado exitosamente": "Payment registered successfully",
+    "Tu resumen del día está listo. Te lo enviamos por correo.": "Your daily summary is ready. We sent it to your email.",
+    "Metas auto-renovadas": "Goals auto-renewed"
   }
 }

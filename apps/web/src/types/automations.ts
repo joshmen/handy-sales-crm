@@ -31,46 +31,50 @@ export interface AutomationExecution {
 }
 
 export type ParamConfigEntry =
-  | { label: string; type: 'number'; min?: number; max?: number }
-  | { label: string; type: 'boolean' }
-  | { label: string; type: 'time' }
-  | { label: string; type: 'select'; options: { value: string; label: string }[] };
+  | { labelKey: string; type: 'number'; min?: number; max?: number }
+  | { labelKey: string; type: 'boolean' }
+  | { labelKey: string; type: 'time' }
+  | { labelKey: string; type: 'select'; optionKeys: { value: string; labelKey: string }[] };
 
+/**
+ * Parameter configuration — uses translation keys (resolved via t() in the component).
+ * Keys are under 'automations.params.*' namespace.
+ */
 export const PARAM_CONFIG: Record<string, ParamConfigEntry> = {
-  umbral_porcentaje: { label: 'Umbral de alerta (%)', type: 'number', min: 1, max: 100 },
-  dias_vencimiento: { label: 'Días de vencimiento para avisar', type: 'number', min: 1, max: 90 },
-  frecuencia_dias: { label: 'Frecuencia de recordatorio (días)', type: 'number', min: 1, max: 30 },
-  max_recordatorios: { label: 'Máximo de recordatorios', type: 'number', min: 1, max: 10 },
-  hora: { label: 'Hora de envío', type: 'time' },
-  incluir_cobros: { label: 'Incluir cobros en resumen', type: 'boolean' },
-  incluir_ventas: { label: 'Incluir ventas en resumen', type: 'boolean' },
-  incluir_visitas: { label: 'Incluir visitas en resumen', type: 'boolean' },
-  dias_inactividad: { label: 'Días sin actividad', type: 'number', min: 1, max: 90 },
-  dias_seguimiento: { label: 'Días para seguimiento', type: 'number', min: 1, max: 30 },
-  dias_sin_pedido: { label: 'Días sin pedido', type: 'number', min: 1, max: 60 },
-  min_pedidos_historicos: { label: 'Mínimo de pedidos históricos', type: 'number', min: 1, max: 20 },
+  umbral_porcentaje: { labelKey: 'params.umbralPorcentaje', type: 'number', min: 1, max: 100 },
+  dias_vencimiento: { labelKey: 'params.diasVencimiento', type: 'number', min: 1, max: 90 },
+  frecuencia_dias: { labelKey: 'params.frecuenciaDias', type: 'number', min: 1, max: 30 },
+  max_recordatorios: { labelKey: 'params.maxRecordatorios', type: 'number', min: 1, max: 10 },
+  hora: { labelKey: 'params.hora', type: 'time' },
+  incluir_cobros: { labelKey: 'params.incluirCobros', type: 'boolean' },
+  incluir_ventas: { labelKey: 'params.incluirVentas', type: 'boolean' },
+  incluir_visitas: { labelKey: 'params.incluirVisitas', type: 'boolean' },
+  dias_inactividad: { labelKey: 'params.diasInactividad', type: 'number', min: 1, max: 90 },
+  dias_seguimiento: { labelKey: 'params.diasSeguimiento', type: 'number', min: 1, max: 30 },
+  dias_sin_pedido: { labelKey: 'params.diasSinPedido', type: 'number', min: 1, max: 60 },
+  min_pedidos_historicos: { labelKey: 'params.minPedidosHistoricos', type: 'number', min: 1, max: 20 },
   dia: {
-    label: 'Día de ejecución',
+    labelKey: 'params.dia',
     type: 'select',
-    options: [
-      { value: '1', label: 'Lunes' },
-      { value: '2', label: 'Martes' },
-      { value: '3', label: 'Miércoles' },
-      { value: '4', label: 'Jueves' },
-      { value: '5', label: 'Viernes' },
-      { value: '6', label: 'Sábado' },
-      { value: '0', label: 'Domingo' },
+    optionKeys: [
+      { value: '1', labelKey: 'params.days.monday' },
+      { value: '2', labelKey: 'params.days.tuesday' },
+      { value: '3', labelKey: 'params.days.wednesday' },
+      { value: '4', labelKey: 'params.days.thursday' },
+      { value: '5', labelKey: 'params.days.friday' },
+      { value: '6', labelKey: 'params.days.saturday' },
+      { value: '0', labelKey: 'params.days.sunday' },
     ],
   },
-  max_paradas: { label: 'Máximo de paradas', type: 'number', min: 1, max: 50 },
-  porcentaje_alerta: { label: 'Porcentaje mínimo de cumplimiento', type: 'number', min: 1, max: 100 },
+  max_paradas: { labelKey: 'params.maxParadas', type: 'number', min: 1, max: 50 },
+  porcentaje_alerta: { labelKey: 'params.porcentajeAlerta', type: 'number', min: 1, max: 100 },
   destinatario: {
-    label: '¿A quién notificar?',
+    labelKey: 'params.destinatario',
     type: 'select',
-    options: [
-      { value: 'admin', label: 'Solo administrador' },
-      { value: 'vendedores', label: 'Solo vendedores' },
-      { value: 'ambos', label: 'Admin + vendedores' },
+    optionKeys: [
+      { value: 'admin', labelKey: 'params.recipientOptions.admin' },
+      { value: 'vendedores', labelKey: 'params.recipientOptions.vendors' },
+      { value: 'ambos', labelKey: 'params.recipientOptions.both' },
     ],
   },
 };
@@ -92,9 +96,32 @@ export const CATEGORY_TAB_COLORS: Record<string, string> = {
   Operacion: 'bg-cyan-600 text-white',
 };
 
-export const CATEGORY_LABELS: Record<string, string> = {
-  Cobranza: 'Cobranza',
-  Ventas: 'Ventas',
-  Inventario: 'Inventario',
-  Operacion: 'Operación',
+/**
+ * Category label translation keys — resolved via t() in the component.
+ * Keys are under 'automations.categories.*' namespace.
+ */
+export const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  Cobranza: 'categories.cobranza',
+  Ventas: 'categories.ventas',
+  Inventario: 'categories.inventario',
+  Operacion: 'categories.operacion',
+};
+
+/**
+ * Automation template name/description translation keys.
+ * The backend sends names in Spanish; frontend resolves via t().
+ * Keys are under 'automations.templates.*' namespace.
+ */
+export const TEMPLATE_KEYS: Record<string, { nameKey: string; descKey: string; shortDescKey: string }> = {
+  'stock-bajo-alerta': { nameKey: 'templates.stockBajo.name', descKey: 'templates.stockBajo.desc', shortDescKey: 'templates.stockBajo.short' },
+  'resumen-diario': { nameKey: 'templates.resumenDiario.name', descKey: 'templates.resumenDiario.desc', shortDescKey: 'templates.resumenDiario.short' },
+  'bienvenida-cliente': { nameKey: 'templates.bienvenida.name', descKey: 'templates.bienvenida.desc', shortDescKey: 'templates.bienvenida.short' },
+  'cobro-vencido-recordatorio': { nameKey: 'templates.cobroVencido.name', descKey: 'templates.cobroVencido.desc', shortDescKey: 'templates.cobroVencido.short' },
+  'cliente-inactivo-visita': { nameKey: 'templates.clienteInactivo.name', descKey: 'templates.clienteInactivo.desc', shortDescKey: 'templates.clienteInactivo.short' },
+  'pedido-recurrente': { nameKey: 'templates.pedidoRecurrente.name', descKey: 'templates.pedidoRecurrente.desc', shortDescKey: 'templates.pedidoRecurrente.short' },
+  'ruta-semanal-auto': { nameKey: 'templates.rutaSemanal.name', descKey: 'templates.rutaSemanal.desc', shortDescKey: 'templates.rutaSemanal.short' },
+  'meta-no-cumplida': { nameKey: 'templates.metaNoCumplida.name', descKey: 'templates.metaNoCumplida.desc', shortDescKey: 'templates.metaNoCumplida.short' },
+  'cobro-exitoso-aviso': { nameKey: 'templates.cobroExitoso.name', descKey: 'templates.cobroExitoso.desc', shortDescKey: 'templates.cobroExitoso.short' },
+  'inventario-critico': { nameKey: 'templates.inventarioCritico.name', descKey: 'templates.inventarioCritico.desc', shortDescKey: 'templates.inventarioCritico.short' },
+  'meta-auto-renovacion': { nameKey: 'templates.metaAutoRenovacion.name', descKey: 'templates.metaAutoRenovacion.desc', shortDescKey: 'templates.metaAutoRenovacion.short' },
 };

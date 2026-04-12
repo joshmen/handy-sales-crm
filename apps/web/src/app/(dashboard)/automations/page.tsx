@@ -9,8 +9,9 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { formatTimeAgo } from '@/lib/utils';
 import { automationService } from '@/services/api/automations';
 import type { AutomationTemplate, AutomationExecution } from '@/types/automations';
-import { PARAM_CONFIG, CATEGORY_COLORS, CATEGORY_LABELS } from '@/types/automations';
+import { PARAM_CONFIG, CATEGORY_COLORS, CATEGORY_LABEL_KEYS, TEMPLATE_KEYS } from '@/types/automations';
 import { toast } from '@/hooks/useToast';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import {
   Robot,
@@ -42,7 +43,7 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 
-const CATEGORIES = ['Todas', ...Object.keys(CATEGORY_LABELS)];
+const CATEGORIES = ['Todas', ...Object.keys(CATEGORY_LABEL_KEYS)];
 
 const ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   PackageOpen: Package, ClipboardList: ClipboardText,
@@ -54,16 +55,16 @@ function getTemplateIcon(iconName: string): React.ComponentType<IconProps> {
   return ICON_MAP[iconName] || Robot;
 }
 
-const STATUS_STYLES: Record<string, { bg: string; label: string; icon?: React.ComponentType<IconProps> }> = {
-  Success: { bg: 'bg-emerald-50 text-emerald-700', label: 'Exitoso', icon: CheckCircle },
-  Failed: { bg: 'bg-red-50 text-red-700', label: 'Error', icon: Warning },
-  Skipped: { bg: 'bg-surface-3 text-foreground/70', label: 'Omitido' },
+const STATUS_STYLES: Record<string, { bg: string; labelKey: string; icon?: React.ComponentType<IconProps> }> = {
+  Success: { bg: 'bg-emerald-50 text-emerald-700', labelKey: 'statusSuccess', icon: CheckCircle },
+  Failed: { bg: 'bg-red-50 text-red-700', labelKey: 'statusError', icon: Warning },
+  Skipped: { bg: 'bg-surface-3 text-foreground/70', labelKey: 'statusSkipped' },
 };
 
-const DESTINATARIO_INFO: Record<string, { icon: React.ComponentType<IconProps>; label: string }> = {
-  admin: { icon: User, label: 'Admin' },
-  vendedores: { icon: Users, label: 'Vendedores' },
-  ambos: { icon: UsersThree, label: 'Todos' },
+const DESTINATARIO_INFO: Record<string, { icon: React.ComponentType<IconProps>; labelKey: string }> = {
+  admin: { icon: User, labelKey: 'recipientAdmin' },
+  vendedores: { icon: Users, labelKey: 'recipientVendors' },
+  ambos: { icon: UsersThree, labelKey: 'recipientAll' },
 };
 
 function getDestinatario(template: AutomationTemplate): string {
@@ -75,12 +76,13 @@ function getDestinatario(template: AutomationTemplate): string {
 }
 
 function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'xs' }) {
+  const t = useTranslations('automations');
   const s = STATUS_STYLES[status] || STATUS_STYLES.Skipped;
   const IconComp = s.icon;
   return (
     <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-md ${s.bg} ${size === 'xs' ? 'text-[10px]' : 'text-xs'}`}>
       {IconComp && <IconComp size={12} weight="fill" />}
-      {s.label}
+      {t(s.labelKey)}
     </span>
   );
 }
@@ -88,10 +90,28 @@ function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'x
 export default function AutomationsPage() {
   const t = useTranslations('automations');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
   const subscriptionStatus = (session?.user as Record<string, unknown>)?.subscriptionStatus as string | undefined;
   const isExpired = subscriptionStatus === 'Expired' || subscriptionStatus === 'PastDue';
+
+  // i18n helpers for automation templates
+  const tName = (slug: string, fallback: string) => {
+    const keys = TEMPLATE_KEYS[slug];
+    if (!keys) return fallback;
+    try { return t(keys.nameKey); } catch { return fallback; }
+  };
+  const tShortDesc = (slug: string, fallback: string) => {
+    const keys = TEMPLATE_KEYS[slug];
+    if (!keys) return fallback;
+    try { return t(keys.shortDescKey); } catch { return fallback; }
+  };
+  const tCategory = (cat: string) => {
+    const key = CATEGORY_LABEL_KEYS[cat];
+    if (!key) return cat;
+    try { return t(key); } catch { return cat; }
+  };
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);
   const [historial, setHistorial] = useState<AutomationExecution[]>([]);
   const [historialTotal, setHistorialTotal] = useState(0);
@@ -160,14 +180,14 @@ export default function AutomationsPage() {
     try {
       if (template.activada) {
         await automationService.desactivar(template.slug);
-        toast({ title: t('deactivated'), description: template.nombre });
+        toast({ title: t('deactivated'), description: tName(template.slug, template.nombre) });
       } else {
         await automationService.activar(template.slug, template.defaultParamsJson || undefined);
-        toast({ title: t('activated'), description: template.nombre });
+        toast({ title: t('activated'), description: tName(template.slug, template.nombre) });
       }
       await loadTemplates();
     } catch (err: unknown) {
-      toast({ title: tc('error'), description: err instanceof Error ? err.message : tc('error'), variant: 'destructive' });
+      toast({ title: tc('error'), description: err instanceof Error ? tApi(err.message) : tc('error'), variant: 'destructive' });
     } finally {
       setTogglingSlug(null);
     }
@@ -197,7 +217,7 @@ export default function AutomationsPage() {
       setConfigDrawerOpen(false);
       await loadTemplates();
     } catch (err: unknown) {
-      toast({ title: tc('error'), description: err instanceof Error ? err.message : tc('error'), variant: 'destructive' });
+      toast({ title: tc('error'), description: err instanceof Error ? tApi(err.message) : tc('error'), variant: 'destructive' });
     } finally {
       setSavingConfig(false);
     }
@@ -208,14 +228,14 @@ export default function AutomationsPage() {
     try {
       const result = await automationService.test(slug);
       if (result.success) {
-        toast({ title: t('testSuccess'), description: result.action });
+        toast({ title: t('testSuccess'), description: tApi(result.action) });
       } else {
-        toast({ title: t('testFailed'), description: result.error || t('unknownError'), variant: 'destructive' });
+        toast({ title: t('testFailed'), description: tApi(result.error) || t('unknownError'), variant: 'destructive' });
       }
       await loadTemplates();
       loadHistorial();
     } catch (err: unknown) {
-      toast({ title: tc('error'), description: err instanceof Error ? err.message : t('testError'), variant: 'destructive' });
+      toast({ title: tc('error'), description: err instanceof Error ? tApi(err.message) : t('testError'), variant: 'destructive' });
     } finally {
       setTestingSlug(null);
     }
@@ -301,7 +321,7 @@ export default function AutomationsPage() {
                     : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
                 }`}
               >
-                {cat === 'Todas' ? t('allCategories') : cat === 'Operacion' ? t('operationCategory') : cat}
+                {cat === 'Todas' ? t('allCategories') : tCategory(cat)}
               </button>
             ))}
           </div>
@@ -334,7 +354,7 @@ export default function AutomationsPage() {
               <p className="font-semibold text-foreground/80 mb-1">{t('noCategory')}</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 {activeCategory !== 'Todas'
-                  ? t('noCategoryDesc', { category: CATEGORY_LABELS[activeCategory] || activeCategory })
+                  ? t('noCategoryDesc', { category: tCategory(activeCategory) })
                   : t('emptyDefault')}
               </p>
               {activeCategory !== 'Todas' && (
@@ -375,12 +395,12 @@ export default function AutomationsPage() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <h3 className="font-medium text-foreground text-[13px] leading-tight truncate">
-                                {template.nombre}
+                                {tName(template.slug, template.nombre)}
                               </h3>
 
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              {template.descripcionCorta}
+                              {tShortDesc(template.slug, template.descripcionCorta)}
                             </p>
                           </div>
                         </div>
@@ -402,7 +422,7 @@ export default function AutomationsPage() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${
                           CATEGORY_COLORS[template.categoria] || 'bg-surface-3 text-foreground/70'
                         }`}>
-                          {CATEGORY_LABELS[template.categoria] || template.categoria}
+                          {tCategory(template.categoria)}
                         </span>
                         {(() => {
                           const dest = getDestinatario(template);
@@ -410,9 +430,9 @@ export default function AutomationsPage() {
                           if (!info) return null;
                           const DestIcon = info.icon;
                           return (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title={`Notifica a: ${info.label}`}>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title={t(info.labelKey)}>
                               <DestIcon size={11} />
-                              {info.label}
+                              {t(info.labelKey)}
                             </span>
                           );
                         })()}
@@ -423,10 +443,10 @@ export default function AutomationsPage() {
                         )}
                         <span className="ml-auto inline-flex items-center gap-1">
                           <button
-                              onClick={() => handleTest(template.slug, template.nombre)}
+                              onClick={() => handleTest(template.slug, tName(template.slug, template.nombre))}
                               disabled={testingSlug === template.slug}
                               className="text-muted-foreground hover:text-green-600 text-xs transition-colors disabled:opacity-50"
-                              aria-label={`${t('testNow')} ${template.nombre}`}
+                              aria-label={`${t('testNow')} ${tName(template.slug, template.nombre)}`}
                               title={t('testNow')}
                             >
                               {testingSlug === template.slug ? <CircleNotch size={14} className="animate-spin" /> : <Play size={14} weight="fill" />}
@@ -436,7 +456,7 @@ export default function AutomationsPage() {
                               onClick={() => handleOpenConfig(template)}
                               className="text-muted-foreground hover:text-foreground/70 text-xs transition-colors"
                               data-tour="automations-config-btn"
-                              aria-label={`${t('configure')} ${template.nombre}`}
+                              aria-label={`${t('configure')} ${tName(template.slug, template.nombre)}`}
                               title={t('configure')}
                             >
                               <GearSix size={14} />
@@ -597,9 +617,9 @@ export default function AutomationsPage() {
         }
       >
         <div className="space-y-5 p-6" data-tour="automations-drawer-form">
-          {configTemplate?.descripcion && (
+          {configTemplate && (
             <p className="text-sm text-muted-foreground bg-surface-1 rounded-lg p-3" data-tour="automations-drawer-desc">
-              {configTemplate.descripcion}
+              {TEMPLATE_KEYS[configTemplate.slug] ? t(TEMPLATE_KEYS[configTemplate.slug].descKey) : configTemplate.descripcion}
             </p>
           )}
 
@@ -610,7 +630,7 @@ export default function AutomationsPage() {
             if (config.type === 'boolean') {
               return (
                 <label key={key} className="flex items-center justify-between">
-                  <span className="text-sm text-foreground/80">{config.label}</span>
+                  <span className="text-sm text-foreground/80">{t(config.labelKey)}</span>
                   <Switch
                     checked={Boolean(value)}
                     onCheckedChange={(checked: boolean) =>
@@ -624,7 +644,7 @@ export default function AutomationsPage() {
             if (config.type === 'time') {
               return (
                 <div key={key}>
-                  <label className="block text-sm font-medium text-foreground/80 mb-1">{config.label}</label>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">{t(config.labelKey)}</label>
                   <input
                     type="time"
                     value={String(value || '')}
@@ -638,14 +658,14 @@ export default function AutomationsPage() {
             if (config.type === 'select') {
               return (
                 <div key={key}>
-                  <label className="block text-sm font-medium text-foreground/80 mb-1">{config.label}</label>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">{t(config.labelKey)}</label>
                   <select
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
                     className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
                   >
-                    {config.options.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    {config.optionKeys.map(opt => (
+                      <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                     ))}
                   </select>
                 </div>
@@ -654,7 +674,7 @@ export default function AutomationsPage() {
 
             return (
               <div key={key}>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{config.label}</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t(config.labelKey)}</label>
                 <input
                   type="number"
                   value={Number(value) || 0}

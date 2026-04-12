@@ -2108,8 +2108,53 @@
     "configurePrefix": "Configurar: {name}",
     "allCategories": "Todas",
     "operationCategory": "Operación",
+    "statusSuccess": "Exitoso",
+    "statusError": "Error",
+    "statusSkipped": "Omitido",
+    "recipientAdmin": "Admin",
+    "recipientVendors": "Vendedores",
+    "recipientAll": "Todos",
     "testError": "Error al probar",
-    "unknownError": "Error desconocido"
+    "unknownError": "Error desconocido",
+    "categories": {
+      "cobranza": "Cobranza",
+      "ventas": "Ventas",
+      "inventario": "Inventario",
+      "operacion": "Operación"
+    },
+    "params": {
+      "umbralPorcentaje": "Umbral de alerta (%)",
+      "diasVencimiento": "Días de vencimiento para avisar",
+      "frecuenciaDias": "Frecuencia de recordatorio (días)",
+      "maxRecordatorios": "Máximo de recordatorios",
+      "hora": "Hora de envío",
+      "incluirCobros": "Incluir cobros en resumen",
+      "incluirVentas": "Incluir ventas en resumen",
+      "incluirVisitas": "Incluir visitas en resumen",
+      "diasInactividad": "Días sin actividad",
+      "diasSeguimiento": "Días para seguimiento",
+      "diasSinPedido": "Días sin pedido",
+      "minPedidosHistoricos": "Mínimo de pedidos históricos",
+      "dia": "Día de ejecución",
+      "maxParadas": "Máximo de paradas",
+      "porcentajeAlerta": "Porcentaje mínimo de cumplimiento",
+      "destinatario": "¿A quién notificar?",
+      "days": { "monday": "Lunes", "tuesday": "Martes", "wednesday": "Miércoles", "thursday": "Jueves", "friday": "Viernes", "saturday": "Sábado", "sunday": "Domingo" },
+      "recipientOptions": { "admin": "Solo administrador", "vendors": "Solo vendedores", "both": "Admin + vendedores" }
+    },
+    "templates": {
+      "stockBajo": { "name": "Alerta de stock bajo", "desc": "Revisa periódicamente el inventario y envía notificación cuando un producto cae por debajo del stock mínimo.", "short": "Notifica cuando un producto tiene stock bajo" },
+      "resumenDiario": { "name": "Resumen del día", "desc": "Genera un resumen automático diario de la actividad de ventas, cobros y visitas.", "short": "Resumen diario de ventas, cobros y visitas" },
+      "bienvenida": { "name": "Bienvenida cliente nuevo", "desc": "Cuando se registra un nuevo cliente, envía una notificación de seguimiento al vendedor asignado.", "short": "Notificación de seguimiento al crear un cliente" },
+      "cobroVencido": { "name": "Recordatorio de cobro vencido", "desc": "Detecta saldos vencidos y envía recordatorios periódicos para cobrar pagos pendientes.", "short": "Recuerda cobrar saldos vencidos" },
+      "clienteInactivo": { "name": "Agendar visita a cliente inactivo", "desc": "Identifica clientes que no han tenido actividad reciente y sugiere agendar una visita.", "short": "Sugiere visitar clientes sin actividad reciente" },
+      "pedidoRecurrente": { "name": "Sugerir reorden automático", "desc": "Analiza patrones de compra y sugiere reordenar cuando un cliente no ha pedido en su ciclo habitual.", "short": "Detecta pedidos recurrentes y sugiere reorden" },
+      "rutaSemanal": { "name": "Ruta automática semanal", "desc": "Cada lunes genera automáticamente rutas optimizadas para cada vendedor basadas en sus clientes asignados.", "short": "Genera ruta semanal automáticamente" },
+      "metaNoCumplida": { "name": "Alerta meta semanal no cumplida", "desc": "Al final de cada semana evalúa las metas de los vendedores y alerta a quienes no alcanzaron el umbral mínimo.", "short": "Avisa si no se alcanzó la meta de ventas" },
+      "cobroExitoso": { "name": "Confirmación de cobro registrado", "desc": "Detecta cobros registrados y notifica al administrador para seguimiento.", "short": "Confirma al admin cuando se registra un cobro" },
+      "inventarioCritico": { "name": "Alerta inventario en cero", "desc": "Monitorea el inventario y envía una alerta urgente cuando un producto llega a stock cero.", "short": "Alerta urgente cuando un producto llega a 0" },
+      "metaAutoRenovacion": { "name": "Auto-renovación de metas", "desc": "Revisa diariamente las metas vencidas y las renueva automáticamente si tienen auto-renovación activada.", "short": "Renueva metas automáticamente al vencer" }
+    }
   },
   "billing": {
     "title": "Facturación",
@@ -5262,6 +5307,21 @@
     "Ya existe una lista de precios con ese nombre.": "Ya existe una lista de precios con ese nombre.",
     "Ya existe una promoción con ese nombre.": "Ya existe una promoción con ese nombre.",
     "Ya existe una unidad de medida con ese nombre.": "Ya existe una unidad de medida con ese nombre.",
-    "Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.": "Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra."
+    "Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.": "Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.",
+    "Sin productos con stock bajo": "Sin productos con stock bajo",
+    "Sin saldos vencidos": "Sin saldos vencidos",
+    "Sin clientes nuevos": "Sin clientes nuevos",
+    "Todos los clientes tienen visitas recientes": "Todos los clientes tienen visitas recientes",
+    "Sin clientes con historial recurrente": "Sin clientes con historial recurrente",
+    "Todos los clientes están dentro de su ciclo normal de pedido": "Todos los clientes están dentro de su ciclo normal de pedido",
+    "Sin vendedores activos": "Sin vendedores activos",
+    "Sin metas configuradas para el período actual": "Sin metas configuradas para el período actual",
+    "Sin cobros nuevos desde la última ejecución": "Sin cobros nuevos desde la última ejecución",
+    "Sin productos con inventario en cero": "Sin productos con inventario en cero",
+    "Sin metas para auto-renovar": "Sin metas para auto-renovar",
+    "Sin rutas nuevas por generar (ya existen o sin clientes asignados)": "Sin rutas nuevas por generar (ya existen o sin clientes asignados)",
+    "Cobro registrado exitosamente": "Cobro registrado exitosamente",
+    "Tu resumen del día está listo. Te lo enviamos por correo.": "Tu resumen del día está listo. Te lo enviamos por correo.",
+    "Metas auto-renovadas": "Metas auto-renovadas"
   }
 }
