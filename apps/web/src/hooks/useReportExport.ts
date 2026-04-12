@@ -223,8 +223,7 @@ export function useReportExport(config: ReportExportConfig) {
           if (y + imgH > ph - MARGIN - FOOTER_H) {
             drawFooterOnPage(pdf, pw, ph, primary);
             pdf.addPage();
-            drawHeader();
-            y = MARGIN + HEADER_H + 3;
+            y = MARGIN + 5;
           }
 
           pdf.addImage(imgData, 'PNG', MARGIN + (cw - imgW) / 2, y, imgW, imgH);
@@ -237,21 +236,26 @@ export function useReportExport(config: ReportExportConfig) {
         if (y > ph - MARGIN - FOOTER_H - 15) {
           drawFooterOnPage(pdf, pw, ph, primary);
           pdf.addPage();
-          drawHeader();
-          y = MARGIN + HEADER_H + 3;
+          y = MARGIN + 5;
         }
 
+        let tablePageCount = 0;
         autoTable(pdf, {
           startY: y,
           head: [cfg.table.headers],
           body: cfg.table.rows.map(r => r.map(String)),
           foot: cfg.table.footerRow ? [cfg.table.footerRow.map(String)] : undefined,
-          margin: { left: MARGIN, right: MARGIN },
+          margin: { left: MARGIN, right: MARGIN, top: MARGIN + 5 },
           styles: { fontSize: 7.5, cellPadding: 2, lineColor: [230, 230, 230], lineWidth: 0.15 },
           headStyles: { fillColor: [pr, pg, pb], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5 },
           footStyles: { fillColor: [242, 242, 242], textColor: [30, 30, 30], fontStyle: 'bold' },
           alternateRowStyles: { fillColor: [249, 249, 249] },
-          didDrawPage: () => { drawHeader(); },
+          didDrawPage: () => {
+            tablePageCount++;
+            // Only draw company header on the first page (already drawn above)
+            // On continuation pages, skip the full header to avoid overlap
+            if (tablePageCount > 1) return;
+          },
         });
       }
 
