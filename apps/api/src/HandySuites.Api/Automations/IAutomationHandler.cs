@@ -173,12 +173,12 @@ public record AutomationContext(
     /// Handlers build their own content using EmailTemplateBuilder static helpers,
     /// then pass it here for branded wrapping + delivery.
     /// </summary>
-    public async Task SendRichEmailAsync(string titulo, string contentHtml, CancellationToken ct, string? preheader = null)
+    public async Task SendRichEmailAsync(string titulo, string contentHtml, CancellationToken ct, string? preheader = null, string language = "es")
     {
         if (EmailService == null) return;
 
         var template = await EmailTemplateBuilder.CreateAsync(Db, TenantId, ct);
-        var html = template.Build(titulo, contentHtml, preheader);
+        var html = template.Build(titulo, contentHtml, preheader, language);
 
         var userIds = await ResolveDestinatarioIdsAsync(ct);
         foreach (var userId in userIds)
@@ -203,7 +203,7 @@ public record AutomationContext(
     /// Send a rich HTML email to the ADMIN only, regardless of the destinatario setting.
     /// Used for operational report emails (stock, cobros, clientes inactivos, etc.).
     /// </summary>
-    public async Task SendAdminEmailAsync(string titulo, string contentHtml, CancellationToken ct, string? preheader = null)
+    public async Task SendAdminEmailAsync(string titulo, string contentHtml, CancellationToken ct, string? preheader = null, string language = "es")
     {
         if (EmailService == null) return;
 
@@ -224,7 +224,7 @@ public record AutomationContext(
         if (string.IsNullOrEmpty(email)) return;
 
         var template = await EmailTemplateBuilder.CreateAsync(Db, TenantId, ct);
-        var html = template.Build(titulo, contentHtml, preheader);
+        var html = template.Build(titulo, contentHtml, preheader, language);
         await EmailService.SendAsync(email, $"HandySuites: {titulo}", html);
     }
 

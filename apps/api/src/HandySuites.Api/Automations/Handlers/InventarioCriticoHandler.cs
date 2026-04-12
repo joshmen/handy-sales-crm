@@ -8,8 +8,12 @@ public class InventarioCriticoHandler : IAutomationHandler
     public string Slug => "inventario-critico";
     private const string Canal = "push";
 
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
+
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
+        var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var productosEnCero = await context.Db.Inventarios
             .Include(i => i.Producto)
@@ -27,15 +31,15 @@ public class InventarioCriticoHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (productosEnCero.Count == 0)
-            return new AutomationResult(true, "Sin productos con inventario en cero");
+            return new AutomationResult(true, string.Format(M("inventarioCritico.result", lang), 0));
 
         // ── Push notification (brief) ──
         var productList = string.Join(", ", productosEnCero.Take(5).Select(p => p.Nombre));
         var message = productosEnCero.Count == 1
-            ? $"El producto {productosEnCero[0].Nombre} tiene inventario en cero"
-            : $"{productosEnCero.Count} productos sin inventario: {productList}";
+            ? $"{productosEnCero[0].Nombre} — 0"
+            : $"{productosEnCero.Count} {M("inventarioCritico.kpi.afectados", lang).ToLower()}: {productList}";
 
-        await context.NotifyAsync("Inventario crítico", message, "Alert", Canal, ct, "/inventory?alerta=critico");
+        await context.NotifyAsync(M("inventarioCritico.subject", lang), message, "Alert", Canal, ct, "/inventory?alerta=critico");
 
         // ── Explicit push to admin (ensure admin always gets notified even if destinatario=vendedores) ──
         var adminId = await context.GetAdminUserIdAsync(ct);
@@ -45,7 +49,7 @@ public class InventarioCriticoHandler : IAutomationHandler
             if (context.Destinatario is not ("admin" or "ambos"))
             {
                 await context.NotifyUserAsync(adminId.Value,
-                    "Inventario crítico — Acción inmediata",
+                    M("inventarioCritico.subject", lang),
                     message,
                     "Alert", Canal, ct,
                     new Dictionary<string, string> { { "url", "/inventory?alerta=critico" } });
@@ -54,14 +58,14 @@ public class InventarioCriticoHandler : IAutomationHandler
 
         // ── Rich email report to admin ──
         var content = new StringBuilder();
-        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));
+        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));
         content.Append(EmailTemplateBuilder.KpiRow(
-            ("Productos agotados", productosEnCero.Count.ToString(), "🚫"),
-            ("Acción requerida", "Inmediata", "🔴")
+            (M("inventarioCritico.kpi.sinStock", lang), productosEnCero.Count.ToString(), "🚫"),
+            (M("inventarioCritico.kpi.afectados", lang), productosEnCero.Count.ToString(), "🔴")
         ));
         content.Append(EmailTemplateBuilder.Callout(
-            $"<strong>{productosEnCero.Count} producto{(productosEnCero.Count != 1 ? "s" : "")}</strong> tienen inventario en cero. " +
-            "Los vendedores no podrán ofrecerlos hasta que se reabastezcan. Revisa tus proveedores.",
+            $"<strong>{productosEnCero.Count} producto{(productosEnCero.Count != 1 ? "s" : "")}</strong> — " +
+            M("inventarioCritico.callout", lang),
             "error"));
 
         var rows = productosEnCero.Select(p => new[]
@@ -73,16 +77,17 @@ public class InventarioCriticoHandler : IAutomationHandler
                 : "<span style=\"color:#9ca3af;\">—</span>",
         }).ToList();
 
-        content.Append(EmailTemplateBuilder.SectionHeading("Productos sin existencias"));
+        content.Append(EmailTemplateBuilder.SectionHeading(M("inventarioCritico.heading", lang)));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { "Producto", "Stock Actual", "Stock Mínimo" }, rows));
+            new[] { M("table.producto", lang), M("table.stock", lang), M("table.minimo", lang) }, rows));
 
         await context.SendAdminEmailAsync(
-            "Inventario Crítico — Acción Inmediata",
+            M("inventarioCritico.subject", lang),
             content.ToString(),
             ct,
-            $"URGENTE: {productosEnCero.Count} productos agotados");
+            $"URGENTE: {productosEnCero.Count} {M("inventarioCritico.kpi.afectados", lang).ToLower()}",
+            language: lang);
 
-        return new AutomationResult(true, $"Alerta enviada: {productosEnCero.Count} productos sin inventario");
+        return new AutomationResult(true, string.Format(M("inventarioCritico.result", lang), productosEnCero.Count));
     }
 }

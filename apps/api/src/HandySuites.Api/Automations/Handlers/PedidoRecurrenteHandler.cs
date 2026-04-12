@@ -9,8 +9,12 @@ public class PedidoRecurrenteHandler : IAutomationHandler
     public string Slug => "pedido-recurrente";
     private const string Canal = "push";
 
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
+
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
+        var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var minPedidosHistoricos = context.GetParam("min_pedidos_historicos", 3);
 
@@ -37,16 +41,13 @@ public class PedidoRecurrenteHandler : IAutomationHandler
         var now = DateTime.UtcNow;
 
         // Smart: personal interval per client
-        // avg_interval = total_span / (orders - 1)
-        // alert when days_since_last > avg_interval * 1.2
-        // rank by urgency_ratio * avg_order_value → highest revenue opportunity first
         var clientesSugeridos = clienteOrders
             .Select(c =>
             {
                 var spanDays = (c.UltimoPedido - c.PrimerPedido).TotalDays;
                 var intervaloPromedio = c.TotalPedidos > 1
                     ? spanDays / (c.TotalPedidos - 1)
-                    : 30.0; // only 1 order recorded → 30-day default interval
+                    : 30.0;
                 var diasDesde = (now - c.UltimoPedido).TotalDays;
                 var urgencia = intervaloPromedio > 0 ? diasDesde / intervaloPromedio : 0;
                 return new
@@ -62,8 +63,8 @@ public class PedidoRecurrenteHandler : IAutomationHandler
                     Urgencia = urgencia,
                 };
             })
-            .Where(c => c.Urgencia >= 1.2) // 20%+ overdue on personal cycle
-            .OrderByDescending(c => c.Urgencia * (double)c.MontoPromedio) // revenue × urgency
+            .Where(c => c.Urgencia >= 1.2)
+            .OrderByDescending(c => c.Urgencia * (double)c.MontoPromedio)
             .Take(20)
             .ToList();
 
@@ -83,28 +84,28 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             var nombres = string.Join(", ", grupo.Take(3).Select(c => c.Nombre));
             var mas = grupo.Count() > 3 ? $" y {grupo.Count() - 3} más" : "";
             var mensaje = grupo.Count() == 1
-                ? $"{grupo.First().Nombre} lleva {grupo.First().DiasDesde} días sin pedir (ciclo usual: {(int)grupo.First().IntervaloPromedio}d)."
-                : $"{grupo.Count()} clientes listos para reordenar: {nombres}{mas}";
+                ? $"{grupo.First().Nombre} — {grupo.First().DiasDesde}d ({M("table.ciclo", lang)}: {(int)grupo.First().IntervaloPromedio}d)"
+                : $"{grupo.Count()} {M("pedidoRecurrente.kpi.oportunidades", lang).ToLower()}: {nombres}{mas}";
 
             foreach (var userId in recipients)
             {
                 await context.NotifyUserAsync(userId,
-                    $"{grupo.Count()} oportunidad{(grupo.Count() != 1 ? "es" : "")} de reorden",
+                    M("pedidoRecurrente.subject", lang),
                     mensaje, "General", Canal, ct,
                     new Dictionary<string, string> { { "url", "/orders" } });
                 notified++;
             }
         }
 
-        // Single push to admin (email has full detail)
+        // Single push to admin
         if (context.Destinatario is "admin" or "ambos")
         {
             var adminId = await context.GetAdminUserIdAsync(ct);
             if (adminId.HasValue)
             {
                 await context.NotifyUserAsync(adminId.Value,
-                    $"{clientesSugeridos.Count} oportunidades de reorden",
-                    "Te hemos enviado un correo con los detalles.",
+                    M("pedidoRecurrente.subject", lang),
+                    $"{clientesSugeridos.Count} {M("pedidoRecurrente.kpi.oportunidades", lang).ToLower()}",
                     "General", Canal, ct);
                 notified++;
             }
@@ -119,19 +120,18 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .ToListAsync(ct);
         var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
 
-        var topUrgencia = (int)(clientesSugeridos.First().Urgencia * 100);
+        var urgentes = clientesSugeridos.Count(c => c.Urgencia >= 2.0);
 
         var content = new StringBuilder();
-        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));
+        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));
         content.Append(EmailTemplateBuilder.KpiRow(
-            ("Oportunidades", clientesSugeridos.Count.ToString(), "🔄"),
-            ("Mayor retraso", $"{topUrgencia}%", "🔥"),
-            ("Pedidos mín.", minPedidosHistoricos.ToString(), "📊")
+            (M("pedidoRecurrente.kpi.oportunidades", lang), clientesSugeridos.Count.ToString(), "🔄"),
+            (M("pedidoRecurrente.kpi.urgentes", lang), urgentes.ToString(), "🔥"),
+            (M("pedidoRecurrente.kpi.valorEstimado", lang), $"~{clientesSugeridos.Sum(c => c.MontoPromedio):N0}", "💰")
         ));
         content.Append(EmailTemplateBuilder.Callout(
             $"<strong>{clientesSugeridos.Count}</strong> cliente{(clientesSugeridos.Count != 1 ? "s" : "")} " +
-            "han superado su ciclo personal de compra. El ranking combina qué tan retrasados están " +
-            "con el valor promedio de sus pedidos.",
+            M("pedidoRecurrente.heading", lang).ToLower() + ".",
             "info"));
 
         var rows = clientesSugeridos.Select(c =>
@@ -144,22 +144,23 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             return new[]
             {
                 System.Net.WebUtility.HtmlEncode(c.Nombre),
-                $"cada {(int)c.IntervaloPromedio}d",
-                $"{c.DiasDesde} días",
+                $"{(int)c.IntervaloPromedio}d",
+                $"{c.DiasDesde} {M("table.dias", lang).ToLower()}",
                 $"<span style=\"color:{pctColor};font-weight:700;\">{pct}%</span>",
                 vendedor,
             };
         }).ToList();
 
-        content.Append(EmailTemplateBuilder.SectionHeading("Clientes con oportunidad de reorden (urgencia × valor)"));
+        content.Append(EmailTemplateBuilder.SectionHeading(M("pedidoRecurrente.heading", lang)));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { "Cliente", "Ciclo usual", "Sin pedir", "Retraso", "Vendedor" }, rows));
+            new[] { M("table.cliente", lang), M("table.ciclo", lang), M("table.diasSinPedido", lang), M("table.urgencia", lang), M("table.vendedor", lang) }, rows));
 
         await context.SendAdminEmailAsync(
-            "Oportunidades de Reorden Inteligente",
+            M("pedidoRecurrente.subject", lang),
             content.ToString(),
             ct,
-            $"{clientesSugeridos.Count} clientes fuera de su ciclo normal de compra");
+            $"{clientesSugeridos.Count} {M("pedidoRecurrente.kpi.oportunidades", lang).ToLower()}",
+            language: lang);
 
         return new AutomationResult(true,
             $"Reorden: {clientesSugeridos.Count} clientes con ciclo superado ({notified} notificaciones)");

@@ -8,8 +8,12 @@ public class RutaSemanalAutoHandler : IAutomationHandler
     public string Slug => "ruta-semanal-auto";
     private const string Canal = "push";
 
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
+
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
+        var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var maxParadas = context.GetParam("max_paradas", 15);
 
         var vendedores = await context.Db.Usuarios
@@ -98,7 +102,7 @@ public class RutaSemanalAutoHandler : IAutomationHandler
             {
                 TenantId = context.TenantId,
                 UsuarioId = vendedor.Id,
-                Nombre = $"Ruta semanal — {nextMonday:dd/MM/yyyy}",
+                Nombre = string.Format(M("rutaSemanal.routeName", lang), nextMonday.ToString("dd/MM/yyyy")),
                 Fecha = nextMonday,
                 Estado = EstadoRuta.Planificada,
                 Activo = true,
@@ -129,10 +133,9 @@ public class RutaSemanalAutoHandler : IAutomationHandler
 
             if (context.Destinatario is "vendedores" or "ambos")
             {
-                var sufijo = geoOptimizado ? ", optimizada por cercanía geográfica" : "";
                 await context.NotifyUserAsync(vendedor.Id,
-                    "Ruta semanal generada",
-                    $"Se generó tu ruta para el {nextMonday:dd/MM/yyyy} con {ordenados.Count} paradas{sufijo}.",
+                    M("rutaSemanal.routeName", lang),
+                    string.Format(M("rutaSemanal.notification", lang), nextMonday.ToString("dd/MM/yyyy"), ordenados.Count),
                     "General", Canal, ct);
             }
         }
@@ -143,8 +146,8 @@ public class RutaSemanalAutoHandler : IAutomationHandler
             if (adminId.HasValue)
             {
                 await context.NotifyUserAsync(adminId.Value,
-                    "Rutas semanales generadas",
-                    $"Se generaron {rutasCreadas} rutas para la semana del {nextMonday:dd/MM/yyyy}. Ver rutas →",
+                    string.Format(M("rutaSemanal.routeName", lang), nextMonday.ToString("dd/MM/yyyy")),
+                    $"{rutasCreadas} rutas — {nextMonday:dd/MM/yyyy}",
                     "General", Canal, ct,
                     new Dictionary<string, string> { { "url", "/routes" } });
             }

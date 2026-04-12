@@ -9,11 +9,13 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
 {
     public string Slug => "cobro-vencido-recordatorio";
     private const string Canal = "push";
-    // Culture is now resolved dynamically via context.GetTenantCultureAsync(ct)
+
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
 
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
         var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var db = context.Db;
         var diasVencimiento = context.GetParam("dias_vencimiento", 7);
@@ -74,11 +76,11 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
         foreach (var grupo in porVendedor)
         {
             var clientesTexto = string.Join(", ", grupo.Select(v => $"{v.ClienteNombre} (${v.Saldo:N2}, {v.DiasVencido}d)"));
-            var mensaje = $"Tienes {grupo.Count()} saldos vencidos: {clientesTexto}";
+            var mensaje = string.Format(M("cobroVencido.notification", lang), grupo.Count()) + $": {clientesTexto}";
 
             if (context.Destinatario is "vendedores" or "ambos")
             {
-                await context.NotifyUserAsync(grupo.Key, "Cobros vencidos pendientes", mensaje, "Alert", Canal, ct,
+                await context.NotifyUserAsync(grupo.Key, M("cobroVencido.subject", lang), mensaje, "Alert", Canal, ct,
                     new Dictionary<string, string> { { "url", "/cobranza?filtro=vencido" } });
                 notificaciones++;
             }
@@ -92,8 +94,11 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             if (adminId.HasValue)
             {
                 await context.NotifyUserAsync(adminId.Value,
-                    "Cobros vencidos pendientes",
-                    $"{vencidos.Count} saldos vencidos por {FormatMoney(totalSaldo, culture)}. Ver detalle →",
+                    M("cobroVencido.subject", lang),
+                    string.Format(M("cobroVencido.callout", lang),
+                        vencidos.Count,
+                        vencidos.Count != 1 ? "s" : "",
+                        FormatMoney(totalSaldo, culture)),
                     "Alert", Canal, ct, new Dictionary<string, string> { { "url", "/cobranza?filtro=vencido" } });
                 notificaciones++;
             }
@@ -111,35 +116,38 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
         var diasPromedio = (int)vencidos.Average(v => v.DiasVencido);
 
         var content = new StringBuilder();
-        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));
+        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));
         content.Append(EmailTemplateBuilder.KpiRow(
-            ("Total vencido", FormatMoney(totalVencido, culture), "💰"),
-            ("Clientes", vencidos.Count.ToString(), "👥"),
-            ("Días promedio", diasPromedio.ToString(), "📅"),
-            ("Días de corte", diasVencimiento.ToString(), "⏰")
+            (M("cobroVencido.kpi.totalPendiente", lang), FormatMoney(totalVencido, culture), "💰"),
+            (M("cobroVencido.kpi.clientes", lang), vencidos.Count.ToString(), "👥"),
+            (M("cobroVencido.kpi.masAntiguo", lang), diasPromedio.ToString(), "📅"),
+            (M("cobroVencido.kpi.montoMayor", lang), FormatMoney(vencidos.Max(v => v.Saldo), culture), "⏰")
         ));
         content.Append(EmailTemplateBuilder.Callout(
-            $"Hay <strong>{vencidos.Count}</strong> cobro{(vencidos.Count != 1 ? "s" : "")} vencidos por un total de <strong>{FormatMoney(totalVencido, culture)}</strong>. " +
-            $"Los saldos llevan más de {diasVencimiento} días sin cobrar.",
+            string.Format(M("cobroVencido.callout", lang),
+                vencidos.Count,
+                vencidos.Count != 1 ? "s" : "",
+                $"<strong>{FormatMoney(totalVencido, culture)}</strong>"),
             "warning"));
 
         var rows = vencidos.Select(v => new[]
         {
             System.Net.WebUtility.HtmlEncode(v.ClienteNombre),
             $"<strong style=\"color:#dc2626;\">{FormatMoney(v.Saldo, culture)}</strong>",
-            $"{v.DiasVencido} días",
+            $"{v.DiasVencido} {M("table.dias", lang).ToLower()}",
             System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(v.UsuarioId, "Sin asignar")),
         }).ToList();
 
-        content.Append(EmailTemplateBuilder.SectionHeading("Cobros vencidos (ordenados por monto)"));
+        content.Append(EmailTemplateBuilder.SectionHeading(M("cobroVencido.heading", lang)));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { "Cliente", "Saldo Vencido", "Días Vencido", "Vendedor" }, rows));
+            new[] { M("table.cliente", lang), M("table.monto", lang), M("table.dias", lang), M("table.vendedor", lang) }, rows));
 
         await context.SendAdminEmailAsync(
-            "Reporte de Cobros Vencidos",
+            M("cobroVencido.subject", lang),
             content.ToString(),
             ct,
-            $"{vencidos.Count} cobros pendientes — {FormatMoney(totalVencido, culture)}");
+            $"{vencidos.Count} cobros — {FormatMoney(totalVencido, culture)}",
+            language: lang);
 
         return new AutomationResult(true, $"Recordatorios enviados: {notificaciones} notificaciones sobre {vencidos.Count} saldos vencidos");
     }

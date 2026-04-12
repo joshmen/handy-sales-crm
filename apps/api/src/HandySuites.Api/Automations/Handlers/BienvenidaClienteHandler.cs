@@ -8,8 +8,12 @@ public class BienvenidaClienteHandler : IAutomationHandler
     public string Slug => "bienvenida-cliente";
     private const string Canal = "push";
 
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
+
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
+        var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var diasSeguimiento = context.GetParam("dias_seguimiento", 3);
         var since = context.Automation.LastExecutedAt ?? DateTime.UtcNow.AddMinutes(-5);
@@ -35,13 +39,13 @@ public class BienvenidaClienteHandler : IAutomationHandler
             var nombres = string.Join(", ", grupo.Take(3).Select(c => c.Nombre));
             var mas = grupo.Count() > 3 ? $" y {grupo.Count() - 3} más" : "";
             var mensaje = grupo.Count() == 1
-                ? $"Se registró {grupo.First().Nombre}. Agenda visita en los próximos {diasSeguimiento} días."
-                : $"{grupo.Count()} nuevos clientes: {nombres}{mas}";
+                ? $"{M("bienvenida.notification", lang)}: {grupo.First().Nombre}"
+                : $"{grupo.Count()} {M("bienvenida.kpi.nuevos", lang).ToLower()}: {nombres}{mas}";
 
             foreach (var userId in recipients)
             {
                 await context.NotifyUserAsync(userId,
-                    $"{grupo.Count()} cliente{(grupo.Count() != 1 ? "s" : "")} nuevo{(grupo.Count() != 1 ? "s" : "")}",
+                    M("bienvenida.notification", lang),
                     mensaje, "General", Canal, ct,
                     new Dictionary<string, string> { { "url", "/clients" } });
                 notified++;
@@ -55,8 +59,8 @@ public class BienvenidaClienteHandler : IAutomationHandler
             if (adminId.HasValue)
             {
                 await context.NotifyUserAsync(adminId.Value,
-                    $"{newClients.Count} cliente{(newClients.Count != 1 ? "s" : "")} nuevo{(newClients.Count != 1 ? "s" : "")}",
-                    "Te hemos enviado un correo con los detalles.",
+                    M("bienvenida.subject", lang),
+                    $"{newClients.Count} {M("bienvenida.kpi.nuevos", lang).ToLower()}",
                     "General", Canal, ct);
                 notified++;
             }
@@ -70,16 +74,18 @@ public class BienvenidaClienteHandler : IAutomationHandler
             .ToListAsync(ct);
         var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
 
+        var conZona = newClients.Count(c => c.VendedorId.HasValue);
+
         var content = new StringBuilder();
-        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));
+        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));
         content.Append(EmailTemplateBuilder.KpiRow(
-            ("Nuevos clientes", newClients.Count.ToString(), "🎉"),
-            ("Días para seguimiento", diasSeguimiento.ToString(), "📅")
+            (M("bienvenida.kpi.nuevos", lang), newClients.Count.ToString(), "🎉"),
+            (M("bienvenida.kpi.conZona", lang), conZona.ToString(), "📍")
         ));
         content.Append(EmailTemplateBuilder.Callout(
             newClients.Count == 1
-                ? $"Se registró <strong>1 nuevo cliente</strong>. Se notificó al vendedor para que agende una visita en los próximos {diasSeguimiento} días."
-                : $"Se registraron <strong>{newClients.Count} nuevos clientes</strong>. Los vendedores asignados fueron notificados para agendar visitas de seguimiento.",
+                ? M("bienvenida.callout.single", lang)
+                : string.Format(M("bienvenida.callout.multi", lang), newClients.Count),
             "success"));
 
         var rows = newClients.Select(c =>
@@ -93,15 +99,16 @@ public class BienvenidaClienteHandler : IAutomationHandler
             return new[] { System.Net.WebUtility.HtmlEncode(c.Nombre), contacto, vendedor };
         }).ToList();
 
-        content.Append(EmailTemplateBuilder.SectionHeading("Nuevos clientes registrados"));
+        content.Append(EmailTemplateBuilder.SectionHeading(M("bienvenida.heading", lang)));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { "Cliente", "Contacto", "Vendedor Asignado" }, rows));
+            new[] { M("table.cliente", lang), M("table.telefono", lang), M("table.vendedor", lang) }, rows));
 
         await context.SendAdminEmailAsync(
-            "Nuevos Clientes Registrados",
+            M("bienvenida.subject", lang),
             content.ToString(),
             ct,
-            $"{newClients.Count} cliente{(newClients.Count != 1 ? "s" : "")} nuevo{(newClients.Count != 1 ? "s" : "")} hoy");
+            $"{newClients.Count} {M("bienvenida.kpi.nuevos", lang).ToLower()}",
+            language: lang);
 
         return new AutomationResult(true, $"Bienvenida enviada para {newClients.Count} clientes nuevos ({notified} notificaciones)");
     }

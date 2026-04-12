@@ -10,11 +10,13 @@ public class MetaNoCumplidaHandler : IAutomationHandler
     public string Slug => "meta-no-cumplida";
     private const string CanalVendedor = "push";
     private const string CanalAdmin = "push";
-    // Culture is now resolved dynamically via context.GetTenantCultureAsync(ct)
+
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
 
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
         var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var porcentajeAlerta = context.GetParam("porcentaje_alerta", 80);
         var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
@@ -90,13 +92,13 @@ public class MetaNoCumplidaHandler : IAutomationHandler
         // ── Push to each vendedor ──
         foreach (var (nombre, vendedorId, tipo, metaMonto, real, pct) in alertas)
         {
-            var tipoLabel = tipo switch { "ventas" => "ventas", "pedidos" => "pedidos", "visitas" => "visitas", _ => tipo };
+            var tipoLabel = tipo switch { "ventas" => M("table.ventas", lang).ToLower(), "pedidos" => M("table.pedidos", lang).ToLower(), "visitas" => "visitas", _ => tipo };
             var metaStr = tipo == "ventas" ? FormatMoney(metaMonto, culture) : $"{metaMonto:N0}";
             var realStr = tipo == "ventas" ? FormatMoney(real, culture) : $"{real:N0}";
 
             await context.NotifyUserAsync(vendedorId,
-                $"Meta de {tipoLabel} al {pct}%",
-                $"Llevas {realStr} de {metaStr} ({pct}%). ¡Quedan días para mejorar!",
+                $"{M("table.meta", lang)} {tipoLabel} — {pct}%",
+                $"{realStr} / {metaStr} ({pct}%)",
                 "Alert", CanalVendedor, ct);
         }
 
@@ -105,33 +107,32 @@ public class MetaNoCumplidaHandler : IAutomationHandler
         if (adminId.HasValue)
         {
             var resumen = alertas.Count == 1
-                ? $"{alertas[0].VendedorNombre} está al {alertas[0].Pct}% de su meta"
-                : $"{alertas.Count} vendedores por debajo del {porcentajeAlerta}% de su meta";
+                ? $"{alertas[0].VendedorNombre} — {alertas[0].Pct}%"
+                : $"{alertas.Count} {M("metaNoCumplida.heading", lang).ToLower()}";
 
             await context.NotifyUserAsync(adminId.Value,
-                "Alerta: metas semanales",
+                M("metaNoCumplida.subject", lang),
                 resumen,
                 "Alert", CanalAdmin, ct);
 
             // Rich email
             var content = new StringBuilder();
-            content.Append(EmailTemplateBuilder.DateStamp(now, tenantTz));
+            content.Append(EmailTemplateBuilder.DateStamp(now, tenantTz, lang));
             content.Append(EmailTemplateBuilder.KpiRow(
-                ("Con alerta", alertas.Count.ToString(), "⚠️"),
-                ("Umbral", $"{porcentajeAlerta}%", "🎯"),
-                ("Total metas", metas.Count.ToString(), "📊")
+                (M("metaNoCumplida.heading", lang), alertas.Count.ToString(), "⚠️"),
+                ($"{M("table.cumplimiento", lang)} <", $"{porcentajeAlerta}%", "🎯"),
+                (M("table.meta", lang), metas.Count.ToString(), "📊")
             ));
             content.Append(EmailTemplateBuilder.Callout(
                 $"<strong>{alertas.Count}</strong> vendedor{(alertas.Count != 1 ? "es" : "")} " +
-                $"están por debajo del <strong>{porcentajeAlerta}%</strong> de su meta. " +
-                "Considera hacer seguimiento antes de que cierre el período.",
+                $"< <strong>{porcentajeAlerta}%</strong>.",
                 alertas.Any(a => a.Pct < 50) ? "error" : "warning"));
 
             var rows = alertas
                 .OrderBy(a => a.Pct)
                 .Select(a =>
                 {
-                    var tipoLabel = a.Tipo switch { "ventas" => "💰 Ventas", "pedidos" => "📦 Pedidos", "visitas" => "📍 Visitas", _ => a.Tipo };
+                    var tipoLabel = a.Tipo switch { "ventas" => $"💰 {M("table.ventas", lang)}", "pedidos" => $"📦 {M("table.pedidos", lang)}", "visitas" => "📍 Visitas", _ => a.Tipo };
                     var metaStr = a.Tipo == "ventas" ? FormatMoney(a.Meta, culture) : $"{a.Meta:N0}";
                     var realStr = a.Tipo == "ventas" ? FormatMoney(a.Real, culture) : $"{a.Real:N0}";
                     var pctColor = a.Pct < 50 ? "#dc2626" : a.Pct < 70 ? "#d97706" : "#2563eb";
@@ -145,15 +146,16 @@ public class MetaNoCumplidaHandler : IAutomationHandler
                     };
                 }).ToList();
 
-            content.Append(EmailTemplateBuilder.SectionHeading("Vendedores con alerta de meta"));
+            content.Append(EmailTemplateBuilder.SectionHeading(M("metaNoCumplida.heading", lang)));
             content.Append(EmailTemplateBuilder.Table(
-                new[] { "Vendedor", "Tipo", "Meta", "Realizado", "Avance" }, rows));
+                new[] { M("table.vendedor", lang), M("table.tipo", lang), M("table.meta", lang), M("table.actual", lang), M("table.cumplimiento", lang) }, rows));
 
             await context.SendAdminEmailAsync(
-                "Alerta — Metas Semanales",
+                M("metaNoCumplida.subject", lang),
                 content.ToString(),
                 ct,
-                $"{alertas.Count} vendedores por debajo del {porcentajeAlerta}%");
+                $"{alertas.Count} vendedores < {porcentajeAlerta}%",
+                language: lang);
         }
 
         return new AutomationResult(true,

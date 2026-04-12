@@ -12,11 +12,13 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
 {
     public string Slug => "cobro-exitoso-aviso";
     private const string Canal = "push";
-    // Culture is now resolved dynamically via context.GetTenantCultureAsync(ct)
+
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
 
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
         var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         // Use LastExecutedAt as watermark — only notify cobros since last run
         var desde = context.Automation.LastExecutedAt ?? DateTime.UtcNow.AddHours(-2);
@@ -47,18 +49,18 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
         if (adminId.HasValue)
         {
             var mensaje = cobros.Count == 1
-                ? $"Cobro registrado: {cobros[0].ClienteNombre} — {FormatMoney(cobros[0].Monto, culture)}"
-                : $"{cobros.Count} cobros registrados — {FormatMoney(totalMonto, culture)} en total";
+                ? string.Format(M("cobroExitoso.notification", lang), cobros[0].ClienteNombre, FormatMoney(cobros[0].Monto, culture))
+                : $"{cobros.Count} cobros — {FormatMoney(totalMonto, culture)}";
 
             await context.NotifyUserAsync(adminId.Value,
-                "Cobro registrado exitosamente",
+                M("cobroExitoso.notification.title", lang),
                 mensaje,
                 "General", Canal, ct,
                 new Dictionary<string, string> { { "url", "/cobranza" } });
         }
 
         return new AutomationResult(true,
-            $"Aviso enviado: {cobros.Count} cobro{(cobros.Count != 1 ? "s" : "")} por {FormatMoney(totalMonto, culture)}");
+            $"{cobros.Count} cobro{(cobros.Count != 1 ? "s" : "")} — {FormatMoney(totalMonto, culture)}");
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);

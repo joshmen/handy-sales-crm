@@ -9,8 +9,12 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
     public string Slug => "cliente-inactivo-visita";
     private const string Canal = "push";
 
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
+
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
+        var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var diasInactividad = context.GetParam("dias_inactividad", 30);
         var cutoff = DateTime.UtcNow.AddDays(-diasInactividad);
@@ -68,7 +72,7 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
                 FechaProgramada = nextBusinessDay,
                 TipoVisita = TipoVisita.Seguimiento,
                 Resultado = ResultadoVisita.Pendiente,
-                Notas = $"Visita agendada automáticamente — cliente sin visitar en {diasInactividad}+ días",
+                Notas = string.Format(M("clienteInactivo.visitNote", lang), diasInactividad),
             };
             context.Db.ClienteVisitas.Add(visita);
             visitasCreadas++;
@@ -90,13 +94,13 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             var nombres = string.Join(", ", grupo.Take(3).Select(c => c.Nombre));
             var mas = grupo.Count() > 3 ? $" y {grupo.Count() - 3} más" : "";
             var mensaje = grupo.Count() == 1
-                ? $"{grupo.First().Nombre} no ha sido visitado en {diasInactividad} días."
-                : $"{grupo.Count()} clientes sin visitar: {nombres}{mas}";
+                ? $"{grupo.First().Nombre} — {diasInactividad}+ {M("table.dias", lang).ToLower()}"
+                : $"{grupo.Count()} {M("clienteInactivo.kpi.sinVisita", lang).ToLower()}: {nombres}{mas}";
 
             foreach (var userId in recipients)
             {
                 await context.NotifyUserAsync(userId,
-                    $"{grupo.Count()} cliente{(grupo.Count() != 1 ? "s" : "")} sin visitar",
+                    M("clienteInactivo.subject", lang),
                     mensaje, "General", Canal, ct,
                     new Dictionary<string, string> { { "url", "/clients" } });
                 notified++;
@@ -110,8 +114,8 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             if (adminId.HasValue)
             {
                 await context.NotifyUserAsync(adminId.Value,
-                    $"{clientesInactivos.Count} clientes sin visitar",
-                    $"Te hemos enviado un correo con los detalles.",
+                    M("clienteInactivo.subject", lang),
+                    $"{clientesInactivos.Count} {M("clienteInactivo.kpi.sinVisita", lang).ToLower()}",
                     "General", Canal, ct);
                 notified++;
             }
@@ -125,43 +129,43 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             .ToListAsync(ct);
         var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
 
+        var sinVendedor = clientesInactivos.Count(c => !c.VendedorId.HasValue);
+
         var content = new StringBuilder();
-        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));
+        content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));
         content.Append(EmailTemplateBuilder.KpiRow(
-            ("Clientes sin visitar", clientesInactivos.Count.ToString(), "👥"),
-            ("Visitas agendadas", visitasCreadas.ToString(), "📋"),
-            ("Días de corte", diasInactividad.ToString(), "📅")
+            (M("clienteInactivo.kpi.sinVisita", lang), clientesInactivos.Count.ToString(), "👥"),
+            (M("clienteInactivo.kpi.visitasAgendadas", lang), visitasCreadas.ToString(), "📋"),
+            (M("clienteInactivo.kpi.sinVendedor", lang), sinVendedor.ToString(), "📅")
         ));
-        var calloutMessage = visitasCreadas > 0
-            ? $"<strong>{clientesInactivos.Count}</strong> cliente{(clientesInactivos.Count != 1 ? "s" : "")} no han recibido visita en los últimos <strong>{diasInactividad} días</strong>. " +
-              $"Se agendaron <strong>{visitasCreadas}</strong> visita{(visitasCreadas != 1 ? "s" : "")} de seguimiento para el <strong>{nextBusinessDay:dd/MM/yyyy}</strong>."
-            : $"<strong>{clientesInactivos.Count}</strong> cliente{(clientesInactivos.Count != 1 ? "s" : "")} no han recibido visita en los últimos <strong>{diasInactividad} días</strong>. " +
-              "No se pudieron agendar visitas porque los clientes no tienen vendedor asignado.";
-        content.Append(EmailTemplateBuilder.Callout(calloutMessage, visitasCreadas > 0 ? "info" : "warning"));
+        content.Append(EmailTemplateBuilder.Callout(
+            string.Format(M("clienteInactivo.callout", lang), visitasCreadas),
+            visitasCreadas > 0 ? "info" : "warning"));
 
         var rows = clientesInactivos.Select(c =>
         {
             var ultimaVisita = ultimaVisitaDict.TryGetValue(c.Id, out var uv) && uv.HasValue
-                ? $"{(int)(DateTime.UtcNow - uv.Value).TotalDays}d atrás"
-                : "<span style=\"color:#9ca3af;\">Sin visitas</span>";
+                ? $"{(int)(DateTime.UtcNow - uv.Value).TotalDays}d"
+                : "<span style=\"color:#9ca3af;\">—</span>";
             var vendedor = c.VendedorId.HasValue
                 ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, "Sin asignar"))
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
             var agendada = c.VendedorId.HasValue
                 ? $"<span style=\"color:#16a34a;font-weight:600;\">{nextBusinessDay:dd/MM/yyyy}</span>"
-                : "<span style=\"color:#9ca3af;\">Sin vendedor</span>";
+                : "<span style=\"color:#9ca3af;\">—</span>";
             return new[] { System.Net.WebUtility.HtmlEncode(c.Nombre), ultimaVisita, vendedor, agendada };
         }).ToList();
 
-        content.Append(EmailTemplateBuilder.SectionHeading("Clientes sin visitar"));
+        content.Append(EmailTemplateBuilder.SectionHeading(M("clienteInactivo.heading", lang)));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { "Cliente", "Última Visita", "Vendedor", "Visita Agendada" }, rows));
+            new[] { M("table.cliente", lang), M("table.ultimaVisita", lang), M("table.vendedor", lang), M("clienteInactivo.kpi.visitasAgendadas", lang) }, rows));
 
         await context.SendAdminEmailAsync(
-            "Reporte de Clientes Inactivos",
+            M("clienteInactivo.subject", lang),
             content.ToString(),
             ct,
-            $"{clientesInactivos.Count} clientes sin visitar en {diasInactividad} días");
+            $"{clientesInactivos.Count} {M("clienteInactivo.kpi.sinVisita", lang).ToLower()}",
+            language: lang);
 
         return new AutomationResult(true,
             $"Clientes inactivos: {clientesInactivos.Count}, visitas agendadas: {visitasCreadas}, notificaciones: {notified}");

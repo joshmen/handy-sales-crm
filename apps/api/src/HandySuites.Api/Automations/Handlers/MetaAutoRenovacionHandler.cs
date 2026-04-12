@@ -7,8 +7,12 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
 {
     public string Slug => "meta-auto-renovacion";
 
+    private static string M(string key, string lang) => AutomationMessages.Get(key, lang);
+
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
+        var culture = await context.GetTenantCultureAsync(ct);
+        var lang = culture.TwoLetterISOLanguageName; // "es" or "en"
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
         var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Date;
@@ -61,8 +65,10 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
         if (adminId.HasValue)
         {
             await context.NotifyUserAsync(adminId.Value,
-                "Metas auto-renovadas",
-                $"Se renovaron {renovadas} meta{(renovadas != 1 ? "s" : "")} automaticamente.",
+                lang == "en" ? "Goals auto-renewed" : "Metas auto-renovadas",
+                lang == "en"
+                    ? $"{renovadas} goal{(renovadas != 1 ? "s" : "")} renewed automatically."
+                    : $"Se renovaron {renovadas} meta{(renovadas != 1 ? "s" : "")} automáticamente.",
                 "Info", "push", ct);
         }
 

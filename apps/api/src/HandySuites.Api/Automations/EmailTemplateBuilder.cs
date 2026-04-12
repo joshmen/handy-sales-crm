@@ -70,14 +70,14 @@ public class EmailTemplateBuilder
     /// <summary>
     /// Wrap content HTML in a professional branded email layout.
     /// </summary>
-    public string Build(string titulo, string contentHtml, string? preheaderText = null)
+    public string Build(string titulo, string contentHtml, string? preheaderText = null, string language = "es")
     {
         var preheader = preheaderText ?? titulo;
         var lighterBg = "#f8faf9";
 
         return $"""
         <!DOCTYPE html>
-        <html lang="es">
+        <html lang="{language}">
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -115,8 +115,8 @@ public class EmailTemplateBuilder
                             <tr>
                                 <td align="center" style="padding:16px 32px;">
                                     <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
-                                        Este correo fue generado autom&aacute;ticamente por HandySuites.<br/>
-                                        Puedes configurar tus notificaciones desde el panel de Automatizaciones.
+                                        {AutomationMessages.Get("email.footer1", language)}<br/>
+                                        {AutomationMessages.Get("email.footer2", language)}
                                     </p>
                                 </td>
                             </tr>
