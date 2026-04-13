@@ -1,9 +1,9 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download, Plus } from 'lucide-react';
 import { SrLoadingText } from '@/components/common/SrLoadingText';
 
 import { MiembrosTab } from './components/MiembrosTab';
@@ -15,6 +15,15 @@ function TeamPageContent() {
   const t = useTranslations('team');
   const tCommon = useTranslations('common');
   const [activeTab, setActiveTab] = useState<TeamTab>('miembros');
+  const [exportFn, setExportFn] = useState<(() => void) | null>(null);
+  const [createFn, setCreateFn] = useState<(() => void) | null>(null);
+
+  const handleExportReady = useCallback((fn: (() => void) | null) => {
+    setExportFn(() => fn);
+  }, []);
+  const handleCreateReady = useCallback((fn: (() => void) | null) => {
+    setCreateFn(() => fn);
+  }, []);
 
   return (
     <PageHeader
@@ -24,6 +33,28 @@ function TeamPageContent() {
       ]}
       title={t('title')}
       subtitle={t('subtitle')}
+      actions={activeTab === 'miembros' ? (
+        <>
+          {exportFn && (
+            <button
+              onClick={exportFn}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">{tCommon('export')}</span>
+            </button>
+          )}
+          {createFn && (
+            <button
+              onClick={createFn}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t('members.newUser')}</span>
+            </button>
+          )}
+        </>
+      ) : undefined}
     >
       {/* Tabs */}
       <div role="tablist" aria-label={t('title')} className="flex items-center gap-1 mb-6 border-b border-border">
@@ -53,7 +84,7 @@ function TeamPageContent() {
         </button>
       </div>
 
-      {activeTab === 'miembros' && <MiembrosTab />}
+      {activeTab === 'miembros' && <MiembrosTab onExportReady={handleExportReady} onCreateReady={handleCreateReady} />}
       {activeTab === 'dispositivos' && <DispositivosTab />}
     </PageHeader>
   );

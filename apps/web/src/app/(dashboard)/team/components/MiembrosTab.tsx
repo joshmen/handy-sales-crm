@@ -477,7 +477,7 @@ function SupervisorView() {
 
 // ============ Admin/CRUD View ============
 
-function AdminUsersView() {
+function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn: (() => void) | null) => void; onCreateReady?: (fn: (() => void) | null) => void }) {
   const t = useTranslations('team.members');
   const td = useTranslations('team.devices');
   const tc = useTranslations('common');
@@ -851,6 +851,11 @@ function AdminUsersView() {
     toast.success(t('csvDownloaded'));
   };
 
+  // Expose export + create functions to parent for header buttons
+  const handleOpenCreate = React.useCallback(() => setIsCreateModalOpen(true), []);
+  React.useEffect(() => { onExportReady?.(handleDescargar); return () => onExportReady?.(null); }, [onExportReady]);
+  React.useEffect(() => { onCreateReady?.(handleOpenCreate); return () => onCreateReady?.(null); }, [onCreateReady, handleOpenCreate]);
+
   // Device sessions drawer
   const handleOpenSessionsDrawer = async (user: User) => {
     setDrawerUser(user);
@@ -1092,14 +1097,6 @@ function AdminUsersView() {
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
           <button
-            data-tour="users-create-btn"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('newUser')}</span>
-          </button>
-          <button
             onClick={handleOpenUbicaciones}
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
           >
@@ -1112,13 +1109,6 @@ function AdminUsersView() {
           >
             <Ruler className="w-4 h-4" />
             <span>{t('distance')}</span>
-          </button>
-          <button
-            onClick={handleDescargar}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="hidden sm:inline">{tc('export')}</span>
           </button>
           <button
             onClick={handleCleanExpired}
@@ -1613,7 +1603,7 @@ function AdminUsersView() {
 
 // ============ Main Export ============
 
-export function MiembrosTab() {
+export function MiembrosTab({ onExportReady, onCreateReady }: { onExportReady?: (fn: (() => void) | null) => void; onCreateReady?: (fn: (() => void) | null) => void }) {
   const { data: session } = useSession();
   const role = (session?.user as { role?: string })?.role;
   const isSupervisor = role === 'SUPERVISOR';
@@ -1622,5 +1612,5 @@ export function MiembrosTab() {
     return <SupervisorView />;
   }
 
-  return <AdminUsersView />;
+  return <AdminUsersView onExportReady={onExportReady} onCreateReady={onCreateReady} />;
 }
