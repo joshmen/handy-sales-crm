@@ -5330,6 +5330,20 @@
     "Clientes inactivos: 14, visitas agendadas: 0, notificaciones: 5": "Inactive clients: 14, visits scheduled: 0, notifications: 5",
     "Clientes inactivos: 14, visitas agendadas: 11, notificaciones: 5": "Inactive clients: 14, visits scheduled: 11, notifications: 5",
     "Reorden: 1 clientes con ciclo superado (3 notificaciones)": "Reorder: 1 client with overdue cycle (3 notifications)",
-    "Error al ejecutar la automatización.": "An error occurred while executing the automation."
+    "Error al ejecutar la automatización.": "An error occurred while executing the automation.",
+    "No goals to auto-renew": "No goals to auto-renew",
+    "No new routes to generate (already exist or no assigned clients)": "No new routes to generate (already exist or no assigned clients)",
+    "No new clients": "No new clients",
+    "No products with low stock": "No products with low stock",
+    "No overdue balances": "No overdue balances",
+    "All clients have recent visits": "All clients have recent visits",
+    "All clients are within their normal order cycle": "All clients are within their normal order cycle",
+    "No active vendors": "No active vendors",
+    "No goals configured for the current period": "No goals configured for the current period",
+    "No new payments since last execution": "No new payments since last execution",
+    "No products with zero inventory": "No products with zero inventory",
+    "Goals auto-renewed": "Goals auto-renewed",
+    "Payment registered successfully": "Payment registered successfully",
+    "An error occurred while executing the automation.": "An error occurred while executing the automation."
   }
 }

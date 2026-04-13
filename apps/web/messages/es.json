@@ -5330,6 +5330,20 @@
     "Clientes inactivos: 14, visitas agendadas: 0, notificaciones: 5": "Clientes inactivos: 14, visitas agendadas: 0, notificaciones: 5",
     "Clientes inactivos: 14, visitas agendadas: 11, notificaciones: 5": "Clientes inactivos: 14, visitas agendadas: 11, notificaciones: 5",
     "Reorden: 1 clientes con ciclo superado (3 notificaciones)": "Reorden: 1 clientes con ciclo superado (3 notificaciones)",
-    "Error al ejecutar la automatización.": "Error al ejecutar la automatización."
+    "Error al ejecutar la automatización.": "Error al ejecutar la automatización.",
+    "No goals to auto-renew": "Sin metas para auto-renovar",
+    "No new routes to generate (already exist or no assigned clients)": "Sin rutas nuevas por generar (ya existen o sin clientes asignados)",
+    "No new clients": "Sin clientes nuevos",
+    "No products with low stock": "Sin productos con stock bajo",
+    "No overdue balances": "Sin saldos vencidos",
+    "All clients have recent visits": "Todos los clientes tienen visitas recientes",
+    "All clients are within their normal order cycle": "Todos los clientes están dentro de su ciclo normal de pedido",
+    "No active vendors": "Sin vendedores activos",
+    "No goals configured for the current period": "Sin metas configuradas para el período actual",
+    "No new payments since last execution": "Sin cobros nuevos desde la última ejecución",
+    "No products with zero inventory": "Sin productos con inventario en cero",
+    "Goals auto-renewed": "Metas auto-renovadas",
+    "Payment registered successfully": "Cobro registrado exitosamente",
+    "An error occurred while executing the automation.": "Error al ejecutar la automatización."
   }
 }
