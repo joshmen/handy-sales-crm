@@ -214,7 +214,7 @@ export default function ActivityLogsPage() {
           className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-foreground/80 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
         >
           <Download className="w-4 h-4" />
-          <span>{tc('exportCsv')}</span>
+          <span>{tc('export')}</span>
         </button>
       }
     >
