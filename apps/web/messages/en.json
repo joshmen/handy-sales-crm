@@ -5322,6 +5322,14 @@
     "Sin rutas nuevas por generar (ya existen o sin clientes asignados)": "No new routes to generate (already exist or no assigned clients)",
     "Cobro registrado exitosamente": "Payment registered successfully",
     "Tu resumen del día está listo. Te lo enviamos por correo.": "Your daily summary is ready. We sent it to your email.",
-    "Metas auto-renovadas": "Goals auto-renewed"
+    "Metas auto-renovadas": "Goals auto-renewed",
+    "Resumen enviado: 0 ventas, 0 cobros, 0 visitas": "Summary sent: 0 sales, 0 collections, 0 visits",
+    "2 rutas semanales generadas": "2 weekly routes generated",
+    "Alerta enviada: 1 productos con stock bajo": "Alert sent: 1 product with low stock",
+    "Clientes inactivos: 12, visitas agendadas: 0, notificaciones: 5": "Inactive clients: 12, visits scheduled: 0, notifications: 5",
+    "Clientes inactivos: 14, visitas agendadas: 0, notificaciones: 5": "Inactive clients: 14, visits scheduled: 0, notifications: 5",
+    "Clientes inactivos: 14, visitas agendadas: 11, notificaciones: 5": "Inactive clients: 14, visits scheduled: 11, notifications: 5",
+    "Reorden: 1 clientes con ciclo superado (3 notificaciones)": "Reorder: 1 client with overdue cycle (3 notifications)",
+    "Error al ejecutar la automatización.": "An error occurred while executing the automation."
   }
 }

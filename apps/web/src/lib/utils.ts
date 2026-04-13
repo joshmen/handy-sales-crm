@@ -68,6 +68,10 @@ export function getInitials(name: string | undefined): string {
 }
 
 export function formatTimeAgo(dateStr: string): string {
+  let lang = 'es'
+  try { const s = JSON.parse(localStorage.getItem('company_settings') || '{}'); lang = s.language || 'es'; } catch { /* */ }
+  const en = lang === 'en'
+
   const now = new Date()
   const date = new Date(dateStr)
   const diffMs = now.getTime() - date.getTime()
@@ -76,15 +80,15 @@ export function formatTimeAgo(dateStr: string): string {
   const diffHr = Math.floor(diffMin / 60)
   const diffDays = Math.floor(diffHr / 24)
 
-  if (diffSec < 60) return 'hace unos segundos'
-  if (diffMin < 2) return 'hace 1 min'
-  if (diffMin < 60) return `hace ${diffMin} min`
-  if (diffHr < 2) return 'hace 1 hora'
-  if (diffHr < 24) return `hace ${diffHr} horas`
-  if (diffDays < 2) return 'hace 1 día'
-  if (diffDays < 30) return `hace ${diffDays} días`
-  if (diffDays < 60) return 'hace 1 mes'
-  return `hace ${Math.floor(diffDays / 30)} meses`
+  if (diffSec < 60) return en ? 'just now' : 'hace unos segundos'
+  if (diffMin < 2) return en ? '1 min ago' : 'hace 1 min'
+  if (diffMin < 60) return en ? `${diffMin} min ago` : `hace ${diffMin} min`
+  if (diffHr < 2) return en ? '1 hour ago' : 'hace 1 hora'
+  if (diffHr < 24) return en ? `${diffHr} hours ago` : `hace ${diffHr} horas`
+  if (diffDays < 2) return en ? '1 day ago' : 'hace 1 día'
+  if (diffDays < 30) return en ? `${diffDays} days ago` : `hace ${diffDays} días`
+  if (diffDays < 60) return en ? '1 month ago' : 'hace 1 mes'
+  return en ? `${Math.floor(diffDays / 30)} months ago` : `hace ${Math.floor(diffDays / 30)} meses`
 }
 
 export function getErrorMessage(err: unknown): string {

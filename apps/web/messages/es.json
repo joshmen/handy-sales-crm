@@ -5322,6 +5322,14 @@
     "Sin rutas nuevas por generar (ya existen o sin clientes asignados)": "Sin rutas nuevas por generar (ya existen o sin clientes asignados)",
     "Cobro registrado exitosamente": "Cobro registrado exitosamente",
     "Tu resumen del día está listo. Te lo enviamos por correo.": "Tu resumen del día está listo. Te lo enviamos por correo.",
-    "Metas auto-renovadas": "Metas auto-renovadas"
+    "Metas auto-renovadas": "Metas auto-renovadas",
+    "Resumen enviado: 0 ventas, 0 cobros, 0 visitas": "Resumen enviado: 0 ventas, 0 cobros, 0 visitas",
+    "2 rutas semanales generadas": "2 rutas semanales generadas",
+    "Alerta enviada: 1 productos con stock bajo": "Alerta enviada: 1 productos con stock bajo",
+    "Clientes inactivos: 12, visitas agendadas: 0, notificaciones: 5": "Clientes inactivos: 12, visitas agendadas: 0, notificaciones: 5",
+    "Clientes inactivos: 14, visitas agendadas: 0, notificaciones: 5": "Clientes inactivos: 14, visitas agendadas: 0, notificaciones: 5",
+    "Clientes inactivos: 14, visitas agendadas: 11, notificaciones: 5": "Clientes inactivos: 14, visitas agendadas: 11, notificaciones: 5",
+    "Reorden: 1 clientes con ciclo superado (3 notificaciones)": "Reorden: 1 clientes con ciclo superado (3 notificaciones)",
+    "Error al ejecutar la automatización.": "Error al ejecutar la automatización."
   }
 }
