@@ -1695,7 +1695,7 @@
       "superAdmin": "Super Admin",
       "companyAdmin": "Company administrator",
       "supervisor": {
-        "activeSessionsCount": "{active} active of {total} session(s)",
+        "activeSessionsCount": "{active} active of {total}",
         "loading": "Loading...",
         "refresh": "Refresh",
         "assignSellers": "Assign Vendors",
@@ -1735,7 +1735,7 @@
       "inactiveBadge": "Inactive",
       "noActivity": "No activity",
       "activeSessionCount": "{count} active",
-      "activeSessionsCount": "{active} active of {total} session(s)",
+      "activeSessionsCount": "{active} active of {total}",
       "sessionCount": "{count} session",
       "sessionsCount": "{count} sessions",
       "columnName": "Name",

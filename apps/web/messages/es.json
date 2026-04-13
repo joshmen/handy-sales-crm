@@ -1676,7 +1676,7 @@
       "loadingSessions": "Cargando sesiones...",
       "noSessions": "Sin sesiones",
       "noSessionsDesc": "Este usuario no tiene sesiones registradas",
-      "activeSessionsCount": "{active} activas de {total} sesión(es)",
+      "activeSessionsCount": "{active} activas de {total}",
       "yourSession": "Tu sesion",
       "connected": "Conectado",
       "activity": "Actividad",
@@ -1709,7 +1709,7 @@
       "batchSuccess": "{count} usuario(s) {action} exitosamente",
       "batchError": "Error al cambiar el estado de los usuarios",
       "supervisor": {
-        "activeSessionsCount": "{active} activas de {total} sesión(es)",
+        "activeSessionsCount": "{active} activas de {total}",
         "loading": "Cargando...",
         "refresh": "Actualizar",
         "assignSellers": "Asignar Vendedores",
