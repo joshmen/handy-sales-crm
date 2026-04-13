@@ -1416,74 +1416,67 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       />
 
       {/* Edit Modal */}
-      {isEditModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b border-border-subtle">
-              <h2 className="text-lg font-semibold text-foreground">{t("editUserTitle")}</h2>
+      {/* Edit User Drawer */}
+      <Drawer
+        isOpen={isEditModalOpen && !!selectedUser}
+        onClose={() => { setIsEditModalOpen(false); setSelectedUser(null); }}
+        title={t("editUserTitle")}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => { setIsEditModalOpen(false); setSelectedUser(null); }}>
+              {t('cancel')}
+            </Button>
+            <Button variant="success" onClick={handleUpdateUser}>
+              {t('saveChanges')}
+            </Button>
+          </div>
+        }
+      >
+        {selectedUser && (
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-1">{t("fullName")}</label>
+              <input
+                type="text"
+                value={selectedUser.name}
+                onChange={(e) => setSelectedUser({ ...selectedUser, name: e.target.value })}
+                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("fullName")}</label>
-                <input
-                  type="text"
-                  value={selectedUser.name}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("email")}</label>
-                <input
-                  type="email"
-                  value={selectedUser.email}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('phone')}</label>
-                <input
-                  type="tel"
-                  value={selectedUser.phone || ''}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('status')}</label>
-                <SearchableSelect
-                  options={[
-                    { value: UserStatus.ACTIVE, label: t('statusActive') },
-                    { value: UserStatus.INACTIVE, label: t('statusInactive') },
-                    { value: UserStatus.SUSPENDED, label: t('statusSuspended') },
-                  ]}
-                  value={selectedUser.status || null}
-                  onChange={(val) => setSelectedUser({ ...selectedUser, status: val as UserStatus })}
-                  placeholder={t('selectStatus')}
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-1">{t("email")}</label>
+              <input
+                type="email"
+                value={selectedUser.email}
+                onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
+                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
             </div>
-            <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setSelectedUser(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
-              >
-                {t('cancel')}
-              </button>
-              <button
-                onClick={handleUpdateUser}
-                className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
-              >
-                {t('saveChanges')}
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-1">{t('phone')}</label>
+              <input
+                type="tel"
+                value={selectedUser.phone || ''}
+                onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-1">{t('status')}</label>
+              <SearchableSelect
+                options={[
+                  { value: UserStatus.ACTIVE, label: t('statusActive') },
+                  { value: UserStatus.INACTIVE, label: t('statusInactive') },
+                  { value: UserStatus.SUSPENDED, label: t('statusSuspended') },
+                ]}
+                value={selectedUser.status || null}
+                onChange={(val) => setSelectedUser({ ...selectedUser, status: val as UserStatus })}
+                placeholder={t('selectStatus')}
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Drawer>
 
       {/* B4: Location Modal — rendered via portal to avoid parent overflow/transform issues */}
       {isLocationModalOpen && typeof document !== 'undefined' && createPortal(
