@@ -1115,10 +1115,10 @@ function AdminUsersView() {
           </button>
           <button
             onClick={handleDescargar}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-700 border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
           >
-            <Download className="w-4 h-4" />
-            <span>{t('download')}</span>
+            <Download className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="hidden sm:inline">{tc('export')}</span>
           </button>
           <button
             onClick={handleCleanExpired}
