@@ -28,6 +28,14 @@ const DYNAMIC_PATTERNS: Array<[RegExp, string]> = [
   [/^(\d+) oportunidades? de reorden detectadas?$/, '$1 reorder opportunity(ies) detected'],
   [/^(\d+) alertas? de meta enviadas?$/, '$1 goal alert(s) sent'],
   [/^Se generó tu ruta para el (.+) con (\d+) paradas?.*$/, 'Your route for $1 with $2 stop(s) has been generated.'],
+  // Handler result messages with interpolation
+  [/^Clientes inactivos: (\d+), visitas agendadas: (\d+), notificaciones: (\d+)$/, 'Inactive clients: $1, visits scheduled: $2, notifications: $3'],
+  [/^Bienvenida enviada para (\d+) clientes nuevos \((\d+) notificaciones\)$/, 'Welcome sent for $1 new clients ($2 notifications)'],
+  [/^Recordatorios enviados: (\d+) notificaciones sobre (\d+) saldos vencidos$/, 'Reminders sent: $1 notifications about $2 overdue balances'],
+  [/^(\d+) meta(?:s)? renovada(?:s)?$/, '$1 goal(s) renewed'],
+  [/^(\d+) cobro(?:s)? — (.+)$/, '$1 payment(s) — $2'],
+  [/^(\d+) rutas semanales generadas$/, '$1 weekly routes generated'],
+  [/^Reorder: (\d+) clients with overdue cycl/, 'Reorder: $1 client(s) with overdue cycle'],
 ];
 
 /**
