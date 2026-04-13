@@ -2,51 +2,40 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useMemo } from 'react';
 
 /**
- * Dynamic patterns for zone errors with dynamic variables.
- * Keep minimal — prefer exact matches in backendMessages JSON.
+ * Bidirectional dynamic patterns for messages with variables.
+ * Each entry: [Spanish regex, English regex, Spanish template, English template]
+ * Works both ways: ES→EN when locale is "en", EN→ES when locale is "es".
  */
-const DYNAMIC_PATTERNS: Array<[RegExp, string]> = [
-  [/^No se puede eliminar la zona porque tiene (\d+) cliente\(s\) asociado\(s\).*$/, 'Cannot delete zone because it has $1 associated client(s). Reassign or remove the clients first.'],
-  [/^No se puede desactivar la zona porque tiene (\d+) cliente\(s\) activo\(s\).*$/, 'Cannot deactivate zone because it has $1 active client(s). Deactivate or reassign the clients first.'],
-  [/^No se pueden desactivar las siguientes zonas porque tienen clientes activos: (.+)$/, 'Cannot deactivate the following zones because they have active clients: $1'],
-  [/^La zona '(.+)' se traslapa con la zona '(.+)' \(distancia: (.+) km, solapamiento: (.+) km\)$/, "Zone '$1' overlaps with zone '$2' (distance: $3 km, overlap: $4 km)"],
-  [/^La latitud debe estar entre .+ Valor recibido: (.+)$/, 'Latitude must be between 14.0 and 33.0 (Mexico limits). Received: $1'],
-  [/^La longitud debe estar entre .+ Valor recibido: (.+)$/, 'Longitude must be between -118.0 and -86.0 (Mexico limits). Received: $1'],
-  [/^Ya existe una zona con nombre '(.+)'$/, "A zone with name '$1' already exists"],
-  [/^Zona '(.+)' no encontrada\. Zonas disponibles: (.+)$/, "Zone '$1' not found. Available zones: $2"],
+const PATTERNS: Array<{ es: RegExp; en: RegExp; toEs: string; toEn: string }> = [
+  // Zone errors
+  { es: /^No se puede eliminar la zona porque tiene (\d+) cliente\(s\) asociado\(s\).*$/, en: /^Cannot delete zone because it has (\d+) associated client\(s\).*$/, toEs: 'No se puede eliminar la zona porque tiene $1 cliente(s) asociado(s). Primero reasigne o elimine los clientes.', toEn: 'Cannot delete zone because it has $1 associated client(s). Reassign or remove the clients first.' },
+  { es: /^No se puede desactivar la zona porque tiene (\d+) cliente\(s\) activo\(s\).*$/, en: /^Cannot deactivate zone because it has (\d+) active client\(s\).*$/, toEs: 'No se puede desactivar la zona porque tiene $1 cliente(s) activo(s).', toEn: 'Cannot deactivate zone because it has $1 active client(s).' },
+  { es: /^La zona '(.+)' se traslapa con la zona '(.+)' \(distancia: (.+) km, solapamiento: (.+) km\)$/, en: /^Zone '(.+)' overlaps with zone '(.+)' \(distance: (.+) km, overlap: (.+) km\)$/, toEs: "La zona '$1' se traslapa con la zona '$2' (distancia: $3 km, solapamiento: $4 km)", toEn: "Zone '$1' overlaps with zone '$2' (distance: $3 km, overlap: $4 km)" },
+
+  // Automation results
+  { es: /^Clientes inactivos: (\d+), visitas agendadas: (\d+), notificaciones: (\d+)$/, en: /^Inactive clients: (\d+), visits scheduled: (\d+), notifications: (\d+)$/, toEs: 'Clientes inactivos: $1, visitas agendadas: $2, notificaciones: $3', toEn: 'Inactive clients: $1, visits scheduled: $2, notifications: $3' },
+  { es: /^Resumen enviado: (\d+) ventas, (\d+) cobros, (\d+) visitas$/, en: /^Summary sent: (\d+) sales, (\d+) collections, (\d+) visits$/, toEs: 'Resumen enviado: $1 ventas, $2 cobros, $3 visitas', toEn: 'Summary sent: $1 sales, $2 collections, $3 visits' },
+  { es: /^Alerta enviada: (\d+) productos con stock bajo$/, en: /^Alert sent: (\d+) products? with low stock$/, toEs: 'Alerta enviada: $1 productos con stock bajo', toEn: 'Alert sent: $1 product(s) with low stock' },
+  { es: /^Alerta enviada: (\d+) productos sin inventario$/, en: /^Alert sent: (\d+) products? with zero inventory$/, toEs: 'Alerta enviada: $1 productos sin inventario', toEn: 'Alert sent: $1 product(s) with zero inventory' },
+  { es: /^Bienvenida enviada para (\d+) clientes nuevos \((\d+) notificaciones\)$/, en: /^Welcome sent for (\d+) new clients \((\d+) notifications\)$/, toEs: 'Bienvenida enviada para $1 clientes nuevos ($2 notificaciones)', toEn: 'Welcome sent for $1 new clients ($2 notifications)' },
+  { es: /^Recordatorios enviados: (\d+) notificaciones sobre (\d+) saldos vencidos$/, en: /^Reminders sent: (\d+) notifications about (\d+) overdue balances$/, toEs: 'Recordatorios enviados: $1 notificaciones sobre $2 saldos vencidos', toEn: 'Reminders sent: $1 notifications about $2 overdue balances' },
+  { es: /^Reorden: (\d+) clientes con ciclo superado \((\d+) notificaciones\)$/, en: /^Reorder: (\d+) clients? with overdue cycle \((\d+) notifications\)$/, toEs: 'Reorden: $1 clientes con ciclo superado ($2 notificaciones)', toEn: 'Reorder: $1 client(s) with overdue cycle ($2 notifications)' },
+  { es: /^(\d+) rutas semanales generadas$/, en: /^(\d+) weekly routes generated$/, toEs: '$1 rutas semanales generadas', toEn: '$1 weekly routes generated' },
+  { es: /^(\d+) meta(?:s)? renovada(?:s)?$/, en: /^(\d+) goal\(s\) renewed$/, toEs: '$1 meta(s) renovada(s)', toEn: '$1 goal(s) renewed' },
+  { es: /^(\d+) cobro(?:s)? — (.+)$/, en: /^(\d+) payment\(s\) — (.+)$/, toEs: '$1 cobro(s) — $2', toEn: '$1 payment(s) — $2' },
+  { es: /^Todos los vendedores están al ≥(\d+)% de su meta$/, en: /^All vendors are at ≥(\d+)% of their goal$/, toEs: 'Todos los vendedores están al ≥$1% de su meta', toEn: 'All vendors are at ≥$1% of their goal' },
+  { es: /^Se generaron (\d+) rutas para la semana del (.+)\. Ver rutas →$/, en: /^(\d+) routes generated for the week of (.+)\. View routes →$/, toEs: 'Se generaron $1 rutas para la semana del $2. Ver rutas →', toEn: '$1 routes generated for the week of $2. View routes →' },
+  { es: /^Se generó tu ruta para el (.+) con (\d+) paradas?.*$/, en: /^Your route for (.+) with (\d+) stops? has been generated\.$/, toEs: 'Se generó tu ruta para el $1 con $2 paradas.', toEn: 'Your route for $1 with $2 stop(s) has been generated.' },
+  { es: /^Cobro registrado: (.+) — (.+)$/, en: /^Payment registered: (.+) — (.+)$/, toEs: 'Cobro registrado: $1 — $2', toEn: 'Payment registered: $1 — $2' },
 ];
 
 /**
- * Bidirectional reverse map: English value → Spanish key.
- * Used when the user is in Spanish but the DB has English messages
- * (saved when the tenant was temporarily in English).
- */
-const EN_TO_ES: Record<string, string> = {
-  'No goals to auto-renew': 'Sin metas para auto-renovar',
-  'No new routes to generate (already exist or no assigned clients)': 'Sin rutas nuevas por generar (ya existen o sin clientes asignados)',
-  'No new clients': 'Sin clientes nuevos',
-  'No products with low stock': 'Sin productos con stock bajo',
-  'No overdue balances': 'Sin saldos vencidos',
-  'All clients have recent visits': 'Todos los clientes tienen visitas recientes',
-  'All clients are within their normal order cycle': 'Todos los clientes están dentro de su ciclo normal de pedido',
-  'No active vendors': 'Sin vendedores activos',
-  'No goals configured for the current period': 'Sin metas configuradas para el período actual',
-  'No new payments since last execution': 'Sin cobros nuevos desde la última ejecución',
-  'No products with zero inventory': 'Sin productos con inventario en cero',
-  'Goals auto-renewed': 'Metas auto-renovadas',
-  'Payment registered successfully': 'Cobro registrado exitosamente',
-  'Summary sent: 0 sales, 0 collections, 0 visits': 'Resumen enviado: 0 ventas, 0 cobros, 0 visitas',
-  'An error occurred while executing the automation.': 'Error al ejecutar la automatización.',
-};
-
-/**
- * Hook that provides bidirectional backend message translation.
- * Translates Spanish→English when locale is "en", and English→Spanish when locale is "es".
+ * Bidirectional backend message translation hook.
+ * Translates messages in either direction based on the current locale.
  */
 export function useBackendTranslation() {
-  const tEn = useTranslations('backendMessages');
+  const t = useTranslations('backendMessages');
 
-  // Detect current language
   const lang = useMemo(() => {
     try {
       const s = JSON.parse(localStorage.getItem('company_settings') || '{}');
@@ -58,30 +47,28 @@ export function useBackendTranslation() {
     (message: string | undefined | null): string => {
       if (!message) return '';
 
-      // 1. Try exact match in backendMessages dictionary (es key → current locale value)
+      // 1. Exact match in backendMessages dictionary (key=Spanish, value=localized)
       try {
-        const translated = tEn(message);
+        const translated = t(message);
         if (!translated.startsWith('backendMessages.')) {
           return translated;
         }
-      } catch { /* key not found */ }
+      } catch { /* not found */ }
 
-      // 2. Reverse lookup: if current locale is "es" and message is in English
-      if (lang === 'es' && EN_TO_ES[message]) {
-        return EN_TO_ES[message];
-      }
-
-      // 3. Dynamic patterns (zone errors)
-      for (const [pattern, replacement] of DYNAMIC_PATTERNS) {
-        if (pattern.test(message)) {
-          return message.replace(pattern, replacement);
+      // 2. Dynamic bidirectional patterns
+      for (const p of PATTERNS) {
+        if (lang === 'en' && p.es.test(message)) {
+          return message.replace(p.es, p.toEn);
+        }
+        if (lang === 'es' && p.en.test(message)) {
+          return message.replace(p.en, p.toEs);
         }
       }
 
-      // 4. Return original
+      // 3. Return original
       return message;
     },
-    [tEn, lang]
+    [t, lang]
   );
 
   return { tApi };
