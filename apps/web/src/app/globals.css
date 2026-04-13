@@ -32,7 +32,7 @@ body {
     /* ═══ HANDY SUITES VISUAL IDENTITY ═══ */
 
     /* Background — cool slate tint */
-    --background: 220 20% 91%;          /* #E2E6EE — blue-slate bg, clear contrast vs white cards */
+    --background: 220 16% 93%;          /* #E8EBF0 — slate bg */
     --foreground: 220 20% 14%;
 
     /* Cards — pure white, stands out from slate background */
@@ -85,9 +85,9 @@ body {
     --radius: 0.75rem;
 
     /* ═══ SURFACE ELEVATION SYSTEM ═══ */
-    --surface-1: 220 20% 91%;          /* #E2E6EE — page bg, blue-slate tint */
+    --surface-1: 220 16% 93%;          /* #E8EBF0 — page bg */
     --surface-2: 0 0% 100%;            /* #FFFFFF — cards float above */
-    --surface-3: 220 18% 87%;          /* #D6DCE6 — hover/active, visible change */
+    --surface-3: 220 14% 90%;          /* #E0E4EA — hover/active */
     --surface-4: 0 0% 100%;            /* #FFFFFF — modals */
 
     /* ═══ SHADOW ELEVATION SYSTEM ═══ */
