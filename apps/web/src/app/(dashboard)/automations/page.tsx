@@ -220,7 +220,7 @@ export default function AutomationsPage() {
     setSavingConfig(true);
     try {
       await automationService.configurar(configTemplate.slug, JSON.stringify(configParams));
-      toast({ title: t('configSaved'), description: configTemplate.nombre });
+      toast({ title: t('configSaved'), description: tName(configTemplate.slug, configTemplate.nombre) });
       setConfigDrawerOpen(false);
       await loadTemplates();
     } catch (err: unknown) {
@@ -608,7 +608,7 @@ export default function AutomationsPage() {
       <Drawer
         isOpen={configDrawerOpen}
         onClose={() => setConfigDrawerOpen(false)}
-        title={t('configurePrefix', { name: configTemplate?.nombre || '' })}
+        title={t('configurePrefix', { name: configTemplate ? tName(configTemplate.slug, configTemplate.nombre) : '' })}
         description={t('drawerConfigDesc')}
         icon={<GearSix size={20} className="text-muted-foreground" />}
         footer={
@@ -707,7 +707,7 @@ export default function AutomationsPage() {
         size="sm"
       >
         <p className="text-sm text-foreground/70 mb-4">
-          {t('confirmDeactivateDesc', { name: confirmDeactivate?.nombre || '' })}
+          {t('confirmDeactivateDesc', { name: confirmDeactivate ? tName(confirmDeactivate.slug, confirmDeactivate.nombre) : '' })}
         </p>
         <div className="flex gap-3 justify-end">
           <Button type="button" variant="outline" onClick={() => setConfirmDeactivate(null)}>
