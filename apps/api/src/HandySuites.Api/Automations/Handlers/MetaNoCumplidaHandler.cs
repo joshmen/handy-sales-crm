@@ -37,7 +37,7 @@ public class MetaNoCumplidaHandler : IAutomationHandler
                 m.Monto,
                 m.FechaInicio,
                 m.FechaFin,
-                UsuarioNombre = m.Usuario.Nombre ?? "Sin nombre",
+                UsuarioNombre = m.Usuario.Nombre ?? M("misc.sinNombre", lang),
             })
             .ToListAsync(ct);
 

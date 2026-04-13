@@ -53,7 +53,7 @@ public class PedidoRecurrenteHandler : IAutomationHandler
                 return new
                 {
                     c.ClienteId,
-                    Nombre = c.Nombre ?? "Sin nombre",
+                    Nombre = c.Nombre ?? M("misc.sinNombre", lang),
                     c.VendedorId,
                     c.TotalPedidos,
                     c.UltimoPedido,
@@ -118,7 +118,7 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .Where(u => vendedorIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync(ct);
-        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
+        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? M("misc.sinAsignar", lang));
 
         var urgentes = clientesSugeridos.Count(c => c.Urgencia >= 2.0);
 
@@ -137,7 +137,7 @@ public class PedidoRecurrenteHandler : IAutomationHandler
         var rows = clientesSugeridos.Select(c =>
         {
             var vendedor = c.VendedorId.HasValue
-                ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, "Sin asignar"))
+                ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang)))
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
             var pct = (int)(c.Urgencia * 100);
             var pctColor = pct >= 200 ? "#dc2626" : pct >= 150 ? "#d97706" : "#2563eb";

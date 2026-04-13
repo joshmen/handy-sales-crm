@@ -107,6 +107,10 @@ public static class AutomationMessages
         ["result.todosClientesCicloNormal"] = "Todos los clientes están dentro de su ciclo normal de pedido",
         ["result.sinVendedoresActivos"] = "Sin vendedores activos",
 
+        // Misc
+        ["misc.sinAsignar"] = "Sin asignar",
+        ["misc.sinNombre"] = "Sin nombre",
+
         // Table Headers
         ["table.producto"] = "Producto",
         ["table.stock"] = "Stock",
@@ -224,6 +228,11 @@ public static class AutomationMessages
         ["result.sinClientesRecurrentes"] = "No clients with recurring history",
         ["result.todosClientesCicloNormal"] = "All clients are within their normal order cycle",
         ["result.sinVendedoresActivos"] = "No active vendors",
+
+        // Table Headers
+        // Misc
+        ["misc.sinAsignar"] = "Unassigned",
+        ["misc.sinNombre"] = "No name",
 
         // Table Headers
         ["table.producto"] = "Product",

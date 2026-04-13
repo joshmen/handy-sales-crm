@@ -72,7 +72,7 @@ public class BienvenidaClienteHandler : IAutomationHandler
             .Where(u => vendedorIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync(ct);
-        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
+        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? M("misc.sinAsignar", lang));
 
         var conZona = newClients.Count(c => c.VendedorId.HasValue);
 
@@ -91,7 +91,7 @@ public class BienvenidaClienteHandler : IAutomationHandler
         var rows = newClients.Select(c =>
         {
             var vendedor = c.VendedorId.HasValue
-                ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, "Sin asignar"))
+                ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang)))
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
             var contacto = !string.IsNullOrEmpty(c.Telefono)
                 ? System.Net.WebUtility.HtmlEncode(c.Telefono)

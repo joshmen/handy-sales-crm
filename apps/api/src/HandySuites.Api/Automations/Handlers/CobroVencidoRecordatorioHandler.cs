@@ -110,7 +110,7 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             .Where(u => vendedorIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync(ct);
-        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
+        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? M("misc.sinAsignar", lang));
 
         var totalVencido = vencidos.Sum(v => v.Saldo);
         var diasPromedio = (int)vencidos.Average(v => v.DiasVencido);
@@ -135,7 +135,7 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             System.Net.WebUtility.HtmlEncode(v.ClienteNombre),
             $"<strong style=\"color:#dc2626;\">{FormatMoney(v.Saldo, culture)}</strong>",
             $"{v.DiasVencido} {M("table.dias", lang).ToLower()}",
-            System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(v.UsuarioId, "Sin asignar")),
+            System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(v.UsuarioId, M("misc.sinAsignar", lang))),
         }).ToList();
 
         content.Append(EmailTemplateBuilder.SectionHeading(M("cobroVencido.heading", lang)));

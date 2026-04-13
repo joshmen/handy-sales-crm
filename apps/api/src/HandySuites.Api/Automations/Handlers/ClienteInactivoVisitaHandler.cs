@@ -127,7 +127,7 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             .Where(u => vendedorIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync(ct);
-        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? "Sin asignar");
+        var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? M("misc.sinAsignar", lang));
 
         var sinVendedor = clientesInactivos.Count(c => !c.VendedorId.HasValue);
 
@@ -148,7 +148,7 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
                 ? $"{(int)(DateTime.UtcNow - uv.Value).TotalDays}d"
                 : "<span style=\"color:#9ca3af;\">—</span>";
             var vendedor = c.VendedorId.HasValue
-                ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, "Sin asignar"))
+                ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang)))
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
             var agendada = c.VendedorId.HasValue
                 ? $"<span style=\"color:#16a34a;font-weight:600;\">{nextBusinessDay:dd/MM/yyyy}</span>"
