@@ -1094,36 +1094,6 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleOpenUbicaciones}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            <MapPin className="w-4 h-4" />
-            <span>{t('location')}</span>
-          </button>
-          <button
-            onClick={handleOpenDistancia}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-violet-700 border border-violet-300 rounded-lg hover:bg-violet-50 transition-colors"
-          >
-            <Ruler className="w-4 h-4" />
-            <span>{t('distance')}</span>
-          </button>
-          <button
-            onClick={handleCleanExpired}
-            disabled={cleaningExpired}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
-          >
-            {cleaningExpired ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
-            )}
-            <span>{t('cleanExpired')}</span>
-          </button>
-        </div>
-
         {/* Filter Row */}
         <div className="flex items-center gap-3">
           {/* Zona Filter */}
@@ -1181,7 +1151,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
             />
           </div>
 
-          {/* Refresh Button */}
+          {/* Refresh */}
           <button
             onClick={handleRefresh}
             className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
@@ -1189,6 +1159,32 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
             <RefreshCw className="w-4 h-4" />
             <span>{t('refresh')}</span>
           </button>
+
+          {/* Secondary tools */}
+          <div className="flex items-center gap-1 ml-auto border-l border-border-subtle pl-3">
+            <button
+              onClick={handleOpenUbicaciones}
+              title={t('location')}
+              className="p-2 rounded-lg text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleOpenDistancia}
+              title={t('distance')}
+              className="p-2 rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-violet-50 transition-colors"
+            >
+              <Ruler className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleCleanExpired}
+              disabled={cleaningExpired}
+              title={t('cleanExpired')}
+              className="p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              {cleaningExpired ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Selection Action Bar */}
