@@ -1676,7 +1676,7 @@
       "loadingSessions": "Cargando sesiones...",
       "noSessions": "Sin sesiones",
       "noSessionsDesc": "Este usuario no tiene sesiones registradas",
-      "activeSessionsCount": "{count} activas",
+      "activeSessionsCount": "{active} activas de {total} sesión(es)",
       "yourSession": "Tu sesion",
       "connected": "Conectado",
       "activity": "Actividad",
@@ -1687,6 +1687,8 @@
       "password": "Contrasena",
       "phone": "Telefono",
       "role": "Rol",
+      "placeholderName": "Juan Pérez",
+      "placeholderEmail": "usuario@ejemplo.com",
       "selectRole": "Seleccionar rol",
       "cancel": "Cancelar",
       "createUser": "Crear usuario",
@@ -1707,6 +1709,7 @@
       "batchSuccess": "{count} usuario(s) {action} exitosamente",
       "batchError": "Error al cambiar el estado de los usuarios",
       "supervisor": {
+        "activeSessionsCount": "{active} activas de {total} sesión(es)",
         "loading": "Cargando...",
         "refresh": "Actualizar",
         "assignSellers": "Asignar Vendedores",
@@ -1865,6 +1868,7 @@
       "deviceListUpdated": "Lista de dispositivos actualizada",
       "cannotRevokeSelf": "No puedes revocar tu propia sesion activa",
       "sessionRevokedSuccess": "Sesion de {name} revocada exitosamente",
+      "revokeReasonAdmin": "Revocada por administrador",
       "errorRevokingSession": "Error al revocar la sesion. Intenta de nuevo.",
       "expiredCleaned": "{count} sesion(es) expirada(s) eliminada(s)"
     }

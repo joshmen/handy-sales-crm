@@ -873,7 +873,7 @@ function AdminUsersView() {
     }
     try {
       setRevokingId(sessionItem.id);
-      await deviceSessionService.revokeSession(sessionItem.id, 'Revoked by admin');
+      await deviceSessionService.revokeSession(sessionItem.id, t('revokeReasonAdmin'));
       toast.success(t('sessionRevoked', { name: sessionItem.usuarioNombre }));
       // Refresh drawer sessions
       if (drawerUser) {
@@ -1233,7 +1233,7 @@ function AdminUsersView() {
           }}
           onRowClick={(user) => handleOpenSessionsDrawer(user)}
           loading={isLoading}
-          loadingMessage="Cargando usuarios..."
+          loadingMessage={t('loadingUsers')}
           emptyIcon={<Users className="w-12 h-12" />}
           emptyTitle={t('noUsers')}
           emptyMessage={t('noUsersDesc')}
@@ -1352,7 +1352,7 @@ function AdminUsersView() {
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                   className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Juan Perez"
+                  placeholder={t('placeholderName')}
                 />
               </div>
               <div>
@@ -1362,7 +1362,7 @@ function AdminUsersView() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="usuario@ejemplo.com"
+                  placeholder={t('placeholderEmail')}
                 />
               </div>
               <div>

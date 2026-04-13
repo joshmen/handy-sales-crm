@@ -1695,6 +1695,7 @@
       "superAdmin": "Super Admin",
       "companyAdmin": "Company administrator",
       "supervisor": {
+        "activeSessionsCount": "{active} active of {total} session(s)",
         "loading": "Loading...",
         "refresh": "Refresh",
         "assignSellers": "Assign Vendors",
@@ -1734,7 +1735,7 @@
       "inactiveBadge": "Inactive",
       "noActivity": "No activity",
       "activeSessionCount": "{count} active",
-      "activeSessionsCount": "{count} active",
+      "activeSessionsCount": "{active} active of {total} session(s)",
       "sessionCount": "{count} session",
       "sessionsCount": "{count} sessions",
       "columnName": "Name",
@@ -1774,6 +1775,8 @@
       "password": "Password",
       "phone": "Phone",
       "role": "Role",
+      "placeholderName": "John Doe",
+      "placeholderEmail": "user@example.com",
       "selectRole": "Select role",
       "createUser": "Create user",
       "editUser": "Edit user",
@@ -1865,6 +1868,7 @@
       "deviceListUpdated": "Device list updated",
       "cannotRevokeSelf": "You cannot revoke your own active session",
       "sessionRevokedSuccess": "Session of {name} revoked successfully",
+      "revokeReasonAdmin": "Revoked by administrator",
       "errorRevokingSession": "Error revoking session. Try again.",
       "expiredCleaned": "{count} expired session(s) deleted"
     }

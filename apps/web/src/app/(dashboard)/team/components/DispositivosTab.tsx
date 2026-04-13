@@ -106,7 +106,7 @@ export function DispositivosTab() {
     setConfirmAction(null);
     try {
       setRevokingId(session.id);
-      await deviceSessionService.revokeSession(session.id, 'Revocada por administrador');
+      await deviceSessionService.revokeSession(session.id, t('revokeReasonAdmin'));
       toast.success(t('sessionRevokedSuccess', { name: session.usuarioNombre }));
       await fetchSessions();
     } catch (err) {
