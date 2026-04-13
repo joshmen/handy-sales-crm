@@ -525,13 +525,13 @@ export default function AutomationsPage() {
                                 {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </td>
                               <td className="px-5 py-2.5 font-medium text-foreground">
-                                {exec.templateNombre}
+                                {tName(exec.templateSlug, exec.templateNombre)}
                               </td>
                               <td className="px-5 py-2.5">
                                 <StatusBadge status={exec.status} />
                               </td>
                               <td className="px-5 py-2.5 text-muted-foreground max-w-xs truncate">
-                                {exec.errorMessage || exec.actionTaken}
+                                {tApi(exec.errorMessage || exec.actionTaken)}
                               </td>
                             </tr>
                           ))}
@@ -544,10 +544,10 @@ export default function AutomationsPage() {
                       {historial.map(exec => (
                         <div key={exec.id} className="px-4 py-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm text-foreground">{exec.templateNombre}</span>
+                            <span className="font-medium text-sm text-foreground">{tName(exec.templateSlug, exec.templateNombre)}</span>
                             <StatusBadge status={exec.status} size="xs" />
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">{exec.errorMessage || exec.actionTaken}</p>
+                          <p className="text-xs text-muted-foreground truncate">{tApi(exec.errorMessage || exec.actionTaken)}</p>
                           <p className="text-[10px] text-muted-foreground mt-1">
                             {formatDate(exec.ejecutadoEn)}
                           </p>
