@@ -112,6 +112,13 @@ export default function AutomationsPage() {
     if (!key) return cat;
     try { return t(key); } catch { return cat; }
   };
+  const tAction = (text: string) => {
+    if (!text) return '';
+    // Strip [TEST] prefix, translate the core message, re-add prefix
+    const testPrefix = text.startsWith('[TEST] ') ? '[TEST] ' : '';
+    const core = testPrefix ? text.slice(7) : text;
+    return testPrefix + tApi(core);
+  };
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);
   const [historial, setHistorial] = useState<AutomationExecution[]>([]);
   const [historialTotal, setHistorialTotal] = useState(0);
@@ -531,7 +538,7 @@ export default function AutomationsPage() {
                                 <StatusBadge status={exec.status} />
                               </td>
                               <td className="px-5 py-2.5 text-muted-foreground max-w-xs truncate">
-                                {tApi(exec.errorMessage || exec.actionTaken)}
+                                {tAction(exec.errorMessage || exec.actionTaken)}
                               </td>
                             </tr>
                           ))}
@@ -547,7 +554,7 @@ export default function AutomationsPage() {
                             <span className="font-medium text-sm text-foreground">{tName(exec.templateSlug, exec.templateNombre)}</span>
                             <StatusBadge status={exec.status} size="xs" />
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">{tApi(exec.errorMessage || exec.actionTaken)}</p>
+                          <p className="text-xs text-muted-foreground truncate">{tAction(exec.errorMessage || exec.actionTaken)}</p>
                           <p className="text-[10px] text-muted-foreground mt-1">
                             {formatDate(exec.ejecutadoEn)}
                           </p>
