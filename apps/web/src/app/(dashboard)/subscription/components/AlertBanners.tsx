@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import type { SubscriptionStatus } from "@/types/subscription";
 import { AlertTriangle, CreditCard, Sparkles, Loader2, RotateCcw } from "lucide-react";
@@ -16,6 +17,8 @@ export function AlertBanners({
   subscription, processing, trialCheckoutLoading,
   onReactivate, onTrialCheckout,
 }: AlertBannersProps) {
+  const t = useTranslations('subscription.alerts');
+
   return (
     <>
       {/* Past due */}
@@ -23,11 +26,11 @@ export function AlertBanners({
         <div role="alert" className="flex items-start gap-3 p-4 bg-muted/40 dark:bg-muted/30 border-l-4 border-l-amber-500 border border-border rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-amber-800 dark:text-amber-300">Pago pendiente</p>
+            <p className="font-medium text-amber-800 dark:text-amber-300">{t('pastDueTitle')}</p>
             <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-              No pudimos procesar tu último pago. Actualiza tu método de pago para evitar la suspensión del servicio.
+              {t('pastDueDesc')}
               {subscription.gracePeriodEnd && (
-                <> Tienes hasta el <strong>{new Date(subscription.gracePeriodEnd).toLocaleDateString("es-MX")}</strong>.</>
+                <> {t('pastDueGrace', { date: new Date(subscription.gracePeriodEnd).toLocaleDateString() })}</>
               )}
             </p>
           </div>
@@ -39,9 +42,9 @@ export function AlertBanners({
         <div role="alert" className="flex items-start gap-3 p-4 bg-muted/40 dark:bg-muted/30 border-l-4 border-l-red-500 border border-border rounded-lg">
           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-red-800 dark:text-red-300">Suscripción expirada</p>
+            <p className="font-medium text-red-800 dark:text-red-300">{t('expiredTitle')}</p>
             <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-              Tu suscripción ha expirado. Renueva para continuar usando todas las funciones.
+              {t('expiredDesc')}
             </p>
           </div>
         </div>
@@ -52,9 +55,9 @@ export function AlertBanners({
         <div role="alert" className="flex items-start gap-3 p-4 bg-muted/40 dark:bg-muted/30 border-l-4 border-l-amber-500 border border-border rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="font-medium text-amber-800 dark:text-amber-300">Cancelación programada</p>
+            <p className="font-medium text-amber-800 dark:text-amber-300">{t('cancellationTitle')}</p>
             <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-              Tu suscripción se cancelará el <strong>{new Date(subscription.cancellationScheduledFor).toLocaleDateString("es-MX")}</strong>. Mantendrás acceso completo hasta esa fecha.
+              {t('cancellationDesc', { date: new Date(subscription.cancellationScheduledFor).toLocaleDateString() })}
             </p>
           </div>
           <Button
@@ -69,7 +72,7 @@ export function AlertBanners({
             ) : (
               <>
                 <RotateCcw className="h-4 w-4 mr-1.5" />
-                Reanudar suscripción
+                {t('resumeSubscription')}
               </>
             )}
           </Button>
@@ -105,13 +108,18 @@ export function AlertBanners({
                     : "text-red-800 dark:text-red-300"
             }`}>
               {subscription.trialCardCollected
-                ? "Tarjeta registrada \u2014 tu trial continúa"
-                : `Tu periodo de prueba termina en ${subscription.daysRemaining} día${subscription.daysRemaining !== 1 ? "s" : ""}`}
+                ? t('trialCardCollected')
+                : t('trialEndsIn', {
+                    days: subscription.daysRemaining,
+                    dayLabel: subscription.daysRemaining !== 1 ? t('trialDays') : t('trialDay'),
+                  })}
             </p>
             <p className="text-sm text-muted-foreground mt-0.5">
               {subscription.trialCardCollected
-                ? `Se cobrará automáticamente cuando termine tu trial${subscription.trialEndsAt ? ` el ${new Date(subscription.trialEndsAt).toLocaleDateString("es-MX")}` : ""}.`
-                : "Agrega un método de pago para no perder acceso a las funciones PRO."}
+                ? (subscription.trialEndsAt
+                    ? t('trialChargeAuto', { date: new Date(subscription.trialEndsAt).toLocaleDateString() })
+                    : t('trialChargeAutoNoDate'))
+                : t('trialAddPayment')}
             </p>
           </div>
           {!subscription.trialCardCollected && (
@@ -126,7 +134,7 @@ export function AlertBanners({
               ) : (
                 <>
                   <CreditCard className="h-4 w-4 mr-1.5" />
-                  Agregar método de pago
+                  {t('addPaymentMethod')}
                 </>
               )}
             </Button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { SbBilling, SbSubscription } from '@/components/layout/DashboardIcons';
 
@@ -18,6 +19,7 @@ interface TimbresModalProps {
  *   2. Otherwise → Timbres exhausted → Buy more CTA
  */
 export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps) {
+  const t = useTranslations('billing.timbres');
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Focus trap + Escape key
@@ -61,7 +63,7 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
 
   if (!open) return null;
 
-  const isNoPlan = errorMessage.includes('no incluye');
+  const isNoPlan = errorMessage.includes('no incluye') || errorMessage.includes('does not include');
 
   return (
     <div
@@ -85,7 +87,7 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
         {isNoPlan ? (
           <>
             <h3 id="timbres-modal-title" className="text-xl font-bold text-foreground mb-2">
-              Tu plan no incluye facturación
+              {t('noPlanTitle')}
             </h3>
             <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
               {errorMessage}
@@ -93,41 +95,41 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
             <div className="flex flex-col gap-2.5">
               <Link href="/subscription">
                 <Button className="w-full h-11 bg-success hover:bg-success/90 text-white font-medium text-sm rounded-xl">
-                  Actualizar plan &rarr;
+                  {t('upgradePlan')}
                 </Button>
               </Link>
               <Button variant="outline" className="w-full h-11 rounded-xl" onClick={onClose}>
-                Cerrar
+                {t('close')}
               </Button>
             </div>
           </>
         ) : (
           <>
             <h3 id="timbres-modal-title" className="text-xl font-bold text-foreground mb-2">
-              Timbres agotados
+              {t('exhaustedTitle')}
             </h3>
             <p className="text-sm text-muted-foreground mb-1.5 leading-relaxed">
               {errorMessage}
             </p>
             <p className="text-xs text-muted-foreground/70 mb-6">
-              Los timbres se renuevan cada mes. También puedes comprar paquetes adicionales.
+              {t('exhaustedDescription')}
             </p>
             <div className="flex flex-col gap-2.5">
               <Link href="/subscription/buy-timbres">
                 <Button className="w-full h-11 bg-success hover:bg-success/90 text-white font-medium text-sm rounded-xl">
-                  Comprar timbres adicionales &rarr;
+                  {t('buyStamps')}
                 </Button>
               </Link>
               <Link href="/subscription">
                 <Button variant="outline" className="w-full h-11 rounded-xl">
-                  Ver mi plan
+                  {t('viewPlan')}
                 </Button>
               </Link>
               <button
                 className="text-xs text-muted-foreground hover:text-foreground py-2 transition-colors"
                 onClick={onClose}
               >
-                Cerrar
+                {t('close')}
               </button>
             </div>
           </>

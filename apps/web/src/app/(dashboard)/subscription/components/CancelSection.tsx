@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ export function CancelSection({
   subscription, currentPlan, processing,
   showCancelDialog, onShowCancelDialog, onCancel,
 }: CancelSectionProps) {
+  const t = useTranslations('subscription.cancel');
   const showBanner = subscription.hasStripe
     && subscription.subscriptionStatus !== "Cancelled"
     && !subscription.cancellationScheduledFor;
@@ -39,8 +41,8 @@ export function CancelSection({
             <div className="flex items-center gap-3">
               <ShieldAlert className="h-4 w-4 text-red-500 dark:text-red-400" />
               <div>
-                <p className="text-sm font-medium text-red-700 dark:text-red-300">Cancelar suscripción</p>
-                <p className="text-xs text-red-600/70 dark:text-red-400/60">Mantendrás acceso hasta el final del período pagado</p>
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">{t('title')}</p>
+                <p className="text-xs text-red-600/70 dark:text-red-400/60">{t('description')}</p>
               </div>
             </div>
             <Button
@@ -49,7 +51,7 @@ export function CancelSection({
               onClick={() => onShowCancelDialog(true)}
               className="border-red-300 text-red-600 hover:text-red-700 hover:bg-red-100 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:border-red-700"
             >
-              Cancelar plan
+              {t('cancelPlan')}
             </Button>
           </div>
         </div>
@@ -62,35 +64,33 @@ export function CancelSection({
             <div className="mx-auto mb-2">
               <SbAlert size={48} />
             </div>
-            <DialogTitle className="text-center">Cancelar suscripción</DialogTitle>
+            <DialogTitle className="text-center">{t('dialogTitle')}</DialogTitle>
             <DialogDescription className="text-center">
-              Tu suscripción seguirá activa hasta el final del período actual
-              {subscription.fechaExpiracion && (
-                <> (<strong>{new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX")}</strong>)</>
-              )}.
-              Después de esa fecha perderás acceso a las funciones de tu plan.
+              {subscription.fechaExpiracion
+                ? t('dialogDesc', { date: new Date(subscription.fechaExpiracion).toLocaleDateString() })
+                : t('dialogDescNoDate')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
-            <p className="font-medium mb-2 text-foreground">Lo que perderás:</p>
+            <p className="font-medium mb-2 text-foreground">{t('whatYouLose')}</p>
             <ul className="space-y-1.5 text-muted-foreground">
               {currentPlan && currentPlan.maxUsuarios > 2 && (
                 <li className="flex items-center gap-2">
                   <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                  Hasta {currentPlan.maxUsuarios} usuarios (baja a 2)
+                  {t('loseUsers', { max: currentPlan.maxUsuarios })}
                 </li>
               )}
               {currentPlan?.incluyeReportes && (
                 <li className="flex items-center gap-2">
                   <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                  Reportes avanzados
+                  {t('loseReports')}
                 </li>
               )}
               {currentPlan?.incluyeSoportePrioritario && (
                 <li className="flex items-center gap-2">
                   <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                  Soporte prioritario
+                  {t('losePriority')}
                 </li>
               )}
             </ul>
@@ -102,7 +102,7 @@ export function CancelSection({
               onClick={() => onShowCancelDialog(false)}
               className="sm:flex-1"
             >
-              Conservar mi plan
+              {t('keepPlan')}
             </Button>
             <Button
               variant="destructive"
@@ -113,7 +113,7 @@ export function CancelSection({
               {processing ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Confirmar cancelación
+              {t('confirmCancel')}
             </Button>
           </DialogFooter>
         </DialogContent>

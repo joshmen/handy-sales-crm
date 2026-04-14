@@ -82,6 +82,13 @@ export default function SubscriptionPage() {
     fetchData();
   }, [fetchData]);
 
+  // Auto-show plans when subscription is expired or cancelled
+  useEffect(() => {
+    if (subscription && (subscription.subscriptionStatus === "Expired" || subscription.subscriptionStatus === "Cancelled")) {
+      setShowPlans(true);
+    }
+  }, [subscription]);
+
   const handleUpgrade = async (planCode: string) => {
     setProcessing(true);
     try {
@@ -94,7 +101,8 @@ export default function SubscriptionPage() {
       setCheckoutPlan(planCode);
     } catch (err) {
       console.error("Error creating checkout:", err);
-      toast.error(t("errorCheckout"));
+      const apiMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(t("errorCheckout"), { description: apiMessage || undefined });
       setProcessing(false);
     }
   };
@@ -209,7 +217,7 @@ export default function SubscriptionPage() {
           </Button>
         }
       >
-        <div className="overflow-hidden">
+        <div className="overflow-hidden rounded-xl bg-white">
           <EmbeddedCheckoutProvider
             stripe={stripePromise}
             options={{ clientSecret: checkoutClientSecret }}

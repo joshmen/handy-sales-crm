@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/subscription";
@@ -38,7 +39,8 @@ export interface DowngradeWarning {
 export function getDowngradeInfo(
   plan: SubscriptionPlan,
   currentPlanCode: string | null,
-  subscription: SubscriptionStatus | null
+  subscription: SubscriptionStatus | null,
+  t?: (key: string, params?: Record<string, string | number>) => string
 ): DowngradeWarning {
   const effectiveCurrent = normalizePlanCode(currentPlanCode);
   const targetCode = normalizePlanCode(plan.codigo);
@@ -50,11 +52,17 @@ export function getDowngradeInfo(
   const violations: string[] = [];
   if (isDowngrade && subscription) {
     if (subscription.activeUsuarios > plan.maxUsuarios)
-      violations.push(`${subscription.activeUsuarios} usuarios activos (máx. ${plan.maxUsuarios})`);
+      violations.push(t
+        ? t('usersViolation', { active: subscription.activeUsuarios, max: plan.maxUsuarios })
+        : `${subscription.activeUsuarios} users (max ${plan.maxUsuarios})`);
     if (subscription.activeProductos > plan.maxProductos)
-      violations.push(`${subscription.activeProductos} productos activos (máx. ${plan.maxProductos})`);
+      violations.push(t
+        ? t('productsViolation', { active: subscription.activeProductos, max: plan.maxProductos })
+        : `${subscription.activeProductos} products (max ${plan.maxProductos})`);
     if (subscription.activeClientes > plan.maxClientesPorMes)
-      violations.push(`${subscription.activeClientes} clientes activos (máx. ${plan.maxClientesPorMes})`);
+      violations.push(t
+        ? t('clientsViolation', { active: subscription.activeClientes, max: plan.maxClientesPorMes })
+        : `${subscription.activeClientes} clients (max ${plan.maxClientesPorMes})`);
   }
 
   return { isDowngrade, violations, isFreeBlocked };
@@ -76,30 +84,32 @@ export function PlanComparisonPage({
   plans, subscription, billingInterval, setBillingInterval,
   processing, onUpgrade, onBack,
 }: PlanComparisonPageProps) {
+  const t = useTranslations('subscription.comparison');
+
   return (
     <PageHeader
       breadcrumbs={[
-        { label: "Inicio", href: "/dashboard" },
-        { label: "Suscripción", href: "/subscription" },
-        { label: "Cambiar plan" },
+        { label: t('home'), href: "/dashboard" },
+        { label: t('subscription'), href: "/subscription" },
+        { label: t('changePlan') },
       ]}
-      title="Cambiar plan"
-      subtitle="Compara planes y elige el que mejor se adapte a tu negocio"
+      title={t('changePlan')}
+      subtitle={t('changeSubtitle')}
       actions={
         <Button variant="outline" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver
+          {t('back')}
         </Button>
       }
     >
       <div className="space-y-6">
         {/* Billing interval toggle */}
         <div className="flex items-center justify-center gap-3">
-          <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "month" ? "text-foreground" : "text-muted-foreground"}`}>Mensual</span>
+          <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "month" ? "text-foreground" : "text-muted-foreground"}`}>{t('monthly')}</span>
           <button
             role="switch"
             aria-checked={billingInterval === "year"}
-            aria-label="Facturación anual"
+            aria-label={t('annualBillingLabel')}
             onClick={() => setBillingInterval(billingInterval === "month" ? "year" : "month")}
             className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
             style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
@@ -110,11 +120,11 @@ export function PlanComparisonPage({
             />
           </button>
           <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "year" ? "text-foreground" : "text-muted-foreground"}`}>
-            Anual
+            {t('annual')}
           </span>
           {billingInterval === "year" && (
             <span className="text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2.5 py-0.5 rounded-full animate-[subFadeIn_0.3s_ease-out]">
-              -17%
+              {t('discount')}
             </span>
           )}
         </div>
@@ -122,11 +132,13 @@ export function PlanComparisonPage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {plans.map((plan) => {
             const effectivePlan = normalizePlanCode(subscription.planTipo);
-            const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
+            const isExpiredOrCancelled = subscription.subscriptionStatus === "Expired" || subscription.subscriptionStatus === "Cancelled";
+            const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan && !isExpiredOrCancelled;
+            const isRenewable = normalizePlanCode(plan.codigo) === effectivePlan && isExpiredOrCancelled;
             const isPopular = plan.codigo === "PRO";
             const price = billingInterval === "year" ? plan.precioAnual : plan.precioMensual;
             const monthlyEquivalent = billingInterval === "year" ? Math.round(plan.precioAnual / 12) : plan.precioMensual;
-            const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription);
+            const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription, t);
             const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
             const isDisabled = isCurrent || processing || plan.codigo === "FREE" || isBlocked;
 
@@ -135,6 +147,7 @@ export function PlanComparisonPage({
                 key={plan.id}
                 plan={plan}
                 isCurrent={isCurrent}
+                isRenewable={isRenewable}
                 isPopular={isPopular}
                 price={price}
                 monthlyEquivalent={monthlyEquivalent}
@@ -144,6 +157,7 @@ export function PlanComparisonPage({
                 isDisabled={isDisabled}
                 downgrade={downgrade}
                 onUpgrade={() => onUpgrade(plan.codigo)}
+                t={t}
               />
             );
           })}
@@ -166,22 +180,26 @@ interface QuickPlanComparisonProps {
 export function QuickPlanComparison({
   plans, subscription, processing, onUpgrade, onShowFullComparison,
 }: QuickPlanComparisonProps) {
+  const t = useTranslations('subscription.comparison');
+
   return (
     <Card className="page-animate-delay-1">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-muted-foreground">Planes disponibles</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground">{t('availablePlans')}</h3>
           <Button variant="ghost" size="sm" onClick={onShowFullComparison} className="text-green-600 hover:text-green-700 hover:bg-muted/40 dark:hover:bg-muted/30">
-            Ver comparativa completa
+            {t('viewFullComparison')}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {plans.map((plan) => {
             const effectivePlan = normalizePlanCode(subscription.planTipo);
-            const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
+            const isExpiredOrCancelled = subscription.subscriptionStatus === "Expired" || subscription.subscriptionStatus === "Cancelled";
+            const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan && !isExpiredOrCancelled;
+            const isRenewable = normalizePlanCode(plan.codigo) === effectivePlan && isExpiredOrCancelled;
             const price = plan.precioMensual;
-            const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription);
+            const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription, t);
             const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
 
             return (
@@ -190,7 +208,9 @@ export function QuickPlanComparison({
                 className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                   isCurrent
                     ? "border-green-200 dark:border-green-800 bg-muted/30 dark:bg-muted/20"
-                    : "border-border hover:border-green-200 dark:hover:border-green-800 hover:bg-accent/50"
+                    : isRenewable
+                      ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10"
+                      : "border-border hover:border-green-200 dark:hover:border-green-800 hover:bg-accent/50"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -199,29 +219,34 @@ export function QuickPlanComparison({
                       <span className="font-semibold text-foreground">{plan.nombre}</span>
                       {isCurrent && (
                         <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                          Actual
+                          {t('current')}
+                        </span>
+                      )}
+                      {isRenewable && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                          {t('expired')}
                         </span>
                       )}
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {price === 0 ? "Gratis" : `$${price.toLocaleString("es-MX")} MXN/mes`}
-                      {" · "}{plan.maxUsuarios} usuarios · {plan.maxProductos.toLocaleString()} productos
+                      {price === 0 ? t('free') : `$${price.toLocaleString()} MXN/mes`}
+                      {" · "}{t('users', { count: plan.maxUsuarios })} · {plan.maxProductos.toLocaleString()} {t('products', { count: plan.maxProductos }).split(' ').slice(1).join(' ')}
                     </span>
                   </div>
                 </div>
-                {!isCurrent && !isBlocked && plan.codigo !== "FREE" && (
+                {(isRenewable || (!isCurrent && !isBlocked && plan.codigo !== "FREE")) && (
                   <Button
                     size="sm"
-                    variant={downgrade.isDowngrade ? "outline" : "default"}
+                    variant={isRenewable ? "default" : downgrade.isDowngrade ? "outline" : "default"}
                     onClick={() => onUpgrade(plan.codigo)}
                     disabled={processing}
-                    className={downgrade.isDowngrade ? "" : "bg-success hover:bg-success/90 text-white"}
+                    className={isRenewable ? "bg-success hover:bg-success/90 text-white" : downgrade.isDowngrade ? "" : "bg-success hover:bg-success/90 text-white"}
                   >
-                    {downgrade.isDowngrade ? "Cambiar" : "Actualizar"}
+                    {isRenewable ? t('renew') : downgrade.isDowngrade ? t('change') : t('upgrade')}
                   </Button>
                 )}
-                {isBlocked && !isCurrent && (
-                  <span className="text-xs text-muted-foreground">No disponible</span>
+                {isBlocked && !isCurrent && !isRenewable && (
+                  <span className="text-xs text-muted-foreground">{t('notAvailable')}</span>
                 )}
               </div>
             );
@@ -235,10 +260,11 @@ export function QuickPlanComparison({
 // ── PlanCard (used in full comparison view) ──
 
 function PlanCard({
-  plan, isCurrent, isPopular, price, monthlyEquivalent, billingInterval, processing, isBlocked, isDisabled, downgrade, onUpgrade,
+  plan, isCurrent, isRenewable, isPopular, price, monthlyEquivalent, billingInterval, processing, isBlocked, isDisabled, downgrade, onUpgrade, t,
 }: {
   plan: SubscriptionPlan;
   isCurrent: boolean;
+  isRenewable: boolean;
   isPopular: boolean;
   price: number;
   monthlyEquivalent: number;
@@ -248,6 +274,7 @@ function PlanCard({
   isDisabled: boolean;
   downgrade: DowngradeWarning;
   onUpgrade: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   return (
     <div className="relative">
@@ -263,7 +290,7 @@ function PlanCard({
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
               <span className="bg-success text-success-foreground text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
-                Más popular
+                {t('mostPopular')}
               </span>
             </div>
           )}
@@ -272,7 +299,7 @@ function PlanCard({
             <h3 className="text-xl font-bold text-foreground dark:text-white">{plan.nombre}</h3>
             {isCurrent && (
               <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                Plan actual
+                {t('currentPlan')}
               </span>
             )}
           </div>
@@ -283,7 +310,7 @@ function PlanCard({
                 key={`${plan.codigo}-${billingInterval}`}
                 className="text-4xl font-extrabold text-foreground dark:text-white tracking-tight animate-[subPricePop_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
               >
-                {price === 0 ? "Gratis" : `$${monthlyEquivalent.toLocaleString("es-MX")}`}
+                {price === 0 ? t('free') : `$${monthlyEquivalent.toLocaleString()}`}
               </span>
               {price > 0 && (
                 <span className="text-sm text-muted-foreground dark:text-muted-foreground font-medium">MXN/mes</span>
@@ -291,7 +318,7 @@ function PlanCard({
             </div>
             {price > 0 && billingInterval === "year" && (
               <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1.5 animate-[subFadeIn_0.3s_ease-out]">
-                Facturado ${price.toLocaleString("es-MX")} MXN/año
+                {t('billedAnnually', { price: price.toLocaleString() })}
               </p>
             )}
           </div>
@@ -299,15 +326,15 @@ function PlanCard({
           <ul className="space-y-2.5 flex-1">
             <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxUsuarios} usuarios
+              {t('users', { count: plan.maxUsuarios })}
             </li>
             <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxProductos.toLocaleString()} productos
+              {t('products', { count: plan.maxProductos.toLocaleString() })}
             </li>
             <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxClientesPorMes} clientes/mes
+              {t('clientsPerMonth', { count: plan.maxClientesPorMes })}
             </li>
             <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-foreground/70 dark:text-muted-foreground/60" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeReportes ? (
@@ -315,7 +342,7 @@ function PlanCard({
               ) : (
                 <X className="h-4 w-4 text-muted-foreground/60 dark:text-foreground/80 flex-shrink-0" />
               )}
-              Reportes avanzados
+              {t('advancedReports')}
             </li>
             <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-foreground/70 dark:text-muted-foreground/60" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeSoportePrioritario ? (
@@ -323,7 +350,7 @@ function PlanCard({
               ) : (
                 <X className="h-4 w-4 text-muted-foreground/60 dark:text-foreground/80 flex-shrink-0" />
               )}
-              Soporte prioritario
+              {t('prioritySupport')}
             </li>
           </ul>
 
@@ -342,8 +369,8 @@ function PlanCard({
                   : "text-amber-700 dark:text-amber-400"
               }`}>
                 {downgrade.isFreeBlocked
-                  ? "No disponible con historial de pago"
-                  : `Excedes límites: ${downgrade.violations.map(v => v.split(" (")[0]).join(", ")}`}
+                  ? t('notAvailableWithHistory')
+                  : t('exceedsLimits', { violations: downgrade.violations.map(v => v.split(" (")[0]).join(", ") })}
               </span>
             </div>
           )}
@@ -354,11 +381,13 @@ function PlanCard({
                 ? "bg-surface-3 dark:bg-foreground text-muted-foreground dark:text-muted-foreground cursor-default"
                 : isDisabled
                   ? "bg-surface-3 dark:bg-foreground text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
-                  : downgrade.isDowngrade
-                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                    : isPopular
-                      ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
-                      : "bg-foreground dark:bg-surface-2 text-white dark:text-foreground hover:bg-foreground dark:hover:bg-surface-3"
+                  : isRenewable
+                    ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
+                    : downgrade.isDowngrade
+                      ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
+                      : isPopular
+                        ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
+                        : "bg-foreground dark:bg-surface-2 text-white dark:text-foreground hover:bg-foreground dark:hover:bg-surface-3"
             }`}
             disabled={isDisabled}
             onClick={onUpgrade}
@@ -366,17 +395,22 @@ function PlanCard({
             {processing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isCurrent ? (
-              "Plan actual"
+              t('currentPlan')
             ) : isBlocked ? (
-              downgrade.isFreeBlocked ? "No disponible" : "Límites excedidos"
+              downgrade.isFreeBlocked ? t('notAvailable') : t('limitsExceeded')
+            ) : isRenewable ? (
+              <>
+                {t('renew')}
+                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+              </>
             ) : downgrade.isDowngrade ? (
               <>
-                Cambiar plan
+                {t('changePlanBtn')}
                 <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
               </>
             ) : (
               <>
-                Actualizar
+                {t('upgrade')}
                 <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
               </>
             )}

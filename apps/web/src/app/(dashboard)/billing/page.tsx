@@ -14,6 +14,7 @@ import {
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { toast } from '@/hooks/useToast';
 import { getDashboard, getTimbres } from '@/services/api/billing';
 import type { BillingDashboard, TimbresBalance, FacturasPorDia, ClienteFacturacion } from '@/types/billing';
@@ -31,6 +32,7 @@ export default function BillingDashboardPage() {
   const [timbres, setTimbres] = useState<TimbresBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const { formatCurrency } = useFormatters();
+  const { tApi } = useBackendTranslation();
 
   useEffect(() => {
     async function load() {
@@ -153,7 +155,7 @@ export default function BillingDashboardPage() {
           <p className="text-xs text-muted-foreground">
             {t('stampsAvailable', { count: timbres.disponibles })}
             {!timbres.allowed && timbres.message && (
-              <span className="text-red-500 ml-2">— {timbres.message}</span>
+              <span className="text-red-500 ml-2">— {tApi(timbres.message)}</span>
             )}
           </p>
         </div>

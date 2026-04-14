@@ -28,7 +28,8 @@ public class SubscriptionReadOnlyMiddleware
         "/stripe",
         "/webhook",
         "/health",
-        "/hubs"
+        "/hubs",
+        "/api/company/settings"
     };
 
     /// <summary>

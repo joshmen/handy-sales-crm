@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { SbPayments } from "@/components/layout/DashboardIcons";
@@ -41,17 +42,19 @@ interface PaymentMethodsProps {
 }
 
 export function PaymentMethods({ paymentMethods, billingLoading, processing, onManageBilling }: PaymentMethodsProps) {
+  const t = useTranslations('subscription.paymentMethod');
+
   return (
     <Card className="page-animate-delay-1">
       <CardContent className="p-5">
         <div className="flex items-center gap-2.5 mb-3">
           <SbPayments size={20} />
-          <h3 className="text-sm font-semibold text-foreground">Método de pago</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t('title')}</h3>
         </div>
         {billingLoading ? (
           <div className="flex items-center gap-2 p-4 border border-border rounded-xl">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Cargando...</span>
+            <span className="text-sm text-muted-foreground">{t('loading')}</span>
           </div>
         ) : paymentMethods.length > 0 ? (
           <div className="space-y-2">
@@ -65,21 +68,21 @@ export function PaymentMethods({ paymentMethods, billingLoading, processing, onM
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground capitalize">
-                        {pm.cardBrand || "Tarjeta"}
+                        {pm.cardBrand || t('card')}
                       </span>
                       <span className="text-muted-foreground font-mono">
                         <span aria-hidden="true">&bull;&bull;&bull;&bull; </span>
-                        <span className="sr-only">terminada en </span>
+                        <span className="sr-only">{t('endingIn')} </span>
                         {pm.cardLast4}
                       </span>
                       {pm.isDefault && (
                         <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                          Principal
+                          {t('default')}
                         </span>
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      Vence {pm.cardExpMonth?.toString().padStart(2, "0")}/{pm.cardExpYear}
+                      {t('expires', { month: pm.cardExpMonth?.toString().padStart(2, "0") || "00", year: pm.cardExpYear || "00" })}
                     </span>
                   </div>
                 </div>
@@ -89,7 +92,7 @@ export function PaymentMethods({ paymentMethods, billingLoading, processing, onM
                   onClick={onManageBilling}
                   disabled={processing}
                 >
-                  Actualizar
+                  {t('update')}
                   <ExternalLink className="h-3 w-3 ml-1 opacity-50" />
                 </Button>
               </div>
@@ -98,7 +101,7 @@ export function PaymentMethods({ paymentMethods, billingLoading, processing, onM
         ) : (
           <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">
             <CreditCard className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">No hay métodos de pago registrados</span>
+            <span className="text-sm text-muted-foreground">{t('noMethods')}</span>
           </div>
         )}
       </CardContent>
