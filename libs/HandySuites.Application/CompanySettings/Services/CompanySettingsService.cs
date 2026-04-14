@@ -79,6 +79,7 @@ namespace HandySuites.Application.CompanySettings.Services
                     Currency = settings.Currency,
                     Language = settings.Language,
                     Theme = settings.Theme,
+                    Country = settings.Country,
                     SubscriptionPlan = tenant?.PlanTipo ?? "Trial",
                     SubscriptionStatus = tenant?.SubscriptionStatus ?? "Trial",
                     MaxUsers = tenant?.MaxUsuarios,
@@ -141,6 +142,9 @@ namespace HandySuites.Application.CompanySettings.Services
                 if (!string.IsNullOrEmpty(request.Theme))
                     settings.Theme = request.Theme;
 
+                if (!string.IsNullOrEmpty(request.Country))
+                    settings.Country = request.Country;
+
                 settings.ActualizadoPor = userId.ToString();
 
                 var updatedSettings = await _repository.UpdateAsync(settings);
@@ -157,6 +161,7 @@ namespace HandySuites.Application.CompanySettings.Services
                     Currency = updatedSettings.Currency,
                     Language = updatedSettings.Language,
                     Theme = updatedSettings.Theme,
+                    Country = updatedSettings.Country,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };
             }

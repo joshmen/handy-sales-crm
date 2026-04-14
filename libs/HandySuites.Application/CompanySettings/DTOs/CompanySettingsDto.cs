@@ -34,6 +34,9 @@ namespace HandySuites.Application.CompanySettings.DTOs
         [JsonPropertyName("theme")]
         public string Theme { get; set; } = "light";
 
+        [JsonPropertyName("country")]
+        public string Country { get; set; } = "MX";
+
         [JsonPropertyName("cloudinaryFolder")]
         public string? CloudinaryFolder { get; set; }
 
@@ -81,6 +84,8 @@ namespace HandySuites.Application.CompanySettings.DTOs
         public string? Currency { get; set; }
         [JsonPropertyName("theme")]
         public string? Theme { get; set; }
+        [JsonPropertyName("country")]
+        public string? Country { get; set; }
     }
 
     public class UploadLogoResponse

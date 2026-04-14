@@ -32,6 +32,7 @@ export interface CompanySettings {
   currency: string;
   language: string;
   theme: string;
+  country: string;
   cloudinaryFolder?: string;
   subscriptionStatus: string;
   subscriptionPlan: string;
@@ -67,6 +68,7 @@ export interface UpdateCompanyRequest {
   language?: string;
   currency?: string;
   theme?: string;
+  country?: string;
 }
 
 export interface ApiResponse<T> {

@@ -50,6 +50,10 @@ public class CompanySetting : AuditableEntity
     [MaxLength(10)]
     public string Theme { get; set; } = "light";
 
+    [Column("country")]
+    [MaxLength(2)]
+    public string Country { get; set; } = "MX";
+
     /// <summary>
     /// JSON config for which notification types are enabled at tenant level.
     /// Keys match automation handler slugs and order event types.
