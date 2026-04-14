@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Sun, Moon, Save, Check, Loader2 } from 'lucide-react';
+import { Sun, Moon, Save, Check, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/stores/useUIStore';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useTranslations } from 'next-intl';
 
 const AMERICAS_TIMEZONES = [
   // Mexico
@@ -59,6 +60,36 @@ const LANGUAGES = [
   { value: 'pt', label: 'Português' },
 ];
 
+const COUNTRIES = [
+  // Mexico
+  { value: 'MX', label: 'MX — México' },
+  // USA & Canada
+  { value: 'US', label: 'US — Estados Unidos' },
+  { value: 'CA', label: 'CA — Canadá' },
+  // Central America
+  { value: 'GT', label: 'GT — Guatemala' },
+  { value: 'HN', label: 'HN — Honduras' },
+  { value: 'SV', label: 'SV — El Salvador' },
+  { value: 'NI', label: 'NI — Nicaragua' },
+  { value: 'CR', label: 'CR — Costa Rica' },
+  { value: 'PA', label: 'PA — Panamá' },
+  // South America
+  { value: 'CO', label: 'CO — Colombia' },
+  { value: 'VE', label: 'VE — Venezuela' },
+  { value: 'EC', label: 'EC — Ecuador' },
+  { value: 'PE', label: 'PE — Perú' },
+  { value: 'BR', label: 'BR — Brasil' },
+  { value: 'CL', label: 'CL — Chile' },
+  { value: 'AR', label: 'AR — Argentina' },
+  { value: 'UY', label: 'UY — Uruguay' },
+  { value: 'PY', label: 'PY — Paraguay' },
+  { value: 'BO', label: 'BO — Bolivia' },
+  // Caribbean
+  { value: 'CU', label: 'CU — Cuba' },
+  { value: 'DO', label: 'DO — República Dominicana' },
+  { value: 'PR', label: 'PR — Puerto Rico' },
+];
+
 const CURRENCIES = [
   { value: 'MXN', label: 'MXN — Peso Mexicano ($)' },
   { value: 'USD', label: 'USD — Dólar Estadounidense ($)' },
@@ -81,12 +112,14 @@ const CURRENCIES = [
 ];
 
 export const AppearanceTab: React.FC = () => {
+  const t = useTranslations('settings.appearance');
   const { theme, setTheme } = useTheme();
   const isDarkMode = theme === 'dark';
   const { settings, updateSettings, isUpdating } = useCompany();
   const [language, setLanguage] = useState('es');
   const [timezone, setTimezone] = useState('America/Mexico_City');
   const [currency, setCurrency] = useState('MXN');
+  const [country, setCountry] = useState('MX');
   const [saved, setSaved] = useState(false);
 
   // Initialize from CompanyContext settings (DB-backed)
@@ -95,6 +128,7 @@ export const AppearanceTab: React.FC = () => {
       if (settings.timezone) setTimezone(settings.timezone);
       if (settings.language) setLanguage(settings.language);
       if (settings.currency) setCurrency(settings.currency);
+      if (settings.country) setCountry(settings.country);
       // Theme is already managed by Zustand — sync from DB on first load only
       if (settings.theme && !localStorage.getItem('handy-suites-theme')) {
         setTheme(settings.theme === 'dark' ? 'dark' : 'light');
@@ -104,7 +138,7 @@ export const AppearanceTab: React.FC = () => {
 
   const handleSave = async () => {
     const currentTheme = isDarkMode ? 'dark' : 'light';
-    const success = await updateSettings({ timezone, language, currency, theme: currentTheme });
+    const success = await updateSettings({ timezone, language, currency, country, theme: currentTheme });
     if (success) {
       // Also write to localStorage for instant hydration on next page load
       localStorage.setItem('handysuites-timezone', timezone);
@@ -121,16 +155,16 @@ export const AppearanceTab: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Apariencia</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Tema</Label>
+            <Label>{t('theme')}</Label>
             <div className="flex gap-4">
               <button
                 aria-pressed={!isDarkMode}
-                aria-label="Tema claro"
+                aria-label={t('lightThemeLabel')}
                 onClick={() => setTheme('light')}
                 className={cn(
                   "flex items-center gap-2 rounded-lg border-2 p-4 transition-colors",
@@ -140,11 +174,11 @@ export const AppearanceTab: React.FC = () => {
                 )}
               >
                 <Sun className="h-5 w-5" aria-hidden="true" />
-                <span>Claro</span>
+                <span>{t('lightTheme')}</span>
               </button>
               <button
                 aria-pressed={isDarkMode}
-                aria-label="Tema oscuro"
+                aria-label={t('darkThemeLabel')}
                 onClick={() => setTheme('dark')}
                 className={cn(
                   "flex items-center gap-2 rounded-lg border-2 p-4 transition-colors",
@@ -154,7 +188,7 @@ export const AppearanceTab: React.FC = () => {
                 )}
               >
                 <Moon className="h-5 w-5" aria-hidden="true" />
-                <span>Oscuro</span>
+                <span>{t('darkTheme')}</span>
               </button>
             </div>
           </div>
@@ -162,33 +196,47 @@ export const AppearanceTab: React.FC = () => {
           <Separator />
 
           <div className="space-y-2">
-            <Label htmlFor="language">Idioma</Label>
+            <Label htmlFor="language">{t('language')}</Label>
             <SearchableSelect
               options={LANGUAGES}
               value={language}
               onChange={(val) => setLanguage(String(val ?? 'es'))}
-              placeholder="Seleccionar idioma"
+              placeholder={t('selectLanguage')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="timezone">Zona horaria</Label>
+            <Label htmlFor="timezone">{t('timezone')}</Label>
             <SearchableSelect
               options={AMERICAS_TIMEZONES}
               value={timezone}
               onChange={(val) => setTimezone(String(val ?? 'America/Mexico_City'))}
-              placeholder="Seleccionar zona horaria"
+              placeholder={t('selectTimezone')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="currency">Moneda</Label>
+            <Label htmlFor="currency">{t('currency')}</Label>
             <SearchableSelect
               options={CURRENCIES}
               value={currency}
               onChange={(val) => setCurrency(String(val ?? 'MXN'))}
-              placeholder="Seleccionar moneda"
+              placeholder={t('selectCurrency')}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="country">{t('country')}</Label>
+            <SearchableSelect
+              options={COUNTRIES}
+              value={country}
+              onChange={(val) => setCountry(String(val ?? 'MX'))}
+              placeholder={t('selectCountry')}
+            />
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Info className="h-3 w-3 shrink-0" />
+              {t('countryDescription')}
+            </p>
           </div>
         </div>
 
@@ -201,7 +249,7 @@ export const AppearanceTab: React.FC = () => {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {isUpdating ? 'Guardando...' : saved ? 'Guardado' : 'Guardar configuración'}
+            {isUpdating ? t('saving') : saved ? t('saved') : t('saveConfig')}
           </Button>
         </div>
       </CardContent>

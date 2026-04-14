@@ -65,6 +65,7 @@ interface SidebarItem {
   permission?: string | string[];
   badge?: string | number;
   section?: string;
+  countryFilter?: string[];
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -277,6 +278,7 @@ const sidebarItems: SidebarItem[] = [
     icon: SbBilling,
     permission: 'manage_billing',
     section: 'Empresa',
+    countryFilter: ['MX'],
     submenu: [
       {
         id: 'billing-dashboard',
@@ -555,6 +557,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
 
   const renderSidebarItem = (item: SidebarItem, level = 0) => {
     if (!hasPermission(item.permission)) return null;
+    if (item.countryFilter && !item.countryFilter.includes(companySettings?.country || 'MX')) return null;
 
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isExpanded = expandedItems.includes(item.id);

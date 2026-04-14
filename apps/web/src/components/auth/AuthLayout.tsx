@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { CheckCircle, Monitor, Tablet, Smartphone, Globe } from 'lucide-react';
 
 /* Apple logo SVG — azul App Store oficial */
 function AppleIcon({ className }: { className?: string }) {
@@ -25,7 +27,37 @@ function PlayStoreIcon({ className }: { className?: string }) {
   );
 }
 
+/* Language selector for public pages */
+function LanguageSelector() {
+  const [currentLocale, setCurrentLocale] = useState('es');
+
+  useEffect(() => {
+    const cookie = document.cookie.split('; ').find(c => c.startsWith('NEXT_LOCALE='));
+    if (cookie) setCurrentLocale(cookie.split('=')[1]);
+  }, []);
+
+  const toggleLocale = () => {
+    const newLocale = currentLocale === 'es' ? 'en' : 'es';
+    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=${365 * 24 * 60 * 60};SameSite=Lax`;
+    window.location.reload();
+  };
+
+  return (
+    <button
+      onClick={toggleLocale}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+      aria-label={currentLocale === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+    >
+      <Globe className="w-4 h-4" />
+      <span>{currentLocale === 'es' ? 'EN' : 'ES'}</span>
+    </button>
+  );
+}
+
 export function AuthLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('auth.layout');
+  const benefits = [t('benefit1'), t('benefit2'), t('benefit3'), t('benefit4')];
+
   return (
     <div className="min-h-screen flex">
       {/* ===== Panel izquierdo — Vendedor de ruta (hidden en mobile) ===== */}
@@ -60,27 +92,17 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
           {/* Bloque inferior: headline + checks + stores */}
           <div className="space-y-7 auth-panel-animate" style={{ animationDelay: '0.25s' }}>
-            <h2
-              className="text-6xl font-bold leading-[1.1] drop-shadow-lg"
-            >
-              Gestiona tu negocio
-              <br />
-              desde cualquier lugar
+            <h2 className="text-6xl font-bold leading-[1.1] drop-shadow-lg">
+              {t('headline')}
             </h2>
             <p className="text-white/70 text-xl max-w-[440px] drop-shadow">
-              La plataforma que conecta tu equipo de ventas en campo con tu
-              operación en oficina.
+              {t('subheadline')}
             </p>
 
             {/* Value props con checks verdes */}
             <ul className="space-y-3">
-              {[
-                'Control total de tu equipo en campo',
-                'Reduce tu cartera vencida hasta 40%',
-                'Facturación SAT en 3 clics',
-                'Funciona sin internet',
-              ].map((text, i) => (
-                <li key={text} className="flex items-center gap-3 auth-panel-animate" style={{ animationDelay: `${0.35 + i * 0.08}s` }}>
+              {benefits.map((text, i) => (
+                <li key={i} className="flex items-center gap-3 auth-panel-animate" style={{ animationDelay: `${0.35 + i * 0.08}s` }}>
                   <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
                   <span className="text-lg text-white/90 drop-shadow">{text}</span>
                 </li>
@@ -94,7 +116,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 <Monitor className="w-5 h-5 text-white/80" />
                 <Tablet className="w-5 h-5 text-white/80" />
                 <Smartphone className="w-5 h-5 text-white/80" />
-                <span className="text-sm text-white/60 ml-0.5">Web, tablet y móvil</span>
+                <span className="text-sm text-white/60 ml-0.5">{t('devices')}</span>
               </div>
               {/* App Store */}
               <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/5">
@@ -110,7 +132,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
             {/* Social proof */}
             <p className="text-base text-white/40 drop-shadow auth-panel-animate" style={{ animationDelay: '0.8s' }}>
-              Más de 500 empresas confían en Handy Suites&reg;
+              {t('socialProof')}
             </p>
           </div>
         </div>
@@ -131,12 +153,15 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               </span>
             </div>
           </Link>
-          <Link
-            href="/"
-            className="text-sm text-muted-foreground hover:text-foreground/80 transition-colors ml-auto"
-          >
-            &larr; Volver al inicio
-          </Link>
+          <div className="flex items-center gap-2 ml-auto">
+            <LanguageSelector />
+            <Link
+              href="/"
+              className="text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
+            >
+              &larr; {t('backToHome')}
+            </Link>
+          </div>
         </div>
 
         {/* Form centrado */}
@@ -146,7 +171,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
         {/* Footer */}
         <div className="px-6 py-4 text-center text-xs text-muted-foreground">
-          &copy; 2026 Handy Suites&reg; — Todos los derechos reservados
+          {t('copyright')}
         </div>
       </div>
     </div>
