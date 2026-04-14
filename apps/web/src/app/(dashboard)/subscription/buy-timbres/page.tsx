@@ -3,31 +3,46 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import { SbBilling } from '@/components/layout/DashboardIcons';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { subscriptionService } from '@/services/api/subscriptions';
-import type { TimbreBalance } from '@/types/subscription';
-import { TIMBRE_PACKAGES } from '@/types/subscription';
+import type { TimbreBalance, TimbrePackage } from '@/types/subscription';
+import { loadStripe } from '@stripe/stripe-js';
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 export default function BuyTimbresPage() {
   const t = useTranslations('subscription');
   const tb = useTranslations('subscription.buyTimbres');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [timbres, setTimbres] = useState<TimbreBalance | null>(null);
-  const [selectedPackage, setSelectedPackage] = useState<number>(50);
+  const [packages, setPackages] = useState<TimbrePackage[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const fetchBalance = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const data = await subscriptionService.getTimbres();
-      setTimbres(data);
+      const [balanceData, pkgData] = await Promise.all([
+        subscriptionService.getTimbres(),
+        subscriptionService.getTimbrePackages(),
+      ]);
+      setTimbres(balanceData);
+      setPackages(pkgData);
+      // Auto-select the most popular or first package
+      const popular = pkgData.find(p => p.badge === 'mostPopular');
+      setSelectedPackageId(popular?.id ?? pkgData[0]?.id ?? null);
     } catch {
       toast({ title: tb('errorLoadingBalance'), variant: 'destructive' });
     } finally {
@@ -35,20 +50,27 @@ export default function BuyTimbresPage() {
     }
   }, []);
 
-  useEffect(() => { fetchBalance(); }, [fetchBalance]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handlePurchase = async () => {
+    if (!selectedPackageId) return;
     setPurchasing(true);
     try {
-      const { url } = await subscriptionService.createTimbreCheckout(selectedPackage);
-      window.location.href = url;
-    } catch {
-      toast({ title: tb('errorStartingPurchase'), variant: 'destructive' });
+      const { clientSecret } = await subscriptionService.createTimbreCheckout(selectedPackageId);
+      setCheckoutClientSecret(clientSecret);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast({
+        title: tb('errorStartingPurchase'),
+        description: apiError ? tApi(apiError) : message || undefined,
+        variant: 'destructive',
+      });
       setPurchasing(false);
     }
   };
 
-  const selectedPkg = TIMBRE_PACKAGES.find(p => p.cantidad === selectedPackage)!;
+  const selectedPkg = packages.find(p => p.id === selectedPackageId);
   const formatMXN = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
 
   if (loading) return (
@@ -58,6 +80,44 @@ export default function BuyTimbresPage() {
     </div>
   );
 
+  // ── Embedded Checkout view ──
+  if (checkoutClientSecret) {
+    return (
+      <PageHeader
+        breadcrumbs={[
+          { label: tc('home'), href: '/dashboard' },
+          { label: t('title'), href: '/subscription' },
+          { label: tb('title') },
+        ]}
+        title={tb('title')}
+        subtitle={selectedPkg ? `${selectedPkg.cantidad} ${tb('timbres')} — ${formatMXN(selectedPkg.precioMxn)}` : ''}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setCheckoutClientSecret(null);
+              setPurchasing(false);
+            }}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t('goBack')}
+          </Button>
+        }
+      >
+        <div className="overflow-hidden rounded-xl bg-white">
+          <EmbeddedCheckoutProvider
+            stripe={stripePromise}
+            options={{ clientSecret: checkoutClientSecret }}
+          >
+            <EmbeddedCheckout className="min-h-[500px]" />
+          </EmbeddedCheckoutProvider>
+        </div>
+      </PageHeader>
+    );
+  }
+
+  // ── Package selection view ──
   return (
     <PageHeader
       breadcrumbs={[
@@ -89,31 +149,31 @@ export default function BuyTimbresPage() {
         {/* Package selection */}
         <h2 className="text-lg font-bold mb-4">{tb('selectPackage')}</h2>
         <div role="radiogroup" aria-label={tb('selectPackageAria')} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {TIMBRE_PACKAGES.map((pkg) => (
+          {packages.map((pkg) => (
             <button
-              key={pkg.cantidad}
+              key={pkg.id}
               role="radio"
-              aria-checked={selectedPackage === pkg.cantidad}
-              onClick={() => setSelectedPackage(pkg.cantidad)}
+              aria-checked={selectedPackageId === pkg.id}
+              onClick={() => setSelectedPackageId(pkg.id)}
               className={`relative p-5 rounded-xl border-2 text-left transition-all ${
-                selectedPackage === pkg.cantidad
+                selectedPackageId === pkg.id
                   ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg'
                   : 'border-border bg-card hover:border-muted-foreground/30'
               }`}
             >
               {pkg.badge && (
                 <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-success text-success-foreground rounded-full">
-                  {pkg.badge}
+                  {tb(pkg.badge)}
                 </span>
               )}
-              {selectedPackage === pkg.cantidad && (
+              {selectedPackageId === pkg.id && (
                 <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" strokeWidth={3} />
                 </div>
               )}
               <p className="text-3xl font-bold mb-1">{pkg.cantidad}</p>
               <p className="text-xs text-muted-foreground mb-3">{tb('timbres')}</p>
-              <p className="text-lg font-semibold">{formatMXN(pkg.precio)}</p>
+              <p className="text-lg font-semibold">{formatMXN(pkg.precioMxn)}</p>
               <p className="text-xs text-muted-foreground">{formatMXN(pkg.precioUnitario)}{tb('perTimbre')}</p>
             </button>
           ))}
@@ -130,13 +190,13 @@ export default function BuyTimbresPage() {
           </button>
           <Button
             onClick={handlePurchase}
-            disabled={purchasing}
+            disabled={purchasing || !selectedPkg}
             className="h-11 px-8 bg-success hover:bg-success/90 text-white font-medium rounded-xl"
           >
             {purchasing ? (
               <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {tb('processing')}</>
             ) : (
-              <><ShieldCheck className="w-4 h-4 mr-2" /> {tb('pay', { amount: formatMXN(selectedPkg.precio) })}</>
+              <><ShieldCheck className="w-4 h-4 mr-2" /> {tb('pay', { amount: formatMXN(selectedPkg?.precioMxn ?? 0) })}</>
             )}
           </Button>
         </div>

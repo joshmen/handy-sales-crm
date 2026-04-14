@@ -82,7 +82,8 @@ public class HandySuitesDbContext : DbContext
     public DbSet<AiCreditPurchase> AiCreditPurchases => Set<AiCreditPurchase>();
     public DbSet<AiEmbedding> AiEmbeddings => Set<AiEmbedding>();
 
-    // Timbre Purchases
+    // Timbre Packages & Purchases
+    public DbSet<TimbrePackage> TimbrePackages => Set<TimbrePackage>();
     public DbSet<TimbrePurchase> TimbrePurchases => Set<TimbrePurchase>();
 
     // Integration Marketplace
@@ -904,6 +905,9 @@ public class HandySuitesDbContext : DbContext
         // IntegrationLog: tenant-scoped, no AuditableEntity
         modelBuilder.Entity<IntegrationLog>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // TimbrePackage: catalog table (no tenant filter, no audit)
+        modelBuilder.Entity<TimbrePackage>().ToTable("timbre_packages");
 
         // TimbrePurchase: no AuditableEntity — tenant filter only
         modelBuilder.Entity<TimbrePurchase>().ToTable("TimbrePurchases");

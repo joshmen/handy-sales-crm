@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance, TimbrePurchaseRecord } from '@/types/subscription';
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance, TimbrePurchaseRecord, TimbrePackage } from '@/types/subscription';
 
 export const subscriptionService = {
   async getPlans(): Promise<SubscriptionPlan[]> {
@@ -73,8 +73,13 @@ export const subscriptionService = {
     return data;
   },
 
-  async createTimbreCheckout(cantidad: number): Promise<{ url: string }> {
-    const { data } = await api.post<{ url: string }>('/api/subscription/timbres/checkout', { cantidad });
+  async getTimbrePackages(): Promise<TimbrePackage[]> {
+    const { data } = await api.get<TimbrePackage[]>('/api/subscription/timbre-packages');
+    return data;
+  },
+
+  async createTimbreCheckout(timbrePackageId: number): Promise<{ clientSecret: string }> {
+    const { data } = await api.post<{ clientSecret: string }>('/api/subscription/timbres/checkout', { timbrePackageId });
     return data;
   },
 

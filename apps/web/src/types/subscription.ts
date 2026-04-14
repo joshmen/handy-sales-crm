@@ -89,8 +89,12 @@ export interface TimbrePurchaseRecord {
   completadoEn: string | null;
 }
 
-export const TIMBRE_PACKAGES: readonly { cantidad: number; precio: number; precioUnitario: number; badge?: string }[] = [
-  { cantidad: 25, precio: 50, precioUnitario: 2.0 },
-  { cantidad: 50, precio: 85, precioUnitario: 1.7, badge: 'Más popular' },
-  { cantidad: 100, precio: 150, precioUnitario: 1.5, badge: 'Mejor valor' },
-];
+export interface TimbrePackage {
+  id: number;
+  nombre: string;
+  cantidad: number;
+  precioMxn: number;
+  precioUnitario: number;
+  badge: string | null;
+  orden: number;
+}

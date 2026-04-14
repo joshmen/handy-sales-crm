@@ -68,6 +68,10 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         group.MapGet("/timbres/purchases", GetTimbrePurchases)
             .WithName("GetTimbrePurchases")
             .WithSummary("Historial de compras de timbres del tenant");
+
+        group.MapGet("/timbre-packages", GetTimbrePackages)
+            .WithName("GetTimbrePackages")
+            .WithSummary("Catálogo de paquetes de timbres disponibles para compra");
     }
 
     private static async Task<IResult> GetPlans(
@@ -103,16 +107,18 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
     {
         var tenant = await db.Tenants
             .AsNoTracking()
+            .Include(t => t.SubscriptionPlan)
             .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
 
         if (tenant == null)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
-        // Look up the plan to get authoritative MaxUsuarios (tenant field can be stale)
-        var plan = !string.IsNullOrEmpty(tenant.PlanTipo)
-            ? await db.SubscriptionPlans.AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Codigo == tenant.PlanTipo)
-            : null;
+        // Use FK navigation; fall back to string lookup for legacy data
+        var plan = tenant.SubscriptionPlan
+            ?? (!string.IsNullOrEmpty(tenant.PlanTipo)
+                ? await db.SubscriptionPlans.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Codigo == tenant.PlanTipo)
+                : null);
         var maxUsuarios = plan?.MaxUsuarios ?? tenant.MaxUsuarios;
 
         // Sync tenant if stale (fire-and-forget safe: same DbContext, same request)
@@ -184,9 +190,13 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
             return Results.Ok(new { clientSecret, sessionId });
         }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
-            return Results.BadRequest(new { message = "No se pudo completar la operación de suscripción." });
+            return Results.BadRequest(new { message = ex.Message });
         }
     }
 
@@ -401,23 +411,35 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         if (!currentTenant.IsAdmin)
             return Results.Forbid();
 
-        // Validate package
-        var packages = new Dictionary<int, decimal> { { 25, 50m }, { 50, 85m }, { 100, 150m } };
-        if (!packages.TryGetValue(request.Cantidad, out var precio))
-            return Results.BadRequest(new { error = "Paquete no válido. Opciones: 25, 50, 100 timbres." });
+        // Validate package from DB
+        var pkg = await db.TimbrePackages.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == request.TimbrePackageId && p.Activo);
+        if (pkg == null)
+            return Results.BadRequest(new { error = "Paquete no válido." });
+        if (string.IsNullOrEmpty(pkg.StripePriceId))
+            return Results.BadRequest(new { error = "Stripe Price ID no configurado para este paquete." });
+
+        // Validate tenant has billing-enabled plan
+        var tenant2 = await db.Tenants.AsNoTracking()
+            .Include(t => t.SubscriptionPlan)
+            .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+        var plan = tenant2?.SubscriptionPlan;
+        if (plan == null || !plan.IncluyeFacturacion)
+            return Results.BadRequest(new { error = "Tu plan no incluye facturación." });
 
         // Create purchase record
         var purchase = new TimbrePurchase
         {
             TenantId = currentTenant.TenantId,
-            Cantidad = request.Cantidad,
-            PrecioMxn = precio,
+            Cantidad = pkg.Cantidad,
+            PrecioMxn = pkg.PrecioMxn,
+            TimbrePackageId = pkg.Id,
         };
         db.TimbrePurchases.Add(purchase);
         await db.SaveChangesAsync();
 
         // Create Stripe Checkout Session
-        var stripeKey = config["Stripe:SecretKey"];
+        var stripeKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY");
         if (string.IsNullOrEmpty(stripeKey))
             return Results.BadRequest(new { error = "Stripe no configurado." });
 
@@ -426,32 +448,19 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
         var options = new Stripe.Checkout.SessionCreateOptions
         {
+            UiMode = "embedded",
             Mode = "payment",
             LineItems = new List<Stripe.Checkout.SessionLineItemOptions>
             {
-                new()
-                {
-                    PriceData = new Stripe.Checkout.SessionLineItemPriceDataOptions
-                    {
-                        Currency = "mxn",
-                        UnitAmount = (long)(precio * 100),
-                        ProductData = new Stripe.Checkout.SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = $"Timbres CFDI x{request.Cantidad}",
-                            Description = $"Paquete de {request.Cantidad} timbres para facturación electrónica",
-                        },
-                    },
-                    Quantity = 1,
-                },
+                new() { Price = pkg.StripePriceId, Quantity = 1 },
             },
             Metadata = new Dictionary<string, string>
             {
                 ["type"] = "timbre_purchase",
-                ["tenantId"] = currentTenant.TenantId.ToString(),
+                ["tenant_id"] = currentTenant.TenantId.ToString(),
                 ["purchaseId"] = purchase.Id.ToString(),
             },
-            SuccessUrl = $"{domain}/subscription?success=timbres",
-            CancelUrl = $"{domain}/subscription/buy-timbres",
+            ReturnUrl = $"{domain}/subscription?success=timbres",
         };
 
         // Use existing Stripe customer if available
@@ -465,7 +474,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         purchase.StripeCheckoutSessionId = session.Id;
         await db.SaveChangesAsync();
 
-        return Results.Ok(new { url = session.Url });
+        return Results.Ok(new { clientSecret = session.ClientSecret });
     }
 
     private static async Task<IResult> GetTimbrePurchases(
@@ -484,9 +493,31 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
         return Results.Ok(purchases);
     }
+
+    private static async Task<IResult> GetTimbrePackages(
+        [FromServices] HandySuitesDbContext db)
+    {
+        var packages = await db.TimbrePackages
+            .AsNoTracking()
+            .Where(p => p.Activo)
+            .OrderBy(p => p.Orden)
+            .Select(p => new
+            {
+                p.Id,
+                p.Nombre,
+                p.Cantidad,
+                precioMxn = p.PrecioMxn,
+                precioUnitario = p.PrecioUnitario,
+                p.Badge,
+                p.Orden,
+            })
+            .ToListAsync();
+
+        return Results.Ok(packages);
+    }
 }
 
 // DTOs
 public record CheckoutRequest(string PlanCode, string Interval, string ReturnUrl);
 public record PortalRequest(string ReturnUrl);
-public record TimbreCheckoutRequest(int Cantidad);
+public record TimbreCheckoutRequest(int TimbrePackageId);

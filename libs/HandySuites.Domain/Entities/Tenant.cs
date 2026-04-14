@@ -14,8 +14,10 @@ public class Tenant : AuditableEntity
     public string? CloudinaryFolder { get; set; }
 
     // Suscripción
+    [Column("subscription_plan_id")]
+    public int? SubscriptionPlanId { get; set; }
     [Column("plan_tipo")]
-    public string? PlanTipo { get; set; }
+    public string? PlanTipo { get; set; } // kept for backward compat, synced with SubscriptionPlanId
     [Column("max_usuarios")]
     public int MaxUsuarios { get; set; } = 10;
     [Column("fecha_suscripcion")]
@@ -68,6 +70,7 @@ public class Tenant : AuditableEntity
     public bool OnboardingCompleted { get; set; } = false;
 
     // Relaciones
+    public SubscriptionPlan? SubscriptionPlan { get; set; }
     public DatosEmpresa? DatosEmpresa { get; set; }
     public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     public ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();

@@ -65,4 +65,7 @@ public class SubscriptionPlan
 
     [Column("orden")]
     public int Orden { get; set; }
+
+    // Navigation
+    public virtual ICollection<Tenant> Tenants { get; set; } = new List<Tenant>();
 }

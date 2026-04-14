@@ -225,20 +225,25 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         var tenant = await _db.Tenants
             .IgnoreQueryFilters()
             .AsNoTracking()
+            .Include(t => t.SubscriptionPlan)
             .FirstOrDefaultAsync(t => t.Id == tenantId);
 
-        if (tenant == null || string.IsNullOrEmpty(tenant.PlanTipo))
+        if (tenant == null) return null;
+
+        // Prefer FK navigation; fall back to string lookup for legacy data
+        if (tenant.SubscriptionPlan != null)
+            return tenant.SubscriptionPlan;
+
+        if (string.IsNullOrEmpty(tenant.PlanTipo))
             return null;
 
-        // Normalize legacy plan codes (PROFESIONAL→PRO, BASICO→BASIC, Trial→FREE)
         var planCode = NormalizePlanCode(tenant.PlanTipo);
-
         return await _db.SubscriptionPlans
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Codigo == planCode && p.Activo);
     }
 
-    private static string NormalizePlanCode(string? planTipo)
+    public static string NormalizePlanCode(string? planTipo)
     {
         if (string.IsNullOrEmpty(planTipo)) return "FREE";
         return planTipo.ToUpperInvariant() switch

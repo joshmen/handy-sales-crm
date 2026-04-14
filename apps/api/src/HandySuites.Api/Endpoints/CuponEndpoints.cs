@@ -219,7 +219,10 @@ public static class CuponEndpoints
 
             case TipoCupon.UpgradePlan:
                 var planAnterior = tenant.PlanTipo;
-                tenant.PlanTipo = cupon.PlanObjetivo ?? "PRO";
+                var upgradePlanCode = cupon.PlanObjetivo ?? "PRO";
+                tenant.PlanTipo = upgradePlanCode;
+                var upgradePlan = await db.SubscriptionPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Codigo == upgradePlanCode && p.Activo);
+                if (upgradePlan != null) tenant.SubscriptionPlanId = upgradePlan.Id;
                 var mesesUpgrade = cupon.MesesUpgrade ?? 1;
                 var upgradeBase = tenant.FechaExpiracion ?? DateTime.UtcNow;
                 if (upgradeBase < DateTime.UtcNow) upgradeBase = DateTime.UtcNow;
@@ -236,6 +239,8 @@ public static class CuponEndpoints
 
             case TipoCupon.PlanGratisPermanente:
                 tenant.PlanTipo = "PRO";
+                var freePlan = await db.SubscriptionPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Codigo == "PRO" && p.Activo);
+                if (freePlan != null) tenant.SubscriptionPlanId = freePlan.Id;
                 tenant.SubscriptionStatus = "Active";
                 tenant.FechaExpiracion = null;
                 beneficioAplicado = "Plan PRO permanente gratuito activado";

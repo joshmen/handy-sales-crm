@@ -31,6 +31,13 @@ INSERT INTO subscription_plans (nombre, codigo, precio_mensual, precio_anual, ma
 ('Profesional', 'PRO', 999, 9990, 20, 5000, 500, true, true, '["Hasta 20 usuarios","5000 productos","500 clientes","Reportes","Soporte prioritario"]'::jsonb, true, 3)
 ON CONFLICT DO NOTHING;
 
+-- Timbre Packages (3)
+INSERT INTO timbre_packages (nombre, cantidad, precio_mxn, precio_unitario, stripe_price_id, badge, activo, orden) VALUES
+('Paquete 25', 25, 50.00, 2.00, NULL, NULL, true, 1),
+('Paquete 50', 50, 85.00, 1.70, NULL, 'mostPopular', true, 2),
+('Paquete 100', 100, 150.00, 1.50, NULL, 'bestValue', true, 3)
+ON CONFLICT DO NOTHING;
+
 -- Roles (5)
 INSERT INTO roles (nombre, descripcion, created_at, updated_at, activo, creado_en, version) VALUES
 ('SUPER_ADMIN', 'Super administrador del sistema', NOW(), NOW(), true, NOW(), 1),

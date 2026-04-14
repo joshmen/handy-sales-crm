@@ -38,6 +38,12 @@ public class TimbrePurchase
     [Column("completado_en")]
     public DateTime? CompletadoEn { get; set; }
 
+    [Column("timbre_package_id")]
+    public int? TimbrePackageId { get; set; }
+
     [ForeignKey("TenantId")]
     public virtual Tenant? Tenant { get; set; }
+
+    [ForeignKey("TimbrePackageId")]
+    public virtual TimbrePackage? TimbrePackage { get; set; }
 }

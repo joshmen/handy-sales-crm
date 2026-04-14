@@ -366,17 +366,56 @@ public class StripeService : IStripeService
         {
             if (session.Metadata.TryGetValue("purchaseId", out var purchaseIdStr) && int.TryParse(purchaseIdStr, out var purchaseId))
             {
-                var purchase = await _db.TimbrePurchases.FindAsync(purchaseId);
-                if (purchase != null && purchase.Estado == "pendiente")
+                // Bypass RLS: webhook has no HTTP tenant claim, so use raw SQL
+                // to complete the purchase and then add extras via direct SQL too
+                try
                 {
-                    purchase.Estado = "completado";
-                    purchase.StripePaymentIntentId = session.PaymentIntentId;
-                    purchase.CompletadoEn = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
+                    var conn = _db.Database.GetDbConnection();
+                    if (conn.State != System.Data.ConnectionState.Open)
+                        await conn.OpenAsync();
 
-                    await _enforcement.AddExtraTimbresAsync(purchase.TenantId, purchase.Cantidad);
-                    _logger.LogInformation("Timbre purchase {PurchaseId} completed: {Cantidad} timbres for tenant {TenantId}",
-                        purchaseId, purchase.Cantidad, purchase.TenantId);
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = $"SET app.tenant_id = '{tenantId}'; " +
+                        $"UPDATE \"TimbrePurchases\" SET estado = 'completado', " +
+                        $"stripe_payment_intent_id = @paymentIntent, " +
+                        $"completado_en = NOW() " +
+                        $"WHERE id = @purchaseId AND estado = 'pendiente' " +
+                        $"RETURNING cantidad, tenant_id;";
+
+                    var pPurchaseId = cmd.CreateParameter();
+                    pPurchaseId.ParameterName = "purchaseId";
+                    pPurchaseId.Value = purchaseId;
+                    cmd.Parameters.Add(pPurchaseId);
+
+                    var pPaymentIntent = cmd.CreateParameter();
+                    pPaymentIntent.ParameterName = "paymentIntent";
+                    pPaymentIntent.Value = (object?)session.PaymentIntentId ?? DBNull.Value;
+                    cmd.Parameters.Add(pPaymentIntent);
+
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                    {
+                        var cantidad = reader.GetInt32(0);
+                        var purchaseTenantId = reader.GetInt32(1);
+                        // Close reader before next command
+                        await reader.CloseAsync();
+
+                        // Add extras directly via SQL to bypass RLS
+                        using var addCmd = conn.CreateCommand();
+                        addCmd.CommandText = $"UPDATE \"Tenants\" SET timbres_extras = timbres_extras + {cantidad} WHERE id = {purchaseTenantId};";
+                        await addCmd.ExecuteNonQueryAsync();
+
+                        _logger.LogInformation("Timbre purchase {PurchaseId} completed: {Cantidad} timbres added to tenant {TenantId}",
+                            purchaseId, cantidad, purchaseTenantId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Timbre purchase {PurchaseId} not found or already completed", purchaseId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error completing timbre purchase {PurchaseId}", purchaseId);
                 }
             }
             return; // Don't process as subscription checkout
@@ -389,6 +428,13 @@ public class StripeService : IStripeService
         session.Metadata.TryGetValue("is_trial_checkout", out var isTrialCheckout);
 
         tenant.StripeSubscriptionId = session.Subscription?.ToString();
+        if (!string.IsNullOrEmpty(planCode))
+        {
+            var plan = await _db.SubscriptionPlans.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Codigo == planCode && p.Activo);
+            if (plan != null)
+                tenant.SubscriptionPlanId = plan.Id;
+        }
         tenant.PlanTipo = planCode ?? tenant.PlanTipo;
         tenant.Activo = true;
         tenant.CancelledAt = null;
@@ -584,7 +630,8 @@ public class StripeService : IStripeService
 
         var methods = await pmService.ListAsync(options);
 
-        return methods.Data.Select(pm => new PaymentMethodDto(
+        // Deduplicate by card fingerprint (same physical card), keep the default or most recent
+        var allMethods = methods.Data.Select(pm => new PaymentMethodDto(
             Id: pm.Id,
             Type: pm.Type ?? "card",
             CardBrand: pm.Card?.Brand,
@@ -593,6 +640,11 @@ public class StripeService : IStripeService
             CardExpYear: (int?)pm.Card?.ExpYear,
             IsDefault: pm.Id == defaultPmId
         )).ToList();
+
+        return allMethods
+            .GroupBy(pm => $"{pm.CardBrand}_{pm.CardLast4}_{pm.CardExpMonth}_{pm.CardExpYear}")
+            .Select(g => g.FirstOrDefault(pm => pm.IsDefault) ?? g.First())
+            .ToList();
     }
 
     public async Task<string> CreateSetupIntentAsync(string stripeCustomerId)
@@ -610,16 +662,6 @@ public class StripeService : IStripeService
         return intent.ClientSecret;
     }
 
-    /// <summary>Maps legacy plan codes (PROFESIONAL, BASICO, STARTER) to canonical codes (PRO, BASIC).</summary>
     private static string NormalizePlanCode(string? planTipo)
-    {
-        if (string.IsNullOrEmpty(planTipo)) return "FREE";
-        return planTipo.ToUpperInvariant() switch
-        {
-            "TRIAL" => "FREE",
-            "PROFESIONAL" or "PROFESSIONAL" => "PRO",
-            "BASICO" or "STARTER" => "BASIC",
-            _ => planTipo.ToUpperInvariant()
-        };
-    }
+        => HandySuites.Infrastructure.Services.SubscriptionEnforcementService.NormalizePlanCode(planTipo);
 }
