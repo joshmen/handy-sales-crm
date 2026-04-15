@@ -70,6 +70,7 @@ const mockProducts = [
 
 function CreateDiscountForm() {
   const t = useTranslations('discounts');
+  const tt = useTranslations('discounts.templates');
   const tc = useTranslations('common');
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -111,8 +112,8 @@ function CreateDiscountForm() {
     if (template) {
       setFormData(prev => ({
         ...prev,
-        name: template.name,
-        description: template.description,
+        name: tt(template.nameKey),
+        description: tt(template.descKey),
         quantityRanges: template.ranges.map((range, index) => ({
           ...range,
           id: `temp-${index}`

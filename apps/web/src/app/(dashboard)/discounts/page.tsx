@@ -576,7 +576,7 @@ export default function DiscountsPage() {
                         <PercentIcon className="w-5 h-5 text-orange-600" weight="duotone" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground">{discount.descuentoPorcentaje}% de descuento</p>
+                        <p className="text-sm font-medium text-foreground">{discount.descuentoPorcentaje}% {t('discount')}</p>
                         {discount.tipoAplicacion === 'Producto' && <p className="text-xs text-muted-foreground truncate">{discount.productoNombre || '-'}</p>}
                       </div>
                     </div>
@@ -585,7 +585,7 @@ export default function DiscountsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full ${discount.tipoAplicacion === 'Global' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>{discount.tipoAplicacion}</span>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full ${discount.tipoAplicacion === 'Global' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>{discount.tipoAplicacion === 'Global' ? t('globalDiscount') : t('productDiscount')}</span>
                     <span>{t('startingFrom', { count: discount.cantidadMinima })}</span>
                     {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-muted-foreground">- {discount.productoCodigo}</span>}
                   </div>

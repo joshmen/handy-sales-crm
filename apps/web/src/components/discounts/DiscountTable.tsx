@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -10,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table';
-import { 
+import {
   Edit,
   Trash2,
   Eye,
@@ -19,11 +20,11 @@ import {
   Plus,
   Percent
 } from 'lucide-react';
-import { 
-  Discount, 
-  DiscountType, 
-  DiscountMethod, 
-  DiscountStatus 
+import {
+  Discount,
+  DiscountType,
+  DiscountMethod,
+  DiscountStatus
 } from '@/types/discounts';
 
 interface DiscountTableProps {
@@ -42,22 +43,6 @@ const statusColors = {
   [DiscountStatus.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
 
-const statusLabels = {
-  [DiscountStatus.ACTIVE]: 'Activo',
-  [DiscountStatus.INACTIVE]: 'Inactivo',
-  [DiscountStatus.PAUSED]: 'Pausado',
-};
-
-const typeLabels = {
-  [DiscountType.GLOBAL]: 'Global',
-  [DiscountType.PRODUCT_SPECIFIC]: 'Por Producto',
-};
-
-const methodLabels = {
-  [DiscountMethod.PERCENTAGE]: '%',
-  [DiscountMethod.FIXED_AMOUNT]: '$',
-};
-
 export function DiscountTable({
   discounts,
   onView,
@@ -67,12 +52,31 @@ export function DiscountTable({
   onCreate,
   loading = false,
 }: DiscountTableProps) {
+  const t = useTranslations('discounts.table');
+  const td = useTranslations('discounts');
+
+  const statusLabels = {
+    [DiscountStatus.ACTIVE]: t('statusActive'),
+    [DiscountStatus.INACTIVE]: t('statusInactive'),
+    [DiscountStatus.PAUSED]: t('statusPaused'),
+  };
+
+  const typeLabels = {
+    [DiscountType.GLOBAL]: t('typeGlobal'),
+    [DiscountType.PRODUCT_SPECIFIC]: t('typeProduct'),
+  };
+
+  const methodLabels = {
+    [DiscountMethod.PERCENTAGE]: '%',
+    [DiscountMethod.FIXED_AMOUNT]: '$',
+  };
+
   const formatDiscountRanges = (ranges: Discount['quantityRanges']) => {
-    if (ranges.length === 0) return 'Sin rangos';
-    
+    if (ranges.length === 0) return t('noRanges');
+
     return ranges
-      .slice(0, 2) // Mostrar solo los primeros 2 rangos
-      .map(range => 
+      .slice(0, 2)
+      .map(range =>
         `${range.minQuantity}${range.maxQuantity ? `-${range.maxQuantity}` : '+'}: ${range.discountValue}%`
       )
       .join(', ') + (ranges.length > 2 ? '...' : '');
@@ -93,13 +97,13 @@ export function DiscountTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Descuento</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Rangos</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Estadísticas</TableHead>
-            <TableHead>Vigencia</TableHead>
-            <TableHead>Acciones</TableHead>
+            <TableHead>{td('discount')}</TableHead>
+            <TableHead>{t('type')}</TableHead>
+            <TableHead>{t('ranges')}</TableHead>
+            <TableHead>{t('status')}</TableHead>
+            <TableHead>{t('stats')}</TableHead>
+            <TableHead>{t('validity')}</TableHead>
+            <TableHead>{t('actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -153,7 +157,7 @@ export function DiscountTable({
                     ${discount.totalSavings?.toLocaleString() || '0'}
                   </div>
                   <div className="text-muted-foreground">
-                    {discount.totalUsed || 0} usos
+                    {discount.totalUsed || 0} {t('uses')}
                   </div>
                 </div>
               </TableCell>
@@ -162,12 +166,12 @@ export function DiscountTable({
                 <div className="text-sm">
                   {discount.isPermanent ? (
                     <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                      Permanente
+                      {t('permanent')}
                     </Badge>
                   ) : (
                     <div className="text-foreground/70">
-                      <div>Desde: {discount.validFrom?.toLocaleDateString()}</div>
-                      <div>Hasta: {discount.validTo?.toLocaleDateString()}</div>
+                      <div>{t('from')}: {discount.validFrom?.toLocaleDateString()}</div>
+                      <div>{t('to')}: {discount.validTo?.toLocaleDateString()}</div>
                     </div>
                   )}
                 </div>
@@ -176,44 +180,25 @@ export function DiscountTable({
               <TableCell>
                 <div className="flex items-center gap-1">
                   {onView && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => onView(discount)}
-                      className="h-8 w-8 p-0"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => onView(discount)} className="h-8 w-8 p-0">
                       <Eye size={16} />
                     </Button>
                   )}
                   {onEdit && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => onEdit(discount)}
-                      className="h-8 w-8 p-0"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => onEdit(discount)} className="h-8 w-8 p-0">
                       <Edit size={16} />
                     </Button>
                   )}
                   {onToggleStatus && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => onToggleStatus(discount)}
-                      className={`h-8 w-8 p-0 ${
-                        discount.status === DiscountStatus.ACTIVE ? 'text-yellow-600' : 'text-green-600'
-                      }`}
+                    <Button
+                      variant="ghost" size="sm" onClick={() => onToggleStatus(discount)}
+                      className={`h-8 w-8 p-0 ${discount.status === DiscountStatus.ACTIVE ? 'text-yellow-600' : 'text-green-600'}`}
                     >
                       {discount.status === DiscountStatus.ACTIVE ? <Pause size={16} /> : <Play size={16} />}
                     </Button>
                   )}
                   {onDelete && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => onDelete(discount)}
-                      className="h-8 w-8 p-0 text-red-600"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => onDelete(discount)} className="h-8 w-8 p-0 text-red-600">
                       <Trash2 size={16} />
                     </Button>
                   )}
@@ -228,15 +213,15 @@ export function DiscountTable({
         <div className="text-center py-12">
           <Percent className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">
-            Sin descuentos configurados
+            {t('emptyTitle')}
           </h3>
           <p className="text-muted-foreground mb-4">
-            Crea tu primer descuento por cantidad para comenzar
+            {t('emptyDescription')}
           </p>
           {onCreate && (
             <Button onClick={onCreate}>
               <Plus className="w-4 h-4 mr-2" />
-              Crear descuento
+              {t('createDiscount')}
             </Button>
           )}
         </div>
