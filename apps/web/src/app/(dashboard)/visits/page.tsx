@@ -686,7 +686,7 @@ function VisitsPageContent() {
               )}
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Vendedor: {visitDetail.usuarioNombre}</span>
+                <span className="text-sm text-muted-foreground">{t('detail.vendor')}: {visitDetail.usuarioNombre}</span>
               </div>
             </div>
 
@@ -695,28 +695,28 @@ function VisitsPageContent() {
               {visitDetail.fechaProgramada && (
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Programada:</span>
+                  <span className="text-muted-foreground">{t('detail.scheduled')}:</span>
                   <span>{formatDate(visitDetail.fechaProgramada)}</span>
                 </div>
               )}
               {visitDetail.fechaHoraInicio && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Inicio:</span>
+                  <span className="text-muted-foreground">{t('detail.start')}:</span>
                   <span>{formatDate(visitDetail.fechaHoraInicio)} {formatTime(visitDetail.fechaHoraInicio)}</span>
                 </div>
               )}
               {visitDetail.fechaHoraFin && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Fin:</span>
+                  <span className="text-muted-foreground">{t('detail.end')}:</span>
                   <span>{formatDate(visitDetail.fechaHoraFin)} {formatTime(visitDetail.fechaHoraFin)}</span>
                 </div>
               )}
               {visitDetail.duracionMinutos && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Duración:</span>
+                  <span className="text-muted-foreground">{t('detail.durationLabel')}:</span>
                   <span className="font-medium">{visitDetail.duracionMinutos} min</span>
                 </div>
               )}
@@ -733,7 +733,7 @@ function VisitsPageContent() {
             {/* Notas */}
             {visitDetail.notas && (
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Notas</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1">{t('detail.notes')}</p>
                 <p className="text-sm text-foreground/80 bg-surface-1 rounded p-3">{visitDetail.notas}</p>
               </div>
             )}
@@ -773,19 +773,19 @@ function VisitsPageContent() {
                     {visitDetail.latitudInicio && (
                       <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-green-500" />
-                        Check-in: {visitDetail.latitudInicio.toFixed(5)}, {visitDetail.longitudInicio?.toFixed(5)}
+                        {t('detail.checkIn')}: {visitDetail.latitudInicio.toFixed(5)}, {visitDetail.longitudInicio?.toFixed(5)}
                       </span>
                     )}
                     {visitDetail.latitudFin && (
                       <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-blue-500" />
-                        Check-out: {visitDetail.latitudFin.toFixed(5)}, {visitDetail.longitudFin?.toFixed(5)}
+                        {t('detail.checkOut')}: {visitDetail.latitudFin.toFixed(5)}, {visitDetail.longitudFin?.toFixed(5)}
                       </span>
                     )}
                     {visitDetail.distanciaCliente != null && (
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        Distancia al cliente: {visitDetail.distanciaCliente.toFixed(0)} m
+                        {t('detail.distanceToClient')}: {visitDetail.distanciaCliente.toFixed(0)} m
                       </span>
                     )}
                   </div>

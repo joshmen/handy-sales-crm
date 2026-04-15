@@ -3486,6 +3486,19 @@
       "duration": "Duración",
       "actions": "Acciones"
     },
+    "card": {
+      "viewDetails": "Ver Detalles",
+      "start": "Iniciar",
+      "finish": "Finalizar"
+    },
+    "list": {
+      "scheduleVisit": "Programar Visita",
+      "emptyTitle": "No hay visitas",
+      "noResults": "No se encontraron visitas",
+      "emptyDescription": "Comienza programando tu primera visita",
+      "noResultsDescription": "Intenta cambiar los filtros o programar una nueva visita",
+      "scheduleFirst": "Programar Primera Visita"
+    },
     "detail": {
       "title": "Detalle de Visita",
       "scheduleTitle": "Programar Nueva Visita",

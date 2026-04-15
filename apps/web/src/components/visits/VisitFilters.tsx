@@ -64,7 +64,7 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
             ]}
             value={tipoFilter || null}
             onChange={(val) => onTipoChange(val ? String(val) : '')}
-            placeholder="Todos los tipos"
+            placeholder={t('allTypes')}
           />
         </div>
 
@@ -82,7 +82,7 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
             ]}
             value={resultadoFilter || null}
             onChange={(val) => onResultadoChange(val ? String(val) : '')}
-            placeholder="Todos los resultados"
+            placeholder={t('allResults')}
           />
         </div>
 
@@ -100,7 +100,7 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
             ]}
             value={dateFilter || null}
             onChange={(val) => onDateChange(val ? String(val) : '')}
-            placeholder="Todas las fechas"
+            placeholder={t('allDates')}
           />
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { VisitCard } from './VisitCard';
 import { VisitFilters } from './VisitFilters';
 import { VisitSummary } from './VisitSummary';
@@ -26,6 +27,7 @@ export const VisitList: React.FC<VisitListProps> = ({
   onCheckOut,
   className = '',
 }) => {
+  const t = useTranslations('visits.list');
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('');
@@ -174,7 +176,7 @@ export const VisitList: React.FC<VisitListProps> = ({
 
         <Button onClick={onCreateVisit} className="lg:ml-4">
           <Plus size={20} className="mr-2" />
-          Programar Visita
+          {t('scheduleVisit')}
         </Button>
       </div>
 
@@ -194,14 +196,14 @@ export const VisitList: React.FC<VisitListProps> = ({
       ) : (
         <EmptyState
           icon={MapPin}
-          title={visits.length === 0 ? 'No hay visitas' : 'No se encontraron visitas'}
+          title={visits.length === 0 ? t('emptyTitle') : t('noResults')}
           description={
             visits.length === 0
-              ? 'Comienza programando tu primera visita'
-              : 'Intenta cambiar los filtros o programar una nueva visita'
+              ? t('emptyDescription')
+              : t('noResultsDescription')
           }
           action={{
-            label: 'Programar Primera Visita',
+            label: t('scheduleFirst'),
             onClick: onCreateVisit,
           }}
         />

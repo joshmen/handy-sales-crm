@@ -51,6 +51,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   onCheckOut,
   className = '',
 }) => {
+  const t = useTranslations('visits');
   const tr = useTranslations('visits.results');
   const tt = useTranslations('visits.types');
   const getResultado = (val: ResultadoVisita) => {
@@ -128,7 +129,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             <div className="flex items-center space-x-2">
               <Calendar size={16} className="text-muted-foreground" />
               <span className="text-sm text-foreground/70">
-                Programada: {formatDate(visit.fechaProgramada)}
+                {t('detail.scheduled')}: {formatDate(visit.fechaProgramada)}
               </span>
             </div>
           )}
@@ -137,8 +138,8 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             <div className="flex items-center space-x-2">
               <Clock size={16} className="text-muted-foreground" />
               <span className="text-sm text-foreground/70">
-                Inicio: {formatTime(visit.fechaHoraInicio)}
-                {visit.fechaHoraFin && ` - Fin: ${formatTime(visit.fechaHoraFin)}`}
+                {t('detail.start')}: {formatTime(visit.fechaHoraInicio)}
+                {visit.fechaHoraFin && ` - ${t('detail.end')}: ${formatTime(visit.fechaHoraFin)}`}
               </span>
             </div>
           )}
@@ -148,7 +149,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
         {visit.duracionMinutos && (
           <div className="mb-4 p-3 bg-surface-1 rounded-lg">
             <div className="text-center">
-              <span className="text-xs text-muted-foreground">Duración</span>
+              <span className="text-xs text-muted-foreground">{t('detail.durationLabel')}</span>
               <p className="font-semibold text-sm">{visit.duracionMinutos} min</p>
             </div>
           </div>
@@ -163,7 +164,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             className="flex-1"
           >
             <Eye size={14} className="mr-1" />
-            Ver Detalles
+            {t('card.viewDetails')}
           </Button>
 
           {isPending && onCheckIn && (
@@ -174,7 +175,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
               className="bg-success hover:bg-success/90"
             >
               <Play size={14} className="mr-1" />
-              Iniciar
+              {t('card.start')}
             </Button>
           )}
 
@@ -186,7 +187,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
               className="bg-blue-600 hover:bg-blue-700"
             >
               <CheckCircle size={14} className="mr-1" />
-              Finalizar
+              {t('card.finish')}
             </Button>
           )}
 

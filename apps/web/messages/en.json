@@ -3486,6 +3486,19 @@
       "duration": "Duration",
       "actions": "Actions"
     },
+    "card": {
+      "viewDetails": "View Details",
+      "start": "Start",
+      "finish": "Finish"
+    },
+    "list": {
+      "scheduleVisit": "Schedule Visit",
+      "emptyTitle": "No visits",
+      "noResults": "No visits found",
+      "emptyDescription": "Start by scheduling your first visit",
+      "noResultsDescription": "Try changing the filters or scheduling a new visit",
+      "scheduleFirst": "Schedule First Visit"
+    },
     "detail": {
       "title": "Visit Detail",
       "scheduleTitle": "Schedule New Visit",
