@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
+import { useTranslations } from "next-intl";
 import { User } from "@/types";
 import { Card, CardHeader, CardContent } from "@/components/ui";
 
@@ -14,12 +15,14 @@ export const UserAssignment: React.FC<UserAssignmentProps> = ({
   users,
   onUserSelect,
 }) => {
+  const t = useTranslations('routes.userAssignment');
+
   return (
     <Card>
       <CardHeader>
         <h3 className="font-semibold flex items-center">
           <span className="mr-2">👤</span>
-          Asigna la ruta a un usuario
+          {t('assignUser')}
         </h3>
       </CardHeader>
       <CardContent>
@@ -40,12 +43,12 @@ export const UserAssignment: React.FC<UserAssignmentProps> = ({
               onClick={() => onUserSelect(null as any)}
               className="ml-auto text-sm text-blue-600 hover:underline"
             >
-              Cambiar
+              {t('change')}
             </button>
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-foreground/70 mb-3">Selecciona un usuario:</p>
+            <p className="text-foreground/70 mb-3">{t('selectUser')}</p>
             {users.map((user) => (
               <button
                 key={user.id}

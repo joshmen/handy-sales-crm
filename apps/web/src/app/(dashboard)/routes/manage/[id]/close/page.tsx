@@ -24,6 +24,8 @@ export default function CloseRoutePage() {
   const { formatCurrency, formatDate } = useFormatters();
   const ts = useTranslations('routes.status');
   const tl = useTranslations('routes.detail');
+  const t = useTranslations('routes.close');
+  const tc = useTranslations('common');
 
   // Lifecycle steps for route status timeline
   const LIFECYCLE_STEPS = [
@@ -60,7 +62,7 @@ export default function CloseRoutePage() {
       setMontoRecibido(rutaData.montoRecibido?.toString() || '');
     } catch (err) {
       console.error('Error:', err);
-      toast.error('Error al cargar datos del cierre');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,7 @@ export default function CloseRoutePage() {
         cargaVehiculo: updatedItem.cargaVehiculo,
       });
     } catch (_err) {
-      toast.error('Error al actualizar retorno');
+      toast.error(t('errorUpdatingReturn'));
       fetchData();
     }
   };
@@ -129,10 +131,10 @@ export default function CloseRoutePage() {
 
   const handleCerrarRuta = async () => {
     if (!montoRecibido) {
-      toast.error('Ingresa el monto recibido');
+      toast.error(t('enterAmountReceived'));
       return;
     }
-    if (!confirm('¿Cerrar esta ruta? Esta acción no se puede deshacer.')) return;
+    if (!confirm(t('confirmClose'))) return;
 
     try {
       setClosing(true);
@@ -145,10 +147,10 @@ export default function CloseRoutePage() {
           cargaVehiculo: r.cargaVehiculo,
         })),
       });
-      toast.success('Ruta cerrada exitosamente');
+      toast.success(t('closedSuccess'));
       fetchData();
     } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || 'Error al cerrar ruta');
+      toast.error((err instanceof Error ? err.message : null) || t('errorClosing'));
     } finally {
       setClosing(false);
     }
@@ -159,7 +161,7 @@ export default function CloseRoutePage() {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <span className="text-sm text-muted-foreground">Cargando cierre...</span>
+          <span className="text-sm text-muted-foreground">{t('loading')}</span>
         </div>
       </div>
     );
@@ -168,7 +170,7 @@ export default function CloseRoutePage() {
   if (!ruta || !resumen) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Ruta no encontrada</p>
+        <p className="text-muted-foreground">{t('notFound')}</p>
       </div>
     );
   }
@@ -182,15 +184,15 @@ export default function CloseRoutePage() {
       {/* Header */}
       <div className="bg-surface-2 px-8 py-6 border-b border-border-subtle">
         <Breadcrumb items={[
-          { label: 'Rutas', href: '/routes' },
+          { label: t('breadcrumbRoutes'), href: '/routes' },
           { label: ruta.nombre, href: `/routes/${ruta.id}` },
-          { label: 'Cierre de ruta' },
+          { label: t('title') },
         ]} />
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-foreground">
-              Cierre de ruta
+              {t('title')}
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
               {estadoBadge}
@@ -205,7 +207,7 @@ export default function CloseRoutePage() {
                 className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
               >
                 {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                Cerrar ruta
+                {t('closeRoute')}
               </button>
             )}
             <button
@@ -213,7 +215,7 @@ export default function CloseRoutePage() {
               className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1"
             >
               <X className="w-4 h-4" />
-              Cancelar
+              {tc('cancel')}
             </button>
           </div>
         </div>
@@ -256,13 +258,13 @@ export default function CloseRoutePage() {
         {ruta.estado === ESTADO_RUTA.PendienteAceptar && (
           <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <p className="text-sm text-yellow-800">Inventario pendiente de aceptar por el vendedor</p>
+            <p className="text-sm text-yellow-800">{t('pendingInventoryAlert')}</p>
           </div>
         )}
 
         {/* Section: Route Details */}
         <div data-tour="routes-close-details" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Detalles de la ruta</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">{t('routeDetails')}</h2>
           <div className="flex items-center gap-4 p-3 bg-surface-1 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
               <User className="w-5 h-5 text-green-600" />
@@ -270,7 +272,7 @@ export default function CloseRoutePage() {
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">{ruta.usuarioNombre}</p>
               <p className="text-xs text-muted-foreground">
-                Ruta: {ruta.nombre} | Zona: {ruta.zonaNombre || 'Sin zona'} | Creado: {formatDate(ruta.creadoEn)}
+                {t('routeLabel')}: {ruta.nombre} | {t('zoneLabel')}: {ruta.zonaNombre || t('noZone')} | {t('created')}: {formatDate(ruta.creadoEn)}
               </p>
             </div>
           </div>
@@ -282,19 +284,19 @@ export default function CloseRoutePage() {
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="w-4 h-4 text-green-600" />
-              <h3 className="text-xs font-semibold text-foreground/80">Efectivo entrante</h3>
+              <h3 className="text-xs font-semibold text-foreground/80">{t('incomingCash')}</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Ventas contado ({resumen.ventasContadoCount})</span>
+                <span className="text-muted-foreground">{t('cashSales')} ({resumen.ventasContadoCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.ventasContado)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Entregas cobradas ({resumen.entregasCobradasCount})</span>
+                <span className="text-muted-foreground">{t('paidDeliveries')} ({resumen.entregasCobradasCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.entregasCobradas)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Cobranza adeudos ({resumen.cobranzaAdeudosCount})</span>
+                <span className="text-muted-foreground">{t('debtCollection')} ({resumen.cobranzaAdeudosCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.cobranzaAdeudos)}</span>
               </div>
             </div>
@@ -304,19 +306,19 @@ export default function CloseRoutePage() {
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="w-4 h-4 text-blue-600" />
-              <h3 className="text-xs font-semibold text-foreground/80">Movimientos a saldo</h3>
+              <h3 className="text-xs font-semibold text-foreground/80">{t('balanceMovements')}</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Ventas crédito ({resumen.ventasCreditoCount})</span>
+                <span className="text-muted-foreground">{t('creditSales')} ({resumen.ventasCreditoCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.ventasCredito)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Entregas crédito ({resumen.entregasCreditoCount})</span>
+                <span className="text-muted-foreground">{t('creditDeliveries')} ({resumen.entregasCreditoCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.entregasCredito)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Saldo a favor ({resumen.entregasContadoSaldoFavorCount})</span>
+                <span className="text-muted-foreground">{t('creditBalance')} ({resumen.entregasContadoSaldoFavorCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.entregasContadoSaldoFavor)}</span>
               </div>
             </div>
@@ -326,15 +328,15 @@ export default function CloseRoutePage() {
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <Package className="w-4 h-4 text-foreground/70" />
-              <h3 className="text-xs font-semibold text-foreground/80">Otros movimientos</h3>
+              <h3 className="text-xs font-semibold text-foreground/80">{t('otherMovements')}</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Pedidos preventa ({resumen.pedidosPreventaCount})</span>
+                <span className="text-muted-foreground">{t('presaleOrders')} ({resumen.pedidosPreventaCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Devoluciones ({resumen.devolucionesCount})</span>
+                <span className="text-muted-foreground">{t('returns')} ({resumen.devolucionesCount})</span>
                 <span className="font-medium text-red-600">{formatCurrency(resumen.devoluciones)}</span>
               </div>
             </div>
@@ -345,14 +347,14 @@ export default function CloseRoutePage() {
         <div className="grid grid-cols-2 gap-4">
           {/* Al inicio */}
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-foreground/80 mb-3">Al inicio</h3>
+            <h3 className="text-xs font-semibold text-foreground/80 mb-3">{t('atStart')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Valor de la ruta</span>
+                <span className="text-muted-foreground">{t('routeValue')}</span>
                 <span className="font-medium text-lg">{formatCurrency(resumen.valorRuta)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Efectivo inicial</span>
+                <span className="text-muted-foreground">{t('initialCash')}</span>
                 <span className="font-medium">{formatCurrency(resumen.efectivoInicial)}</span>
               </div>
             </div>
@@ -360,14 +362,14 @@ export default function CloseRoutePage() {
 
           {/* Al cierre */}
           <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-foreground/80 mb-3">Al cierre</h3>
+            <h3 className="text-xs font-semibold text-foreground/80 mb-3">{t('atClose')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">A recibir</span>
+                <span className="text-muted-foreground">{t('toReceive')}</span>
                 <span className="font-medium text-lg">{formatCurrency(resumen.aRecibir)}</span>
               </div>
               <div className="flex justify-between text-xs items-center">
-                <span className="text-muted-foreground">Recibido</span>
+                <span className="text-muted-foreground">{t('received')}</span>
                 {isReadonly ? (
                   <span className="font-medium">{formatCurrency(resumen.recibido ?? 0)}</span>
                 ) : (
@@ -383,7 +385,7 @@ export default function CloseRoutePage() {
               </div>
               {diferencia !== null && (
                 <div className="flex justify-between text-xs pt-1 border-t">
-                  <span className="text-muted-foreground">Diferencia</span>
+                  <span className="text-muted-foreground">{t('difference')}</span>
                   <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-foreground'}`}>
                     {diferencia >= 0 ? '+' : ''}{formatCurrency(diferencia)}
                   </span>
@@ -396,28 +398,28 @@ export default function CloseRoutePage() {
         {/* Inventario de retorno */}
         <div data-tour="routes-close-inventory" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">Inventario de retorno</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('returnInventory')}</h2>
             {!isReadonly && (
               <div data-tour="routes-close-actions" className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Diferencia a:</span>
+                <span className="text-xs text-muted-foreground">{t('differenceTo')}:</span>
                 <button
                   onClick={() => handleSetAllDiferencia('recAlmacen')}
                   className="px-3 py-1 text-xs font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
                 >
-                  Almacén
+                  {t('warehouse')}
                 </button>
                 <button
                   onClick={() => handleSetAllDiferencia('cargaVehiculo')}
                   className="px-3 py-1 text-xs font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
                 >
-                  Carga
+                  {t('vehicleLoad')}
                 </button>
               </div>
             )}
           </div>
 
           {retorno.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-8">No hay inventario de retorno</p>
+            <p className="text-xs text-muted-foreground text-center py-8">{t('noReturnInventory')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

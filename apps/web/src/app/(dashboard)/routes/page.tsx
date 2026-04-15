@@ -429,7 +429,7 @@ export default function RoutesPage() {
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             data-tour="routes-export-btn"
-            onClick={async () => { try { await exportToCsv('rutas'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+            onClick={async () => { try { await exportToCsv('rutas'); toast.success(t('csvDownloaded')); } catch { toast.error(t('exportError')); } }}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Route, RouteSummary } from "@/types/routes";
 import { Card, CardContent } from "@/components/ui";
 
@@ -10,6 +11,13 @@ interface RouteCardProps {
   onClose: () => void;
 }
 
+const STATUS_KEYS: Record<string, string> = {
+  pending: "statusPending",
+  in_progress: "statusInProgress",
+  completed: "statusCompleted",
+  cancelled: "statusCancelled",
+};
+
 export const RouteCard: React.FC<RouteCardProps> = ({
   route,
   summary,
@@ -17,6 +25,8 @@ export const RouteCard: React.FC<RouteCardProps> = ({
   onEdit,
   onClose,
 }) => {
+  const t = useTranslations('routes.card');
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -32,21 +42,6 @@ export const RouteCard: React.FC<RouteCardProps> = ({
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "Pendiente";
-      case "in_progress":
-        return "En Progreso";
-      case "completed":
-        return "Completada";
-      case "cancelled":
-        return "Cancelada";
-      default:
-        return status;
-    }
-  };
-
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent>
@@ -59,33 +54,31 @@ export const RouteCard: React.FC<RouteCardProps> = ({
             </p>
           </div>
           <span
-            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-              route.status
-            )}`}
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(route.status)}`}
           >
-            {getStatusLabel(route.status)}
+            {t(STATUS_KEYS[route.status] ?? route.status)}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-sm text-muted-foreground">Ventas</p>
+            <p className="text-sm text-muted-foreground">{t('sales')}</p>
             <p className="text-lg font-semibold">
               ${summary.totalSales.toFixed(2)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Pedidos</p>
+            <p className="text-sm text-muted-foreground">{t('orders')}</p>
             <p className="text-lg font-semibold">{summary.totalOrders}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Visitas</p>
+            <p className="text-sm text-muted-foreground">{t('visits')}</p>
             <p className="text-lg font-semibold">
               {summary.completedVisits}/{summary.totalVisits}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Efectividad</p>
+            <p className="text-sm text-muted-foreground">{t('effectiveness')}</p>
             <p className="text-lg font-semibold">{summary.effectiveness}%</p>
           </div>
         </div>
@@ -95,14 +88,14 @@ export const RouteCard: React.FC<RouteCardProps> = ({
             onClick={onView}
             className="flex-1 bg-teal-500 text-white py-2 px-4 rounded text-sm hover:bg-teal-600"
           >
-            Ver Detalles
+            {t('viewDetails')}
           </button>
           {route.status === "pending" && (
             <button
               onClick={onEdit}
               className="flex-1 bg-blue-500 text-white py-2 px-4 rounded text-sm hover:bg-blue-600"
             >
-              Editar
+              {t('edit')}
             </button>
           )}
           {route.status === "in_progress" && (
@@ -110,7 +103,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({
               onClick={onClose}
               className="flex-1 bg-orange-500 text-white py-2 px-4 rounded text-sm hover:bg-orange-600"
             >
-              Cerrar Ruta
+              {t('closeRoute')}
             </button>
           )}
         </div>

@@ -304,7 +304,7 @@ export default function RouteAdminPage() {
   // --- Zone options ---
 
   const zonaOptions = [
-    { value: 'all' as string | number, label: 'Todas las zonas' },
+    { value: 'all' as string | number, label: t('allZones') },
     ...zones.map(z => ({ value: z.id.toString() as string | number, label: z.name })),
   ];
 
@@ -399,7 +399,7 @@ export default function RouteAdminPage() {
               options={zonaOptions}
               value={filterZone}
               onChange={val => setFilterZone(val ? String(val) : 'all')}
-              placeholder="Todas las zonas"
+              placeholder={t('allZones')}
             />
           </div>
         </div>
