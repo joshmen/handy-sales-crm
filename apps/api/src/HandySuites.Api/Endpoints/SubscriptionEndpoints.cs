@@ -290,6 +290,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
     }
 
     private static async Task<IResult> GetInvoices(
+        [FromQuery] string? cursor,
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
@@ -302,20 +303,21 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
             .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
 
         if (tenant == null || string.IsNullOrEmpty(tenant.StripeCustomerId))
-            return Results.Ok(Array.Empty<object>());
+            return Results.Ok(new PaginatedStripeResult<InvoiceDto>(new(), false, null));
 
         try
         {
-            var invoices = await stripeService.GetInvoicesAsync(tenant.StripeCustomerId);
-            return Results.Ok(invoices);
+            var result = await stripeService.GetInvoicesAsync(tenant.StripeCustomerId, cursor);
+            return Results.Ok(result);
         }
         catch (Exception)
         {
-            return Results.Ok(Array.Empty<object>());
+            return Results.Ok(new PaginatedStripeResult<InvoiceDto>(new(), false, null));
         }
     }
 
     private static async Task<IResult> GetPaymentMethods(
+        [FromQuery] string? cursor,
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
@@ -328,16 +330,16 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
             .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
 
         if (tenant == null || string.IsNullOrEmpty(tenant.StripeCustomerId))
-            return Results.Ok(Array.Empty<object>());
+            return Results.Ok(new PaginatedStripeResult<PaymentMethodDto>(new(), false, null));
 
         try
         {
-            var methods = await stripeService.GetPaymentMethodsAsync(tenant.StripeCustomerId);
-            return Results.Ok(methods);
+            var result = await stripeService.GetPaymentMethodsAsync(tenant.StripeCustomerId, cursor);
+            return Results.Ok(result);
         }
         catch (Exception)
         {
-            return Results.Ok(Array.Empty<object>());
+            return Results.Ok(new PaginatedStripeResult<PaymentMethodDto>(new(), false, null));
         }
     }
 

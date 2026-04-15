@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SbWallet } from "@/components/layout/DashboardIcons";
-import type { StripeInvoice } from "@/types/subscription";
-import { Loader2, FileText, Download, Receipt } from "lucide-react";
+import type { StripeInvoice, PaginatedStripeResult } from "@/types/subscription";
+import { subscriptionService } from "@/services/api/subscriptions";
+import { Loader2, FileText, Download, Receipt, ChevronDown } from "lucide-react";
 
 // ── Invoice Status Badge ──────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
@@ -35,12 +37,40 @@ function InvoiceStatusBadge({ status, t }: { status: string; t: (key: string) =>
 }
 
 interface InvoiceHistoryProps {
-  invoices: StripeInvoice[];
+  initialData: PaginatedStripeResult<StripeInvoice> | null;
   billingLoading: boolean;
 }
 
-export function InvoiceHistory({ invoices, billingLoading }: InvoiceHistoryProps) {
+export function InvoiceHistory({ initialData, billingLoading }: InvoiceHistoryProps) {
   const t = useTranslations('subscription.invoiceHistory');
+  const [invoices, setInvoices] = useState<StripeInvoice[]>(initialData?.items ?? []);
+  const [hasMore, setHasMore] = useState(initialData?.hasMore ?? false);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Sync when initialData changes (parent re-fetch)
+  const [prevData, setPrevData] = useState(initialData);
+  if (initialData !== prevData) {
+    setPrevData(initialData);
+    setInvoices(initialData?.items ?? []);
+    setHasMore(initialData?.hasMore ?? false);
+    setNextCursor(initialData?.nextCursor ?? null);
+  }
+
+  const handleLoadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await subscriptionService.getInvoices(nextCursor);
+      setInvoices(prev => [...prev, ...result.items]);
+      setHasMore(result.hasMore);
+      setNextCursor(result.nextCursor);
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <Card className="page-animate-delay-2">
@@ -171,6 +201,24 @@ export function InvoiceHistory({ invoices, billingLoading }: InvoiceHistoryProps
                 </div>
               ))}
             </div>
+
+            {/* Load More */}
+            {hasMore && (
+              <div className="border-t border-border px-4 py-3 flex justify-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground border border-border rounded-lg hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loadingMore ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                  {loadingMore ? t('loadingMore') : t('loadMore')}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">

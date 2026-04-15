@@ -18,8 +18,8 @@ public interface IStripeService
     Task HandleWebhookAsync(string json, string signature);
     Task CancelSubscriptionAsync(int tenantId);
     Task ReactivateSubscriptionAsync(int tenantId);
-    Task<List<InvoiceDto>> GetInvoicesAsync(string stripeCustomerId, int limit = 24);
-    Task<List<PaymentMethodDto>> GetPaymentMethodsAsync(string stripeCustomerId);
+    Task<PaginatedStripeResult<InvoiceDto>> GetInvoicesAsync(string stripeCustomerId, string? cursor = null, int limit = 3);
+    Task<PaginatedStripeResult<PaymentMethodDto>> GetPaymentMethodsAsync(string stripeCustomerId, string? cursor = null, int limit = 3);
     Task<string> CreateSetupIntentAsync(string stripeCustomerId);
 }
 
@@ -45,6 +45,12 @@ public record PaymentMethodDto(
     int? CardExpMonth,
     int? CardExpYear,
     bool IsDefault
+);
+
+public record PaginatedStripeResult<T>(
+    List<T> Items,
+    bool HasMore,
+    string? NextCursor
 );
 
 public class StripeService : IStripeService
@@ -588,7 +594,7 @@ public class StripeService : IStripeService
             tenant.Id, subscription.Status, subscription.CancelAtPeriodEnd);
     }
 
-    public async Task<List<InvoiceDto>> GetInvoicesAsync(string stripeCustomerId, int limit = 24)
+    public async Task<PaginatedStripeResult<InvoiceDto>> GetInvoicesAsync(string stripeCustomerId, string? cursor = null, int limit = 3)
     {
         var service = new InvoiceService();
         var options = new InvoiceListOptions
@@ -596,10 +602,12 @@ public class StripeService : IStripeService
             Customer = stripeCustomerId,
             Limit = limit,
         };
+        if (!string.IsNullOrEmpty(cursor))
+            options.StartingAfter = cursor;
 
         var invoices = await service.ListAsync(options);
 
-        return invoices.Data.Select(inv => new InvoiceDto(
+        var items = invoices.Data.Select(inv => new InvoiceDto(
             Id: inv.Id,
             Number: inv.Number,
             Created: inv.Created,
@@ -612,9 +620,11 @@ public class StripeService : IStripeService
             InvoicePdfUrl: inv.InvoicePdf,
             HostedInvoiceUrl: inv.HostedInvoiceUrl
         )).ToList();
+
+        return new PaginatedStripeResult<InvoiceDto>(items, invoices.HasMore, items.LastOrDefault()?.Id);
     }
 
-    public async Task<List<PaymentMethodDto>> GetPaymentMethodsAsync(string stripeCustomerId)
+    public async Task<PaginatedStripeResult<PaymentMethodDto>> GetPaymentMethodsAsync(string stripeCustomerId, string? cursor = null, int limit = 3)
     {
         // Get default payment method from customer
         var customerService = new CustomerService();
@@ -626,7 +636,10 @@ public class StripeService : IStripeService
         {
             Customer = stripeCustomerId,
             Type = "card",
+            Limit = limit,
         };
+        if (!string.IsNullOrEmpty(cursor))
+            options.StartingAfter = cursor;
 
         var methods = await pmService.ListAsync(options);
 
@@ -641,10 +654,13 @@ public class StripeService : IStripeService
             IsDefault: pm.Id == defaultPmId
         )).ToList();
 
-        return allMethods
+        var deduplicated = allMethods
             .GroupBy(pm => $"{pm.CardBrand}_{pm.CardLast4}_{pm.CardExpMonth}_{pm.CardExpYear}")
             .Select(g => g.FirstOrDefault(pm => pm.IsDefault) ?? g.First())
             .ToList();
+
+        // Use the last raw ID (before dedup) for cursor, since Stripe needs the original ID
+        return new PaginatedStripeResult<PaymentMethodDto>(deduplicated, methods.HasMore, allMethods.LastOrDefault()?.Id);
     }
 
     public async Task<string> CreateSetupIntentAsync(string stripeCustomerId)

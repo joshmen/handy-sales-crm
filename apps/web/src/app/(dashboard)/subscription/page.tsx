@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
-import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance } from "@/types/subscription";
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance, PaginatedStripeResult } from "@/types/subscription";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -40,8 +40,8 @@ export default function SubscriptionPage() {
   const [trialCheckoutLoading, setTrialCheckoutLoading] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPlans, setShowPlans] = useState(false);
-  const [invoices, setInvoices] = useState<StripeInvoice[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<StripePaymentMethod[]>([]);
+  const [invoiceData, setInvoiceData] = useState<PaginatedStripeResult<StripeInvoice> | null>(null);
+  const [pmData, setPmData] = useState<PaginatedStripeResult<StripePaymentMethod> | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [timbres, setTimbres] = useState<TimbreBalance | null>(null);
 
@@ -64,8 +64,8 @@ export default function SubscriptionPage() {
           subscriptionService.getInvoices(),
           subscriptionService.getPaymentMethods(),
         ]).then(([inv, pm]) => {
-          setInvoices(inv);
-          setPaymentMethods(pm);
+          setInvoiceData(inv);
+          setPmData(pm);
         }).catch(() => {
           // Silently fail — billing section just stays empty
         }).finally(() => setBillingLoading(false));
@@ -286,7 +286,7 @@ export default function SubscriptionPage() {
 
         {subscription.hasStripe && (
           <PaymentMethods
-            paymentMethods={paymentMethods}
+            initialData={pmData}
             billingLoading={billingLoading}
             processing={processing}
             onManageBilling={handleManageBilling}
@@ -295,7 +295,7 @@ export default function SubscriptionPage() {
 
         {subscription.hasStripe && (
           <InvoiceHistory
-            invoices={invoices}
+            initialData={invoiceData}
             billingLoading={billingLoading}
           />
         )}

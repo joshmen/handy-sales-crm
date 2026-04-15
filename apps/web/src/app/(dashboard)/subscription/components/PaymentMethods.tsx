@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { SbPayments } from "@/components/layout/DashboardIcons";
-import type { StripePaymentMethod } from "@/types/subscription";
-import { CreditCard, Loader2, ExternalLink } from "lucide-react";
+import type { StripePaymentMethod, PaginatedStripeResult } from "@/types/subscription";
+import { subscriptionService } from "@/services/api/subscriptions";
+import { CreditCard, Loader2, ExternalLink, ChevronDown } from "lucide-react";
 
 // ── Card brand SVG icons ──────────────────────────────────
 function CardBrandIcon({ brand, className }: { brand: string | null; className?: string }) {
@@ -35,14 +37,42 @@ function CardBrandIcon({ brand, className }: { brand: string | null; className?:
 }
 
 interface PaymentMethodsProps {
-  paymentMethods: StripePaymentMethod[];
+  initialData: PaginatedStripeResult<StripePaymentMethod> | null;
   billingLoading: boolean;
   processing: boolean;
   onManageBilling: () => void;
 }
 
-export function PaymentMethods({ paymentMethods, billingLoading, processing, onManageBilling }: PaymentMethodsProps) {
+export function PaymentMethods({ initialData, billingLoading, processing, onManageBilling }: PaymentMethodsProps) {
   const t = useTranslations('subscription.paymentMethod');
+  const [methods, setMethods] = useState<StripePaymentMethod[]>(initialData?.items ?? []);
+  const [hasMore, setHasMore] = useState(initialData?.hasMore ?? false);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Sync when initialData changes (parent re-fetch)
+  const [prevData, setPrevData] = useState(initialData);
+  if (initialData !== prevData) {
+    setPrevData(initialData);
+    setMethods(initialData?.items ?? []);
+    setHasMore(initialData?.hasMore ?? false);
+    setNextCursor(initialData?.nextCursor ?? null);
+  }
+
+  const handleLoadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await subscriptionService.getPaymentMethods(nextCursor);
+      setMethods(prev => [...prev, ...result.items]);
+      setHasMore(result.hasMore);
+      setNextCursor(result.nextCursor);
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <Card className="page-animate-delay-1">
@@ -56,9 +86,9 @@ export function PaymentMethods({ paymentMethods, billingLoading, processing, onM
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">{t('loading')}</span>
           </div>
-        ) : paymentMethods.length > 0 ? (
+        ) : methods.length > 0 ? (
           <div className="space-y-2">
-            {paymentMethods.map((pm) => (
+            {methods.map((pm) => (
               <div
                 key={pm.id}
                 className="flex items-center justify-between p-4 border border-border rounded-xl bg-gradient-to-r from-background to-muted/20 hover:shadow-sm transition-all"
@@ -97,6 +127,24 @@ export function PaymentMethods({ paymentMethods, billingLoading, processing, onM
                 </Button>
               </div>
             ))}
+
+            {/* Load More */}
+            {hasMore && (
+              <div className="flex justify-center pt-1">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground border border-border rounded-lg hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loadingMore ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                  {loadingMore ? t('loadingMore') : t('loadMore')}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">

@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance, TimbrePurchaseRecord, TimbrePackage } from '@/types/subscription';
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance, TimbrePurchaseRecord, TimbrePackage, PaginatedStripeResult } from '@/types/subscription';
 
 export const subscriptionService = {
   async getPlans(): Promise<SubscriptionPlan[]> {
@@ -53,13 +53,15 @@ export const subscriptionService = {
     await api.post('/api/subscription/reactivate');
   },
 
-  async getInvoices(): Promise<StripeInvoice[]> {
-    const { data } = await api.get<StripeInvoice[]>('/api/subscription/invoices');
+  async getInvoices(cursor?: string): Promise<PaginatedStripeResult<StripeInvoice>> {
+    const params = cursor ? { cursor } : {};
+    const { data } = await api.get<PaginatedStripeResult<StripeInvoice>>('/api/subscription/invoices', { params });
     return data;
   },
 
-  async getPaymentMethods(): Promise<StripePaymentMethod[]> {
-    const { data } = await api.get<StripePaymentMethod[]>('/api/subscription/payment-methods');
+  async getPaymentMethods(cursor?: string): Promise<PaginatedStripeResult<StripePaymentMethod>> {
+    const params = cursor ? { cursor } : {};
+    const { data } = await api.get<PaginatedStripeResult<StripePaymentMethod>>('/api/subscription/payment-methods', { params });
     return data;
   },
 

@@ -89,6 +89,14 @@ export interface TimbrePurchaseRecord {
   completadoEn: string | null;
 }
 
+// ─── Paginated Stripe Result ───
+
+export interface PaginatedStripeResult<T> {
+  items: T[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
 export interface TimbrePackage {
   id: number;
   nombre: string;
