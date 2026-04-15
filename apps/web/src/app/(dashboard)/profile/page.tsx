@@ -211,7 +211,7 @@ export default function ProfilePage() {
 
   const handleRevokeDevice = async (sessionId: number) => {
     try {
-      await deviceSessionService.cerrarSesion(sessionId, 'Cerrado desde perfil');
+      await deviceSessionService.cerrarSesion(sessionId, t('closedFromProfile'));
       setDevices(prev => prev.filter(d => d.id !== sessionId));
       toast({
         title: t('deviceRevoked'),
@@ -219,7 +219,7 @@ export default function ProfilePage() {
       });
     } catch {
       toast({
-        title: 'Error',
+        title: tc('error'),
         description: t('errorRevokingDevice'),
         variant: 'destructive',
       });
@@ -289,7 +289,7 @@ export default function ProfilePage() {
                 </Badge>
                 <Badge variant="outline">
                   <MapPin className="h-3 w-3 mr-1" />
-                  {'Ciudad de México'}
+                  {t('defaultLocation')}
                 </Badge>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function ProfilePage() {
                 <div>
                   <Badge className="bg-red-100 text-red-800 text-xs">
                     <Shield className="h-3 w-3 mr-1" />
-                    Super Admin
+                    {t('roles.superAdmin')}
                   </Badge>
                 </div>
               )}

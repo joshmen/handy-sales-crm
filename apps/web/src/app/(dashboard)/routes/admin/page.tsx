@@ -134,7 +134,7 @@ export default function RouteAdminPage() {
       const response = await zoneService.getZones();
       setZones(response.zones.map(z => ({ id: parseInt(z.id), name: z.name })));
     } catch {
-      console.error('Error al cargar zonas');
+      console.error(t('templates.errorLoadingZones'));
     }
   };
 
@@ -145,7 +145,7 @@ export default function RouteAdminPage() {
       const items = Array.isArray(data) ? data : data.items || [];
       setUsuarios(items);
     } catch {
-      console.error('Error al cargar usuarios');
+      console.error(t('templates.errorLoadingUsers'));
     }
   };
 
@@ -328,7 +328,7 @@ export default function RouteAdminPage() {
       title={t('templates.title')}
       subtitle={
         totalTemplates > 0
-          ? `${totalTemplates} template${totalTemplates !== 1 ? 's' : ''}`
+          ? t('templates.subtitleCount', { count: totalTemplates })
           : undefined
       }
       actions={
@@ -481,7 +481,7 @@ export default function RouteAdminPage() {
                       onClick={() => handleOpenAssign(template)}
                       disabled={actionLoading}
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
-                      title="Asignar a vendedor"
+                      title={t('templates.assignTooltip')}
                     >
                       <CalendarPlus size={14} />
                       {t('templates.assign')}
@@ -490,7 +490,7 @@ export default function RouteAdminPage() {
                       onClick={() => handleOpenEdit(template)}
                       disabled={actionLoading}
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-md hover:bg-amber-100 transition-colors disabled:opacity-50"
-                      title="Editar template"
+                      title={t('templates.editTooltip')}
                     >
                       <Pencil size={14} />
                     </button>
@@ -498,7 +498,7 @@ export default function RouteAdminPage() {
                       onClick={() => handleDuplicate(template)}
                       disabled={actionLoading}
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors disabled:opacity-50"
-                      title="Duplicar template"
+                      title={t('templates.duplicateTooltip')}
                     >
                       <Copy size={14} />
                     </button>
@@ -506,7 +506,7 @@ export default function RouteAdminPage() {
                       onClick={() => handleDelete(template)}
                       disabled={actionLoading}
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50 ml-auto"
-                      title="Eliminar template"
+                      title={t('templates.deleteTooltip')}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -612,7 +612,7 @@ export default function RouteAdminPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">{assigningTemplate.descripcion}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {assigningTemplate.totalParadas} parada{assigningTemplate.totalParadas !== 1 ? 's' : ''}
+                  {assigningTemplate.totalParadas} {assigningTemplate.totalParadas !== 1 ? t('templates.stopsPlural') : t('templates.stop')}
                   {assigningTemplate.zonaNombre ? ` - ${assigningTemplate.zonaNombre}` : ''}
                 </p>
               </div>

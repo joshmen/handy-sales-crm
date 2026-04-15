@@ -717,7 +717,24 @@
       "completeRegistration": "Completar registro",
       "createMyAccount": "Crear mi cuenta",
       "alreadyHaveAccount": "¿Ya tienes cuenta?",
-      "signInLink": "Inicia sesión"
+      "signInLink": "Inicia sesión",
+      "invalidEmail": "Formato de correo inválido",
+      "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+      "invalidRfc": "RFC inválido",
+      "mustAcceptTerms": "Debes aceptar los términos y el aviso de privacidad",
+      "passwordsMismatch": "Las contraseñas no coinciden",
+      "namePlaceholder": "Juan Pérez",
+      "emailPlaceholder": "tu@empresa.com",
+      "passwordHint": "Min. 6 caracteres",
+      "repeatHint": "Repetir",
+      "companyPlaceholder": "Mi Empresa S.A. de C.V.",
+      "iAccept": "Acepto los",
+      "andThe": "y el",
+      "orSeparator": "o",
+      "errorUnexpected": "Error inesperado al registrarse.",
+      "errorConnection": "No se pudo conectar con el servidor.",
+      "errorRegistering": "Error al registrarse.",
+      "errorSession": "Error al establecer la sesión."
     }
   },
   "dashboard": {
@@ -779,6 +796,45 @@
       "subtitle": "Completa la configuración inicial para sacar el máximo provecho de Handy Suites.",
       "cta": "Comenzar",
       "closeBanner": "Cerrar banner"
+    },
+    "activityChart": {
+      "title": "Actividad del Sistema",
+      "subtitle": "Tendencia de actividad de los últimos 7 días",
+      "activities": "Actividades",
+      "logins": "Logins",
+      "users": "Usuarios",
+      "errors": "Errores",
+      "noData": "No hay datos de actividad disponibles"
+    },
+    "goalProgress": {
+      "title": "Metas y Objetivos",
+      "subtitle": "Progreso hacia los objetivos establecidos",
+      "overdue": "Vencido",
+      "today": "Hoy",
+      "oneDay": "1 día",
+      "nDays": "{count} días",
+      "overallProgress": "Progreso General",
+      "remaining": "Falta:",
+      "of": "de",
+      "noGoals": "No hay metas configuradas",
+      "noGoalsHint": "Agrega objetivos para hacer seguimiento del progreso"
+    },
+    "salesChart": {
+      "title": "Ventas",
+      "subtitle": "Evolución de ventas en el tiempo",
+      "sales": "Ventas:",
+      "orders": "Pedidos:",
+      "totalSales": "Total Ventas",
+      "ordersLabel": "Pedidos",
+      "average": "Promedio"
+    },
+    "visitsChart": {
+      "title": "Visitas",
+      "subtitle": "Estado de visitas por período",
+      "total": "Total:",
+      "totalVisits": "Total Visitas",
+      "completed": "Completadas",
+      "successRate": "Tasa Éxito"
     }
   },
   "orders": {
@@ -1568,7 +1624,16 @@
       "descriptionPlaceholder": "Describe la ruta...",
       "notesPlaceholder": "Notas adicionales...",
       "update": "Actualizar",
-      "create": "Crear"
+      "create": "Crear",
+      "assignTooltip": "Asignar a vendedor",
+      "editTooltip": "Editar template",
+      "duplicateTooltip": "Duplicar template",
+      "deleteTooltip": "Eliminar template",
+      "stop": "parada",
+      "stopsPlural": "paradas",
+      "subtitleCount": "{count} template{count, plural, one {} other {s}}",
+      "errorLoadingZones": "Error al cargar zonas",
+      "errorLoadingUsers": "Error al cargar usuarios"
     },
     "detail": {
       "errorLoading": "Error al cargar la ruta",
@@ -2001,6 +2066,14 @@
       "selectStatus": "Seleccionar estado",
       "saveChanges": "Guardar cambios",
       "csvDownloaded": "Archivo CSV descargado",
+      "csvActive": "Activo",
+      "csvInactive": "Inactivo",
+      "csvNA": "N/D",
+      "csvName": "Nombre",
+      "csvStatus": "Estado",
+      "csvPhone": "Teléfono",
+      "csvLastActivity": "Última actividad",
+      "csvCreated": "Creado",
       "listUpdated": "Lista actualizada",
       "errorLoadingSessions": "Error al cargar sesiones del usuario",
       "cannotRevokeOwn": "No puedes revocar tu propia sesion activa",
@@ -2565,6 +2638,7 @@
     "title": "Facturación",
     "subtitle": "Resumen de facturación electrónica SAT CFDI 4.0",
     "newInvoice": "Nueva Factura",
+    "loadingScreenReader": "Cargando...",
     "kpis": {
       "totalInvoiced": "Total facturado",
       "stampedInvoices": "Facturas timbradas",
@@ -2662,6 +2736,7 @@
       "sendByEmail": "Enviar por email",
       "cancelInvoice": "Cancelar factura",
       "issuer": "Emisor",
+      "receptor": "Receptor",
       "rfcLabel": "RFC",
       "businessName": "Razon social",
       "taxRegime": "Regimen fiscal",
@@ -2700,7 +2775,7 @@
       },
       "cancelModal": {
         "title": "Cancelar factura",
-        "irreversibleWarning": "Esta acción es irreversible. La factura se cancelará ante la autoridad fiscal.",
+        "irreversibleWarning": "Esta acción es <bold>irreversible</bold>. La factura se cancelará ante la autoridad fiscal.",
         "cancelReasonLabel": "Motivo de cancelación *",
         "reason01": "01 — Emitido con errores (con factura sustituta)",
         "reason02": "02 — Emitido con errores (sin relación)",
@@ -3737,6 +3812,8 @@
     "discardChangesTitle": "¿Descartar cambios?",
     "discardChangesDesc": "Tienes cambios sin guardar en tu información personal que se perderán si continúas. ¿Qué deseas hacer?",
     "noChangesToSave": "No hay cambios para guardar",
+    "closedFromProfile": "Cerrado desde perfil",
+    "defaultLocation": "Ciudad de México",
     "imageHint": "PNG, JPG o WebP. Máx. 2 MB.",
     "tabs": {
       "personal": "Información Personal",

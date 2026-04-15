@@ -717,7 +717,24 @@
       "completeRegistration": "Complete registration",
       "createMyAccount": "Create my account",
       "alreadyHaveAccount": "Already have an account?",
-      "signInLink": "Sign in"
+      "signInLink": "Sign in",
+      "invalidEmail": "Invalid email format",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "invalidRfc": "Invalid RFC",
+      "mustAcceptTerms": "You must accept the terms and privacy policy",
+      "passwordsMismatch": "Passwords do not match",
+      "namePlaceholder": "John Doe",
+      "emailPlaceholder": "you@company.com",
+      "passwordHint": "Min. 6 characters",
+      "repeatHint": "Repeat",
+      "companyPlaceholder": "My Company Inc.",
+      "iAccept": "I accept the",
+      "andThe": "and the",
+      "orSeparator": "or",
+      "errorUnexpected": "Unexpected error during registration.",
+      "errorConnection": "Could not connect to the server.",
+      "errorRegistering": "Error registering.",
+      "errorSession": "Error establishing the session."
     }
   },
   "dashboard": {
@@ -779,6 +796,45 @@
       "subtitle": "Complete the initial setup to get the most out of Handy Suites.",
       "cta": "Get Started",
       "closeBanner": "Close banner"
+    },
+    "activityChart": {
+      "title": "System Activity",
+      "subtitle": "Activity trend over the last 7 days",
+      "activities": "Activities",
+      "logins": "Logins",
+      "users": "Users",
+      "errors": "Errors",
+      "noData": "No activity data available"
+    },
+    "goalProgress": {
+      "title": "Goals & Objectives",
+      "subtitle": "Progress toward established objectives",
+      "overdue": "Overdue",
+      "today": "Today",
+      "oneDay": "1 day",
+      "nDays": "{count} days",
+      "overallProgress": "Overall Progress",
+      "remaining": "Remaining:",
+      "of": "of",
+      "noGoals": "No goals configured",
+      "noGoalsHint": "Add objectives to track progress"
+    },
+    "salesChart": {
+      "title": "Sales",
+      "subtitle": "Sales evolution over time",
+      "sales": "Sales:",
+      "orders": "Orders:",
+      "totalSales": "Total Sales",
+      "ordersLabel": "Orders",
+      "average": "Average"
+    },
+    "visitsChart": {
+      "title": "Visits",
+      "subtitle": "Visit status by period",
+      "total": "Total:",
+      "totalVisits": "Total Visits",
+      "completed": "Completed",
+      "successRate": "Success Rate"
     }
   },
   "orders": {
@@ -1568,7 +1624,16 @@
       "descriptionPlaceholder": "Describe the route...",
       "notesPlaceholder": "Additional notes...",
       "update": "Update",
-      "create": "Create"
+      "create": "Create",
+      "assignTooltip": "Assign to vendor",
+      "editTooltip": "Edit template",
+      "duplicateTooltip": "Duplicate template",
+      "deleteTooltip": "Delete template",
+      "stop": "stop",
+      "stopsPlural": "stops",
+      "subtitleCount": "{count} template{count, plural, one {} other {s}}",
+      "errorLoadingZones": "Error loading zones",
+      "errorLoadingUsers": "Error loading users"
     },
     "detail": {
       "errorLoading": "Error loading route",
@@ -2048,6 +2113,14 @@
       "columnLastActivity": "Last activity",
       "columnSessions": "Sessions",
       "csvDownloaded": "CSV file downloaded",
+      "csvActive": "Active",
+      "csvInactive": "Inactive",
+      "csvNA": "N/A",
+      "csvName": "Name",
+      "csvStatus": "Status",
+      "csvPhone": "Phone",
+      "csvLastActivity": "Last activity",
+      "csvCreated": "Created",
       "listUpdated": "List updated",
       "errorLoadingLocations": "Error loading locations",
       "errorLoadingSessions": "Error loading user sessions",
@@ -2565,6 +2638,7 @@
     "title": "Billing",
     "subtitle": "SAT CFDI 4.0 electronic billing overview",
     "newInvoice": "New Invoice",
+    "loadingScreenReader": "Loading...",
     "kpis": {
       "totalInvoiced": "Total invoiced",
       "stampedInvoices": "Stamped invoices",
@@ -2662,6 +2736,7 @@
       "sendByEmail": "Send by email",
       "cancelInvoice": "Cancel invoice",
       "issuer": "Issuer",
+      "receptor": "Receiver",
       "rfcLabel": "Tax ID",
       "businessName": "Business name",
       "taxRegime": "Tax regime",
@@ -2700,7 +2775,7 @@
       },
       "cancelModal": {
         "title": "Cancel invoice",
-        "irreversibleWarning": "This action is irreversible. The invoice will be cancelled with the tax authority.",
+        "irreversibleWarning": "This action is <bold>irreversible</bold>. The invoice will be cancelled with the tax authority.",
         "cancelReasonLabel": "Cancellation reason *",
         "reason01": "01 — Issued with errors (with substitute invoice)",
         "reason02": "02 — Issued with errors (no relation)",
@@ -3737,6 +3812,8 @@
     "discardChangesTitle": "Discard changes?",
     "discardChangesDesc": "You have unsaved changes in your personal information that will be lost if you continue. What would you like to do?",
     "noChangesToSave": "No changes to save",
+    "closedFromProfile": "Closed from profile",
+    "defaultLocation": "Mexico City",
     "imageHint": "PNG, JPG or WebP. Max 2 MB.",
     "tabs": {
       "personal": "Personal Information",

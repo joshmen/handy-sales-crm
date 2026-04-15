@@ -829,13 +829,13 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   // B6: CSV export
   const handleDescargar = () => {
     const csvData = displayUsers.map(u => ({
-      Name: u.name,
+      [t('csvName')]: u.name,
       Email: u.email,
       Rol: getRoleLabel(u.role),
-      Status: u.status === UserStatus.ACTIVE ? 'Active' : 'Inactive',
-      Phone: u.phone || '',
-      'Last activity': u.lastLogin ? formatDate(u.lastLogin) : 'N/A',
-      'Created': u.createdAt ? formatDate(u.createdAt) : '',
+      [t('csvStatus')]: u.status === UserStatus.ACTIVE ? t('csvActive') : t('csvInactive'),
+      [t('csvPhone')]: u.phone || '',
+      [t('csvLastActivity')]: u.lastLogin ? formatDate(u.lastLogin) : t('csvNA'),
+      [t('csvCreated')]: u.createdAt ? formatDate(u.createdAt) : '',
     }));
 
     const csv = Papa.unparse(csvData);
