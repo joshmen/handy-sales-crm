@@ -12,107 +12,41 @@ import { useTheme } from '@/stores/useUIStore';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useTranslations } from 'next-intl';
 
-const AMERICAS_TIMEZONES = [
-  // Mexico
-  { value: 'America/Mexico_City', label: 'Ciudad de México (GMT-6)' },
-  { value: 'America/Monterrey', label: 'Monterrey (GMT-6)' },
-  { value: 'America/Chihuahua', label: 'Chihuahua (GMT-6)' },
-  { value: 'America/Mazatlan', label: 'Mazatlán (GMT-7)' },
-  { value: 'America/Hermosillo', label: 'Hermosillo (GMT-7)' },
-  { value: 'America/Tijuana', label: 'Tijuana (GMT-8)' },
-  { value: 'America/Cancun', label: 'Cancún (GMT-5)' },
-  // USA & Canada
-  { value: 'America/New_York', label: 'Eastern — New York (GMT-5)' },
-  { value: 'America/Chicago', label: 'Central — Chicago (GMT-6)' },
-  { value: 'America/Denver', label: 'Mountain — Denver (GMT-7)' },
-  { value: 'America/Los_Angeles', label: 'Pacific — Los Angeles (GMT-8)' },
-  { value: 'America/Anchorage', label: 'Alaska (GMT-9)' },
-  { value: 'Pacific/Honolulu', label: 'Hawaii (GMT-10)' },
-  { value: 'America/Toronto', label: 'Toronto (GMT-5)' },
-  { value: 'America/Vancouver', label: 'Vancouver (GMT-8)' },
-  // Central America
-  { value: 'America/Guatemala', label: 'Guatemala (GMT-6)' },
-  { value: 'America/Costa_Rica', label: 'Costa Rica (GMT-6)' },
-  { value: 'America/Panama', label: 'Panamá (GMT-5)' },
-  { value: 'America/Tegucigalpa', label: 'Honduras (GMT-6)' },
-  { value: 'America/Managua', label: 'Nicaragua (GMT-6)' },
-  { value: 'America/El_Salvador', label: 'El Salvador (GMT-6)' },
-  // South America
-  { value: 'America/Bogota', label: 'Bogotá, Colombia (GMT-5)' },
-  { value: 'America/Lima', label: 'Lima, Perú (GMT-5)' },
-  { value: 'America/Santiago', label: 'Santiago, Chile (GMT-4)' },
-  { value: 'America/Sao_Paulo', label: 'São Paulo, Brasil (GMT-3)' },
-  { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires, Argentina (GMT-3)' },
-  { value: 'America/Caracas', label: 'Caracas, Venezuela (GMT-4)' },
-  { value: 'America/Guayaquil', label: 'Guayaquil, Ecuador (GMT-5)' },
-  { value: 'America/Asuncion', label: 'Asunción, Paraguay (GMT-4)' },
-  { value: 'America/Montevideo', label: 'Montevideo, Uruguay (GMT-3)' },
-  { value: 'America/La_Paz', label: 'La Paz, Bolivia (GMT-4)' },
-  // Caribbean
-  { value: 'America/Havana', label: 'La Habana, Cuba (GMT-5)' },
-  { value: 'America/Santo_Domingo', label: 'Santo Domingo, Rep. Dom. (GMT-4)' },
-  { value: 'America/Puerto_Rico', label: 'Puerto Rico (GMT-4)' },
+// Value keys for dropdowns — labels resolved via i18n in component
+const TIMEZONE_KEYS = [
+  'America/Mexico_City', 'America/Monterrey', 'America/Chihuahua', 'America/Mazatlan',
+  'America/Hermosillo', 'America/Tijuana', 'America/Cancun',
+  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Anchorage', 'Pacific/Honolulu', 'America/Toronto', 'America/Vancouver',
+  'America/Guatemala', 'America/Costa_Rica', 'America/Panama', 'America/Tegucigalpa',
+  'America/Managua', 'America/El_Salvador',
+  'America/Bogota', 'America/Lima', 'America/Santiago', 'America/Sao_Paulo',
+  'America/Argentina/Buenos_Aires', 'America/Caracas', 'America/Guayaquil',
+  'America/Asuncion', 'America/Montevideo', 'America/La_Paz',
+  'America/Havana', 'America/Santo_Domingo', 'America/Puerto_Rico',
+];
+const LANGUAGE_KEYS = ['es', 'en', 'pt'];
+const COUNTRY_KEYS = [
+  'MX', 'US', 'CA', 'GT', 'HN', 'SV', 'NI', 'CR', 'PA',
+  'CO', 'VE', 'EC', 'PE', 'BR', 'CL', 'AR', 'UY', 'PY', 'BO',
+  'CU', 'DO', 'PR',
+];
+const CURRENCY_KEYS = [
+  'MXN', 'USD', 'CAD', 'BRL', 'ARS', 'COP', 'CLP', 'PEN',
+  'UYU', 'PYG', 'BOB', 'VES', 'GTQ', 'CRC', 'PAB', 'DOP', 'HNL', 'NIO',
 ];
 
-const LANGUAGES = [
-  { value: 'es', label: 'Español' },
-  { value: 'en', label: 'English' },
-  { value: 'pt', label: 'Português' },
-];
-
-const COUNTRIES = [
-  // Mexico
-  { value: 'MX', label: 'MX — México' },
-  // USA & Canada
-  { value: 'US', label: 'US — Estados Unidos' },
-  { value: 'CA', label: 'CA — Canadá' },
-  // Central America
-  { value: 'GT', label: 'GT — Guatemala' },
-  { value: 'HN', label: 'HN — Honduras' },
-  { value: 'SV', label: 'SV — El Salvador' },
-  { value: 'NI', label: 'NI — Nicaragua' },
-  { value: 'CR', label: 'CR — Costa Rica' },
-  { value: 'PA', label: 'PA — Panamá' },
-  // South America
-  { value: 'CO', label: 'CO — Colombia' },
-  { value: 'VE', label: 'VE — Venezuela' },
-  { value: 'EC', label: 'EC — Ecuador' },
-  { value: 'PE', label: 'PE — Perú' },
-  { value: 'BR', label: 'BR — Brasil' },
-  { value: 'CL', label: 'CL — Chile' },
-  { value: 'AR', label: 'AR — Argentina' },
-  { value: 'UY', label: 'UY — Uruguay' },
-  { value: 'PY', label: 'PY — Paraguay' },
-  { value: 'BO', label: 'BO — Bolivia' },
-  // Caribbean
-  { value: 'CU', label: 'CU — Cuba' },
-  { value: 'DO', label: 'DO — República Dominicana' },
-  { value: 'PR', label: 'PR — Puerto Rico' },
-];
-
-const CURRENCIES = [
-  { value: 'MXN', label: 'MXN — Peso Mexicano ($)' },
-  { value: 'USD', label: 'USD — Dólar Estadounidense ($)' },
-  { value: 'CAD', label: 'CAD — Dólar Canadiense ($)' },
-  { value: 'BRL', label: 'BRL — Real Brasileño (R$)' },
-  { value: 'ARS', label: 'ARS — Peso Argentino ($)' },
-  { value: 'COP', label: 'COP — Peso Colombiano ($)' },
-  { value: 'CLP', label: 'CLP — Peso Chileno ($)' },
-  { value: 'PEN', label: 'PEN — Sol Peruano (S/)' },
-  { value: 'UYU', label: 'UYU — Peso Uruguayo ($)' },
-  { value: 'PYG', label: 'PYG — Guaraní Paraguayo (Gs)' },
-  { value: 'BOB', label: 'BOB — Boliviano (Bs)' },
-  { value: 'VES', label: 'VES — Bolívar Venezolano (Bs.D)' },
-  { value: 'GTQ', label: 'GTQ — Quetzal Guatemalteco (Q)' },
-  { value: 'CRC', label: 'CRC — Colón Costarricense (₡)' },
-  { value: 'PAB', label: 'PAB — Balboa Panameño (B/.)' },
-  { value: 'DOP', label: 'DOP — Peso Dominicano (RD$)' },
-  { value: 'HNL', label: 'HNL — Lempira Hondureño (L)' },
-  { value: 'NIO', label: 'NIO — Córdoba Nicaragüense (C$)' },
-];
+// Convert timezone value to i18n key (America/Mexico_City → America_Mexico_City)
+const tzKey = (tz: string) => tz.replace(/\//g, '_');
 
 export const AppearanceTab: React.FC = () => {
   const t = useTranslations('settings.appearance');
+
+  // Build i18n-resolved dropdown options
+  const LANGUAGES = LANGUAGE_KEYS.map(k => ({ value: k, label: t(`languages.${k}`) }));
+  const AMERICAS_TIMEZONES = TIMEZONE_KEYS.map(k => ({ value: k, label: t(`timezones.${tzKey(k)}`) }));
+  const COUNTRIES = COUNTRY_KEYS.map(k => ({ value: k, label: t(`countries.${k}`) }));
+  const CURRENCIES = CURRENCY_KEYS.map(k => ({ value: k, label: t(`currencies.${k}`) }));
   const { theme, setTheme } = useTheme();
   const isDarkMode = theme === 'dark';
   const { settings, updateSettings, isUpdating } = useCompany();

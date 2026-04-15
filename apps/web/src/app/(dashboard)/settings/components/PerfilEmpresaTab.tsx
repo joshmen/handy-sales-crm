@@ -165,12 +165,12 @@ export const PerfilEmpresaTab: React.FC = () => {
                 onChange={e => handleChange('tipoIdentificadorFiscal', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <option value="RFC">RFC (México)</option>
-                <option value="NIT">NIT (Colombia)</option>
-                <option value="CUIT">CUIT (Argentina)</option>
-                <option value="CNPJ">CNPJ (Brasil)</option>
-                <option value="RUT">RUT (Chile)</option>
-                <option value="RUC">RUC (Perú)</option>
+                <option value="RFC">{t('taxIdTypes.RFC')}</option>
+                <option value="NIT">{t('taxIdTypes.NIT')}</option>
+                <option value="CUIT">{t('taxIdTypes.CUIT')}</option>
+                <option value="CNPJ">{t('taxIdTypes.CNPJ')}</option>
+                <option value="RUT">{t('taxIdTypes.RUT')}</option>
+                <option value="RUC">{t('taxIdTypes.RUC')}</option>
               </select>
             </div>
           </div>

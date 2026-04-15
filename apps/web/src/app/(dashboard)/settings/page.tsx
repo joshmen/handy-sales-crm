@@ -7,7 +7,7 @@ import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Palette, Database, Building, Building2, Bell, Shield, Loader2 } from 'lucide-react';
+import { Palette, Database, Building, Building2, Bell, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { SrLoadingText } from '@/components/common/SrLoadingText';
 
@@ -17,7 +17,6 @@ import { PerfilEmpresaTab } from './components/PerfilEmpresaTab';
 import { AppearanceTab } from './components/AppearanceTab';
 import { SystemTab } from './components/SystemTab';
 import { NotificationsTab } from './components/NotificationsTab';
-import { SecurityTab } from './components/SecurityTab';
 
 function SettingsPageContent() {
   const t = useTranslations('settings');
@@ -122,10 +121,6 @@ function SettingsPageContent() {
             <Database className="h-4 w-4" />
             <span className="hidden sm:inline">{t('tabs.system')}</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tabs.security')}</span>
-          </TabsTrigger>
         </TabsList>
 
         {/* Perfil de Empresa - Datos fiscales y contacto */}
@@ -174,10 +169,6 @@ function SettingsPageContent() {
           />
         </TabsContent>
 
-        {/* Security Tab — Password, 2FA, Impersonation History */}
-        <TabsContent value="security" className="space-y-6">
-          <SecurityTab />
-        </TabsContent>
       </Tabs>
     </PageHeader>
   );
