@@ -522,7 +522,7 @@ export default function ZonesPage() {
                 {/* Row 2: Badges */}
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
-                    {zone.clientCount || 0} cliente{zone.clientCount !== 1 ? 's' : ''}
+                    {zone.clientCount || 0} {t('columns.clients')}
                   </span>
                 </div>
 
@@ -699,9 +699,9 @@ export default function ZonesPage() {
                       <div className="w-16 h-16 rounded-full bg-surface-3 flex items-center justify-center mb-4">
                         <Map className="w-8 h-8 text-muted-foreground/60" />
                       </div>
-                      <p className="text-sm font-medium text-foreground/80">Sin zonas geolocalizadas</p>
+                      <p className="text-sm font-medium text-foreground/80">{t('noGeoZones')}</p>
                       <p className="text-xs text-muted-foreground mt-1.5 max-w-xs">
-                        Edita una zona y agrega latitud, longitud y radio para verla en el mapa.
+                        {t('noGeoZonesHint')}
                       </p>
                     </div>
                   );
@@ -719,10 +719,10 @@ export default function ZonesPage() {
                       {z.description && <p className="text-xs text-muted-foreground mt-0.5">{z.description}</p>}
                       <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border-subtle">
                         <span className="text-xs text-foreground/70">
-                          {z.clientCount || 0} cliente{(z.clientCount || 0) !== 1 ? 's' : ''}
+                          {z.clientCount || 0} {t('columns.clients')}
                         </span>
                         {z.boundaries?.[0]?.radius && (
-                          <span className="text-xs text-muted-foreground">Radio: {z.boundaries[0].radius} km</span>
+                          <span className="text-xs text-muted-foreground">{t('drawer.radiusKm')}: {z.boundaries[0].radius} km</span>
                         )}
                       </div>
                     </div>
@@ -759,8 +759,8 @@ export default function ZonesPage() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
                       <span className="text-[11px] font-medium text-muted-foreground">
                         {zonesWithoutGeo.length > 0
-                          ? `${zonesWithGeo.length} de ${allZonesForMap.length} en mapa`
-                          : 'Zonas'}
+                          ? t('zonesOnMap', { shown: zonesWithGeo.length, total: allZonesForMap.length })
+                          : t('title')}
                       </span>
                       {zonesWithGeo.map(z => (
                         <button
@@ -771,7 +771,7 @@ export default function ZonesPage() {
                             handleEditZone(z);
                           }}
                           className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-surface-3 transition-colors group"
-                          title={`Editar ${z.name}`}
+                          title={`${tc('edit')} ${z.name}`}
                         >
                           <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: z.color }} />
                           <span className="text-xs text-foreground/70 group-hover:text-foreground">{z.name}</span>
@@ -852,7 +852,7 @@ export default function ZonesPage() {
                       className="w-3 h-3 rounded-full border border-border-subtle"
                       style={{ backgroundColor: watchedColor || '#EC4899' }}
                     />
-                    Color
+                    {t('drawer.color')}
                   </label>
                   <div className="flex gap-1.5 flex-wrap max-w-[180px]">
                     {availableColors.map((color) => (

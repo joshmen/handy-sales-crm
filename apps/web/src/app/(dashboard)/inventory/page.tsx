@@ -684,7 +684,7 @@ export default function InventoryPage() {
         {activeTab === 'almacen' && (
           <div key="almacen" className="animate-fade-in">
             {/* Filter Row */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
               <SearchBar
                 value={searchTerm}
                 onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
@@ -807,7 +807,7 @@ export default function InventoryPage() {
         {activeTab === 'movimientos' && (
           <div key="movimientos" className="animate-fade-in">
             {/* Filter Row */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
               <SearchBar
                 value={movSearchTerm}
                 onChange={(val) => {

@@ -3362,7 +3362,8 @@
       "loadingMap": "Cargando mapa...",
       "status": "Estado",
       "activeZone": "Zona activa",
-      "activeZoneHint": "Las zonas inactivas no se asignan a rutas ni aparecen en los filtros de vendedores."
+      "activeZoneHint": "Las zonas inactivas no se asignan a rutas ni aparecen en los filtros de vendedores.",
+      "color": "Color"
     },
     "modal": {
       "editZone": "Editar zona",

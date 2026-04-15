@@ -3362,7 +3362,8 @@
       "loadingMap": "Loading map...",
       "status": "Status",
       "activeZone": "Active zone",
-      "activeZoneHint": "Inactive zones are not assigned to routes and do not appear in vendor filters."
+      "activeZoneHint": "Inactive zones are not assigned to routes and do not appear in vendor filters.",
+      "color": "Color"
     },
     "modal": {
       "editZone": "Edit zone",
