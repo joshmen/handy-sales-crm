@@ -96,10 +96,10 @@ export default function InvoiceDetailPage() {
     try {
       setActionLoading('timbrar');
       await timbrarFactura(factura.id);
-      toast.success('Factura timbrada exitosamente');
+      toast.success(t('stampSuccess'));
       await loadFactura();
     } catch (error: unknown) {
-      toast.error((error as { message?: string })?.message || 'Error al timbrar');
+      toast.error((error as { message?: string })?.message || t('stampError'));
     } finally {
       setActionLoading(null);
     }
@@ -111,7 +111,7 @@ export default function InvoiceDetailPage() {
       setActionLoading('pdf');
       await downloadFacturaPdf(factura.id, `${factura.serie || 'A'}${factura.folio}`, factura.emisorRfc);
     } catch {
-      toast.error('Error al descargar PDF');
+      toast.error(t('downloadPdfError'));
     } finally {
       setActionLoading(null);
     }
@@ -123,7 +123,7 @@ export default function InvoiceDetailPage() {
       setActionLoading('xml');
       await downloadFacturaXml(factura.id, `${factura.serie || 'A'}${factura.folio}`, factura.emisorRfc);
     } catch {
-      toast.error('Error al descargar XML');
+      toast.error(t('downloadXmlError'));
     } finally {
       setActionLoading(null);
     }
@@ -134,11 +134,11 @@ export default function InvoiceDetailPage() {
     try {
       setActionLoading('email');
       await enviarFactura(factura.id, { email: emailTo.trim(), incluirPdf: true, incluirXml: true });
-      toast.success('Factura enviada por correo');
+      toast.success(t('emailModal.success'));
       setShowEmailModal(false);
       setEmailTo('');
     } catch {
-      toast.error('Error al enviar por correo');
+      toast.error(t('emailModal.error'));
     } finally {
       setActionLoading(null);
     }
@@ -147,7 +147,7 @@ export default function InvoiceDetailPage() {
   const handleCancelar = async () => {
     if (!factura || !cancelConfirmed) return;
     if (cancelMotivo === '01' && !cancelFolioSustitucion.trim()) {
-      toast.error('El motivo 01 requiere el UUID de la factura que sustituye');
+      toast.error(t('cancelModal.reason01RequiresUuid'));
       return;
     }
     try {
@@ -157,16 +157,16 @@ export default function InvoiceDetailPage() {
         folioSustitucion: cancelMotivo === '01' ? cancelFolioSustitucion.trim() : undefined,
       });
       if (result.estado === 'EN_PROCESO') {
-        toast.info(result.mensaje || 'Solicitud en proceso. El receptor tiene 72 hrs para aceptar.');
+        toast.info(result.mensaje || t('cancelModal.inProcessMessage'));
       } else {
-        toast.success(result.mensaje || 'Factura cancelada ante la autoridad fiscal.');
+        toast.success(result.mensaje || t('cancelModal.cancelledMessage'));
       }
       setShowCancelModal(false);
       setCancelConfirmed(false);
       await loadFactura();
     } catch (error: unknown) {
       const msg = (error as { response?: { data?: { error?: string; details?: string } } })?.response?.data;
-      toast.error(msg?.error || msg?.details || 'Error al cancelar factura');
+      toast.error(msg?.error || msg?.details || t('cancelModal.cancelError'));
     } finally {
       setActionLoading(null);
     }
@@ -179,7 +179,7 @@ export default function InvoiceDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-          <span className="text-foreground/70">Cargando factura...</span>
+          <span className="text-foreground/70">{t('loadingInvoice')}</span>
         </div>
       </div>
     );
@@ -190,10 +190,10 @@ export default function InvoiceDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Factura no encontrada</h2>
-          <p className="text-foreground/70 mb-4">La factura que buscas no existe o no tienes acceso.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
+          <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
           <button onClick={() => router.push('/billing/invoices')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
-            Volver a facturas
+            {t('backToInvoices')}
           </button>
         </div>
       </div>
@@ -207,9 +207,9 @@ export default function InvoiceDetailPage() {
       {/* Header */}
       <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
         <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Facturacion', href: '/billing' },
-          { label: `Factura #${folioDisplay}` },
+          { label: t('breadcrumbHome'), href: '/dashboard' },
+          { label: t('breadcrumbBilling'), href: '/billing' },
+          { label: t('invoiceTitle', { folio: folioDisplay }) },
         ]} />
 
         <div className="flex items-center justify-between mt-2">
@@ -217,12 +217,12 @@ export default function InvoiceDetailPage() {
             <button
               onClick={() => router.push('/billing/invoices')}
               className="p-1.5 rounded-md hover:bg-surface-3 text-muted-foreground hover:text-foreground/80 transition-colors"
-              aria-label="Volver a facturas"
+              aria-label={t('backToInvoices')}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-[22px] font-bold text-foreground">
-              Factura #{folioDisplay}
+              {t('invoiceTitle', { folio: folioDisplay })}
             </h1>
             <StatusBadge estado={factura.estado} />
           </div>
@@ -235,7 +235,7 @@ export default function InvoiceDetailPage() {
                 className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'timbrar' && <Loader2 className="w-4 h-4 animate-spin" />}
-                Timbrar
+                {t('stamp')}
               </button>
             )}
             <button
@@ -244,7 +244,7 @@ export default function InvoiceDetailPage() {
               className="flex items-center gap-2 border border-border-default text-foreground/80 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'pdf' && <Loader2 className="w-4 h-4 animate-spin" />}
-              Descargar PDF
+              {t('downloadPdf')}
             </button>
             <button
               onClick={handleDownloadXml}
@@ -252,14 +252,14 @@ export default function InvoiceDetailPage() {
               className="flex items-center gap-2 border border-border-default text-foreground/80 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'xml' && <Loader2 className="w-4 h-4 animate-spin" />}
-              Descargar XML
+              {t('downloadXml')}
             </button>
             <button
               onClick={() => setShowEmailModal(true)}
               disabled={!!actionLoading}
               className="flex items-center gap-2 border border-border-default text-foreground/80 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
-              Enviar por email
+              {t('sendByEmail')}
             </button>
             {factura.estado === 'TIMBRADA' && (
               <button
@@ -267,7 +267,7 @@ export default function InvoiceDetailPage() {
                 disabled={!!actionLoading}
                 className="flex items-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
-                Cancelar factura
+                {t('cancelInvoice')}
               </button>
             )}
           </div>
@@ -279,39 +279,39 @@ export default function InvoiceDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Emisor */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Emisor</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t('issuer')}</h2>
             <div className="space-y-2">
-              <InfoRow label="RFC" value={factura.emisorRfc} />
-              <InfoRow label="Razon social" value={factura.emisorNombre} />
-              <InfoRow label="Regimen fiscal" value={factura.emisorRegimenFiscal} />
+              <InfoRow label={t('rfcLabel')} value={factura.emisorRfc} />
+              <InfoRow label={t('businessName')} value={factura.emisorNombre} />
+              <InfoRow label={t('taxRegime')} value={factura.emisorRegimenFiscal} />
             </div>
           </div>
 
           {/* Receptor */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Receptor</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t('receptor')}</h2>
             <div className="space-y-2">
-              <InfoRow label="RFC" value={factura.receptorRfc} />
-              <InfoRow label="Razon social" value={factura.receptorNombre} />
-              <InfoRow label="Uso CFDI" value={factura.receptorUsoCfdi} />
+              <InfoRow label={t('rfcLabel')} value={factura.receptorRfc} />
+              <InfoRow label={t('businessName')} value={factura.receptorNombre} />
+              <InfoRow label={t('cfdiUse')} value={factura.receptorUsoCfdi} />
             </div>
           </div>
         </div>
 
         {/* Line items */}
         <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Conceptos</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('concepts')}</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border-subtle text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Clave SAT</th>
-                  <th className="pb-3 font-medium">Descripcion</th>
-                  <th className="pb-3 font-medium">Unidad</th>
-                  <th className="pb-3 font-medium text-right">Cantidad</th>
-                  <th className="pb-3 font-medium text-right">Precio unit.</th>
-                  <th className="pb-3 font-medium text-right">Descuento</th>
-                  <th className="pb-3 font-medium text-right">Importe</th>
+                  <th className="pb-3 font-medium">{t('satKey')}</th>
+                  <th className="pb-3 font-medium">{t('description')}</th>
+                  <th className="pb-3 font-medium">{t('unit')}</th>
+                  <th className="pb-3 font-medium text-right">{t('quantityLabel')}</th>
+                  <th className="pb-3 font-medium text-right">{t('unitPriceLabel')}</th>
+                  <th className="pb-3 font-medium text-right">{t('discountLabel')}</th>
+                  <th className="pb-3 font-medium text-right">{t('amountLabel')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -328,7 +328,7 @@ export default function InvoiceDetailPage() {
                 ))}
                 {(!factura.detalles || factura.detalles.length === 0) && (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-muted-foreground">Sin conceptos</td>
+                    <td colSpan={7} className="py-6 text-center text-muted-foreground">{t('noConcepts')}</td>
                   </tr>
                 )}
               </tbody>
@@ -339,40 +339,40 @@ export default function InvoiceDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Totals */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Totales</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t('totals')}</h2>
             <div className="space-y-2">
-              <InfoRow label="Subtotal" value={formatCurrency(factura.subtotal)} />
+              <InfoRow label={t('subtotal')} value={formatCurrency(factura.subtotal)} />
               {factura.descuento > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Descuento</span>
+                  <span className="text-muted-foreground">{t('discount')}</span>
                   <span className="text-red-600">-{formatCurrency(factura.descuento)}</span>
                 </div>
               )}
-              <InfoRow label="IVA trasladado" value={formatCurrency(factura.totalImpuestosTrasladados)} />
+              <InfoRow label={t('taxTransferred')} value={formatCurrency(factura.totalImpuestosTrasladados)} />
               {factura.totalImpuestosRetenidos > 0 && (
-                <InfoRow label="Impuestos retenidos" value={formatCurrency(factura.totalImpuestosRetenidos)} />
+                <InfoRow label={t('taxWithheld')} value={formatCurrency(factura.totalImpuestosRetenidos)} />
               )}
               <div className="border-t border-border-subtle pt-2 flex justify-between">
                 <span className="text-base font-semibold text-foreground">{tc('total')}</span>
                 <span className="text-base font-bold text-foreground">{formatCurrency(factura.total)}</span>
               </div>
-              <InfoRow label="Moneda" value={factura.moneda} />
+              <InfoRow label={t('currency')} value={factura.moneda} />
             </div>
           </div>
 
           {/* CFDI info */}
           <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Datos CFDI</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t('cfdiData')}</h2>
             <div className="space-y-2">
-              {factura.uuid && <InfoRow label="UUID" value={factura.uuid} />}
-              <InfoRow label="Serie" value={factura.serie} />
-              <InfoRow label="Folio" value={factura.folio} />
-              <InfoRow label="Tipo comprobante" value={factura.tipoComprobante} />
-              <InfoRow label="Metodo de pago" value={factura.metodoPago} />
-              <InfoRow label="Forma de pago" value={factura.formaPago} />
-              <InfoRow label="Uso CFDI" value={factura.usoCfdi} />
-              <InfoRow label="Fecha emision" value={formatDate(factura.fechaEmision)} />
-              <InfoRow label="Fecha timbrado" value={formatDate(factura.fechaTimbrado)} />
+              {factura.uuid && <InfoRow label={t('uuid')} value={factura.uuid} />}
+              <InfoRow label={t('series')} value={factura.serie} />
+              <InfoRow label={t('folio')} value={factura.folio} />
+              <InfoRow label={t('voucherType')} value={factura.tipoComprobante} />
+              <InfoRow label={t('paymentMethod')} value={factura.metodoPago} />
+              <InfoRow label={t('paymentForm')} value={factura.formaPago} />
+              <InfoRow label={t('cfdiUse')} value={factura.usoCfdi} />
+              <InfoRow label={t('issuanceDate')} value={formatDate(factura.fechaEmision)} />
+              <InfoRow label={t('stampDate')} value={formatDate(factura.fechaTimbrado)} />
             </div>
           </div>
         </div>
@@ -382,13 +382,13 @@ export default function InvoiceDetailPage() {
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-2 rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Enviar factura por email</h3>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">Correo electronico</label>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t('emailModal.title')}</h3>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('emailModal.emailLabel')}</label>
             <input
               type="email"
               value={emailTo}
               onChange={(e) => setEmailTo(e.target.value)}
-              placeholder="correo@ejemplo.com"
+              placeholder={t('emailModal.emailPlaceholder')}
               className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
             />
             <div className="flex justify-end gap-2 mt-4">
@@ -396,7 +396,7 @@ export default function InvoiceDetailPage() {
                 onClick={() => { setShowEmailModal(false); setEmailTo(''); }}
                 className="px-4 py-2 text-sm text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"
               >
-                Cancelar
+                {tc('cancel')}
               </button>
               <button
                 onClick={handleSendEmail}
@@ -404,7 +404,7 @@ export default function InvoiceDetailPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50"
               >
                 {actionLoading === 'email' && <Loader2 className="w-4 h-4 animate-spin" />}
-                Enviar
+                {t('emailModal.send')}
               </button>
             </div>
           </div>
@@ -415,37 +415,39 @@ export default function InvoiceDetailPage() {
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-surface-2 dark:bg-card rounded-xl p-6 w-full max-w-md mx-4 shadow-xl border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-2">Cancelar factura</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">{t('cancelModal.title')}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Esta acción es <span className="font-semibold text-red-600">irreversible</span>. La factura se cancelará ante la autoridad fiscal.
+              {t.rich('cancelModal.irreversibleWarning', {
+                bold: (chunks) => <span className="font-semibold text-red-600">{chunks}</span>,
+              })}
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo de cancelación *</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('cancelModal.cancelReasonLabel')}</label>
                 <select
                   value={cancelMotivo}
                   onChange={(e) => { setCancelMotivo(e.target.value as typeof cancelMotivo); setCancelConfirmed(false); }}
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
                 >
-                  <option value="01">01 — Emitido con errores (con factura sustituta)</option>
-                  <option value="02">02 — Emitido con errores (sin relación)</option>
-                  <option value="03">03 — No se llevó a cabo la operación</option>
-                  <option value="04">04 — Operación nominativa en factura global</option>
+                  <option value="01">{t('cancelModal.reason01')}</option>
+                  <option value="02">{t('cancelModal.reason02')}</option>
+                  <option value="03">{t('cancelModal.reason03')}</option>
+                  <option value="04">{t('cancelModal.reason04')}</option>
                 </select>
               </div>
 
               {cancelMotivo === '01' && (
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">UUID de factura sustituta *</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('cancelModal.substituteUuidLabel')}</label>
                   <input
                     type="text"
                     value={cancelFolioSustitucion}
                     onChange={(e) => setCancelFolioSustitucion(e.target.value.toUpperCase())}
-                    placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                    placeholder={t('cancelModal.substituteUuidPlaceholder')}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">UUID de la nueva factura que sustituye a esta.</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('cancelModal.substituteUuidHint')}</p>
                 </div>
               )}
 
@@ -454,19 +456,19 @@ export default function InvoiceDetailPage() {
                   onClick={() => setCancelConfirmed(true)}
                   className="w-full px-4 py-2 text-sm font-medium text-red-600 border-2 border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 >
-                  Quiero cancelar esta factura
+                  {t('cancelModal.wantToCancel')}
                 </button>
               ) : (
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                   <p className="text-xs text-red-700 dark:text-red-400 mb-3 font-medium">
-                    ¿Estás seguro? Esta factura quedará cancelada ante la autoridad fiscal y no se puede revertir.
+                    {t('cancelModal.confirmMessage')}
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setCancelConfirmed(false)}
                       className="flex-1 px-3 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
                     >
-                      No, volver
+                      {t('cancelModal.goBack')}
                     </button>
                     <button
                       onClick={handleCancelar}
@@ -474,7 +476,7 @@ export default function InvoiceDetailPage() {
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                     >
                       {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Sí, cancelar
+                      {t('cancelModal.confirmCancel')}
                     </button>
                   </div>
                 </div>
@@ -485,7 +487,7 @@ export default function InvoiceDetailPage() {
               onClick={() => { setShowCancelModal(false); setCancelConfirmed(false); }}
               className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Cerrar
+              {t('cancelModal.closeLabel')}
             </button>
           </div>
         </div>
