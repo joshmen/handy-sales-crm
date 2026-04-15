@@ -410,7 +410,9 @@
       "default": "Principal",
       "expires": "Vence {month}/{year}",
       "update": "Actualizar",
-      "noMethods": "No hay métodos de pago registrados"
+      "noMethods": "No hay métodos de pago registrados",
+      "loadMore": "Cargar más",
+      "loadingMore": "Cargando..."
     },
     "invoiceHistory": {
       "title": "Historial de facturación",
@@ -431,7 +433,9 @@
       "statusOpen": "Pendiente",
       "statusDraft": "Borrador",
       "statusUncollectible": "Incobrable",
-      "statusVoid": "Anulado"
+      "statusVoid": "Anulado",
+      "loadMore": "Cargar más",
+      "loadingMore": "Cargando..."
     },
     "cancel": {
       "title": "Cancelar suscripción",
@@ -900,7 +904,46 @@
       "lastMonth": "Mes pasado",
       "allClients": "Todos los clientes",
       "activeFilters": "Filtros activos aplicados",
-      "clearFilters": "Limpiar filtros"
+      "clearFilters": "Limpiar filtros",
+      "status": "Estado",
+      "priority": "Prioridad",
+      "date": "Fecha",
+      "client": "Cliente"
+    },
+    "card": {
+      "status": {
+        "draft": "Borrador",
+        "confirmed": "Confirmado",
+        "en_route": "En Ruta",
+        "delivered": "Entregado",
+        "cancelled": "Cancelado"
+      },
+      "priority": {
+        "low": "Baja",
+        "normal": "Normal",
+        "high": "Alta",
+        "urgent": "Urgente"
+      },
+      "orderDate": "Pedido",
+      "deliveryDate": "Entrega",
+      "products": "Productos",
+      "total": "Total",
+      "viewDetails": "Ver Detalles"
+    },
+    "list": {
+      "createOrder": "Crear Pedido",
+      "emptyTitle": "No hay pedidos",
+      "noResults": "No se encontraron pedidos",
+      "emptyDescription": "Comienza creando tu primer pedido",
+      "noResultsDescription": "Intenta cambiar los filtros o crear un nuevo pedido",
+      "createFirstOrder": "Crear Primer Pedido"
+    },
+    "summary": {
+      "totalOrders": "Total Pedidos",
+      "pending": "Pendientes",
+      "inProgress": "En Proceso",
+      "completed": "Completados",
+      "totalValue": "Valor Total"
     },
     "detailPage": {
       "breadcrumbHome": "Inicio",
@@ -2053,7 +2096,92 @@
       "countryDescription": "El país determina qué funciones están disponibles, como facturación SAT/CFDI para México.",
       "saveConfig": "Guardar configuración",
       "saving": "Guardando...",
-      "saved": "Guardado"
+      "saved": "Guardado",
+      "languages": {
+        "es": "Español",
+        "en": "English",
+        "pt": "Português"
+      },
+      "timezones": {
+        "America_Mexico_City": "Ciudad de México (GMT-6)",
+        "America_Monterrey": "Monterrey (GMT-6)",
+        "America_Chihuahua": "Chihuahua (GMT-6)",
+        "America_Mazatlan": "Mazatlán (GMT-7)",
+        "America_Hermosillo": "Hermosillo (GMT-7)",
+        "America_Tijuana": "Tijuana (GMT-8)",
+        "America_Cancun": "Cancún (GMT-5)",
+        "America_New_York": "Eastern — Nueva York (GMT-5)",
+        "America_Chicago": "Central — Chicago (GMT-6)",
+        "America_Denver": "Mountain — Denver (GMT-7)",
+        "America_Los_Angeles": "Pacific — Los Ángeles (GMT-8)",
+        "America_Anchorage": "Alaska (GMT-9)",
+        "Pacific_Honolulu": "Hawái (GMT-10)",
+        "America_Toronto": "Toronto (GMT-5)",
+        "America_Vancouver": "Vancouver (GMT-8)",
+        "America_Guatemala": "Guatemala (GMT-6)",
+        "America_Costa_Rica": "Costa Rica (GMT-6)",
+        "America_Panama": "Panamá (GMT-5)",
+        "America_Tegucigalpa": "Honduras (GMT-6)",
+        "America_Managua": "Nicaragua (GMT-6)",
+        "America_El_Salvador": "El Salvador (GMT-6)",
+        "America_Bogota": "Bogotá, Colombia (GMT-5)",
+        "America_Lima": "Lima, Perú (GMT-5)",
+        "America_Santiago": "Santiago, Chile (GMT-4)",
+        "America_Sao_Paulo": "São Paulo, Brasil (GMT-3)",
+        "America_Argentina_Buenos_Aires": "Buenos Aires, Argentina (GMT-3)",
+        "America_Caracas": "Caracas, Venezuela (GMT-4)",
+        "America_Guayaquil": "Guayaquil, Ecuador (GMT-5)",
+        "America_Asuncion": "Asunción, Paraguay (GMT-4)",
+        "America_Montevideo": "Montevideo, Uruguay (GMT-3)",
+        "America_La_Paz": "La Paz, Bolivia (GMT-4)",
+        "America_Havana": "La Habana, Cuba (GMT-5)",
+        "America_Santo_Domingo": "Santo Domingo, Rep. Dom. (GMT-4)",
+        "America_Puerto_Rico": "Puerto Rico (GMT-4)"
+      },
+      "countries": {
+        "MX": "MX — México",
+        "US": "US — Estados Unidos",
+        "CA": "CA — Canadá",
+        "GT": "GT — Guatemala",
+        "HN": "HN — Honduras",
+        "SV": "SV — El Salvador",
+        "NI": "NI — Nicaragua",
+        "CR": "CR — Costa Rica",
+        "PA": "PA — Panamá",
+        "CO": "CO — Colombia",
+        "VE": "VE — Venezuela",
+        "EC": "EC — Ecuador",
+        "PE": "PE — Perú",
+        "BR": "BR — Brasil",
+        "CL": "CL — Chile",
+        "AR": "AR — Argentina",
+        "UY": "UY — Uruguay",
+        "PY": "PY — Paraguay",
+        "BO": "BO — Bolivia",
+        "CU": "CU — Cuba",
+        "DO": "DO — República Dominicana",
+        "PR": "PR — Puerto Rico"
+      },
+      "currencies": {
+        "MXN": "MXN — Peso Mexicano ($)",
+        "USD": "USD — Dólar Estadounidense ($)",
+        "CAD": "CAD — Dólar Canadiense ($)",
+        "BRL": "BRL — Real Brasileño (R$)",
+        "ARS": "ARS — Peso Argentino ($)",
+        "COP": "COP — Peso Colombiano ($)",
+        "CLP": "CLP — Peso Chileno ($)",
+        "PEN": "PEN — Sol Peruano (S/)",
+        "UYU": "UYU — Peso Uruguayo ($)",
+        "PYG": "PYG — Guaraní Paraguayo (Gs)",
+        "BOB": "BOB — Boliviano (Bs)",
+        "VES": "VES — Bolívar Venezolano (Bs.D)",
+        "GTQ": "GTQ — Quetzal Guatemalteco (Q)",
+        "CRC": "CRC — Colón Costarricense (₡)",
+        "PAB": "PAB — Balboa Panameño (B/.)",
+        "DOP": "DOP — Peso Dominicano (RD$)",
+        "HNL": "HNL — Lempira Hondureño (L)",
+        "NIO": "NIO — Córdoba Nicaragüense (C$)"
+      }
     },
     "company": {
       "title": "Configuración de Empresa",
@@ -2103,7 +2231,15 @@
       "saving": "Guardando...",
       "saveChanges": "Guardar cambios",
       "savedSuccess": "Datos de empresa actualizados correctamente",
-      "saveError": "Error al guardar los datos de empresa"
+      "saveError": "Error al guardar los datos de empresa",
+      "taxIdTypes": {
+        "RFC": "RFC (México)",
+        "NIT": "NIT (Colombia)",
+        "CUIT": "CUIT (Argentina)",
+        "CNPJ": "CNPJ (Brasil)",
+        "RUT": "RUT (Chile)",
+        "RUC": "RUC (Perú)"
+      }
     },
     "system": {
       "title": "Información del sistema",
@@ -3401,6 +3537,7 @@
     "notAvailableDesc": "El Asistente IA está disponible a partir del plan Profesional. Obtén créditos mensuales de inteligencia artificial para analizar tu negocio.",
     "viewPlans": "Ver planes disponibles",
     "credits": "créditos",
+    "creditUnit": "cr",
     "loadingAssistant": "Cargando asistente...",
     "suggestedActions": "Acciones sugeridas",
     "confirmAction": "¿Confirmar acción?",

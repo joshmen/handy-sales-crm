@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   Package,
@@ -95,40 +96,41 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   totalValue,
   className = "",
 }) => {
+  const t = useTranslations('orders.summary');
   return (
     <div
       className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 ${className}`}
     >
       <SummaryCard
-        title="Total Pedidos"
+        title={t('totalOrders')}
         value={totalOrders}
         icon={Package}
         color="blue"
       />
 
       <SummaryCard
-        title="Pendientes"
+        title={t('pending')}
         value={pendingOrders}
         icon={Clock}
         color="yellow"
       />
 
       <SummaryCard
-        title="En Proceso"
+        title={t('inProgress')}
         value={inProgressOrders}
         icon={AlertCircle}
         color="red"
       />
 
       <SummaryCard
-        title="Completados"
+        title={t('completed')}
         value={completedOrders}
         icon={CheckCircle}
         color="green"
       />
 
       <SummaryCard
-        title="Valor Total"
+        title={t('totalValue')}
         value={totalValue}
         icon={DollarSign}
         color="purple"

@@ -620,7 +620,7 @@ export default function CobranzaPage() {
                           </span>
                           {c.referencia && (
                             <span className="text-xs text-muted-foreground truncate">
-                              Ref: {c.referencia}
+                              {t('drawer.reference')}: {c.referencia}
                             </span>
                           )}
                         </div>
@@ -839,7 +839,7 @@ export default function CobranzaPage() {
                               className="px-3 py-1.5 text-xs font-medium text-foreground/80 border border-border-default rounded hover:bg-surface-1 transition-colors"
                               title={t('viewAccountStatement')}
                             >
-                              Ver detalles
+                              {t('viewDetails')}
                             </button>
                           </div>
                         </div>
@@ -1164,7 +1164,7 @@ export default function CobranzaPage() {
                                     <span className="mx-1.5 text-muted-foreground/60">&middot;</span>
                                     {c.metodoPagoNombre}
                                     {c.referencia && (
-                                      <span className="text-muted-foreground/60 ml-1.5">Ref: {c.referencia}</span>
+                                      <span className="text-muted-foreground/60 ml-1.5">{t('drawer.reference')}: {c.referencia}</span>
                                     )}
                                   </span>
                                   <span className="font-semibold text-green-600 tabular-nums flex-shrink-0">{formatCurrency(c.monto)}</span>
@@ -1211,7 +1211,7 @@ export default function CobranzaPage() {
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">Método *</label>
+                                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">{t('drawer.paymentMethod')} *</label>
                                     <select
                                       value={inlineCobroData.metodoPago}
                                       onChange={(e) => setInlineCobroData(prev => ({ ...prev, metodoPago: Number(e.target.value) }))}
@@ -1330,7 +1330,7 @@ export default function CobranzaPage() {
             {formPedidosLoading ? (
               <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Cargando pedidos...
+                {t('drawer.loadingOrders')}
               </div>
             ) : watch('clienteId') ? (
               formPedidos.length > 0 ? (

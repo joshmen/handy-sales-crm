@@ -140,7 +140,7 @@ export default function OrderDetailPage() {
           <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
           <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
-            Volver a pedidos
+            {t('backToOrders')}
           </button>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function OrderDetailPage() {
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-bold text-foreground">
-              Pedido #{order.numeroPedido}
+              {t('orderTitle', { number: order.numeroPedido })}
             </h1>
             <StatusBadge status={order.estado} label={STATUS_LABELS[order.estado] ?? order.estado} />
           </div>
@@ -181,7 +181,7 @@ export default function OrderDetailPage() {
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'confirmar' && <Loader2 className="w-4 h-4 animate-spin" />}
-                Confirmar
+                {t('confirmBtn')}
               </button>
             )}
             {order.estado === OrderStatus.CONFIRMADA && (
@@ -191,7 +191,7 @@ export default function OrderDetailPage() {
                 className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'en-ruta' && <Loader2 className="w-4 h-4 animate-spin" />}
-                En ruta
+                {t('enRouteBtn')}
               </button>
             )}
             {order.estado === OrderStatus.ENVIADA && (
@@ -201,7 +201,7 @@ export default function OrderDetailPage() {
                 className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'entregar' && <Loader2 className="w-4 h-4 animate-spin" />}
-                Entregar
+                {t('deliverBtn')}
               </button>
             )}
             {!isCancelled && !isDelivered && (
@@ -211,7 +211,7 @@ export default function OrderDetailPage() {
                 className="flex items-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
-                Cancelar
+                {t('cancelBtn')}
               </button>
             )}
           </div>

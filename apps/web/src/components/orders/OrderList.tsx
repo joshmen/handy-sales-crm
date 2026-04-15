@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { OrderCard } from './OrderCard';
 import { OrderFilters } from './OrderFilters';
 import { OrderSummary } from './OrderSummary';
@@ -26,6 +27,7 @@ export const OrderList: React.FC<OrderListProps> = ({
   onDeleteOrder,
   className = '',
 }) => {
+  const t = useTranslations('orders.list');
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -173,7 +175,7 @@ export const OrderList: React.FC<OrderListProps> = ({
 
         <Button onClick={onCreateOrder} className="lg:ml-4">
           <Plus size={20} className="mr-2" />
-          Crear Pedido
+          {t('createOrder')}
         </Button>
       </div>
 
@@ -193,14 +195,14 @@ export const OrderList: React.FC<OrderListProps> = ({
       ) : (
         <EmptyState
           icon={Package}
-          title={orders.length === 0 ? 'No hay pedidos' : 'No se encontraron pedidos'}
+          title={orders.length === 0 ? t('emptyTitle') : t('noResults')}
           description={
             orders.length === 0
-              ? 'Comienza creando tu primer pedido'
-              : 'Intenta cambiar los filtros o crear un nuevo pedido'
+              ? t('emptyDescription')
+              : t('noResultsDescription')
           }
           action={{
-            label: 'Crear Primer Pedido',
+            label: t('createFirstOrder'),
             onClick: onCreateOrder,
           }}
         />

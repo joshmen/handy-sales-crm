@@ -278,7 +278,7 @@ export default function EditClientPage() {
             onClick={() => router.push('/clients')}
             className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90"
           >
-            Volver a clientes
+            {t('backToClients')}
           </button>
         </div>
       </div>
@@ -297,7 +297,7 @@ export default function EditClientPage() {
 
         <div className="flex items-center justify-between">
           <h1 className="text-[22px] font-bold text-foreground">
-            Editar cliente
+            {t('editClient')}
           </h1>
           <div className="flex items-center gap-3">
             <button
@@ -305,7 +305,7 @@ export default function EditClientPage() {
               onClick={handleCancel}
               className="px-4 py-2 text-[13px] font-medium text-foreground/80 border border-border-default rounded hover:bg-surface-1 transition-colors"
             >
-              Cancelar
+              {tc('cancel')}
             </button>
             <button
               onClick={handleSubmit(onSubmit, (fieldErrors) => {

@@ -100,7 +100,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
           //options={statusOptions}
           value={statusFilter}
           onChange={e => onStatusChange(e.target.value)}
-          placeholder="Estado"
+          placeholder={t('status')}
         >
           {statusOptions.map(u => (
             <option key={u.value} value={u.value}>
@@ -113,7 +113,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
           //options={priorityOptions}
           value={priorityFilter}
           onChange={e => onPriorityChange(e.target.value)}
-          placeholder="Prioridad"
+          placeholder={t('priority')}
         >
           {priorityOptions.map(u => (
             <option key={u.value} value={u.value}>
@@ -126,7 +126,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
           //options={dateOptions}
           value={dateFilter}
           onChange={e => onDateChange(e.target.value)}
-          placeholder="Fecha"
+          placeholder={t('date')}
         >
           {dateOptions.map(u => (
             <option key={u.value} value={u.value}>
@@ -139,7 +139,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
           //options={clientOptions}
           value={clientFilter}
           onChange={e => onClientChange(e.target.value)}
-          placeholder="Cliente"
+          placeholder={t('client')}
         >
           {clientOptions.map(u => (
             <option key={u.value} value={u.value}>

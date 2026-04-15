@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { clientService } from '@/services/api/clients';
@@ -13,8 +13,8 @@ import { toast } from '@/hooks/useToast';
 
 // ── Helpers ──
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
+function formatCurrency(value: number, locale = 'es-MX') {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 function formatDate(dateStr: string) {
@@ -41,6 +41,8 @@ export default function ClientDetailPage() {
   const t = useTranslations('clients.detail');
   const tClients = useTranslations('clients');
   const tc = useTranslations('common');
+  const locale = useLocale();
+  const fmt = (v: number) => formatCurrency(v, locale);
   const router = useRouter();
   const params = useParams();
   const clientId = params.id as string;
@@ -147,7 +149,7 @@ export default function ClientDetailPage() {
           </div>
           <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
             <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalSales')}</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalVentas)}</p>
+            <p className="text-2xl font-bold text-foreground">{fmt(totalVentas)}</p>
           </div>
           <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
             <p className="text-xs font-medium text-muted-foreground mb-1">{t('pendingOrders')}</p>
@@ -189,11 +191,11 @@ export default function ClientDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('balance')}</span>
-              <span className="text-foreground">{formatCurrency(client.saldo ?? 0)}</span>
+              <span className="text-foreground">{fmt(client.saldo ?? 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('creditLimit')}</span>
-              <span className="text-foreground">{formatCurrency(client.limiteCredito ?? 0)}</span>
+              <span className="text-foreground">{fmt(client.limiteCredito ?? 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('creditDays')}</span>
@@ -290,7 +292,7 @@ export default function ClientDetailPage() {
                                 </span>
                               </td>
                               <td className="py-3 text-muted-foreground">{order.usuarioNombre}</td>
-                              <td className="py-3 text-right font-medium text-foreground">{formatCurrency(order.total)}</td>
+                              <td className="py-3 text-right font-medium text-foreground">{fmt(order.total)}</td>
                             </tr>
                           );
                         })}
