@@ -17,40 +17,40 @@ import axios from 'axios';
 import { Suspense } from 'react';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 
-// Schema for manual registration
-const registerSchema = z.object({
-  nombre: z.string().min(1, 'nameRequired'),
-  email: z.string().email('Formato de correo inválido'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  confirmPassword: z.string(),
-  nombreEmpresa: z.string().min(1, 'companyNameRequired'),
-  identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'RFC inválido').optional().or(z.literal('')),
-  contacto: z.string().max(100).optional().or(z.literal('')),
-  aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmPassword'],
-});
-
-// Schema for Google registration (no password)
-const googleRegisterSchema = z.object({
-  nombre: z.string().min(1, 'nameRequired'),
-  email: z.string().email('Formato de correo inválido'),
-  nombreEmpresa: z.string().min(1, 'companyNameRequired'),
-  identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'RFC inválido').optional().or(z.literal('')),
-  contacto: z.string().max(100).optional().or(z.literal('')),
-  aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
-});
-
-type RegisterFormData = z.infer<typeof registerSchema>;
-type GoogleRegisterFormData = z.infer<typeof googleRegisterSchema>;
-
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { executeRecaptcha } = useGoogleReCaptcha();
   const t = useTranslations('auth.register');
   const ta = useTranslations('auth');
+
+  // Schema for manual registration
+  const registerSchema = z.object({
+    nombre: z.string().min(1, 'nameRequired'),
+    email: z.string().email(t('invalidEmail')),
+    password: z.string().min(6, t('passwordMinLength')),
+    confirmPassword: z.string(),
+    nombreEmpresa: z.string().min(1, 'companyNameRequired'),
+    identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, t('invalidRfc')).optional().or(z.literal('')),
+    contacto: z.string().max(100).optional().or(z.literal('')),
+    aceptaTerminos: z.literal(true, { errorMap: () => ({ message: t('mustAcceptTerms') }) }),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('passwordsMismatch'),
+    path: ['confirmPassword'],
+  });
+
+  // Schema for Google registration (no password)
+  const googleRegisterSchema = z.object({
+    nombre: z.string().min(1, 'nameRequired'),
+    email: z.string().email(t('invalidEmail')),
+    nombreEmpresa: z.string().min(1, 'companyNameRequired'),
+    identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, t('invalidRfc')).optional().or(z.literal('')),
+    contacto: z.string().max(100).optional().or(z.literal('')),
+    aceptaTerminos: z.literal(true, { errorMap: () => ({ message: t('mustAcceptTerms') }) }),
+  });
+
+  type RegisterFormData = z.infer<typeof registerSchema>;
+  type GoogleRegisterFormData = z.infer<typeof googleRegisterSchema>;
 
   // Check if coming from Google OAuth redirect
   const googleEmail = searchParams.get('email');
@@ -121,13 +121,13 @@ function RegisterContent() {
       }
 
       if (response.data.error) {
-        toast({ title: 'Error', description: response.data.error, variant: 'destructive' });
+        toast({ title: ta('authError'), description: response.data.error, variant: 'destructive' });
         return;
       }
 
-      toast({ title: 'Error', description: 'Error inesperado al registrarse.', variant: 'destructive' });
+      toast({ title: ta('authError'), description: t('errorUnexpected'), variant: 'destructive' });
     } catch {
-      toast({ title: 'Error', description: 'No se pudo conectar con el servidor.', variant: 'destructive' });
+      toast({ title: ta('authError'), description: t('errorConnection'), variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +154,7 @@ function RegisterContent() {
       const result = await response.json();
 
       if (!response.ok) {
-        toast({ title: 'Error', description: result.error || 'Error al registrarse.', variant: 'destructive' });
+        toast({ title: ta('authError'), description: result.error || t('errorRegistering'), variant: 'destructive' });
         return;
       }
 
@@ -171,9 +171,9 @@ function RegisterContent() {
         }
       }
 
-      toast({ title: 'Error', description: 'Error al establecer la sesión.', variant: 'destructive' });
+      toast({ title: ta('authError'), description: t('errorSession'), variant: 'destructive' });
     } catch {
-      toast({ title: 'Error', description: 'No se pudo conectar con el servidor.', variant: 'destructive' });
+      toast({ title: ta('authError'), description: t('errorConnection'), variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -226,7 +226,7 @@ function RegisterContent() {
               <label className="block text-[14px] font-medium text-[#374151]">{t('companyName')} *</label>
               <input
                 {...googleForm.register('nombreEmpresa')}
-                placeholder="Mi Empresa S.A. de C.V."
+                placeholder={t('companyPlaceholder')}
                 disabled={submitting}
                 className={inputClassName(!!googleForm.formState.errors.nombreEmpresa)}
               />
@@ -265,11 +265,11 @@ function RegisterContent() {
                   className="mt-0.5 h-4 w-4 rounded border-border-default text-indigo-600 focus:ring-indigo-500"
                 />
                 <span className="text-[13px] text-[#64748B] leading-tight">
-                  {t('termsAndConditions').split(t('termsLink'))[0]}
+                  {t('iAccept')}{' '}
                   <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
                     {t('termsLink')}
                   </a>{' '}
-                  y el{' '}
+                  {t('andThe')}{' '}
                   <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
                     {t('privacyLink')}
                   </a>
@@ -296,7 +296,7 @@ function RegisterContent() {
                 <label className="block text-[14px] font-medium text-[#374151]">{t('fullName')}</label>
                 <input
                   {...manualForm.register('nombre')}
-                  placeholder="Juan Pérez"
+                  placeholder={t('namePlaceholder')}
                   disabled={submitting}
                   className={inputClassName(!!manualForm.formState.errors.nombre)}
                 />
@@ -310,7 +310,7 @@ function RegisterContent() {
                 <input
                   {...manualForm.register('email')}
                   type="email"
-                  placeholder="tu@empresa.com"
+                  placeholder={t('emailPlaceholder')}
                   disabled={submitting}
                   className={inputClassName(!!manualForm.formState.errors.email)}
                 />
@@ -326,7 +326,7 @@ function RegisterContent() {
                     <input
                       {...manualForm.register('password')}
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Min. 6 caracteres"
+                      placeholder={t('passwordHint')}
                       disabled={submitting}
                       className={inputClassName(!!manualForm.formState.errors.password)}
                     />
@@ -349,7 +349,7 @@ function RegisterContent() {
                     <input
                       {...manualForm.register('confirmPassword')}
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Repetir"
+                      placeholder={t('repeatHint')}
                       disabled={submitting}
                       className={inputClassName(!!manualForm.formState.errors.confirmPassword)}
                     />
@@ -372,7 +372,7 @@ function RegisterContent() {
                 <label className="block text-[14px] font-medium text-[#374151]">{t('companyName')} *</label>
                 <input
                   {...manualForm.register('nombreEmpresa')}
-                  placeholder="Mi Empresa S.A. de C.V."
+                  placeholder={t('companyPlaceholder')}
                   disabled={submitting}
                   className={inputClassName(!!manualForm.formState.errors.nombreEmpresa)}
                 />
@@ -411,13 +411,13 @@ function RegisterContent() {
                     className="mt-0.5 h-4 w-4 rounded border-border-default text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="text-[13px] text-[#64748B] leading-tight">
-                    Acepto los{' '}
+                    {t('iAccept')}{' '}
                     <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
-                      Términos y Condiciones
+                      {t('termsLink')}
                     </a>{' '}
-                    y el{' '}
+                    {t('andThe')}{' '}
                     <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
-                      Aviso de Privacidad
+                      {t('privacyLink')}
                     </a>
                   </span>
                 </label>
@@ -441,7 +441,7 @@ function RegisterContent() {
                 <div className="w-full border-t border-[#E5E7EB]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-surface-2 px-3 text-[#9CA3AF]">o</span>
+                <span className="bg-surface-2 px-3 text-[#9CA3AF]">{t('orSeparator')}</span>
               </div>
             </div>
 
