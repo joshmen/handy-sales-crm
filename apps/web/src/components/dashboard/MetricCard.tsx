@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLocale } from "next-intl";
 
 interface MetricCardProps {
   title: string;
@@ -67,12 +68,13 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   className = "",
 }) => {
   const colors = colorConfig[color];
+  const locale = useLocale();
 
   const formatValue = (val: string | number) => {
     if (typeof val === "number") {
       // Si es un número grande, usar formato con comas
       if (val >= 1000) {
-        return val.toLocaleString("es-MX");
+        return val.toLocaleString(locale);
       }
       return val.toString();
     }

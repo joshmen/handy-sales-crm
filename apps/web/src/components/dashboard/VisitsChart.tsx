@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { useChartTheme } from "@/hooks/useChartTheme";
+import { useTranslations } from "next-intl";
 
 interface VisitsData {
   date: string;
@@ -34,14 +35,17 @@ interface VisitsChartProps {
 
 export const VisitsChart: React.FC<VisitsChartProps> = ({
   data,
-  title = "Visitas",
-  subtitle = "Estado de visitas por período",
+  title,
+  subtitle,
   type = "stacked",
   height = 300,
   isLoading = false,
   className = "",
 }) => {
   const ct = useChartTheme();
+  const t = useTranslations("dashboard.visitsChart");
+  const resolvedTitle = title ?? t("title");
+  const resolvedSubtitle = subtitle ?? t("subtitle");
   // Colores para cada tipo de visita
   const colors = {
     programadas: "#3b82f6", // Azul
@@ -79,7 +83,7 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
             ))}
             <div className="border-t pt-1 mt-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Total:</span>
+                <span className="text-sm font-medium">{t("total")}</span>
                 <span className="text-sm font-bold">{total}</span>
               </div>
             </div>
@@ -149,26 +153,26 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            <p className="text-sm text-foreground/70">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{resolvedTitle}</h3>
+            <p className="text-sm text-foreground/70">{resolvedSubtitle}</p>
           </div>
 
           {/* Métricas rápidas */}
           <div className="flex space-x-6 text-right">
             <div>
-              <p className="text-xs text-muted-foreground">Total Visitas</p>
+              <p className="text-xs text-muted-foreground">{t("totalVisits")}</p>
               <p className="text-sm font-semibold text-foreground">
                 {totalVisits}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Completadas</p>
+              <p className="text-xs text-muted-foreground">{t("completed")}</p>
               <p className="text-sm font-semibold text-green-600">
                 {totals.completadas}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Tasa Éxito</p>
+              <p className="text-xs text-muted-foreground">{t("successRate")}</p>
               <p className="text-sm font-semibold text-blue-600">
                 {completionRate}%
               </p>

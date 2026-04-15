@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { useChartTheme } from "@/hooks/useChartTheme";
+import { useTranslations, useLocale } from "next-intl";
 
 interface SalesData {
   date: string;
@@ -34,8 +35,8 @@ interface SalesChartProps {
 
 export const SalesChart: React.FC<SalesChartProps> = ({
   data,
-  title = "Ventas",
-  subtitle = "Evolución de ventas en el tiempo",
+  title,
+  subtitle,
   type = "area",
   color = "#06b6d4",
   height = 300,
@@ -43,9 +44,14 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   className = "",
 }) => {
   const ct = useChartTheme();
+  const t = useTranslations("dashboard.salesChart");
+  const locale = useLocale();
+  const resolvedTitle = title ?? t("title");
+  const resolvedSubtitle = subtitle ?? t("subtitle");
+
   // Formatear valores para mostrar en el tooltip
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-MX", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "MXN",
       minimumFractionDigits: 0,
@@ -54,7 +60,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   };
 
   const formatNumber = (value: number) => {
-    return value.toLocaleString("es-MX");
+    return value.toLocaleString(locale);
   };
 
   // Componente personalizado para el tooltip
@@ -70,7 +76,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({
                 style={{ backgroundColor: entry.color }}
               ></div>
               <span className="text-sm">
-                {entry.dataKey === "sales" ? "Ventas:" : "Pedidos:"}{" "}
+                {entry.dataKey === "sales" ? t("sales") : t("orders")}{" "}
                 <span className="font-semibold">
                   {entry.dataKey === "sales"
                     ? formatCurrency(entry.value)
@@ -113,26 +119,26 @@ export const SalesChart: React.FC<SalesChartProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            <p className="text-sm text-foreground/70">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{resolvedTitle}</h3>
+            <p className="text-sm text-foreground/70">{resolvedSubtitle}</p>
           </div>
 
           {/* Métricas rápidas */}
           <div className="flex space-x-6 text-right">
             <div>
-              <p className="text-xs text-muted-foreground">Total Ventas</p>
+              <p className="text-xs text-muted-foreground">{t("totalSales")}</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatCurrency(totalSales)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Pedidos</p>
+              <p className="text-xs text-muted-foreground">{t("ordersLabel")}</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatNumber(totalOrders)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Promedio</p>
+              <p className="text-xs text-muted-foreground">{t("average")}</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatCurrency(avgOrderValue)}
               </p>

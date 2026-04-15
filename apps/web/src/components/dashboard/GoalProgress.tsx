@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 interface Goal {
   id: string;
@@ -82,14 +83,19 @@ const colorConfig: Record<
 
 export const GoalProgress: React.FC<GoalProgressProps> = ({
   goals,
-  title = "Metas y Objetivos",
-  subtitle = "Progreso hacia los objetivos establecidos",
+  title,
+  subtitle,
   isLoading = false,
   className = "",
 }) => {
+  const t = useTranslations("dashboard.goalProgress");
+  const locale = useLocale();
+  const resolvedTitle = title ?? t("title");
+  const resolvedSubtitle = subtitle ?? t("subtitle");
+
   const formatValue = (value: number, unit: string) => {
     if (unit === "currency" || unit === "$") {
-      return new Intl.NumberFormat("es-MX", {
+      return new Intl.NumberFormat(locale, {
         style: "currency",
         currency: "MXN",
         minimumFractionDigits: 0,
@@ -101,7 +107,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
       return `${value}%`;
     }
 
-    return `${value.toLocaleString("es-MX")} ${unit}`;
+    return `${value.toLocaleString(locale)} ${unit}`;
   };
 
   const calculateProgress = (current: number, target: number) => {
@@ -127,10 +133,10 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
     const diffTime = deadline.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return "Vencido";
-    if (diffDays === 0) return "Hoy";
-    if (diffDays === 1) return "1 día";
-    return `${diffDays} días`;
+    if (diffDays < 0) return t("overdue");
+    if (diffDays === 0) return t("today");
+    if (diffDays === 1) return t("oneDay");
+    return t("nDays", { count: diffDays });
   };
 
   const getOverallProgress = () => {
@@ -172,13 +178,13 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            <p className="text-sm text-foreground/70">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{resolvedTitle}</h3>
+            <p className="text-sm text-foreground/70">{resolvedSubtitle}</p>
           </div>
 
           {/* Progreso general */}
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">Progreso General</p>
+            <p className="text-xs text-muted-foreground">{t("overallProgress")}</p>
             <p className="text-lg font-bold text-foreground">
               {getOverallProgress().toFixed(1)}%
             </p>
@@ -244,11 +250,11 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
                   {/* Valores */}
                   <div className="flex justify-between items-center text-xs text-foreground/70">
                     <span>
-                      {formatValue(goal.current, goal.unit)} de{" "}
+                      {formatValue(goal.current, goal.unit)} {t("of")}{" "}
                       {formatValue(goal.target, goal.unit)}
                     </span>
                     <span>
-                      Falta:{" "}
+                      {t("remaining")}{" "}
                       {formatValue(
                         Math.max(0, goal.target - goal.current),
                         goal.unit
@@ -263,9 +269,9 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
           {goals.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Target size={48} className="mx-auto mb-4 text-muted-foreground/60" />
-              <p className="text-sm">No hay metas configuradas</p>
+              <p className="text-sm">{t("noGoals")}</p>
               <p className="text-xs">
-                Agrega objetivos para hacer seguimiento del progreso
+                {t("noGoalsHint")}
               </p>
             </div>
           )}

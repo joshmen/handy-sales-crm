@@ -13,6 +13,7 @@ import {
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { useChartTheme } from '@/hooks/useChartTheme';
 import { ActivityChartData } from '@/services/dashboardService';
+import { useTranslations } from 'next-intl';
 
 interface ActivityChartProps {
   data: ActivityChartData[];
@@ -25,13 +26,16 @@ interface ActivityChartProps {
 
 export const ActivityChart: React.FC<ActivityChartProps> = ({
   data,
-  title = 'Actividad del Sistema',
-  subtitle = 'Tendencia de actividad de los últimos 7 días',
+  title,
+  subtitle,
   height = 300,
   isLoading = false,
   className = '',
 }) => {
   const ct = useChartTheme();
+  const t = useTranslations('dashboard.activityChart');
+  const resolvedTitle = title ?? t('title');
+  const resolvedSubtitle = subtitle ?? t('subtitle');
   // Colores para cada métrica
   const colors = {
     totalActivities: '#3b82f6', // Azul
@@ -55,10 +59,10 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
                     style={{ backgroundColor: entry.color }}
                   ></div>
                   <span className="text-sm">
-                    {entry.dataKey === 'totalActivities' && 'Actividades:'}
-                    {entry.dataKey === 'logins' && 'Logins:'}
-                    {entry.dataKey === 'uniqueUsers' && 'Usuarios:'}
-                    {entry.dataKey === 'errors' && 'Errores:'}
+                    {entry.dataKey === 'totalActivities' && `${t('activities')}:`}
+                    {entry.dataKey === 'logins' && `${t('logins')}:`}
+                    {entry.dataKey === 'uniqueUsers' && `${t('users')}:`}
+                    {entry.dataKey === 'errors' && `${t('errors')}:`}
                   </span>
                 </div>
                 <span className="text-sm font-semibold">{entry.value}</span>
@@ -85,10 +89,10 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   // Componente personalizado para la leyenda
   const CustomLegend = ({ payload }: any) => {
     const labels: Record<string, string> = {
-      totalActivities: 'Actividades',
-      logins: 'Logins',
-      uniqueUsers: 'Usuarios',
-      errors: 'Errores',
+      totalActivities: t('activities'),
+      logins: t('logins'),
+      uniqueUsers: t('users'),
+      errors: t('errors'),
     };
 
     return (
@@ -129,13 +133,13 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       <Card className={className}>
         <CardHeader>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            <p className="text-sm text-foreground/70">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{resolvedTitle}</h3>
+            <p className="text-sm text-foreground/70">{resolvedSubtitle}</p>
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            <p>No hay datos de actividad disponibles</p>
+            <p>{t('noData')}</p>
           </div>
         </CardContent>
       </Card>
@@ -147,22 +151,22 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            <p className="text-sm text-foreground/70">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-foreground">{resolvedTitle}</h3>
+            <p className="text-sm text-foreground/70">{resolvedSubtitle}</p>
           </div>
 
           {/* Métricas rápidas */}
           <div className="flex space-x-6 text-right">
             <div>
-              <p className="text-xs text-muted-foreground">Actividades</p>
+              <p className="text-xs text-muted-foreground">{t('activities')}</p>
               <p className="text-sm font-semibold text-blue-600">{totals.totalActivities}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Logins</p>
+              <p className="text-xs text-muted-foreground">{t('logins')}</p>
               <p className="text-sm font-semibold text-green-600">{totals.logins}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Errores</p>
+              <p className="text-xs text-muted-foreground">{t('errors')}</p>
               <p className="text-sm font-semibold text-red-600">{totals.errors}</p>
             </div>
           </div>
