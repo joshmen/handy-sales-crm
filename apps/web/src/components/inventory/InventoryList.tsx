@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -23,6 +24,8 @@ export function InventoryList({
   loading = false,
   onItemClick,
 }: InventoryListProps) {
+  const t = useTranslations('inventory.list');
+
   const getStockBadgeVariant = (item: InventoryItem) => {
     if (item.totalQuantity === 0) return 'destructive';
     if (item.totalQuantity <= item.minStock) return 'warning';
@@ -30,9 +33,9 @@ export function InventoryList({
   };
 
   const getStockBadgeText = (item: InventoryItem) => {
-    if (item.totalQuantity === 0) return 'Sin stock';
-    if (item.totalQuantity <= item.minStock) return 'Stock bajo';
-    return 'Disponible';
+    if (item.totalQuantity === 0) return t('outOfStock');
+    if (item.totalQuantity <= item.minStock) return t('lowStock');
+    return t('available');
   };
 
   if (loading) {
@@ -50,12 +53,11 @@ export function InventoryList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Producto</TableHead>
-            <TableHead>Unidad de medida</TableHead>
-            <TableHead>Existencia totales</TableHead>
-            <TableHead>Existencia en almacén</TableHead>
-
-            <TableHead>Estado</TableHead>
+            <TableHead>{t('product')}</TableHead>
+            <TableHead>{t('unitOfMeasure')}</TableHead>
+            <TableHead>{t('totalStock')}</TableHead>
+            <TableHead>{t('warehouseStock')}</TableHead>
+            <TableHead>{t('status')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -108,7 +110,7 @@ export function InventoryList({
       {items.length === 0 && (
         <div className="text-center py-8">
           <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No se encontraron productos</p>
+          <p className="text-muted-foreground">{t('noProducts')}</p>
         </div>
       )}
     </Card>

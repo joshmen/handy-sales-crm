@@ -245,10 +245,10 @@ export default function InventoryPage() {
       setCurrentImageUrl(null);
       setImageFile(null);
       setImagePreview(null);
-      toast.success('Imagen eliminada');
+      toast.success(t('imageDeleted'));
       fetchInventory();
     } catch {
-      toast.error('Error al eliminar la imagen');
+      toast.error(t('errorDeletingImage'));
     } finally {
       setUploadingImage(false);
     }
@@ -1075,7 +1075,7 @@ export default function InventoryPage() {
             <div>
               <label className="block text-sm font-medium text-foreground/80 mb-1">{t('drawer.productLabel')}</label>
               <div className="px-3 py-2 bg-surface-1 border border-border-subtle rounded text-sm text-foreground/80">
-                {selectedItem?.product?.name || `Producto #${selectedItem?.productId}`}
+                {selectedItem?.product?.name || `${t('drawer.productLabel')} #${selectedItem?.productId}`}
                 {selectedItem?.product?.code && (
                   <span className="text-muted-foreground ml-2">({selectedItem.product.code})</span>
                 )}
@@ -1097,7 +1097,7 @@ export default function InventoryPage() {
                 size="md"
                 maxSizeMB={5}
                 accept="image/jpeg,image/png,image/webp"
-                hint="PNG, JPG o WebP. Max. 5 MB."
+                hint={t('drawer.imageHint')}
                 disabled={uploadingImage}
                 onUpload={(file) => {
                   setImageFile(file);

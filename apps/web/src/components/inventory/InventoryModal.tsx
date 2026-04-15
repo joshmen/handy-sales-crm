@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -72,6 +73,8 @@ export function InventoryModal({
     };
   };
 
+  const t = useTranslations('inventory.modal');
+  const tc = useTranslations('common');
   const [formData, setFormData] = useState<InventoryFormData>(() => getInitialFormData(mode));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -115,16 +118,16 @@ export function InventoryModal({
     const newErrors: Record<string, string> = {};
     
     if (!formData.productId) {
-      newErrors.productId = 'Selecciona un producto';
+      newErrors.productId = t('selectProduct');
     }
     
     if (!formData.quantity || formData.quantity <= 0) {
-      newErrors.quantity = 'La cantidad debe ser mayor a 0';
+      newErrors.quantity = t('quantityGreaterThanZero');
     }
 
     // Validación específica para ajustes
     if (mode === 'adjust' && isAdjustmentData(formData) && formData.type === InventoryAdjustmentType.DECREASE && formData.quantity > currentStock) {
-      newErrors.quantity = 'No puedes disminuir más cantidad de la que tienes en stock';
+      newErrors.quantity = t('cannotDecreaseMoreThanStock');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -155,23 +158,23 @@ export function InventoryModal({
 
   const getModalTitle = () => {
     switch (mode) {
-      case 'adjust': return 'Agregar ajuste de inventario';
-      case 'transfer': return 'Transferir inventario';
-      case 'create': return 'Crear producto en inventario';
-      case 'edit': return 'Editar inventario';
-      default: return 'Gestionar inventario';
+      case 'adjust': return t('titleAdjust');
+      case 'transfer': return t('titleTransfer');
+      case 'create': return t('titleCreate');
+      case 'edit': return t('titleEdit');
+      default: return t('titleManage');
     }
   };
 
   const adjustmentTypeOptions = [
-    { value: InventoryAdjustmentType.INCREASE, label: 'Cantidad a aumentar' },
-    { value: InventoryAdjustmentType.DECREASE, label: 'Cantidad a disminuir' },
-    { value: InventoryAdjustmentType.SET_NEW, label: 'Nuevo inventario' },
+    { value: InventoryAdjustmentType.INCREASE, label: t('increase') },
+    { value: InventoryAdjustmentType.DECREASE, label: t('decrease') },
+    { value: InventoryAdjustmentType.SET_NEW, label: t('setNew') },
   ];
 
   const locationOptions = [
-    { value: 'warehouse', label: 'Almacén' },
-    { value: 'route', label: 'Ruta' },
+    { value: 'warehouse', label: t('warehouse') },
+    { value: 'route', label: t('route') },
   ];
 
   const productOptions = products.map(product => ({
@@ -193,13 +196,13 @@ export function InventoryModal({
       <>
         {/* Product Selection */}
         <div className="space-y-2">
-          <Label htmlFor="product">Buscar producto</Label>
+          <Label htmlFor="product">{t('searchProduct')}</Label>
           <Select
             value={adjustmentData.productId}
             onValueChange={(value) => updateFormData({ productId: value })}
           >
             <SelectTrigger className={errors.productId ? 'border-red-500' : ''}>
-              <SelectValue placeholder="Selecciona un producto" />
+              <SelectValue placeholder={t('selectProduct')} />
             </SelectTrigger>
             <SelectContent>
               {productOptions.map((option) => (
@@ -217,7 +220,7 @@ export function InventoryModal({
         {/* Current Stock Display */}
         {adjustmentData.productId && (
           <div className="space-y-2">
-            <Label htmlFor="current-stock">Inventario actual</Label>
+            <Label htmlFor="current-stock">{t('currentStock')}</Label>
             <Input
               id="current-stock"
               value={currentStock}
@@ -231,7 +234,7 @@ export function InventoryModal({
 
         {/* Adjustment Type */}
         <div className="space-y-3">
-          <Label>Tipo de ajuste</Label>
+          <Label>{t('adjustmentType')}</Label>
           <div className="space-y-2">
             {adjustmentTypeOptions.map((option) => (
               <div key={option.value} className="flex items-center space-x-2">
@@ -257,9 +260,9 @@ export function InventoryModal({
         {/* Quantity */}
         <div className="space-y-2">
           <Label htmlFor="quantity">
-            {adjustmentData.type === InventoryAdjustmentType.SET_NEW 
-              ? 'Nueva cantidad' 
-              : 'Cantidad'
+            {adjustmentData.type === InventoryAdjustmentType.SET_NEW
+              ? t('newQuantity')
+              : t('quantity')
             }
           </Label>
           <Input
@@ -277,7 +280,7 @@ export function InventoryModal({
 
         {/* Reason/Comment */}
         <div className="space-y-2">
-          <Label htmlFor="reason">Motivo / Comentario</Label>
+          <Label htmlFor="reason">{t('reasonComment')}</Label>
           <textarea
             id="reason"
             value={adjustmentData.reason || ''}
@@ -285,7 +288,7 @@ export function InventoryModal({
               updateFormData({ reason: e.target.value })
             }
             className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-            placeholder="Describe el motivo del ajuste..."
+            placeholder={t('reasonPlaceholder')}
             rows={3}
           />
         </div>
@@ -308,13 +311,13 @@ export function InventoryModal({
       <>
         {/* Product Selection */}
         <div className="space-y-2">
-          <Label htmlFor="product">Producto</Label>
+          <Label htmlFor="product">{t('product')}</Label>
           <Select
             value={transferData.productId}
             onValueChange={(value) => updateFormData({ productId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecciona un producto" />
+              <SelectValue placeholder={t('selectProduct')} />
             </SelectTrigger>
             <SelectContent>
               {productOptions.map((option) => (
@@ -329,7 +332,7 @@ export function InventoryModal({
         {/* From/To Locations */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Desde</Label>
+            <Label>{t('from')}</Label>
             <Select
               value={transferData.fromLocation}
               onValueChange={(value) =>
@@ -350,7 +353,7 @@ export function InventoryModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Hacia</Label>
+            <Label>{t('to')}</Label>
             <Select
               value={transferData.toLocation}
               onValueChange={(value) =>
@@ -373,7 +376,7 @@ export function InventoryModal({
 
         {/* Quantity */}
         <div className="space-y-2">
-          <Label htmlFor="quantity">Cantidad a transferir</Label>
+          <Label htmlFor="quantity">{t('transferQuantity')}</Label>
           <Input
             id="quantity"
             type="number"
@@ -417,14 +420,14 @@ export function InventoryModal({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Cancelar
+            {tc('cancel')}
           </Button>
           <Button
             type="submit"
             loading={loading}
             disabled={!formData.productId || !formData.quantity}
           >
-            {mode === 'transfer' ? 'Transferir' : 'Aceptar'}
+            {mode === 'transfer' ? t('transfer') : t('accept')}
           </Button>
         </div>
       </form>

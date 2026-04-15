@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Package, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
 import { InventoryMetrics as IInventoryMetrics } from '@/types/inventory';
@@ -9,30 +10,32 @@ interface InventoryMetricsProps {
 }
 
 export function InventoryMetrics({ metrics, loading = false }: InventoryMetricsProps) {
+  const t = useTranslations('inventory.metrics');
+
   const metricCards = [
     {
-      title: 'Total de Productos',
+      title: t('totalProducts'),
       value: metrics.totalProducts,
       icon: Package,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Stock Bajo',
+      title: t('lowStock'),
       value: metrics.lowStockProducts,
       icon: AlertTriangle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
     },
     {
-      title: 'Sin Stock',
+      title: t('outOfStock'),
       value: metrics.outOfStockProducts,
       icon: TrendingUp,
       color: 'text-red-600',
       bgColor: 'bg-red-100',
     },
     {
-      title: 'Valor Total',
+      title: t('totalValue'),
       value: `$${metrics.totalValue.toLocaleString()}`,
       icon: DollarSign,
       color: 'text-green-600',
