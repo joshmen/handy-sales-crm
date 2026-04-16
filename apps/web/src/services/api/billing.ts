@@ -1,7 +1,6 @@
 import api from '@/lib/api';
 import { billingApi } from '@/lib/billingApi';
 import type {
-  FacturaListItem,
   FacturaDetail,
   CreateFacturaRequest,
   CreateFacturaFromOrderRequest,

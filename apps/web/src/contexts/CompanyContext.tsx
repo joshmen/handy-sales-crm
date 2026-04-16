@@ -48,6 +48,9 @@ export const useCompany = () => {
   return context;
 };
 
+/** Safe version — returns null if CompanyProvider is not mounted (public pages, SSR) */
+export const useCompanyOptional = () => useContext(CompanyContext);
+
 interface CompanyProviderProps {
   children: React.ReactNode;
 }
