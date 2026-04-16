@@ -18,12 +18,13 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task PostCliente_DeberiaCrearCliente()
     {
+        var unique = Guid.NewGuid().ToString("N")[..8];
         var dto = new ClienteCreateDto
         {
             TenandId = 1,
-            Nombre = "Cliente Test",
-            RFC = "TEST123456XX0",
-            Correo = "cliente@test.com",
+            Nombre = $"Cliente Test {unique}",
+            RFC = $"TEST{unique[..6]}XX0",
+            Correo = $"cliente-{unique}@test.com",
             Telefono = "5551234567",
             Direccion = "Calle Falsa 123",
             NumeroExterior = "123",
