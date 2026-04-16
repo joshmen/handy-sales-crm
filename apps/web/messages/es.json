@@ -2891,6 +2891,7 @@
       "voucherType": "Tipo de comprobante",
       "initialFolio": "Folio inicial",
       "currentFolio": "Folio actual",
+      "currentFolioMobile": "Folio actual:",
       "createSeries": "Crear serie",
       "errorCreatingSeries": "Error al crear serie",
       "errorTogglingSeriesStatus": "Error al cambiar estado de la serie",
@@ -2951,7 +2952,54 @@
       "defaultUnitLabel": "Clave Unidad SAT predeterminada",
       "defaultsTitle": "Valores Predeterminados del Tenant",
       "defaultsDesc": "Se usan como respaldo cuando un producto no tiene mapeo fiscal asignado.",
-      "clickToSelect": "Click para seleccionar..."
+      "clickToSelect": "Click para seleccionar...",
+      "batchAssignTitle": "Asignación Masiva",
+      "batchAssignDesc": "Asignar la misma clave SAT a {count} producto(s) seleccionado(s).",
+      "assign": "Asignar",
+      "saveDefaults": "Guardar Predeterminados",
+      "fiscalMappingTitle": "Mapeo Fiscal",
+      "codeLabel": "Código",
+      "unitInfoLabel": "Unidad",
+      "deleteMapping": "Eliminar mapeo",
+      "confirmDelete": "Confirmar eliminar",
+      "deleting": "Eliminando...",
+      "unsavedChanges": "Cambios sin guardar",
+      "unsavedChangesDesc": "Tienes cambios sin guardar. ¿Qué deseas hacer?",
+      "keepEditing": "Seguir editando",
+      "discard": "Descartar",
+      "save": "Guardar",
+      "close": "Cerrar",
+      "satResults": "Resultados SAT",
+      "searching": "Buscando...",
+      "noResults": "Sin resultados para \"{query}\"",
+      "productId": "Producto ID",
+      "prodServSat": "Clave ProdServ SAT",
+      "unitSat": "Clave Unidad SAT",
+      "fiscalDescription": "Descripción Fiscal",
+      "statusCol": "Estado",
+      "updatedCol": "Actualizado",
+      "actionsCol": "Acciones",
+      "mapped": "Mapeado",
+      "editMappingOf": "Editar mapeo de {name}",
+      "deleteMappingOf": "Eliminar mapeo de {name}",
+      "noMappedProducts": "No hay productos con mapeo fiscal",
+      "pageOf": "Página {page} de {total}",
+      "productCol": "Producto",
+      "barcodeCol": "Código de Barras",
+      "unitCol": "Unidad",
+      "unassigned": "Sin asignar",
+      "unmapped": "Sin Mapear",
+      "assignMapping": "Asignar mapeo fiscal",
+      "assignBtn": "Asignar",
+      "allProductsMapped": "Todos los productos tienen mapeo fiscal",
+      "prevPage": "Página anterior",
+      "nextPage": "Página siguiente",
+      "edit": "Editar",
+      "productHash": "Producto #",
+      "selectProductLabel": "Seleccionar producto {id}",
+      "selectLabel": "Seleccionar {name}",
+      "assignMappingTo": "Asignar mapeo a {name}",
+      "barcodeLabel": "Codigo"
     },
     "settingsTab": {
       "cfdiTitle": "Configuración de Facturación CFDI 4.0",
@@ -6434,53 +6482,122 @@
       "title": "Tour general del sistema",
       "desc": "Conoce las secciones principales de Handy Suites y cómo navegar el sistema.",
       "steps": {
-        "0": { "title": "Menú de navegación", "desc": "Usa este menú lateral para moverte entre las secciones del sistema: Clientes, Productos, Inventario, Pedidos, Rutas y más. Puedes colapsarlo para más espacio." },
-        "1": { "title": "Barra de búsqueda", "desc": "Busca rápidamente clientes, productos o pedidos escribiendo aquí. Los resultados aparecen al instante." },
-        "2": { "title": "Notificaciones", "desc": "Aquí verás alertas de stock bajo, pedidos nuevos, visitas programadas y otras notificaciones importantes de tu negocio." },
-        "3": { "title": "Ayuda contextual", "desc": "Abre el panel de ayuda para ver artículos específicos de cada página. También puedes repetir este tour desde ahí." },
-        "4": { "title": "Menú de usuario", "desc": "Accede a tu perfil, configuración de la empresa y cierra sesión desde aquí." },
-        "5": { "title": "Métricas del negocio", "desc": "Estos indicadores muestran un resumen en tiempo real de tus ventas, pedidos, clientes activos y productos. El porcentaje muestra el cambio respecto al período anterior." },
-        "6": { "title": "Gráfico de ventas semanales", "desc": "Visualiza tus ventas día por día. Usa el filtro de período para cambiar el rango de fechas." },
-        "7": { "title": "Actividad reciente", "desc": "Aquí verás los últimos movimientos: pedidos completados, clientes registrados, alertas de inventario y más." },
-        "8": { "title": "Meta de venta semanal", "desc": "Muestra el progreso de la meta de ventas de la semana: monto objetivo, logrado y porcentaje de avance. La barra se llena conforme te acercas a la meta." }
+        "0": {
+          "title": "Menú de navegación",
+          "desc": "Usa este menú lateral para moverte entre las secciones del sistema: Clientes, Productos, Inventario, Pedidos, Rutas y más. Puedes colapsarlo para más espacio."
+        },
+        "1": {
+          "title": "Barra de búsqueda",
+          "desc": "Busca rápidamente clientes, productos o pedidos escribiendo aquí. Los resultados aparecen al instante."
+        },
+        "2": {
+          "title": "Notificaciones",
+          "desc": "Aquí verás alertas de stock bajo, pedidos nuevos, visitas programadas y otras notificaciones importantes de tu negocio."
+        },
+        "3": {
+          "title": "Ayuda contextual",
+          "desc": "Abre el panel de ayuda para ver artículos específicos de cada página. También puedes repetir este tour desde ahí."
+        },
+        "4": {
+          "title": "Menú de usuario",
+          "desc": "Accede a tu perfil, configuración de la empresa y cierra sesión desde aquí."
+        },
+        "5": {
+          "title": "Métricas del negocio",
+          "desc": "Estos indicadores muestran un resumen en tiempo real de tus ventas, pedidos, clientes activos y productos. El porcentaje muestra el cambio respecto al período anterior."
+        },
+        "6": {
+          "title": "Gráfico de ventas semanales",
+          "desc": "Visualiza tus ventas día por día. Usa el filtro de período para cambiar el rango de fechas."
+        },
+        "7": {
+          "title": "Actividad reciente",
+          "desc": "Aquí verás los últimos movimientos: pedidos completados, clientes registrados, alertas de inventario y más."
+        },
+        "8": {
+          "title": "Meta de venta semanal",
+          "desc": "Muestra el progreso de la meta de ventas de la semana: monto objetivo, logrado y porcentaje de avance. La barra se llena conforme te acercas a la meta."
+        }
       }
     },
     "reports-tour": {
       "title": "Tour de Reportes",
       "desc": "Conoce los reportes disponibles para analizar tu negocio.",
       "steps": {
-        "0": { "title": "Catálogo de reportes", "desc": "Aquí ves todos los reportes organizados por sección: Ventas, Clientes e Inventario. Haz clic en cualquier tarjeta para abrir ese reporte." },
-        "1": { "title": "Filtros de fecha", "desc": "Selecciona un rango de fechas y haz clic en \"Consultar\" para generar el reporte. Algunos reportes tienen filtros adicionales como agrupación o zona." },
-        "2": { "title": "Indicadores clave", "desc": "Tarjetas con los KPIs principales del reporte: totales, promedios y métricas relevantes. Los colores indican la categoría de cada métrica." },
-        "3": { "title": "Tabla de datos", "desc": "Tabla detallada con los datos del reporte. Haz clic en los encabezados con flechas para ordenar por columna. Algunos reportes incluyen una fila de totales al final." }
+        "0": {
+          "title": "Catálogo de reportes",
+          "desc": "Aquí ves todos los reportes organizados por sección: Ventas, Clientes e Inventario. Haz clic en cualquier tarjeta para abrir ese reporte."
+        },
+        "1": {
+          "title": "Filtros de fecha",
+          "desc": "Selecciona un rango de fechas y haz clic en \"Consultar\" para generar el reporte. Algunos reportes tienen filtros adicionales como agrupación o zona."
+        },
+        "2": {
+          "title": "Indicadores clave",
+          "desc": "Tarjetas con los KPIs principales del reporte: totales, promedios y métricas relevantes. Los colores indican la categoría de cada métrica."
+        },
+        "3": {
+          "title": "Tabla de datos",
+          "desc": "Tabla detallada con los datos del reporte. Haz clic en los encabezados con flechas para ordenar por columna. Algunos reportes incluyen una fila de totales al final."
+        }
       }
     },
     "global-settings-tour": {
       "title": "Tour de Configuración",
       "desc": "Conoce las opciones de configuración global de tu empresa.",
       "steps": {
-        "0": { "title": "Nombre y logo", "desc": "Configura el nombre de tu empresa y sube tu logotipo. Estos aparecerán en el sistema y en documentos generados." },
-        "1": { "title": "Colores de la plataforma", "desc": "Personaliza los colores primario y secundario de la interfaz para que coincidan con la identidad visual de tu empresa." },
-        "2": { "title": "Configuración regional", "desc": "Selecciona el idioma y zona horaria predeterminados para tu empresa." },
-        "3": { "title": "Guardar configuración", "desc": "Haz clic aquí para guardar todos los cambios de configuración." }
+        "0": {
+          "title": "Nombre y logo",
+          "desc": "Configura el nombre de tu empresa y sube tu logotipo. Estos aparecerán en el sistema y en documentos generados."
+        },
+        "1": {
+          "title": "Colores de la plataforma",
+          "desc": "Personaliza los colores primario y secundario de la interfaz para que coincidan con la identidad visual de tu empresa."
+        },
+        "2": {
+          "title": "Configuración regional",
+          "desc": "Selecciona el idioma y zona horaria predeterminados para tu empresa."
+        },
+        "3": {
+          "title": "Guardar configuración",
+          "desc": "Haz clic aquí para guardar todos los cambios de configuración."
+        }
       }
     },
     "roles-tour": {
       "title": "Tour de Roles",
       "desc": "Aprende a gestionar los roles y permisos de los usuarios del sistema.",
       "steps": {
-        "0": { "title": "Crear rol", "desc": "Crea un nuevo rol con nombre, descripción y conjunto de permisos. Los roles definen qué puede hacer cada tipo de usuario." },
-        "1": { "title": "Estadísticas de roles", "desc": "Resumen rápido: total de roles, activos, inactivos y roles del sistema (que no se pueden eliminar)." },
-        "2": { "title": "Tabla de roles", "desc": "Lista de todos los roles con nombre, descripción, permisos asignados y acciones. Los roles del sistema están protegidos." }
+        "0": {
+          "title": "Crear rol",
+          "desc": "Crea un nuevo rol con nombre, descripción y conjunto de permisos. Los roles definen qué puede hacer cada tipo de usuario."
+        },
+        "1": {
+          "title": "Estadísticas de roles",
+          "desc": "Resumen rápido: total de roles, activos, inactivos y roles del sistema (que no se pueden eliminar)."
+        },
+        "2": {
+          "title": "Tabla de roles",
+          "desc": "Lista de todos los roles con nombre, descripción, permisos asignados y acciones. Los roles del sistema están protegidos."
+        }
       }
     },
     "profile-tour": {
       "title": "Tour del Perfil",
       "desc": "Conoce las opciones de configuración de tu perfil de usuario.",
       "steps": {
-        "0": { "title": "Foto de perfil", "desc": "Haz clic para cambiar tu foto de perfil. Se recomienda una imagen cuadrada de al menos 200x200 píxeles." },
-        "1": { "title": "Secciones del perfil", "desc": "Navega entre las secciones: Información personal, Seguridad (contraseña y 2FA), Preferencias (idioma, tema), Dispositivos y Actividad." },
-        "2": { "title": "Información personal", "desc": "Edita tu nombre, email, teléfono, departamento y ubicación. Haz clic en \"Editar\" para modificar los datos." }
+        "0": {
+          "title": "Foto de perfil",
+          "desc": "Haz clic para cambiar tu foto de perfil. Se recomienda una imagen cuadrada de al menos 200x200 píxeles."
+        },
+        "1": {
+          "title": "Secciones del perfil",
+          "desc": "Navega entre las secciones: Información personal, Seguridad (contraseña y 2FA), Preferencias (idioma, tema), Dispositivos y Actividad."
+        },
+        "2": {
+          "title": "Información personal",
+          "desc": "Edita tu nombre, email, teléfono, departamento y ubicación. Haz clic en \"Editar\" para modificar los datos."
+        }
       }
     },
     "clients-tour": {
@@ -6488,247 +6605,700 @@
       "desc": "Aprende a gestionar tu cartera de clientes: agregar, filtrar, editar y organizar.",
       "doneBtn": "Siguiente",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tu lista de clientes en CSV o importa clientes desde un archivo CSV para cargas masivas." },
-        "1": { "title": "Buscar clientes", "desc": "Escribe el nombre o código del cliente para filtrar la lista rápidamente." },
-        "2": { "title": "Filtrar por zona", "desc": "Selecciona una zona geográfica para ver solo los clientes de esa área. Útil para planear rutas de visita." },
-        "3": { "title": "Filtrar por categoría", "desc": "Filtra por categoría de cliente (mayorista, minorista, etc.) para segmentar tu cartera." },
-        "4": { "title": "Mostrar clientes inactivos", "desc": "Activa este switch para ver también los clientes desactivados. Por defecto solo se muestran los activos." },
-        "5": { "title": "Tabla de clientes", "desc": "Aquí ves todos tus clientes con su zona, categoría, saldo y estado. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote." },
-        "6": { "title": "Crear nuevo cliente", "desc": "Haz clic en \"Siguiente\" para ir al formulario de nuevo cliente y conocer cada sección." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tu lista de clientes en CSV o importa clientes desde un archivo CSV para cargas masivas."
+        },
+        "1": {
+          "title": "Buscar clientes",
+          "desc": "Escribe el nombre o código del cliente para filtrar la lista rápidamente."
+        },
+        "2": {
+          "title": "Filtrar por zona",
+          "desc": "Selecciona una zona geográfica para ver solo los clientes de esa área. Útil para planear rutas de visita."
+        },
+        "3": {
+          "title": "Filtrar por categoría",
+          "desc": "Filtra por categoría de cliente (mayorista, minorista, etc.) para segmentar tu cartera."
+        },
+        "4": {
+          "title": "Mostrar clientes inactivos",
+          "desc": "Activa este switch para ver también los clientes desactivados. Por defecto solo se muestran los activos."
+        },
+        "5": {
+          "title": "Tabla de clientes",
+          "desc": "Aquí ves todos tus clientes con su zona, categoría, saldo y estado. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote."
+        },
+        "6": {
+          "title": "Crear nuevo cliente",
+          "desc": "Haz clic en \"Siguiente\" para ir al formulario de nuevo cliente y conocer cada sección."
+        }
       }
     },
     "new-client-tour": {
       "title": "Tour de Crear Cliente",
       "desc": "Aprende a completar el formulario para registrar un nuevo cliente.",
       "steps": {
-        "0": { "title": "Guardar o cancelar", "desc": "Cuando termines de llenar el formulario, haz clic en \"Guardar\" para registrar el cliente. Si deseas descartar los cambios, usa \"Cancelar\"." },
-        "1": { "title": "Información general", "desc": "Captura el nombre del cliente, selecciona su categoría (mayorista, minorista, etc.) y marca si es prospecto. El nombre y la categoría son obligatorios." },
-        "2": { "title": "Precios y descuento", "desc": "Asigna una lista de precios especial para este cliente y un porcentaje de descuento general. Esta sección es opcional." },
-        "3": { "title": "Pago, venta y crédito", "desc": "Define el saldo inicial, límite de crédito y el monto mínimo para que una visita se considere efectiva." },
-        "4": { "title": "Configuración de entregas", "desc": "Elige si el cliente paga de contado, a crédito o ambos. Configura el tipo de pago predeterminado y los días de crédito." },
-        "5": { "title": "Datos fiscales", "desc": "Si el cliente requiere factura, activa \"Facturable\" para capturar RFC, razón social, régimen fiscal y uso CFDI conforme a los requisitos del SAT." },
-        "6": { "title": "Dirección y mapa", "desc": "Escribe la dirección y el autocompletado de Google Maps llenará los campos automáticamente. Selecciona la zona geográfica del cliente. El mapa muestra la ubicación y valida que esté dentro de la zona." },
-        "7": { "title": "Datos de contacto", "desc": "Registra el nombre del encargado, teléfono (10 dígitos) y correo electrónico del cliente. El teléfono y email son obligatorios." }
+        "0": {
+          "title": "Guardar o cancelar",
+          "desc": "Cuando termines de llenar el formulario, haz clic en \"Guardar\" para registrar el cliente. Si deseas descartar los cambios, usa \"Cancelar\"."
+        },
+        "1": {
+          "title": "Información general",
+          "desc": "Captura el nombre del cliente, selecciona su categoría (mayorista, minorista, etc.) y marca si es prospecto. El nombre y la categoría son obligatorios."
+        },
+        "2": {
+          "title": "Precios y descuento",
+          "desc": "Asigna una lista de precios especial para este cliente y un porcentaje de descuento general. Esta sección es opcional."
+        },
+        "3": {
+          "title": "Pago, venta y crédito",
+          "desc": "Define el saldo inicial, límite de crédito y el monto mínimo para que una visita se considere efectiva."
+        },
+        "4": {
+          "title": "Configuración de entregas",
+          "desc": "Elige si el cliente paga de contado, a crédito o ambos. Configura el tipo de pago predeterminado y los días de crédito."
+        },
+        "5": {
+          "title": "Datos fiscales",
+          "desc": "Si el cliente requiere factura, activa \"Facturable\" para capturar RFC, razón social, régimen fiscal y uso CFDI conforme a los requisitos del SAT."
+        },
+        "6": {
+          "title": "Dirección y mapa",
+          "desc": "Escribe la dirección y el autocompletado de Google Maps llenará los campos automáticamente. Selecciona la zona geográfica del cliente. El mapa muestra la ubicación y valida que esté dentro de la zona."
+        },
+        "7": {
+          "title": "Datos de contacto",
+          "desc": "Registra el nombre del encargado, teléfono (10 dígitos) y correo electrónico del cliente. El teléfono y email son obligatorios."
+        }
       }
     },
     "products-tour": {
       "title": "Tour de Productos",
       "desc": "Aprende a dar de alta productos, asignar precios, familias y categorías.",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tu catálogo de productos en CSV o importa productos desde un archivo CSV para cargas masivas. El archivo debe incluir nombre, código de barras, precio base, familia, categoría y unidad de medida." },
-        "1": { "title": "Crear nuevo producto", "desc": "Haz clic aquí para dar de alta un producto. Se abrirá un formulario lateral donde capturarás todos los datos." },
-        "2": { "title": "Nombre del producto", "desc": "Captura el nombre del producto tal como lo conocen tus vendedores. Es obligatorio y debe ser único." },
-        "3": { "title": "Código de barras", "desc": "Ingresa el código de barras del producto (EAN-13, UPC, etc.). Es obligatorio y debe ser único. Los vendedores podrán escanearlo desde la app móvil." },
-        "4": { "title": "Imagen del producto", "desc": "Sube una foto del producto en JPEG, PNG o WebP (máximo 5 MB). La imagen aparecerá en el catálogo y en la app móvil de los vendedores." },
-        "5": { "title": "Familia de productos", "desc": "Selecciona la familia principal del producto (ej: Bebidas, Abarrotes, Lácteos). Las familias se configuran en el catálogo de Familias de Productos." },
-        "6": { "title": "Categoría", "desc": "Selecciona la categoría que subdivide la familia (ej: Refrescos dentro de Bebidas). Las categorías se configuran en el catálogo de Categorías de Productos." },
-        "7": { "title": "Unidad de medida", "desc": "Selecciona cómo se vende el producto: Pieza, Caja, Litro, Kilogramo, etc. Las unidades se configuran en el catálogo de Unidades de Medida." },
-        "8": { "title": "Precio base", "desc": "El precio de venta principal del producto. Si usas listas de precios, cada lista puede tener un precio diferente para este producto." },
-        "9": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Producto\" para guardarlo o \"Cancelar\" para descartar. Si hay cambios sin guardar, se te pedirá confirmar." },
-        "10": { "title": "Buscar productos", "desc": "Escribe el nombre o código del producto para encontrarlo rápidamente." },
-        "11": { "title": "Filtrar por familia", "desc": "Las familias agrupan productos por tipo (ej: Bebidas, Abarrotes, Lácteos). Selecciona una para filtrar la lista." },
-        "12": { "title": "Filtrar por categoría", "desc": "Las categorías subdividen las familias (ej: Refrescos, Jugos dentro de Bebidas). Usa este filtro para refinar la búsqueda." },
-        "13": { "title": "Mostrar inactivos", "desc": "Activa este switch para ver productos desactivados. Los productos inactivos no aparecen al crear pedidos." },
-        "14": { "title": "Catálogo de productos", "desc": "Aquí ves todos tus productos con imagen, código, precio, existencia, familia y categoría. Los productos con stock bajo se marcan en rojo. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tu catálogo de productos en CSV o importa productos desde un archivo CSV para cargas masivas. El archivo debe incluir nombre, código de barras, precio base, familia, categoría y unidad de medida."
+        },
+        "1": {
+          "title": "Crear nuevo producto",
+          "desc": "Haz clic aquí para dar de alta un producto. Se abrirá un formulario lateral donde capturarás todos los datos."
+        },
+        "2": {
+          "title": "Nombre del producto",
+          "desc": "Captura el nombre del producto tal como lo conocen tus vendedores. Es obligatorio y debe ser único."
+        },
+        "3": {
+          "title": "Código de barras",
+          "desc": "Ingresa el código de barras del producto (EAN-13, UPC, etc.). Es obligatorio y debe ser único. Los vendedores podrán escanearlo desde la app móvil."
+        },
+        "4": {
+          "title": "Imagen del producto",
+          "desc": "Sube una foto del producto en JPEG, PNG o WebP (máximo 5 MB). La imagen aparecerá en el catálogo y en la app móvil de los vendedores."
+        },
+        "5": {
+          "title": "Familia de productos",
+          "desc": "Selecciona la familia principal del producto (ej: Bebidas, Abarrotes, Lácteos). Las familias se configuran en el catálogo de Familias de Productos."
+        },
+        "6": {
+          "title": "Categoría",
+          "desc": "Selecciona la categoría que subdivide la familia (ej: Refrescos dentro de Bebidas). Las categorías se configuran en el catálogo de Categorías de Productos."
+        },
+        "7": {
+          "title": "Unidad de medida",
+          "desc": "Selecciona cómo se vende el producto: Pieza, Caja, Litro, Kilogramo, etc. Las unidades se configuran en el catálogo de Unidades de Medida."
+        },
+        "8": {
+          "title": "Precio base",
+          "desc": "El precio de venta principal del producto. Si usas listas de precios, cada lista puede tener un precio diferente para este producto."
+        },
+        "9": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Producto\" para guardarlo o \"Cancelar\" para descartar. Si hay cambios sin guardar, se te pedirá confirmar."
+        },
+        "10": {
+          "title": "Buscar productos",
+          "desc": "Escribe el nombre o código del producto para encontrarlo rápidamente."
+        },
+        "11": {
+          "title": "Filtrar por familia",
+          "desc": "Las familias agrupan productos por tipo (ej: Bebidas, Abarrotes, Lácteos). Selecciona una para filtrar la lista."
+        },
+        "12": {
+          "title": "Filtrar por categoría",
+          "desc": "Las categorías subdividen las familias (ej: Refrescos, Jugos dentro de Bebidas). Usa este filtro para refinar la búsqueda."
+        },
+        "13": {
+          "title": "Mostrar inactivos",
+          "desc": "Activa este switch para ver productos desactivados. Los productos inactivos no aparecen al crear pedidos."
+        },
+        "14": {
+          "title": "Catálogo de productos",
+          "desc": "Aquí ves todos tus productos con imagen, código, precio, existencia, familia y categoría. Los productos con stock bajo se marcan en rojo. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "zones-tour": {
       "title": "Tour de Zonas",
       "desc": "Aprende a organizar tu territorio en zonas geográficas para tus vendedores.",
       "steps": {
-        "0": { "title": "Ver mapa de zonas", "desc": "Abre un mapa interactivo con todas tus zonas dibujadas como círculos de colores. Útil para visualizar la cobertura territorial de tu equipo." },
-        "1": { "title": "Importar / Exportar", "desc": "Exporta tus zonas a CSV o importa desde un archivo para cargas masivas. El CSV incluye nombre, descripción y color." },
-        "2": { "title": "Nueva zona", "desc": "Crea una zona geográfica con nombre, color y ubicación en el mapa. Después podrás asignar clientes a cada zona." },
-        "3": { "title": "Nombre de la zona", "desc": "Escribe un nombre descriptivo para la zona (ej. \"Centro Histórico\", \"Zona Norte\", \"Industrial Zapopan\")." },
-        "4": { "title": "Color de la zona", "desc": "Selecciona un color para identificar visualmente la zona en el mapa y en las listas. Elige uno diferente para cada zona." },
-        "5": { "title": "Ubicación y radio", "desc": "Busca un lugar, haz doble clic en el mapa o arrastra el marcador para posicionar la zona. Ajusta el radio arrastrando el borde del círculo o escribiendo el valor en km." },
-        "6": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Zona\" para guardar o \"Cancelar\" para descartar los cambios." },
-        "7": { "title": "Buscar zonas", "desc": "Escribe el nombre de la zona para encontrarla rápidamente. La búsqueda filtra en tiempo real." },
-        "8": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver también las zonas desactivadas. Por defecto solo se muestran las activas." },
-        "9": { "title": "Tabla de zonas", "desc": "Cada zona muestra su color, nombre, clientes asignados y estado activo/inactivo. Haz clic en una fila para editarla. Selecciona varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Ver mapa de zonas",
+          "desc": "Abre un mapa interactivo con todas tus zonas dibujadas como círculos de colores. Útil para visualizar la cobertura territorial de tu equipo."
+        },
+        "1": {
+          "title": "Importar / Exportar",
+          "desc": "Exporta tus zonas a CSV o importa desde un archivo para cargas masivas. El CSV incluye nombre, descripción y color."
+        },
+        "2": {
+          "title": "Nueva zona",
+          "desc": "Crea una zona geográfica con nombre, color y ubicación en el mapa. Después podrás asignar clientes a cada zona."
+        },
+        "3": {
+          "title": "Nombre de la zona",
+          "desc": "Escribe un nombre descriptivo para la zona (ej. \"Centro Histórico\", \"Zona Norte\", \"Industrial Zapopan\")."
+        },
+        "4": {
+          "title": "Color de la zona",
+          "desc": "Selecciona un color para identificar visualmente la zona en el mapa y en las listas. Elige uno diferente para cada zona."
+        },
+        "5": {
+          "title": "Ubicación y radio",
+          "desc": "Busca un lugar, haz doble clic en el mapa o arrastra el marcador para posicionar la zona. Ajusta el radio arrastrando el borde del círculo o escribiendo el valor en km."
+        },
+        "6": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Zona\" para guardar o \"Cancelar\" para descartar los cambios."
+        },
+        "7": {
+          "title": "Buscar zonas",
+          "desc": "Escribe el nombre de la zona para encontrarla rápidamente. La búsqueda filtra en tiempo real."
+        },
+        "8": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver también las zonas desactivadas. Por defecto solo se muestran las activas."
+        },
+        "9": {
+          "title": "Tabla de zonas",
+          "desc": "Cada zona muestra su color, nombre, clientes asignados y estado activo/inactivo. Haz clic en una fila para editarla. Selecciona varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "client-categories-tour": {
       "title": "Tour de Categorías de Clientes",
       "desc": "Aprende a organizar tus clientes por categoría (mayorista, minorista, etc.).",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus categorías en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)." },
-        "1": { "title": "Nueva categoría", "desc": "Crea una nueva categoría de cliente para segmentar tu cartera (mayorista, minorista, VIP, etc.)." },
-        "2": { "title": "Nombre de la categoría", "desc": "Escribe un nombre descriptivo para la categoría (ej. Mayorista, VIP, Distribuidor). Este campo es obligatorio." },
-        "3": { "title": "Descripción", "desc": "Agrega una descripción opcional para identificar mejor la categoría." },
-        "4": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Categoría\" para guardar o \"Cancelar\" para descartar los cambios." },
-        "5": { "title": "Buscar categorías", "desc": "Escribe para filtrar las categorías por nombre." },
-        "6": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver también las categorías desactivadas. Por defecto solo se muestran las activas." },
-        "7": { "title": "Tabla de categorías", "desc": "Lista de todas las categorías con nombre, descripción y estado. Puedes editar o activar/desactivar cada una." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus categorías en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)."
+        },
+        "1": {
+          "title": "Nueva categoría",
+          "desc": "Crea una nueva categoría de cliente para segmentar tu cartera (mayorista, minorista, VIP, etc.)."
+        },
+        "2": {
+          "title": "Nombre de la categoría",
+          "desc": "Escribe un nombre descriptivo para la categoría (ej. Mayorista, VIP, Distribuidor). Este campo es obligatorio."
+        },
+        "3": {
+          "title": "Descripción",
+          "desc": "Agrega una descripción opcional para identificar mejor la categoría."
+        },
+        "4": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Categoría\" para guardar o \"Cancelar\" para descartar los cambios."
+        },
+        "5": {
+          "title": "Buscar categorías",
+          "desc": "Escribe para filtrar las categorías por nombre."
+        },
+        "6": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver también las categorías desactivadas. Por defecto solo se muestran las activas."
+        },
+        "7": {
+          "title": "Tabla de categorías",
+          "desc": "Lista de todas las categorías con nombre, descripción y estado. Puedes editar o activar/desactivar cada una."
+        }
       }
     },
     "product-categories-tour": {
       "title": "Tour de Categorías de Productos",
       "desc": "Aprende a clasificar tus productos por categoría para organizarlos mejor.",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus categorías en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)." },
-        "1": { "title": "Nueva categoría", "desc": "Crea una nueva categoría de producto. Se abrirá un formulario lateral donde capturarás nombre y descripción." },
-        "2": { "title": "Nombre de la categoría", "desc": "Captura el nombre de la categoría (ej: Refrescos, Galletas, Lácteos). Es obligatorio y debe ser único. Las categorías subdividen las familias de productos." },
-        "3": { "title": "Descripción", "desc": "Agrega una descripción opcional para identificar qué tipo de productos pertenecen a esta categoría." },
-        "4": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Categoría\" para guardarla o \"Cancelar\" para descartar." },
-        "5": { "title": "Buscar categorías", "desc": "Escribe para filtrar las categorías por nombre." },
-        "6": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver también las categorías desactivadas. Por defecto solo se muestran las activas." },
-        "7": { "title": "Tabla de categorías", "desc": "Lista de categorías con nombre, descripción, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus categorías en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)."
+        },
+        "1": {
+          "title": "Nueva categoría",
+          "desc": "Crea una nueva categoría de producto. Se abrirá un formulario lateral donde capturarás nombre y descripción."
+        },
+        "2": {
+          "title": "Nombre de la categoría",
+          "desc": "Captura el nombre de la categoría (ej: Refrescos, Galletas, Lácteos). Es obligatorio y debe ser único. Las categorías subdividen las familias de productos."
+        },
+        "3": {
+          "title": "Descripción",
+          "desc": "Agrega una descripción opcional para identificar qué tipo de productos pertenecen a esta categoría."
+        },
+        "4": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Categoría\" para guardarla o \"Cancelar\" para descartar."
+        },
+        "5": {
+          "title": "Buscar categorías",
+          "desc": "Escribe para filtrar las categorías por nombre."
+        },
+        "6": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver también las categorías desactivadas. Por defecto solo se muestran las activas."
+        },
+        "7": {
+          "title": "Tabla de categorías",
+          "desc": "Lista de categorías con nombre, descripción, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "product-families-tour": {
       "title": "Tour de Familias de Productos",
       "desc": "Aprende a agrupar tus productos por familia (Bebidas, Abarrotes, etc.).",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus familias en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)." },
-        "1": { "title": "Nueva familia", "desc": "Crea una nueva familia de productos. Se abrirá un formulario lateral donde capturarás nombre y descripción." },
-        "2": { "title": "Nombre de la familia", "desc": "Captura el nombre de la familia (ej: Bebidas, Abarrotes, Lácteos). Es obligatorio y debe ser único. Las familias son la agrupación principal de tu catálogo." },
-        "3": { "title": "Descripción", "desc": "Agrega una descripción opcional para ayudar a identificar el tipo de productos que pertenecen a esta familia." },
-        "4": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Familia\" para guardarla o \"Cancelar\" para descartar." },
-        "5": { "title": "Buscar familias", "desc": "Escribe para filtrar las familias por nombre." },
-        "6": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver también las familias desactivadas." },
-        "7": { "title": "Tabla de familias", "desc": "Lista de familias con nombre, descripción, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus familias en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)."
+        },
+        "1": {
+          "title": "Nueva familia",
+          "desc": "Crea una nueva familia de productos. Se abrirá un formulario lateral donde capturarás nombre y descripción."
+        },
+        "2": {
+          "title": "Nombre de la familia",
+          "desc": "Captura el nombre de la familia (ej: Bebidas, Abarrotes, Lácteos). Es obligatorio y debe ser único. Las familias son la agrupación principal de tu catálogo."
+        },
+        "3": {
+          "title": "Descripción",
+          "desc": "Agrega una descripción opcional para ayudar a identificar el tipo de productos que pertenecen a esta familia."
+        },
+        "4": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Familia\" para guardarla o \"Cancelar\" para descartar."
+        },
+        "5": {
+          "title": "Buscar familias",
+          "desc": "Escribe para filtrar las familias por nombre."
+        },
+        "6": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver también las familias desactivadas."
+        },
+        "7": {
+          "title": "Tabla de familias",
+          "desc": "Lista de familias con nombre, descripción, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "units-tour": {
       "title": "Tour de Unidades de Medida",
       "desc": "Aprende a configurar las unidades de medida para tus productos.",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus unidades en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y abreviatura (opcional)." },
-        "1": { "title": "Nueva unidad", "desc": "Crea una nueva unidad de medida. Se abrirá un formulario lateral donde capturarás nombre y abreviatura." },
-        "2": { "title": "Nombre de la unidad", "desc": "Captura el nombre completo de la unidad (ej: Kilogramo, Pieza, Litro). Es obligatorio y debe ser único. Las unidades se asignan a cada producto." },
-        "3": { "title": "Abreviatura", "desc": "Abreviatura corta de la unidad (ej: kg, pz, lt, m). Se muestra en tablas y reportes para ahorrar espacio. Máximo 10 caracteres." },
-        "4": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Unidad\" para guardarla o \"Cancelar\" para descartar." },
-        "5": { "title": "Buscar unidades", "desc": "Escribe para filtrar las unidades por nombre o abreviatura." },
-        "6": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver también las unidades desactivadas. Por defecto solo se muestran las activas." },
-        "7": { "title": "Tabla de unidades", "desc": "Lista de unidades con nombre, abreviatura, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus unidades en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y abreviatura (opcional)."
+        },
+        "1": {
+          "title": "Nueva unidad",
+          "desc": "Crea una nueva unidad de medida. Se abrirá un formulario lateral donde capturarás nombre y abreviatura."
+        },
+        "2": {
+          "title": "Nombre de la unidad",
+          "desc": "Captura el nombre completo de la unidad (ej: Kilogramo, Pieza, Litro). Es obligatorio y debe ser único. Las unidades se asignan a cada producto."
+        },
+        "3": {
+          "title": "Abreviatura",
+          "desc": "Abreviatura corta de la unidad (ej: kg, pz, lt, m). Se muestra en tablas y reportes para ahorrar espacio. Máximo 10 caracteres."
+        },
+        "4": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Unidad\" para guardarla o \"Cancelar\" para descartar."
+        },
+        "5": {
+          "title": "Buscar unidades",
+          "desc": "Escribe para filtrar las unidades por nombre o abreviatura."
+        },
+        "6": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver también las unidades desactivadas. Por defecto solo se muestran las activas."
+        },
+        "7": {
+          "title": "Tabla de unidades",
+          "desc": "Lista de unidades con nombre, abreviatura, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "metas-tour": {
       "title": "Tour de Metas de Vendedor",
       "desc": "Aprende a definir y dar seguimiento a las metas de ventas, pedidos y visitas de tu equipo.",
       "steps": {
-        "0": { "title": "Nueva meta", "desc": "Crea una meta para un vendedor: elige si es de ventas ($), pedidos o visitas, define el período (semanal o mensual) y el objetivo numérico." },
-        "1": { "title": "Seleccionar vendedor", "desc": "Elige a qué vendedor aplica esta meta. Cada vendedor puede tener metas distintas para cada tipo de indicador." },
-        "2": { "title": "Tipo de meta", "desc": "Ventas ($) mide el monto total vendido. Pedidos (#) cuenta el número de pedidos cerrados. Visitas (#) mide las visitas completadas al cliente." },
-        "3": { "title": "Objetivo", "desc": "Ingresa el número a alcanzar: monto en pesos para ventas, o cantidad de pedidos/visitas para los otros tipos." },
-        "4": { "title": "Período de vigencia", "desc": "Define el rango de fechas en que aplica la meta. La automatización \"Meta no cumplida\" evalúa estos rangos cada viernes para enviar alertas." },
-        "5": { "title": "Guardar meta", "desc": "Crea la meta. Aparecerá en el tablero del vendedor y en la automatización de alerta semanal." },
-        "6": { "title": "Buscar metas", "desc": "Filtra por nombre del vendedor o tipo de meta para encontrar rápidamente lo que buscas." },
-        "7": { "title": "Filtrar por tipo", "desc": "Muestra solo las metas de ventas, de pedidos o de visitas para comparar objetivos del mismo indicador." },
-        "8": { "title": "Lista de metas", "desc": "Cada fila muestra el vendedor, tipo, período, objetivo y estado. Usa el toggle para activar/desactivar y los botones de acción para editar o eliminar." }
+        "0": {
+          "title": "Nueva meta",
+          "desc": "Crea una meta para un vendedor: elige si es de ventas ($), pedidos o visitas, define el período (semanal o mensual) y el objetivo numérico."
+        },
+        "1": {
+          "title": "Seleccionar vendedor",
+          "desc": "Elige a qué vendedor aplica esta meta. Cada vendedor puede tener metas distintas para cada tipo de indicador."
+        },
+        "2": {
+          "title": "Tipo de meta",
+          "desc": "Ventas ($) mide el monto total vendido. Pedidos (#) cuenta el número de pedidos cerrados. Visitas (#) mide las visitas completadas al cliente."
+        },
+        "3": {
+          "title": "Objetivo",
+          "desc": "Ingresa el número a alcanzar: monto en pesos para ventas, o cantidad de pedidos/visitas para los otros tipos."
+        },
+        "4": {
+          "title": "Período de vigencia",
+          "desc": "Define el rango de fechas en que aplica la meta. La automatización \"Meta no cumplida\" evalúa estos rangos cada viernes para enviar alertas."
+        },
+        "5": {
+          "title": "Guardar meta",
+          "desc": "Crea la meta. Aparecerá en el tablero del vendedor y en la automatización de alerta semanal."
+        },
+        "6": {
+          "title": "Buscar metas",
+          "desc": "Filtra por nombre del vendedor o tipo de meta para encontrar rápidamente lo que buscas."
+        },
+        "7": {
+          "title": "Filtrar por tipo",
+          "desc": "Muestra solo las metas de ventas, de pedidos o de visitas para comparar objetivos del mismo indicador."
+        },
+        "8": {
+          "title": "Lista de metas",
+          "desc": "Cada fila muestra el vendedor, tipo, período, objetivo y estado. Usa el toggle para activar/desactivar y los botones de acción para editar o eliminar."
+        }
       }
     },
     "discounts-tour": {
       "title": "Tour de Descuentos",
       "desc": "Aprende a crear descuentos por cantidad, globales o por producto específico.",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus descuentos en CSV o importa desde un archivo. Columnas: TipoAplicacion (Global/Producto), Producto, CantidadMinima, DescuentoPorcentaje." },
-        "1": { "title": "Dos tipos de descuento", "desc": "Hay dos tipos: <b>Descuento global</b> (aplica a todo el catálogo) y <b>Descuento por producto</b> (aplica a un producto específico). Veamos primero el global." },
-        "2": { "title": "Descuento global — Campos", "desc": "Para un descuento global solo necesitas dos campos: el <b>porcentaje de descuento</b> (1-100%) y la <b>cantidad mínima</b> de unidades. El descuento aplica a todos los productos del catálogo." },
-        "3": { "title": "Guardar descuento global", "desc": "Haz clic en \"Crear\" para guardar o \"Cancelar\" para descartar. Ahora veamos cómo se crea un descuento por producto." },
-        "4": { "title": "Descuento por producto — Producto", "desc": "A diferencia del global, aquí debes <b>seleccionar un producto específico</b> del catálogo. El descuento solo aplicará a ese producto. Los campos de porcentaje y cantidad mínima funcionan igual." },
-        "5": { "title": "Guardar descuento por producto", "desc": "Guarda el descuento por producto o cancela para descartar los cambios." },
-        "6": { "title": "Pestañas de tipo", "desc": "Navega entre las pestañas para ver los descuentos de cada tipo por separado: \"Descuento global\" y \"Descuento por producto\"." },
-        "7": { "title": "Buscar descuentos", "desc": "Busca descuentos por nombre de producto, código o porcentaje." },
-        "8": { "title": "Mostrar inactivos", "desc": "Activa este switch para ver también los descuentos desactivados. Por defecto solo se muestran los activos." },
-        "9": { "title": "Tarjetas de descuento", "desc": "Cada tarjeta muestra el porcentaje, cantidad mínima, quién lo creó y su estado. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus descuentos en CSV o importa desde un archivo. Columnas: TipoAplicacion (Global/Producto), Producto, CantidadMinima, DescuentoPorcentaje."
+        },
+        "1": {
+          "title": "Dos tipos de descuento",
+          "desc": "Hay dos tipos: <b>Descuento global</b> (aplica a todo el catálogo) y <b>Descuento por producto</b> (aplica a un producto específico). Veamos primero el global."
+        },
+        "2": {
+          "title": "Descuento global — Campos",
+          "desc": "Para un descuento global solo necesitas dos campos: el <b>porcentaje de descuento</b> (1-100%) y la <b>cantidad mínima</b> de unidades. El descuento aplica a todos los productos del catálogo."
+        },
+        "3": {
+          "title": "Guardar descuento global",
+          "desc": "Haz clic en \"Crear\" para guardar o \"Cancelar\" para descartar. Ahora veamos cómo se crea un descuento por producto."
+        },
+        "4": {
+          "title": "Descuento por producto — Producto",
+          "desc": "A diferencia del global, aquí debes <b>seleccionar un producto específico</b> del catálogo. El descuento solo aplicará a ese producto. Los campos de porcentaje y cantidad mínima funcionan igual."
+        },
+        "5": {
+          "title": "Guardar descuento por producto",
+          "desc": "Guarda el descuento por producto o cancela para descartar los cambios."
+        },
+        "6": {
+          "title": "Pestañas de tipo",
+          "desc": "Navega entre las pestañas para ver los descuentos de cada tipo por separado: \"Descuento global\" y \"Descuento por producto\"."
+        },
+        "7": {
+          "title": "Buscar descuentos",
+          "desc": "Busca descuentos por nombre de producto, código o porcentaje."
+        },
+        "8": {
+          "title": "Mostrar inactivos",
+          "desc": "Activa este switch para ver también los descuentos desactivados. Por defecto solo se muestran los activos."
+        },
+        "9": {
+          "title": "Tarjetas de descuento",
+          "desc": "Cada tarjeta muestra el porcentaje, cantidad mínima, quién lo creó y su estado. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "promotions-tour": {
       "title": "Tour de Promociones",
       "desc": "Aprende a crear promociones con descuento para tus productos.",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus promociones en CSV o importa desde un archivo. Columnas: Nombre*, Descripcion, DescuentoPorcentaje*, FechaInicio*, FechaFin*, Productos* (separados por punto y coma)." },
-        "1": { "title": "Nueva promoción", "desc": "Crea una promoción con descuento para uno o más productos con fechas de vigencia." },
-        "2": { "title": "Nombre de la promoción", "desc": "Escribe un nombre descriptivo (ej. \"Promo Verano 2026\"). El nombre debe ser único, no puede repetirse." },
-        "3": { "title": "Seleccionar productos", "desc": "Selecciona los productos que incluirá la promoción. Puedes agregar varios productos y también usar \"Seleccionar todos\". Un producto no puede estar en dos promociones activas con fechas que se solapen." },
-        "4": { "title": "Porcentaje de descuento", "desc": "Define el porcentaje de descuento (1-100%). Se aplica automáticamente al crear pedidos con estos productos durante la vigencia." },
-        "5": { "title": "Fechas de vigencia", "desc": "Define cuándo inicia y termina la promoción (formato yyyy-MM-dd). La fecha de fin debe ser posterior a la de inicio. Al vencer, la promoción se marca como expirada." },
-        "6": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear promoción\" para guardar o \"Cancelar\" para descartar los cambios." },
-        "7": { "title": "Buscar promociones", "desc": "Busca por nombre o descripción de la promoción." },
-        "8": { "title": "Mostrar inactivas", "desc": "Activa este filtro para ver también las promociones desactivadas o vencidas. Útil para reactivar promociones anteriores." },
-        "9": { "title": "Tabla de promociones", "desc": "Cada promoción muestra nombre, productos incluidos, porcentaje, vigencia y estado. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus promociones en CSV o importa desde un archivo. Columnas: Nombre*, Descripcion, DescuentoPorcentaje*, FechaInicio*, FechaFin*, Productos* (separados por punto y coma)."
+        },
+        "1": {
+          "title": "Nueva promoción",
+          "desc": "Crea una promoción con descuento para uno o más productos con fechas de vigencia."
+        },
+        "2": {
+          "title": "Nombre de la promoción",
+          "desc": "Escribe un nombre descriptivo (ej. \"Promo Verano 2026\"). El nombre debe ser único, no puede repetirse."
+        },
+        "3": {
+          "title": "Seleccionar productos",
+          "desc": "Selecciona los productos que incluirá la promoción. Puedes agregar varios productos y también usar \"Seleccionar todos\". Un producto no puede estar en dos promociones activas con fechas que se solapen."
+        },
+        "4": {
+          "title": "Porcentaje de descuento",
+          "desc": "Define el porcentaje de descuento (1-100%). Se aplica automáticamente al crear pedidos con estos productos durante la vigencia."
+        },
+        "5": {
+          "title": "Fechas de vigencia",
+          "desc": "Define cuándo inicia y termina la promoción (formato yyyy-MM-dd). La fecha de fin debe ser posterior a la de inicio. Al vencer, la promoción se marca como expirada."
+        },
+        "6": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear promoción\" para guardar o \"Cancelar\" para descartar los cambios."
+        },
+        "7": {
+          "title": "Buscar promociones",
+          "desc": "Busca por nombre o descripción de la promoción."
+        },
+        "8": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este filtro para ver también las promociones desactivadas o vencidas. Útil para reactivar promociones anteriores."
+        },
+        "9": {
+          "title": "Tabla de promociones",
+          "desc": "Cada promoción muestra nombre, productos incluidos, porcentaje, vigencia y estado. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "price-lists-tour": {
       "title": "Tour de Listas de Precios",
       "desc": "Aprende a crear listas de precios diferenciados para distintos tipos de clientes.",
       "steps": {
-        "0": { "title": "Importar y exportar", "desc": "Descarga tus listas en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)." },
-        "1": { "title": "Nueva lista de precios", "desc": "Crea una lista de precios para asignar precios específicos por producto según tipo de cliente (mayoreo, menudeo, etc.)." },
-        "2": { "title": "Nombre de la lista", "desc": "Escribe un nombre descriptivo (ej. Lista mayoreo, Lista minorista). Este campo es obligatorio." },
-        "3": { "title": "Descripción", "desc": "Agrega una descripción opcional para identificar mejor la lista de precios." },
-        "4": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear Lista\" para guardar o \"Cancelar\" para descartar. Después podrás asignar precios por producto." },
-        "5": { "title": "Buscar listas", "desc": "Escribe el nombre de la lista de precios para encontrarla rápidamente." },
-        "6": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver las listas de precios desactivadas. Por defecto solo se muestran las activas." },
-        "7": { "title": "Tabla de listas", "desc": "Cada lista muestra nombre, descripción, última modificación y estado. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Importar y exportar",
+          "desc": "Descarga tus listas en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional)."
+        },
+        "1": {
+          "title": "Nueva lista de precios",
+          "desc": "Crea una lista de precios para asignar precios específicos por producto según tipo de cliente (mayoreo, menudeo, etc.)."
+        },
+        "2": {
+          "title": "Nombre de la lista",
+          "desc": "Escribe un nombre descriptivo (ej. Lista mayoreo, Lista minorista). Este campo es obligatorio."
+        },
+        "3": {
+          "title": "Descripción",
+          "desc": "Agrega una descripción opcional para identificar mejor la lista de precios."
+        },
+        "4": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear Lista\" para guardar o \"Cancelar\" para descartar. Después podrás asignar precios por producto."
+        },
+        "5": {
+          "title": "Buscar listas",
+          "desc": "Escribe el nombre de la lista de precios para encontrarla rápidamente."
+        },
+        "6": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver las listas de precios desactivadas. Por defecto solo se muestran las activas."
+        },
+        "7": {
+          "title": "Tabla de listas",
+          "desc": "Cada lista muestra nombre, descripción, última modificación y estado. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "orders-tour": {
       "title": "Tour de Pedidos",
       "desc": "Aprende a crear pedidos, darles seguimiento y gestionar su estado.",
       "steps": {
-        "0": { "title": "Buscar pedidos", "desc": "Escribe el número de pedido o nombre del cliente para encontrarlo rápidamente. La búsqueda filtra en tiempo real." },
-        "1": { "title": "Filtro de fechas", "desc": "Selecciona un rango de fechas para ver solo los pedidos de ese período. Por defecto muestra los últimos 30 días." },
-        "2": { "title": "Filtro por estado", "desc": "Filtra pedidos por su estado: Borrador, Pendiente, Confirmado, En proceso, Entregado o Cancelado." },
-        "3": { "title": "Filtro por vendedor", "desc": "Filtra los pedidos por vendedor para ver el desempeño individual de tu equipo. Solo visible para administradores." },
-        "4": { "title": "Tipo de venta", "desc": "Filtra entre Preventa (pedido que se entrega después) y Venta Directa (se entrega en el momento)." },
-        "5": { "title": "Lista de pedidos", "desc": "Cada pedido muestra su número, cliente, vendedor, fecha, estado, tipo y total. Haz clic en los iconos de acción para ver detalles, editar o eliminar." },
-        "6": { "title": "Crear nuevo pedido", "desc": "Haz clic aquí para crear un pedido. Se abrirá un formulario donde seleccionas cliente, agregas productos y el sistema calcula totales automáticamente." },
-        "7": { "title": "Seleccionar cliente", "desc": "Primero selecciona el cliente que hace el pedido. Puedes buscar por nombre para encontrarlo rápidamente." },
-        "8": { "title": "Agregar productos", "desc": "Busca un producto, define la cantidad y haz clic en \"Agregar\". Puedes agregar varios productos al mismo pedido." },
-        "9": { "title": "Lista de productos", "desc": "Aquí aparecen los productos agregados con su cantidad, precio unitario y total. Puedes modificar cantidades o eliminar productos. El sistema calcula subtotal, IVA y total automáticamente." },
-        "10": { "title": "Notas del pedido", "desc": "Agrega comentarios o instrucciones especiales para este pedido (dirección de entrega, horario preferido, etc.)." }
+        "0": {
+          "title": "Buscar pedidos",
+          "desc": "Escribe el número de pedido o nombre del cliente para encontrarlo rápidamente. La búsqueda filtra en tiempo real."
+        },
+        "1": {
+          "title": "Filtro de fechas",
+          "desc": "Selecciona un rango de fechas para ver solo los pedidos de ese período. Por defecto muestra los últimos 30 días."
+        },
+        "2": {
+          "title": "Filtro por estado",
+          "desc": "Filtra pedidos por su estado: Borrador, Pendiente, Confirmado, En proceso, Entregado o Cancelado."
+        },
+        "3": {
+          "title": "Filtro por vendedor",
+          "desc": "Filtra los pedidos por vendedor para ver el desempeño individual de tu equipo. Solo visible para administradores."
+        },
+        "4": {
+          "title": "Tipo de venta",
+          "desc": "Filtra entre Preventa (pedido que se entrega después) y Venta Directa (se entrega en el momento)."
+        },
+        "5": {
+          "title": "Lista de pedidos",
+          "desc": "Cada pedido muestra su número, cliente, vendedor, fecha, estado, tipo y total. Haz clic en los iconos de acción para ver detalles, editar o eliminar."
+        },
+        "6": {
+          "title": "Crear nuevo pedido",
+          "desc": "Haz clic aquí para crear un pedido. Se abrirá un formulario donde seleccionas cliente, agregas productos y el sistema calcula totales automáticamente."
+        },
+        "7": {
+          "title": "Seleccionar cliente",
+          "desc": "Primero selecciona el cliente que hace el pedido. Puedes buscar por nombre para encontrarlo rápidamente."
+        },
+        "8": {
+          "title": "Agregar productos",
+          "desc": "Busca un producto, define la cantidad y haz clic en \"Agregar\". Puedes agregar varios productos al mismo pedido."
+        },
+        "9": {
+          "title": "Lista de productos",
+          "desc": "Aquí aparecen los productos agregados con su cantidad, precio unitario y total. Puedes modificar cantidades o eliminar productos. El sistema calcula subtotal, IVA y total automáticamente."
+        },
+        "10": {
+          "title": "Notas del pedido",
+          "desc": "Agrega comentarios o instrucciones especiales para este pedido (dirección de entrega, horario preferido, etc.)."
+        }
       }
     },
     "inventory-tour": {
       "title": "Tour del Inventario",
       "desc": "Aprende a gestionar el inventario de tu almacén y monitorear niveles de stock.",
       "steps": {
-        "0": { "title": "Importar / Exportar", "desc": "Exporta tu inventario completo a CSV (producto, código de barra, cantidad, stock mín/máx). También puedes importar desde un CSV — si el producto ya tiene inventario, se actualizan sus valores." },
-        "1": { "title": "Agregar al inventario", "desc": "Haz clic aquí para registrar un nuevo producto en el inventario con su cantidad inicial, stock mínimo y stock máximo." },
-        "2": { "title": "Seleccionar producto", "desc": "Elige el producto que deseas agregar al inventario. Solo aparecen productos que aún no tienen registro de inventario. La búsqueda es por nombre o código de barra." },
-        "3": { "title": "Cantidad actual", "desc": "Define cuántas unidades hay disponibles en el almacén. Este es el punto de partida; luego los movimientos (entradas, salidas, ajustes) actualizan este valor automáticamente." },
-        "4": { "title": "Stock mínimo y máximo", "desc": "El stock mínimo te alerta cuando el producto está por agotarse. El stock máximo te ayuda a evitar sobreinventario. Cuando las existencias caen al mínimo, la fila se marca en rojo." },
-        "5": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Agregar\" para registrar el producto en el inventario o \"Cancelar\" para descartar." },
-        "6": { "title": "Buscar en inventario", "desc": "Filtra la lista escribiendo el nombre o código del producto que buscas. La búsqueda se aplica en tiempo real." },
-        "7": { "title": "Tabla de inventario", "desc": "Cada fila muestra producto, unidad, existencias, stock mín/máx. Haz clic en una fila para editar sus valores. Los productos con stock bajo se resaltan con un indicador de alerta." },
-        "8": { "title": "Columnas de stock mín./máx.", "desc": "Configura estos valores para cada producto. Cuando las existencias bajan del mínimo aparece un triángulo de alerta. Usa esto para saber cuándo reabastecer." }
+        "0": {
+          "title": "Importar / Exportar",
+          "desc": "Exporta tu inventario completo a CSV (producto, código de barra, cantidad, stock mín/máx). También puedes importar desde un CSV — si el producto ya tiene inventario, se actualizan sus valores."
+        },
+        "1": {
+          "title": "Agregar al inventario",
+          "desc": "Haz clic aquí para registrar un nuevo producto en el inventario con su cantidad inicial, stock mínimo y stock máximo."
+        },
+        "2": {
+          "title": "Seleccionar producto",
+          "desc": "Elige el producto que deseas agregar al inventario. Solo aparecen productos que aún no tienen registro de inventario. La búsqueda es por nombre o código de barra."
+        },
+        "3": {
+          "title": "Cantidad actual",
+          "desc": "Define cuántas unidades hay disponibles en el almacén. Este es el punto de partida; luego los movimientos (entradas, salidas, ajustes) actualizan este valor automáticamente."
+        },
+        "4": {
+          "title": "Stock mínimo y máximo",
+          "desc": "El stock mínimo te alerta cuando el producto está por agotarse. El stock máximo te ayuda a evitar sobreinventario. Cuando las existencias caen al mínimo, la fila se marca en rojo."
+        },
+        "5": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Agregar\" para registrar el producto en el inventario o \"Cancelar\" para descartar."
+        },
+        "6": {
+          "title": "Buscar en inventario",
+          "desc": "Filtra la lista escribiendo el nombre o código del producto que buscas. La búsqueda se aplica en tiempo real."
+        },
+        "7": {
+          "title": "Tabla de inventario",
+          "desc": "Cada fila muestra producto, unidad, existencias, stock mín/máx. Haz clic en una fila para editar sus valores. Los productos con stock bajo se resaltan con un indicador de alerta."
+        },
+        "8": {
+          "title": "Columnas de stock mín./máx.",
+          "desc": "Configura estos valores para cada producto. Cuando las existencias bajan del mínimo aparece un triángulo de alerta. Usa esto para saber cuándo reabastecer."
+        }
       }
     },
     "movements-tour": {
       "title": "Tour de Movimientos",
       "desc": "Aprende a registrar entradas, salidas y ajustes de inventario.",
       "steps": {
-        "0": { "title": "Exportar inventario", "desc": "Descarga tu inventario completo a CSV desde aquí. Útil para respaldos o análisis en Excel." },
-        "1": { "title": "Nuevo movimiento", "desc": "Registra una entrada (mercancía de proveedores), salida (venta a clientes) o ajuste (corrección por conteo físico)." },
-        "2": { "title": "Seleccionar producto", "desc": "Elige el producto al que quieres registrar el movimiento. Se muestra su stock actual para que sepas cuánto hay disponible." },
-        "3": { "title": "Tipo de movimiento", "desc": "Selecciona Entrada (llega mercancía al almacén), Salida (sale mercancía) o Ajuste (corrección de inventario). Si no hay existencias, \"Salida\" se desactiva automáticamente." },
-        "4": { "title": "Cantidad", "desc": "Define cuántas unidades entran, salen o se ajustan. El sistema te muestra la proyección del stock resultante en tiempo real." },
-        "5": { "title": "Motivo del movimiento", "desc": "Cada tipo tiene motivos específicos: Entrada → Compra, Devolución, Transferencia. Salida → Venta, Merma, Devolución a proveedor. Ajuste → Ajuste de inventario, Merma." },
-        "6": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Guardar\" para registrar el movimiento. El inventario se actualizará automáticamente con la cantidad indicada." },
-        "7": { "title": "Buscar movimientos", "desc": "Filtra el historial escribiendo el nombre del producto. La búsqueda se aplica en tiempo real." },
-        "8": { "title": "Filtro por tipo", "desc": "Filtra movimientos por tipo: Entrada (llega mercancía), Salida (sale mercancía) o Ajuste (correcciones de inventario)." },
-        "9": { "title": "Filtro por motivo", "desc": "Filtra por motivo específico: Compra, Venta, Devolución, Merma, Ajuste de inventario o Transferencia." },
-        "10": { "title": "Historial de movimientos", "desc": "Cada fila muestra fecha, producto, tipo, cantidad (verde +entrada, rojo -salida), stock anterior → nuevo, motivo y usuario. Usa los filtros para encontrar movimientos específicos." }
+        "0": {
+          "title": "Exportar inventario",
+          "desc": "Descarga tu inventario completo a CSV desde aquí. Útil para respaldos o análisis en Excel."
+        },
+        "1": {
+          "title": "Nuevo movimiento",
+          "desc": "Registra una entrada (mercancía de proveedores), salida (venta a clientes) o ajuste (corrección por conteo físico)."
+        },
+        "2": {
+          "title": "Seleccionar producto",
+          "desc": "Elige el producto al que quieres registrar el movimiento. Se muestra su stock actual para que sepas cuánto hay disponible."
+        },
+        "3": {
+          "title": "Tipo de movimiento",
+          "desc": "Selecciona Entrada (llega mercancía al almacén), Salida (sale mercancía) o Ajuste (corrección de inventario). Si no hay existencias, \"Salida\" se desactiva automáticamente."
+        },
+        "4": {
+          "title": "Cantidad",
+          "desc": "Define cuántas unidades entran, salen o se ajustan. El sistema te muestra la proyección del stock resultante en tiempo real."
+        },
+        "5": {
+          "title": "Motivo del movimiento",
+          "desc": "Cada tipo tiene motivos específicos: Entrada → Compra, Devolución, Transferencia. Salida → Venta, Merma, Devolución a proveedor. Ajuste → Ajuste de inventario, Merma."
+        },
+        "6": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Guardar\" para registrar el movimiento. El inventario se actualizará automáticamente con la cantidad indicada."
+        },
+        "7": {
+          "title": "Buscar movimientos",
+          "desc": "Filtra el historial escribiendo el nombre del producto. La búsqueda se aplica en tiempo real."
+        },
+        "8": {
+          "title": "Filtro por tipo",
+          "desc": "Filtra movimientos por tipo: Entrada (llega mercancía), Salida (sale mercancía) o Ajuste (correcciones de inventario)."
+        },
+        "9": {
+          "title": "Filtro por motivo",
+          "desc": "Filtra por motivo específico: Compra, Venta, Devolución, Merma, Ajuste de inventario o Transferencia."
+        },
+        "10": {
+          "title": "Historial de movimientos",
+          "desc": "Cada fila muestra fecha, producto, tipo, cantidad (verde +entrada, rojo -salida), stock anterior → nuevo, motivo y usuario. Usa los filtros para encontrar movimientos específicos."
+        }
       }
     },
     "routes-tour": {
       "title": "Tour de Rutas",
       "desc": "Aprende a asignar rutas de visita a tus vendedores y dar seguimiento a su progreso.",
       "steps": {
-        "0": { "title": "Exportar rutas", "desc": "Descarga todas tus rutas en un archivo CSV con nombre, fecha, vendedor, zona, estado, paradas y horarios. Útil para reportes y análisis." },
-        "1": { "title": "Nueva ruta", "desc": "Crea una ruta de venta asignada a un vendedor. Define zona, fecha y horario estimado." },
-        "2": { "title": "Nombre de la ruta", "desc": "Escribe un nombre descriptivo para identificar la ruta (ej. \"Ruta Centro - Lunes\", \"Zona Norte AM\"). Máximo 100 caracteres." },
-        "3": { "title": "Vendedor asignado", "desc": "Selecciona el vendedor que realizará esta ruta. Solo aparece al crear; al editar no se puede cambiar el vendedor." },
-        "4": { "title": "Zona (opcional)", "desc": "Asigna una zona geográfica a la ruta. Esto ayuda a organizar las rutas por territorio y facilita los filtros." },
-        "5": { "title": "Fecha de la ruta", "desc": "Selecciona la fecha programada. Por defecto se usa la fecha de hoy. Formato yyyy-MM-dd." },
-        "6": { "title": "Horario estimado", "desc": "Define la hora de inicio y fin estimadas para la ruta. Son opcionales y sirven para planificar la jornada del vendedor." },
-        "7": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Crear ruta\" para guardar o \"Cancelar\" para descartar los cambios." },
-        "8": { "title": "Filtros de búsqueda", "desc": "Filtra rutas por texto, estado (Planificada, En progreso, Completada, etc.), zona y vendedor asignado. Los administradores ven el filtro de vendedor." },
-        "9": { "title": "Mostrar inactivas", "desc": "Activa este switch para ver también las rutas desactivadas. Por defecto solo se muestran las activas." },
-        "10": { "title": "Tabla de rutas", "desc": "Cada ruta muestra nombre, zona, vendedor, fecha, estado, paradas completadas/total y toggle activo. Selecciona varias con los checkboxes para activar/desactivar en lote." }
+        "0": {
+          "title": "Exportar rutas",
+          "desc": "Descarga todas tus rutas en un archivo CSV con nombre, fecha, vendedor, zona, estado, paradas y horarios. Útil para reportes y análisis."
+        },
+        "1": {
+          "title": "Nueva ruta",
+          "desc": "Crea una ruta de venta asignada a un vendedor. Define zona, fecha y horario estimado."
+        },
+        "2": {
+          "title": "Nombre de la ruta",
+          "desc": "Escribe un nombre descriptivo para identificar la ruta (ej. \"Ruta Centro - Lunes\", \"Zona Norte AM\"). Máximo 100 caracteres."
+        },
+        "3": {
+          "title": "Vendedor asignado",
+          "desc": "Selecciona el vendedor que realizará esta ruta. Solo aparece al crear; al editar no se puede cambiar el vendedor."
+        },
+        "4": {
+          "title": "Zona (opcional)",
+          "desc": "Asigna una zona geográfica a la ruta. Esto ayuda a organizar las rutas por territorio y facilita los filtros."
+        },
+        "5": {
+          "title": "Fecha de la ruta",
+          "desc": "Selecciona la fecha programada. Por defecto se usa la fecha de hoy. Formato yyyy-MM-dd."
+        },
+        "6": {
+          "title": "Horario estimado",
+          "desc": "Define la hora de inicio y fin estimadas para la ruta. Son opcionales y sirven para planificar la jornada del vendedor."
+        },
+        "7": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Crear ruta\" para guardar o \"Cancelar\" para descartar los cambios."
+        },
+        "8": {
+          "title": "Filtros de búsqueda",
+          "desc": "Filtra rutas por texto, estado (Planificada, En progreso, Completada, etc.), zona y vendedor asignado. Los administradores ven el filtro de vendedor."
+        },
+        "9": {
+          "title": "Mostrar inactivas",
+          "desc": "Activa este switch para ver también las rutas desactivadas. Por defecto solo se muestran las activas."
+        },
+        "10": {
+          "title": "Tabla de rutas",
+          "desc": "Cada ruta muestra nombre, zona, vendedor, fecha, estado, paradas completadas/total y toggle activo. Selecciona varias con los checkboxes para activar/desactivar en lote."
+        }
       }
     },
     "routes-manage-tour": {
@@ -6736,163 +7306,400 @@
       "desc": "Aprende a gestionar las rutas operativas: cargar inventario, dar seguimiento y cerrar rutas.",
       "doneBtn": "Ir al detalle →",
       "steps": {
-        "0": { "title": "Exportar rutas", "desc": "Descarga un CSV con todas las rutas incluyendo nombre, fecha, vendedor, zona, estado, paradas y horarios." },
-        "1": { "title": "Filtros de búsqueda", "desc": "Filtra rutas por fecha, vendedor y estado. Usa \"+ Más filtros\" para ver el filtro de estado con opciones: Planificada, En progreso, Terminada, Cancelada, Pend. aceptar, Carga aceptada o Cerrada." },
-        "2": { "title": "Filtro por fecha", "desc": "Selecciona un rango de fechas (desde/hasta) para ver solo las rutas programadas en ese período." },
-        "3": { "title": "Filtro por usuario", "desc": "Filtra las rutas por vendedor asignado para ver su carga de trabajo y seguimiento." },
-        "4": { "title": "Más filtros", "desc": "Haz clic aquí para mostrar u ocultar el filtro de estado. Permite acotar aún más los resultados por la etapa operativa de cada ruta." },
-        "5": { "title": "Actualizar lista", "desc": "Recarga la lista con los datos más recientes del servidor. Útil cuando otro usuario está modificando rutas en paralelo." },
-        "6": { "title": "Lista de rutas operativas", "desc": "Cada fila muestra nombre, vendedor, zona, fecha, estado y progreso de paradas. Haz clic en cualquier fila para abrir su detalle operativo." },
-        "7": { "title": "Abrir detalle de una ruta", "desc": "Haz clic en una ruta para administrarla. Según su estado: \"Planificada\" abre la pantalla de carga de inventario, \"En progreso\" o \"Pend. aceptar\" muestra el seguimiento, y \"Terminada\" abre el cierre donde reconcilias inventario y efectivo." }
+        "0": {
+          "title": "Exportar rutas",
+          "desc": "Descarga un CSV con todas las rutas incluyendo nombre, fecha, vendedor, zona, estado, paradas y horarios."
+        },
+        "1": {
+          "title": "Filtros de búsqueda",
+          "desc": "Filtra rutas por fecha, vendedor y estado. Usa \"+ Más filtros\" para ver el filtro de estado con opciones: Planificada, En progreso, Terminada, Cancelada, Pend. aceptar, Carga aceptada o Cerrada."
+        },
+        "2": {
+          "title": "Filtro por fecha",
+          "desc": "Selecciona un rango de fechas (desde/hasta) para ver solo las rutas programadas en ese período."
+        },
+        "3": {
+          "title": "Filtro por usuario",
+          "desc": "Filtra las rutas por vendedor asignado para ver su carga de trabajo y seguimiento."
+        },
+        "4": {
+          "title": "Más filtros",
+          "desc": "Haz clic aquí para mostrar u ocultar el filtro de estado. Permite acotar aún más los resultados por la etapa operativa de cada ruta."
+        },
+        "5": {
+          "title": "Actualizar lista",
+          "desc": "Recarga la lista con los datos más recientes del servidor. Útil cuando otro usuario está modificando rutas en paralelo."
+        },
+        "6": {
+          "title": "Lista de rutas operativas",
+          "desc": "Cada fila muestra nombre, vendedor, zona, fecha, estado y progreso de paradas. Haz clic en cualquier fila para abrir su detalle operativo."
+        },
+        "7": {
+          "title": "Abrir detalle de una ruta",
+          "desc": "Haz clic en una ruta para administrarla. Según su estado: \"Planificada\" abre la pantalla de carga de inventario, \"En progreso\" o \"Pend. aceptar\" muestra el seguimiento, y \"Terminada\" abre el cierre donde reconcilias inventario y efectivo."
+        }
       }
     },
     "routes-load-tour": {
       "title": "Tour de Carga de Inventario",
       "desc": "Aprende a cargar inventario a una ruta antes de que el vendedor salga a campo.",
       "steps": {
-        "0": { "title": "Resumen de la carga", "desc": "Indicadores en tiempo real: total de entregas, productos cargados y monto total asignado. Se actualizan automáticamente al agregar productos o pedidos." },
-        "1": { "title": "Guardar y actualizar", "desc": "Usa \"Guardar\" para guardar el efectivo inicial y comentarios. El botón de refrescar recarga los datos de la ruta desde el servidor." },
-        "2": { "title": "Vendedor y efectivo inicial", "desc": "Muestra el vendedor asignado a la ruta. Define el monto de efectivo inicial (viáticos/cambio) y comentarios para el vendedor." },
-        "3": { "title": "Pedidos para entrega", "desc": "Pedidos confirmados que el vendedor debe entregar en su ruta. Sus productos se suman automáticamente a la carga. Usa \"Agregar pedidos\" para asignar pedidos del catálogo." },
-        "4": { "title": "Productos para venta directa", "desc": "Agrega productos adicionales para que el vendedor los lleve y venda directamente (sin pedido previo). Selecciona producto, cantidad y precio unitario." },
-        "5": { "title": "Tabla consolidada de carga", "desc": "Resumen de TODO lo que se cargará: cantidad asignada para entrega, para venta directa, total, disponibilidad en almacén, precio y monto total. Si \"Disponible\" se muestra en rojo, no hay suficiente stock." },
-        "6": { "title": "Enviar a carga", "desc": "Cuando todo esté listo, haz clic aquí para confirmar la carga y enviarla al vendedor. Recibirá una notificación en su app móvil para aceptar la carga." }
+        "0": {
+          "title": "Resumen de la carga",
+          "desc": "Indicadores en tiempo real: total de entregas, productos cargados y monto total asignado. Se actualizan automáticamente al agregar productos o pedidos."
+        },
+        "1": {
+          "title": "Guardar y actualizar",
+          "desc": "Usa \"Guardar\" para guardar el efectivo inicial y comentarios. El botón de refrescar recarga los datos de la ruta desde el servidor."
+        },
+        "2": {
+          "title": "Vendedor y efectivo inicial",
+          "desc": "Muestra el vendedor asignado a la ruta. Define el monto de efectivo inicial (viáticos/cambio) y comentarios para el vendedor."
+        },
+        "3": {
+          "title": "Pedidos para entrega",
+          "desc": "Pedidos confirmados que el vendedor debe entregar en su ruta. Sus productos se suman automáticamente a la carga. Usa \"Agregar pedidos\" para asignar pedidos del catálogo."
+        },
+        "4": {
+          "title": "Productos para venta directa",
+          "desc": "Agrega productos adicionales para que el vendedor los lleve y venda directamente (sin pedido previo). Selecciona producto, cantidad y precio unitario."
+        },
+        "5": {
+          "title": "Tabla consolidada de carga",
+          "desc": "Resumen de TODO lo que se cargará: cantidad asignada para entrega, para venta directa, total, disponibilidad en almacén, precio y monto total. Si \"Disponible\" se muestra en rojo, no hay suficiente stock."
+        },
+        "6": {
+          "title": "Enviar a carga",
+          "desc": "Cuando todo esté listo, haz clic aquí para confirmar la carga y enviarla al vendedor. Recibirá una notificación en su app móvil para aceptar la carga."
+        }
       }
     },
     "routes-close-tour": {
       "title": "Tour de Cierre de Ruta",
       "desc": "Aprende a cerrar una ruta: reconciliar inventario, verificar efectivo y registrar devoluciones.",
       "steps": {
-        "0": { "title": "Pestañas de estado", "desc": "Las pestañas reflejan la etapa de la ruta: Pendiente de aceptar, Carga aceptada, Terminada y Cerrada. La pestaña activa se selecciona automáticamente según el estado de la ruta." },
-        "1": { "title": "Detalles de la ruta", "desc": "Información del vendedor asignado, nombre de la ruta, zona geográfica y fecha de creación. Proporciona el contexto completo de la operación." },
-        "2": { "title": "Resumen financiero", "desc": "Tres tarjetas: Efectivo entrante (ventas contado + entregas cobradas + cobranza), Movimientos a saldo (ventas crédito + entregas crédito) y Otros movimientos (preventas + devoluciones). Muestra el desglose completo de la operación." },
-        "3": { "title": "Balance: Al inicio vs Al cierre", "desc": "Compara el valor de la ruta y efectivo inicial contra el monto a recibir, lo recibido y la diferencia. Un diferencia positiva (verde) indica sobrante, negativa (rojo) indica faltante." },
-        "4": { "title": "Inventario de retorno", "desc": "Tabla de reconciliación producto por producto: cantidad inicial, vendidos, entregados, devueltos, mermas, recibido a almacén y en vehículo. El sistema calcula la diferencia automáticamente — debe ser 0 al cerrar." },
-        "5": { "title": "Acciones de inventario", "desc": "Botones rápidos: \"Almacén\" envía toda la diferencia a recepción de almacén, \"Carga\" la deja en el vehículo para la siguiente ruta. Ajusta con los steppers (+/-) de cada fila." },
-        "6": { "title": "Cerrar ruta", "desc": "Cuando toda la reconciliación esté completa y hayas ingresado el monto recibido, haz clic aquí para cerrar la ruta definitivamente. Esta acción no se puede deshacer." }
+        "0": {
+          "title": "Pestañas de estado",
+          "desc": "Las pestañas reflejan la etapa de la ruta: Pendiente de aceptar, Carga aceptada, Terminada y Cerrada. La pestaña activa se selecciona automáticamente según el estado de la ruta."
+        },
+        "1": {
+          "title": "Detalles de la ruta",
+          "desc": "Información del vendedor asignado, nombre de la ruta, zona geográfica y fecha de creación. Proporciona el contexto completo de la operación."
+        },
+        "2": {
+          "title": "Resumen financiero",
+          "desc": "Tres tarjetas: Efectivo entrante (ventas contado + entregas cobradas + cobranza), Movimientos a saldo (ventas crédito + entregas crédito) y Otros movimientos (preventas + devoluciones). Muestra el desglose completo de la operación."
+        },
+        "3": {
+          "title": "Balance: Al inicio vs Al cierre",
+          "desc": "Compara el valor de la ruta y efectivo inicial contra el monto a recibir, lo recibido y la diferencia. Un diferencia positiva (verde) indica sobrante, negativa (rojo) indica faltante."
+        },
+        "4": {
+          "title": "Inventario de retorno",
+          "desc": "Tabla de reconciliación producto por producto: cantidad inicial, vendidos, entregados, devueltos, mermas, recibido a almacén y en vehículo. El sistema calcula la diferencia automáticamente — debe ser 0 al cerrar."
+        },
+        "5": {
+          "title": "Acciones de inventario",
+          "desc": "Botones rápidos: \"Almacén\" envía toda la diferencia a recepción de almacén, \"Carga\" la deja en el vehículo para la siguiente ruta. Ajusta con los steppers (+/-) de cada fila."
+        },
+        "6": {
+          "title": "Cerrar ruta",
+          "desc": "Cuando toda la reconciliación esté completa y hayas ingresado el monto recibido, haz clic aquí para cerrar la ruta definitivamente. Esta acción no se puede deshacer."
+        }
       }
     },
     "deliveries-tour": {
       "title": "Tour de Entregas",
       "desc": "Aprende a dar seguimiento a las entregas de tus rutas de venta.",
       "steps": {
-        "0": { "title": "Indicadores de entregas", "desc": "Tarjetas resumen: entregas en progreso, completadas, pendientes y porcentaje de completado. Te dan una visión rápida del estado de tus entregas." },
-        "1": { "title": "Buscar entregas", "desc": "Escribe el nombre de la ruta o del vendedor para filtrar la lista de entregas." },
-        "2": { "title": "Filtro por estado", "desc": "Filtra entregas por estado: En progreso, Completada, Pendiente o Cancelada." },
-        "3": { "title": "Tabla de entregas", "desc": "Cada fila muestra la ruta, vendedor, progreso de paradas y estado. Usa los botones de acción para iniciar, completar o cancelar entregas." },
-        "4": { "title": "Actualizar", "desc": "Recarga los datos de entregas para ver el estado más reciente." }
+        "0": {
+          "title": "Indicadores de entregas",
+          "desc": "Tarjetas resumen: entregas en progreso, completadas, pendientes y porcentaje de completado. Te dan una visión rápida del estado de tus entregas."
+        },
+        "1": {
+          "title": "Buscar entregas",
+          "desc": "Escribe el nombre de la ruta o del vendedor para filtrar la lista de entregas."
+        },
+        "2": {
+          "title": "Filtro por estado",
+          "desc": "Filtra entregas por estado: En progreso, Completada, Pendiente o Cancelada."
+        },
+        "3": {
+          "title": "Tabla de entregas",
+          "desc": "Cada fila muestra la ruta, vendedor, progreso de paradas y estado. Usa los botones de acción para iniciar, completar o cancelar entregas."
+        },
+        "4": {
+          "title": "Actualizar",
+          "desc": "Recarga los datos de entregas para ver el estado más reciente."
+        }
       }
     },
     "calendar-tour": {
       "title": "Tour del Calendario",
       "desc": "Aprende a programar visitas a clientes y gestionar la agenda de tus vendedores.",
       "steps": {
-        "0": { "title": "Programar visita", "desc": "Haz clic aquí para programar una nueva visita. Selecciona vendedor, cliente, fecha y hora." },
-        "1": { "title": "Reglas de nuevos prospectos", "desc": "Configura reglas automáticas para programar visitas a clientes nuevos o sin actividad reciente." },
-        "2": { "title": "Filtro por vendedor", "desc": "Selecciona un vendedor para ver solo sus visitas programadas en el calendario." },
-        "3": { "title": "Navegación del calendario", "desc": "Usa las flechas para moverte entre meses. También puedes cambiar entre vista semanal y diaria." },
-        "4": { "title": "Vista del calendario", "desc": "Las visitas programadas aparecen como eventos en el calendario. Haz clic en un día para ver el detalle o agregar una nueva visita." }
+        "0": {
+          "title": "Programar visita",
+          "desc": "Haz clic aquí para programar una nueva visita. Selecciona vendedor, cliente, fecha y hora."
+        },
+        "1": {
+          "title": "Reglas de nuevos prospectos",
+          "desc": "Configura reglas automáticas para programar visitas a clientes nuevos o sin actividad reciente."
+        },
+        "2": {
+          "title": "Filtro por vendedor",
+          "desc": "Selecciona un vendedor para ver solo sus visitas programadas en el calendario."
+        },
+        "3": {
+          "title": "Navegación del calendario",
+          "desc": "Usa las flechas para moverte entre meses. También puedes cambiar entre vista semanal y diaria."
+        },
+        "4": {
+          "title": "Vista del calendario",
+          "desc": "Las visitas programadas aparecen como eventos en el calendario. Haz clic en un día para ver el detalle o agregar una nueva visita."
+        }
       }
     },
     "visits-tour": {
       "title": "Tour de Visitas",
       "desc": "Aprende a gestionar el historial de visitas a clientes y registrar resultados.",
       "steps": {
-        "0": { "title": "Resumen del día", "desc": "KPIs de visitas: total programadas, completadas, con venta, pendientes y tasa de conversión." },
-        "1": { "title": "Lista de visitas", "desc": "Todas las visitas con su estado, cliente y resultado. Haz clic en una fila para ver los detalles. Desde ahí puedes iniciar (check-in) o finalizar (check-out) la visita." },
-        "2": { "title": "Vista de calendario", "desc": "Alterna entre vista de lista y calendario. En el calendario puedes hacer clic en un día para programar una visita." },
-        "3": { "title": "Programar visita", "desc": "Abre el formulario para programar una nueva visita." },
-        "4": { "title": "Seleccionar cliente", "desc": "Busca y selecciona el cliente que vas a visitar. Es el único campo obligatorio." },
-        "5": { "title": "Tipo de visita", "desc": "Selecciona el motivo: Rutina (visita regular), Cobranza, Entrega, Prospección, Seguimiento u Otro." },
-        "6": { "title": "Fecha programada", "desc": "Selecciona fecha y hora. Deja vacío para visita inmediata (se registrará con la fecha de hoy)." },
-        "7": { "title": "Guardar o cancelar", "desc": "Haz clic en \"Programar Visita\" para guardar o \"Cancelar\" para descartar." }
+        "0": {
+          "title": "Resumen del día",
+          "desc": "KPIs de visitas: total programadas, completadas, con venta, pendientes y tasa de conversión."
+        },
+        "1": {
+          "title": "Lista de visitas",
+          "desc": "Todas las visitas con su estado, cliente y resultado. Haz clic en una fila para ver los detalles. Desde ahí puedes iniciar (check-in) o finalizar (check-out) la visita."
+        },
+        "2": {
+          "title": "Vista de calendario",
+          "desc": "Alterna entre vista de lista y calendario. En el calendario puedes hacer clic en un día para programar una visita."
+        },
+        "3": {
+          "title": "Programar visita",
+          "desc": "Abre el formulario para programar una nueva visita."
+        },
+        "4": {
+          "title": "Seleccionar cliente",
+          "desc": "Busca y selecciona el cliente que vas a visitar. Es el único campo obligatorio."
+        },
+        "5": {
+          "title": "Tipo de visita",
+          "desc": "Selecciona el motivo: Rutina (visita regular), Cobranza, Entrega, Prospección, Seguimiento u Otro."
+        },
+        "6": {
+          "title": "Fecha programada",
+          "desc": "Selecciona fecha y hora. Deja vacío para visita inmediata (se registrará con la fecha de hoy)."
+        },
+        "7": {
+          "title": "Guardar o cancelar",
+          "desc": "Haz clic en \"Programar Visita\" para guardar o \"Cancelar\" para descartar."
+        }
       }
     },
     "automations-tour": {
       "title": "Tour de Automatizaciones",
       "desc": "Aprende a activar recetas automáticas para que el sistema trabaje por ti.",
       "steps": {
-        "0": { "title": "Resumen de automatizaciones", "desc": "Estas tarjetas muestran cuántas automatizaciones tienes activas, cuántas veces se han ejecutado y cuándo fue la última ejecución." },
-        "1": { "title": "Categorías", "desc": "Filtra las automatizaciones por tipo: Cobranza (recordatorios de pago), Ventas (clientes nuevos), Inventario (stock bajo) y Operación (resúmenes diarios)." },
-        "2": { "title": "Recetas disponibles", "desc": "Cada tarjeta es una automatización. El ícono de persona indica a quién notifica: <b>Admin</b>, <b>Vendedores</b> o <b>Todos</b>. El sistema elige automáticamente si envía push (alertas) o email (reportes)." },
-        "3": { "title": "Activar / Desactivar", "desc": "Usa el interruptor para activar o desactivar una automatización. Al activarla, el sistema empezará a ejecutarla automáticamente según su programación." },
-        "4": { "title": "Configurar parámetros", "desc": "Haz clic en el engranaje para abrir la configuración. Veamos qué puedes ajustar dentro." },
-        "5": { "title": "Descripción de la receta", "desc": "Aquí se describe exactamente qué hace esta automatización: cuándo se ejecuta, qué condición detecta y qué acción toma." },
-        "6": { "title": "Parámetros configurables", "desc": "Ajusta umbrales, frecuencias, horarios y especialmente <b>a quién notificar</b>: solo al administrador, solo a los vendedores, o a ambos. Cada automatización tiene parámetros distintos según su función." },
-        "7": { "title": "Guardar configuración", "desc": "Haz clic en \"Guardar cambios\" para aplicar tus ajustes. Los cambios se reflejan en la próxima ejecución de la automatización." },
-        "8": { "title": "Historial de ejecuciones", "desc": "Aquí puedes ver cuándo se ejecutó cada automatización y si fue exitosa. Muestra la acción tomada y cualquier error que haya ocurrido." }
+        "0": {
+          "title": "Resumen de automatizaciones",
+          "desc": "Estas tarjetas muestran cuántas automatizaciones tienes activas, cuántas veces se han ejecutado y cuándo fue la última ejecución."
+        },
+        "1": {
+          "title": "Categorías",
+          "desc": "Filtra las automatizaciones por tipo: Cobranza (recordatorios de pago), Ventas (clientes nuevos), Inventario (stock bajo) y Operación (resúmenes diarios)."
+        },
+        "2": {
+          "title": "Recetas disponibles",
+          "desc": "Cada tarjeta es una automatización. El ícono de persona indica a quién notifica: <b>Admin</b>, <b>Vendedores</b> o <b>Todos</b>. El sistema elige automáticamente si envía push (alertas) o email (reportes)."
+        },
+        "3": {
+          "title": "Activar / Desactivar",
+          "desc": "Usa el interruptor para activar o desactivar una automatización. Al activarla, el sistema empezará a ejecutarla automáticamente según su programación."
+        },
+        "4": {
+          "title": "Configurar parámetros",
+          "desc": "Haz clic en el engranaje para abrir la configuración. Veamos qué puedes ajustar dentro."
+        },
+        "5": {
+          "title": "Descripción de la receta",
+          "desc": "Aquí se describe exactamente qué hace esta automatización: cuándo se ejecuta, qué condición detecta y qué acción toma."
+        },
+        "6": {
+          "title": "Parámetros configurables",
+          "desc": "Ajusta umbrales, frecuencias, horarios y especialmente <b>a quién notificar</b>: solo al administrador, solo a los vendedores, o a ambos. Cada automatización tiene parámetros distintos según su función."
+        },
+        "7": {
+          "title": "Guardar configuración",
+          "desc": "Haz clic en \"Guardar cambios\" para aplicar tus ajustes. Los cambios se reflejan en la próxima ejecución de la automatización."
+        },
+        "8": {
+          "title": "Historial de ejecuciones",
+          "desc": "Aquí puedes ver cuándo se ejecutó cada automatización y si fue exitosa. Muestra la acción tomada y cualquier error que haya ocurrido."
+        }
       }
     },
     "cobranza-tour": {
       "title": "Tour de Cobranza",
       "desc": "Aprende a registrar cobros, revisar quién te debe y exportar tu cartera.",
       "steps": {
-        "0": { "title": "Resumen de tu cartera", "desc": "Estas tarjetas muestran el resumen de tu cartera: cuánto se ha vendido, cuánto ya cobraste, cuánto falta por cobrar, y cuántos clientes tienen deuda." },
-        "1": { "title": "Filtro por período", "desc": "Selecciona un rango de fechas para consultar los cobros y saldos de ese período. Presiona Actualizar para aplicar." },
-        "2": { "title": "Registrar un cobro", "desc": "Haz clic aquí para registrar un pago de un cliente. Selecciona el cliente, su pedido pendiente, monto y método de pago." },
-        "3": { "title": "Seleccionar cliente", "desc": "Selecciona el cliente que hizo el pago. Se cargan automáticamente sus pedidos con saldo pendiente." },
-        "4": { "title": "Pedido pendiente", "desc": "Al seleccionar un pedido, el monto se llena automáticamente con el saldo pendiente. Si el cliente tiene varios pedidos, puedes buscar por número." },
-        "5": { "title": "Monto y método de pago", "desc": "Confirma el monto a cobrar y selecciona el método de pago (Efectivo, Transferencia, Cheque, Tarjeta). También puedes agregar fecha, referencia y notas." },
-        "6": { "title": "Vistas disponibles", "desc": "Usa estas pestañas para cambiar entre el historial de cobros recibidos y la lista de clientes que te deben dinero." },
-        "7": { "title": "Historial de cobros", "desc": "Historial completo de pagos recibidos. Puedes ordenar por fecha, cliente o monto. Haz clic en el ojo para ver el estado de cuenta del cliente." },
-        "8": { "title": "¿Quién te debe?", "desc": "Muestra cada cliente con su deuda pendiente y una barra de avance hacia el pago completo. Haz clic en un cliente para ver su estado de cuenta detallado por pedido." }
+        "0": {
+          "title": "Resumen de tu cartera",
+          "desc": "Estas tarjetas muestran el resumen de tu cartera: cuánto se ha vendido, cuánto ya cobraste, cuánto falta por cobrar, y cuántos clientes tienen deuda."
+        },
+        "1": {
+          "title": "Filtro por período",
+          "desc": "Selecciona un rango de fechas para consultar los cobros y saldos de ese período. Presiona Actualizar para aplicar."
+        },
+        "2": {
+          "title": "Registrar un cobro",
+          "desc": "Haz clic aquí para registrar un pago de un cliente. Selecciona el cliente, su pedido pendiente, monto y método de pago."
+        },
+        "3": {
+          "title": "Seleccionar cliente",
+          "desc": "Selecciona el cliente que hizo el pago. Se cargan automáticamente sus pedidos con saldo pendiente."
+        },
+        "4": {
+          "title": "Pedido pendiente",
+          "desc": "Al seleccionar un pedido, el monto se llena automáticamente con el saldo pendiente. Si el cliente tiene varios pedidos, puedes buscar por número."
+        },
+        "5": {
+          "title": "Monto y método de pago",
+          "desc": "Confirma el monto a cobrar y selecciona el método de pago (Efectivo, Transferencia, Cheque, Tarjeta). También puedes agregar fecha, referencia y notas."
+        },
+        "6": {
+          "title": "Vistas disponibles",
+          "desc": "Usa estas pestañas para cambiar entre el historial de cobros recibidos y la lista de clientes que te deben dinero."
+        },
+        "7": {
+          "title": "Historial de cobros",
+          "desc": "Historial completo de pagos recibidos. Puedes ordenar por fecha, cliente o monto. Haz clic en el ojo para ver el estado de cuenta del cliente."
+        },
+        "8": {
+          "title": "¿Quién te debe?",
+          "desc": "Muestra cada cliente con su deuda pendiente y una barra de avance hacia el pago completo. Haz clic en un cliente para ver su estado de cuenta detallado por pedido."
+        }
       }
     },
     "reports-tour-ops": {
       "title": "Tour de Reportes",
       "desc": "Conoce los reportes de ventas, clientes e inventario disponibles.",
       "steps": {
-        "0": { "title": "Catálogo de reportes", "desc": "Aquí están todos los reportes organizados por categoría: Ventas, Clientes e Inventario. Haz clic en cualquier tarjeta para ver el reporte completo con gráficas y tablas." }
+        "0": {
+          "title": "Catálogo de reportes",
+          "desc": "Aquí están todos los reportes organizados por categoría: Ventas, Clientes e Inventario. Haz clic en cualquier tarjeta para ver el reporte completo con gráficas y tablas."
+        }
       }
     },
     "users-tour": {
       "title": "Tour de Usuarios",
       "desc": "Aprende a gestionar los usuarios del sistema: vendedores, supervisores y administradores.",
       "steps": {
-        "0": { "title": "Crear nuevo usuario", "desc": "Registra un nuevo usuario con nombre, email, contraseña y rol. Los roles disponibles son: Administrador, Supervisor y Usuario móvil (vendedor)." },
-        "1": { "title": "Formulario de nuevo usuario", "desc": "Formulario de registro con nombre, email, rol y permisos" },
-        "2": { "title": "Filtrar por rol", "desc": "Filtra la lista por tipo de usuario: Administrador, Supervisor o Usuario móvil. Útil para gestionar permisos por grupo." },
-        "3": { "title": "Tarjetas de usuarios", "desc": "Cada tarjeta muestra el nombre, rol, estado, última sesión y métricas del vendedor: pedidos, devoluciones y efectividad de visitas. Puedes seleccionar varios para activar/desactivar en lote." }
+        "0": {
+          "title": "Crear nuevo usuario",
+          "desc": "Registra un nuevo usuario con nombre, email, contraseña y rol. Los roles disponibles son: Administrador, Supervisor y Usuario móvil (vendedor)."
+        },
+        "1": {
+          "title": "Formulario de nuevo usuario",
+          "desc": "Formulario de registro con nombre, email, rol y permisos"
+        },
+        "2": {
+          "title": "Filtrar por rol",
+          "desc": "Filtra la lista por tipo de usuario: Administrador, Supervisor o Usuario móvil. Útil para gestionar permisos por grupo."
+        },
+        "3": {
+          "title": "Tarjetas de usuarios",
+          "desc": "Cada tarjeta muestra el nombre, rol, estado, última sesión y métricas del vendedor: pedidos, devoluciones y efectividad de visitas. Puedes seleccionar varios para activar/desactivar en lote."
+        }
       }
     },
     "forms-tour": {
       "title": "Tour de Formularios",
       "desc": "Conoce la gestión de formularios personalizados del sistema.",
       "steps": {
-        "0": { "title": "Crear formulario", "desc": "Crea un nuevo formulario personalizado con los campos que necesites para tus procesos." },
-        "1": { "title": "Mostrar inactivos", "desc": "Activa este switch para ver los formularios desactivados." },
-        "2": { "title": "Lista de formularios", "desc": "Tabla con todos los formularios disponibles. Cada uno muestra nombre, tipo, estado y acciones." }
+        "0": {
+          "title": "Crear formulario",
+          "desc": "Crea un nuevo formulario personalizado con los campos que necesites para tus procesos."
+        },
+        "1": {
+          "title": "Mostrar inactivos",
+          "desc": "Activa este switch para ver los formularios desactivados."
+        },
+        "2": {
+          "title": "Lista de formularios",
+          "desc": "Tabla con todos los formularios disponibles. Cada uno muestra nombre, tipo, estado y acciones."
+        }
       }
     },
     "devices-tour": {
       "title": "Tour de Dispositivos",
       "desc": "Aprende a gestionar los dispositivos y sesiones activas de tu equipo.",
       "steps": {
-        "0": { "title": "Buscar dispositivos", "desc": "Filtra dispositivos por nombre, modelo o usuario." },
-        "1": { "title": "Filtro por usuario", "desc": "Selecciona un usuario para ver solo sus dispositivos y sesiones activas." },
-        "2": { "title": "Tabla de dispositivos", "desc": "Lista de dispositivos con usuario, modelo, última conexión y estado. Puedes revocar sesiones activas desde aquí." },
-        "3": { "title": "Actualizar", "desc": "Recarga la lista de dispositivos para ver los datos más recientes." }
+        "0": {
+          "title": "Buscar dispositivos",
+          "desc": "Filtra dispositivos por nombre, modelo o usuario."
+        },
+        "1": {
+          "title": "Filtro por usuario",
+          "desc": "Selecciona un usuario para ver solo sus dispositivos y sesiones activas."
+        },
+        "2": {
+          "title": "Tabla de dispositivos",
+          "desc": "Lista de dispositivos con usuario, modelo, última conexión y estado. Puedes revocar sesiones activas desde aquí."
+        },
+        "3": {
+          "title": "Actualizar",
+          "desc": "Recarga la lista de dispositivos para ver los datos más recientes."
+        }
       }
     },
     "notifications-tour": {
       "title": "Tour de Notificaciones",
       "desc": "Aprende a enviar y gestionar notificaciones para tu equipo.",
       "steps": {
-        "0": { "title": "Enviar notificación", "desc": "Crea y envía una nueva notificación a uno o más usuarios. Puedes seleccionar tipo, destinatarios y mensaje." },
-        "1": { "title": "Buscar notificaciones", "desc": "Filtra notificaciones por texto del mensaje o destinatario." },
-        "2": { "title": "Filtro por tipo", "desc": "Filtra por tipo de notificación: Información, Alerta, Urgente, etc." },
-        "3": { "title": "Lista de notificaciones", "desc": "Historial de todas las notificaciones enviadas con tipo, mensaje, destinatario, fecha y estado de lectura." }
+        "0": {
+          "title": "Enviar notificación",
+          "desc": "Crea y envía una nueva notificación a uno o más usuarios. Puedes seleccionar tipo, destinatarios y mensaje."
+        },
+        "1": {
+          "title": "Buscar notificaciones",
+          "desc": "Filtra notificaciones por texto del mensaje o destinatario."
+        },
+        "2": {
+          "title": "Filtro por tipo",
+          "desc": "Filtra por tipo de notificación: Información, Alerta, Urgente, etc."
+        },
+        "3": {
+          "title": "Lista de notificaciones",
+          "desc": "Historial de todas las notificaciones enviadas con tipo, mensaje, destinatario, fecha y estado de lectura."
+        }
       }
     },
     "activity-logs-tour": {
       "title": "Tour de Logs de Actividad",
       "desc": "Conoce el registro de actividad del sistema para auditoría y seguimiento.",
       "steps": {
-        "0": { "title": "Exportar logs", "desc": "Descarga los logs de actividad en formato Excel o CSV para análisis externo." },
-        "1": { "title": "Buscar en logs", "desc": "Filtra los registros por texto: nombre de usuario, descripción de acción o entidad." },
-        "2": { "title": "Filtro por acción", "desc": "Filtra por tipo de acción: Crear, Actualizar, Eliminar, Login, Logout, etc." },
-        "3": { "title": "Filtro por entidad", "desc": "Filtra por entidad afectada: Cliente, Producto, Pedido, Usuario, Inventario, etc." },
-        "4": { "title": "Tabla de actividad", "desc": "Cada registro muestra fecha, usuario, acción realizada, entidad afectada y detalles. Útil para auditoría y resolución de problemas." }
+        "0": {
+          "title": "Exportar logs",
+          "desc": "Descarga los logs de actividad en formato Excel o CSV para análisis externo."
+        },
+        "1": {
+          "title": "Buscar en logs",
+          "desc": "Filtra los registros por texto: nombre de usuario, descripción de acción o entidad."
+        },
+        "2": {
+          "title": "Filtro por acción",
+          "desc": "Filtra por tipo de acción: Crear, Actualizar, Eliminar, Login, Logout, etc."
+        },
+        "3": {
+          "title": "Filtro por entidad",
+          "desc": "Filtra por entidad afectada: Cliente, Producto, Pedido, Usuario, Inventario, etc."
+        },
+        "4": {
+          "title": "Tabla de actividad",
+          "desc": "Cada registro muestra fecha, usuario, acción realizada, entidad afectada y detalles. Útil para auditoría y resolución de problemas."
+        }
       }
     }
   }

@@ -151,7 +151,7 @@ export default function BillingSettingsPage() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">{tCommon('loading')}</span>
     </div>
   );
 
@@ -215,7 +215,7 @@ export default function BillingSettingsPage() {
       }
     >
       {/* ─── Tabs ─── */}
-      <div role="tablist" aria-label="Configuración fiscal" className="flex items-center gap-1 mb-6 border-b border-border">
+      <div role="tablist" aria-label={t('title')} className="flex items-center gap-1 mb-6 border-b border-border">
         <button
           role="tab"
           aria-selected={activeTab === 'datos'}
@@ -464,7 +464,7 @@ export default function BillingSettingsPage() {
                   <span className="font-mono font-bold text-foreground">{s.serie || '—'}</span>
                   <span className="ml-2 text-xs text-muted-foreground">{s.tipoDocumento}</span>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Folio actual: <span className="font-semibold text-foreground tabular-nums">{s.folioActual}</span>
+                    {t('currentFolioMobile')} <span className="font-semibold text-foreground tabular-nums">{s.folioActual}</span>
                   </div>
                 </div>
                 <ActiveToggle isActive={s.activo} onToggle={() => handleToggleSerie(s.id, !s.activo)} />

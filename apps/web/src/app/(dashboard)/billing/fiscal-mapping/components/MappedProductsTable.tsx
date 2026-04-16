@@ -38,6 +38,7 @@ export function MappedProductsTable({
   onSetMappingsPage,
 }: MappedProductsTableProps) {
   const tc = useTranslations('common');
+  const t = useTranslations('billing.fiscalMapping');
   return (
     <>
       {/* Desktop table */}
@@ -46,13 +47,13 @@ export function MappedProductsTable({
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="w-10 px-4 py-3" />
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto ID</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave ProdServ SAT</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave Unidad SAT</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Descripción Fiscal</th>
-              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Actualizado</th>
-              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Acciones</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('productId')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('prodServSat')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('unitSat')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('fiscalDescription')}</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">{t('statusCol')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('updatedCol')}</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">{t('actionsCol')}</th>
             </tr>
           </thead>
           <tbody>
@@ -61,7 +62,7 @@ export function MappedProductsTable({
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
-                    aria-label={`Seleccionar producto ${m.productoId}`}
+                    aria-label={t('selectProductLabel', { id: m.productoId })}
                     checked={selectedIds.has(m.productoId)}
                     onChange={() => onToggleSelect(m.productoId)}
                     className="rounded border-border text-green-600 focus:ring-green-500"
@@ -89,7 +90,7 @@ export function MappedProductsTable({
                 <td className="px-4 py-3 text-center">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                     <Check className="w-3 h-3 mr-1" />
-                    Mapeado
+                    {t('mapped')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -100,13 +101,13 @@ export function MappedProductsTable({
                     <button
                       onClick={() => onEdit({
                         productoId: m.productoId,
-                        nombre: m.productoNombre || 'Producto #' + m.productoId,
+                        nombre: m.productoNombre || t('productHash') + m.productoId,
                         currentProdServ: m.claveProdServ,
                         currentUnidad: m.claveUnidad,
                         hasMapping: true,
                       })}
                       className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-                      aria-label={`Editar mapeo de ${m.productoNombre || m.productoId}`}
+                      aria-label={t('editMappingOf', { name: m.productoNombre || m.productoId })}
                       title={tc('editMapping')}
                     >
                       <Pencil className="w-4 h-4" />
@@ -114,7 +115,7 @@ export function MappedProductsTable({
                     <button
                       onClick={() => onDelete(m.productoId)}
                       className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-                      aria-label={`Eliminar mapeo de ${m.productoNombre || m.productoId}`}
+                      aria-label={t('deleteMappingOf', { name: m.productoNombre || m.productoId })}
                       title={tc('deleteMapping')}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -126,7 +127,7 @@ export function MappedProductsTable({
             {mappings.length === 0 && !loading && (
               <tr>
                 <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
-                  No hay productos con mapeo fiscal
+                  {t('noMappedProducts')}
                 </td>
               </tr>
             )}
@@ -145,20 +146,20 @@ export function MappedProductsTable({
                 onChange={() => onToggleSelect(m.productoId)}
                 className="rounded border-border text-green-600 focus:ring-green-500"
               />
-              <span className="font-medium text-sm">Producto #{m.productoId}</span>
+              <span className="font-medium text-sm">{t('productHash')}{m.productoId}</span>
               <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                Mapeado
+                {t('mapped')}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <span className="text-xs text-muted-foreground">ProdServ:</span>
+                <span className="text-xs text-muted-foreground">{t('prodServSat')}:</span>
                 <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
                   {m.claveProdServ}
                 </span>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Unidad:</span>
+                <span className="text-xs text-muted-foreground">{t('unitInfoLabel')}:</span>
                 <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
                   {m.claveUnidad}
                 </span>
@@ -168,7 +169,7 @@ export function MappedProductsTable({
               <button
                 onClick={() => onEdit({
                   productoId: m.productoId,
-                  nombre: m.productoNombre || 'Producto #' + m.productoId,
+                  nombre: m.productoNombre || t('productHash') + m.productoId,
                   currentProdServ: m.claveProdServ,
                   currentUnidad: m.claveUnidad,
                   hasMapping: true,
@@ -176,14 +177,14 @@ export function MappedProductsTable({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
-                Editar
+                {t('edit')}
               </button>
             </div>
           </div>
         ))}
         {mappings.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground text-sm">
-            No hay productos con mapeo fiscal
+            {t('noMappedProducts')}
           </div>
         )}
       </div>
@@ -192,7 +193,7 @@ export function MappedProductsTable({
       {mappingsTotalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm">
           <span className="text-muted-foreground">
-            Página {mappingsPage} de {mappingsTotalPages}
+            {t('pageOf', { page: mappingsPage, total: mappingsTotalPages })}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -200,7 +201,7 @@ export function MappedProductsTable({
               size="sm"
               onClick={() => onSetMappingsPage(p => Math.max(1, p - 1))}
               disabled={mappingsPage <= 1}
-              aria-label="Página anterior"
+              aria-label={t('prevPage')}
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -209,7 +210,7 @@ export function MappedProductsTable({
               size="sm"
               onClick={() => onSetMappingsPage(p => Math.min(mappingsTotalPages, p + 1))}
               disabled={mappingsPage >= mappingsTotalPages}
-              aria-label="Página siguiente"
+              aria-label={t('nextPage')}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>

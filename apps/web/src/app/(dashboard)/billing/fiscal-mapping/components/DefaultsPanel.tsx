@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AutocompleteDropdown } from './SatAutocomplete';
@@ -28,17 +29,19 @@ export function DefaultsPanel({
   onSetDefaultsEditUnidad,
   onSaveDefaults,
 }: DefaultsPanelProps) {
+  const t = useTranslations('billing.fiscalMapping');
+
   return (
     <div className="mb-6 bg-card border border-border rounded-xl p-4 sm:p-6">
-      <h3 className="text-sm font-semibold text-foreground mb-1">Valores Predeterminados del Tenant</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-1">{t('defaultsTitle')}</h3>
       <p className="text-xs text-muted-foreground mb-4">
-        Se usan como respaldo cuando un producto no tiene mapeo fiscal asignado.
+        {t('defaultsDesc')}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Default ProdServ */}
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            Clave ProdServ SAT predeterminada
+            {t('defaultProdServLabel')}
           </label>
           {defaultsEditProdServ ? (
             <AutocompleteDropdown<CatalogoProdServItem>
@@ -50,7 +53,7 @@ export function DefaultsPanel({
               onClose={() => onSetDefaultsEditProdServ(false)}
               searchFn={searchCatalogoProdServ}
               renderLabel={item => item.descripcion}
-              placeholder="Buscar clave ProdServ..."
+              placeholder={t('searchProdServ')}
             />
           ) : (
             <button
@@ -60,7 +63,7 @@ export function DefaultsPanel({
               {defaults.claveProdServDefault ? (
                 <span className="font-mono">{defaults.claveProdServDefault}</span>
               ) : (
-                <span className="text-muted-foreground">Click para seleccionar...</span>
+                <span className="text-muted-foreground">{t('clickToSelect')}</span>
               )}
             </button>
           )}
@@ -69,7 +72,7 @@ export function DefaultsPanel({
         {/* Default Unidad */}
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            Clave Unidad SAT predeterminada
+            {t('defaultUnitLabel')}
           </label>
           {defaultsEditUnidad ? (
             <AutocompleteDropdown<CatalogoUnidadItem>
@@ -81,7 +84,7 @@ export function DefaultsPanel({
               onClose={() => onSetDefaultsEditUnidad(false)}
               searchFn={searchCatalogoUnidad}
               renderLabel={item => item.nombre}
-              placeholder="Buscar clave unidad..."
+              placeholder={t('searchUnit')}
             />
           ) : (
             <button
@@ -91,7 +94,7 @@ export function DefaultsPanel({
               {defaults.claveUnidadDefault ? (
                 <span className="font-mono">{defaults.claveUnidadDefault}</span>
               ) : (
-                <span className="text-muted-foreground">Click para seleccionar...</span>
+                <span className="text-muted-foreground">{t('clickToSelect')}</span>
               )}
             </button>
           )}
@@ -104,7 +107,7 @@ export function DefaultsPanel({
           className="bg-success hover:bg-success/90 text-white"
         >
           {savingDefaults && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          Guardar Predeterminados
+          {t('saveDefaults')}
         </Button>
       </div>
     </div>

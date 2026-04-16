@@ -2891,6 +2891,7 @@
       "voucherType": "Voucher type",
       "initialFolio": "Initial folio",
       "currentFolio": "Current folio",
+      "currentFolioMobile": "Current folio:",
       "createSeries": "Create series",
       "errorCreatingSeries": "Error creating series",
       "errorTogglingSeriesStatus": "Error changing series status",
@@ -2951,7 +2952,54 @@
       "defaultUnitLabel": "Default SAT Unit code",
       "defaultsTitle": "Tenant Default Values",
       "defaultsDesc": "Used as fallback when a product has no fiscal mapping assigned.",
-      "clickToSelect": "Click to select..."
+      "clickToSelect": "Click to select...",
+      "batchAssignTitle": "Batch Assign",
+      "batchAssignDesc": "Assign the same SAT key to {count} selected product(s).",
+      "assign": "Assign",
+      "saveDefaults": "Save Defaults",
+      "fiscalMappingTitle": "Fiscal Mapping",
+      "codeLabel": "Code",
+      "unitInfoLabel": "Unit",
+      "deleteMapping": "Delete mapping",
+      "confirmDelete": "Confirm delete",
+      "deleting": "Deleting...",
+      "unsavedChanges": "Unsaved changes",
+      "unsavedChangesDesc": "You have unsaved changes. What would you like to do?",
+      "keepEditing": "Keep editing",
+      "discard": "Discard",
+      "save": "Save",
+      "close": "Close",
+      "satResults": "SAT Results",
+      "searching": "Searching...",
+      "noResults": "No results for \"{query}\"",
+      "productId": "Product ID",
+      "prodServSat": "ProdServ SAT Key",
+      "unitSat": "Unit SAT Key",
+      "fiscalDescription": "Fiscal Description",
+      "statusCol": "Status",
+      "updatedCol": "Updated",
+      "actionsCol": "Actions",
+      "mapped": "Mapped",
+      "editMappingOf": "Edit mapping for {name}",
+      "deleteMappingOf": "Delete mapping for {name}",
+      "noMappedProducts": "No products with fiscal mapping",
+      "pageOf": "Page {page} of {total}",
+      "productCol": "Product",
+      "barcodeCol": "Barcode",
+      "unitCol": "Unit",
+      "unassigned": "Unassigned",
+      "unmapped": "Unmapped",
+      "assignMapping": "Assign fiscal mapping",
+      "assignBtn": "Assign",
+      "allProductsMapped": "All products have fiscal mapping",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "edit": "Edit",
+      "productHash": "Product #",
+      "selectProductLabel": "Select product {id}",
+      "selectLabel": "Select {name}",
+      "assignMappingTo": "Assign mapping to {name}",
+      "barcodeLabel": "Barcode"
     },
     "settingsTab": {
       "cfdiTitle": "CFDI 4.0 Billing Configuration",
@@ -6434,53 +6482,122 @@
       "title": "General System Tour",
       "desc": "Learn the main sections of Handy Suites and how to navigate the system.",
       "steps": {
-        "0": { "title": "Navigation Menu", "desc": "Use this sidebar to move between system sections: Clients, Products, Inventory, Orders, Routes, and more. You can collapse it for more space." },
-        "1": { "title": "Search Bar", "desc": "Quickly search for clients, products, or orders by typing here. Results appear instantly." },
-        "2": { "title": "Notifications", "desc": "Here you'll see low-stock alerts, new orders, scheduled visits, and other important business notifications." },
-        "3": { "title": "Contextual Help", "desc": "Open the help panel to see page-specific articles. You can also restart this tour from there." },
-        "4": { "title": "User Menu", "desc": "Access your profile, company settings, and sign out from here." },
-        "5": { "title": "Business Metrics", "desc": "These indicators show a real-time summary of your sales, orders, active clients, and products. The percentage shows the change from the previous period." },
-        "6": { "title": "Weekly Sales Chart", "desc": "Visualize your sales day by day. Use the period filter to change the date range." },
-        "7": { "title": "Recent Activity", "desc": "Here you'll see the latest movements: completed orders, registered clients, inventory alerts, and more." },
-        "8": { "title": "Weekly Sales Goal", "desc": "Shows the weekly sales goal progress: target amount, achieved, and percentage of advance. The bar fills as you approach the goal." }
+        "0": {
+          "title": "Navigation Menu",
+          "desc": "Use this sidebar to move between system sections: Clients, Products, Inventory, Orders, Routes, and more. You can collapse it for more space."
+        },
+        "1": {
+          "title": "Search Bar",
+          "desc": "Quickly search for clients, products, or orders by typing here. Results appear instantly."
+        },
+        "2": {
+          "title": "Notifications",
+          "desc": "Here you'll see low-stock alerts, new orders, scheduled visits, and other important business notifications."
+        },
+        "3": {
+          "title": "Contextual Help",
+          "desc": "Open the help panel to see page-specific articles. You can also restart this tour from there."
+        },
+        "4": {
+          "title": "User Menu",
+          "desc": "Access your profile, company settings, and sign out from here."
+        },
+        "5": {
+          "title": "Business Metrics",
+          "desc": "These indicators show a real-time summary of your sales, orders, active clients, and products. The percentage shows the change from the previous period."
+        },
+        "6": {
+          "title": "Weekly Sales Chart",
+          "desc": "Visualize your sales day by day. Use the period filter to change the date range."
+        },
+        "7": {
+          "title": "Recent Activity",
+          "desc": "Here you'll see the latest movements: completed orders, registered clients, inventory alerts, and more."
+        },
+        "8": {
+          "title": "Weekly Sales Goal",
+          "desc": "Shows the weekly sales goal progress: target amount, achieved, and percentage of advance. The bar fills as you approach the goal."
+        }
       }
     },
     "reports-tour": {
       "title": "Reports Tour",
       "desc": "Explore the available reports to analyze your business.",
       "steps": {
-        "0": { "title": "Report Catalog", "desc": "Here you see all reports organized by section: Sales, Clients, and Inventory. Click on any card to open that report." },
-        "1": { "title": "Date Filters", "desc": "Select a date range and click \"Query\" to generate the report. Some reports have additional filters such as grouping or zone." },
-        "2": { "title": "Key Indicators", "desc": "Cards with the main KPIs of the report: totals, averages, and relevant metrics. Colors indicate the category of each metric." },
-        "3": { "title": "Data Table", "desc": "Detailed table with the report data. Click on headers with arrows to sort by column. Some reports include a totals row at the bottom." }
+        "0": {
+          "title": "Report Catalog",
+          "desc": "Here you see all reports organized by section: Sales, Clients, and Inventory. Click on any card to open that report."
+        },
+        "1": {
+          "title": "Date Filters",
+          "desc": "Select a date range and click \"Query\" to generate the report. Some reports have additional filters such as grouping or zone."
+        },
+        "2": {
+          "title": "Key Indicators",
+          "desc": "Cards with the main KPIs of the report: totals, averages, and relevant metrics. Colors indicate the category of each metric."
+        },
+        "3": {
+          "title": "Data Table",
+          "desc": "Detailed table with the report data. Click on headers with arrows to sort by column. Some reports include a totals row at the bottom."
+        }
       }
     },
     "global-settings-tour": {
       "title": "Settings Tour",
       "desc": "Learn the global configuration options for your company.",
       "steps": {
-        "0": { "title": "Name and Logo", "desc": "Configure your company name and upload your logo. These will appear in the system and in generated documents." },
-        "1": { "title": "Platform Colors", "desc": "Customize the primary and secondary interface colors to match your company's visual identity." },
-        "2": { "title": "Regional Settings", "desc": "Select the default language and time zone for your company." },
-        "3": { "title": "Save Settings", "desc": "Click here to save all configuration changes." }
+        "0": {
+          "title": "Name and Logo",
+          "desc": "Configure your company name and upload your logo. These will appear in the system and in generated documents."
+        },
+        "1": {
+          "title": "Platform Colors",
+          "desc": "Customize the primary and secondary interface colors to match your company's visual identity."
+        },
+        "2": {
+          "title": "Regional Settings",
+          "desc": "Select the default language and time zone for your company."
+        },
+        "3": {
+          "title": "Save Settings",
+          "desc": "Click here to save all configuration changes."
+        }
       }
     },
     "roles-tour": {
       "title": "Roles Tour",
       "desc": "Learn to manage user roles and permissions.",
       "steps": {
-        "0": { "title": "Create Role", "desc": "Create a new role with name, description, and permission set. Roles define what each type of user can do." },
-        "1": { "title": "Role Statistics", "desc": "Quick summary: total roles, active, inactive, and system roles (which cannot be deleted)." },
-        "2": { "title": "Roles Table", "desc": "List of all roles with name, description, assigned permissions, and actions. System roles are protected." }
+        "0": {
+          "title": "Create Role",
+          "desc": "Create a new role with name, description, and permission set. Roles define what each type of user can do."
+        },
+        "1": {
+          "title": "Role Statistics",
+          "desc": "Quick summary: total roles, active, inactive, and system roles (which cannot be deleted)."
+        },
+        "2": {
+          "title": "Roles Table",
+          "desc": "List of all roles with name, description, assigned permissions, and actions. System roles are protected."
+        }
       }
     },
     "profile-tour": {
       "title": "Profile Tour",
       "desc": "Learn the configuration options for your user profile.",
       "steps": {
-        "0": { "title": "Profile Photo", "desc": "Click to change your profile photo. A square image of at least 200x200 pixels is recommended." },
-        "1": { "title": "Profile Sections", "desc": "Navigate between sections: Personal Information, Security (password and 2FA), Preferences (language, theme), Devices, and Activity." },
-        "2": { "title": "Personal Information", "desc": "Edit your name, email, phone, department, and location. Click \"Edit\" to modify the data." }
+        "0": {
+          "title": "Profile Photo",
+          "desc": "Click to change your profile photo. A square image of at least 200x200 pixels is recommended."
+        },
+        "1": {
+          "title": "Profile Sections",
+          "desc": "Navigate between sections: Personal Information, Security (password and 2FA), Preferences (language, theme), Devices, and Activity."
+        },
+        "2": {
+          "title": "Personal Information",
+          "desc": "Edit your name, email, phone, department, and location. Click \"Edit\" to modify the data."
+        }
       }
     },
     "clients-tour": {
@@ -6488,247 +6605,700 @@
       "desc": "Learn to manage your client portfolio: add, filter, edit, and organize.",
       "doneBtn": "Next",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your client list as CSV or import clients from a CSV file for bulk uploads." },
-        "1": { "title": "Search Clients", "desc": "Type the client name or code to quickly filter the list." },
-        "2": { "title": "Filter by Zone", "desc": "Select a geographic zone to see only clients in that area. Useful for planning visit routes." },
-        "3": { "title": "Filter by Category", "desc": "Filter by client category (wholesale, retail, etc.) to segment your portfolio." },
-        "4": { "title": "Show Inactive Clients", "desc": "Toggle this switch to also see deactivated clients. By default only active ones are shown." },
-        "5": { "title": "Clients Table", "desc": "Here you see all your clients with their zone, category, balance, and status. You can select multiple with checkboxes for batch activate/deactivate." },
-        "6": { "title": "Create New Client", "desc": "Click \"Next\" to go to the new client form and learn about each section." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your client list as CSV or import clients from a CSV file for bulk uploads."
+        },
+        "1": {
+          "title": "Search Clients",
+          "desc": "Type the client name or code to quickly filter the list."
+        },
+        "2": {
+          "title": "Filter by Zone",
+          "desc": "Select a geographic zone to see only clients in that area. Useful for planning visit routes."
+        },
+        "3": {
+          "title": "Filter by Category",
+          "desc": "Filter by client category (wholesale, retail, etc.) to segment your portfolio."
+        },
+        "4": {
+          "title": "Show Inactive Clients",
+          "desc": "Toggle this switch to also see deactivated clients. By default only active ones are shown."
+        },
+        "5": {
+          "title": "Clients Table",
+          "desc": "Here you see all your clients with their zone, category, balance, and status. You can select multiple with checkboxes for batch activate/deactivate."
+        },
+        "6": {
+          "title": "Create New Client",
+          "desc": "Click \"Next\" to go to the new client form and learn about each section."
+        }
       }
     },
     "new-client-tour": {
       "title": "Create Client Tour",
       "desc": "Learn to complete the form to register a new client.",
       "steps": {
-        "0": { "title": "Save or Cancel", "desc": "When done filling the form, click \"Save\" to register the client. To discard changes, use \"Cancel\"." },
-        "1": { "title": "General Information", "desc": "Enter the client name, select their category (wholesale, retail, etc.), and mark if they are a prospect. Name and category are required." },
-        "2": { "title": "Pricing and Discount", "desc": "Assign a special price list for this client and a general discount percentage. This section is optional." },
-        "3": { "title": "Payment, Sales and Credit", "desc": "Set the initial balance, credit limit, and the minimum amount for a visit to be considered effective." },
-        "4": { "title": "Delivery Configuration", "desc": "Choose whether the client pays cash, credit, or both. Configure the default payment type and credit days." },
-        "5": { "title": "Fiscal Data", "desc": "If the client requires invoicing, enable \"Billable\" to capture tax ID, legal name, tax regime, and CFDI usage per SAT requirements." },
-        "6": { "title": "Address and Map", "desc": "Type the address and Google Maps autocomplete will fill in the fields automatically. Select the client's geographic zone. The map shows the location and validates it is within the zone." },
-        "7": { "title": "Contact Information", "desc": "Register the contact person's name, phone (10 digits), and email. Phone and email are required." }
+        "0": {
+          "title": "Save or Cancel",
+          "desc": "When done filling the form, click \"Save\" to register the client. To discard changes, use \"Cancel\"."
+        },
+        "1": {
+          "title": "General Information",
+          "desc": "Enter the client name, select their category (wholesale, retail, etc.), and mark if they are a prospect. Name and category are required."
+        },
+        "2": {
+          "title": "Pricing and Discount",
+          "desc": "Assign a special price list for this client and a general discount percentage. This section is optional."
+        },
+        "3": {
+          "title": "Payment, Sales and Credit",
+          "desc": "Set the initial balance, credit limit, and the minimum amount for a visit to be considered effective."
+        },
+        "4": {
+          "title": "Delivery Configuration",
+          "desc": "Choose whether the client pays cash, credit, or both. Configure the default payment type and credit days."
+        },
+        "5": {
+          "title": "Fiscal Data",
+          "desc": "If the client requires invoicing, enable \"Billable\" to capture tax ID, legal name, tax regime, and CFDI usage per SAT requirements."
+        },
+        "6": {
+          "title": "Address and Map",
+          "desc": "Type the address and Google Maps autocomplete will fill in the fields automatically. Select the client's geographic zone. The map shows the location and validates it is within the zone."
+        },
+        "7": {
+          "title": "Contact Information",
+          "desc": "Register the contact person's name, phone (10 digits), and email. Phone and email are required."
+        }
       }
     },
     "products-tour": {
       "title": "Products Tour",
       "desc": "Learn to register products, assign prices, families, and categories.",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your product catalog as CSV or import products from a CSV file for bulk uploads. The file must include name, barcode, base price, family, category, and unit of measure." },
-        "1": { "title": "Create New Product", "desc": "Click here to register a product. A side form will open where you'll enter all the details." },
-        "2": { "title": "Product Name", "desc": "Enter the product name as your salespeople know it. It is required and must be unique." },
-        "3": { "title": "Barcode", "desc": "Enter the product barcode (EAN-13, UPC, etc.). It is required and must be unique. Salespeople can scan it from the mobile app." },
-        "4": { "title": "Product Image", "desc": "Upload a product photo in JPEG, PNG, or WebP (max 5 MB). The image will appear in the catalog and in the salespeople's mobile app." },
-        "5": { "title": "Product Family", "desc": "Select the main product family (e.g., Beverages, Groceries, Dairy). Families are configured in the Product Families catalog." },
-        "6": { "title": "Category", "desc": "Select the category that subdivides the family (e.g., Sodas within Beverages). Categories are configured in the Product Categories catalog." },
-        "7": { "title": "Unit of Measure", "desc": "Select how the product is sold: Piece, Box, Liter, Kilogram, etc. Units are configured in the Units of Measure catalog." },
-        "8": { "title": "Base Price", "desc": "The main selling price of the product. If you use price lists, each list can have a different price for this product." },
-        "9": { "title": "Save or Cancel", "desc": "Click \"Create Product\" to save or \"Cancel\" to discard. If there are unsaved changes, you'll be asked to confirm." },
-        "10": { "title": "Search Products", "desc": "Type the product name or code to find it quickly." },
-        "11": { "title": "Filter by Family", "desc": "Families group products by type (e.g., Beverages, Groceries, Dairy). Select one to filter the list." },
-        "12": { "title": "Filter by Category", "desc": "Categories subdivide families (e.g., Sodas, Juices within Beverages). Use this filter to refine the search." },
-        "13": { "title": "Show Inactive", "desc": "Toggle this switch to see deactivated products. Inactive products don't appear when creating orders." },
-        "14": { "title": "Product Catalog", "desc": "Here you see all your products with image, code, price, stock, family, and category. Low-stock products are marked in red. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your product catalog as CSV or import products from a CSV file for bulk uploads. The file must include name, barcode, base price, family, category, and unit of measure."
+        },
+        "1": {
+          "title": "Create New Product",
+          "desc": "Click here to register a product. A side form will open where you'll enter all the details."
+        },
+        "2": {
+          "title": "Product Name",
+          "desc": "Enter the product name as your salespeople know it. It is required and must be unique."
+        },
+        "3": {
+          "title": "Barcode",
+          "desc": "Enter the product barcode (EAN-13, UPC, etc.). It is required and must be unique. Salespeople can scan it from the mobile app."
+        },
+        "4": {
+          "title": "Product Image",
+          "desc": "Upload a product photo in JPEG, PNG, or WebP (max 5 MB). The image will appear in the catalog and in the salespeople's mobile app."
+        },
+        "5": {
+          "title": "Product Family",
+          "desc": "Select the main product family (e.g., Beverages, Groceries, Dairy). Families are configured in the Product Families catalog."
+        },
+        "6": {
+          "title": "Category",
+          "desc": "Select the category that subdivides the family (e.g., Sodas within Beverages). Categories are configured in the Product Categories catalog."
+        },
+        "7": {
+          "title": "Unit of Measure",
+          "desc": "Select how the product is sold: Piece, Box, Liter, Kilogram, etc. Units are configured in the Units of Measure catalog."
+        },
+        "8": {
+          "title": "Base Price",
+          "desc": "The main selling price of the product. If you use price lists, each list can have a different price for this product."
+        },
+        "9": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Product\" to save or \"Cancel\" to discard. If there are unsaved changes, you'll be asked to confirm."
+        },
+        "10": {
+          "title": "Search Products",
+          "desc": "Type the product name or code to find it quickly."
+        },
+        "11": {
+          "title": "Filter by Family",
+          "desc": "Families group products by type (e.g., Beverages, Groceries, Dairy). Select one to filter the list."
+        },
+        "12": {
+          "title": "Filter by Category",
+          "desc": "Categories subdivide families (e.g., Sodas, Juices within Beverages). Use this filter to refine the search."
+        },
+        "13": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to see deactivated products. Inactive products don't appear when creating orders."
+        },
+        "14": {
+          "title": "Product Catalog",
+          "desc": "Here you see all your products with image, code, price, stock, family, and category. Low-stock products are marked in red. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "zones-tour": {
       "title": "Zones Tour",
       "desc": "Learn to organize your territory into geographic zones for your salespeople.",
       "steps": {
-        "0": { "title": "View Zone Map", "desc": "Open an interactive map with all your zones drawn as colored circles. Useful for visualizing your team's territorial coverage." },
-        "1": { "title": "Import / Export", "desc": "Export your zones to CSV or import from a file for bulk uploads. The CSV includes name, description, and color." },
-        "2": { "title": "New Zone", "desc": "Create a geographic zone with name, color, and map location. You can then assign clients to each zone." },
-        "3": { "title": "Zone Name", "desc": "Enter a descriptive name for the zone (e.g., \"Downtown\", \"North Zone\", \"Industrial District\")." },
-        "4": { "title": "Zone Color", "desc": "Select a color to visually identify the zone on the map and in lists. Choose a different one for each zone." },
-        "5": { "title": "Location and Radius", "desc": "Search for a place, double-click on the map, or drag the marker to position the zone. Adjust the radius by dragging the circle edge or typing the value in km." },
-        "6": { "title": "Save or Cancel", "desc": "Click \"Create Zone\" to save or \"Cancel\" to discard changes." },
-        "7": { "title": "Search Zones", "desc": "Type the zone name to find it quickly. Search filters in real time." },
-        "8": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated zones. By default only active ones are shown." },
-        "9": { "title": "Zones Table", "desc": "Each zone shows its color, name, assigned clients, and active/inactive status. Click a row to edit. Select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "View Zone Map",
+          "desc": "Open an interactive map with all your zones drawn as colored circles. Useful for visualizing your team's territorial coverage."
+        },
+        "1": {
+          "title": "Import / Export",
+          "desc": "Export your zones to CSV or import from a file for bulk uploads. The CSV includes name, description, and color."
+        },
+        "2": {
+          "title": "New Zone",
+          "desc": "Create a geographic zone with name, color, and map location. You can then assign clients to each zone."
+        },
+        "3": {
+          "title": "Zone Name",
+          "desc": "Enter a descriptive name for the zone (e.g., \"Downtown\", \"North Zone\", \"Industrial District\")."
+        },
+        "4": {
+          "title": "Zone Color",
+          "desc": "Select a color to visually identify the zone on the map and in lists. Choose a different one for each zone."
+        },
+        "5": {
+          "title": "Location and Radius",
+          "desc": "Search for a place, double-click on the map, or drag the marker to position the zone. Adjust the radius by dragging the circle edge or typing the value in km."
+        },
+        "6": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Zone\" to save or \"Cancel\" to discard changes."
+        },
+        "7": {
+          "title": "Search Zones",
+          "desc": "Type the zone name to find it quickly. Search filters in real time."
+        },
+        "8": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated zones. By default only active ones are shown."
+        },
+        "9": {
+          "title": "Zones Table",
+          "desc": "Each zone shows its color, name, assigned clients, and active/inactive status. Click a row to edit. Select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "client-categories-tour": {
       "title": "Client Categories Tour",
       "desc": "Learn to organize your clients by category (wholesale, retail, etc.).",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your categories as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)." },
-        "1": { "title": "New Category", "desc": "Create a new client category to segment your portfolio (wholesale, retail, VIP, etc.)." },
-        "2": { "title": "Category Name", "desc": "Enter a descriptive name for the category (e.g., Wholesale, VIP, Distributor). This field is required." },
-        "3": { "title": "Description", "desc": "Add an optional description to better identify the category." },
-        "4": { "title": "Save or Cancel", "desc": "Click \"Create Category\" to save or \"Cancel\" to discard changes." },
-        "5": { "title": "Search Categories", "desc": "Type to filter categories by name." },
-        "6": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated categories. By default only active ones are shown." },
-        "7": { "title": "Categories Table", "desc": "List of all categories with name, description, and status. You can edit or activate/deactivate each one." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your categories as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)."
+        },
+        "1": {
+          "title": "New Category",
+          "desc": "Create a new client category to segment your portfolio (wholesale, retail, VIP, etc.)."
+        },
+        "2": {
+          "title": "Category Name",
+          "desc": "Enter a descriptive name for the category (e.g., Wholesale, VIP, Distributor). This field is required."
+        },
+        "3": {
+          "title": "Description",
+          "desc": "Add an optional description to better identify the category."
+        },
+        "4": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Category\" to save or \"Cancel\" to discard changes."
+        },
+        "5": {
+          "title": "Search Categories",
+          "desc": "Type to filter categories by name."
+        },
+        "6": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated categories. By default only active ones are shown."
+        },
+        "7": {
+          "title": "Categories Table",
+          "desc": "List of all categories with name, description, and status. You can edit or activate/deactivate each one."
+        }
       }
     },
     "product-categories-tour": {
       "title": "Product Categories Tour",
       "desc": "Learn to classify your products by category for better organization.",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your categories as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)." },
-        "1": { "title": "New Category", "desc": "Create a new product category. A side form will open where you'll enter name and description." },
-        "2": { "title": "Category Name", "desc": "Enter the category name (e.g., Sodas, Cookies, Dairy). It is required and must be unique. Categories subdivide product families." },
-        "3": { "title": "Description", "desc": "Add an optional description to identify what type of products belong to this category." },
-        "4": { "title": "Save or Cancel", "desc": "Click \"Create Category\" to save or \"Cancel\" to discard." },
-        "5": { "title": "Search Categories", "desc": "Type to filter categories by name." },
-        "6": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated categories. By default only active ones are shown." },
-        "7": { "title": "Categories Table", "desc": "List of categories with name, description, status, and actions. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your categories as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)."
+        },
+        "1": {
+          "title": "New Category",
+          "desc": "Create a new product category. A side form will open where you'll enter name and description."
+        },
+        "2": {
+          "title": "Category Name",
+          "desc": "Enter the category name (e.g., Sodas, Cookies, Dairy). It is required and must be unique. Categories subdivide product families."
+        },
+        "3": {
+          "title": "Description",
+          "desc": "Add an optional description to identify what type of products belong to this category."
+        },
+        "4": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Category\" to save or \"Cancel\" to discard."
+        },
+        "5": {
+          "title": "Search Categories",
+          "desc": "Type to filter categories by name."
+        },
+        "6": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated categories. By default only active ones are shown."
+        },
+        "7": {
+          "title": "Categories Table",
+          "desc": "List of categories with name, description, status, and actions. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "product-families-tour": {
       "title": "Product Families Tour",
       "desc": "Learn to group your products by family (Beverages, Groceries, etc.).",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your families as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)." },
-        "1": { "title": "New Family", "desc": "Create a new product family. A side form will open where you'll enter name and description." },
-        "2": { "title": "Family Name", "desc": "Enter the family name (e.g., Beverages, Groceries, Dairy). It is required and must be unique. Families are the main grouping of your catalog." },
-        "3": { "title": "Description", "desc": "Add an optional description to help identify the type of products that belong to this family." },
-        "4": { "title": "Save or Cancel", "desc": "Click \"Create Family\" to save or \"Cancel\" to discard." },
-        "5": { "title": "Search Families", "desc": "Type to filter families by name." },
-        "6": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated families." },
-        "7": { "title": "Families Table", "desc": "List of families with name, description, status, and actions. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your families as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)."
+        },
+        "1": {
+          "title": "New Family",
+          "desc": "Create a new product family. A side form will open where you'll enter name and description."
+        },
+        "2": {
+          "title": "Family Name",
+          "desc": "Enter the family name (e.g., Beverages, Groceries, Dairy). It is required and must be unique. Families are the main grouping of your catalog."
+        },
+        "3": {
+          "title": "Description",
+          "desc": "Add an optional description to help identify the type of products that belong to this family."
+        },
+        "4": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Family\" to save or \"Cancel\" to discard."
+        },
+        "5": {
+          "title": "Search Families",
+          "desc": "Type to filter families by name."
+        },
+        "6": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated families."
+        },
+        "7": {
+          "title": "Families Table",
+          "desc": "List of families with name, description, status, and actions. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "units-tour": {
       "title": "Units of Measure Tour",
       "desc": "Learn to configure the units of measure for your products.",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your units as CSV or import from a file for bulk uploads. The file requires name (required) and abbreviation (optional)." },
-        "1": { "title": "New Unit", "desc": "Create a new unit of measure. A side form will open where you'll enter name and abbreviation." },
-        "2": { "title": "Unit Name", "desc": "Enter the full unit name (e.g., Kilogram, Piece, Liter). It is required and must be unique. Units are assigned to each product." },
-        "3": { "title": "Abbreviation", "desc": "Short abbreviation for the unit (e.g., kg, pc, lt, m). Shown in tables and reports to save space. Maximum 10 characters." },
-        "4": { "title": "Save or Cancel", "desc": "Click \"Create Unit\" to save or \"Cancel\" to discard." },
-        "5": { "title": "Search Units", "desc": "Type to filter units by name or abbreviation." },
-        "6": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated units. By default only active ones are shown." },
-        "7": { "title": "Units Table", "desc": "List of units with name, abbreviation, status, and actions. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your units as CSV or import from a file for bulk uploads. The file requires name (required) and abbreviation (optional)."
+        },
+        "1": {
+          "title": "New Unit",
+          "desc": "Create a new unit of measure. A side form will open where you'll enter name and abbreviation."
+        },
+        "2": {
+          "title": "Unit Name",
+          "desc": "Enter the full unit name (e.g., Kilogram, Piece, Liter). It is required and must be unique. Units are assigned to each product."
+        },
+        "3": {
+          "title": "Abbreviation",
+          "desc": "Short abbreviation for the unit (e.g., kg, pc, lt, m). Shown in tables and reports to save space. Maximum 10 characters."
+        },
+        "4": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Unit\" to save or \"Cancel\" to discard."
+        },
+        "5": {
+          "title": "Search Units",
+          "desc": "Type to filter units by name or abbreviation."
+        },
+        "6": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated units. By default only active ones are shown."
+        },
+        "7": {
+          "title": "Units Table",
+          "desc": "List of units with name, abbreviation, status, and actions. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "metas-tour": {
       "title": "Salesperson Goals Tour",
       "desc": "Learn to define and track sales, orders, and visit goals for your team.",
       "steps": {
-        "0": { "title": "New Goal", "desc": "Create a goal for a salesperson: choose whether it's for sales ($), orders, or visits, define the period (weekly or monthly) and the numeric target." },
-        "1": { "title": "Select Salesperson", "desc": "Choose which salesperson this goal applies to. Each salesperson can have different goals for each indicator type." },
-        "2": { "title": "Goal Type", "desc": "Sales ($) measures total amount sold. Orders (#) counts closed orders. Visits (#) measures completed client visits." },
-        "3": { "title": "Target", "desc": "Enter the number to achieve: amount in currency for sales, or quantity of orders/visits for the other types." },
-        "4": { "title": "Validity Period", "desc": "Define the date range the goal applies to. The \"Unmet goal\" automation evaluates these ranges every Friday to send alerts." },
-        "5": { "title": "Save Goal", "desc": "Create the goal. It will appear on the salesperson's dashboard and in the weekly alert automation." },
-        "6": { "title": "Search Goals", "desc": "Filter by salesperson name or goal type to quickly find what you're looking for." },
-        "7": { "title": "Filter by Type", "desc": "Show only sales, orders, or visit goals to compare targets of the same indicator." },
-        "8": { "title": "Goals List", "desc": "Each row shows the salesperson, type, period, target, and status. Use the toggle to activate/deactivate and the action buttons to edit or delete." }
+        "0": {
+          "title": "New Goal",
+          "desc": "Create a goal for a salesperson: choose whether it's for sales ($), orders, or visits, define the period (weekly or monthly) and the numeric target."
+        },
+        "1": {
+          "title": "Select Salesperson",
+          "desc": "Choose which salesperson this goal applies to. Each salesperson can have different goals for each indicator type."
+        },
+        "2": {
+          "title": "Goal Type",
+          "desc": "Sales ($) measures total amount sold. Orders (#) counts closed orders. Visits (#) measures completed client visits."
+        },
+        "3": {
+          "title": "Target",
+          "desc": "Enter the number to achieve: amount in currency for sales, or quantity of orders/visits for the other types."
+        },
+        "4": {
+          "title": "Validity Period",
+          "desc": "Define the date range the goal applies to. The \"Unmet goal\" automation evaluates these ranges every Friday to send alerts."
+        },
+        "5": {
+          "title": "Save Goal",
+          "desc": "Create the goal. It will appear on the salesperson's dashboard and in the weekly alert automation."
+        },
+        "6": {
+          "title": "Search Goals",
+          "desc": "Filter by salesperson name or goal type to quickly find what you're looking for."
+        },
+        "7": {
+          "title": "Filter by Type",
+          "desc": "Show only sales, orders, or visit goals to compare targets of the same indicator."
+        },
+        "8": {
+          "title": "Goals List",
+          "desc": "Each row shows the salesperson, type, period, target, and status. Use the toggle to activate/deactivate and the action buttons to edit or delete."
+        }
       }
     },
     "discounts-tour": {
       "title": "Discounts Tour",
       "desc": "Learn to create quantity discounts, global or product-specific.",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your discounts as CSV or import from a file. Columns: ApplicationType (Global/Product), Product, MinimumQuantity, DiscountPercentage." },
-        "1": { "title": "Two Discount Types", "desc": "There are two types: <b>Global discount</b> (applies to the entire catalog) and <b>Product discount</b> (applies to a specific product). Let's start with global." },
-        "2": { "title": "Global Discount — Fields", "desc": "For a global discount you only need two fields: the <b>discount percentage</b> (1-100%) and the <b>minimum quantity</b> of units. The discount applies to all products in the catalog." },
-        "3": { "title": "Save Global Discount", "desc": "Click \"Create\" to save or \"Cancel\" to discard. Now let's see how to create a product discount." },
-        "4": { "title": "Product Discount — Product", "desc": "Unlike global, here you must <b>select a specific product</b> from the catalog. The discount will only apply to that product. The percentage and minimum quantity fields work the same." },
-        "5": { "title": "Save Product Discount", "desc": "Save the product discount or cancel to discard changes." },
-        "6": { "title": "Type Tabs", "desc": "Navigate between tabs to see discounts of each type separately: \"Global discount\" and \"Product discount\"." },
-        "7": { "title": "Search Discounts", "desc": "Search discounts by product name, code, or percentage." },
-        "8": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated discounts. By default only active ones are shown." },
-        "9": { "title": "Discount Cards", "desc": "Each card shows the percentage, minimum quantity, who created it, and its status. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your discounts as CSV or import from a file. Columns: ApplicationType (Global/Product), Product, MinimumQuantity, DiscountPercentage."
+        },
+        "1": {
+          "title": "Two Discount Types",
+          "desc": "There are two types: <b>Global discount</b> (applies to the entire catalog) and <b>Product discount</b> (applies to a specific product). Let's start with global."
+        },
+        "2": {
+          "title": "Global Discount — Fields",
+          "desc": "For a global discount you only need two fields: the <b>discount percentage</b> (1-100%) and the <b>minimum quantity</b> of units. The discount applies to all products in the catalog."
+        },
+        "3": {
+          "title": "Save Global Discount",
+          "desc": "Click \"Create\" to save or \"Cancel\" to discard. Now let's see how to create a product discount."
+        },
+        "4": {
+          "title": "Product Discount — Product",
+          "desc": "Unlike global, here you must <b>select a specific product</b> from the catalog. The discount will only apply to that product. The percentage and minimum quantity fields work the same."
+        },
+        "5": {
+          "title": "Save Product Discount",
+          "desc": "Save the product discount or cancel to discard changes."
+        },
+        "6": {
+          "title": "Type Tabs",
+          "desc": "Navigate between tabs to see discounts of each type separately: \"Global discount\" and \"Product discount\"."
+        },
+        "7": {
+          "title": "Search Discounts",
+          "desc": "Search discounts by product name, code, or percentage."
+        },
+        "8": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated discounts. By default only active ones are shown."
+        },
+        "9": {
+          "title": "Discount Cards",
+          "desc": "Each card shows the percentage, minimum quantity, who created it, and its status. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "promotions-tour": {
       "title": "Promotions Tour",
       "desc": "Learn to create discount promotions for your products.",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your promotions as CSV or import from a file. Columns: Name*, Description, DiscountPercentage*, StartDate*, EndDate*, Products* (separated by semicolons)." },
-        "1": { "title": "New Promotion", "desc": "Create a promotion with a discount for one or more products with validity dates." },
-        "2": { "title": "Promotion Name", "desc": "Enter a descriptive name (e.g., \"Summer Promo 2026\"). The name must be unique and cannot be repeated." },
-        "3": { "title": "Select Products", "desc": "Select the products the promotion will include. You can add multiple products and also use \"Select all\". A product cannot be in two active promotions with overlapping dates." },
-        "4": { "title": "Discount Percentage", "desc": "Set the discount percentage (1-100%). It is automatically applied when creating orders with these products during the validity period." },
-        "5": { "title": "Validity Dates", "desc": "Define when the promotion starts and ends (yyyy-MM-dd format). The end date must be after the start date. When expired, the promotion is marked as expired." },
-        "6": { "title": "Save or Cancel", "desc": "Click \"Create Promotion\" to save or \"Cancel\" to discard changes." },
-        "7": { "title": "Search Promotions", "desc": "Search by promotion name or description." },
-        "8": { "title": "Show Inactive", "desc": "Enable this filter to also see deactivated or expired promotions. Useful for reactivating previous promotions." },
-        "9": { "title": "Promotions Table", "desc": "Each promotion shows name, included products, percentage, validity, and status. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your promotions as CSV or import from a file. Columns: Name*, Description, DiscountPercentage*, StartDate*, EndDate*, Products* (separated by semicolons)."
+        },
+        "1": {
+          "title": "New Promotion",
+          "desc": "Create a promotion with a discount for one or more products with validity dates."
+        },
+        "2": {
+          "title": "Promotion Name",
+          "desc": "Enter a descriptive name (e.g., \"Summer Promo 2026\"). The name must be unique and cannot be repeated."
+        },
+        "3": {
+          "title": "Select Products",
+          "desc": "Select the products the promotion will include. You can add multiple products and also use \"Select all\". A product cannot be in two active promotions with overlapping dates."
+        },
+        "4": {
+          "title": "Discount Percentage",
+          "desc": "Set the discount percentage (1-100%). It is automatically applied when creating orders with these products during the validity period."
+        },
+        "5": {
+          "title": "Validity Dates",
+          "desc": "Define when the promotion starts and ends (yyyy-MM-dd format). The end date must be after the start date. When expired, the promotion is marked as expired."
+        },
+        "6": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Promotion\" to save or \"Cancel\" to discard changes."
+        },
+        "7": {
+          "title": "Search Promotions",
+          "desc": "Search by promotion name or description."
+        },
+        "8": {
+          "title": "Show Inactive",
+          "desc": "Enable this filter to also see deactivated or expired promotions. Useful for reactivating previous promotions."
+        },
+        "9": {
+          "title": "Promotions Table",
+          "desc": "Each promotion shows name, included products, percentage, validity, and status. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "price-lists-tour": {
       "title": "Price Lists Tour",
       "desc": "Learn to create differentiated price lists for different types of clients.",
       "steps": {
-        "0": { "title": "Import and Export", "desc": "Download your lists as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)." },
-        "1": { "title": "New Price List", "desc": "Create a price list to assign specific prices per product based on client type (wholesale, retail, etc.)." },
-        "2": { "title": "List Name", "desc": "Enter a descriptive name (e.g., Wholesale List, Retail List). This field is required." },
-        "3": { "title": "Description", "desc": "Add an optional description to better identify the price list." },
-        "4": { "title": "Save or Cancel", "desc": "Click \"Create List\" to save or \"Cancel\" to discard. You can then assign prices per product." },
-        "5": { "title": "Search Lists", "desc": "Type the price list name to find it quickly." },
-        "6": { "title": "Show Inactive", "desc": "Toggle this switch to see deactivated price lists. By default only active ones are shown." },
-        "7": { "title": "Lists Table", "desc": "Each list shows name, description, last modified, and status. You can select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Import and Export",
+          "desc": "Download your lists as CSV or import from a file for bulk uploads. The file requires name (required) and description (optional)."
+        },
+        "1": {
+          "title": "New Price List",
+          "desc": "Create a price list to assign specific prices per product based on client type (wholesale, retail, etc.)."
+        },
+        "2": {
+          "title": "List Name",
+          "desc": "Enter a descriptive name (e.g., Wholesale List, Retail List). This field is required."
+        },
+        "3": {
+          "title": "Description",
+          "desc": "Add an optional description to better identify the price list."
+        },
+        "4": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create List\" to save or \"Cancel\" to discard. You can then assign prices per product."
+        },
+        "5": {
+          "title": "Search Lists",
+          "desc": "Type the price list name to find it quickly."
+        },
+        "6": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to see deactivated price lists. By default only active ones are shown."
+        },
+        "7": {
+          "title": "Lists Table",
+          "desc": "Each list shows name, description, last modified, and status. You can select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "orders-tour": {
       "title": "Orders Tour",
       "desc": "Learn to create orders, track them, and manage their status.",
       "steps": {
-        "0": { "title": "Search Orders", "desc": "Type the order number or client name to find it quickly. The search filters in real time." },
-        "1": { "title": "Date Filter", "desc": "Select a date range to see only orders from that period. By default shows the last 30 days." },
-        "2": { "title": "Status Filter", "desc": "Filter orders by status: Draft, Pending, Confirmed, In Process, Delivered, or Canceled." },
-        "3": { "title": "Salesperson Filter", "desc": "Filter orders by salesperson to see individual team performance. Only visible to administrators." },
-        "4": { "title": "Sale Type", "desc": "Filter between Pre-sale (order delivered later) and Direct Sale (delivered immediately)." },
-        "5": { "title": "Order List", "desc": "Each order shows its number, client, salesperson, date, status, type, and total. Click on the action icons to view details, edit, or delete." },
-        "6": { "title": "Create New Order", "desc": "Click here to create an order. A form will open where you select a client, add products, and the system calculates totals automatically." },
-        "7": { "title": "Select Client", "desc": "First select the client placing the order. You can search by name to find them quickly." },
-        "8": { "title": "Add Products", "desc": "Search for a product, set the quantity, and click \"Add\". You can add multiple products to the same order." },
-        "9": { "title": "Product List", "desc": "Here the added products appear with their quantity, unit price, and total. You can modify quantities or remove products. The system calculates subtotal, tax, and total automatically." },
-        "10": { "title": "Order Notes", "desc": "Add comments or special instructions for this order (delivery address, preferred schedule, etc.)." }
+        "0": {
+          "title": "Search Orders",
+          "desc": "Type the order number or client name to find it quickly. The search filters in real time."
+        },
+        "1": {
+          "title": "Date Filter",
+          "desc": "Select a date range to see only orders from that period. By default shows the last 30 days."
+        },
+        "2": {
+          "title": "Status Filter",
+          "desc": "Filter orders by status: Draft, Pending, Confirmed, In Process, Delivered, or Canceled."
+        },
+        "3": {
+          "title": "Salesperson Filter",
+          "desc": "Filter orders by salesperson to see individual team performance. Only visible to administrators."
+        },
+        "4": {
+          "title": "Sale Type",
+          "desc": "Filter between Pre-sale (order delivered later) and Direct Sale (delivered immediately)."
+        },
+        "5": {
+          "title": "Order List",
+          "desc": "Each order shows its number, client, salesperson, date, status, type, and total. Click on the action icons to view details, edit, or delete."
+        },
+        "6": {
+          "title": "Create New Order",
+          "desc": "Click here to create an order. A form will open where you select a client, add products, and the system calculates totals automatically."
+        },
+        "7": {
+          "title": "Select Client",
+          "desc": "First select the client placing the order. You can search by name to find them quickly."
+        },
+        "8": {
+          "title": "Add Products",
+          "desc": "Search for a product, set the quantity, and click \"Add\". You can add multiple products to the same order."
+        },
+        "9": {
+          "title": "Product List",
+          "desc": "Here the added products appear with their quantity, unit price, and total. You can modify quantities or remove products. The system calculates subtotal, tax, and total automatically."
+        },
+        "10": {
+          "title": "Order Notes",
+          "desc": "Add comments or special instructions for this order (delivery address, preferred schedule, etc.)."
+        }
       }
     },
     "inventory-tour": {
       "title": "Inventory Tour",
       "desc": "Learn to manage your warehouse inventory and monitor stock levels.",
       "steps": {
-        "0": { "title": "Import / Export", "desc": "Export your complete inventory to CSV (product, barcode, quantity, min/max stock). You can also import from a CSV — if the product already has inventory, its values are updated." },
-        "1": { "title": "Add to Inventory", "desc": "Click here to register a new product in the inventory with its initial quantity, minimum stock, and maximum stock." },
-        "2": { "title": "Select Product", "desc": "Choose the product you want to add to inventory. Only products without an inventory record are shown. Search by name or barcode." },
-        "3": { "title": "Current Quantity", "desc": "Define how many units are available in the warehouse. This is the starting point; then movements (entries, exits, adjustments) update this value automatically." },
-        "4": { "title": "Min and Max Stock", "desc": "Minimum stock alerts you when the product is running low. Maximum stock helps you avoid overstock. When stock falls to minimum, the row is marked in red." },
-        "5": { "title": "Save or Cancel", "desc": "Click \"Add\" to register the product in inventory or \"Cancel\" to discard." },
-        "6": { "title": "Search Inventory", "desc": "Filter the list by typing the product name or code. The search applies in real time." },
-        "7": { "title": "Inventory Table", "desc": "Each row shows product, unit, stock, min/max stock. Click a row to edit its values. Low-stock products are highlighted with an alert indicator." },
-        "8": { "title": "Min/Max Stock Columns", "desc": "Configure these values for each product. When stock drops below minimum, an alert triangle appears. Use this to know when to restock." }
+        "0": {
+          "title": "Import / Export",
+          "desc": "Export your complete inventory to CSV (product, barcode, quantity, min/max stock). You can also import from a CSV — if the product already has inventory, its values are updated."
+        },
+        "1": {
+          "title": "Add to Inventory",
+          "desc": "Click here to register a new product in the inventory with its initial quantity, minimum stock, and maximum stock."
+        },
+        "2": {
+          "title": "Select Product",
+          "desc": "Choose the product you want to add to inventory. Only products without an inventory record are shown. Search by name or barcode."
+        },
+        "3": {
+          "title": "Current Quantity",
+          "desc": "Define how many units are available in the warehouse. This is the starting point; then movements (entries, exits, adjustments) update this value automatically."
+        },
+        "4": {
+          "title": "Min and Max Stock",
+          "desc": "Minimum stock alerts you when the product is running low. Maximum stock helps you avoid overstock. When stock falls to minimum, the row is marked in red."
+        },
+        "5": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Add\" to register the product in inventory or \"Cancel\" to discard."
+        },
+        "6": {
+          "title": "Search Inventory",
+          "desc": "Filter the list by typing the product name or code. The search applies in real time."
+        },
+        "7": {
+          "title": "Inventory Table",
+          "desc": "Each row shows product, unit, stock, min/max stock. Click a row to edit its values. Low-stock products are highlighted with an alert indicator."
+        },
+        "8": {
+          "title": "Min/Max Stock Columns",
+          "desc": "Configure these values for each product. When stock drops below minimum, an alert triangle appears. Use this to know when to restock."
+        }
       }
     },
     "movements-tour": {
       "title": "Movements Tour",
       "desc": "Learn to record inventory entries, exits, and adjustments.",
       "steps": {
-        "0": { "title": "Export Inventory", "desc": "Download your complete inventory to CSV from here. Useful for backups or Excel analysis." },
-        "1": { "title": "New Movement", "desc": "Record an entry (merchandise from suppliers), exit (sale to clients), or adjustment (correction by physical count)." },
-        "2": { "title": "Select Product", "desc": "Choose the product to record the movement for. Its current stock is shown so you know what's available." },
-        "3": { "title": "Movement Type", "desc": "Select Entry (merchandise arrives at warehouse), Exit (merchandise leaves), or Adjustment (inventory correction). If there's no stock, \"Exit\" is automatically disabled." },
-        "4": { "title": "Quantity", "desc": "Define how many units enter, exit, or are adjusted. The system shows you the projected resulting stock in real time." },
-        "5": { "title": "Movement Reason", "desc": "Each type has specific reasons: Entry → Purchase, Return, Transfer. Exit → Sale, Shrinkage, Return to supplier. Adjustment → Inventory adjustment, Shrinkage." },
-        "6": { "title": "Save or Cancel", "desc": "Click \"Save\" to record the movement. The inventory will be updated automatically with the indicated quantity." },
-        "7": { "title": "Search Movements", "desc": "Filter the history by typing the product name. The search applies in real time." },
-        "8": { "title": "Type Filter", "desc": "Filter movements by type: Entry (merchandise arrives), Exit (merchandise leaves), or Adjustment (inventory corrections)." },
-        "9": { "title": "Reason Filter", "desc": "Filter by specific reason: Purchase, Sale, Return, Shrinkage, Inventory adjustment, or Transfer." },
-        "10": { "title": "Movement History", "desc": "Each row shows date, product, type, quantity (green +entry, red -exit), previous → new stock, reason, and user. Use filters to find specific movements." }
+        "0": {
+          "title": "Export Inventory",
+          "desc": "Download your complete inventory to CSV from here. Useful for backups or Excel analysis."
+        },
+        "1": {
+          "title": "New Movement",
+          "desc": "Record an entry (merchandise from suppliers), exit (sale to clients), or adjustment (correction by physical count)."
+        },
+        "2": {
+          "title": "Select Product",
+          "desc": "Choose the product to record the movement for. Its current stock is shown so you know what's available."
+        },
+        "3": {
+          "title": "Movement Type",
+          "desc": "Select Entry (merchandise arrives at warehouse), Exit (merchandise leaves), or Adjustment (inventory correction). If there's no stock, \"Exit\" is automatically disabled."
+        },
+        "4": {
+          "title": "Quantity",
+          "desc": "Define how many units enter, exit, or are adjusted. The system shows you the projected resulting stock in real time."
+        },
+        "5": {
+          "title": "Movement Reason",
+          "desc": "Each type has specific reasons: Entry → Purchase, Return, Transfer. Exit → Sale, Shrinkage, Return to supplier. Adjustment → Inventory adjustment, Shrinkage."
+        },
+        "6": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Save\" to record the movement. The inventory will be updated automatically with the indicated quantity."
+        },
+        "7": {
+          "title": "Search Movements",
+          "desc": "Filter the history by typing the product name. The search applies in real time."
+        },
+        "8": {
+          "title": "Type Filter",
+          "desc": "Filter movements by type: Entry (merchandise arrives), Exit (merchandise leaves), or Adjustment (inventory corrections)."
+        },
+        "9": {
+          "title": "Reason Filter",
+          "desc": "Filter by specific reason: Purchase, Sale, Return, Shrinkage, Inventory adjustment, or Transfer."
+        },
+        "10": {
+          "title": "Movement History",
+          "desc": "Each row shows date, product, type, quantity (green +entry, red -exit), previous → new stock, reason, and user. Use filters to find specific movements."
+        }
       }
     },
     "routes-tour": {
       "title": "Routes Tour",
       "desc": "Learn to assign visit routes to your salespeople and track their progress.",
       "steps": {
-        "0": { "title": "Export Routes", "desc": "Download all your routes as a CSV file with name, date, salesperson, zone, status, stops, and schedules. Useful for reports and analysis." },
-        "1": { "title": "New Route", "desc": "Create a sales route assigned to a salesperson. Define zone, date, and estimated schedule." },
-        "2": { "title": "Route Name", "desc": "Enter a descriptive name to identify the route (e.g., \"Downtown Route - Monday\", \"North Zone AM\"). Maximum 100 characters." },
-        "3": { "title": "Assigned Salesperson", "desc": "Select the salesperson who will perform this route. Only appears when creating; when editing, the salesperson cannot be changed." },
-        "4": { "title": "Zone (optional)", "desc": "Assign a geographic zone to the route. This helps organize routes by territory and facilitates filtering." },
-        "5": { "title": "Route Date", "desc": "Select the scheduled date. Today's date is used by default. Format yyyy-MM-dd." },
-        "6": { "title": "Estimated Schedule", "desc": "Define the estimated start and end times for the route. They are optional and serve to plan the salesperson's workday." },
-        "7": { "title": "Save or Cancel", "desc": "Click \"Create Route\" to save or \"Cancel\" to discard changes." },
-        "8": { "title": "Search Filters", "desc": "Filter routes by text, status (Planned, In Progress, Completed, etc.), zone, and assigned salesperson. Administrators see the salesperson filter." },
-        "9": { "title": "Show Inactive", "desc": "Toggle this switch to also see deactivated routes. By default only active ones are shown." },
-        "10": { "title": "Routes Table", "desc": "Each route shows name, zone, salesperson, date, status, completed/total stops, and active toggle. Select multiple with checkboxes for batch activate/deactivate." }
+        "0": {
+          "title": "Export Routes",
+          "desc": "Download all your routes as a CSV file with name, date, salesperson, zone, status, stops, and schedules. Useful for reports and analysis."
+        },
+        "1": {
+          "title": "New Route",
+          "desc": "Create a sales route assigned to a salesperson. Define zone, date, and estimated schedule."
+        },
+        "2": {
+          "title": "Route Name",
+          "desc": "Enter a descriptive name to identify the route (e.g., \"Downtown Route - Monday\", \"North Zone AM\"). Maximum 100 characters."
+        },
+        "3": {
+          "title": "Assigned Salesperson",
+          "desc": "Select the salesperson who will perform this route. Only appears when creating; when editing, the salesperson cannot be changed."
+        },
+        "4": {
+          "title": "Zone (optional)",
+          "desc": "Assign a geographic zone to the route. This helps organize routes by territory and facilitates filtering."
+        },
+        "5": {
+          "title": "Route Date",
+          "desc": "Select the scheduled date. Today's date is used by default. Format yyyy-MM-dd."
+        },
+        "6": {
+          "title": "Estimated Schedule",
+          "desc": "Define the estimated start and end times for the route. They are optional and serve to plan the salesperson's workday."
+        },
+        "7": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Create Route\" to save or \"Cancel\" to discard changes."
+        },
+        "8": {
+          "title": "Search Filters",
+          "desc": "Filter routes by text, status (Planned, In Progress, Completed, etc.), zone, and assigned salesperson. Administrators see the salesperson filter."
+        },
+        "9": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to also see deactivated routes. By default only active ones are shown."
+        },
+        "10": {
+          "title": "Routes Table",
+          "desc": "Each route shows name, zone, salesperson, date, status, completed/total stops, and active toggle. Select multiple with checkboxes for batch activate/deactivate."
+        }
       }
     },
     "routes-manage-tour": {
@@ -6736,163 +7306,400 @@
       "desc": "Learn to manage operational routes: load inventory, track progress, and close routes.",
       "doneBtn": "Go to detail →",
       "steps": {
-        "0": { "title": "Export Routes", "desc": "Download a CSV with all routes including name, date, salesperson, zone, status, stops, and schedules." },
-        "1": { "title": "Search Filters", "desc": "Filter routes by date, salesperson, and status. Use \"+ More filters\" to see the status filter with options: Planned, In Progress, Completed, Canceled, Pending Acceptance, Load Accepted, or Closed." },
-        "2": { "title": "Date Filter", "desc": "Select a date range (from/to) to see only routes scheduled in that period." },
-        "3": { "title": "User Filter", "desc": "Filter routes by assigned salesperson to see their workload and tracking." },
-        "4": { "title": "More Filters", "desc": "Click here to show or hide the status filter. Allows further narrowing of results by the operational stage of each route." },
-        "5": { "title": "Refresh List", "desc": "Reload the list with the most recent data from the server. Useful when another user is modifying routes in parallel." },
-        "6": { "title": "Operational Routes List", "desc": "Each row shows name, salesperson, zone, date, status, and stop progress. Click any row to open its operational detail." },
-        "7": { "title": "Open Route Detail", "desc": "Click a route to manage it. Based on its status: \"Planned\" opens the inventory loading screen, \"In Progress\" or \"Pending Acceptance\" shows tracking, and \"Completed\" opens the closing where you reconcile inventory and cash." }
+        "0": {
+          "title": "Export Routes",
+          "desc": "Download a CSV with all routes including name, date, salesperson, zone, status, stops, and schedules."
+        },
+        "1": {
+          "title": "Search Filters",
+          "desc": "Filter routes by date, salesperson, and status. Use \"+ More filters\" to see the status filter with options: Planned, In Progress, Completed, Canceled, Pending Acceptance, Load Accepted, or Closed."
+        },
+        "2": {
+          "title": "Date Filter",
+          "desc": "Select a date range (from/to) to see only routes scheduled in that period."
+        },
+        "3": {
+          "title": "User Filter",
+          "desc": "Filter routes by assigned salesperson to see their workload and tracking."
+        },
+        "4": {
+          "title": "More Filters",
+          "desc": "Click here to show or hide the status filter. Allows further narrowing of results by the operational stage of each route."
+        },
+        "5": {
+          "title": "Refresh List",
+          "desc": "Reload the list with the most recent data from the server. Useful when another user is modifying routes in parallel."
+        },
+        "6": {
+          "title": "Operational Routes List",
+          "desc": "Each row shows name, salesperson, zone, date, status, and stop progress. Click any row to open its operational detail."
+        },
+        "7": {
+          "title": "Open Route Detail",
+          "desc": "Click a route to manage it. Based on its status: \"Planned\" opens the inventory loading screen, \"In Progress\" or \"Pending Acceptance\" shows tracking, and \"Completed\" opens the closing where you reconcile inventory and cash."
+        }
       }
     },
     "routes-load-tour": {
       "title": "Inventory Loading Tour",
       "desc": "Learn to load inventory onto a route before the salesperson goes out to the field.",
       "steps": {
-        "0": { "title": "Load Summary", "desc": "Real-time indicators: total deliveries, products loaded, and total assigned amount. They update automatically when adding products or orders." },
-        "1": { "title": "Save and Refresh", "desc": "Use \"Save\" to save the initial cash and comments. The refresh button reloads the route data from the server." },
-        "2": { "title": "Salesperson and Initial Cash", "desc": "Shows the salesperson assigned to the route. Define the initial cash amount (travel expenses/change) and comments for the salesperson." },
-        "3": { "title": "Orders for Delivery", "desc": "Confirmed orders that the salesperson must deliver on their route. Their products are automatically added to the load. Use \"Add orders\" to assign orders from the catalog." },
-        "4": { "title": "Products for Direct Sale", "desc": "Add additional products for the salesperson to carry and sell directly (without a prior order). Select product, quantity, and unit price." },
-        "5": { "title": "Consolidated Load Table", "desc": "Summary of EVERYTHING that will be loaded: quantity assigned for delivery, for direct sale, total, warehouse availability, price, and total amount. If \"Available\" shows in red, there's not enough stock." },
-        "6": { "title": "Send to Load", "desc": "When everything is ready, click here to confirm the load and send it to the salesperson. They will receive a notification on their mobile app to accept the load." }
+        "0": {
+          "title": "Load Summary",
+          "desc": "Real-time indicators: total deliveries, products loaded, and total assigned amount. They update automatically when adding products or orders."
+        },
+        "1": {
+          "title": "Save and Refresh",
+          "desc": "Use \"Save\" to save the initial cash and comments. The refresh button reloads the route data from the server."
+        },
+        "2": {
+          "title": "Salesperson and Initial Cash",
+          "desc": "Shows the salesperson assigned to the route. Define the initial cash amount (travel expenses/change) and comments for the salesperson."
+        },
+        "3": {
+          "title": "Orders for Delivery",
+          "desc": "Confirmed orders that the salesperson must deliver on their route. Their products are automatically added to the load. Use \"Add orders\" to assign orders from the catalog."
+        },
+        "4": {
+          "title": "Products for Direct Sale",
+          "desc": "Add additional products for the salesperson to carry and sell directly (without a prior order). Select product, quantity, and unit price."
+        },
+        "5": {
+          "title": "Consolidated Load Table",
+          "desc": "Summary of EVERYTHING that will be loaded: quantity assigned for delivery, for direct sale, total, warehouse availability, price, and total amount. If \"Available\" shows in red, there's not enough stock."
+        },
+        "6": {
+          "title": "Send to Load",
+          "desc": "When everything is ready, click here to confirm the load and send it to the salesperson. They will receive a notification on their mobile app to accept the load."
+        }
       }
     },
     "routes-close-tour": {
       "title": "Route Closing Tour",
       "desc": "Learn to close a route: reconcile inventory, verify cash, and record returns.",
       "steps": {
-        "0": { "title": "Status Tabs", "desc": "The tabs reflect the route stage: Pending Acceptance, Load Accepted, Completed, and Closed. The active tab is automatically selected based on the route status." },
-        "1": { "title": "Route Details", "desc": "Information about the assigned salesperson, route name, geographic zone, and creation date. Provides the complete operation context." },
-        "2": { "title": "Financial Summary", "desc": "Three cards: Incoming Cash (cash sales + collected deliveries + collections), Balance Movements (credit sales + credit deliveries), and Other Movements (pre-sales + returns). Shows the complete operation breakdown." },
-        "3": { "title": "Balance: Start vs Close", "desc": "Compare the route value and initial cash against the amount to receive, received, and the difference. A positive difference (green) indicates surplus, negative (red) indicates shortage." },
-        "4": { "title": "Return Inventory", "desc": "Product-by-product reconciliation table: initial quantity, sold, delivered, returned, shrinkage, received at warehouse, and in vehicle. The system calculates the difference automatically — it must be 0 when closing." },
-        "5": { "title": "Inventory Actions", "desc": "Quick buttons: \"Warehouse\" sends all the difference to warehouse reception, \"Load\" leaves it in the vehicle for the next route. Adjust with the steppers (+/-) on each row." },
-        "6": { "title": "Close Route", "desc": "When all reconciliation is complete and you've entered the received amount, click here to close the route permanently. This action cannot be undone." }
+        "0": {
+          "title": "Status Tabs",
+          "desc": "The tabs reflect the route stage: Pending Acceptance, Load Accepted, Completed, and Closed. The active tab is automatically selected based on the route status."
+        },
+        "1": {
+          "title": "Route Details",
+          "desc": "Information about the assigned salesperson, route name, geographic zone, and creation date. Provides the complete operation context."
+        },
+        "2": {
+          "title": "Financial Summary",
+          "desc": "Three cards: Incoming Cash (cash sales + collected deliveries + collections), Balance Movements (credit sales + credit deliveries), and Other Movements (pre-sales + returns). Shows the complete operation breakdown."
+        },
+        "3": {
+          "title": "Balance: Start vs Close",
+          "desc": "Compare the route value and initial cash against the amount to receive, received, and the difference. A positive difference (green) indicates surplus, negative (red) indicates shortage."
+        },
+        "4": {
+          "title": "Return Inventory",
+          "desc": "Product-by-product reconciliation table: initial quantity, sold, delivered, returned, shrinkage, received at warehouse, and in vehicle. The system calculates the difference automatically — it must be 0 when closing."
+        },
+        "5": {
+          "title": "Inventory Actions",
+          "desc": "Quick buttons: \"Warehouse\" sends all the difference to warehouse reception, \"Load\" leaves it in the vehicle for the next route. Adjust with the steppers (+/-) on each row."
+        },
+        "6": {
+          "title": "Close Route",
+          "desc": "When all reconciliation is complete and you've entered the received amount, click here to close the route permanently. This action cannot be undone."
+        }
       }
     },
     "deliveries-tour": {
       "title": "Deliveries Tour",
       "desc": "Learn to track deliveries from your sales routes.",
       "steps": {
-        "0": { "title": "Delivery Indicators", "desc": "Summary cards: in-progress deliveries, completed, pending, and completion percentage. They give you a quick overview of your delivery status." },
-        "1": { "title": "Search Deliveries", "desc": "Type the route name or salesperson name to filter the delivery list." },
-        "2": { "title": "Status Filter", "desc": "Filter deliveries by status: In Progress, Completed, Pending, or Canceled." },
-        "3": { "title": "Deliveries Table", "desc": "Each row shows the route, salesperson, stop progress, and status. Use the action buttons to start, complete, or cancel deliveries." },
-        "4": { "title": "Refresh", "desc": "Reload the delivery data to see the most recent status." }
+        "0": {
+          "title": "Delivery Indicators",
+          "desc": "Summary cards: in-progress deliveries, completed, pending, and completion percentage. They give you a quick overview of your delivery status."
+        },
+        "1": {
+          "title": "Search Deliveries",
+          "desc": "Type the route name or salesperson name to filter the delivery list."
+        },
+        "2": {
+          "title": "Status Filter",
+          "desc": "Filter deliveries by status: In Progress, Completed, Pending, or Canceled."
+        },
+        "3": {
+          "title": "Deliveries Table",
+          "desc": "Each row shows the route, salesperson, stop progress, and status. Use the action buttons to start, complete, or cancel deliveries."
+        },
+        "4": {
+          "title": "Refresh",
+          "desc": "Reload the delivery data to see the most recent status."
+        }
       }
     },
     "calendar-tour": {
       "title": "Calendar Tour",
       "desc": "Learn to schedule client visits and manage your salespeople's agenda.",
       "steps": {
-        "0": { "title": "Schedule Visit", "desc": "Click here to schedule a new visit. Select salesperson, client, date, and time." },
-        "1": { "title": "New Prospect Rules", "desc": "Configure automatic rules to schedule visits to new clients or those without recent activity." },
-        "2": { "title": "Salesperson Filter", "desc": "Select a salesperson to see only their scheduled visits on the calendar." },
-        "3": { "title": "Calendar Navigation", "desc": "Use the arrows to move between months. You can also switch between weekly and daily views." },
-        "4": { "title": "Calendar View", "desc": "Scheduled visits appear as events on the calendar. Click on a day to see the detail or add a new visit." }
+        "0": {
+          "title": "Schedule Visit",
+          "desc": "Click here to schedule a new visit. Select salesperson, client, date, and time."
+        },
+        "1": {
+          "title": "New Prospect Rules",
+          "desc": "Configure automatic rules to schedule visits to new clients or those without recent activity."
+        },
+        "2": {
+          "title": "Salesperson Filter",
+          "desc": "Select a salesperson to see only their scheduled visits on the calendar."
+        },
+        "3": {
+          "title": "Calendar Navigation",
+          "desc": "Use the arrows to move between months. You can also switch between weekly and daily views."
+        },
+        "4": {
+          "title": "Calendar View",
+          "desc": "Scheduled visits appear as events on the calendar. Click on a day to see the detail or add a new visit."
+        }
       }
     },
     "visits-tour": {
       "title": "Visits Tour",
       "desc": "Learn to manage the client visit history and record results.",
       "steps": {
-        "0": { "title": "Day Summary", "desc": "Visit KPIs: total scheduled, completed, with sale, pending, and conversion rate." },
-        "1": { "title": "Visit List", "desc": "All visits with their status, client, and result. Click a row to see details. From there you can start (check-in) or finish (check-out) the visit." },
-        "2": { "title": "Calendar View", "desc": "Toggle between list and calendar view. In the calendar you can click a day to schedule a visit." },
-        "3": { "title": "Schedule Visit", "desc": "Open the form to schedule a new visit." },
-        "4": { "title": "Select Client", "desc": "Search and select the client you're going to visit. It is the only required field." },
-        "5": { "title": "Visit Type", "desc": "Select the reason: Routine (regular visit), Collection, Delivery, Prospecting, Follow-up, or Other." },
-        "6": { "title": "Scheduled Date", "desc": "Select date and time. Leave empty for an immediate visit (will be recorded with today's date)." },
-        "7": { "title": "Save or Cancel", "desc": "Click \"Schedule Visit\" to save or \"Cancel\" to discard." }
+        "0": {
+          "title": "Day Summary",
+          "desc": "Visit KPIs: total scheduled, completed, with sale, pending, and conversion rate."
+        },
+        "1": {
+          "title": "Visit List",
+          "desc": "All visits with their status, client, and result. Click a row to see details. From there you can start (check-in) or finish (check-out) the visit."
+        },
+        "2": {
+          "title": "Calendar View",
+          "desc": "Toggle between list and calendar view. In the calendar you can click a day to schedule a visit."
+        },
+        "3": {
+          "title": "Schedule Visit",
+          "desc": "Open the form to schedule a new visit."
+        },
+        "4": {
+          "title": "Select Client",
+          "desc": "Search and select the client you're going to visit. It is the only required field."
+        },
+        "5": {
+          "title": "Visit Type",
+          "desc": "Select the reason: Routine (regular visit), Collection, Delivery, Prospecting, Follow-up, or Other."
+        },
+        "6": {
+          "title": "Scheduled Date",
+          "desc": "Select date and time. Leave empty for an immediate visit (will be recorded with today's date)."
+        },
+        "7": {
+          "title": "Save or Cancel",
+          "desc": "Click \"Schedule Visit\" to save or \"Cancel\" to discard."
+        }
       }
     },
     "automations-tour": {
       "title": "Automations Tour",
       "desc": "Learn to activate automatic recipes so the system works for you.",
       "steps": {
-        "0": { "title": "Automations Summary", "desc": "These cards show how many automations you have active, how many times they've run, and when the last execution was." },
-        "1": { "title": "Categories", "desc": "Filter automations by type: Collections (payment reminders), Sales (new clients), Inventory (low stock), and Operations (daily summaries)." },
-        "2": { "title": "Available Recipes", "desc": "Each card is an automation. The person icon indicates who it notifies: <b>Admin</b>, <b>Salespeople</b>, or <b>All</b>. The system automatically chooses whether to send push (alerts) or email (reports)." },
-        "3": { "title": "Enable / Disable", "desc": "Use the switch to enable or disable an automation. When enabled, the system will start running it automatically according to its schedule." },
-        "4": { "title": "Configure Parameters", "desc": "Click the gear icon to open the configuration. Let's see what you can adjust inside." },
-        "5": { "title": "Recipe Description", "desc": "Here it describes exactly what this automation does: when it runs, what condition it detects, and what action it takes." },
-        "6": { "title": "Configurable Parameters", "desc": "Adjust thresholds, frequencies, schedules, and especially <b>who to notify</b>: only the administrator, only the salespeople, or both. Each automation has different parameters based on its function." },
-        "7": { "title": "Save Configuration", "desc": "Click \"Save Changes\" to apply your adjustments. Changes take effect on the next automation execution." },
-        "8": { "title": "Execution History", "desc": "Here you can see when each automation ran and whether it was successful. Shows the action taken and any errors that occurred." }
+        "0": {
+          "title": "Automations Summary",
+          "desc": "These cards show how many automations you have active, how many times they've run, and when the last execution was."
+        },
+        "1": {
+          "title": "Categories",
+          "desc": "Filter automations by type: Collections (payment reminders), Sales (new clients), Inventory (low stock), and Operations (daily summaries)."
+        },
+        "2": {
+          "title": "Available Recipes",
+          "desc": "Each card is an automation. The person icon indicates who it notifies: <b>Admin</b>, <b>Salespeople</b>, or <b>All</b>. The system automatically chooses whether to send push (alerts) or email (reports)."
+        },
+        "3": {
+          "title": "Enable / Disable",
+          "desc": "Use the switch to enable or disable an automation. When enabled, the system will start running it automatically according to its schedule."
+        },
+        "4": {
+          "title": "Configure Parameters",
+          "desc": "Click the gear icon to open the configuration. Let's see what you can adjust inside."
+        },
+        "5": {
+          "title": "Recipe Description",
+          "desc": "Here it describes exactly what this automation does: when it runs, what condition it detects, and what action it takes."
+        },
+        "6": {
+          "title": "Configurable Parameters",
+          "desc": "Adjust thresholds, frequencies, schedules, and especially <b>who to notify</b>: only the administrator, only the salespeople, or both. Each automation has different parameters based on its function."
+        },
+        "7": {
+          "title": "Save Configuration",
+          "desc": "Click \"Save Changes\" to apply your adjustments. Changes take effect on the next automation execution."
+        },
+        "8": {
+          "title": "Execution History",
+          "desc": "Here you can see when each automation ran and whether it was successful. Shows the action taken and any errors that occurred."
+        }
       }
     },
     "cobranza-tour": {
       "title": "Collections Tour",
       "desc": "Learn to record payments, review who owes you, and export your portfolio.",
       "steps": {
-        "0": { "title": "Portfolio Summary", "desc": "These cards show your portfolio summary: how much has been sold, how much you've collected, how much is left to collect, and how many clients have debt." },
-        "1": { "title": "Period Filter", "desc": "Select a date range to query payments and balances for that period. Press Update to apply." },
-        "2": { "title": "Record a Payment", "desc": "Click here to record a client payment. Select the client, their pending order, amount, and payment method." },
-        "3": { "title": "Select Client", "desc": "Select the client who made the payment. Their orders with pending balances are loaded automatically." },
-        "4": { "title": "Pending Order", "desc": "When selecting an order, the amount is automatically filled with the pending balance. If the client has multiple orders, you can search by number." },
-        "5": { "title": "Amount and Payment Method", "desc": "Confirm the amount to collect and select the payment method (Cash, Transfer, Check, Card). You can also add date, reference, and notes." },
-        "6": { "title": "Available Views", "desc": "Use these tabs to switch between the received payments history and the list of clients who owe you money." },
-        "7": { "title": "Payment History", "desc": "Complete history of received payments. You can sort by date, client, or amount. Click the eye icon to see the client's account statement." },
-        "8": { "title": "Who Owes You?", "desc": "Shows each client with their pending debt and a progress bar toward full payment. Click a client to see their detailed account statement by order." }
+        "0": {
+          "title": "Portfolio Summary",
+          "desc": "These cards show your portfolio summary: how much has been sold, how much you've collected, how much is left to collect, and how many clients have debt."
+        },
+        "1": {
+          "title": "Period Filter",
+          "desc": "Select a date range to query payments and balances for that period. Press Update to apply."
+        },
+        "2": {
+          "title": "Record a Payment",
+          "desc": "Click here to record a client payment. Select the client, their pending order, amount, and payment method."
+        },
+        "3": {
+          "title": "Select Client",
+          "desc": "Select the client who made the payment. Their orders with pending balances are loaded automatically."
+        },
+        "4": {
+          "title": "Pending Order",
+          "desc": "When selecting an order, the amount is automatically filled with the pending balance. If the client has multiple orders, you can search by number."
+        },
+        "5": {
+          "title": "Amount and Payment Method",
+          "desc": "Confirm the amount to collect and select the payment method (Cash, Transfer, Check, Card). You can also add date, reference, and notes."
+        },
+        "6": {
+          "title": "Available Views",
+          "desc": "Use these tabs to switch between the received payments history and the list of clients who owe you money."
+        },
+        "7": {
+          "title": "Payment History",
+          "desc": "Complete history of received payments. You can sort by date, client, or amount. Click the eye icon to see the client's account statement."
+        },
+        "8": {
+          "title": "Who Owes You?",
+          "desc": "Shows each client with their pending debt and a progress bar toward full payment. Click a client to see their detailed account statement by order."
+        }
       }
     },
     "reports-tour-ops": {
       "title": "Reports Tour",
       "desc": "Explore the available sales, client, and inventory reports.",
       "steps": {
-        "0": { "title": "Report Catalog", "desc": "Here are all reports organized by category: Sales, Clients, and Inventory. Click any card to see the full report with charts and tables." }
+        "0": {
+          "title": "Report Catalog",
+          "desc": "Here are all reports organized by category: Sales, Clients, and Inventory. Click any card to see the full report with charts and tables."
+        }
       }
     },
     "users-tour": {
       "title": "Users Tour",
       "desc": "Learn to manage system users: salespeople, supervisors, and administrators.",
       "steps": {
-        "0": { "title": "Create New User", "desc": "Register a new user with name, email, password, and role. Available roles are: Administrator, Supervisor, and Mobile User (salesperson)." },
-        "1": { "title": "New User Form", "desc": "Registration form with name, email, role, and permissions" },
-        "2": { "title": "Filter by Role", "desc": "Filter the list by user type: Administrator, Supervisor, or Mobile User. Useful for managing permissions by group." },
-        "3": { "title": "User Cards", "desc": "Each card shows the name, role, status, last session, and salesperson metrics: orders, returns, and visit effectiveness. You can select multiple for batch activate/deactivate." }
+        "0": {
+          "title": "Create New User",
+          "desc": "Register a new user with name, email, password, and role. Available roles are: Administrator, Supervisor, and Mobile User (salesperson)."
+        },
+        "1": {
+          "title": "New User Form",
+          "desc": "Registration form with name, email, role, and permissions"
+        },
+        "2": {
+          "title": "Filter by Role",
+          "desc": "Filter the list by user type: Administrator, Supervisor, or Mobile User. Useful for managing permissions by group."
+        },
+        "3": {
+          "title": "User Cards",
+          "desc": "Each card shows the name, role, status, last session, and salesperson metrics: orders, returns, and visit effectiveness. You can select multiple for batch activate/deactivate."
+        }
       }
     },
     "forms-tour": {
       "title": "Forms Tour",
       "desc": "Learn about custom form management in the system.",
       "steps": {
-        "0": { "title": "Create Form", "desc": "Create a new custom form with the fields you need for your processes." },
-        "1": { "title": "Show Inactive", "desc": "Toggle this switch to see deactivated forms." },
-        "2": { "title": "Form List", "desc": "Table with all available forms. Each shows name, type, status, and actions." }
+        "0": {
+          "title": "Create Form",
+          "desc": "Create a new custom form with the fields you need for your processes."
+        },
+        "1": {
+          "title": "Show Inactive",
+          "desc": "Toggle this switch to see deactivated forms."
+        },
+        "2": {
+          "title": "Form List",
+          "desc": "Table with all available forms. Each shows name, type, status, and actions."
+        }
       }
     },
     "devices-tour": {
       "title": "Devices Tour",
       "desc": "Learn to manage devices and active sessions for your team.",
       "steps": {
-        "0": { "title": "Search Devices", "desc": "Filter devices by name, model, or user." },
-        "1": { "title": "User Filter", "desc": "Select a user to see only their devices and active sessions." },
-        "2": { "title": "Devices Table", "desc": "List of devices with user, model, last connection, and status. You can revoke active sessions from here." },
-        "3": { "title": "Refresh", "desc": "Reload the device list to see the most recent data." }
+        "0": {
+          "title": "Search Devices",
+          "desc": "Filter devices by name, model, or user."
+        },
+        "1": {
+          "title": "User Filter",
+          "desc": "Select a user to see only their devices and active sessions."
+        },
+        "2": {
+          "title": "Devices Table",
+          "desc": "List of devices with user, model, last connection, and status. You can revoke active sessions from here."
+        },
+        "3": {
+          "title": "Refresh",
+          "desc": "Reload the device list to see the most recent data."
+        }
       }
     },
     "notifications-tour": {
       "title": "Notifications Tour",
       "desc": "Learn to send and manage notifications for your team.",
       "steps": {
-        "0": { "title": "Send Notification", "desc": "Create and send a new notification to one or more users. You can select type, recipients, and message." },
-        "1": { "title": "Search Notifications", "desc": "Filter notifications by message text or recipient." },
-        "2": { "title": "Type Filter", "desc": "Filter by notification type: Information, Alert, Urgent, etc." },
-        "3": { "title": "Notification List", "desc": "History of all sent notifications with type, message, recipient, date, and read status." }
+        "0": {
+          "title": "Send Notification",
+          "desc": "Create and send a new notification to one or more users. You can select type, recipients, and message."
+        },
+        "1": {
+          "title": "Search Notifications",
+          "desc": "Filter notifications by message text or recipient."
+        },
+        "2": {
+          "title": "Type Filter",
+          "desc": "Filter by notification type: Information, Alert, Urgent, etc."
+        },
+        "3": {
+          "title": "Notification List",
+          "desc": "History of all sent notifications with type, message, recipient, date, and read status."
+        }
       }
     },
     "activity-logs-tour": {
       "title": "Activity Logs Tour",
       "desc": "Learn about the system's activity log for auditing and tracking.",
       "steps": {
-        "0": { "title": "Export Logs", "desc": "Download activity logs in Excel or CSV format for external analysis." },
-        "1": { "title": "Search Logs", "desc": "Filter records by text: username, action description, or entity." },
-        "2": { "title": "Action Filter", "desc": "Filter by action type: Create, Update, Delete, Login, Logout, etc." },
-        "3": { "title": "Entity Filter", "desc": "Filter by affected entity: Client, Product, Order, User, Inventory, etc." },
-        "4": { "title": "Activity Table", "desc": "Each record shows date, user, action performed, affected entity, and details. Useful for auditing and troubleshooting." }
+        "0": {
+          "title": "Export Logs",
+          "desc": "Download activity logs in Excel or CSV format for external analysis."
+        },
+        "1": {
+          "title": "Search Logs",
+          "desc": "Filter records by text: username, action description, or entity."
+        },
+        "2": {
+          "title": "Action Filter",
+          "desc": "Filter by action type: Create, Update, Delete, Login, Logout, etc."
+        },
+        "3": {
+          "title": "Entity Filter",
+          "desc": "Filter by affected entity: Client, Product, Order, User, Inventory, etc."
+        },
+        "4": {
+          "title": "Activity Table",
+          "desc": "Each record shows date, user, action performed, affected entity, and details. Useful for auditing and troubleshooting."
+        }
       }
     }
   }

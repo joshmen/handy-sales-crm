@@ -177,7 +177,7 @@ function PreFacturaContent() {
 
   const loadPreview = useCallback(async () => {
     if (!pedidoId) {
-      setError('No se proporcionó un ID de pedido válido.');
+      setError(t('noOrderId'));
       setLoading(false);
       return;
     }
@@ -239,8 +239,8 @@ function PreFacturaContent() {
 
       toast({
         title: timbrar
-          ? `Factura #${factura.folio} creada y enviada a timbrar`
-          : `Factura #${factura.folio} creada como PENDIENTE`,
+          ? t('invoiceCreatedAndStamped', { folio: factura.folio })
+          : t('invoiceCreated', { folio: factura.folio }),
       });
       router.push('/billing/invoices');
     } catch (err: unknown) {
@@ -250,7 +250,7 @@ function PreFacturaContent() {
         setTimbresModalOpen(true);
       } else {
         toast({
-          title: 'Error al crear factura',
+          title: t('errorCreating'),
           description: apiError.details ? `${apiError.message} — ${apiError.details}` : apiError.message,
           variant: 'destructive',
         });
@@ -275,26 +275,26 @@ function PreFacturaContent() {
     return (
       <PageHeader
         breadcrumbs={[
-          { label: 'Facturación', href: '/billing' },
-          { label: 'Pre-Factura' },
+          { label: t('breadcrumbBilling'), href: '/billing' },
+          { label: t('title') },
         ]}
-        title="Pre-Factura"
+        title={t('title')}
       >
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
-          <h2 className="text-lg font-semibold mb-2">No se pudo cargar la pre-factura</h2>
-          <p className="text-muted-foreground text-sm max-w-md mb-4">{error ?? 'Pedido no encontrado.'}</p>
+          <h2 className="text-lg font-semibold mb-2">{t('loadError')}</h2>
+          <p className="text-muted-foreground text-sm max-w-md mb-4">{error ?? t('orderNotFound')}</p>
           {errorClienteId && (
             <a
               href={`/clients/${errorClienteId}/edit`}
               className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium text-white bg-success hover:bg-success/90 rounded-lg transition-colors"
             >
-              Editar cliente
+              {t('editClient')}
             </a>
           )}
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Regresar
+            {t('goBack')}
           </Button>
         </div>
       </PageHeader>
@@ -306,12 +306,12 @@ function PreFacturaContent() {
   return (<>
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturación', href: '/billing' },
-        { label: 'Facturas', href: '/billing/invoices' },
-        { label: `Pre-Factura — Pedido ${preview.numeroPedido}` },
+        { label: t('breadcrumbBilling'), href: '/billing' },
+        { label: t('breadcrumbInvoices'), href: '/billing/invoices' },
+        { label: t('breadcrumbPreInvoice', { order: preview.numeroPedido }) },
       ]}
-      title={`Pre-Factura — Pedido #${preview.numeroPedido}`}
-      subtitle="Revisa los datos fiscales antes de crear la factura"
+      title={t('titleWithOrder', { order: preview.numeroPedido })}
+      subtitle={t('subtitle')}
     >
       {/* Unmapped Products Warning */}
       {preview.hasUnmappedProducts && (
@@ -340,11 +340,11 @@ function PreFacturaContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Emisor */}
         <div className="bg-card border border-border rounded-xl p-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Emisor</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('issuer')}</h3>
           <p className="font-medium text-sm">{preview.emisorNombre}</p>
           <p className="text-sm text-muted-foreground">RFC: {preview.emisorRfc}</p>
           {preview.emisorRegimenFiscal && (
-            <p className="text-xs text-muted-foreground mt-1">Régimen: {preview.emisorRegimenFiscal}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('regime')}: {preview.emisorRegimenFiscal}</p>
           )}
         </div>
 
@@ -354,10 +354,10 @@ function PreFacturaContent() {
           <p className="font-medium text-sm">{preview.receptorNombre}</p>
           <p className="text-sm text-muted-foreground">RFC: {preview.receptorRfc}</p>
           {preview.receptorRegimenFiscal && (
-            <p className="text-xs text-muted-foreground mt-1">Régimen: {preview.receptorRegimenFiscal}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('regime')}: {preview.receptorRegimenFiscal}</p>
           )}
           {preview.receptorDomicilioFiscal && (
-            <p className="text-xs text-muted-foreground">C.P.: {preview.receptorDomicilioFiscal}</p>
+            <p className="text-xs text-muted-foreground">{t('postalCode')}: {preview.receptorDomicilioFiscal}</p>
           )}
         </div>
       </div>
@@ -365,22 +365,22 @@ function PreFacturaContent() {
       {/* Payment Method / Uso CFDI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-card border border-border rounded-xl p-4">
-          <span className="text-xs text-muted-foreground">Método de Pago</span>
+          <span className="text-xs text-muted-foreground">{t('paymentMethodLabel')}</span>
           <p className="text-sm font-medium mt-0.5">{preview.metodoPago ?? '—'}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
-          <span className="text-xs text-muted-foreground">Forma de Pago</span>
+          <span className="text-xs text-muted-foreground">{t('paymentFormLabel')}</span>
           <p className="text-sm font-medium mt-0.5">{preview.formaPago ?? '—'}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
-          <span className="text-xs text-muted-foreground">Uso CFDI</span>
+          <span className="text-xs text-muted-foreground">{t('cfdiUseLabel')}</span>
           <p className="text-sm font-medium mt-0.5">{preview.receptorUsoCfdi ?? '—'}</p>
         </div>
       </div>
 
       {/* Amounts Summary */}
       <div className="bg-card border border-border rounded-xl p-5 mb-6">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Resumen de Montos</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('amountsSummary')}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <span className="text-xs text-muted-foreground">{t('subtotal')}</span>
@@ -457,7 +457,7 @@ function PreFacturaContent() {
           className="order-3 sm:order-1"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Cancelar
+          {tc('cancel')}
         </Button>
 
         <div className="flex-1" />
@@ -468,7 +468,7 @@ function PreFacturaContent() {
           className="order-1 sm:order-2 bg-surface-3 dark:bg-zinc-800 hover:bg-surface-3 dark:hover:bg-zinc-700 text-foreground"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-          Crear Factura
+          {t('createInvoice')}
         </Button>
 
         <Button
@@ -477,7 +477,7 @@ function PreFacturaContent() {
           className="order-2 sm:order-3 bg-success hover:bg-success/90 text-white"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Stamp className="w-4 h-4 mr-2" />}
-          Crear y Timbrar
+          {t('createAndStamp')}
         </Button>
       </div>
     </PageHeader>

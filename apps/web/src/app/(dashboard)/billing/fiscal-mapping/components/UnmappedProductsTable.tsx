@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Check, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { UnmappedProduct } from '@/types/billing';
@@ -34,6 +35,7 @@ export function UnmappedProductsTable({
   onEdit,
   onSetUnmappedPage,
 }: UnmappedProductsTableProps) {
+  const t = useTranslations('billing.fiscalMapping');
   return (
     <>
       {/* Desktop table */}
@@ -42,13 +44,13 @@ export function UnmappedProductsTable({
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="w-10 px-4 py-3" />
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Código de Barras</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Unidad</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave ProdServ SAT</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave Unidad SAT</th>
-              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
-              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Acciones</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('productCol')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('barcodeCol')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('unitCol')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('prodServSat')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('unitSat')}</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">{t('statusCol')}</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">{t('actionsCol')}</th>
             </tr>
           </thead>
           <tbody>
@@ -57,7 +59,7 @@ export function UnmappedProductsTable({
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
-                    aria-label={`Seleccionar ${u.nombre}`}
+                    aria-label={t('selectLabel', { name: u.nombre })}
                     checked={selectedIds.has(u.productoId)}
                     onChange={() => onToggleSelect(u.productoId)}
                     className="rounded border-border text-green-600 focus:ring-green-500"
@@ -81,7 +83,7 @@ export function UnmappedProductsTable({
                       {u.claveSatActual}
                     </span>
                   ) : (
-                    <span className="text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
+                    <span className="text-amber-600 dark:text-amber-400 text-xs">{t('unassigned')}</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -90,12 +92,12 @@ export function UnmappedProductsTable({
                       {u.unidadClaveSat}
                     </span>
                   ) : (
-                    <span className="text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
+                    <span className="text-amber-600 dark:text-amber-400 text-xs">{t('unassigned')}</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-center">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                    Sin Mapear
+                    {t('unmapped')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -110,11 +112,11 @@ export function UnmappedProductsTable({
                       hasMapping: false,
                     })}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-green-50 dark:hover:bg-green-900/20 text-muted-foreground hover:text-green-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-                    aria-label={`Asignar mapeo a ${u.nombre}`}
-                    title="Asignar mapeo fiscal"
+                    aria-label={t('assignMappingTo', { name: u.nombre })}
+                    title={t('assignMapping')}
                   >
                     <ClipboardList className="w-3.5 h-3.5" />
-                    Asignar
+                    {t('assignBtn')}
                   </button>
                 </td>
               </tr>
@@ -124,7 +126,7 @@ export function UnmappedProductsTable({
                 <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <Check className="w-8 h-8 text-green-500" />
-                    <span>Todos los productos tienen mapeo fiscal</span>
+                    <span>{t('allProductsMapped')}</span>
                   </div>
                 </td>
               </tr>
@@ -149,31 +151,31 @@ export function UnmappedProductsTable({
                 <span className="text-xs text-muted-foreground">{u.unidadNombre}</span>
               </div>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                Sin Mapear
+                {t('unmapped')}
               </span>
             </div>
             {u.codigoBarra && (
-              <p className="text-xs text-muted-foreground font-mono mb-2">Codigo: {u.codigoBarra}</p>
+              <p className="text-xs text-muted-foreground font-mono mb-2">{t('barcodeLabel')}: {u.codigoBarra}</p>
             )}
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <span className="text-xs text-muted-foreground">ProdServ:</span>
+                <span className="text-xs text-muted-foreground">{t('prodServSat')}:</span>
                 {u.claveSatActual ? (
                   <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
                     {u.claveSatActual}
                   </span>
                 ) : (
-                  <span className="block text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
+                  <span className="block text-amber-600 dark:text-amber-400 text-xs">{t('unassigned')}</span>
                 )}
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Unidad:</span>
+                <span className="text-xs text-muted-foreground">{t('unitInfoLabel')}:</span>
                 {u.unidadClaveSat ? (
                   <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
                     {u.unidadClaveSat}
                   </span>
                 ) : (
-                  <span className="block text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
+                  <span className="block text-amber-600 dark:text-amber-400 text-xs">{t('unassigned')}</span>
                 )}
               </div>
             </div>
@@ -191,7 +193,7 @@ export function UnmappedProductsTable({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-green-50 dark:hover:bg-green-900/20 text-muted-foreground hover:text-green-600 transition-colors"
               >
                 <ClipboardList className="w-3.5 h-3.5" />
-                Asignar
+                {t('assignBtn')}
               </button>
             </div>
           </div>
@@ -199,7 +201,7 @@ export function UnmappedProductsTable({
         {unmapped.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground text-sm flex flex-col items-center gap-2">
             <Check className="w-8 h-8 text-green-500" />
-            Todos los productos tienen mapeo fiscal
+            {t('allProductsMapped')}
           </div>
         )}
       </div>
@@ -208,7 +210,7 @@ export function UnmappedProductsTable({
       {unmappedTotalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm">
           <span className="text-muted-foreground">
-            Página {unmappedPage} de {unmappedTotalPages}
+            {t('pageOf', { page: unmappedPage, total: unmappedTotalPages })}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -216,7 +218,7 @@ export function UnmappedProductsTable({
               size="sm"
               onClick={() => onSetUnmappedPage(p => Math.max(1, p - 1))}
               disabled={unmappedPage <= 1}
-              aria-label="Página anterior"
+              aria-label={t('prevPage')}
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -225,7 +227,7 @@ export function UnmappedProductsTable({
               size="sm"
               onClick={() => onSetUnmappedPage(p => Math.min(unmappedTotalPages, p + 1))}
               disabled={unmappedPage >= unmappedTotalPages}
-              aria-label="Página siguiente"
+              aria-label={t('nextPage')}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>

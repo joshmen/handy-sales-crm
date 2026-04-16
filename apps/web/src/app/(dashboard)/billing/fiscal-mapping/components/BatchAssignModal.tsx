@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import { X as XIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BatchAutocomplete } from './SatAutocomplete';
@@ -31,6 +32,8 @@ export function BatchAssignModal({
   onAssign,
   onClose,
 }: BatchAssignModalProps) {
+  const t = useTranslations('billing.fiscalMapping');
+  const tc = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,13 +63,13 @@ export function BatchAssignModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 id="batch-assign-title" className="text-lg font-semibold text-foreground">Asignación Masiva</h3>
-          <button onClick={onClose} aria-label="Cerrar" className="text-muted-foreground hover:text-foreground">
+          <h3 id="batch-assign-title" className="text-lg font-semibold text-foreground">{t('batchAssignTitle')}</h3>
+          <button onClick={onClose} aria-label={t('close')} className="text-muted-foreground hover:text-foreground">
             <XIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Asignar la misma clave SAT a {selectedCount} producto{selectedCount > 1 ? 's' : ''} seleccionado{selectedCount > 1 ? 's' : ''}.
+          {t('batchAssignDesc', { count: selectedCount })}
         </p>
         {selectedProductNames && selectedProductNames.length > 0 && (
           <div className="mb-4 max-h-24 overflow-y-auto rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
@@ -79,7 +82,7 @@ export function BatchAssignModal({
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Clave ProdServ SAT
+              {t('prodServLabel')}
             </label>
             {batchProdServ && (
               <div className="mb-1 px-2 py-1 text-xs font-mono bg-muted rounded border border-border inline-block">
@@ -91,13 +94,13 @@ export function BatchAssignModal({
               onChange={onBatchProdServChange}
               searchFn={searchCatalogoProdServ}
               renderLabel={(item: CatalogoProdServItem) => `${item.clave} \u2014 ${item.descripcion}`}
-              placeholder="Buscar clave ProdServ..."
+              placeholder={t('searchProdServ')}
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Clave Unidad SAT
+              {t('unitLabel')}
             </label>
             {batchUnidad && (
               <div className="mb-1 px-2 py-1 text-xs font-mono bg-muted rounded border border-border inline-block">
@@ -109,14 +112,14 @@ export function BatchAssignModal({
               onChange={onBatchUnidadChange}
               searchFn={searchCatalogoUnidad}
               renderLabel={(item: CatalogoUnidadItem) => `${item.clave} \u2014 ${item.nombre}`}
-              placeholder="Buscar clave unidad..."
+              placeholder={t('searchUnit')}
             />
           </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancelar
+            {tc('cancel')}
           </Button>
           <Button
             onClick={onAssign}
@@ -124,7 +127,7 @@ export function BatchAssignModal({
             className="bg-success hover:bg-success/90 text-white"
           >
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Asignar
+            {t('assign')}
           </Button>
         </div>
       </div>

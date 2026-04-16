@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import { X as XIcon, Loader2, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BatchAutocomplete } from './SatAutocomplete';
@@ -27,6 +28,8 @@ interface MapeoEditModalProps {
 }
 
 export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: MapeoEditModalProps) {
+  const t = useTranslations('billing.fiscalMapping');
+  const tc = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
   const [claveProdServ, setClaveProdServ] = useState(product.currentProdServ || '');
   const [claveUnidad, setClaveUnidad] = useState(product.currentUnidad || '');
@@ -77,8 +80,8 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
-          <h3 id="mapeo-edit-title" className="text-lg font-semibold text-foreground">Mapeo Fiscal</h3>
-          <button onClick={handleClose} aria-label="Cerrar" className="text-muted-foreground hover:text-foreground p-1">
+          <h3 id="mapeo-edit-title" className="text-lg font-semibold text-foreground">{t('fiscalMappingTitle')}</h3>
+          <button onClick={handleClose} aria-label={t('close')} className="text-muted-foreground hover:text-foreground p-1">
             <XIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
@@ -87,15 +90,15 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
         <div className="mb-5 rounded-lg bg-muted/50 border border-border px-3 py-2.5">
           <p className="text-sm font-medium text-foreground">{product.nombre}</p>
           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-            {product.codigoBarra && <span>Código: {product.codigoBarra}</span>}
-            {product.unidad && <span>Unidad: {product.unidad}</span>}
+            {product.codigoBarra && <span>{t('codeLabel')}: {product.codigoBarra}</span>}
+            {product.unidad && <span>{t('unitInfoLabel')}: {product.unidad}</span>}
           </div>
         </div>
 
         {/* Clave ProdServ SAT */}
         <div className="mb-4">
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            Clave ProdServ SAT *
+            {t('prodServLabel')}
           </label>
           {claveProdServ && (
             <div className="mb-1.5 flex items-center gap-2">
@@ -105,9 +108,9 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
               <button
                 onClick={() => { setClaveProdServ(''); setDirty(true); }}
                 className="text-xs text-muted-foreground hover:text-foreground"
-                aria-label="Quitar clave ProdServ"
+                aria-label={t('removeProdServKey')}
               >
-                Cambiar
+                {t('changeSatKey')}
               </button>
             </div>
           )}
@@ -117,7 +120,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
               onChange={(v) => { setClaveProdServ(v); setDirty(true); }}
               searchFn={searchCatalogoProdServ}
               renderLabel={(item: CatalogoProdServItem) => `${item.clave} — ${item.descripcion}`}
-              placeholder="Buscar clave ProdServ..."
+              placeholder={t('searchProdServ')}
             />
           )}
         </div>
@@ -125,7 +128,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
         {/* Clave Unidad SAT */}
         <div className="mb-6">
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            Clave Unidad SAT *
+            {t('unitLabel')}
           </label>
           {claveUnidad && (
             <div className="mb-1.5 flex items-center gap-2">
@@ -135,9 +138,9 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
               <button
                 onClick={() => { setClaveUnidad(''); setDirty(true); }}
                 className="text-xs text-muted-foreground hover:text-foreground"
-                aria-label="Quitar clave unidad"
+                aria-label={t('removeUnitKey')}
               >
-                Cambiar
+                {t('changeSatKey')}
               </button>
             </div>
           )}
@@ -147,7 +150,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
               onChange={(v) => { setClaveUnidad(v); setDirty(true); }}
               searchFn={searchCatalogoUnidad}
               renderLabel={(item: CatalogoUnidadItem) => `${item.clave} — ${item.nombre}`}
-              placeholder="Buscar clave unidad..."
+              placeholder={t('searchUnit')}
             />
           )}
         </div>
@@ -162,7 +165,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-600 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Eliminar mapeo
+                {t('deleteMapping')}
               </button>
             )}
             {product.hasMapping && confirmDelete && (
@@ -172,13 +175,13 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
                   disabled={saving}
                   className="text-xs font-medium text-red-600 hover:text-red-700"
                 >
-                  {saving ? 'Eliminando...' : 'Confirmar eliminar'}
+                  {saving ? t('deleting') : t('confirmDelete')}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   className="text-xs text-muted-foreground hover:text-foreground"
                 >
-                  Cancelar
+                  {tc('cancel')}
                 </button>
               </div>
             )}
@@ -187,7 +190,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
           {/* Save / Cancel */}
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={onClose} disabled={saving}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button
               onClick={() => onSave(product.productoId, claveProdServ, claveUnidad)}
@@ -195,7 +198,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
               className="bg-success hover:bg-success/90 text-white"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Guardar
+              {t('save')}
             </Button>
           </div>
         </div>
@@ -205,14 +208,14 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
       {confirmDiscard && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setConfirmDiscard(false)}>
           <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h4 className="text-sm font-semibold text-foreground mb-2">Cambios sin guardar</h4>
-            <p className="text-sm text-muted-foreground mb-4">Tienes cambios sin guardar. ¿Deseas descartarlos?</p>
+            <h4 className="text-sm font-semibold text-foreground mb-2">{t('unsavedChanges')}</h4>
+            <p className="text-sm text-muted-foreground mb-4">{t('unsavedChangesDesc')}</p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setConfirmDiscard(false)}>
-                Seguir editando
+                {t('keepEditing')}
               </Button>
               <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={onClose}>
-                Descartar
+                {t('discard')}
               </Button>
             </div>
           </div>

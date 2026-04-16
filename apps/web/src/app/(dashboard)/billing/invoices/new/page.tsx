@@ -178,7 +178,7 @@ export default function NewInvoicePage() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">{tCommon('loading')}</span>
     </div>
   );
 

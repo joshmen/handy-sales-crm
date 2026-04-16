@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import { Search, Loader2 } from 'lucide-react';
 
 // ─── Inline Autocomplete (used in table cells) ───
@@ -21,6 +22,7 @@ export function AutocompleteDropdown<T extends { clave: string }>({
   renderLabel: (item: T) => string;
   placeholder: string;
 }) {
+  const t = useTranslations('billing.fiscalMapping');
   const [query, setQuery] = useState(value || '');
   const [results, setResults] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
@@ -126,14 +128,14 @@ export function AutocompleteDropdown<T extends { clave: string }>({
           ref={dropdownRef}
           id={listboxId}
           role="listbox"
-          aria-label="Resultados SAT"
+          aria-label={t('satResults')}
           style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, zIndex: 9999 }}
           className="max-h-60 overflow-auto bg-card border border-border rounded-lg shadow-lg"
         >
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-              Buscando...
+              {t('searching')}
             </div>
           )}
           {results.map((item, i) => (
@@ -153,7 +155,7 @@ export function AutocompleteDropdown<T extends { clave: string }>({
             </button>
           ))}
           {!loading && results.length === 0 && query.trim().length >= 2 && (
-            <div className="px-3 py-2 text-sm text-muted-foreground">Sin resultados para &quot;{query}&quot;</div>
+            <div className="px-3 py-2 text-sm text-muted-foreground">{t('noResults', { query })}</div>
           )}
         </div>,
         document.body
@@ -177,6 +179,7 @@ export function BatchAutocomplete<T extends { clave: string }>({
   renderLabel: (item: T) => string;
   placeholder: string;
 }) {
+  const t = useTranslations('billing.fiscalMapping');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
@@ -251,13 +254,13 @@ export function BatchAutocomplete<T extends { clave: string }>({
         <div
           id={listboxId}
           role="listbox"
-          aria-label="Resultados SAT"
+          aria-label={t('satResults')}
           className="mt-1 max-h-40 overflow-auto bg-card border border-border rounded-lg shadow-sm"
         >
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
               <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
-              Buscando...
+              {t('searching')}
             </div>
           )}
           {results.map((item, i) => (
