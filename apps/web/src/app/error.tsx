@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
 import { reportError } from '@/services/errorReporter';
+import { useTranslations } from 'next-intl';
 
 export default function GlobalError({
   error,
@@ -11,6 +12,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations('errorPage');
+
   useEffect(() => {
     console.error('[GlobalError]', error);
     reportError(error);
@@ -23,12 +26,12 @@ export default function GlobalError({
           <AlertTriangle className="w-8 h-8 text-red-600" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">Algo salió mal</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Ocurrió un error inesperado. Puedes intentar recargar la página o volver al inicio.
+            {t('description')}
           </p>
           <p className="text-xs text-muted-foreground">
-            Si el problema persiste, contacta a soporte.
+            {t('persistsContact')}
             {error.digest && <span className="font-mono ml-1">(Ref: {error.digest})</span>}
           </p>
         </div>
@@ -38,14 +41,14 @@ export default function GlobalError({
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
-            Reintentar
+            {t('retry')}
           </button>
           <a
             href="/dashboard"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-foreground/80 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
-            Ir al inicio
+            {t('goToHome')}
           </a>
         </div>
       </div>

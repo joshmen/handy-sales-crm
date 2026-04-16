@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 interface ErrorBannerProps {
   error: string | null;
@@ -9,8 +10,10 @@ interface ErrorBannerProps {
 export const ErrorBanner: React.FC<ErrorBannerProps> = ({
   error,
   onRetry,
-  retryLabel = 'Reintentar',
+  retryLabel,
 }) => {
+  const tc = useTranslations('common');
+  const label = retryLabel ?? tc('retry');
   if (!error) return null;
 
   return (
@@ -21,7 +24,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
           onClick={onRetry}
           className="ml-4 underline hover:no-underline"
         >
-          {retryLabel}
+          {label}
         </button>
       )}
     </div>

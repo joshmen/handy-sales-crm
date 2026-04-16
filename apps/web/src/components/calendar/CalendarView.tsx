@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Visit } from "@/types/calendar";
 
 interface CalendarViewProps {
@@ -18,6 +19,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onVisitClick,
   selectedUser,
 }) => {
+  const tcal = useTranslations("visits.calendar");
   const [viewMode] = useState<"month" | "week" | "day">("month");
 
   const getDaysInMonth = (date: Date) => {
@@ -83,15 +85,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     year: "numeric",
   });
   const days = getDaysInMonth(currentDate);
-  const weekDays = [
-    "Lunes",
-    "Martes",
-    "Miércoles",
-    "Jueves",
-    "Viernes",
-    "Sábado",
-    "Domingo",
-  ];
+  const weekDays = tcal.raw("weekdaysLong") as string[];
 
   if (viewMode === "month") {
     return (
@@ -179,14 +173,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {dayVisits.length > 3 && (
                     <div className="text-xs text-foreground/80 px-2 font-medium bg-surface-3 rounded py-1">
-                      +{dayVisits.length - 3} más
+                      {tcal("moreItems", { count: dayVisits.length - 3 })}
                     </div>
                   )}
 
                   {/* 🎨 MARCADOR ESPECIAL MEJORADO */}
                   {dayInfo.date.getDate() === 2 && dayInfo.isCurrentMonth && (
                     <div className="bg-success-300 text-success-900 text-xs px-2 py-1 rounded-md text-center font-bold border border-success-400">
-                      Día especial
+                      {tcal("specialDay")}
                     </div>
                   )}
                 </div>
@@ -200,8 +194,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   return (
     <div className="text-center py-12 text-foreground/70">
-      <p className="text-lg font-medium">Vista {viewMode} en desarrollo</p>
-      <p className="text-sm text-muted-foreground mt-2">Próximamente disponible</p>
+      <p className="text-lg font-medium">{tcal("viewInDevelopment", { mode: viewMode })}</p>
+      <p className="text-sm text-muted-foreground mt-2">{tcal("comingSoon")}</p>
     </div>
   );
 };

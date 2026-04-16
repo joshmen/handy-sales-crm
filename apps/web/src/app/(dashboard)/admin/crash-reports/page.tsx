@@ -100,19 +100,19 @@ function getSeverityBadge(severity: string) {
   }
 }
 
-function getEstadoBadge(resuelto: boolean) {
+function getEstadoBadge(resuelto: boolean, labels: { resolved: string; pending: string }) {
   if (resuelto) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
         <CheckCircle size={14} weight="fill" className="text-green-600" />
-        Resuelto
+        {labels.resolved}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
       <Clock size={14} weight="fill" className="text-muted-foreground" />
-      Pendiente
+      {labels.pending}
     </span>
   );
 }
@@ -1068,7 +1068,7 @@ function MobileCrashesTab() {
                       {report.appVersion || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getEstadoBadge(report.resuelto)}
+                      {getEstadoBadge(report.resuelto, { resolved: t('badgeResolved'), pending: t('badgePending') })}
                     </td>
                   </tr>
                 ))
@@ -1121,7 +1121,7 @@ function MobileCrashesTab() {
             >
               <div className="flex items-center justify-between mb-2">
                 {getSeverityBadge(report.severity)}
-                {getEstadoBadge(report.resuelto)}
+                {getEstadoBadge(report.resuelto, { resolved: t('badgeResolved'), pending: t('badgePending') })}
               </div>
               <p className="text-sm font-medium text-foreground mb-1 line-clamp-2">
                 {report.errorMessage}
@@ -1171,7 +1171,7 @@ function MobileCrashesTab() {
               {resolverOpen ? (
                 <div className="flex flex-col w-full gap-3">
                   <label className="text-sm font-medium text-foreground/80">
-                    Nota de resolucion (opcional)
+                    {t('resolutionNote')}
                   </label>
                   <textarea
                     value={resolverNota}
@@ -1243,13 +1243,13 @@ function MobileCrashesTab() {
           <div className="p-6 space-y-6">
             <div className="flex items-center gap-3">
               {getSeverityBadge(selectedReport.severity)}
-              {getEstadoBadge(selectedReport.resuelto)}
+              {getEstadoBadge(selectedReport.resuelto, { resolved: t('badgeResolved'), pending: t('badgePending') })}
             </div>
 
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                 <Warning size={14} className="text-orange-500" />
-                Mensaje de error
+                {t('errorMessage')}
               </h3>
               <p className="text-sm text-foreground bg-red-50 rounded-lg p-3 border border-red-100">
                 {selectedReport.errorMessage}
@@ -1336,7 +1336,7 @@ function MobileCrashesTab() {
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                 <CalendarDots size={14} className="text-blue-500" />
-                Fecha de reporte
+                {t('reportDate')}
               </h3>
               <p className="text-sm text-foreground">{formatDate(selectedReport.creadoEn)}</p>
             </div>
@@ -1345,7 +1345,7 @@ function MobileCrashesTab() {
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                   <CheckCircle size={14} className="text-green-500" />
-                  Nota de resolucion
+                  {t('resolutionNoteLabel')}
                 </h3>
                 <p className="text-sm text-foreground bg-green-50 rounded-lg p-3 border border-green-100">
                   {selectedReport.notaResolucion}

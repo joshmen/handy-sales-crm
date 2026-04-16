@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { Loader2, Cloud } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export function QuickMigrationButton() {
   const [isMigrating, setIsMigrating] = useState(false);
+  const t = useTranslations('adminMigration');
 
   const handleMigration = async () => {
     setIsMigrating(true);
@@ -22,14 +24,14 @@ export function QuickMigrationButton() {
       );
 
       toast({
-        title: 'Migración completada',
+        title: t('migrationComplete'),
         description: response.data.message,
       });
     } catch (error) {
       console.error('Error en migración:', error);
       toast({
-        title: 'Error en la migración',
-        description: 'No se pudo completar la inicialización. Ver consola.',
+        title: t('migrationError'),
+        description: t('couldNotCompleteInit'),
         variant: 'destructive',
       });
     } finally {
@@ -48,7 +50,7 @@ export function QuickMigrationButton() {
       ) : (
         <Cloud className="h-4 w-4 mr-2" />
       )}
-      Inicializar Cloudinary (Una vez)
+      {t('initCloudinary')}
     </Button>
   );
 }

@@ -5,22 +5,24 @@ import { Button } from '@/components/ui/Button';
 import { AlertCircle, CreditCard, Mail, Phone, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/useToast';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export default function SuspendedPage() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const t = useTranslations('billingSuspended');
 
   const handleReactivate = async () => {
     setIsProcessing(true);
     toast({
-      title: 'Procesando pago...',
-      description: 'Redirigiendo al sistema de pago',
+      title: t('processingPayment'),
+      description: t('redirectingToPayment'),
     });
 
     // TODO: Integrar con sistema de pago real
     setTimeout(() => {
       toast({
-        title: 'Pago procesado',
-        description: 'Tu membresía ha sido reactivada',
+        title: t('paymentProcessed'),
+        description: t('membershipReactivated'),
       });
       window.location.href = '/dashboard';
     }, 2000);
@@ -34,49 +36,49 @@ export default function SuspendedPage() {
             <AlertCircle className="h-10 w-10 text-red-600" />
           </div>
 
-          <h1 className="text-3xl font-bold text-foreground mb-2">Membresía Suspendida</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
 
           <p className="text-lg text-foreground/70">
-            Tu cuenta ha sido suspendida debido a un pago pendiente
+            {t('subtitle')}
           </p>
         </div>
 
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
-          <h3 className="font-semibold text-red-900 mb-2">¿Por qué fue suspendida mi cuenta?</h3>
+          <h3 className="font-semibold text-red-900 mb-2">{t('whySuspendedTitle')}</h3>
           <ul className="space-y-2 text-sm text-red-800">
             <li className="flex items-start gap-2">
               <span className="text-red-600 mt-1">•</span>
-              <span>El pago de tu membresía no pudo ser procesado</span>
+              <span>{t('reason1')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-600 mt-1">•</span>
-              <span>Tu período de gracia de 7 días ha expirado</span>
+              <span>{t('reason2')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-600 mt-1">•</span>
-              <span>Necesitas actualizar tu método de pago para continuar</span>
+              <span>{t('reason3')}</span>
             </li>
           </ul>
         </div>
 
         <div className="bg-surface-2 border rounded-lg p-6 mb-6">
-          <h3 className="font-semibold text-foreground mb-4">Detalles de tu suscripción</h3>
+          <h3 className="font-semibold text-foreground mb-4">{t('subscriptionDetails')}</h3>
 
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-foreground/70">Plan actual:</span>
+              <span className="text-foreground/70">{t('currentPlan')}</span>
               <span className="font-medium">Pro - $899 MXN/mes</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-foreground/70">Último pago:</span>
+              <span className="text-foreground/70">{t('lastPayment')}</span>
               <span className="font-medium">15 de diciembre, 2024</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-foreground/70">Monto pendiente:</span>
+              <span className="text-foreground/70">{t('amountDue')}</span>
               <span className="font-bold text-red-600">$899 MXN</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-foreground/70">Fecha de suspensión:</span>
+              <span className="text-foreground/70">{t('suspensionDate')}</span>
               <span className="font-medium">8 de enero, 2025</span>
             </div>
           </div>
@@ -92,12 +94,12 @@ export default function SuspendedPage() {
             {isProcessing ? (
               <>
                 <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-r-transparent" />
-                Procesando...
+                {t('processing')}
               </>
             ) : (
               <>
                 <CreditCard className="h-5 w-5 mr-2" />
-                Pagar y Reactivar Membresía
+                {t('payAndReactivate')}
               </>
             )}
           </Button>
@@ -108,13 +110,13 @@ export default function SuspendedPage() {
             size="lg"
             onClick={() => (window.location.href = '/billing/payment-methods')}
           >
-            Actualizar Método de Pago
+            {t('updatePaymentMethod')}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
 
         <div className="mt-8 pt-6 border-t">
-          <h4 className="font-medium text-foreground mb-3">¿Necesitas ayuda?</h4>
+          <h4 className="font-medium text-foreground mb-3">{t('needHelp')}</h4>
           <div className="space-y-2 text-sm">
             <a
               href="mailto:soporte@handysuites.com"
@@ -133,15 +135,13 @@ export default function SuspendedPage() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-4">
-            Horario de atención: Lunes a Viernes de 9:00 AM a 6:00 PM (Hora del Pacífico)
+            {t('businessHours')}
           </p>
         </div>
 
         <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            <strong>Importante:</strong> Tu información está segura. Si no reactivás tu membresía en
-            los próximos 30 días, tus datos serán archivados pero no eliminados. Podrás recuperar tu
-            cuenta en cualquier momento.
+            <strong>{t('importantNotice')}</strong> {t('dataRetentionNotice')}
           </p>
         </div>
       </Card>

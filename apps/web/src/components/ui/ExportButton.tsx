@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 import { Download, FileText, FileJson, Settings } from 'lucide-react';
 import { exportToCSV, exportToJSON, ExportColumn, ExportOptions } from '@/lib/export';
 
@@ -38,6 +39,7 @@ export function ExportButton<T = unknown>({
   className = '',
   showConfigDialog = true,
 }: ExportButtonProps<T>) {
+  const tc = useTranslations('common');
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [exportConfig, setExportConfig] = useState({
     filename,
@@ -59,8 +61,8 @@ export function ExportButton<T = unknown>({
     try {
       if (!data || data.length === 0) {
         toast({
-          title: 'Sin datos',
-          description: 'No hay datos para exportar',
+          title: tc('noDataTitle'),
+          description: tc('noDataToExport'),
           variant: 'destructive',
         });
         return;
@@ -75,20 +77,20 @@ export function ExportButton<T = unknown>({
       if (format === 'csv') {
         exportToCSV(data, options);
         toast({
-          title: 'Exportación exitosa',
-          description: `Datos exportados a CSV: ${exportConfig.filename}`,
+          title: tc('exportSuccess'),
+          description: tc('exportedTo', { format: 'CSV', filename: exportConfig.filename }),
         });
       } else {
         exportToJSON(data, options);
         toast({
-          title: 'Exportación exitosa',
-          description: `Datos exportados a JSON: ${exportConfig.filename}`,
+          title: tc('exportSuccess'),
+          description: tc('exportedTo', { format: 'JSON', filename: exportConfig.filename }),
         });
       }
     } catch (error) {
       toast({
-        title: 'Error de exportación',
-        description: error instanceof Error ? error.message : 'Error desconocido',
+        title: tc('exportError'),
+        description: error instanceof Error ? tc.has(error.message) ? tc(error.message) : error.message : tc('unknownError'),
         variant: 'destructive',
       });
     }
@@ -98,8 +100,8 @@ export function ExportButton<T = unknown>({
     try {
       if (!data || data.length === 0) {
         toast({
-          title: 'Sin datos',
-          description: 'No hay datos para exportar',
+          title: tc('noDataTitle'),
+          description: tc('noDataToExport'),
           variant: 'destructive',
         });
         return;
@@ -120,13 +122,13 @@ export function ExportButton<T = unknown>({
 
       setIsConfigOpen(false);
       toast({
-        title: 'Exportación exitosa',
-        description: `${data.length} registro(s) exportado(s) exitosamente`,
+        title: tc('exportSuccess'),
+        description: tc('recordsExported', { count: data.length }),
       });
     } catch (error) {
       toast({
-        title: 'Error de exportación',
-        description: error instanceof Error ? error.message : 'Error desconocido',
+        title: tc('exportError'),
+        description: error instanceof Error ? tc.has(error.message) ? tc(error.message) : error.message : tc('unknownError'),
         variant: 'destructive',
       });
     }
@@ -145,7 +147,7 @@ export function ExportButton<T = unknown>({
     return (
       <Button variant={variant} size={size} disabled className={className}>
         <Download className="h-4 w-4 mr-2" />
-        Exportar
+        {tc('exportLabel')}
       </Button>
     );
   }
@@ -156,24 +158,24 @@ export function ExportButton<T = unknown>({
         <DropdownMenuTrigger asChild>
           <Button variant={variant} size={size} disabled={disabled} className={className}>
             <Download className="h-4 w-4 mr-2" />
-            Exportar
+            {tc('exportLabel')}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={() => handleQuickExport('csv')}>
             <FileText className="h-4 w-4 mr-2" />
-            Exportar CSV
+            {tc('exportCsv')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleQuickExport('json')}>
             <FileJson className="h-4 w-4 mr-2" />
-            Exportar JSON
+            {tc('exportJson')}
           </DropdownMenuItem>
           {showConfigDialog && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setIsConfigOpen(true)}>
                 <Settings className="h-4 w-4 mr-2" />
-                Configurar exportación
+                {tc('configureExport')}
               </DropdownMenuItem>
             </>
           )}
@@ -184,17 +186,17 @@ export function ExportButton<T = unknown>({
         <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Configurar Exportación</DialogTitle>
+              <DialogTitle>{tc('configureExportTitle')}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="export-filename">Nombre del archivo</Label>
+                <Label htmlFor="export-filename">{tc('fileName')}</Label>
                 <Input
                   id="export-filename"
                   value={exportConfig.filename}
                   onChange={e => setExportConfig(prev => ({ ...prev, filename: e.target.value }))}
-                  placeholder="nombre-archivo"
+                  placeholder={tc('fileNamePlaceholder')}
                 />
               </div>
 
@@ -207,13 +209,13 @@ export function ExportButton<T = unknown>({
                   }
                 />
                 <Label htmlFor="include-timestamp" className="text-sm font-normal">
-                  Incluir timestamp en el nombre
+                  {tc('includeTimestamp')}
                 </Label>
               </div>
 
               {availableColumns.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Columnas a exportar</Label>
+                  <Label>{tc('columnsToExport')}</Label>
                   <div className="max-h-32 overflow-y-auto space-y-1 border rounded p-2">
                     <div className="flex items-center space-x-2 pb-2 border-b">
                       <Checkbox
@@ -227,7 +229,7 @@ export function ExportButton<T = unknown>({
                         }}
                       />
                       <Label htmlFor="select-all" className="text-sm font-medium">
-                        Seleccionar todas
+                        {tc('selectAllColumns')}
                       </Label>
                     </div>
                     {availableColumns.map((column, index) => (
@@ -262,7 +264,7 @@ export function ExportButton<T = unknown>({
                   </Button>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setIsConfigOpen(false)}>
-                  Cancelar
+                  {tc('cancel')}
                 </Button>
               </div>
             </div>

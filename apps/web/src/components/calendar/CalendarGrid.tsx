@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Visit } from "@/types/calendar";
 
 interface CalendarGridProps {
@@ -27,6 +28,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   selectedUser,
   className = "",
 }) => {
+  const tcal = useTranslations("visits.calendar");
   const getDaysForView = (): DayInfo[] => {
     const today = new Date();
 
@@ -156,7 +158,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   );
 
   const renderMonthView = (days: DayInfo[]) => {
-    const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+    const weekDays = tcal.raw("weekdaysShort") as string[];
 
     return (
       <div className="border border-border-subtle rounded-lg overflow-hidden">
@@ -206,7 +208,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                   {dayVisits.length > 3 && (
                     <div className="text-xs text-foreground/70 px-2 py-1 bg-surface-3 rounded font-medium">
-                      +{dayVisits.length - 3} más
+                      {tcal("moreItems", { count: dayVisits.length - 3 })}
                     </div>
                   )}
                 </div>
@@ -219,15 +221,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const renderWeekView = (days: DayInfo[]) => {
-    const weekDays = [
-      "Lunes",
-      "Martes",
-      "Miércoles",
-      "Jueves",
-      "Viernes",
-      "Sábado",
-      "Domingo",
-    ];
+    const weekDays = tcal.raw("weekdaysLong") as string[];
 
     return (
       <div className="border border-border-subtle rounded-lg overflow-hidden">
@@ -292,7 +286,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           </h3>
           {dayInfo.isToday && (
             <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-              Hoy
+              {tcal("today")}
             </span>
           )}
         </div>
@@ -337,10 +331,10 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             <div className="text-center py-12 text-muted-foreground">
               <div className="text-6xl mb-4">📅</div>
               <h3 className="text-lg font-medium mb-2">
-                No hay visitas programadas
+                {tcal("noVisitsScheduled")}
               </h3>
               <p className="text-sm">
-                Haz clic aquí para programar una nueva visita
+                {tcal("clickToSchedule")}
               </p>
             </div>
           )}

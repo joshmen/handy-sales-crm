@@ -15,6 +15,7 @@ import {
   Cloud,
   Settings,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface TenantStatus {
   id: number;
@@ -46,6 +47,8 @@ export function TenantMigration() {
   const [summary, setSummary] = useState<TenantsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+  const t = useTranslations('adminMigration');
+  const tc = useTranslations('common');
 
   const loadTenantsStatus = async () => {
     setIsLoading(true);
@@ -55,8 +58,8 @@ export function TenantMigration() {
       setSummary(response.data.summary);
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo cargar el estado de los tenants',
+        title: tc('error'),
+        description: t('couldNotLoadTenantsStatus'),
         variant: 'destructive',
       });
     } finally {
@@ -72,7 +75,7 @@ export function TenantMigration() {
       );
 
       toast({
-        title: 'Migración completada',
+        title: t('migrationComplete'),
         description: response.data.message,
       });
 
@@ -80,8 +83,8 @@ export function TenantMigration() {
       await loadTenantsStatus();
     } catch (_error) {
       toast({
-        title: 'Error en la migración',
-        description: 'No se pudo completar la inicialización',
+        title: t('migrationError'),
+        description: t('couldNotCompleteInitShort'),
         variant: 'destructive',
       });
     } finally {
@@ -95,13 +98,12 @@ export function TenantMigration() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Migración de Tenants Existentes
+            {t('tenantMigrationTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Inicializa las carpetas de Cloudinary y configuraciones para tenants existentes que
-            fueron creados antes de implementar esta funcionalidad.
+            {t('tenantMigrationDesc')}
           </p>
 
           <div className="flex gap-3">
@@ -111,7 +113,7 @@ export function TenantMigration() {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Verificar Estado
+              {t('checkStatus')}
             </Button>
 
             <Button
@@ -123,7 +125,7 @@ export function TenantMigration() {
               ) : (
                 <Cloud className="h-4 w-4 mr-2" />
               )}
-              Inicializar Tenants
+              {t('initTenants')}
             </Button>
           </div>
         </CardContent>
@@ -132,25 +134,25 @@ export function TenantMigration() {
       {summary && (
         <Card>
           <CardHeader>
-            <CardTitle>Resumen del Estado</CardTitle>
+            <CardTitle>{t('statusSummary')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{summary.total}</div>
-                <div className="text-sm text-muted-foreground">Total Tenants</div>
+                <div className="text-sm text-muted-foreground">{t('totalTenants')}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{summary.withCloudinary}</div>
-                <div className="text-sm text-muted-foreground">Con Cloudinary</div>
+                <div className="text-sm text-muted-foreground">{t('withCloudinary')}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">{summary.withoutCloudinary}</div>
-                <div className="text-sm text-muted-foreground">Sin Cloudinary</div>
+                <div className="text-sm text-muted-foreground">{t('withoutCloudinary')}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{summary.withSettings}</div>
-                <div className="text-sm text-muted-foreground">Con Settings</div>
+                <div className="text-sm text-muted-foreground">{t('withSettings')}</div>
               </div>
             </div>
           </CardContent>
@@ -160,7 +162,7 @@ export function TenantMigration() {
       {tenants.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Estado por Tenant</CardTitle>
+            <CardTitle>{t('statusByTenant')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -174,7 +176,7 @@ export function TenantMigration() {
                     <p className="text-sm text-muted-foreground">ID: {tenant.id}</p>
                     {tenant.cloudinaryFolder && (
                       <p className="text-xs text-muted-foreground">
-                        Carpeta: {tenant.cloudinaryFolder}
+                        {t('folder')}: {tenant.cloudinaryFolder}
                       </p>
                     )}
                   </div>

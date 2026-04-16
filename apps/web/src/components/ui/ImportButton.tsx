@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/Table';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 import { Upload, FileText, FileJson, AlertCircle, CheckCircle } from 'lucide-react';
 import {
   importFromCSV,
@@ -53,6 +54,7 @@ export function ImportButton<T = unknown>({
   showPreview = true,
   title = 'Importar Datos',
 }: ImportButtonProps<T>) {
+  const tc = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult<T> | null>(null);
@@ -84,7 +86,7 @@ export function ImportButton<T = unknown>({
       } else if (file.name.endsWith('.json')) {
         result = await importFromJSON<T>(file, options);
       } else {
-        throw new Error('Formato de archivo no soportado. Use CSV o JSON.');
+        throw new Error(tc('unsupportedFileFormat'));
       }
 
       setImportResult(result);
@@ -101,8 +103,8 @@ export function ImportButton<T = unknown>({
       }
     } catch (error) {
       toast({
-        title: 'Error de importación',
-        description: error instanceof Error ? error.message : 'Error desconocido',
+        title: tc('importError'),
+        description: error instanceof Error ? tc.has(error.message) ? tc(error.message) : error.message : tc('unknownError'),
         variant: 'destructive',
       });
     } finally {

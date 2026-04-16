@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { CompanySettings, UpdateCompanyRequest, companyService } from '@/services/api/companyService';
 import { toast } from '@/hooks/useToast';
 import { useUIStore } from '@/stores/useUIStore';
+import { useTranslations } from 'next-intl';
 // Convert hex color to HSL string for CSS variables (e.g. "142 71% 45%")
 function hexToHsl(hex: string): string | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -53,6 +54,7 @@ interface CompanyProviderProps {
 
 export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) => {
   const { data: session, status } = useSession();
+  const t = useTranslations('settings.company.toast');
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -182,8 +184,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         localStorage.setItem('company_settings', JSON.stringify(response.data));
         
         toast({
-          title: 'Configuración actualizada',
-          description: 'Los cambios se han aplicado correctamente',
+          title: t('settingsUpdatedTitle'),
+          description: t('settingsUpdatedDesc'),
         });
         return true;
       } else {
@@ -193,15 +195,15 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         localStorage.setItem('company_settings', JSON.stringify(updatedSettings));
         
         toast({
-          title: 'Configuración guardada localmente',
-          description: 'Los cambios se han aplicado temporalmente',
+          title: t('settingsSavedLocalTitle'),
+          description: t('settingsSavedLocalDesc'),
         });
         return false;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo actualizar la configuración',
+        title: t('errorTitle'),
+        description: t('settingsUpdateError'),
         variant: 'destructive',
       });
       return false;
@@ -222,14 +224,14 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         localStorage.setItem('company_settings', JSON.stringify(updatedSettings));
         
         toast({
-          title: 'Logo actualizado',
-          description: 'El logo de la empresa ha sido actualizado',
+          title: t('logoUpdatedTitle'),
+          description: t('logoUpdatedDesc'),
         });
         return true;
       } else {
-        const errorMsg = response.error || 'No se pudo subir el logo';
+        const errorMsg = response.error || t('logoUploadError');
         toast({
-          title: 'Error al subir logo',
+          title: t('logoUploadErrorTitle'),
           description: errorMsg,
           variant: 'destructive',
         });
@@ -237,8 +239,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
       }
     } catch {
       toast({
-        title: 'Error',
-        description: 'Error inesperado al subir el logo',
+        title: t('errorTitle'),
+        description: t('logoUploadUnexpected'),
         variant: 'destructive',
       });
       return false;
@@ -258,14 +260,14 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         localStorage.setItem('company_settings', JSON.stringify(response.data));
         
         toast({
-          title: 'Logo eliminado',
-          description: 'El logo de la empresa ha sido eliminado',
+          title: t('logoDeletedTitle'),
+          description: t('logoDeletedDesc'),
         });
         return true;
       } else {
-        const errorMsg = response.error || 'No se pudo eliminar el logo';
+        const errorMsg = response.error || t('logoDeleteError');
         toast({
-          title: 'Error al eliminar logo',
+          title: t('logoDeleteErrorTitle'),
           description: errorMsg,
           variant: 'destructive',
         });
@@ -273,8 +275,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
       }
     } catch {
       toast({
-        title: 'Error',
-        description: 'Error inesperado al eliminar el logo',
+        title: t('errorTitle'),
+        description: t('logoDeleteUnexpected'),
         variant: 'destructive',
       });
       return false;

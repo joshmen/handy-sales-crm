@@ -520,7 +520,7 @@ export default function TenantDetailPage() {
                 <div className="flex items-start gap-2 sm:col-span-2">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <div className="text-xs text-muted-foreground">Dirección</div>
+                    <div className="text-xs text-muted-foreground">{tt('addressLabel')}</div>
                     <div className="text-foreground">
                       {tenant.datosEmpresa.direccion}
                       {tenant.datosEmpresa.ciudad && `, ${tenant.datosEmpresa.ciudad}`}
@@ -533,14 +533,14 @@ export default function TenantDetailPage() {
               <div className="flex items-start gap-2">
                 <Users className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Máx. Usuarios</div>
+                  <div className="text-xs text-muted-foreground">{t('maxUsers')}</div>
                   <div className="text-foreground">{tenant.maxUsuarios}</div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Fecha de Creación</div>
+                  <div className="text-xs text-muted-foreground">{t('creationDate')}</div>
                   <div className="text-foreground">{formatDate(tenant.creadoEn)}</div>
                 </div>
               </div>
@@ -820,7 +820,7 @@ export default function TenantDetailPage() {
           {tenant.stats.usuarios >= tenant.maxUsuarios && (
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-              <p>Se alcanzó el límite de usuarios. Actualiza el plan de esta empresa para agregar más.</p>
+              <p>{t('userLimitReached')}</p>
             </div>
           )}
 
@@ -881,17 +881,17 @@ export default function TenantDetailPage() {
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Contraseña Temporal <span className="text-red-500">*</span>
+              {t('tempPasswordLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 {...registerUser('password', {
-                  required: 'La contraseña es requerida',
+                  required: tc('required'),
                   minLength: { value: 6, message: 'min6Chars' },
                 })}
                 className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm"
-                placeholder="Contraseña temporal"
+                placeholder={t('tempPasswordPlaceholder')}
               />
               <button
                 type="button"
@@ -901,7 +901,7 @@ export default function TenantDetailPage() {
                   setCopiedPassword(false);
                 }}
                 className="px-3 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                title="Generar contraseña"
+                title={t('generatePassword')}
               >
                 <RefreshCw className="h-4 w-4" />
               </button>

@@ -9,11 +9,14 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import axios from 'axios';
 import { API_CONFIG } from '@/lib/constants';
+import { useTranslations } from 'next-intl';
 
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
+  const t = useTranslations('verifyEmail');
+  const tc = useTranslations('common');
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [verifying, setVerifying] = useState(false);
@@ -120,19 +123,19 @@ function VerifyEmailContent() {
           return;
         }
 
-        toast({ title: 'Error', description: 'No se pudo establecer la sesión.', variant: 'destructive' });
+        toast({ title: tc('error'), description: t('couldNotEstablishSession'), variant: 'destructive' });
       } else {
-        const errorMsg = response.data?.error || 'Código inválido o expirado.';
-        toast({ title: 'Error', description: errorMsg, variant: 'destructive' });
+        const errorMsg = response.data?.error || t('invalidOrExpired');
+        toast({ title: tc('error'), description: errorMsg, variant: 'destructive' });
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
     } catch {
-      toast({ title: 'Error', description: 'No se pudo conectar con el servidor.', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('couldNotConnect'), variant: 'destructive' });
     } finally {
       setVerifying(false);
     }
-  }, [fullCode, verifying, email, router]);
+  }, [fullCode, verifying, email, router, t, tc]);
 
   // Keep ref in sync for auto-submit from handleChange
   handleVerifyRef.current = handleVerify;
@@ -149,15 +152,15 @@ function VerifyEmailContent() {
       );
 
       if (response.status === 200) {
-        toast({ title: 'Código reenviado', description: 'Revisa tu bandeja de entrada.' });
+        toast({ title: t('codeResent'), description: t('codeResentDesc') });
         setCountdown(900);
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       } else {
-        toast({ title: 'Error', description: response.data?.error || 'No se pudo reenviar el código.', variant: 'destructive' });
+        toast({ title: tc('error'), description: response.data?.error || t('couldNotResend'), variant: 'destructive' });
       }
     } catch {
-      toast({ title: 'Error', description: 'No se pudo conectar con el servidor.', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('couldNotConnect'), variant: 'destructive' });
     } finally {
       setResending(false);
     }
@@ -183,10 +186,10 @@ function VerifyEmailContent() {
               </div>
             </div>
             <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
-              Verifica tu correo
+              {t('title')}
             </h1>
             <p className="text-[15px] text-[#64748B]">
-              Enviamos un código de 6 dígitos a
+              {t('sentCodeTo')}
             </p>
             <p className="text-[15px] font-medium text-[#0F172A] break-all">{email}</p>
           </div>
@@ -216,7 +219,7 @@ function VerifyEmailContent() {
             disabled={fullCode.length !== 6 || verifying}
             className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
           >
-            {verifying ? (<>{spinnerSvg}Verificando...</>) : 'Verificar'}
+            {verifying ? (<>{spinnerSvg}{t('verifying')}</>) : t('verifyButton')}
           </button>
 
           <div className="space-y-3 text-center">
@@ -227,10 +230,10 @@ function VerifyEmailContent() {
               className="text-[14px] font-medium text-indigo-600 hover:text-indigo-700 disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
             >
               {countdown > 0
-                ? `Reenviar código en ${Math.floor(Math.max(0, countdown) / 60)}:${String(Math.max(0, countdown) % 60).padStart(2, '0')}`
+                ? t('resendCodeIn', { time: `${Math.floor(Math.max(0, countdown) / 60)}:${String(Math.max(0, countdown) % 60).padStart(2, '0')}` })
                 : resending
-                  ? 'Reenviando...'
-                  : 'Reenviar código'}
+                  ? t('resending')
+                  : t('resendCode')}
             </button>
 
             <div>
@@ -239,14 +242,14 @@ function VerifyEmailContent() {
                 className="inline-flex items-center gap-1 text-[14px] text-[#64748B] hover:text-[#374151] transition-colors"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Cambiar correo
+                {t('changeEmail')}
               </a>
             </div>
           </div>
         </div>
       </AuthLayout>
 
-      {navigating && <BrandedLoadingScreen message="Preparando tu escritorio..." />}
+      {navigating && <BrandedLoadingScreen message={t('preparingDesktop')} />}
     </>
   );
 }

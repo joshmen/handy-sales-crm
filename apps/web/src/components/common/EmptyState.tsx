@@ -126,17 +126,18 @@ export const EmptyClients: React.FC<{
   onCreateClient?: () => void
   onImportClients?: () => void
 }> = ({ onCreateClient, onImportClients }) => {
+  const te = useTranslations('emptyStates')
   return (
     <EmptyState
       icon={SbClients}
-      title="No hay clientes registrados"
-      description="Comienza agregando tu primer cliente para gestionar las ventas y rutas."
+      title={te('noClients')}
+      description={te('noClientsDesc')}
       action={onCreateClient ? {
-        label: 'Agregar cliente',
+        label: te('addClient'),
         onClick: onCreateClient
       } : undefined}
       secondaryAction={onImportClients ? {
-        label: 'Importar clientes',
+        label: te('importClients'),
         onClick: onImportClients
       } : undefined}
     />
@@ -147,17 +148,18 @@ export const EmptyProducts: React.FC<{
   onCreateProduct?: () => void
   onImportProducts?: () => void
 }> = ({ onCreateProduct, onImportProducts }) => {
+  const te = useTranslations('emptyStates')
   return (
     <EmptyState
       icon={SbProducts}
-      title="No hay productos en el catálogo"
-      description="Agrega productos para comenzar a crear pedidos y gestionar el inventario."
+      title={te('noProducts')}
+      description={te('noProductsDesc')}
       action={onCreateProduct ? {
-        label: 'Agregar producto',
+        label: te('addProduct'),
         onClick: onCreateProduct
       } : undefined}
       secondaryAction={onImportProducts ? {
-        label: 'Importar productos',
+        label: te('importProducts'),
         onClick: onImportProducts
       } : undefined}
     />
@@ -167,13 +169,14 @@ export const EmptyProducts: React.FC<{
 export const EmptyOrders: React.FC<{
   onCreateOrder?: () => void
 }> = ({ onCreateOrder }) => {
+  const te = useTranslations('emptyStates')
   return (
     <EmptyState
       icon={SbShoppingCart}
-      title="No hay pedidos registrados"
-      description="Los pedidos aparecerán aquí una vez que comiences a registrar ventas."
+      title={te('noOrders')}
+      description={te('noOrdersDesc')}
       action={onCreateOrder ? {
-        label: 'Crear pedido',
+        label: te('createOrder'),
         onClick: onCreateOrder
       } : undefined}
     />
@@ -183,13 +186,14 @@ export const EmptyOrders: React.FC<{
 export const EmptyVisits: React.FC<{
   onScheduleVisit?: () => void
 }> = ({ onScheduleVisit }) => {
+  const te = useTranslations('emptyStates')
   return (
     <EmptyState
       icon={SbVisits}
-      title="No hay visitas programadas"
-      description="Programa visitas a tus clientes para mantener un seguimiento efectivo."
+      title={te('noVisits')}
+      description={te('noVisitsDesc')}
       action={onScheduleVisit ? {
-        label: 'Programar visita',
+        label: te('scheduleVisit'),
         onClick: onScheduleVisit
       } : undefined}
     />
@@ -199,13 +203,14 @@ export const EmptyVisits: React.FC<{
 export const EmptyDeliveries: React.FC<{
   onCreateDelivery?: () => void
 }> = ({ onCreateDelivery }) => {
+  const te = useTranslations('emptyStates')
   return (
     <EmptyState
       icon={SbTruck}
-      title="No hay entregas programadas"
-      description="Las entregas aparecerán aquí cuando los pedidos estén listos para envío."
+      title={te('noDeliveries')}
+      description={te('noDeliveriesDesc')}
       action={onCreateDelivery ? {
-        label: 'Programar entrega',
+        label: te('scheduleDelivery'),
         onClick: onCreateDelivery
       } : undefined}
     />
@@ -239,13 +244,14 @@ export const EmptySearchResults: React.FC<{
 export const EmptyForms: React.FC<{
   onCreateForm?: () => void
 }> = ({ onCreateForm }) => {
+  const te = useTranslations('emptyStates')
   return (
     <EmptyState
       icon={SbForms}
-      title="No hay formularios creados"
-      description="Crea formularios personalizados para recopilar información específica de tus clientes."
+      title={te('noForms')}
+      description={te('noFormsDesc')}
       action={onCreateForm ? {
-        label: 'Crear formulario',
+        label: te('createForm'),
         onClick: onCreateForm
       } : undefined}
     />

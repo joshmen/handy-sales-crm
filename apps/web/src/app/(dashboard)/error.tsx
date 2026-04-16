@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
 import { reportError } from '@/services/errorReporter';
+import { useTranslations } from 'next-intl';
 
 export default function DashboardError({
   error,
@@ -11,6 +12,8 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations('errorPage');
+
   useEffect(() => {
     console.error('[DashboardError]', error);
     reportError(error);
@@ -23,14 +26,14 @@ export default function DashboardError({
           <AlertTriangle className="w-7 h-7 text-amber-600" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-foreground">Error en esta página</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('dashboardTitle')}</h2>
           <p className="text-sm text-muted-foreground">
-            No se pudo cargar el contenido. Esto puede deberse a un problema temporal.
+            {t('dashboardDescription')}
           </p>
           {process.env.NODE_ENV === 'development' && (
             <details className="mt-3 text-left">
               <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70">
-                Detalles del error (solo visible en desarrollo)
+                {t('devErrorDetails')}
               </summary>
               <pre className="mt-2 p-3 bg-surface-3 rounded-lg text-xs text-red-700 overflow-auto max-h-40">
                 {error.message}
@@ -39,7 +42,7 @@ export default function DashboardError({
             </details>
           )}
           <p className="text-xs text-muted-foreground">
-            Si el problema persiste, contacta a soporte.
+            {t('persistsContact')}
             {error.digest && <span className="font-mono ml-1">(Ref: {error.digest})</span>}
           </p>
         </div>
@@ -49,14 +52,14 @@ export default function DashboardError({
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
-            Reintentar
+            {t('retry')}
           </button>
           <a
             href="/dashboard"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-foreground/80 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
-            Dashboard
+            {t('dashboard')}
           </a>
         </div>
       </div>

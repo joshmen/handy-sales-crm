@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
 import { impersonationService } from '@/services/api/impersonation';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle, Clock, Eye, Edit, LogOut, Building2 } from 'lucide-react';
 
 /**
@@ -22,6 +23,8 @@ export function ImpersonationBanner() {
   } = useImpersonationStore();
 
   const { update: updateSession } = useSession();
+  const tc = useTranslations('common');
+  const ti = useTranslations('impersonation');
   const [minutesRemaining, setMinutesRemaining] = useState(0);
   const [isEnding, setIsEnding] = useState(false);
 
@@ -86,8 +89,8 @@ export function ImpersonationBanner() {
       endImpersonation();
       updateSession({ isImpersonating: false });
       toast({
-        title: 'Sesión expirada',
-        description: 'La sesión de impersonación ha expirado automáticamente',
+        title: ti('sessionExpired'),
+        description: ti('sessionExpiredAuto'),
       });
       window.location.href = '/admin/tenants';
     }
@@ -102,14 +105,14 @@ export function ImpersonationBanner() {
       endImpersonation();
       await updateSession({ isImpersonating: false });
       toast({
-        title: 'Sesión finalizada',
-        description: 'Has salido del modo de impersonación',
+        title: ti('sessionEnded'),
+        description: ti('exitedImpersonation'),
       });
       window.location.href = '/admin/tenants';
     } catch {
       toast({
-        title: 'Error',
-        description: 'No se pudo finalizar la sesión',
+        title: tc('error'),
+        description: ti('couldNotEndSession'),
         variant: 'destructive',
       });
     } finally {
@@ -129,7 +132,7 @@ export function ImpersonationBanner() {
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center gap-1.5 bg-amber-600/30 px-2.5 py-0.5 rounded-full flex-shrink-0">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <span className="font-semibold text-xs hidden sm:inline">MODO SOPORTE</span>
+            <span className="font-semibold text-xs hidden sm:inline">{ti('supportMode')}</span>
           </div>
 
           <div className="flex items-center gap-1.5 min-w-0">
@@ -139,7 +142,7 @@ export function ImpersonationBanner() {
 
           <div className="hidden md:flex items-center gap-1 bg-amber-600/20 px-2 py-0.5 rounded text-xs flex-shrink-0">
             {isReadOnly ? <Eye className="h-3 w-3" /> : <Edit className="h-3 w-3" />}
-            <span>{isReadOnly ? 'Solo lectura' : 'Lectura/Escritura'}</span>
+            <span>{isReadOnly ? ti('readOnlyLabel') : ti('readWriteLabel')}</span>
           </div>
         </div>
 
@@ -152,10 +155,10 @@ export function ImpersonationBanner() {
           >
             <Clock className="h-3 w-3" />
             <span className="hidden sm:inline">
-              {minutesRemaining > 0 ? `${minutesRemaining} min` : 'Expirando...'}
+              {minutesRemaining > 0 ? ti('minutesShort', { minutes: minutesRemaining }) : ti('expiring')}
             </span>
             <span className="sm:hidden">
-              {minutesRemaining > 0 ? `${minutesRemaining}m` : '!'}
+              {minutesRemaining > 0 ? ti('minutesShortMobile', { minutes: minutesRemaining }) : '!'}
             </span>
           </div>
 
@@ -165,7 +168,7 @@ export function ImpersonationBanner() {
             className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded text-xs font-medium transition-colors disabled:opacity-50"
           >
             <LogOut className="h-3 w-3" />
-            <span className="hidden sm:inline">{isEnding ? 'Saliendo...' : 'Salir'}</span>
+            <span className="hidden sm:inline">{isEnding ? ti('exitingButton') : ti('exitButton')}</span>
           </button>
         </div>
       </div>

@@ -214,7 +214,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
       }
       router.push('/');
     } catch {
-      toast({ title: 'Error', description: 'No se pudo cerrar la sesión', variant: 'destructive' });
+      toast({ title: tc('error'), description: tc('logoutError'), variant: 'destructive' });
     } finally {
       setIsLoggingOut(false);
       setIsUserMenuOpen(false);
@@ -416,7 +416,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>Notificaciones</DialogTitle>
+              <DialogTitle>{tc('notificationsTitle')}</DialogTitle>
               {notifications.length > 0 && unreadCount > 0 && (
                 <Button
                   variant="ghost"
@@ -424,12 +424,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                   onClick={async () => {
                     const res = await markAllAsRead();
                     if (res.success) {
-                      toast({ title: 'Listo', description: 'Todas marcadas como leídas' });
+                      toast({ title: tc('done'), description: tc('allMarkedRead') });
                     }
                   }}
                   className="text-xs text-blue-600 hover:text-blue-700 -mr-2"
                 >
-                  Marcar todas como leídas
+                  {tc('markAllAsRead')}
                 </Button>
               )}
             </div>
@@ -442,7 +442,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           ) : notifications.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-              <p>No tienes notificaciones</p>
+              <p>{tc('noNotifications')}</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -496,7 +496,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                           <span className="text-xs text-muted-foreground/70">{formatTime(createdDate)}</span>
                           {n.data?.['url'] && (
                             <span className="text-xs text-blue-500 font-medium flex items-center gap-0.5">
-                              Ver detalles <ArrowRight className="h-3 w-3" />
+                              {tc('viewDetails')} <ArrowRight className="h-3 w-3" />
                             </span>
                           )}
                         </div>

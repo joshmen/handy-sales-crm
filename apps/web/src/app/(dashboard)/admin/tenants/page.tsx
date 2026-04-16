@@ -672,7 +672,7 @@ export default function TenantsPage() {
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <div className="text-center">
               <Building2 className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
-              <p className="text-lg font-medium">No hay empresas</p>
+              <p className="text-lg font-medium">{t('noCompanies')}</p>
               <p className="text-sm mt-1">
                 {searchTerm || planFilter !== 'todos'
                   ? t('noResults')
@@ -936,7 +936,7 @@ export default function TenantsPage() {
               {/* Dirección */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Dirección
+                  {t('addressLabel')}
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -944,7 +944,7 @@ export default function TenantsPage() {
                     {...register('direccion')}
                     rows={3}
                     className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                    placeholder="Dirección completa"
+                    placeholder={t('addressPlaceholder')}
                   />
                 </div>
               </div>
@@ -1043,7 +1043,7 @@ export default function TenantsPage() {
               {/* Admin Password */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Contraseña Temporal
+                  {t('adminPasswordLabel')}
                 </label>
                 <input
                   type="text"
@@ -1051,7 +1051,7 @@ export default function TenantsPage() {
                     minLength: { value: 6, message: 'min6Chars' },
                   })}
                   className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Contraseña temporal"
+                  placeholder={t('adminPasswordLabel')}
                 />
                 {errors.adminPassword && (
                   <FieldError message={errors.adminPassword?.message} />

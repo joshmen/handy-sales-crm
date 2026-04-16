@@ -11,23 +11,25 @@ import Link from 'next/link';
 import axios from 'axios';
 import { API_CONFIG } from '@/lib/constants';
 import { AuthLayout } from '@/components/auth/AuthLayout';
-
-const schema = z
-  .object({
-    password: z.string().min(8, 'Mínimo 8 caracteres'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Las contraseñas no coinciden',
-    path: ['confirmPassword'],
-  });
-
-type FormData = z.infer<typeof schema>;
+import { useTranslations } from 'next-intl';
 
 function SetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const email = searchParams.get('email');
+  const t = useTranslations('setPassword');
+
+  const schema = z
+    .object({
+      password: z.string().min(8, t('minChars')),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('passwordsDoNotMatch'),
+      path: ['confirmPassword'],
+    });
+
+  type FormData = z.infer<typeof schema>;
 
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,17 +53,16 @@ function SetPasswordForm() {
           <AlertTriangle className="w-8 h-8 text-red-500" />
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">
-          Enlace inválido
+          {t('invalidLink')}
         </h2>
         <p className="text-sm text-foreground/70 mb-6">
-          El enlace de invitación es inválido o ha expirado.
-          Contacta al administrador de tu empresa para recibir una nueva invitación.
+          {t('invalidLinkDesc')}
         </p>
         <Link
           href="/login"
           className="inline-block px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm font-semibold rounded-[10px] hover:from-green-700 hover:to-green-800 transition-all shadow-sm"
         >
-          Ir al Login
+          {t('goToLogin')}
         </Link>
       </div>
     );
@@ -82,11 +83,11 @@ function SetPasswordForm() {
       } else {
         setError(
           response.data?.error ||
-            'Error al establecer la contraseña. El enlace puede haber expirado.'
+            t('errorSettingPassword')
         );
       }
     } catch {
-      setError('No se pudo conectar con el servidor. Intenta de nuevo.');
+      setError(t('couldNotConnect'));
     } finally {
       setLoading(false);
     }
@@ -99,17 +100,16 @@ function SetPasswordForm() {
           <CheckCircle className="w-8 h-8 text-emerald-600" />
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">
-          ¡Cuenta lista!
+          {t('accountReady')}
         </h2>
         <p className="text-sm text-foreground/70 mb-6">
-          Tu contraseña ha sido establecida exitosamente. Ya puedes iniciar
-          sesión con tu cuenta.
+          {t('accountReadyDesc')}
         </p>
         <Link
           href="/login"
           className="inline-block px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm font-semibold rounded-[10px] hover:from-green-700 hover:to-green-800 transition-all shadow-sm"
         >
-          Iniciar sesión
+          {t('signIn')}
         </Link>
       </div>
     );
@@ -122,10 +122,10 @@ function SetPasswordForm() {
           <UserPlus className="w-7 h-7 text-green-600" />
         </div>
         <h2 className="text-xl font-bold text-foreground mb-1">
-          Bienvenido a Handy Suites
+          {t('welcomeTitle')}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Crea tu contraseña para la cuenta{' '}
+          {t('createPasswordFor')}{' '}
           <strong>{email}</strong>
         </p>
       </div>
@@ -133,13 +133,13 @@ function SetPasswordForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-foreground/80 mb-1.5">
-            Contraseña
+            {t('passwordLabel')}
           </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
               {...register('password')}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('minChars')}
               className="w-full h-12 px-3.5 pr-10 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
               autoFocus
             />
@@ -164,13 +164,13 @@ function SetPasswordForm() {
 
         <div>
           <label className="block text-sm font-medium text-foreground/80 mb-1.5">
-            Confirmar contraseña
+            {t('confirmPasswordLabel')}
           </label>
           <div className="relative">
             <input
               type={showConfirm ? 'text' : 'password'}
               {...register('confirmPassword')}
-              placeholder="Repite la contraseña"
+              placeholder={t('repeatPasswordPlaceholder')}
               className="w-full h-12 px-3.5 pr-10 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
             />
             <button
@@ -207,7 +207,7 @@ function SetPasswordForm() {
           {loading ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            'Crear mi contraseña'
+            t('createMyPassword')
           )}
         </button>
       </form>

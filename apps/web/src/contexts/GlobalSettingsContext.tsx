@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { GlobalSettings, companyService } from '@/services/api/companyService';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 
 interface GlobalSettingsContextType {
   globalSettings: GlobalSettings | null;
@@ -32,6 +33,7 @@ interface GlobalSettingsProviderProps {
 
 export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ children }) => {
   const { status } = useSession();
+  const t = useTranslations('globalSettings.toast');
   const { isConnected, on, off } = useSignalR();
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,22 +154,22 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         localStorage.setItem('global_settings', JSON.stringify(response.data));
         
         toast({
-          title: 'Configuración global actualizada',
-          description: 'Los cambios se han aplicado en toda la plataforma',
+          title: t('updatedTitle'),
+          description: t('updatedDesc'),
         });
         return true;
       } else {
         toast({
-          title: 'Error',
-          description: 'No se pudo actualizar la configuración global',
+          title: t('errorTitle'),
+          description: t('updateError'),
           variant: 'destructive',
         });
         return false;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo actualizar la configuración global. Solo SUPER_ADMIN puede hacer estos cambios.',
+        title: t('errorTitle'),
+        description: t('updateErrorSuperAdmin'),
         variant: 'destructive',
       });
       return false;
@@ -188,14 +190,14 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         localStorage.setItem('global_settings', JSON.stringify(updatedSettings));
         
         toast({
-          title: 'Logo de plataforma actualizado',
-          description: 'El logo se ha actualizado en toda la plataforma',
+          title: t('logoUpdatedTitle'),
+          description: t('logoUpdatedDesc'),
         });
         return true;
       } else {
         toast({
-          title: 'Error al subir logo',
-          description: response.error || 'Solo SUPER_ADMIN puede cambiar el logo de la plataforma',
+          title: t('logoUploadErrorTitle'),
+          description: response.error || t('logoUploadErrorDefault'),
           variant: 'destructive',
         });
         return false;
@@ -203,8 +205,8 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
     } catch (_error) {
       console.error('Upload platform logo exception:', _error);
       toast({
-        title: 'Error',
-        description: 'Error inesperado al subir el logo de la plataforma',
+        title: t('errorTitle'),
+        description: t('logoUploadUnexpected'),
         variant: 'destructive',
       });
       return false;
@@ -225,22 +227,22 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         localStorage.setItem('global_settings', JSON.stringify(updatedSettings));
         
         toast({
-          title: 'Logo de plataforma eliminado',
-          description: 'El logo se ha eliminado de toda la plataforma',
+          title: t('logoDeletedTitle'),
+          description: t('logoDeletedDesc'),
         });
         return true;
       } else {
         toast({
-          title: 'Error',
-          description: 'No se pudo eliminar el logo de la plataforma',
+          title: t('errorTitle'),
+          description: t('logoDeleteError'),
           variant: 'destructive',
         });
         return false;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el logo de la plataforma',
+        title: t('errorTitle'),
+        description: t('logoDeleteError'),
         variant: 'destructive',
       });
       return false;

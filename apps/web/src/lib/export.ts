@@ -1,6 +1,10 @@
 // Utilidades genéricas para exportación de datos
 import { formatCurrency as libFmtCurrency, formatDate as libFmtDate } from '@/lib/formatters';
 
+export const EXPORT_ERROR_CODES = {
+  NO_DATA: 'EXPORT_NO_DATA',
+} as const;
+
 export interface ExportColumn<T = unknown> {
   key: keyof T | string;
   header: string;
@@ -18,7 +22,7 @@ export function exportToCSV<T>(data: T[], options: ExportOptions<T> = {}): void 
   const { filename = 'export', columns, includeTimestamp = true } = options;
 
   if (!data || data.length === 0) {
-    throw new Error('No hay datos para exportar');
+    throw new Error(EXPORT_ERROR_CODES.NO_DATA);
   }
 
   // Si no se especifican columnas, usar todas las propiedades del primer objeto
@@ -60,7 +64,7 @@ export function exportToJSON<T>(data: T[], options: ExportOptions<T> = {}): void
   const { filename = 'export', columns, includeTimestamp = true } = options;
 
   if (!data || data.length === 0) {
-    throw new Error('No hay datos para exportar');
+    throw new Error(EXPORT_ERROR_CODES.NO_DATA);
   }
 
   let exportData: T[] = data;

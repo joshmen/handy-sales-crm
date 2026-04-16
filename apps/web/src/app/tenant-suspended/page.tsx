@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { ShieldOff } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export default function TenantSuspendedPage() {
   const router = useRouter();
+  const t = useTranslations('tenantSuspended');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-1 px-6">
@@ -29,19 +31,18 @@ export default function TenantSuspendedPage() {
         {/* Message */}
         <div className="space-y-3">
           <h1 className="text-2xl font-bold text-[#111827]">
-            Cuenta Desactivada
+            {t('title')}
           </h1>
           <p className="text-foreground/70 text-sm leading-relaxed">
-            Su empresa ha sido desactivada por el administrador del sistema.
-            Si cree que esto es un error, contacte al soporte técnico.
+            {t('description')}
           </p>
         </div>
 
         {/* Contact info */}
         <div className="bg-surface-2 border border-border-subtle rounded-lg p-4 text-left space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Soporte</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('support')}</p>
           <p className="text-sm text-foreground/80">
-            Email: <a href="mailto:soporte@handysuites.com" className="text-blue-600 hover:underline">soporte@handysuites.com</a>
+            {t('emailLabel')}: <a href="mailto:soporte@handysuites.com" className="text-blue-600 hover:underline">soporte@handysuites.com</a>
           </p>
         </div>
 
@@ -50,7 +51,7 @@ export default function TenantSuspendedPage() {
           onClick={() => router.push('/login')}
           className="w-full h-11 bg-success hover:bg-success/90 text-white text-sm font-semibold rounded-lg transition-colors"
         >
-          Volver al Inicio de Sesión
+          {t('backToLogin')}
         </button>
       </div>
     </div>

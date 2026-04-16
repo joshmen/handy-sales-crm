@@ -1,5 +1,14 @@
 // Utilidades genéricas para importación de datos
 
+export const IMPORT_ERROR_CODES = {
+  INVALID_CSV: 'IMPORT_INVALID_CSV',
+  INVALID_JSON: 'IMPORT_INVALID_JSON',
+  INVALID_JSON_FORMAT: 'IMPORT_INVALID_JSON_FORMAT',
+  INVALID_JSON_ARRAY: 'IMPORT_INVALID_JSON_ARRAY',
+  READ_ERROR: 'IMPORT_READ_ERROR',
+  EMPTY_CSV: 'IMPORT_EMPTY_CSV',
+} as const;
+
 export interface ImportColumn<T = unknown> {
   key: keyof T | string;
   header: string;
@@ -35,7 +44,7 @@ export async function importFromCSV<T>(
 ): Promise<ImportResult<T>> {
   return new Promise((resolve, reject) => {
     if (!file || (file.type !== 'text/csv' && !file.name.endsWith('.csv'))) {
-      reject(new Error('El archivo debe ser de tipo CSV'));
+      reject(new Error(IMPORT_ERROR_CODES.INVALID_CSV));
       return;
     }
 
@@ -52,7 +61,7 @@ export async function importFromCSV<T>(
     };
 
     reader.onerror = () => {
-      reject(new Error('Error al leer el archivo'));
+      reject(new Error(IMPORT_ERROR_CODES.READ_ERROR));
     };
 
     reader.readAsText(file, 'UTF-8');
@@ -66,7 +75,7 @@ export async function importFromJSON<T>(
 ): Promise<ImportResult<T>> {
   return new Promise((resolve, reject) => {
     if (!file || (file.type !== 'application/json' && !file.name.endsWith('.json'))) {
-      reject(new Error('El archivo debe ser de tipo JSON'));
+      reject(new Error(IMPORT_ERROR_CODES.INVALID_JSON));
       return;
     }
 
@@ -78,7 +87,7 @@ export async function importFromJSON<T>(
         const jsonData = JSON.parse(jsonContent);
 
         if (!Array.isArray(jsonData)) {
-          reject(new Error('El archivo JSON debe contener un array de objetos'));
+          reject(new Error(IMPORT_ERROR_CODES.INVALID_JSON_ARRAY));
           return;
         }
 
@@ -86,7 +95,7 @@ export async function importFromJSON<T>(
         resolve(result);
       } catch (error) {
         if (error instanceof SyntaxError) {
-          reject(new Error('El archivo JSON no tiene un formato válido'));
+          reject(new Error(IMPORT_ERROR_CODES.INVALID_JSON_FORMAT));
         } else {
           reject(error);
         }
@@ -94,7 +103,7 @@ export async function importFromJSON<T>(
     };
 
     reader.onerror = () => {
-      reject(new Error('Error al leer el archivo'));
+      reject(new Error(IMPORT_ERROR_CODES.READ_ERROR));
     };
 
     reader.readAsText(file, 'UTF-8');
@@ -109,7 +118,7 @@ function parseCSV<T>(csvContent: string, options: ImportOptions<T>): ImportResul
     .filter(line => line);
 
   if (lines.length === 0) {
-    throw new Error('El archivo CSV está vacío');
+    throw new Error(IMPORT_ERROR_CODES.EMPTY_CSV);
   }
 
   // Parsear headers

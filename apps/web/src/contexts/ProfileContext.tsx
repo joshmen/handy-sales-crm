@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { UserProfile, UpdateProfileRequest, ChangePasswordRequest, profileService } from '@/services/api/profileService';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 
 interface ProfileContextType {
   profile: UserProfile | null;
@@ -33,6 +34,7 @@ interface ProfileProviderProps {
 
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
   const { data: session, status } = useSession();
+  const t = useTranslations('profile.toast');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -95,23 +97,23 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       if (response.success && response.data) {
         setProfile(response.data);
         toast({
-          title: 'Perfil actualizado',
-          description: 'Tu información personal ha sido actualizada correctamente',
+          title: t('profileUpdatedTitle'),
+          description: t('profileUpdatedDesc'),
         });
         return true;
       } else {
         // Fallback: actualizar localmente si la API falla
         setProfile(prev => (prev ? { ...prev, ...data } : null));
         toast({
-          title: 'Perfil actualizado localmente',
-          description: 'Los cambios se han guardado temporalmente',
+          title: t('profileUpdatedLocalTitle'),
+          description: t('profileUpdatedLocalDesc'),
         });
         return true;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el perfil',
+        title: t('errorTitle'),
+        description: t('profileUpdateError'),
         variant: 'destructive',
       });
       return false;
@@ -128,22 +130,22 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       const response = await profileService.changePassword(data);
       if (response.success) {
         toast({
-          title: 'Contraseña actualizada',
-          description: 'Tu contraseña ha sido cambiada exitosamente',
+          title: t('passwordUpdatedTitle'),
+          description: t('passwordUpdatedDesc'),
         });
         return true;
       } else {
         toast({
-          title: 'Error',
-          description: response.error || 'No se pudo cambiar la contraseña',
+          title: t('errorTitle'),
+          description: response.error || t('passwordChangeError'),
           variant: 'destructive',
         });
         return false;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo cambiar la contraseña',
+        title: t('errorTitle'),
+        description: t('passwordChangeError'),
         variant: 'destructive',
       });
       return false;
@@ -166,22 +168,22 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         setProfile(updatedProfile);
         
         toast({
-          title: 'Foto actualizada',
-          description: 'Tu foto de perfil ha sido actualizada',
+          title: t('avatarUpdatedTitle'),
+          description: t('avatarUpdatedDesc'),
         });
         return true;
       } else {
         toast({
-          title: 'Error',
-          description: 'No se pudo subir la foto',
+          title: t('errorTitle'),
+          description: t('avatarUploadError'),
           variant: 'destructive',
         });
         return false;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo subir la foto',
+        title: t('errorTitle'),
+        description: t('avatarUploadError'),
         variant: 'destructive',
       });
       return false;
@@ -204,22 +206,22 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         setProfile(updatedProfile);
         
         toast({
-          title: 'Foto eliminada',
-          description: 'Tu foto de perfil ha sido eliminada',
+          title: t('avatarDeletedTitle'),
+          description: t('avatarDeletedDesc'),
         });
         return true;
       } else {
         toast({
-          title: 'Error',
-          description: 'No se pudo eliminar la foto',
+          title: t('errorTitle'),
+          description: t('avatarDeleteError'),
           variant: 'destructive',
         });
         return false;
       }
     } catch (_error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo eliminar la foto',
+        title: t('errorTitle'),
+        description: t('avatarDeleteError'),
         variant: 'destructive',
       });
       return false;
