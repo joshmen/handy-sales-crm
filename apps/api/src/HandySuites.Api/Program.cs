@@ -135,7 +135,7 @@ builder.Services.AddHttpClient("OpenAI", client =>
 var mobileApiUrl = builder.Configuration["MobileApiUrl"]
     ?? Environment.GetEnvironmentVariable("MOBILE_API_URL")
     ?? "http://localhost:1052";
-var internalApiKey = builder.Configuration["InternalApiKey"] ?? "handy-internal-2024";
+var internalApiKey = builder.Configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
 builder.Services.AddHttpClient("MobileApi", client =>
 {
     client.BaseAddress = new Uri(mobileApiUrl);

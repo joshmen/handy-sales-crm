@@ -104,7 +104,7 @@ public static class ClienteEndpoints
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados });
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPost("/clientes/{id:int}/aprobar-prospecto", async (
             int id,

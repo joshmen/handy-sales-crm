@@ -186,7 +186,7 @@ public static class MobileVentaDirectaEndpoints
                     {
                         var mainClient = httpClientFactory.CreateClient("MainApi");
                         var notifyRequest = new HttpRequestMessage(HttpMethod.Post, "/api/internal/dashboard-notify");
-                        notifyRequest.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? "handy-internal-2024");
+                        notifyRequest.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured"));
                         notifyRequest.Content = JsonContent.Create(new { tipo = "pedido", id = pedido.Id, tenantId });
                         await mainClient.SendAsync(notifyRequest);
                     }

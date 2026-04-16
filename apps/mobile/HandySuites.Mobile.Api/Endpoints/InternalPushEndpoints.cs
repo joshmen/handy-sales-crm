@@ -28,7 +28,7 @@ public static class InternalPushEndpoints
         {
             // API key authentication (same pattern as Main API internal endpoints)
             var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
-            var expectedKey = configuration["InternalApiKey"] ?? "handy-internal-2024";
+            var expectedKey = configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
             if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
             {
                 logger.LogWarning("push-notify: Invalid or missing API key");

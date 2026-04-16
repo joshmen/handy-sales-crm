@@ -49,6 +49,7 @@ public static class MobileCrashReportEndpoints
             return Results.Created($"/api/crash-reports/{report.Id}", new { id = report.Id });
         })
         .AllowAnonymous()
+        .RequireRateLimiting("crash-reports")
         .WithTags("CrashReports")
         .WithSummary("Reportar crash desde móvil (anonymous — crashes can happen before login)");
     }

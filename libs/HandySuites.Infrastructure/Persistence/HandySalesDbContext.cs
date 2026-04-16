@@ -603,7 +603,8 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(ims => new { ims.SuperAdminId, ims.Status });
             entity.HasIndex(ims => new { ims.TargetTenantId, ims.Status });
 
-            // Matching query filter with Usuario (suppresses EF Core warning)
+            // ImpersonationSession is an immutable audit record — no EliminadoEn field.
+            // This filter only suppresses EF Core's query filter mismatch warning on the SuperAdmin navigation.
             entity.HasQueryFilter(ims => ims.SuperAdmin!.EliminadoEn == null);
         });
         // Configure Cobro entity

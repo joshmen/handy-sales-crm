@@ -23,7 +23,7 @@ public static class InternalEndpoints
         {
             // API key authentication (no JWT required — internal service-to-service call)
             var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
-            var expectedKey = configuration["InternalApiKey"] ?? "handy-internal-2024";
+            var expectedKey = configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
             if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
             {
                 logger.LogWarning("sync-notify: Invalid or missing API key");
@@ -105,7 +105,7 @@ public static class InternalEndpoints
         {
             // API key authentication (no JWT required — internal service-to-service call)
             var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
-            var expectedKey = configuration["InternalApiKey"] ?? "handy-internal-2024";
+            var expectedKey = configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
             if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
             {
                 logger.LogWarning("dashboard-notify: Invalid or missing API key");

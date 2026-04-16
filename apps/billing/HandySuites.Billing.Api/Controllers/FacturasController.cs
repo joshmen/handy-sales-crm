@@ -217,6 +217,12 @@ public class FacturasController : ControllerBase
         var tenantId = GetTenantId();
         var userId = GetUserId();
 
+        // Validate RFC format
+        if (!IsValidRfc(request.EmisorRfc))
+            return BadRequest(new { error = "RFC del emisor no tiene formato válido" });
+        if (!IsValidRfc(request.ReceptorRfc))
+            return BadRequest(new { error = "RFC del receptor no tiene formato válido" });
+
         // Obtener siguiente folio
         var folio = await GetNextFolio(tenantId, request.Serie ?? "A");
 
@@ -1398,4 +1404,9 @@ public class FacturasController : ControllerBase
             }).ToList()
         };
     }
+
+    private static bool IsValidRfc(string rfc) =>
+        !string.IsNullOrWhiteSpace(rfc) &&
+        (rfc == "XAXX010101000" || rfc == "XEXX010101000" ||
+         System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-ZÑ&]{3,4}\d{6}[A-V1-9][0-9A-Z]\d$"));
 }

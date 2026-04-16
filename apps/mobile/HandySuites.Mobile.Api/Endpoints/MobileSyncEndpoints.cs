@@ -17,7 +17,7 @@ public static class MobileSyncEndpoints
         {
             var client = httpClientFactory.CreateClient("MainApi");
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/internal/dashboard-notify");
-            request.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? "handy-internal-2024");
+            request.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured"));
             request.Content = JsonContent.Create(new { tipo = "sync", id = 0, tenantId });
             await client.SendAsync(request);
         }
