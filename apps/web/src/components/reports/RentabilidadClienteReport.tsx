@@ -10,6 +10,7 @@ import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -20,6 +21,7 @@ function defaultDates() {
 
 export function RentabilidadClienteReport() {
   const { formatCurrency, formatDate } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.rentabilidad");
   const tc = useTranslations("reports.common");
   const fmt = (n: number) => formatCurrency(n);
@@ -55,11 +57,11 @@ export function RentabilidadClienteReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: "65%" } },
-    colors: ["#10b981"],
-    grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
-    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: ["#374151"] }, offsetX: 5 },
-    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: "#9ca3af" } } },
-    yaxis: { labels: { style: { fontSize: "10px", colors: "#374151" } } },
+    colors: [chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
+    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: [chartColors.textPrimary] }, offsetX: 5 },
+    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: "10px", colors: chartColors.textPrimary } } },
     tooltip: { y: { formatter: (v) => fmt(v) } },
   };
 
@@ -87,7 +89,7 @@ export function RentabilidadClienteReport() {
           {top10.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
-              <Chart type="bar" options={chartOptions} series={[{ name: t("salesLabel"), data: top10.map(c => ({ x: c.nombre, y: c.totalVentas })) }]} height={Math.max(250, top10.length * 45)} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={chartOptions} series={[{ name: t("salesLabel"), data: top10.map(c => ({ x: c.nombre, y: c.totalVentas })) }]} height={Math.max(250, top10.length * 45)} />
             </Card>
           )}
           <ReportTable data={data.clientes as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} />

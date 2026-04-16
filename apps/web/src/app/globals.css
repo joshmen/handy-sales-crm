@@ -303,6 +303,10 @@ body {
 .dark .bg-cyan-100 { background-color: hsl(190 82% 48% / 0.12); }
 .dark .bg-emerald-50 { background-color: hsl(152 60% 48% / 0.08); }
 .dark .bg-emerald-100 { background-color: hsl(152 60% 48% / 0.12); }
+.dark .bg-violet-50 { background-color: hsl(263 70% 58% / 0.08); }
+.dark .bg-violet-100 { background-color: hsl(263 70% 58% / 0.12); }
+.dark .bg-rose-50 { background-color: hsl(350 70% 55% / 0.08); }
+.dark .bg-rose-100 { background-color: hsl(350 70% 55% / 0.12); }
 
 /* Inputs in dark mode — visible borders and readable text */
 .dark input[type="text"],

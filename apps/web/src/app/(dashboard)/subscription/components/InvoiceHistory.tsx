@@ -12,9 +12,9 @@ import { Loader2, FileText, Download, Receipt, ChevronDown } from "lucide-react"
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   open: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  draft: "bg-surface-3 text-foreground dark:bg-foreground dark:text-muted-foreground/60",
+  draft: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground/60",
   uncollectible: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  void: "bg-surface-3 text-foreground/70 dark:bg-foreground dark:text-muted-foreground",
+  void: "bg-surface-3 text-foreground/70 dark:bg-surface-3 dark:text-muted-foreground",
 };
 
 const STATUS_KEYS: Record<string, string> = {
@@ -26,7 +26,7 @@ const STATUS_KEYS: Record<string, string> = {
 };
 
 function InvoiceStatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
-  const color = STATUS_COLORS[status] || "bg-surface-3 text-foreground dark:bg-foreground dark:text-muted-foreground/60";
+  const color = STATUS_COLORS[status] || "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground/60";
   const key = STATUS_KEYS[status];
   const label = key ? t(key) : status;
   return (

@@ -197,7 +197,7 @@ export default function ReportsPage() {
                           <button
                             key={report.id}
                             onClick={() => handleReportClick(report.id)}
-                            className={`text-left bg-surface-2 dark:bg-foreground border border-border-subtle dark:border-border-strong rounded-xl p-5 transition-all hover:bg-surface-1 dark:hover:bg-foreground hover:border-border-default hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
+                            className={`text-left bg-surface-2 dark:bg-card border border-border-subtle dark:border-border-strong rounded-xl p-5 transition-all hover:bg-surface-1 dark:hover:bg-surface-3 hover:border-border-default hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-start gap-3 mb-3">
                               <Icon size={36} />

@@ -11,6 +11,7 @@ import { toast } from '@/hooks/useToast';
 import { RefreshCw, Download, Loader2 } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const estadoColorMap: Record<string, { bg: string; text: string; key: string; pie: string }> = {
   sin_stock: { bg: 'bg-red-100', text: 'text-red-700', key: 'outOfStock', pie: '#dc2626' },
@@ -20,6 +21,7 @@ const estadoColorMap: Record<string, { bg: string; text: string; key: string; pi
 };
 
 export function InventarioReport() {
+  const chartColors = useChartTheme();
   const t = useTranslations('reports.inventario');
   const tCommon = useTranslations('reports.common');
   const tFilters = useTranslations('reports.filters');
@@ -103,13 +105,15 @@ export function InventarioReport() {
           {pieData.length > 0 && (
             <TremorCard ref={chartRef as React.RefObject<HTMLDivElement>}>
               <Chart
+                key={chartColors.isDark ? 'dark' : 'light'}
                 type="donut"
                 options={{
                   chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
                   labels: pieData.map(d => d.name),
-                  colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6'],
+                  colors: [chartColors.series.red, chartColors.series.amber, chartColors.series.green, chartColors.series.blue],
                   plotOptions: { pie: { donut: { size: '65%' } } },
-                  legend: { position: 'bottom', fontSize: '12px' },
+                  legend: { position: 'bottom', fontSize: '12px', labels: { colors: chartColors.textPrimary } },
+                  stroke: { colors: [chartColors.stroke] },
                   dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%` },
                 }}
                 series={pieData.map(d => d.value)}

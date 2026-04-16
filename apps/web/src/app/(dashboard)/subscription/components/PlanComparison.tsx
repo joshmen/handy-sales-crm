@@ -357,7 +357,7 @@ function PlanCard({
           {isBlocked && !isCurrent && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
               downgrade.isFreeBlocked
-                ? "bg-surface-3 dark:bg-foreground/60 border border-border-subtle dark:border-border-strong"
+                ? "bg-surface-3 dark:bg-surface-3/60 border border-border-subtle dark:border-border-strong"
                 : "bg-muted/40 dark:bg-muted/30 border border-amber-200/60 dark:border-amber-800/40"
             }`}>
               <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
@@ -378,9 +378,9 @@ function PlanCard({
           <button
             className={`group/btn flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${isBlocked || isCurrent ? "mt-3" : "mt-5"} ${
               isCurrent
-                ? "bg-surface-3 dark:bg-foreground text-muted-foreground dark:text-muted-foreground cursor-default"
+                ? "bg-surface-3 dark:bg-surface-3 text-muted-foreground dark:text-muted-foreground cursor-default"
                 : isDisabled
-                  ? "bg-surface-3 dark:bg-foreground text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
+                  ? "bg-surface-3 dark:bg-surface-3 text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
                   : isRenewable
                     ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
                     : downgrade.isDowngrade

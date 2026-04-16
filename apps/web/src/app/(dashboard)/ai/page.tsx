@@ -101,7 +101,7 @@ function HelpTooltip() {
         <Question size={15} weight="bold" />
       </button>
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border-subtle dark:border-border-strong bg-surface-2/95 dark:bg-foreground/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border-subtle dark:border-border-strong bg-surface-2/95 dark:bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
           <p className="font-semibold text-foreground dark:text-white mb-4 text-base">{t('helpTitle')}</p>
           <div className="space-y-3">
             {ACTION_TYPES.map((a) => {
@@ -295,7 +295,7 @@ function ActionButtons({
               isConfirming
                 ? 'border-amber-500 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-500/30'
                 : isExecuting
-                  ? 'border-border-default dark:border-gray-600 bg-surface-1 dark:bg-foreground cursor-wait'
+                  ? 'border-border-default dark:border-gray-600 bg-surface-1 dark:bg-card cursor-wait'
                   : 'border-border-subtle dark:border-border-strong bg-surface-2 dark:bg-gray-800 hover:border-border-default dark:hover:border-gray-600 hover:shadow-sm'
             } ${executing && !isExecuting ? 'opacity-40 cursor-not-allowed' : ''}`}
             style={!isConfirming && !isExecuting ? {
@@ -760,10 +760,10 @@ export default function AiPage() {
                 )}
               </p>
               <p className="text-[10px] sm:text-[11px] text-muted-foreground hidden sm:block">
-                <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-foreground text-[10px] font-mono">Enter</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-surface-3 text-[10px] font-mono">Enter</kbd>
                 <span className="ml-1">{t('send')}</span>
                 <span className="hidden lg:inline ml-2">
-                  <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-foreground text-[10px] font-mono">Shift+Enter</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-surface-3 dark:bg-surface-3 text-[10px] font-mono">Shift+Enter</kbd>
                   <span className="ml-1">{t('newLine')}</span>
                 </span>
               </p>

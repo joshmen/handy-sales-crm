@@ -162,27 +162,27 @@ module.exports = {
         },
         'dark-tremor': {
           brand: {
-            faint: '#0B1229',
+            faint: '#0e1518',
             muted: '#172554',
             subtle: '#1e40af',
             DEFAULT: '#3b82f6',
             emphasis: '#60a5fa',
-            inverted: '#030712',
+            inverted: '#0e1518',
           },
           background: {
-            muted: '#131A2B',
-            subtle: '#1f2937',
-            DEFAULT: '#111827',
+            muted: '#0e1518',      /* --surface-1: hsl(200 20% 7%) */
+            subtle: '#1e2a30',     /* --surface-3: hsl(200 16% 14%) */
+            DEFAULT: '#172025',    /* --card: hsl(200 18% 11%) */
             emphasis: '#d1d5db',
           },
-          border: { DEFAULT: '#1f2937' },
-          ring: { DEFAULT: '#1f2937' },
+          border: { DEFAULT: '#2b3539' },   /* --border: hsl(200 14% 20%) */
+          ring: { DEFAULT: '#2b3539' },
           content: {
-            subtle: '#4b5563',
-            DEFAULT: '#6b7280',
-            emphasis: '#e5e7eb',
-            strong: '#f9fafb',
-            inverted: '#000000',
+            subtle: '#5a6e78',     /* muted-foreground dimmed */
+            DEFAULT: '#7b9099',    /* --muted-foreground: hsl(200 10% 55%) */
+            emphasis: '#e4eaed',   /* --foreground: hsl(200 12% 92%) */
+            strong: '#f0f4f6',
+            inverted: '#0e1518',
           },
         },
       },

@@ -10,6 +10,7 @@ import { getEfectividadVisitas, EfectividadVendedor, EfectividadVisitasResponse 
 import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -19,6 +20,7 @@ function defaultDates() {
 }
 
 export function EfectividadVisitasReport() {
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.efectividadVisitas");
   const tc = useTranslations("reports.common");
   const [dates, setDates] = useState(defaultDates);
@@ -58,11 +60,11 @@ export function EfectividadVisitasReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "45%" } },
-    colors: ["#94a3b8", "#10b981"],
-    grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
+    colors: [chartColors.textMuted, chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
-    xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
-    yaxis: { labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
+    xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
     legend: { position: "top", fontSize: "12px" },
     tooltip: { shared: true, intersect: false },
   };
@@ -95,7 +97,7 @@ export function EfectividadVisitasReport() {
           ]} />
           {data.vendedores.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <Chart type="bar" options={chartOptions} series={[
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={chartOptions} series={[
                 { name: t("totalBar"), data: data.vendedores.map(v => v.totalVisitas) },
                 { name: t("withSaleBar"), data: data.vendedores.map(v => v.visitasConVenta) },
               ]} height={320} />

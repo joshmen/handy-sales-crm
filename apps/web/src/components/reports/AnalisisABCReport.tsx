@@ -11,6 +11,7 @@ import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -23,6 +24,7 @@ const CLASS_COLORS: Record<string, string> = { A: "text-green-600 bg-green-50", 
 
 export function AnalisisABCReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.analisisABC");
   const tc = useTranslations("reports.common");
   const fmt = (n: number) => formatCurrency(n);
@@ -66,13 +68,13 @@ export function AnalisisABCReport() {
     chart: { type: "line", toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     stroke: { width: [0, 3], curve: "smooth" },
     plotOptions: { bar: { borderRadius: 4, columnWidth: "60%" } },
-    colors: ["#10b981", "#3b82f6"],
-    grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
+    colors: [chartColors.series.green, chartColors.series.blue],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
-    xaxis: { categories: top20.map(i => i.nombre.substring(0, 15)), labels: { style: { fontSize: "9px", colors: "#9ca3af" }, rotate: -30 } },
+    xaxis: { categories: top20.map(i => i.nombre.substring(0, 15)), labels: { style: { fontSize: "9px", colors: chartColors.textMuted }, rotate: -30 } },
     yaxis: [
-      { title: { text: t("salesLabel"), style: { fontSize: "11px", color: "#9ca3af" } }, labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: "#9ca3af" } } },
-      { opposite: true, title: { text: t("accumLabel"), style: { fontSize: "11px", color: "#9ca3af" } }, labels: { formatter: (v) => `${v}%`, style: { fontSize: "11px", colors: "#9ca3af" } }, min: 0, max: 100 },
+      { title: { text: t("salesLabel"), style: { fontSize: "11px", color: chartColors.textSecondary } }, labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: chartColors.textMuted } } },
+      { opposite: true, title: { text: t("accumLabel"), style: { fontSize: "11px", color: chartColors.textSecondary } }, labels: { formatter: (v) => `${v}%`, style: { fontSize: "11px", colors: chartColors.textMuted } }, min: 0, max: 100 },
     ],
     tooltip: { shared: true, intersect: false },
     legend: { position: "top", fontSize: "12px" },
@@ -116,7 +118,7 @@ export function AnalisisABCReport() {
           {top20.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
-              <Chart type="line" options={chartOptions} series={[
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="line" options={chartOptions} series={[
                 { name: t("salesLabel"), type: "column", data: top20.map(i => i.totalVentas) },
                 { name: t("accumLabel"), type: "line", data: top20.map(i => i.porcentajeAcumulado) },
               ]} height={350} />

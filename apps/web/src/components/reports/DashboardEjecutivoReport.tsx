@@ -9,11 +9,13 @@ import { ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2, Down
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 export function DashboardEjecutivoReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations('reports.ejecutivo');
   const tCommon = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
@@ -51,22 +53,22 @@ export function DashboardEjecutivoReport() {
   const donutOptions: ApexCharts.ApexOptions = {
     chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
     labels: data ? [t('withSale', { count: data.visitas.conVenta }), t('withoutSale', { count: data.visitas.sinVenta })] : [],
-    colors: ['#3b82f6', '#e5e7eb'],
-    plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: t('visitsTitle'), fontSize: '12px', color: '#6b7280', formatter: () => data ? String(data.visitas.total) : '0' } } } } },
+    colors: [chartColors.series.blue, chartColors.emptySegment],
+    plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: t('visitsTitle'), fontSize: '12px', color: chartColors.textSecondary, formatter: () => data ? String(data.visitas.total) : '0' } } } } },
     legend: { position: 'bottom', fontSize: '12px' },
     dataLabels: { enabled: false },
-    stroke: { width: 2, colors: ['#ffffff'] },
+    stroke: { width: 2, colors: [chartColors.stroke] },
   };
 
   // Bar chart for sales breakdown
   const barOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 600 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%' } },
-    colors: ['#10b981'],
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
-    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: ['#374151'] }, offsetX: 5 },
-    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: '#9ca3af' } } },
-    yaxis: { labels: { style: { fontSize: '11px', colors: '#374151' } } },
+    colors: [chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: [chartColors.textPrimary] }, offsetX: 5 },
+    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: chartColors.textPrimary } } },
     tooltip: { y: { formatter: (v) => fmt(v) } },
   };
 
@@ -159,12 +161,12 @@ export function DashboardEjecutivoReport() {
               </Flex>
               <p className="text-3xl font-bold text-foreground mb-1">{data.visitas.total}</p>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mb-4">{data.visitas.efectividadPct}%</span>
-              <Chart type="donut" options={donutOptions} series={[data.visitas.conVenta, data.visitas.sinVenta || 0]} height={220} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="donut" options={donutOptions} series={[data.visitas.conVenta, data.visitas.sinVenta || 0]} height={220} />
             </Card>
 
             <Card className="lg:col-span-3 page-animate page-animate-delay-3">
               <Text className="!font-semibold !text-foreground mb-4">{t('salesTitle')} — {periodoLabel}</Text>
-              <Chart type="bar" options={barOptions} series={barSeries} height={200} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={barOptions} series={barSeries} height={200} />
             </Card>
           </div>
 

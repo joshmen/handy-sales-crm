@@ -11,6 +11,7 @@ import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -21,6 +22,7 @@ function defaultDates() {
 
 export function CarteraVencidaReport() {
   const { formatCurrency, formatDate } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.carteraVencida");
   const tc = useTranslations("reports.common");
   const fmt = (n: number) => formatCurrency(n);
@@ -75,11 +77,11 @@ export function CarteraVencidaReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "55%", distributed: true } },
-    colors: ["#10b981", "#f59e0b", "#f97316", "#ef4444"],
-    grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
+    colors: [chartColors.series.green, chartColors.series.amber, "#f97316", chartColors.series.red],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px" } },
-    xaxis: { categories: bucketChart.map(b => b.name), labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
-    yaxis: { labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: "#9ca3af" } } },
+    xaxis: { categories: bucketChart.map(b => b.name), labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
+    yaxis: { labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: chartColors.textMuted } } },
     legend: { show: false },
     tooltip: { y: { formatter: (v) => fmt(v) } },
   };
@@ -114,7 +116,7 @@ export function CarteraVencidaReport() {
           {bucketChart.some(b => b.value > 0) && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
-              <Chart type="bar" options={chartOptions} series={[{ name: t("balanceLabel"), data: bucketChart.map(b => b.value) }]} height={300} />
+              <Chart key={chartColors.isDark ? "dark" : "light"} type="bar" options={chartOptions} series={[{ name: t("balanceLabel"), data: bucketChart.map(b => b.value) }]} height={300} />
             </Card>
           )}
           <ReportTable data={data.clientes as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} />

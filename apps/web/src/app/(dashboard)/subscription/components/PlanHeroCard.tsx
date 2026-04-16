@@ -20,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
   Trial: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   Active: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   PastDue: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  Cancelled: "bg-surface-3 text-foreground dark:bg-foreground dark:text-muted-foreground/60",
+  Cancelled: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground/60",
   Expired: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 };
 

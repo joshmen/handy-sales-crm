@@ -221,7 +221,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
     <form ref={formRef} onSubmit={handleSubmit(onFormSubmit, scrollToFirstError)} className="flex flex-col gap-5 p-6" data-tour="order-form">
       {/* Tipo de Venta */}
       {!order && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-1 dark:bg-foreground/50 dark:border-border-strong">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-1 dark:bg-surface-3/50 dark:border-border-strong">
           <span className="text-[13px] font-medium text-foreground/80 dark:text-muted-foreground/60">{t('saleType')}</span>
           <div className="flex rounded-lg overflow-hidden border border-border-default dark:border-gray-600">
             <button
@@ -230,7 +230,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
               className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
                 tipoVenta === 0
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-foreground/70 hover:bg-surface-3 dark:bg-foreground/80 dark:text-muted-foreground/60'
+                  : 'bg-white text-foreground/70 hover:bg-surface-3 dark:bg-surface-3 dark:text-muted-foreground/60'
               }`}
             >
               {t('presale')}
@@ -241,7 +241,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
               className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
                 tipoVenta === 1
                   ? 'bg-success text-success-foreground'
-                  : 'bg-white text-foreground/70 hover:bg-surface-3 dark:bg-foreground/80 dark:text-muted-foreground/60'
+                  : 'bg-white text-foreground/70 hover:bg-surface-3 dark:bg-surface-3 dark:text-muted-foreground/60'
               }`}
             >
               {t('directSale')}

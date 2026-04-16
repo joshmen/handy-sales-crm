@@ -7,6 +7,7 @@ import { getInsights, InsightsResponse, Insight } from "@/services/api/reports";
 import { toast } from "@/hooks/useToast";
 import { Package, MapPin, Users, Eye, ShoppingCart, Lightbulb, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -58,6 +59,7 @@ function translateInsight(text: string): string {
 }
 
 function InsightCard({ insight, index }: { insight: Insight; index: number }) {
+  const chartColors = useChartTheme();
   const Icon = TIPO_ICONS[insight.tipo] || Lightbulb;
   const colors = TIPO_COLORS[insight.tipo] || { bar: "from-gray-400 to-gray-300", bg: "bg-surface-1", text: "text-muted-foreground", chart: "#9ca3af" };
   const isUp = insight.tendencia === "up";
@@ -117,7 +119,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
 
         {/* Mini sparkline chart */}
         <div className="-mx-2 -mb-2">
-          <Chart type="area" options={sparkOptions} series={[{ data: sparkData }]} height={50} />
+          <Chart key={chartColors.isDark ? 'dark' : 'light'} type="area" options={sparkOptions} series={[{ data: sparkData }]} height={50} />
         </div>
       </div>
     </div>
@@ -125,6 +127,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
 }
 
 export function AutoInsightsReport() {
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.autoInsights");
   const tc = useTranslations("reports.common");
   const [dates, setDates] = useState(defaultDates);
@@ -205,6 +208,7 @@ export function AutoInsightsReport() {
             <div className="bg-surface-2 border border-border-subtle rounded-xl shadow-elevation-1 p-5">
               <h3 className="text-sm font-semibold text-foreground mb-4">{t("summaryChart")}</h3>
               <Chart
+                key={chartColors.isDark ? 'dark' : 'light'}
                 type="bar"
                 options={summaryOptions}
                 series={[{ name: "%", data: chartInsights.map(i => i.valor) }]}

@@ -9,7 +9,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-surface-3 dark:bg-foreground/80",
+        "animate-pulse rounded-md bg-surface-3 dark:bg-surface-3",
         className
       )}
     />
@@ -37,7 +37,7 @@ export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
   return (
     <div className="overflow-hidden rounded-lg border border-border-subtle dark:border-border-strong">
       <table className="min-w-full divide-y divide-border-subtle dark:divide-gray-700">
-        <thead className="bg-surface-1 dark:bg-foreground">
+        <thead className="bg-surface-1 dark:bg-card">
           <tr>
             {Array.from({ length: columns }).map((_, i) => (
               <th key={i} className="px-4 py-3">
@@ -46,7 +46,7 @@ export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-foreground">
+        <tbody className="bg-white dark:bg-card">
           {Array.from({ length: rows }).map((_, i) => (
             <TableRowSkeleton key={i} columns={columns} />
           ))}
@@ -59,7 +59,7 @@ export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
 // Skeleton for cards
 export const CardSkeleton: React.FC = () => {
   return (
-    <div className="rounded-lg border border-border-subtle bg-white p-4 shadow-sm dark:border-border-strong dark:bg-foreground">
+    <div className="rounded-lg border border-border-subtle bg-white p-4 shadow-sm dark:border-border-strong dark:bg-card">
       <Skeleton className="mb-3 h-5 w-1/3" />
       <Skeleton className="mb-2 h-4 w-full" />
       <Skeleton className="mb-2 h-4 w-2/3" />
@@ -71,7 +71,7 @@ export const CardSkeleton: React.FC = () => {
 // Skeleton for stat cards (dashboard)
 export const StatCardSkeleton: React.FC = () => {
   return (
-    <div className="rounded-lg border border-border-subtle bg-white p-4 shadow-sm dark:border-border-strong dark:bg-foreground">
+    <div className="rounded-lg border border-border-subtle bg-white p-4 shadow-sm dark:border-border-strong dark:bg-card">
       <div className="flex items-center justify-between">
         <Skeleton className="h-10 w-10 rounded-full" />
         <Skeleton className="h-4 w-16" />
@@ -158,7 +158,7 @@ export const DetailPageSkeleton: React.FC = () => {
         <Skeleton className="h-8 w-48" />
       </div>
 
-      <div className="rounded-lg border border-border-subtle bg-white p-6 dark:border-border-strong dark:bg-foreground">
+      <div className="rounded-lg border border-border-subtle bg-white p-6 dark:border-border-strong dark:bg-card">
         <div className="grid gap-6 md:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <FormFieldSkeleton key={i} />

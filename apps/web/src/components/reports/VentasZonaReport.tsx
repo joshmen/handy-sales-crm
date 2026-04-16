@@ -11,6 +11,7 @@ import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -21,6 +22,7 @@ function defaultDates() {
 
 export function VentasZonaReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations('reports.ventasZona');
   const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
@@ -62,8 +64,8 @@ export function VentasZonaReport() {
   const donutOptions: ApexCharts.ApexOptions = {
     chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
     labels: zonesWithSales.map(z => z.nombre),
-    colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'],
-    plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: tc('total'), fontSize: '12px', color: '#6b7280', formatter: () => fmt(data?.totales.totalVentas || 0) } } } } },
+    colors: [chartColors.series.green, chartColors.series.blue, chartColors.series.amber, chartColors.series.red, chartColors.series.purple, chartColors.series.cyan, '#ec4899', '#14b8a6'],
+    plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: tc('total'), fontSize: '12px', color: chartColors.textSecondary, formatter: () => fmt(data?.totales.totalVentas || 0) } } } } },
     legend: { position: 'bottom', fontSize: '12px' },
     dataLabels: { enabled: true, formatter: (val) => `${Number(val).toFixed(0)}%` },
     tooltip: { y: { formatter: (v) => fmt(v) } },
@@ -99,7 +101,7 @@ export function VentasZonaReport() {
 
           {zonesWithSales.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <Chart type="donut" options={donutOptions} series={zonesWithSales.map(z => z.ventasTotales)} height={350} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="donut" options={donutOptions} series={zonesWithSales.map(z => z.ventasTotales)} height={350} />
             </Card>
           )}
 

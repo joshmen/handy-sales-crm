@@ -10,6 +10,7 @@ import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -22,6 +23,7 @@ function defaultDates() {
 
 export function VentasVendedorReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations('reports.ventasVendedor');
   const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
@@ -62,11 +64,11 @@ export function VentasVendedorReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '65%' } },
-    colors: ['#10b981'],
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 3 },
-    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: ['#374151'] }, offsetX: 5 },
-    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: '#9ca3af' } } },
-    yaxis: { labels: { style: { fontSize: '11px', colors: '#374151' } } },
+    colors: [chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
+    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: [chartColors.textPrimary] }, offsetX: 5 },
+    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: chartColors.textPrimary } } },
     tooltip: { y: { formatter: (v) => fmt(v) } },
   };
 
@@ -94,6 +96,7 @@ export function VentasVendedorReport() {
         <>
           <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
             <Chart
+              key={chartColors.isDark ? 'dark' : 'light'}
               type="bar"
               options={chartOptions}
               series={[{ name: t('salesLabel'), data: data.map(v => ({ x: v.nombre, y: v.totalVentas })) }]}

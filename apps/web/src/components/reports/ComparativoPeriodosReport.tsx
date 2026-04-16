@@ -15,6 +15,7 @@ import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { Search, Download, Loader2, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 function monthAgo(months: number) {
   const d = new Date();
@@ -26,6 +27,7 @@ function monthAgo(months: number) {
 
 export function ComparativoPeriodosReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.comparativo");
   const tMetrics = useTranslations("reports.comparativo.metrics");
   const tCommon = useTranslations("reports.common");
@@ -176,16 +178,17 @@ export function ComparativoPeriodosReport() {
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
               <ApexChart
+                key={chartColors.isDark ? 'dark' : 'light'}
                 type="bar"
                 options={{
                   chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
                   plotOptions: { bar: { borderRadius: 6, columnWidth: "40%" } },
-                  colors: ["#94a3b8", "#10b981"],
-                  grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
+                  colors: [chartColors.textMuted, chartColors.series.green],
+                  grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
                   dataLabels: { enabled: false },
-                  xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "10px", colors: "#9ca3af" }, rotate: -20 } },
-                  yaxis: { labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
-                  legend: { position: "top", fontSize: "12px" },
+                  xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "10px", colors: chartColors.textMuted }, rotate: -20 } },
+                  yaxis: { labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
+                  legend: { position: "top", fontSize: "12px", labels: { colors: chartColors.textPrimary } },
                   tooltip: { shared: true, intersect: false },
                 }}
                 series={[

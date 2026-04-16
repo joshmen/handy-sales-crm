@@ -11,6 +11,7 @@ import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -23,6 +24,7 @@ function defaultDates() {
 
 export function VentasPeriodoReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations('reports.ventasPeriodo');
   const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
@@ -70,20 +72,20 @@ export function VentasPeriodoReport() {
       animations: { enabled: true, speed: 800 },
       zoom: { enabled: agrupacion === 'dia' },
     },
-    colors: ['#10b981'],
+    colors: [chartColors.series.green],
     stroke: { curve: 'smooth', width: agrupacion === 'dia' ? 2.5 : 0 },
     fill: agrupacion === 'dia'
       ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] } }
       : { type: 'solid' },
     plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
     dataLabels: { enabled: false },
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 3 },
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     xaxis: {
       categories: data?.periodos.map(p => p.fecha) || [],
-      labels: { style: { fontSize: '11px', colors: '#9ca3af' }, rotate: -30 },
+      labels: { style: { fontSize: '11px', colors: chartColors.textMuted }, rotate: -30 },
     },
     yaxis: {
-      labels: { style: { fontSize: '11px', colors: '#9ca3af' }, formatter: (v) => `$${(v / 1000).toFixed(0)}k` },
+      labels: { style: { fontSize: '11px', colors: chartColors.textMuted }, formatter: (v) => `$${(v / 1000).toFixed(0)}k` },
     },
     tooltip: { theme: 'light', y: { formatter: (v) => fmt(v) } },
   };
@@ -130,6 +132,7 @@ export function VentasPeriodoReport() {
           {data.periodos.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <Chart
+                key={chartColors.isDark ? 'dark' : 'light'}
                 type={agrupacion === 'dia' ? 'area' : 'bar'}
                 options={chartOptions}
                 series={chartSeries}

@@ -11,6 +11,7 @@ import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -23,6 +24,7 @@ type Tab = 'masVendidos' | 'mayorVenta' | 'sinVenta';
 
 export function VentasProductoReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const tr = useTranslations('reports.ventasProducto');
   const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
@@ -74,11 +76,11 @@ export function VentasProductoReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%' } },
-    colors: [tab === 'masVendidos' ? '#3b82f6' : '#10b981'],
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 3 },
-    dataLabels: { enabled: true, formatter: (v) => tab === 'masVendidos' ? String(v) : fmt(Number(v)), style: { fontSize: '11px', colors: ['#374151'] }, offsetX: 5 },
-    xaxis: { labels: { formatter: (v) => tab === 'masVendidos' ? String(v) : `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: '#9ca3af' } } },
-    yaxis: { labels: { style: { fontSize: '11px', colors: '#374151' } } },
+    colors: [tab === 'masVendidos' ? chartColors.series.blue : chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
+    dataLabels: { enabled: true, formatter: (v) => tab === 'masVendidos' ? String(v) : fmt(Number(v)), style: { fontSize: '11px', colors: [chartColors.textPrimary] }, offsetX: 5 },
+    xaxis: { labels: { formatter: (v) => tab === 'masVendidos' ? String(v) : `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: chartColors.textPrimary } } },
     tooltip: { y: { formatter: (v) => tab === 'masVendidos' ? `${v} ${tr('quantity').toLowerCase()}` : fmt(v) } },
   };
 
@@ -121,7 +123,7 @@ export function VentasProductoReport() {
 
           {tab !== 'sinVenta' && chartData.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <Chart type="bar" options={chartOptions} series={[{ name: tab === 'masVendidos' ? tr('quantity') : tr('totalSales'), data: chartData.map(p => ({ x: p.nombre, y: tab === 'masVendidos' ? p.cantidadVendida : p.totalVentas })) }]} height={Math.max(250, chartData.length * 40)} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={chartOptions} series={[{ name: tab === 'masVendidos' ? tr('quantity') : tr('totalSales'), data: chartData.map(p => ({ x: p.nombre, y: tab === 'masVendidos' ? p.cantidadVendida : p.totalVentas })) }]} height={Math.max(250, chartData.length * 40)} />
             </Card>
           )}
 

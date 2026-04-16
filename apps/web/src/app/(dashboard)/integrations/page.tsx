@@ -24,7 +24,7 @@ import {
 const estadoBadgeStyles: Record<string, string> = {
   DISPONIBLE: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   PROXIMO: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  DESCONTINUADO: "bg-surface-3 text-foreground dark:bg-foreground dark:text-muted-foreground",
+  DESCONTINUADO: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground",
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -72,7 +72,7 @@ function IntegrationCard({
             integration.isActivated
               ? "bg-green-100 dark:bg-green-900/30 text-green-600"
               : isAvailable
-                ? "bg-surface-3 dark:bg-foreground text-foreground/70 dark:text-muted-foreground"
+                ? "bg-surface-3 dark:bg-surface-3 text-foreground/70 dark:text-muted-foreground"
                 : "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
           }`}>
             {icon}

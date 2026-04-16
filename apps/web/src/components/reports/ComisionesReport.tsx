@@ -11,6 +11,7 @@ import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -21,6 +22,7 @@ function defaultDates() {
 
 export function ComisionesReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.comisionesReport");
   const tc = useTranslations("reports.common");
   const fmt = (n: number) => formatCurrency(n);
@@ -59,11 +61,11 @@ export function ComisionesReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "50%" } },
-    colors: ["#10b981"],
-    grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
-    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: ["#374151"] } },
-    xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
-    yaxis: { labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: "#9ca3af" } } },
+    colors: [chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
+    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: [chartColors.textPrimary] } },
+    xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
+    yaxis: { labels: { formatter: (v) => `$${(v / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: chartColors.textMuted } } },
     tooltip: { y: { formatter: (v) => fmt(v) } },
   };
 
@@ -100,7 +102,7 @@ export function ComisionesReport() {
           ]} />
           {data.vendedores.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
-              <Chart type="bar" options={chartOptions} series={[{ name: t("chartName"), data: data.vendedores.map(v => v.comision) }]} height={320} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={chartOptions} series={[{ name: t("chartName"), data: data.vendedores.map(v => v.comision) }]} height={320} />
             </Card>
           )}
           <ReportTable data={data.vendedores as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} footerRow={{ nombre: tc("total"), totalVentas: fmt(data.totalVentas), cantidadPedidos: "", comision: fmt(data.totalComisiones) }} />

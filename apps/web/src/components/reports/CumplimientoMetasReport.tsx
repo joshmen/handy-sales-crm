@@ -11,6 +11,7 @@ import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslations } from "next-intl";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -21,6 +22,7 @@ function defaultDates() {
 
 export function CumplimientoMetasReport() {
   const { formatCurrency } = useFormatters();
+  const chartColors = useChartTheme();
   const t = useTranslations("reports.cumplimientoMetas");
   const tc = useTranslations("reports.common");
   const fmt = (n: number) => formatCurrency(n);
@@ -72,11 +74,11 @@ export function CumplimientoMetasReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "40%" } },
-    colors: ["#94a3b8", "#10b981"],
-    grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
+    colors: [chartColors.textMuted, chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
-    xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
-    yaxis: { labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
+    xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
     legend: { position: "top", fontSize: "12px" },
     tooltip: { shared: true, intersect: false },
   };
@@ -111,7 +113,7 @@ export function CumplimientoMetasReport() {
           {chartData.length > 0 && (
             <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <h3 className="text-sm font-semibold text-foreground/80 mb-3">{t("chartTitle")}</h3>
-              <Chart type="bar" options={chartOptions} series={[
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={chartOptions} series={[
                 { name: t("goalLabel"), data: chartData.map(c => c.meta) },
                 { name: t("actualLabel"), data: chartData.map(c => c.actual) },
               ]} height={320} />

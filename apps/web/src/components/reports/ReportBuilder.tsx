@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import {
   BarChart3, TrendingUp, Layers, PieChart, Table,
   Play, Loader2, AlertCircle, FileDown,
@@ -37,6 +38,7 @@ const CHART_ICONS: { type: ChartType; icon: React.ElementType; label: string }[]
 ];
 
 export function ReportBuilder() {
+  const chartColors = useChartTheme();
   const t = useTranslations('analytics');
   const tSources = useTranslations('analytics.sources');
   const tc = useTranslations('common');
@@ -122,18 +124,18 @@ export function ReportBuilder() {
 
   const apexOptions: ApexCharts.ApexOptions = useMemo(() => {
     if (chartType === 'pie') {
-      return { chart: { type: 'pie', background: 'transparent' }, labels: chartCategories, colors: CHART_COLORS, legend: { position: 'bottom', labels: { colors: '#9ca3af' } }, dataLabels: { enabled: true } };
+      return { chart: { type: 'pie', background: 'transparent' }, labels: chartCategories, colors: CHART_COLORS, legend: { position: 'bottom', labels: { colors: chartColors.textMuted } }, stroke: { colors: [chartColors.stroke] }, dataLabels: { enabled: true } };
     }
     return {
       chart: { type: chartType === 'area' ? 'area' : chartType === 'line' ? 'line' : 'bar', background: 'transparent', toolbar: { show: true } },
-      xaxis: { categories: chartCategories, labels: { style: { colors: '#9ca3af' } } },
-      yaxis: { labels: { style: { colors: '#9ca3af' } } },
+      xaxis: { categories: chartCategories, labels: { style: { colors: chartColors.textMuted } } },
+      yaxis: { labels: { style: { colors: chartColors.textMuted } } },
       colors: CHART_COLORS, dataLabels: { enabled: false },
-      grid: { borderColor: '#e5e7eb', strokeDashArray: 3 },
+      grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
       fill: chartType === 'area' ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } } : {},
       tooltip: { shared: true, intersect: false },
     };
-  }, [chartType, chartCategories]);
+  }, [chartType, chartCategories, chartColors]);
 
   const apexSeries = useMemo(() => chartType === 'pie' ? chartSeriesData : [{ name: metricLabel, data: chartSeriesData }], [chartType, chartSeriesData, metricLabel]);
 
@@ -190,7 +192,7 @@ export function ReportBuilder() {
           {result.rows.length === 0 && <div className="flex flex-col items-center justify-center py-24 text-muted-foreground"><Table className="w-12 h-12 mb-3 text-muted-foreground/30" /><p className="text-sm font-medium">{t('noResults')}</p></div>}
           {result.rows.length > 0 && chartType !== 'table' && (
             <div ref={chartRef} className="bg-surface-2 rounded-xl border border-border-subtle shadow-elevation-1 p-4">
-              <Chart options={apexOptions} series={apexSeries} type={chartType === 'pie' ? 'pie' : chartType === 'area' ? 'area' : chartType === 'line' ? 'line' : 'bar'} height={380} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} options={apexOptions} series={apexSeries} type={chartType === 'pie' ? 'pie' : chartType === 'area' ? 'area' : chartType === 'line' ? 'line' : 'bar'} height={380} />
             </div>
           )}
           {result.rows.length > 0 && (

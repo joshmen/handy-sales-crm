@@ -256,7 +256,7 @@ function PlatformBadge({ platform, t }: { platform: 'web' | 'app' | 'ambos'; t: 
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-3 text-foreground/70 text-xs font-medium dark:bg-foreground dark:text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-3 text-foreground/70 text-xs font-medium dark:bg-surface-3 dark:text-muted-foreground">
       {role === 'Admin' || role === 'Supervisor' ? <ShieldCheck size={12} /> : <UserCircle size={12} />}
       {role}
     </span>
@@ -284,7 +284,7 @@ function StepRow({ step, index, phaseColor, t }: { step: FlowStep; index: number
       {step.href && (
         <Link
           href={step.href}
-          className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-surface-3 dark:bg-foreground hover:bg-surface-3 dark:hover:bg-foreground/80 transition-colors`}
+          className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-surface-3 dark:bg-surface-3 hover:bg-surface-3 dark:hover:bg-surface-4 transition-colors`}
           style={{ color: colors ? undefined : '#16A34A' }}
         >
           <span className="text-primary">{step.href}</span>

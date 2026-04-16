@@ -12,6 +12,7 @@ import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -23,6 +24,7 @@ function defaultDates() {
 const fmtDate = (d: string) => libFmtDate(d, null, { day: '2-digit', month: 'short', year: 'numeric' });
 
 export function NuevosClientesReport() {
+  const chartColors = useChartTheme();
   const t = useTranslations('reports.nuevosClientes');
   const tc = useTranslations('reports.common');
   const [dates, setDates] = useState(defaultDates);
@@ -59,11 +61,11 @@ export function NuevosClientesReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
-    colors: ['#10b981'],
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 3 },
-    dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#374151'] } },
-    xaxis: { categories: data?.porMes.map(m => m.mes) || [], labels: { style: { fontSize: '11px', colors: '#9ca3af' } } },
-    yaxis: { labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, forceNiceScale: true },
+    colors: [chartColors.series.green],
+    grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
+    dataLabels: { enabled: true, style: { fontSize: '11px', colors: [chartColors.textPrimary] } },
+    xaxis: { categories: data?.porMes.map(m => m.mes) || [], labels: { style: { fontSize: '11px', colors: chartColors.textMuted } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: chartColors.textMuted } }, forceNiceScale: true },
     tooltip: { y: { formatter: (v) => `${v} ${tc('clients').toLowerCase()}` } },
   };
 
@@ -92,7 +94,7 @@ export function NuevosClientesReport() {
           {data.porMes.length > 0 && (
             <Card>
               <p className="text-xs font-medium text-foreground/70 mb-3">{t('perMonth')}</p>
-              <Chart type="bar" options={chartOptions} series={[{ name: tc('clients'), data: data.porMes.map(m => m.cantidad) }]} height={260} />
+              <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={chartOptions} series={[{ name: tc('clients'), data: data.porMes.map(m => m.cantidad) }]} height={260} />
             </Card>
           )}
           <ReportTable data={data.clientes as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} showIndex />
