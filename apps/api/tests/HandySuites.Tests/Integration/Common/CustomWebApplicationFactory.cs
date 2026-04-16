@@ -58,6 +58,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         // Skip DatabaseMigrator — EnsureCreated() handles schema for SQLite
         Environment.SetEnvironmentVariable("RUN_MIGRATIONS", "false");
+        // InternalApiKey required after hardcoded default removal
+        Environment.SetEnvironmentVariable("InternalApiKey", "test-internal-api-key");
         builder.UseEnvironment("Testing");
 
         // Provide dummy config values for services that require them
@@ -68,6 +70,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Cloudinary:Url"] = "cloudinary://000000000000000:fake_secret@fake_cloud",
                 ["SendGrid:ApiKey"] = "SG.fake-key-for-testing",
                 ["Ai:ApiKey"] = "sk-fake-key-for-testing",
+                ["InternalApiKey"] = "test-internal-api-key",
             });
         });
 

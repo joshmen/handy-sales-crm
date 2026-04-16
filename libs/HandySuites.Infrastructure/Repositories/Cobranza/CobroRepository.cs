@@ -131,15 +131,15 @@ public class CobroRepository : ICobroRepository
                 }
                 else
                 {
-                    // SQLite fallback (tests) — no row-level locking
+                    // SQLite fallback (tests) — no row-level locking, no decimal SumAsync
                     var pedido = await _db.Pedidos.AsNoTracking()
                         .Where(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId)
                         .Select(p => new { p.Total }).FirstOrDefaultAsync();
                     if (pedido != null)
                     {
-                        var cobradoPrevio = await _db.Cobros.AsNoTracking()
+                        var cobradoPrevio = (await _db.Cobros.AsNoTracking()
                             .Where(c => c.PedidoId == dto.PedidoId.Value && c.TenantId == tenantId && c.Activo)
-                            .SumAsync(c => c.Monto);
+                            .Select(c => c.Monto).ToListAsync()).Sum();
                         var saldoPendiente = pedido.Total - cobradoPrevio;
                         if (dto.Monto > saldoPendiente)
                             throw new InvalidOperationException(
@@ -219,9 +219,9 @@ public class CobroRepository : ICobroRepository
                         .Select(p => new { p.Total }).FirstOrDefaultAsync();
                     if (pedido != null)
                     {
-                        var cobradoOtros = await _db.Cobros.AsNoTracking()
+                        var cobradoOtros = (await _db.Cobros.AsNoTracking()
                             .Where(c => c.PedidoId == entity.PedidoId.Value && c.TenantId == tenantId && c.Activo && c.Id != id)
-                            .SumAsync(c => c.Monto);
+                            .Select(c => c.Monto).ToListAsync()).Sum();
                         var saldoPendiente = pedido.Total - cobradoOtros;
                         if (dto.Monto > saldoPendiente)
                             throw new InvalidOperationException(
