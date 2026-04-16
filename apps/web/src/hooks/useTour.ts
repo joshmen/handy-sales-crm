@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import type { Driver } from 'driver.js';
 import { getTourForPathname } from '@/data/tours';
 import { restoreDrawerFromTour, closeDrawerForTour, consumeTourContinuation } from '@/data/tours/types';
@@ -43,6 +44,7 @@ function ensureDriverCSS() {
 
 export function useTour() {
   const pathname = usePathname();
+  const tTours = useTranslations('tours');
   const driverRef = useRef<Driver | null>(null);
 
   const tourConfig = getTourForPathname(pathname);
@@ -80,10 +82,10 @@ export function useTour() {
       stagePadding: 10,
       stageRadius: 8,
       popoverClass: 'handy-tour-popover',
-      nextBtnText: 'Siguiente',
-      prevBtnText: 'Anterior',
-      doneBtnText: tourConfig.doneBtnText || 'Terminar',
-      progressText: '{{current}} de {{total}}',
+      nextBtnText: tTours('nav.next'),
+      prevBtnText: tTours('nav.prev'),
+      doneBtnText: tourConfig.doneBtnText ? tTours(tourConfig.doneBtnText as Parameters<typeof tTours>[0]) : tTours('nav.done'),
+      progressText: tTours('nav.progress'),
       onDestroyed: () => {
         if (driverRef.current?.isLastStep()) {
           markTourCompleted(tourId);
@@ -94,26 +96,36 @@ export function useTour() {
         driverRef.current = null;
         window.dispatchEvent(new Event('tour-inactive'));
       },
-      steps: tourConfig.steps.map((step) => ({
-        ...(step.element ? { element: step.element } : {}),
-        ...(step.onHighlighted ? { onHighlighted: step.onHighlighted } : {}),
-        ...(step.onDeselected ? { onDeselected: step.onDeselected } : {}),
-        popover: {
-          title: step.popover.title,
-          description: step.popover.description,
-          side: step.popover.side,
-          align: step.popover.align,
-          ...(step.popover.popoverClass
-            ? { popoverClass: `handy-tour-popover ${step.popover.popoverClass}` }
-            : {}),
-          ...(step.popover.onNextClick
-            ? { onNextClick: () => driverRef.current && step.popover.onNextClick!(driverRef.current) }
-            : {}),
-          ...(step.popover.onPrevClick
-            ? { onPrevClick: () => driverRef.current && step.popover.onPrevClick!(driverRef.current) }
-            : {}),
-        },
-      })),
+      steps: tourConfig.steps.map((step) => {
+        const resolvedTitle = tTours(step.popover.title as Parameters<typeof tTours>[0]);
+        const resolvedDesc = tTours(step.popover.description as Parameters<typeof tTours>[0]);
+        // For image steps, wrap title with emoji and description with HTML image layout
+        const displayTitle = step.imagePath ? `\ud83d\udccb ${resolvedTitle}` : resolvedTitle;
+        const displayDesc = step.imagePath
+          ? `<div class="tour-img-wrap"><img src="${step.imagePath}" alt="${resolvedTitle}" /><p class="tour-img-caption">${resolvedDesc}</p></div>`
+          : resolvedDesc;
+
+        return {
+          ...(step.element ? { element: step.element } : {}),
+          ...(step.onHighlighted ? { onHighlighted: step.onHighlighted } : {}),
+          ...(step.onDeselected ? { onDeselected: step.onDeselected } : {}),
+          popover: {
+            title: displayTitle,
+            description: displayDesc,
+            side: step.popover.side,
+            align: step.popover.align,
+            ...(step.popover.popoverClass
+              ? { popoverClass: `handy-tour-popover ${step.popover.popoverClass}` }
+              : {}),
+            ...(step.popover.onNextClick
+              ? { onNextClick: () => driverRef.current && step.popover.onNextClick!(driverRef.current) }
+              : {}),
+            ...(step.popover.onPrevClick
+              ? { onPrevClick: () => driverRef.current && step.popover.onPrevClick!(driverRef.current) }
+              : {}),
+          },
+        };
+      }),
     });
 
     driverRef.current = instance;
@@ -123,7 +135,7 @@ export function useTour() {
       instance.drive();
       window.dispatchEvent(new Event('tour-active'));
     });
-  }, [tourConfig]);
+  }, [tourConfig, tTours]);
 
   // Auto-start tour if navigated from another tour (cross-page continuation)
   useEffect(() => {

@@ -13,15 +13,31 @@ interface HelpTooltipProps {
 
 export function HelpTooltip({ tooltipKey, className }: HelpTooltipProps) {
   const t = useTranslations('tooltips');
-  // Try i18n first, fallback to hardcoded help-content
-  let text: string;
+  const tHelp = useTranslations('helpContent');
+
+  // Resolve tooltip: try dedicated tooltips namespace first, then helpContent namespace
+  let text: string | undefined;
   try {
     const translated = t(tooltipKey);
-    // next-intl returns the full key path when missing (e.g. "tooltips.total-quantity")
-    text = translated.startsWith('tooltips.') ? tooltips[tooltipKey] : translated;
+    if (!translated.startsWith('tooltips.')) {
+      text = translated;
+    }
   } catch {
-    text = tooltips[tooltipKey];
+    // key not in tooltips namespace
   }
+
+  // Fallback: resolve via helpContent namespace using the key stored in help-content.ts
+  if (!text) {
+    const helpKey = tooltips[tooltipKey];
+    if (helpKey) {
+      try {
+        text = tHelp(helpKey);
+      } catch {
+        // key not in helpContent namespace either
+      }
+    }
+  }
+
   if (!text) return null;
 
   return (

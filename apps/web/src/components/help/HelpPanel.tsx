@@ -12,7 +12,7 @@ interface HelpPanelProps {
   onClose: () => void;
 }
 
-function ArticleItem({ article, defaultExpanded = false }: { article: HelpArticle; defaultExpanded?: boolean }) {
+function ArticleItem({ article, defaultExpanded = false, tHelp }: { article: HelpArticle; defaultExpanded?: boolean; tHelp: (key: string) => string }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
@@ -29,16 +29,16 @@ function ArticleItem({ article, defaultExpanded = false }: { article: HelpArticl
         )}
         <div className="flex-1 min-w-0">
           <span className={`text-sm font-medium ${expanded ? 'text-foreground' : 'text-foreground/70'}`}>
-            {article.title}
+            {tHelp(article.title)}
           </span>
           {!expanded && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{article.summary}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{tHelp(article.summary)}</p>
           )}
         </div>
       </button>
       {expanded && (
         <div className="px-4 pb-4 pl-10">
-          <p className="text-sm text-foreground/70 leading-relaxed">{article.body}</p>
+          <p className="text-sm text-foreground/70 leading-relaxed">{tHelp(article.body)}</p>
         </div>
       )}
     </div>
@@ -47,6 +47,7 @@ function ArticleItem({ article, defaultExpanded = false }: { article: HelpArticl
 
 export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
   const t = useTranslations('help.panel');
+  const tHelp = useTranslations('helpContent');
   const pathname = usePathname();
 
   // Find matching help page - try exact match first, then parent paths
@@ -111,7 +112,7 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
           <div className="flex items-center gap-2.5">
             <BookOpen className="w-5 h-5 text-blue-600" />
             <h2 className="text-base font-semibold text-blue-900">
-              {helpPage ? t('helpTitleWithPage', { page: helpPage.title }) : t('helpTitle')}
+              {helpPage ? t('helpTitleWithPage', { page: tHelp(helpPage.title) }) : t('helpTitle')}
             </h2>
           </div>
           <button
@@ -132,7 +133,7 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
           {helpPage ? (
             <>
               <div className="px-4 py-3 border-b border-border-subtle">
-                <p className="text-xs text-muted-foreground">{helpPage.description}</p>
+                <p className="text-xs text-muted-foreground">{tHelp(helpPage.description)}</p>
               </div>
               <div>
                 {helpPage.articles.map((article, index) => (
@@ -140,6 +141,7 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
                     key={article.id}
                     article={article}
                     defaultExpanded={index < 2}
+                    tHelp={tHelp}
                   />
                 ))}
               </div>

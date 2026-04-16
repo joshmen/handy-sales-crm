@@ -6,6 +6,8 @@ export interface TourStep {
   onHighlighted?: () => void;
   /** Called when this step is deselected (navigating away). */
   onDeselected?: () => void;
+  /** When set, useTour wraps the description in an image preview layout */
+  imagePath?: string;
   popover: {
     title: string;
     description: string;
@@ -132,12 +134,14 @@ export interface TourConfig {
   doneBtnText?: string;
 }
 
-/** Creates a centered image preview step (no element highlight) */
+/** Creates a centered image preview step (no element highlight).
+ *  title and caption are i18n keys resolved at runtime by useTour. */
 export function imageStep(title: string, imagePath: string, caption: string): TourStep {
   return {
+    imagePath,
     popover: {
-      title: `📋 ${title}`,
-      description: `<div class="tour-img-wrap"><img src="${imagePath}" alt="${title}" /><p class="tour-img-caption">${caption}</p></div>`,
+      title,
+      description: caption,
       side: 'over',
       popoverClass: 'tour-image-step',
     },

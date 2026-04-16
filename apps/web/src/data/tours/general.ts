@@ -4,15 +4,14 @@ import { TourConfig } from './types';
 export const generalTours: Record<string, TourConfig> = {
   '/dashboard': {
     id: 'dashboard-general',
-    title: 'Tour general del sistema',
-    description: 'Conoce las secciones principales de Handy Suites y cómo navegar el sistema.',
+    title: 'dashboard-general.title',
+    description: 'dashboard-general.desc',
     steps: [
       {
         element: '[data-tour="sidebar-nav"]',
         popover: {
-          title: 'Menú de navegación',
-          description:
-            'Usa este menú lateral para moverte entre las secciones del sistema: Clientes, Productos, Inventario, Pedidos, Rutas y más. Puedes colapsarlo para más espacio.',
+          title: 'dashboard-general.steps.0.title',
+          description: 'dashboard-general.steps.0.desc',
           side: 'right',
           align: 'start',
         },
@@ -20,9 +19,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="header-search"]',
         popover: {
-          title: 'Barra de búsqueda',
-          description:
-            'Busca rápidamente clientes, productos o pedidos escribiendo aquí. Los resultados aparecen al instante.',
+          title: 'dashboard-general.steps.1.title',
+          description: 'dashboard-general.steps.1.desc',
           side: 'bottom',
           align: 'center',
         },
@@ -30,9 +28,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="header-notifications"]',
         popover: {
-          title: 'Notificaciones',
-          description:
-            'Aquí verás alertas de stock bajo, pedidos nuevos, visitas programadas y otras notificaciones importantes de tu negocio.',
+          title: 'dashboard-general.steps.2.title',
+          description: 'dashboard-general.steps.2.desc',
           side: 'bottom',
           align: 'end',
         },
@@ -40,9 +37,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="header-help"]',
         popover: {
-          title: 'Ayuda contextual',
-          description:
-            'Abre el panel de ayuda para ver artículos específicos de cada página. También puedes repetir este tour desde ahí.',
+          title: 'dashboard-general.steps.3.title',
+          description: 'dashboard-general.steps.3.desc',
           side: 'bottom',
           align: 'end',
         },
@@ -50,9 +46,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="header-user-menu"]',
         popover: {
-          title: 'Menú de usuario',
-          description:
-            'Accede a tu perfil, configuración de la empresa y cierra sesión desde aquí.',
+          title: 'dashboard-general.steps.4.title',
+          description: 'dashboard-general.steps.4.desc',
           side: 'bottom',
           align: 'end',
         },
@@ -60,9 +55,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="dashboard-metrics"]',
         popover: {
-          title: 'Métricas del negocio',
-          description:
-            'Estos indicadores muestran un resumen en tiempo real de tus ventas, pedidos, clientes activos y productos. El porcentaje muestra el cambio respecto al período anterior.',
+          title: 'dashboard-general.steps.5.title',
+          description: 'dashboard-general.steps.5.desc',
           side: 'bottom',
           align: 'center',
         },
@@ -70,9 +64,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="dashboard-chart"]',
         popover: {
-          title: 'Gráfico de ventas semanales',
-          description:
-            'Visualiza tus ventas día por día. Usa el filtro de período para cambiar el rango de fechas.',
+          title: 'dashboard-general.steps.6.title',
+          description: 'dashboard-general.steps.6.desc',
           side: 'top',
           align: 'center',
         },
@@ -80,9 +73,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="dashboard-activity"]',
         popover: {
-          title: 'Actividad reciente',
-          description:
-            'Aquí verás los últimos movimientos: pedidos completados, clientes registrados, alertas de inventario y más.',
+          title: 'dashboard-general.steps.7.title',
+          description: 'dashboard-general.steps.7.desc',
           side: 'top',
           align: 'center',
         },
@@ -90,9 +82,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="dashboard-goal"]',
         popover: {
-          title: 'Meta de venta semanal',
-          description:
-            'Muestra el progreso de la meta de ventas de la semana: monto objetivo, logrado y porcentaje de avance. La barra se llena conforme te acercas a la meta.',
+          title: 'dashboard-general.steps.8.title',
+          description: 'dashboard-general.steps.8.desc',
           side: 'top',
           align: 'center',
         },
@@ -102,15 +93,14 @@ export const generalTours: Record<string, TourConfig> = {
 
   '/reports': {
     id: 'reports-tour',
-    title: 'Tour de Reportes',
-    description: 'Conoce los reportes disponibles para analizar tu negocio.',
+    title: 'reports-tour.title',
+    description: 'reports-tour.desc',
     steps: [
       {
         element: '[data-tour="reports-cards"]',
         popover: {
-          title: 'Catálogo de reportes',
-          description:
-            'Aquí ves todos los reportes organizados por sección: Ventas, Clientes e Inventario. Haz clic en cualquier tarjeta para abrir ese reporte.',
+          title: 'reports-tour.steps.0.title',
+          description: 'reports-tour.steps.0.desc',
           side: 'top',
           align: 'center',
         },
@@ -118,9 +108,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="report-filters"]',
         popover: {
-          title: 'Filtros de fecha',
-          description:
-            'Selecciona un rango de fechas y haz clic en "Consultar" para generar el reporte. Algunos reportes tienen filtros adicionales como agrupación o zona.',
+          title: 'reports-tour.steps.1.title',
+          description: 'reports-tour.steps.1.desc',
           side: 'bottom',
           align: 'start',
         },
@@ -128,9 +117,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="report-kpis"]',
         popover: {
-          title: 'Indicadores clave',
-          description:
-            'Tarjetas con los KPIs principales del reporte: totales, promedios y métricas relevantes. Los colores indican la categoría de cada métrica.',
+          title: 'reports-tour.steps.2.title',
+          description: 'reports-tour.steps.2.desc',
           side: 'bottom',
           align: 'center',
         },
@@ -138,9 +126,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="report-table"]',
         popover: {
-          title: 'Tabla de datos',
-          description:
-            'Tabla detallada con los datos del reporte. Haz clic en los encabezados con flechas para ordenar por columna. Algunos reportes incluyen una fila de totales al final.',
+          title: 'reports-tour.steps.3.title',
+          description: 'reports-tour.steps.3.desc',
           side: 'top',
           align: 'center',
         },
@@ -150,15 +137,14 @@ export const generalTours: Record<string, TourConfig> = {
 
   '/global-settings': {
     id: 'global-settings-tour',
-    title: 'Tour de Configuración',
-    description: 'Conoce las opciones de configuración global de tu empresa.',
+    title: 'global-settings-tour.title',
+    description: 'global-settings-tour.desc',
     steps: [
       {
         element: '[data-tour="settings-platform"]',
         popover: {
-          title: 'Nombre y logo',
-          description:
-            'Configura el nombre de tu empresa y sube tu logotipo. Estos aparecerán en el sistema y en documentos generados.',
+          title: 'global-settings-tour.steps.0.title',
+          description: 'global-settings-tour.steps.0.desc',
           side: 'bottom',
           align: 'start',
         },
@@ -166,9 +152,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="settings-colors"]',
         popover: {
-          title: 'Colores de la plataforma',
-          description:
-            'Personaliza los colores primario y secundario de la interfaz para que coincidan con la identidad visual de tu empresa.',
+          title: 'global-settings-tour.steps.1.title',
+          description: 'global-settings-tour.steps.1.desc',
           side: 'bottom',
           align: 'start',
         },
@@ -176,9 +161,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="settings-regional"]',
         popover: {
-          title: 'Configuración regional',
-          description:
-            'Selecciona el idioma y zona horaria predeterminados para tu empresa.',
+          title: 'global-settings-tour.steps.2.title',
+          description: 'global-settings-tour.steps.2.desc',
           side: 'bottom',
           align: 'start',
         },
@@ -186,9 +170,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="settings-save"]',
         popover: {
-          title: 'Guardar configuración',
-          description:
-            'Haz clic aquí para guardar todos los cambios de configuración.',
+          title: 'global-settings-tour.steps.3.title',
+          description: 'global-settings-tour.steps.3.desc',
           side: 'top',
           align: 'end',
         },
@@ -198,15 +181,14 @@ export const generalTours: Record<string, TourConfig> = {
 
   '/roles': {
     id: 'roles-tour',
-    title: 'Tour de Roles',
-    description: 'Aprende a gestionar los roles y permisos de los usuarios del sistema.',
+    title: 'roles-tour.title',
+    description: 'roles-tour.desc',
     steps: [
       {
         element: '[data-tour="roles-create-btn"]',
         popover: {
-          title: 'Crear rol',
-          description:
-            'Crea un nuevo rol con nombre, descripción y conjunto de permisos. Los roles definen qué puede hacer cada tipo de usuario.',
+          title: 'roles-tour.steps.0.title',
+          description: 'roles-tour.steps.0.desc',
           side: 'bottom',
           align: 'end',
         },
@@ -214,9 +196,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="roles-stats"]',
         popover: {
-          title: 'Estadísticas de roles',
-          description:
-            'Resumen rápido: total de roles, activos, inactivos y roles del sistema (que no se pueden eliminar).',
+          title: 'roles-tour.steps.1.title',
+          description: 'roles-tour.steps.1.desc',
           side: 'bottom',
           align: 'center',
         },
@@ -224,9 +205,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="roles-table"]',
         popover: {
-          title: 'Tabla de roles',
-          description:
-            'Lista de todos los roles con nombre, descripción, permisos asignados y acciones. Los roles del sistema están protegidos.',
+          title: 'roles-tour.steps.2.title',
+          description: 'roles-tour.steps.2.desc',
           side: 'top',
           align: 'center',
         },
@@ -236,15 +216,14 @@ export const generalTours: Record<string, TourConfig> = {
 
   '/profile': {
     id: 'profile-tour',
-    title: 'Tour del Perfil',
-    description: 'Conoce las opciones de configuración de tu perfil de usuario.',
+    title: 'profile-tour.title',
+    description: 'profile-tour.desc',
     steps: [
       {
         element: '[data-tour="profile-avatar"]',
         popover: {
-          title: 'Foto de perfil',
-          description:
-            'Haz clic para cambiar tu foto de perfil. Se recomienda una imagen cuadrada de al menos 200x200 píxeles.',
+          title: 'profile-tour.steps.0.title',
+          description: 'profile-tour.steps.0.desc',
           side: 'bottom',
           align: 'center',
         },
@@ -252,9 +231,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="profile-tabs"]',
         popover: {
-          title: 'Secciones del perfil',
-          description:
-            'Navega entre las secciones: Información personal, Seguridad (contraseña y 2FA), Preferencias (idioma, tema), Dispositivos y Actividad.',
+          title: 'profile-tour.steps.1.title',
+          description: 'profile-tour.steps.1.desc',
           side: 'bottom',
           align: 'start',
         },
@@ -262,9 +240,8 @@ export const generalTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="profile-personal"]',
         popover: {
-          title: 'Información personal',
-          description:
-            'Edita tu nombre, email, teléfono, departamento y ubicación. Haz clic en "Editar" para modificar los datos.',
+          title: 'profile-tour.steps.2.title',
+          description: 'profile-tour.steps.2.desc',
           side: 'top',
           align: 'center',
         },
