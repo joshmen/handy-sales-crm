@@ -14,7 +14,7 @@ export default function PrivacidadPage() {
 
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-foreground">Aviso de Privacidad</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Última actualización: febrero 2026</p>
+        <p className="mt-2 text-sm text-muted-foreground">Última actualización: abril 2026</p>
 
         <div className="mt-8 space-y-8 text-foreground/80 leading-relaxed">
           <section>
@@ -23,7 +23,8 @@ export default function PrivacidadPage() {
               Handy Suites® (en adelante &quot;el Responsable&quot;), con domicilio en Guadalajara, Jalisco, México,
               es responsable del tratamiento de los datos personales que nos proporcione, los cuales serán protegidos
               conforme a lo dispuesto por la Ley Federal de Protección de Datos Personales en Posesión de los
-              Particulares (LFPDPPP), su Reglamento y los Lineamientos del Aviso de Privacidad.
+              Particulares (LFPDPPP, publicada en el DOF el 20 de marzo de 2025), su Reglamento y los
+              Lineamientos del Aviso de Privacidad emitidos por el organismo garante competente.
             </p>
           </section>
 
@@ -34,7 +35,7 @@ export default function PrivacidadPage() {
               <li>Datos de identificación: nombre completo, correo electrónico, teléfono.</li>
               <li>Datos de la empresa: razón social, RFC, domicilio fiscal, régimen fiscal.</li>
               <li>Datos de acceso: credenciales de autenticación (contraseñas cifradas), tokens de sesión.</li>
-              <li>Datos de uso: registros de actividad, direcciones IP, tipo de navegador, geolocalización aproximada.</li>
+              <li>Datos de uso: registros de actividad, direcciones IP, tipo de navegador, geolocalización (ubicación GPS precisa en la aplicación móvil para registro de visitas y rutas de venta).</li>
               <li>Datos financieros: información de facturación y método de pago (procesados por terceros certificados).</li>
             </ul>
             <p className="mt-2">

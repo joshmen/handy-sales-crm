@@ -14,7 +14,7 @@ export default function TerminosPage() {
 
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-foreground">Términos de Servicio</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Última actualización: febrero 2026</p>
+        <p className="mt-2 text-sm text-muted-foreground">Última actualización: abril 2026</p>
 
         <div className="mt-8 space-y-8 text-foreground/80 leading-relaxed">
           <section>
@@ -68,6 +68,11 @@ export default function TerminosPage() {
               <li>
                 El incumplimiento en el pago podrá resultar en la suspensión temporal del servicio
                 tras un periodo de gracia de 7 días.
+              </li>
+              <li>
+                El módulo de facturación electrónica (CFDI 4.0) está disponible exclusivamente para
+                operaciones realizadas en México y conforme a las disposiciones del Servicio de
+                Administración Tributaria (SAT).
               </li>
             </ul>
           </section>
@@ -216,7 +221,7 @@ export default function TerminosPage() {
               El tratamiento de datos personales se rige por nuestro{' '}
               <Link href="/privacidad" className="text-blue-600 hover:underline">Aviso de Privacidad</Link>,
               el cual cumple con la Ley Federal de Protección de Datos Personales en Posesión de los
-              Particulares (LFPDPPP) y su Reglamento.
+              Particulares (LFPDPPP, publicada en el DOF el 20 de marzo de 2025) y su Reglamento.
             </p>
           </section>
 
