@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   AreaChart,
   Area,
@@ -36,16 +36,19 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   const t = useTranslations('dashboard.activityChart');
   const resolvedTitle = title ?? t('title');
   const resolvedSubtitle = subtitle ?? t('subtitle');
-  // Colores para cada métrica
-  const colors = {
+
+  // Colores para cada métrica — static, memoized to keep referential identity
+  const colors = useMemo(() => ({
     totalActivities: '#3b82f6', // Azul
     logins: '#10b981', // Verde
     uniqueUsers: '#8b5cf6', // Púrpura
     errors: '#ef4444', // Rojo
-  };
+  }), []);
+
+  const chartMargin = useMemo(() => ({ top: 20, right: 30, left: 20, bottom: 5 }), []);
 
   // Componente personalizado para el tooltip
-  const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
+  const CustomTooltip = useCallback(({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
     if (active && payload && payload.length) {
       return (
         <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
@@ -73,10 +76,10 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       );
     }
     return null;
-  };
+  }, [ct.tooltipBg, ct.tooltipBorder, ct.tooltipText, t]);
 
-  // Calcular métricas totales
-  const totals = data.reduce(
+  // Calcular métricas totales — memoized since data array can be large
+  const totals = useMemo(() => data.reduce(
     (acc, item) => ({
       totalActivities: acc.totalActivities + item.totalActivities,
       logins: acc.logins + item.logins,
@@ -84,17 +87,18 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       errors: acc.errors + item.errors,
     }),
     { totalActivities: 0, logins: 0, uniqueUsers: 0, errors: 0 }
-  );
+  ), [data]);
+
+  // Legend label map — memoized to avoid recreating on each render
+  const legendLabels = useMemo<Record<string, string>>(() => ({
+    totalActivities: t('activities'),
+    logins: t('logins'),
+    uniqueUsers: t('users'),
+    errors: t('errors'),
+  }), [t]);
 
   // Componente personalizado para la leyenda
-  const CustomLegend = ({ payload }: { payload?: ReadonlyArray<LegendPayload> }) => {
-    const labels: Record<string, string> = {
-      totalActivities: t('activities'),
-      logins: t('logins'),
-      uniqueUsers: t('users'),
-      errors: t('errors'),
-    };
-
+  const CustomLegend = useCallback(({ payload }: { payload?: ReadonlyArray<LegendPayload> }) => {
     return (
       <div className="flex justify-center space-x-6 mt-4">
         {payload?.map((entry, index: number) => (
@@ -103,12 +107,12 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             ></div>
-            <span className="text-sm" style={{ color: ct.textSecondary }}>{(entry.value != null ? labels[entry.value] : undefined) || entry.value}</span>
+            <span className="text-sm" style={{ color: ct.textSecondary }}>{(entry.value != null ? legendLabels[entry.value] : undefined) || entry.value}</span>
           </div>
         ))}
       </div>
     );
-  };
+  }, [ct.textSecondary, legendLabels]);
 
   if (isLoading) {
     return (
@@ -176,7 +180,7 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       <CardContent>
         <div style={{ height }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <AreaChart data={data} margin={chartMargin}>
               <defs>
                 <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={colors.totalActivities} stopOpacity={0.3} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -46,16 +46,19 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
   const t = useTranslations("dashboard.visitsChart");
   const resolvedTitle = title ?? t("title");
   const resolvedSubtitle = subtitle ?? t("subtitle");
-  // Colores para cada tipo de visita
-  const colors = {
+
+  // Colores para cada tipo de visita — static, memoized to keep referential identity
+  const colors = useMemo(() => ({
     programadas: "#3b82f6", // Azul
     completadas: "#10b981", // Verde
     canceladas: "#ef4444", // Rojo
     pendientes: "#f59e0b", // Amarillo/Naranja
-  };
+  }), []);
+
+  const chartMargin = useMemo(() => ({ top: 20, right: 30, left: 20, bottom: 5 }), []);
 
   // Componente personalizado para el tooltip
-  const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
+  const CustomTooltip = useCallback(({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
     if (active && payload && payload.length) {
       const total = payload.reduce(
         (sum, entry) => sum + (entry.value ?? 0),
@@ -92,10 +95,10 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
       );
     }
     return null;
-  };
+  }, [ct.tooltipBg, ct.tooltipBorder, ct.tooltipText, t]);
 
-  // Calcular métricas totales
-  const totals = data.reduce(
+  // Calcular métricas totales — memoized since data array can be large
+  const totals = useMemo(() => data.reduce(
     (acc, item) => ({
       programadas: acc.programadas + item.programadas,
       completadas: acc.completadas + item.completadas,
@@ -103,16 +106,17 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
       pendientes: acc.pendientes + item.pendientes,
     }),
     { programadas: 0, completadas: 0, canceladas: 0, pendientes: 0 }
-  );
+  ), [data]);
 
-  const totalVisits = Object.values(totals).reduce((sum, val) => sum + val, 0);
-  const completionRate =
+  const totalVisits = useMemo(() => Object.values(totals).reduce((sum, val) => sum + val, 0), [totals]);
+  const completionRate = useMemo(() =>
     totals.programadas > 0
       ? ((totals.completadas / totals.programadas) * 100).toFixed(1)
-      : "0";
+      : "0",
+  [totals]);
 
   // Componente personalizado para la leyenda
-  const CustomLegend = ({ payload }: { payload?: ReadonlyArray<LegendPayload> }) => {
+  const CustomLegend = useCallback(({ payload }: { payload?: ReadonlyArray<LegendPayload> }) => {
     return (
       <div className="flex justify-center space-x-6 mt-4">
         {payload?.map((entry, index: number) => (
@@ -128,7 +132,7 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
         ))}
       </div>
     );
-  };
+  }, [ct.textSecondary]);
 
   if (isLoading) {
     return (
@@ -186,7 +190,7 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              margin={chartMargin}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke={ct.axis} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   LineChart,
   Line,
@@ -49,22 +49,25 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   const resolvedTitle = title ?? t("title");
   const resolvedSubtitle = subtitle ?? t("subtitle");
 
-  // Formatear valores para mostrar en el tooltip
-  const formatCurrency = (value: number) => {
+  // Formatear valores para mostrar en el tooltip — memoized to avoid recreating Intl objects
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "MXN",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
-  };
+  }, [locale]);
 
-  const formatNumber = (value: number) => {
+  const formatNumber = useCallback((value: number) => {
     return value.toLocaleString(locale);
-  };
+  }, [locale]);
+
+  // YAxis tick formatter — memoized to keep stable reference
+  const yAxisTickFormatter = useCallback((value: number) => `$${(value / 1000).toFixed(0)}k`, []);
 
   // Componente personalizado para el tooltip
-  const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
+  const CustomTooltip = useCallback(({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
     if (active && payload && payload.length) {
       return (
         <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
@@ -79,8 +82,8 @@ export const SalesChart: React.FC<SalesChartProps> = ({
                 {entry.dataKey === "sales" ? t("sales") : t("orders")}{" "}
                 <span className="font-semibold">
                   {entry.dataKey === "sales"
-                    ? formatCurrency(entry.value)
-                    : formatNumber(entry.value)}
+                    ? formatCurrency(entry.value as number)
+                    : formatNumber(entry.value as number)}
                 </span>
               </span>
             </div>
@@ -89,12 +92,22 @@ export const SalesChart: React.FC<SalesChartProps> = ({
       );
     }
     return null;
-  };
+  }, [ct.tooltipBg, ct.tooltipBorder, ct.tooltipText, t, formatCurrency, formatNumber]);
 
-  // Calcular métricas rápidas
-  const totalSales = data.reduce((sum, item) => sum + item.sales, 0);
-  const totalOrders = data.reduce((sum, item) => sum + item.orders, 0);
-  const avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+  // Calcular métricas rápidas — memoized since data array can be large
+  const { totalSales, totalOrders, avgOrderValue } = useMemo(() => {
+    const sales = data.reduce((sum, item) => sum + item.sales, 0);
+    const orders = data.reduce((sum, item) => sum + item.orders, 0);
+    return {
+      totalSales: sales,
+      totalOrders: orders,
+      avgOrderValue: orders > 0 ? sales / orders : 0,
+    };
+  }, [data]);
+
+  // Inline style objects for Line chart — memoized to prevent re-renders
+  const lineDotStyle = useMemo(() => ({ fill: color, strokeWidth: 0, r: 4 }), [color]);
+  const lineActiveDotStyle = useMemo(() => ({ r: 6, stroke: color, strokeWidth: 2 }), [color]);
 
   if (isLoading) {
     return (
@@ -173,7 +186,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({
                 <YAxis
                   tick={{ fontSize: 12 }}
                   stroke={ct.axis}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={yAxisTickFormatter}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
@@ -195,7 +208,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({
                 <YAxis
                   tick={{ fontSize: 12 }}
                   stroke={ct.axis}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={yAxisTickFormatter}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line
@@ -203,8 +216,8 @@ export const SalesChart: React.FC<SalesChartProps> = ({
                   dataKey="sales"
                   stroke={color}
                   strokeWidth={3}
-                  dot={{ fill: color, strokeWidth: 0, r: 4 }}
-                  activeDot={{ r: 6, stroke: color, strokeWidth: 2 }}
+                  dot={lineDotStyle}
+                  activeDot={lineActiveDotStyle}
                 />
               </LineChart>
             )}
