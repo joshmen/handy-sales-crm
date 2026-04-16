@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import {
   BarChart,
@@ -10,6 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import type { TooltipContentProps, LegendPayload } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { useTranslations } from "next-intl";
@@ -55,10 +55,10 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
   };
 
   // Componente personalizado para el tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
     if (active && payload && payload.length) {
       const total = payload.reduce(
-        (sum: number, entry: any) => sum + entry.value,
+        (sum, entry) => sum + (entry.value ?? 0),
         0
       );
 
@@ -66,7 +66,7 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
         <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
           <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
           <div className="space-y-1">
-            {payload.map((entry: any, index: number) => (
+            {payload.map((entry, index: number) => (
               <div
                 key={index}
                 className="flex items-center justify-between space-x-4"
@@ -112,10 +112,10 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
       : "0";
 
   // Componente personalizado para la leyenda
-  const CustomLegend = ({ payload }: any) => {
+  const CustomLegend = ({ payload }: { payload?: ReadonlyArray<LegendPayload> }) => {
     return (
       <div className="flex justify-center space-x-6 mt-4">
-        {payload.map((entry: any, index: number) => (
+        {payload?.map((entry, index: number) => (
           <div key={index} className="flex items-center space-x-2">
             <div
               className="w-3 h-3 rounded-full"

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { User, Client } from "./index";
 
 export interface Visit {
@@ -29,7 +28,7 @@ export interface FormResponse {
   id: string;
   formId: string;
   visitId: string;
-  responses: Record<string, any>;
+  responses: Record<string, string | number | boolean | string[]>;
   createdAt: Date;
 }
 

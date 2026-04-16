@@ -42,7 +42,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { usePaginatedUsers, useCreateUser, useUpdateUser } from '@/hooks/useUsers';
 import { roleService, Role } from '@/services/api/roleService';
-import { usersService, type UsuarioUbicacion } from '@/services/api/users';
+import { usersService, type UsuarioUbicacion, type User as ApiUser } from '@/services/api/users';
 import { zoneService } from '@/services/api/zones';
 import { UserRole, UserStatus, type User } from '@/types/users';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -582,8 +582,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       ? displayUsers
       : displayUsers.filter(u => u.status === filterStatus);
     if (filterSession !== 'all') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const apiMap = new Map(apiUsers.map((u: any) => [String(u.id), u]));
+      const apiMap = new Map(apiUsers.map((u: ApiUser) => [String(u.id), u]));
       filtered = filtered.filter(u => {
         const api = apiMap.get(u.id);
         if (!api) return false;
@@ -648,10 +647,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   // Get session count for a user from apiUsers
   const getSessionCount = (userId: string): number => {
     if (!Array.isArray(apiUsers)) return 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const apiUser = apiUsers.find((u: any) => String(u.id) === userId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (apiUser as any)?.activeSessionCount ?? 0;
+    const apiUser = apiUsers.find((u: ApiUser) => String(u.id) === userId);
+    return apiUser?.activeSessionCount ?? 0;
   };
 
   const handleCreateUser = async () => {
@@ -1084,13 +1081,11 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('onlineUsers')}</p>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: any) => u.isOnline).length}</p>
+            <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: ApiUser) => u.isOnline).length}</p>
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeSessions')}</p>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: any) => sum + (u.activeSessionCount || 0), 0)}</p>
+            <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: ApiUser) => sum + (u.activeSessionCount || 0), 0)}</p>
           </div>
         </div>
 

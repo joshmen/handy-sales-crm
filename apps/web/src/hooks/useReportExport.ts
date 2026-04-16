@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import jsPDF, { GState } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useCompany } from '@/contexts/CompanyContext';
 import { datosEmpresaService } from '@/services/api/datosEmpresa';
@@ -181,19 +181,15 @@ export function useReportExport(config: ReportExportConfig) {
 
           // Light bg
           pdf.setFillColor(pr, pg, pb);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pdf.setGState(new (pdf as any).GState({ opacity: 0.07 }));
+          pdf.setGState(new GState({ opacity: 0.07 }));
           pdf.roundedRect(kx, y, kw, kh, 1.5, 1.5, 'F');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+          pdf.setGState(new GState({ opacity: 1 }));
 
           // Border
           pdf.setDrawColor(pr, pg, pb).setLineWidth(0.25);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pdf.setGState(new (pdf as any).GState({ opacity: 0.25 }));
+          pdf.setGState(new GState({ opacity: 0.25 }));
           pdf.roundedRect(kx, y, kw, kh, 1.5, 1.5, 'S');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+          pdf.setGState(new GState({ opacity: 1 }));
 
           // Value
           pdf.setFont('helvetica', 'bold').setFontSize(13).setTextColor(30, 30, 30);

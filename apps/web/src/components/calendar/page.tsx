@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -135,8 +134,8 @@ export default function CalendarPage() {
         date: visitData.date!,
         startTime: visitData.startTime!,
         status: 'scheduled',
-        type: visitData.type as any,
-        priority: visitData.priority as any,
+        type: visitData.type!,
+        priority: visitData.priority!,
         notes: visitData.notes,
         address: visitData.address,
         createdAt: new Date(),

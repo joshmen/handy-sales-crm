@@ -45,8 +45,7 @@ function IntegrationCard({
   onActivate: (slug: string) => void;
   onDeactivate: (slug: string) => void;
   loading: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: (key: string, values?: any) => string;
+  t: (key: string, values?: Record<string, string | number | Date>) => string;
 }) {
   const estadoLabelMap: Record<string, string> = {
     DISPONIBLE: t("statusAvailable"),

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { useTranslations } from "next-intl";
 import { User } from "@/types";
@@ -7,7 +6,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui";
 interface UserAssignmentProps {
   selectedUser: User | null;
   users: User[];
-  onUserSelect: (user: User) => void;
+  onUserSelect: (user: User | null) => void;
 }
 
 export const UserAssignment: React.FC<UserAssignmentProps> = ({
@@ -40,7 +39,7 @@ export const UserAssignment: React.FC<UserAssignmentProps> = ({
               <p className="text-sm text-foreground/70">{selectedUser.email}</p>
             </div>
             <button
-              onClick={() => onUserSelect(null as any)}
+              onClick={() => onUserSelect(null)}
               className="ml-auto text-sm text-blue-600 hover:underline"
             >
               {t('change')}

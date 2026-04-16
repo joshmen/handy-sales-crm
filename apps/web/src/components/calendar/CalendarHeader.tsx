@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { Button } from '@/components/ui/Button';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
@@ -95,7 +94,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     }
   };
 
-  const viewModeOptions = [
+  const viewModeOptions: { value: 'month' | 'week' | 'day'; label: string; icon: typeof Grid3X3 }[] = [
     { value: 'month', label: 'Mes', icon: Grid3X3 },
     { value: 'week', label: 'Semana', icon: List },
     { value: 'day', label: 'Día', icon: CalendarIcon },
@@ -190,7 +189,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               return (
                 <button
                   key={option.value}
-                  onClick={() => onViewModeChange(option.value as any)}
+                  onClick={() => onViewModeChange(option.value)}
                   className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
                     viewMode === option.value
                       ? 'bg-primary-600 text-white'

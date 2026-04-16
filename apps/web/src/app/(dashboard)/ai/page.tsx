@@ -11,6 +11,7 @@ import {
   User as UserIcon, Users, MagnifyingGlass, Target,
   CalendarPlus, CurrencyDollar, MapPin, Package, CheckCircle, Warning,
 } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
 import {
   SbClients, SbBarChart, SbLightbulb, SbTrendingUp, SbSearch, SbGoals,
@@ -29,8 +30,7 @@ const ACTION_TYPES = [
 type ActionType = typeof ACTION_TYPES[number]['value'];
 
 // ─── Suggestion chips — grouped by category ─────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SUGGESTIONS: { textKey: string; action: ActionType; icon3d: any }[] = [
+const SUGGESTIONS: { textKey: string; action: ActionType; icon3d: React.ComponentType<{ size?: number; className?: string }> }[] = [
   { textKey: 'suggestions.topClients', action: 'pregunta', icon3d: SbClients },
   { textKey: 'suggestions.weeklySales', action: 'resumen', icon3d: SbBarChart },
   { textKey: 'suggestions.bestMargin', action: 'insight', icon3d: SbLightbulb },
@@ -233,8 +233,7 @@ function NoPlanGate() {
 }
 
 // ─── Action icon map ─────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ACTION_ICON_MAP: Record<string, any> = {
+const ACTION_ICON_MAP: Record<string, PhosphorIcon> = {
   calendar: CalendarPlus,
   money: CurrencyDollar,
   target: Target,

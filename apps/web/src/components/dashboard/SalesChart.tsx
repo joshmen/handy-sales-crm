@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import {
   LineChart,
@@ -11,6 +10,7 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+import type { TooltipContentProps } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { useTranslations, useLocale } from "next-intl";
@@ -64,12 +64,12 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   };
 
   // Componente personalizado para el tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
     if (active && payload && payload.length) {
       return (
         <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
           <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <div key={index} className="flex items-center space-x-2">
               <div
                 className="w-3 h-3 rounded-full"
