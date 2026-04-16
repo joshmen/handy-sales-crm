@@ -10,6 +10,14 @@ import * as Crypto from 'expo-crypto';
 import { API_CONFIG, STORAGE_KEYS } from '@/utils/constants';
 import { secureStorage } from '@/utils/storage';
 
+// TODO [SEC-M2]: Implement SSL/TLS certificate pinning
+// Steps:
+// 1. Install: npx expo install expo-certificate-transparency (or react-native-ssl-pinning)
+// 2. Pin the certificate SHA-256 fingerprints for: api.handysuites.com, *.railway.app
+// 3. Reject connections if certificate doesn't match pinned fingerprints
+// 4. Add monitoring for certificate rotation (pins must be updated before cert expires)
+// Priority: HIGH — prevents MITM attacks on untrusted networks (WiFi público)
+
 // --- Axios instance ---
 const apiInstance: AxiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,

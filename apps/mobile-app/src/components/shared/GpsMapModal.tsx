@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { MapPin, Phone, Globe, Clock, X, Navigation } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
+import { api } from '@/api/client';
 
 interface PlaceDetails {
   name?: string;
@@ -23,14 +24,13 @@ interface GpsMapModalProps {
   onCancel: () => void;
 }
 
-const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+// All Google Maps calls routed through backend proxy (API key never exposed to client)
 
 async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails> {
   try {
     const fields = 'name,formatted_address,formatted_phone_number,website,opening_hours';
-    const res = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${API_KEY}`);
-    const data = await res.json();
-    const r = data.result;
+    const res = await api.get<{ result?: { name?: string; formatted_address?: string; formatted_phone_number?: string; website?: string; opening_hours?: { open_now?: boolean } } }>('/api/geo/places/details', { params: { placeId, fields } });
+    const r = res.data.result;
     if (!r) return {};
     return {
       name: r.name,
@@ -45,9 +45,8 @@ async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails> {
 
 async function reverseGeocode(lat: number, lng: number): Promise<PlaceDetails> {
   try {
-    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`);
-    const data = await res.json();
-    const result = data.results?.[0];
+    const res = await api.get<{ results?: Array<{ formatted_address?: string }> }>('/api/geo/geocode/reverse', { params: { latlng: `${lat},${lng}` } });
+    const result = res.data.results?.[0];
     if (!result) return {};
     return { address: result.formatted_address };
   } catch { return {}; }
@@ -99,10 +98,10 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
     timer.current = setTimeout(async () => {
       try {
         const loc = `${coord.latitude},${coord.longitude}`;
-        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${loc}&radius=5000&key=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setResults(data.results?.slice(0, 5) ?? []);
+        const res = await api.get<{ results?: Array<Record<string, unknown>> }>('/api/geo/places/autocomplete', {
+          params: { query, location: loc, radius: 5000 },
+        });
+        setResults(res.data.results?.slice(0, 5) ?? []);
       } catch { setResults([]); }
     }, 500);
   }, [coord]);

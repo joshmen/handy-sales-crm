@@ -7,11 +7,13 @@ public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
+    private readonly IWebHostEnvironment _env;
 
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
+    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger, IWebHostEnvironment env)
     {
         _next = next;
         _logger = logger;
+        _env = env;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -25,18 +27,18 @@ public class GlobalExceptionMiddleware
             _logger.LogError(ex, "Unhandled exception occurred. Request: {Method} {Path}",
                 context.Request.Method, context.Request.Path);
 
-            await HandleExceptionAsync(context, ex);
+            await HandleExceptionAsync(context, ex, _env);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, IWebHostEnvironment env)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
 
         var response = new
         {
             Success = false,
-            Message = GetErrorMessage(exception),
+            Message = GetErrorMessage(exception, env),
             Data = (object?)null
         };
 
@@ -50,14 +52,16 @@ public class GlobalExceptionMiddleware
         await context.Response.WriteAsync(jsonResponse);
     }
 
-    private static string GetErrorMessage(Exception exception)
+    private static string GetErrorMessage(Exception exception, IWebHostEnvironment env)
     {
-        // Business logic exceptions: return the actual message (safe, written by us).
-        // System exceptions: return generic message (avoid leaking internals).
+        // In production: return generic messages to avoid leaking internals.
+        // In development: return actual messages for debugging.
         return exception switch
         {
-            InvalidOperationException ex => !string.IsNullOrEmpty(ex.Message) ? ex.Message : "No se pudo completar la operación.",
-            ArgumentException ex => !string.IsNullOrEmpty(ex.Message) ? ex.Message : "Parámetros de solicitud inválidos.",
+            InvalidOperationException ex => env.IsDevelopment() && !string.IsNullOrEmpty(ex.Message)
+                ? ex.Message : "No se pudo completar la operación.",
+            ArgumentException ex => env.IsDevelopment() && !string.IsNullOrEmpty(ex.Message)
+                ? ex.Message : "Parámetros de solicitud inválidos.",
             UnauthorizedAccessException => "Acceso no autorizado.",
             KeyNotFoundException => "Recurso no encontrado.",
             _ => "Ocurrió un error al procesar tu solicitud."

@@ -28,7 +28,15 @@ const getApiUrl = (): string => {
 
   // Emulator/simulator fallback
   const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-  return `http://${host}:1052`;
+  let url = `http://${host}:1052`;
+
+  // Security: force HTTPS in production builds
+  if (!__DEV__ && url.startsWith('http://')) {
+    console.warn('SECURITY: HTTP not allowed in production. Forcing HTTPS.');
+    url = url.replace('http://', 'https://');
+  }
+
+  return url;
 };
 
 export const API_CONFIG = {

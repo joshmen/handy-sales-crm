@@ -123,6 +123,7 @@ app.MapMobileCrashReportEndpoints();
 app.MapMobileAnnouncementEndpoints();
 app.MapMobileMetasEndpoints();
 app.MapMobileFacturaEndpoints();
+app.MapMobileGeoProxyEndpoints();
 app.MapInternalPushEndpoints();
 app.MapMobileLogLevelEndpoints();
 app.MapHealthEndpoints();

@@ -172,9 +172,15 @@ public class SessionValidationMiddleware
         await _next(context);
     }
 
+    private static readonly string[] PreAuthPaths = [
+        "/auth/login", "/auth/register", "/auth/forgot-password",
+        "/auth/verify-email", "/auth/set-password", "/auth/google-login",
+        "/auth/verify-2fa", "/auth/resend-code", "/auth/social-login"
+    ];
+
     private static bool ShouldSkipValidation(string path)
     {
-        return path.Contains("/auth/") ||
+        return PreAuthPaths.Any(p => path.Contains(p, StringComparison.OrdinalIgnoreCase)) ||
                path.StartsWith("/health") ||
                path.StartsWith("/swagger") ||
                path.StartsWith("/hubs/") ||

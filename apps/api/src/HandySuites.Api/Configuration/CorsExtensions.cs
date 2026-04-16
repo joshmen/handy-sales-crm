@@ -12,11 +12,13 @@ public static class CorsExtensions
                 
                 if (environment == "Development")
                 {
-                    // Desarrollo: Permitir cualquier origen localhost
+                    // Desarrollo: Solo puertos localhost conocidos
                     builder
-                        .SetIsOriginAllowed(origin =>
-                            origin.Contains("localhost") ||
-                            origin.Contains("127.0.0.1"))
+                        .WithOrigins(
+                            "http://localhost:1083",  // Next.js dev
+                            "http://localhost:3000",  // Next.js alt
+                            "http://localhost:5173",  // Vite
+                            "http://127.0.0.1:1083")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials()
