@@ -44,16 +44,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("BillingApiPolicy", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",           // Next.js dev
-                "https://localhost:3000",
-                "http://localhost:1083",           // Next.js dev (HandySuites port)
-                "http://localhost:3001",           // Alternative port
-                "https://handy-sales-crm.vercel.app", // Vercel production deployment
-                "https://handysales.vercel.app",   // Legacy Vercel domain
-                "https://handysales.com",          // Your custom domain
-                "https://www.handysales.com"
-            )
+        policy.SetIsOriginAllowed(origin =>
+            {
+                if (origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:"))
+                    return true;
+                if (origin == "https://handy-sales-crm.vercel.app") return true;
+                var uri = new Uri(origin);
+                return uri.Host == "handysuites.com" || uri.Host.EndsWith(".handysuites.com");
+            })
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials()

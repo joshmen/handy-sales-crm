@@ -36,8 +36,7 @@ public static class CorsExtensions
                             var uri = new Uri(origin);
                             return uri.Host == allowedVercelHost ||
                                    uri.Host == "handysuites.com" ||
-                                   uri.Host == "www.handysuites.com" ||
-                                   uri.Host == "app.handysuites.com";
+                                   uri.Host.EndsWith(".handysuites.com");
                         })
                         .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                         .AllowAnyHeader()
@@ -53,11 +52,13 @@ public static class CorsExtensions
                     ?? "handy-sales-crm.vercel.app";
 
                 builder
-                    .WithOrigins(
-                        "http://localhost:1083",
-                        $"https://{adminVercelHost}",
-                        "https://app.handysuites.com"
-                    )
+                    .SetIsOriginAllowed(origin =>
+                    {
+                        if (origin == "http://localhost:1083") return true;
+                        if (origin == $"https://{adminVercelHost}") return true;
+                        var uri = new Uri(origin);
+                        return uri.Host == "handysuites.com" || uri.Host.EndsWith(".handysuites.com");
+                    })
                     .WithMethods("GET", "POST", "PUT", "DELETE")
                     .WithHeaders("Authorization", "Content-Type")
                     .AllowCredentials();

@@ -21,18 +21,16 @@ public static class CorsExtensions
                 }
                 else
                 {
-                    // Producción: Orígenes específicos para apps móviles
-                    var allowedOrigins = configuration.GetSection("CORS:AllowedOrigins").Get<string[]>() ?? new[]
-                    {
-                        "https://handysales.com",
-                        "https://api.handysales.com",
-                        "capacitor://localhost",          // Capacitor/Ionic apps
-                        "ionic://localhost",              // Ionic apps
-                        "http://localhost"                // React Native debug
-                    };
-
+                    // Producción: handysuites.com + subdominios + esquemas mobile
                     builder
-                        .WithOrigins(allowedOrigins)
+                        .SetIsOriginAllowed(origin =>
+                        {
+                            if (origin == "capacitor://localhost") return true;
+                            if (origin == "ionic://localhost") return true;
+                            if (origin == "http://localhost") return true;
+                            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+                            return uri.Host == "handysuites.com" || uri.Host.EndsWith(".handysuites.com");
+                        })
                         .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                         .WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Device-Id", "X-Device-Fingerprint", "X-App-Version")
                         .SetPreflightMaxAge(TimeSpan.FromHours(1));
