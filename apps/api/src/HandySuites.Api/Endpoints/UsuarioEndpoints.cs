@@ -154,7 +154,8 @@ public static class UsuarioEndpoints
             var usuarioId = await service.CrearUsuarioAsync(dto);
 
             // Send invitation email so the new user can set their password
-            var baseUrl = config["App:FrontendUrl"] ?? "http://localhost:1083";
+            // App:FrontendUrl is validated at startup in Program.cs
+            var baseUrl = config["App:FrontendUrl"]!;
             try { await authService.SendInvitationEmailAsync(usuarioId, baseUrl); }
             catch { /* logged inside SendInvitationEmailAsync */ }
 

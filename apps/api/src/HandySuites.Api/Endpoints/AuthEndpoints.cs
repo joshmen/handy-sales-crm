@@ -256,7 +256,8 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { error = "Se requiere email" });
 
             // Use configured frontend URL — never trust Origin/Referer headers
-            var baseUrl = config["App:FrontendUrl"] ?? "http://localhost:1083";
+            // App:FrontendUrl is validated at startup in Program.cs
+            var baseUrl = config["App:FrontendUrl"]!;
 
             var result = await auth.ForgotPasswordAsync(dto.Email.Trim().ToLowerInvariant(), baseUrl);
             return Results.Ok(result);

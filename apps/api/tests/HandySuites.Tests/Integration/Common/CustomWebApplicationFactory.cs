@@ -60,6 +60,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("RUN_MIGRATIONS", "false");
         // InternalApiKey required after hardcoded default removal
         Environment.SetEnvironmentVariable("InternalApiKey", "test-internal-api-key");
+        // App:FrontendUrl required after hardcoded localhost fallback removal
+        Environment.SetEnvironmentVariable("App__FrontendUrl", "http://localhost:1083");
         builder.UseEnvironment("Testing");
 
         // Provide dummy config values for services that require them
@@ -71,6 +73,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["SendGrid:ApiKey"] = "SG.fake-key-for-testing",
                 ["Ai:ApiKey"] = "sk-fake-key-for-testing",
                 ["InternalApiKey"] = "test-internal-api-key",
+                ["App:FrontendUrl"] = "http://localhost:1083",
             });
         });
 

@@ -136,6 +136,7 @@ var mobileApiUrl = builder.Configuration["MobileApiUrl"]
     ?? Environment.GetEnvironmentVariable("MOBILE_API_URL")
     ?? "http://localhost:1052";
 var internalApiKey = builder.Configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
+_ = builder.Configuration["App:FrontendUrl"] ?? throw new InvalidOperationException("App:FrontendUrl is not configured — set App__FrontendUrl env var (e.g. https://handysuites.com)");
 builder.Services.AddHttpClient("MobileApi", client =>
 {
     client.BaseAddress = new Uri(mobileApiUrl);

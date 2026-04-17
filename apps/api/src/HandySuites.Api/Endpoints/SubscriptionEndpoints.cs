@@ -446,7 +446,8 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
             return Results.BadRequest(new { error = "Stripe no configurado." });
 
         Stripe.StripeConfiguration.ApiKey = stripeKey;
-        var domain = config["App:FrontendUrl"] ?? "http://localhost:1083";
+        // App:FrontendUrl is validated at startup in Program.cs
+        var domain = config["App:FrontendUrl"]!;
 
         var options = new Stripe.Checkout.SessionCreateOptions
         {
