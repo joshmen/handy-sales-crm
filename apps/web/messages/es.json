@@ -239,7 +239,20 @@
     "IMPORT_INVALID_JSON_FORMAT": "El archivo JSON no tiene un formato válido",
     "IMPORT_INVALID_JSON_ARRAY": "El archivo JSON debe contener un array de objetos",
     "IMPORT_READ_ERROR": "Error al leer el archivo",
-    "IMPORT_EMPTY_CSV": "El archivo CSV está vacío"
+    "IMPORT_EMPTY_CSV": "El archivo CSV está vacío",
+    "help": "Ayuda",
+    "userAccount": "Cuenta de usuario",
+    "myProfile": "Mi perfil",
+    "settings": "Configuración",
+    "globalSettings": "Configuración Global",
+    "impersonateCompany": "Impersonar Empresa",
+    "loggingOut": "Cerrando sesión...",
+    "signOut": "Cerrar sesión",
+    "notificationsTitle": "Notificaciones",
+    "markAllAsRead": "Marcar todo como leído",
+    "noNotifications": "No hay notificaciones",
+    "viewDetails": "Ver detalles",
+    "logoutError": "Error al cerrar sesión"
   },
   "errorPage": {
     "title": "Algo salió mal",

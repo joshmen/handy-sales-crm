@@ -239,7 +239,20 @@
     "IMPORT_INVALID_JSON_FORMAT": "The JSON file has an invalid format",
     "IMPORT_INVALID_JSON_ARRAY": "The JSON file must contain an array of objects",
     "IMPORT_READ_ERROR": "Error reading the file",
-    "IMPORT_EMPTY_CSV": "The CSV file is empty"
+    "IMPORT_EMPTY_CSV": "The CSV file is empty",
+    "help": "Help",
+    "userAccount": "User Account",
+    "myProfile": "My Profile",
+    "settings": "Settings",
+    "globalSettings": "Global Settings",
+    "impersonateCompany": "Impersonate Company",
+    "loggingOut": "Signing out...",
+    "signOut": "Sign Out",
+    "notificationsTitle": "Notifications",
+    "markAllAsRead": "Mark all as read",
+    "noNotifications": "No notifications",
+    "viewDetails": "View details",
+    "logoutError": "Error signing out"
   },
   "errorPage": {
     "title": "Something went wrong",
