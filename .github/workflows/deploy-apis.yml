@@ -3,7 +3,8 @@ name: Deploy APIs to Railway
 on:
   push:
     branches:
-      - main
+      - main      # production deploy (requires approval via GitHub Environment)
+      - staging   # staging deploy (auto)
     paths:
       - 'apps/api/**'
       - 'apps/billing/**'
@@ -26,13 +27,18 @@ on:
         required: false
         default: true
 
+# Branch → environment mapping:
+#   push to `staging` → staging env (auto, no approval)
+#   push to `main`    → production env (requires approval via GitHub Environment)
+#   workflow_dispatch → user-selected environment
+#
 # Required secrets (configure in GitHub repo settings):
 # - STAGING_DB_CONNECTION_STRING:    PostgreSQL connection for staging migrations
 # - PRODUCTION_DB_CONNECTION_STRING: PostgreSQL connection for production migrations
 #
 # Railway environments:
-# - staging:    auto-deploys from main branch (configured in Railway dashboard)
-# - production: manual deploy only (disable "Deploy Automatically" in Railway)
+# - staging:    auto-deploys from `staging` branch
+# - production: auto-deploys from `main` branch (keep CI/approval gate)
 #
 # This workflow runs EF Core migrations BEFORE Railway deploys.
 # Enable "Wait for CI" in Railway service settings so it waits for migrations.
@@ -46,7 +52,7 @@ jobs:
       billing-api: ${{ steps.filter.outputs.billing-api }}
       mobile-api: ${{ steps.filter.outputs.mobile-api }}
       deploy-all: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_all }}
-      target-env: ${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+      target-env: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -176,7 +182,7 @@ jobs:
           echo "| Database Migrations | ${{ needs.migrate-database.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ needs.detect-changes.outputs.target-env }}" = "staging" ]; then
-            echo "Railway **staging** auto-deploys from main branch after CI passes." >> $GITHUB_STEP_SUMMARY
+            echo "Railway **staging** auto-deploys from \`staging\` branch after CI passes." >> $GITHUB_STEP_SUMMARY
           else
-            echo "Railway **production** requires manual deploy in Railway dashboard after migrations succeed." >> $GITHUB_STEP_SUMMARY
+            echo "Railway **production** auto-deploys from \`main\` branch after CI + approval pass." >> $GITHUB_STEP_SUMMARY
           fi
