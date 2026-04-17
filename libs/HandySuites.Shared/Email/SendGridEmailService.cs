@@ -16,8 +16,16 @@ public class SendGridEmailService : IEmailService
         _logger = logger;
 
         var apiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
-        _fromEmail = Environment.GetEnvironmentVariable("SENDGRID_FROM_EMAIL") ?? "no-reply@handysales.com";
+        var fromEmail = Environment.GetEnvironmentVariable("SENDGRID_FROM_EMAIL");
         _fromName = Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME") ?? "HandySuites";
+
+        if (!string.IsNullOrEmpty(apiKey) && string.IsNullOrEmpty(fromEmail))
+        {
+            throw new InvalidOperationException(
+                "SENDGRID_FROM_EMAIL must be configured when SENDGRID_API_KEY is set.");
+        }
+
+        _fromEmail = fromEmail ?? "dry-run@localhost";
 
         if (string.IsNullOrEmpty(apiKey))
         {

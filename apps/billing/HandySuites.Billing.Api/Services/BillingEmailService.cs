@@ -14,8 +14,16 @@ public class BillingEmailService : IBillingEmailService
     {
         _logger = logger;
         _apiKey = configuration["SENDGRID_API_KEY"];
-        _fromEmail = configuration["SENDGRID_FROM_EMAIL"] ?? "noreply@handysuites.com";
+        var fromEmail = configuration["SENDGRID_FROM_EMAIL"];
         _fromName = configuration["SENDGRID_FROM_NAME"] ?? "Handy Suites";
+
+        if (!string.IsNullOrEmpty(_apiKey) && string.IsNullOrEmpty(fromEmail))
+        {
+            throw new InvalidOperationException(
+                "SENDGRID_FROM_EMAIL must be configured when SENDGRID_API_KEY is set.");
+        }
+
+        _fromEmail = fromEmail ?? "dry-run@localhost";
     }
 
     public async Task<bool> SendFacturaAsync(
