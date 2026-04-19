@@ -86,6 +86,8 @@ services:
       InternalApiKey: "DktQvBp0c01HyuVlNKGhbAPyNIpgvo-OO832AYqCSGQ"
       MobileApiUrl: "http://mobile_api:1052"
       App__FrontendUrl: "http://localhost:1083"
+      BILLING_API_URL: "http://api_billing:1051"
+      BILLING_INTERNAL_API_KEY: "dev-billing-sync-key-change-in-prod-0123456789"
     ports:
       - "1050:1050"
     depends_on:
@@ -132,6 +134,7 @@ services:
       SENDGRID_FROM_EMAIL: "noreply@handysuites.com"
       SENDGRID_FROM_NAME: "Handy Suites"
       MAIN_API_URL: "http://api_main:1050"
+      INTERNAL_API_KEY: "dev-billing-sync-key-change-in-prod-0123456789"
       FINKOK_USUARIO: "${FINKOK_USUARIO}"
       FINKOK_PASSWORD: "${FINKOK_PASSWORD}"
       FINKOK_AMBIENTE: "${FINKOK_AMBIENTE:-sandbox}"

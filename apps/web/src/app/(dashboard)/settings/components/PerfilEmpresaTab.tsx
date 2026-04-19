@@ -131,6 +131,10 @@ export const PerfilEmpresaTab: React.FC = () => {
       <CardContent className="space-y-6">
         {/* Datos fiscales */}
         <div className="space-y-4">
+          <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 px-3 py-2 text-xs text-blue-800 dark:text-blue-200">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{t('fiscalSyncNote')}</span>
+          </div>
           <h3 className="text-sm font-medium text-muted-foreground">
             {t('fiscalData')}
           </h3>

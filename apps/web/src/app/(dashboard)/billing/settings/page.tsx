@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus} from 'lucide-react';
+import Link from 'next/link';
+import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
@@ -99,10 +100,6 @@ export default function BillingSettingsPage() {
   }, [showInactive]);
 
   const handleSave = async () => {
-    if (!config.rfc?.trim() || !config.razonSocial?.trim()) {
-      toast({ title: t('rfcAndNameRequired'), variant: 'destructive' });
-      return;
-    }
     setSaving(true);
     try {
       const saved = await saveConfigFiscal(config);
@@ -250,32 +247,54 @@ export default function BillingSettingsPage() {
       {/* ═══════════════════════════════════════════ */}
       {activeTab === 'datos' && (
         <div className="space-y-6 max-w-3xl">
-          {/* Datos del Emisor */}
+          {/* Datos sincronizados desde /settings (read-only) */}
           <section className="bg-card border border-border rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-4">{t('issuerData')}</h2>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">{t('issuerData')}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('issuerDataSyncedFromSettings')}</p>
+              </div>
+              <Link
+                href="/settings"
+                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline shrink-0"
+              >
+                {t('editInSettings')}
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('rfc')} *</label>
-                <input
-                  type="text"
-                  value={config.rfc || ''}
-                  onChange={e => updateField('rfc', e.target.value.toUpperCase())}
-                  placeholder="XAXX010101000"
-                  maxLength={13}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 uppercase"
-                />
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('rfc')}</label>
+                <div className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-muted/40 text-foreground font-mono">
+                  {config.rfc || <span className="text-muted-foreground italic">{t('notSet')}</span>}
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('businessName')} *</label>
-                <input
-                  type="text"
-                  value={config.razonSocial || ''}
-                  onChange={e => updateField('razonSocial', e.target.value)}
-                  placeholder="Mi Empresa S.A. de C.V."
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-                />
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('businessName')}</label>
+                <div className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-muted/40 text-foreground">
+                  {config.razonSocial || <span className="text-muted-foreground italic">{t('notSet')}</span>}
+                </div>
               </div>
               <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('postalCode')}</label>
+                <div className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-muted/40 text-foreground">
+                  {config.codigoPostal || <span className="text-muted-foreground italic">{t('notSet')}</span>}
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('fiscalAddress')}</label>
+                <div className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-muted/40 text-foreground">
+                  {config.direccionFiscal || <span className="text-muted-foreground italic">{t('notSet')}</span>}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Configuración fiscal específica (editable aquí) */}
+          <section className="bg-card border border-border rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-4">{t('fiscalRegimeSection')}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-muted-foreground mb-1">{t('taxRegime')}</label>
                 <select
                   value={config.regimenFiscal || ''}
@@ -303,27 +322,6 @@ export default function BillingSettingsPage() {
                   <option value="625">625 — Régimen de las Actividades Empresariales (RESICO)</option>
                   <option value="626">626 — Régimen Simplificado de Confianza</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('postalCode')}</label>
-                <input
-                  type="text"
-                  value={config.codigoPostal || ''}
-                  onChange={e => updateField('codigoPostal', e.target.value)}
-                  placeholder="12345"
-                  maxLength={5}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('fiscalAddress')}</label>
-                <input
-                  type="text"
-                  value={config.direccionFiscal || ''}
-                  onChange={e => updateField('direccionFiscal', e.target.value)}
-                  placeholder="Calle, colonia, municipio, estado"
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-                />
               </div>
             </div>
           </section>
