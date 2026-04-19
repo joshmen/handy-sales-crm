@@ -6099,6 +6099,8 @@
     "Token registrado": "Token registered",
     "Tu acceso fue revocado por el administrador. Contacta a tu administrador.": "Your access was revoked by the administrator. Contact your administrator.",
     "Tu empresa ya ha utilizado este cupón": "Your company has already used this coupon",
+    "Tu plan no incluye facturación electrónica.": "Your plan does not include electronic invoicing.",
+    "Tu plan no incluye facturación electrónica. Actualiza tu plan para timbrar facturas.": "Your plan does not include electronic invoicing. Upgrade your plan to stamp invoices.",
     "Tu sesión fue cerrada porque se inició sesión en otro dispositivo": "Your session was closed because a login occurred on another device",
     "Tu suscripción ha expirado. Suscríbete para activar automatizaciones.": "Your subscription has expired. Subscribe to activate automations.",
     "Tu suscripción ha expirado. Suscríbete para ejecutar automatizaciones.": "Your subscription has expired. Subscribe to execute automations.",
