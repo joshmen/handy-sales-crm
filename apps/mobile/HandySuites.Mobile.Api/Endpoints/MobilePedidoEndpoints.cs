@@ -37,17 +37,23 @@ public static class MobilePedidoEndpoints
     /// <summary>
     /// Sends push notification to relevant users after order state change.
     /// Fire-and-forget: failures are logged but never block the response.
+    ///
+    /// IMPORTANT: creates an isolated DI scope for the background task. The request-scoped
+    /// OrderNotificationHelper holds a DbContext that gets disposed when the endpoint returns;
+    /// using that captured helper inside Task.Run causes ObjectDisposedException.
     /// </summary>
-    private static async Task NotifyOrderPush(OrderNotificationHelper helper, HttpContext context, int pedidoId, EstadoPedido newState)
+    private static async Task NotifyOrderPush(IServiceScopeFactory scopeFactory, HttpContext context, int pedidoId, EstadoPedido newState)
     {
         var tenantId = int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tid) ? tid : 0;
         var userId = int.TryParse(context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? context.User.FindFirst("sub")?.Value, out var uid) ? uid : 0;
         if (tenantId <= 0 || userId <= 0) return;
 
-        // Fire-and-forget — don't await in the request pipeline
+        // Fire-and-forget with isolated scope — don't await in the request pipeline
         _ = Task.Run(async () =>
         {
+            using var scope = scopeFactory.CreateScope();
+            var helper = scope.ServiceProvider.GetRequiredService<OrderNotificationHelper>();
             try { await helper.NotifyStateChangeAsync(pedidoId, tenantId, userId, newState); }
             catch { /* logged inside helper */ }
         });
@@ -193,14 +199,14 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] OrderNotificationHelper notifyHelper) =>
+            [FromServices] IServiceScopeFactory scopeFactory) =>
         {
             var resultado = await servicio.ConfirmarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Confirmado);
+            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.Confirmado);
             return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
         .WithSummary("[Legacy] Enviar pedido → Confirmar")
@@ -216,14 +222,14 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] OrderNotificationHelper notifyHelper) =>
+            [FromServices] IServiceScopeFactory scopeFactory) =>
         {
             var resultado = await servicio.CancelarAsync(id, dto?.Motivo);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo cancelar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Cancelado);
+            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.Cancelado);
             return Results.Ok(new { success = true, message = "Pedido cancelado" });
         })
         .WithSummary("Cancelar pedido")
@@ -238,14 +244,14 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] OrderNotificationHelper notifyHelper) =>
+            [FromServices] IServiceScopeFactory scopeFactory) =>
         {
             var resultado = await servicio.ConfirmarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Confirmado);
+            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.Confirmado);
             return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
         .WithSummary("Confirmar pedido")
@@ -261,14 +267,14 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] OrderNotificationHelper notifyHelper) =>
+            [FromServices] IServiceScopeFactory scopeFactory) =>
         {
             var resultado = await servicio.EnviarARutaAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.EnRuta);
+            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.EnRuta);
             return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
         .WithSummary("[Legacy] Procesar pedido → En Ruta")
@@ -283,14 +289,14 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] OrderNotificationHelper notifyHelper) =>
+            [FromServices] IServiceScopeFactory scopeFactory) =>
         {
             var resultado = await servicio.EnviarARutaAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.EnRuta);
+            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.EnRuta);
             return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
         .WithSummary("Poner en ruta")
@@ -306,22 +312,23 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] OrderNotificationHelper notifyHelper,
-            [FromServices] StockNotificationService stockNotifier) =>
+            [FromServices] IServiceScopeFactory scopeFactory) =>
         {
             var resultado = await servicio.EntregarAsync(id, dto?.NotasEntrega);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo entregar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Entregado);
+            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.Entregado);
 
-            // Check stock levels after delivery — fire-and-forget
+            // Check stock levels after delivery — fire-and-forget with isolated DI scope
             var tenantId = int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tid) ? tid : 0;
             if (tenantId > 0)
             {
                 _ = Task.Run(async () =>
                 {
+                    using var scope = scopeFactory.CreateScope();
+                    var stockNotifier = scope.ServiceProvider.GetRequiredService<StockNotificationService>();
                     try { await stockNotifier.CheckAndNotifyLowStockAsync(id, tenantId); }
                     catch { /* logged inside service */ }
                 });

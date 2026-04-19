@@ -112,7 +112,9 @@ public static class AnnouncementEndpoints
             [FromServices] ICurrentTenant tenant,
             [FromServices] IMemoryCache cache,
             [FromServices] IHubContext<NotificationHub> hubContext,
-            [FromServices] IHttpClientFactory httpClientFactory) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IServiceScopeFactory scopeFactory,
+            [FromServices] ILogger<Program> logger) =>
         {
             if (!tenant.IsSuperAdmin)
                 return Results.Forbid();
@@ -266,19 +268,29 @@ public static class AnnouncementEndpoints
                 }
             }
 
-            // Push notification to mobile devices (fire and forget)
+            // Push notification to mobile devices (fire and forget).
+            // IMPORTANT: create an independent DI scope — the HTTP request scope is disposed
+            // as soon as Results.Created returns, so using the request-scoped `db` here would
+            // cause ObjectDisposedException (and on SQLite: "active statements" errors).
+            var announcementTitulo = announcement.Titulo;
+            var announcementMensaje = announcement.Mensaje;
+            var announcementId = announcement.Id;
+            var targetTenantIdsLocal = dto.TargetTenantIds;
+            var targetRolesLocal = dto.TargetRoles;
             _ = Task.Run(async () =>
             {
+                using var scope = scopeFactory.CreateScope();
+                var scopedDb = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
                 try
                 {
-                    var pushBody = announcement.Mensaje.Length > 100
-                        ? announcement.Mensaje[..97] + "..."
-                        : announcement.Mensaje;
+                    var pushBody = announcementMensaje.Length > 100
+                        ? announcementMensaje[..97] + "..."
+                        : announcementMensaje;
 
                     // Send to each target tenant, or broadcast if no specific targets
-                    var targetTenants = dto.TargetTenantIds is { Count: > 0 }
-                        ? dto.TargetTenantIds
-                        : await db.Tenants.AsNoTracking().Where(t => t.Activo).Select(t => t.Id).ToListAsync();
+                    var targetTenants = targetTenantIdsLocal is { Count: > 0 }
+                        ? targetTenantIdsLocal
+                        : await scopedDb.Tenants.AsNoTracking().Where(t => t.Activo).Select(t => t.Id).ToListAsync();
 
                     var mobileClient = httpClientFactory.CreateClient("MobileApi");
                     foreach (var tid in targetTenants)
@@ -286,18 +298,21 @@ public static class AnnouncementEndpoints
                         await mobileClient.PostAsJsonAsync("/api/internal/push-notify", new
                         {
                             tenantId = tid,
-                            roles = dto.TargetRoles ?? new List<string>(),
-                            title = announcement.Titulo,
+                            roles = targetRolesLocal ?? new List<string>(),
+                            title = announcementTitulo,
                             body = pushBody,
                             data = new Dictionary<string, string>
                             {
                                 ["type"] = "announcement",
-                                ["entityId"] = announcement.Id.ToString()
+                                ["entityId"] = announcementId.ToString()
                             }
                         });
                     }
                 }
-                catch { /* fire and forget */ }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Push notification fire-and-forget failed for announcement {Id}", announcementId);
+                }
             });
 
             return Results.Created($"/api/superadmin/announcements/{announcement.Id}", new

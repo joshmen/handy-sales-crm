@@ -50,15 +50,6 @@ public class BillingSyncService : IBillingSyncService
 
         try
         {
-            // Log payload detallado (sin datos sensibles) antes de enviar
-            _logger.LogInformation(
-                "BillingSync preparando payload para tenant {TenantId}: RFC={Rfc}, RazonSocial={RazonSocial}, Direccion={Direccion}, CP={CP}",
-                dto.TenantId,
-                dto.Rfc ?? "<null>",
-                dto.RazonSocial ?? "<null>",
-                dto.DireccionFiscal ?? "<null>",
-                dto.CodigoPostal ?? "<null>");
-
             using var req = new HttpRequestMessage(HttpMethod.Post,
                 new Uri(baseUri, "/api/internal/sync/datos-empresa"));
             req.Headers.Add("X-Internal-Api-Key", apiKey);
