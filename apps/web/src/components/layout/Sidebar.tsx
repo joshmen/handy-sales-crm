@@ -39,7 +39,6 @@ import {
   SbAnnouncements,
   SbBuildings,
   SbBug,
-  SbSecurity,
   SbCategory,
   SbFolders,
   SbUnits,
@@ -394,12 +393,6 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/crash-reports',
   },
   {
-    id: 'sa-security',
-    label: 'Seguridad',
-    icon: SbSecurity,
-    href: '/admin/security',
-  },
-  {
     id: 'sa-settings',
     label: 'Configuración',
     icon: SbSettings,
@@ -433,7 +426,7 @@ const LABEL_KEYS: Record<string, string> = {
   'Suscripción': 'nav.subscription', 'Configuración': 'nav.settings', 'Asistente IA': 'nav.aiAssistant', 'Ayuda': 'nav.help',
   'Dashboard': 'nav.dashboard', 'Empresas': 'nav.saCompanies', 'Usuarios Global': 'nav.saGlobalUsers',
   'Anuncios': 'nav.saAnnouncements', 'Planes': 'nav.saPlans', 'Cupones': 'nav.saCoupons',
-  'Monitor de Errores': 'nav.saCrashReports', 'Seguridad': 'nav.saSecurity',
+  'Monitor de Errores': 'nav.saCrashReports',
   // Sections
   'Ventas': 'nav.sectionSales', 'Catálogo': 'nav.sectionCatalog', 'Operación': 'nav.sectionOperations',
   'Empresa': 'nav.sectionCompany',
