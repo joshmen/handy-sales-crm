@@ -20,6 +20,7 @@ import { PlanComparisonPage, QuickPlanComparison } from "./components/PlanCompar
 import { PaymentMethods } from "./components/PaymentMethods";
 import { InvoiceHistory } from "./components/InvoiceHistory";
 import { CancelSection } from "./components/CancelSection";
+import { CuponRedeemCard } from "./components/CuponRedeemCard";
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -271,6 +272,8 @@ export default function SubscriptionPage() {
           currentPlan={currentPlan}
           onChangePlan={() => setShowPlans(true)}
         />
+
+        <CuponRedeemCard onRedeemed={fetchData} />
 
         <ConsumoSection timbres={timbres} />
 

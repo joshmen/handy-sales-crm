@@ -89,4 +89,15 @@ export const subscriptionService = {
     const { data } = await api.get<TimbrePurchaseRecord[]>('/api/subscription/timbres/purchases');
     return data;
   },
+
+  async redimirCupon(codigo: string): Promise<CuponRedeemResponse> {
+    const { data } = await api.post<CuponRedeemResponse>('/api/subscription/redimir-cupon', { codigo });
+    return data;
+  },
 };
+
+export interface CuponRedeemResponse {
+  message: string;
+  beneficio: string;
+  tipo: 'MesesGratis' | 'UpgradePlan' | 'DescuentoPorcentaje' | 'PlanGratisPermanente';
+}

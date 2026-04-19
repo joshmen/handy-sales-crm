@@ -399,6 +399,17 @@
   "subscription": {
     "title": "Subscription",
     "subtitle": "Manage your plan and payment method",
+    "cupon": {
+      "title": "Have a coupon?",
+      "subtitle": "Redeem a coupon code to apply discounts, plan upgrades, or free access.",
+      "placeholder": "Enter your code",
+      "submit": "Redeem",
+      "submitting": "Redeeming...",
+      "requiredCode": "Enter a coupon code",
+      "errorGeneric": "Could not redeem coupon",
+      "successTitle": "Coupon applied!",
+      "redeemAnother": "Redeem another coupon"
+    },
     "expiresIn": "Your subscription expires in {days} day{plural}. Renew to keep uninterrupted access.",
     "renew": "Renew",
     "renewNow": "Renew now",
