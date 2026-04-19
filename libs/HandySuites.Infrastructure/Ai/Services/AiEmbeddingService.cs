@@ -6,6 +6,7 @@ using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pgvector;
 
@@ -17,6 +18,7 @@ public class AiEmbeddingService : IAiEmbeddingService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _config;
     private readonly ILogger<AiEmbeddingService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -28,12 +30,14 @@ public class AiEmbeddingService : IAiEmbeddingService
         HandySuitesDbContext db,
         IHttpClientFactory httpClientFactory,
         IConfiguration config,
-        ILogger<AiEmbeddingService> logger)
+        ILogger<AiEmbeddingService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
         _config = config;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task UpsertEmbeddingAsync(int tenantId, string sourceType, int sourceId, string contentText)
@@ -110,11 +114,52 @@ public class AiEmbeddingService : IAiEmbeddingService
         )).ToList();
     }
 
+    /// <summary>
+    /// Safe fire-and-forget variant of UpsertEmbeddingAsync. Callers typically invoke this
+    /// as `_ = embeddingService.SafeUpsertAsync(...)` without awaiting.
+    ///
+    /// IMPORTANT: uses IServiceScopeFactory to create an independent DI scope so the request's
+    /// DbContext isn't held past request lifetime. Otherwise, if OpenAI takes > request duration,
+    /// the scoped `_db` would throw ObjectDisposedException.
+    /// </summary>
     public async Task SafeUpsertAsync(int tenantId, string sourceType, int sourceId, string contentText)
     {
+        if (string.IsNullOrWhiteSpace(contentText))
+            return;
+
         try
         {
-            await UpsertEmbeddingAsync(tenantId, sourceType, sourceId, contentText);
+            var vector = await GetEmbeddingFromOpenAiAsync(contentText);
+            if (vector == null)
+                return;
+
+            // Use isolated DI scope — NEVER use `_db` here: it may be disposed.
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
+
+            var existing = await db.AiEmbeddings
+                .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.SourceType == sourceType && e.SourceId == sourceId);
+
+            if (existing != null)
+            {
+                existing.ContentText = contentText;
+                existing.Embedding = vector;
+                existing.ActualizadoEn = DateTime.UtcNow;
+            }
+            else
+            {
+                db.AiEmbeddings.Add(new AiEmbedding
+                {
+                    TenantId = tenantId,
+                    SourceType = sourceType,
+                    SourceId = sourceId,
+                    ContentText = contentText,
+                    Embedding = vector,
+                    CreadoEn = DateTime.UtcNow,
+                });
+            }
+
+            await db.SaveChangesAsync();
         }
         catch (Exception ex)
         {
