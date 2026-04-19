@@ -64,6 +64,7 @@ import {
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const PAGE_SIZE = 20;
 
@@ -1367,25 +1368,15 @@ export default function CrashReportsPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('cloudwatch');
 
   return (
+    <PageHeader
+      breadcrumbs={[
+        { label: ta('breadcrumb') },
+        { label: t('title') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle')}
+    >
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <span>{ta('breadcrumb')}</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{t('title')}</span>
-      </nav>
-
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Bug size={28} weight="duotone" className="text-red-500" />
-          {t('title')}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
-
       {/* Tabs */}
       <div className="border-b border-border-subtle">
         <nav className="flex gap-6" aria-label="Tabs">
@@ -1421,5 +1412,6 @@ export default function CrashReportsPage() {
       {/* Tab Content */}
       {activeTab === 'cloudwatch' ? <CloudWatchTab /> : <MobileCrashesTab />}
     </div>
+    </PageHeader>
   );
 }

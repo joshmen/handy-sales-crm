@@ -5,20 +5,24 @@
 -- Usage (from Railway PG or Docker):
 --   psql -U postgres -d handy_erp < infra/database/schema/seed_production.sql
 --
--- Contains ONLY:
+-- Contains:
 --   - Subscription plans (3)
 --   - System roles (4 — no VIEWER)
 --   - Automation templates (11)
 --   - Timbre packages (3)
---   - 1 Super Admin user
---   - 1 Coupon for first client (Jeyma)
+--   - Tenant 1: HandySuites Platform + Super Admin user (xjoshmenx@gmail.com)
+--   - Tenant 2: Jeyma (primer cliente) + admin@jeyma.com + vendedor@jeyma.com
+--   - Coupon JEYMA-FAMILIA-2026 (PlanGratisPermanente → PRO)
+--
+-- All seeded users use BCrypt hash for password: test123
+-- (hash: $2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO)
+-- CHANGE passwords via /auth/recovery after first login.
 --
 -- Does NOT contain:
---   - Test tenants, products, clients, orders
---   - Test users (admin@jeyma.com, etc.)
---   - E2E test data
+--   - Products, clients, orders (created in-app)
+--   - E2E test data (use seed_e2e_pg.sql for that)
 --
--- Real tenants are created via /auth/register in the app.
+-- Additional tenants are created via /auth/register in the app.
 -- =====================================================
 
 BEGIN;
@@ -73,14 +77,12 @@ INSERT INTO "AutomationTemplates" (slug, nombre, descripcion, descripcion_corta,
 ON CONFLICT (slug) DO NOTHING;
 
 -- =====================================================
--- SECTION 5: SUPER ADMIN USER
--- This is the ONLY user seeded in production.
--- All other users are created via the app registration flow.
+-- SECTION 5: PLATFORM TENANT + SUPER ADMIN USER
 -- =====================================================
 
 -- Create a minimal tenant for the super admin
-INSERT INTO "Tenants" (nombre_empresa, plan_tipo, max_usuarios, subscription_status, activo, creado_en, version) VALUES
-('HandySuites Platform', 'PRO', 100, 'Active', true, NOW(), 1);
+INSERT INTO "Tenants" (nombre_empresa, plan_tipo, max_usuarios, subscription_status, onboarding_completed, activo, creado_en, version) VALUES
+('HandySuites Platform', 'PRO', 100, 'Active', true, true, NOW(), 1);
 
 INSERT INTO "DatosEmpresa" (tenant_id, razon_social, identificador_fiscal, tipo_identificador_fiscal, telefono, email, contacto, activo, creado_en, version) VALUES
 (1, 'HandySuites Platform', 'HSU260101AAA', 'RFC', '0000000000', 'admin@handysuites.com', 'Platform Admin', true, NOW(), 1);
@@ -89,20 +91,46 @@ INSERT INTO company_settings (tenant_id, company_name, primary_color, secondary_
 (1, 'HandySuites Platform', '#16A34A', '#0F766E', 'America/Mexico_City', 'es', 'MXN', 'system', true, NOW(), 1);
 
 -- Super Admin user
--- Password: Hs!Pr0d#2026SuperAdm1n (CHANGE THIS after first login!)
+-- Password: test123 (CHANGE THIS after first login!)
 INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, es_admin, es_super_admin, rol, role_id, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
-(1, 'superadmin@handysuites.com',
- '$2b$10$6L4Pou.rBfAdIWv/ZEU27usdJY3yu2wJ/5qWGZltwnlMfAQ1Q0SJi',
+(1, 'xjoshmenx@gmail.com',
+ '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO',
  'Super Administrador', true, true, 'SUPER_ADMIN',
  (SELECT id FROM roles WHERE nombre = 'SUPER_ADMIN'),
  true, 0, false, true, NOW(), 1);
 
 -- =====================================================
--- SECTION 6: LAUNCH COUPON (Jeyma — first client)
+-- SECTION 6: FIRST CLIENT TENANT (Jeyma)
+-- =====================================================
+
+INSERT INTO "Tenants" (nombre_empresa, plan_tipo, max_usuarios, subscription_status, onboarding_completed, activo, creado_en, version) VALUES
+('Jeyma S.A. de C.V.', 'PRO', 20, 'Active', true, true, NOW(), 1);
+
+INSERT INTO "DatosEmpresa" (tenant_id, razon_social, identificador_fiscal, tipo_identificador_fiscal, telefono, email, contacto, activo, creado_en, version) VALUES
+(2, 'Jeyma S.A. de C.V.', 'JEY260101AAA', 'RFC', '3300000000', 'admin@jeyma.com', 'Administrador Jeyma', true, NOW(), 1);
+
+INSERT INTO company_settings (tenant_id, company_name, primary_color, secondary_color, timezone, language, currency, theme, activo, creado_en, version) VALUES
+(2, 'Jeyma S.A. de C.V.', '#16A34A', '#0F766E', 'America/Mexico_City', 'es', 'MXN', 'system', true, NOW(), 1);
+
+-- Jeyma users (password: test123 — CHANGE after first login)
+INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, es_admin, es_super_admin, rol, role_id, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
+(2, 'admin@jeyma.com',
+ '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO',
+ 'Administrador Jeyma', true, false, 'ADMIN',
+ (SELECT id FROM roles WHERE nombre = 'ADMIN'),
+ true, 0, false, true, NOW(), 1),
+(2, 'vendedor@jeyma.com',
+ '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO',
+ 'Vendedor Jeyma', false, false, 'VENDEDOR',
+ (SELECT id FROM roles WHERE nombre = 'VENDEDOR'),
+ true, 0, false, true, NOW(), 1);
+
+-- =====================================================
+-- SECTION 7: LAUNCH COUPON (Jeyma — first client)
 -- Type 3 = PlanGratisPermanente → upgrades to PRO for free, forever
 -- =====================================================
 
-INSERT INTO "Cupones" (codigo, nombre, tipo_cupon, plan_objetivo, meses_gratis, descuento_porcentaje, activo, max_usos, usos_actuales, fecha_expiracion, creado_en, version) VALUES
+INSERT INTO "Cupones" (codigo, nombre, tipo, plan_objetivo, meses_gratis, descuento_porcentaje, activo, max_usos, usos_actuales, fecha_expiracion, creado_en, version) VALUES
 ('JEYMA-FAMILIA-2026', 'Plan Profesional Gratis - Jeyma (Primer Cliente)', 3, 'PRO', 0, 0, true, 1, 0, '2027-12-31', NOW(), 1)
 ON CONFLICT DO NOTHING;
 

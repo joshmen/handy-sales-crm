@@ -40,6 +40,7 @@ import { tenantService } from '@/services/api/tenants';
 import type { Tenant } from '@/types/tenant';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const tipoIcons: Record<string, { icon: React.ReactNode; color: string }> = {
   Broadcast: { icon: <Radio className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
@@ -62,6 +63,7 @@ const displayModeIcons: Record<string, { icon: React.ReactNode; color: string }>
 
 export default function AnnouncementsPage() {
   const t = useTranslations('admin.announcements');
+  const ta = useTranslations('admin');
   const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
@@ -205,27 +207,24 @@ export default function AnnouncementsPage() {
   if (userRole !== 'SUPER_ADMIN') return null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Megaphone className="h-6 w-6 text-purple-600" />
-            {t('title')}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('subtitle')}
-          </p>
-        </div>
+    <PageHeader
+      breadcrumbs={[
+        { label: ta('breadcrumb') },
+        { label: t('breadcrumb') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle', { count: total })}
+      actions={
         <button
           onClick={() => setDrawerOpen(true)}
-          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 bg-success hover:bg-success/90 text-success-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="h-4 w-4" />
           {t('newAnnouncement')}
         </button>
-      </div>
-
+      }
+    >
+    <div className="space-y-6">
       {/* Maintenance Quick Toggle */}
       <div className={`rounded-xl border p-4 ${maintenanceActive ? 'bg-red-50 border-red-200' : 'bg-surface-1 border-border-subtle'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -281,7 +280,7 @@ export default function AnnouncementsPage() {
       <div className="bg-surface-2 rounded-xl border border-border-subtle overflow-hidden">
         <div className="px-4 py-3 border-b border-border-subtle">
           <h2 className="font-medium text-foreground">
-            {t('historyTitle', { count: total })}
+            {t('historyTitle')}
           </h2>
         </div>
 
@@ -707,5 +706,6 @@ export default function AnnouncementsPage() {
         </div>
       </Drawer>
     </div>
+    </PageHeader>
   );
 }

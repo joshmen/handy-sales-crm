@@ -389,15 +389,17 @@ CREATE INDEX idx_mv_payment_risk_score
 --    Llamar al cerrar ruta o vía cron nocturno
 -- ─────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION refresh_ai_materialized_views()
-RETURNS void AS $$
+RETURNS void
+SECURITY DEFINER
+AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_suggested_products;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_collection_priority;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_visit_duration_avg;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_order_history_avg;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_order_total_avg;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_demand_forecast;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_payment_risk;
+    REFRESH MATERIALIZED VIEW mv_suggested_products;
+    REFRESH MATERIALIZED VIEW mv_collection_priority;
+    REFRESH MATERIALIZED VIEW mv_visit_duration_avg;
+    REFRESH MATERIALIZED VIEW mv_order_history_avg;
+    REFRESH MATERIALIZED VIEW mv_order_total_avg;
+    REFRESH MATERIALIZED VIEW mv_demand_forecast;
+    REFRESH MATERIALIZED VIEW mv_payment_risk;
 END;
 $$ LANGUAGE plpgsql;
 

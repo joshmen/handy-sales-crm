@@ -271,16 +271,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_kpis_dashboard_unique
 -- ═══════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION refresh_report_materialized_views()
-RETURNS void AS $$
+RETURNS void
+SECURITY DEFINER
+AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_ventas_diarias;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_ventas_vendedor;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_ventas_producto;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_ventas_zona;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_actividad_clientes;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_inventario_resumen;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_cartera_vencida;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_kpis_dashboard;
+    REFRESH MATERIALIZED VIEW mv_ventas_diarias;
+    REFRESH MATERIALIZED VIEW mv_ventas_vendedor;
+    REFRESH MATERIALIZED VIEW mv_ventas_producto;
+    REFRESH MATERIALIZED VIEW mv_ventas_zona;
+    REFRESH MATERIALIZED VIEW mv_actividad_clientes;
+    REFRESH MATERIALIZED VIEW mv_inventario_resumen;
+    REFRESH MATERIALIZED VIEW mv_cartera_vencida;
+    REFRESH MATERIALIZED VIEW mv_kpis_dashboard;
 END;
 $$ LANGUAGE plpgsql;
 
