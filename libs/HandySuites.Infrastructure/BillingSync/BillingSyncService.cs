@@ -20,12 +20,25 @@ public class BillingSyncService : IBillingSyncService
 
     public async Task SyncDatosEmpresaAsync(SyncDatosEmpresaDto dto, string userJwt, CancellationToken ct = default)
     {
-        var billingUrl = _config["BILLING_API_URL"];
+        var billingUrlRaw = _config["BILLING_API_URL"];
         var apiKey = _config["BILLING_INTERNAL_API_KEY"];
 
-        if (string.IsNullOrWhiteSpace(billingUrl) || string.IsNullOrWhiteSpace(apiKey))
+        if (string.IsNullOrWhiteSpace(billingUrlRaw) || string.IsNullOrWhiteSpace(apiKey))
         {
             _logger.LogDebug("BillingSync no configurado (BILLING_API_URL o BILLING_INTERNAL_API_KEY vacíos) — skip");
+            return;
+        }
+
+        // Trim whitespace (incluyendo CR/LF que Railway/editores a veces añaden)
+        var billingUrl = billingUrlRaw.Trim();
+
+        // Validar formato del URI antes de construirlo (evita UriFormatException opaco)
+        if (!Uri.TryCreate(billingUrl, UriKind.Absolute, out var baseUri)
+            || (baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps))
+        {
+            _logger.LogError(
+                "BillingSync: BILLING_API_URL no es un URI válido. Valor recibido='{Value}' (len={Len}). Esperado: https://host.example.com",
+                billingUrl, billingUrl.Length);
             return;
         }
 
@@ -47,7 +60,7 @@ public class BillingSyncService : IBillingSyncService
                 dto.CodigoPostal ?? "<null>");
 
             using var req = new HttpRequestMessage(HttpMethod.Post,
-                new Uri(new Uri(billingUrl), "/api/internal/sync/datos-empresa"));
+                new Uri(baseUri, "/api/internal/sync/datos-empresa"));
             req.Headers.Add("X-Internal-Api-Key", apiKey);
             req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userJwt);
             req.Content = JsonContent.Create(dto);
