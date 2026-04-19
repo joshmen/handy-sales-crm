@@ -78,6 +78,7 @@ function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
 export default function ActivityLogsPage() {
   const t = useTranslations('activity');
   const tc = useTranslations('common');
+  const ta = useTranslations('admin');
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const { formatDate, formatNumber } = useFormatters();
@@ -203,7 +204,7 @@ export default function ActivityLogsPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: tc('home'), href: '/dashboard' },
+        { label: ta('breadcrumb') },
         { label: t('title') },
       ]}
       title={t('title')}

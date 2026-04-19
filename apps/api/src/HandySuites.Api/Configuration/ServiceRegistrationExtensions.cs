@@ -252,6 +252,13 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<HandySuites.Application.DatosEmpresa.Interfaces.IDatosEmpresaRepository, DatosEmpresaRepository>();
         services.AddScoped<HandySuites.Application.DatosEmpresa.Interfaces.IDatosEmpresaService, HandySuites.Application.DatosEmpresa.Services.DatosEmpresaService>();
 
+        // Billing sync (replica campos duplicados hacia Billing API — handy_billing)
+        services.AddHttpClient<HandySuites.Application.BillingSync.IBillingSyncService,
+            HandySuites.Infrastructure.BillingSync.BillingSyncService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
         // Billing Data (DatosFacturacion)
         services.AddScoped<IDatosFacturacionService, DatosFacturacionService>();
 

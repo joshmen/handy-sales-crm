@@ -13,6 +13,7 @@ import { tenantService } from '@/services/api/tenants';
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { PageHeader } from '@/components/layout/PageHeader';
 import type { GlobalUser, Tenant } from '@/types/tenant';
 
 const ROLE_OPTIONS = [
@@ -117,24 +118,15 @@ export default function GlobalUsersPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-surface-2 px-8 py-6 border-b border-border-subtle">
-        <div className="flex items-center gap-2 text-[13px] mb-4">
-          <span className="text-muted-foreground">{ta('breadcrumb')}</span>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          <span className="text-foreground font-semibold">{t('breadcrumb')}</span>
-        </div>
-
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('subtitle', { count: totalCount.toLocaleString() })}
-            </p>
-          </div>
-        </div>
-
+    <PageHeader
+      breadcrumbs={[
+        { label: ta('breadcrumb') },
+        { label: t('breadcrumb') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle', { count: totalCount.toLocaleString() })}
+    >
+      <div className="space-y-4">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
@@ -153,7 +145,7 @@ export default function GlobalUsersPage() {
               options={tenantOptions}
               value={filterTenant}
               onChange={(val) => setFilterTenant(val ? String(val) : 'all')}
-              placeholder="Todas las empresas"
+              placeholder={tc('allCompanies')}
             />
           </div>
 
@@ -162,7 +154,7 @@ export default function GlobalUsersPage() {
               options={ROLE_OPTIONS}
               value={filterRol}
               onChange={(val) => setFilterRol(val ? String(val) : 'all')}
-              placeholder="Todos los roles"
+              placeholder={t('allRoles')}
             />
           </div>
 
@@ -171,16 +163,12 @@ export default function GlobalUsersPage() {
               options={STATUS_OPTIONS}
               value={filterActivo}
               onChange={(val) => setFilterActivo(val ? String(val) : 'all')}
-              placeholder="Todos"
+              placeholder={t('allStatuses')}
             />
           </div>
         </div>
-      </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-auto">
-        <div className="px-8 py-6">
-          <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
+        <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
                 <div className="flex items-center gap-2">
@@ -355,8 +343,7 @@ export default function GlobalUsersPage() {
               </div>
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </PageHeader>
   );
 }

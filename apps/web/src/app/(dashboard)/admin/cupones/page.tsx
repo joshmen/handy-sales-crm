@@ -26,6 +26,7 @@ import {
 } from '@/services/api/cuponesAdmin';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 type DrawerMode = 'none' | 'create' | 'edit';
 
@@ -448,26 +449,15 @@ export default function CuponesAdminPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-foreground/70">
-        <span>{ta('breadcrumb')}</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{t('title')}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Ticket className="h-6 w-6 text-violet-600" weight="duotone" />
-            {t('title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('subtitle')}
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <PageHeader
+      breadcrumbs={[
+        { label: ta('breadcrumb') },
+        { label: t('title') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle')}
+      actions={
+        <>
           <button
             onClick={fetchCupones}
             disabled={loading}
@@ -478,14 +468,15 @@ export default function CuponesAdminPage() {
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
             {t('newCoupon')}
           </button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
+    <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
@@ -731,5 +722,6 @@ export default function CuponesAdminPage() {
       {/* Drawer */}
       {drawerMode !== 'none' && renderDrawer()}
     </div>
+    </PageHeader>
   );
 }

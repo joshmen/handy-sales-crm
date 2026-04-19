@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   AreaChart,
   Area,
@@ -100,61 +101,51 @@ export default function SystemDashboardPage() {
   const formatCurrency = (value: number) => _fmtCur(value);
   const formatNumber = (value: number) => _fmtNum(value);
 
+  const breadcrumbs = [
+    { label: ta('breadcrumb') },
+    { label: t('breadcrumb') },
+  ];
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-6 w-64 bg-surface-3 rounded-md animate-pulse" />
-        <div>
-          <div className="h-8 w-48 bg-surface-3 rounded-md animate-pulse mb-2" />
-          <div className="h-5 w-96 bg-surface-3 rounded-md animate-pulse" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="h-4 w-24 bg-surface-3 rounded-md animate-pulse mb-3" />
-                  <div className="h-8 w-20 bg-surface-3 rounded-md animate-pulse" />
+      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-4 w-24 bg-surface-3 rounded-md animate-pulse mb-3" />
+                    <div className="h-8 w-20 bg-surface-3 rounded-md animate-pulse" />
+                  </div>
+                  <div className="h-12 w-12 rounded-lg bg-surface-3 animate-pulse" />
                 </div>
-                <div className="h-12 w-12 rounded-lg bg-surface-3 animate-pulse" />
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm h-80 animate-pulse" />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2].map((i) => (
-            <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm h-80 animate-pulse" />
-          ))}
-        </div>
-      </div>
+      </PageHeader>
     );
   }
 
   if (!metrics) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">{t('loadErrorShort')}</p>
-      </div>
+      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">{t('loadErrorShort')}</p>
+        </div>
+      </PageHeader>
     );
   }
 
   return (
+    <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <span>{ta('breadcrumb')}</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{t('breadcrumb')}</span>
-      </nav>
-
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -503,5 +494,6 @@ export default function SystemDashboardPage() {
         </div>
       </div>
     </div>
+    </PageHeader>
   );
 }

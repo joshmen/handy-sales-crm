@@ -1,3 +1,4 @@
+using HandySuites.Application.BillingSync;
 using HandySuites.Application.DatosEmpresa.DTOs;
 using HandySuites.Application.DatosEmpresa.Interfaces;
 using HandySuites.Shared.Multitenancy;
@@ -36,7 +37,9 @@ public static class DatosEmpresaEndpoints
             DatosEmpresaUpdateDto request,
             HttpContext context,
             [FromServices] IDatosEmpresaService service,
-            [FromServices] ICurrentTenant currentTenant) =>
+            [FromServices] IBillingSyncService billingSync,
+            [FromServices] ICurrentTenant currentTenant,
+            CancellationToken ct) =>
         {
             if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
                 return Results.Forbid();
@@ -49,6 +52,23 @@ public static class DatosEmpresaEndpoints
                 return Results.Unauthorized();
 
             var result = await service.UpdateAsync(request, userId.ToString());
+
+            // Replicar campos duplicados a Billing API (ConfiguracionFiscal en handy_billing).
+            // Forwardeamos el JWT del usuario para que Billing API aplique RLS y query filters
+            // normalmente — el sync NO bypassa seguridad multi-tenant.
+            // Fallos de sync se loguean como WARN, no rompen el flujo principal.
+            var authHeader = context.Request.Headers.Authorization.ToString();
+            var userJwt = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                ? authHeader.Substring("Bearer ".Length).Trim()
+                : string.Empty;
+
+            await billingSync.SyncDatosEmpresaAsync(new SyncDatosEmpresaDto(
+                result.TenantId,
+                result.IdentificadorFiscal,
+                result.RazonSocial,
+                result.Direccion,
+                result.CodigoPostal), userJwt, ct);
+
             return Results.Ok(result);
         })
         .WithName("UpdateDatosEmpresa")

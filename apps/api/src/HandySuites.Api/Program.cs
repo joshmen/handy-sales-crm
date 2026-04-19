@@ -244,7 +244,6 @@ app.MapSupervisorEndpoints();
 app.MapAutomationEndpoints();
 app.MapAiEndpoints();
 app.MapAnalyticsEndpoints();
-app.MapSecurityConfigEndpoints();
 app.MapIntegrationEndpoints();
 app.MapCuponEndpoints();
 

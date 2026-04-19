@@ -29,6 +29,7 @@ import {
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const AVAILABLE_FEATURES = [
   'CRM y clientes',
@@ -466,26 +467,15 @@ export default function SubscriptionPlansAdminPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-foreground/70">
-        <span>{ta('breadcrumb')}</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{t('breadcrumb')}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-blue-600" weight="duotone" />
-            {t('title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('subtitle')}
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <PageHeader
+      breadcrumbs={[
+        { label: ta('breadcrumb') },
+        { label: t('breadcrumb') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle')}
+      actions={
+        <>
           <button
             onClick={fetchPlans}
             disabled={loading}
@@ -496,14 +486,15 @@ export default function SubscriptionPlansAdminPage() {
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
             {t('newPlan')}
           </button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
+    <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
@@ -730,5 +721,6 @@ export default function SubscriptionPlansAdminPage() {
       {/* Drawer */}
       {drawerMode !== 'none' && renderDrawer()}
     </div>
+    </PageHeader>
   );
 }

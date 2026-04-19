@@ -22,6 +22,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 interface GlobalSettings {
   id: string;
@@ -46,6 +47,7 @@ export default function GlobalSettingsPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const t = useTranslations('globalSettings');
+  const ta = useTranslations('admin');
   const {
     globalSettings,
     isLoading,
@@ -117,39 +119,36 @@ export default function GlobalSettingsPage() {
     return null; // Will redirect
   }
 
+  const breadcrumbs = [
+    { label: ta('breadcrumb') },
+    { label: t('title') },
+  ];
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </PageHeader>
     );
   }
 
   if (!settings) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">{t('errorLoading')}</p>
-      </div>
+      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">{t('errorLoading')}</p>
+        </div>
+      </PageHeader>
     );
   }
 
   return (
-    <div className="space-y-6">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Settings className="h-6 w-6 text-purple-600" />
-              </div>
-              <h1 className="text-3xl font-bold text-foreground">{t('title')}</h1>
-            </div>
-            <p className="text-foreground/70">
-              {t('subtitle')}
-            </p>
-            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
-              <Shield className="h-4 w-4 mr-1" />
-              {t('superAdminOnly')}
-            </div>
+    <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+          <div className="mb-6 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
+            <Shield className="h-4 w-4 mr-1" />
+            {t('superAdminOnly')}
           </div>
 
           <div className="space-y-6">
@@ -432,6 +431,6 @@ export default function GlobalSettingsPage() {
           <div className="text-center text-sm text-muted-foreground">
             {t('lastUpdated', { date: formatDate(settings.updatedAt) })}
           </div>
-      </div>
+    </PageHeader>
   );
 }
