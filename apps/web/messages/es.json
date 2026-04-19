@@ -408,6 +408,7 @@
       "requiredCode": "Ingresa un código de cupón",
       "errorGeneric": "No se pudo canjear el cupón",
       "successTitle": "¡Cupón aplicado!",
+      "checkAboveHint": "Tu plan ya se actualizó. Revísalo arriba.",
       "redeemAnother": "Canjear otro cupón"
     },
     "expiresIn": "Tu suscripción expira en {days} día{plural}. Renueva para mantener el acceso sin interrupciones.",

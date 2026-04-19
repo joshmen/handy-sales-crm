@@ -30,10 +30,14 @@ export function CuponRedeemCard({ onRedeemed }: CuponRedeemCardProps) {
     setSubmitting(true);
     try {
       const result = await subscriptionService.redimirCupon(trimmed);
+      setCodigo('');
+      // Refrescar datos primero, luego mostrar success state (así el hero card arriba
+      // ya refleja el nuevo plan cuando el usuario ve "aplicado")
+      await onRedeemed();
       setSuccess({ beneficio: result.beneficio });
       toast.success(result.message);
-      setCodigo('');
-      await onRedeemed();
+      // Scroll al top para que el usuario vea el PlanHeroCard actualizado
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
       const backendMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(backendMsg ? tApi(backendMsg) : t('errorGeneric'));
@@ -44,12 +48,15 @@ export function CuponRedeemCard({ onRedeemed }: CuponRedeemCardProps) {
 
   if (success) {
     return (
-      <div className="rounded-xl border border-success/30 bg-success/5 dark:bg-success/10 px-5 py-4">
+      <div className="rounded-xl border-2 border-success/50 bg-success/10 dark:bg-success/15 px-5 py-4 animate-in fade-in slide-in-from-top-2">
         <div className="flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" />
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-foreground">{t('successTitle')}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{success.beneficio}</p>
+            <p className="text-sm text-foreground/80 mt-1">{success.beneficio}</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {t('checkAboveHint')}
+            </p>
             <button
               onClick={() => setSuccess(null)}
               className="text-xs text-muted-foreground hover:text-foreground mt-2 underline"

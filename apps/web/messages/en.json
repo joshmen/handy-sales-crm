@@ -408,6 +408,7 @@
       "requiredCode": "Enter a coupon code",
       "errorGeneric": "Could not redeem coupon",
       "successTitle": "Coupon applied!",
+      "checkAboveHint": "Your plan has been updated. See it above.",
       "redeemAnother": "Redeem another coupon"
     },
     "expiresIn": "Your subscription expires in {days} day{plural}. Renew to keep uninterrupted access.",
