@@ -47,6 +47,15 @@ public class InternalSyncController : ControllerBase
         [FromBody] SyncDatosEmpresaRequest req,
         CancellationToken ct)
     {
+        // Log payload recibido (para diagnóstico de valores null)
+        _logger.LogInformation(
+            "InternalSync recibió payload: TenantId={TenantId}, RFC={Rfc}, RazonSocial={RazonSocial}, Direccion={Direccion}, CP={CP}",
+            req.TenantId,
+            req.Rfc ?? "<null>",
+            req.RazonSocial ?? "<null>",
+            req.DireccionFiscal ?? "<null>",
+            req.CodigoPostal ?? "<null>");
+
         // 1) Validar API key (defensa en profundidad: solo Main API debe poder llamar este endpoint)
         var expectedKey = _config["INTERNAL_API_KEY"];
         if (string.IsNullOrWhiteSpace(expectedKey))
