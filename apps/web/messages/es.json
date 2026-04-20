@@ -399,6 +399,18 @@
   "subscription": {
     "title": "Suscripción",
     "subtitle": "Administra tu plan y método de pago",
+    "cupon": {
+      "title": "¿Tienes un cupón?",
+      "subtitle": "Canjea un código de cupón para aplicar descuentos, upgrades de plan o acceso gratis.",
+      "placeholder": "Ingresa tu código",
+      "submit": "Canjear",
+      "submitting": "Canjeando...",
+      "requiredCode": "Ingresa un código de cupón",
+      "errorGeneric": "No pudimos aplicar el cupón. Verifica el código e intenta de nuevo.",
+      "successTitle": "¡Cupón aplicado!",
+      "checkAboveHint": "Tu plan ya se actualizó. Revísalo arriba.",
+      "redeemAnother": "Canjear otro cupón"
+    },
     "expiresIn": "Tu suscripción expira en {days} día{plural}. Renueva para mantener el acceso sin interrupciones.",
     "renew": "Renovar",
     "renewNow": "Renovar ahora",
