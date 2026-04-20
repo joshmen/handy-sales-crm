@@ -86,11 +86,17 @@ BEGIN
 
         -- Create policy: rows visible only when tenant matches session variable
         -- OR caller is SUPER_ADMIN (set via app.is_super_admin from es_super_admin JWT claim)
-        -- OR caller is a trusted worker (no HttpContext → interceptor sets is_super_admin='true')
+        -- OR caller is a trusted worker (no HttpContext → interceptor sets is_super_admin='true').
+        --
+        -- The NULLIF guard is critical: PostgreSQL does NOT guarantee short-circuit on OR,
+        -- so if app.tenant_id is '' (unset or empty) the raw cast ''::int would throw
+        -- SQLSTATE 22P02 even when is_super_admin='true' alone would satisfy the policy.
+        -- NULLIF('') returns NULL, and `tenant_id = NULL` yields NULL (not true) — safely
+        -- excluding the row instead of erroring the whole query.
         EXECUTE format(
             'CREATE POLICY tenant_isolation ON %I FOR ALL USING (
                 current_setting(''app.is_super_admin'', true) = ''true''
-                OR tenant_id = current_setting(''app.tenant_id'', true)::int
+                OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::int
             )',
             t
         );
