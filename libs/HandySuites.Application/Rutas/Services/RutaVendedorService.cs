@@ -1,5 +1,6 @@
 using HandySuites.Application.Ai.DTOs;
 using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Interfaces;
 using HandySuites.Domain.Entities;
@@ -12,17 +13,20 @@ public class RutaVendedorService
 {
     private readonly IRutaVendedorRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITransactionManager _transactions;
     private readonly IAiGatewayService? _aiGateway;
     private readonly ILogger<RutaVendedorService>? _logger;
 
     public RutaVendedorService(
         IRutaVendedorRepository repo,
         ICurrentTenant tenant,
+        ITransactionManager transactions,
         IAiGatewayService? aiGateway = null,
         ILogger<RutaVendedorService>? logger = null)
     {
         _repo = repo;
         _tenant = tenant;
+        _transactions = transactions;
         _aiGateway = aiGateway;
         _logger = logger;
     }
@@ -46,9 +50,12 @@ public class RutaVendedorService
             CreadoPor = _tenant.UserId
         };
 
+        // BR-040 (Audit HIGH-5, Abril 2026): header + detalles atómico. Si falla
+        // cualquier detalle, la ruta entera rollback — no dejamos paradas parciales.
+        await using var tx = await _transactions.BeginTransactionAsync();
+
         var rutaId = await _repo.CrearAsync(ruta);
 
-        // Agregar detalles si se proporcionan
         if (dto.Detalles?.Any() == true)
         {
             foreach (var detalleDto in dto.Detalles.OrderBy(d => d.OrdenVisita))
@@ -69,6 +76,7 @@ public class RutaVendedorService
             }
         }
 
+        await _transactions.CommitTransactionAsync();
         return rutaId;
     }
 
@@ -311,6 +319,9 @@ public class RutaVendedorService
             CreadoPor = _tenant.UserId
         };
 
+        // BR-040: instanciación atómica — header + copia de paradas en una transacción.
+        await using var tx = await _transactions.BeginTransactionAsync();
+
         var rutaId = await _repo.CrearAsync(ruta);
 
         // Copy paradas from template
@@ -331,6 +342,7 @@ public class RutaVendedorService
             await _repo.AgregarDetalleAsync(nuevoDetalle);
         }
 
+        await _transactions.CommitTransactionAsync();
         return rutaId;
     }
 
@@ -356,6 +368,9 @@ public class RutaVendedorService
             CreadoPor = _tenant.UserId
         };
 
+        // BR-040: duplicación atómica.
+        await using var tx = await _transactions.BeginTransactionAsync();
+
         var copiaId = await _repo.CrearAsync(copia);
 
         // Copy paradas from original template
@@ -376,6 +391,7 @@ public class RutaVendedorService
             await _repo.AgregarDetalleAsync(nuevoDetalle);
         }
 
+        await _transactions.CommitTransactionAsync();
         return copiaId;
     }
 

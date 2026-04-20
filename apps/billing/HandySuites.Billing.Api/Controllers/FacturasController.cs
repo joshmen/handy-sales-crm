@@ -224,6 +224,27 @@ public class FacturasController : ControllerBase
         if (!IsValidRfc(request.ReceptorRfc))
             return BadRequest(new { error = "RFC del receptor no tiene formato válido" });
 
+        // BR-012 (Audit HIGH-8, Abril 2026): pre-validar disponibilidad de timbres
+        // antes de crear el registro PENDIENTE. Evita acumular facturas que nunca
+        // podrán timbrarse si el tenant no tiene cuota.
+        var authHeader = Request.Headers["Authorization"].ToString();
+        if (!string.IsNullOrEmpty(authHeader))
+        {
+            var timbreCheck = await _timbreService.CheckTimbreAvailableAsync(authHeader);
+            if (!timbreCheck.Allowed)
+            {
+                return StatusCode(402, new
+                {
+                    error = timbreCheck.Message ?? "No tienes timbres disponibles.",
+                    usados = timbreCheck.Usados,
+                    maximo = timbreCheck.Maximo
+                });
+            }
+        }
+
+        // BR-010: folio + factura atómicamente (mismo patrón que CreateFacturaFromOrder).
+        await using var folioTx = await _context.Database.BeginTransactionAsync();
+
         // Obtener siguiente folio
         var folio = await GetNextFolio(tenantId, request.Serie ?? "A");
 
@@ -286,6 +307,7 @@ public class FacturasController : ControllerBase
 
         RegistrarAuditoria(tenantId, factura.Id, "CREAR", "Factura creada", userId);
         await _context.SaveChangesAsync();
+        await folioTx.CommitAsync();
 
         return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
     }

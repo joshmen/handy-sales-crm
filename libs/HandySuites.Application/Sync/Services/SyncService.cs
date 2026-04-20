@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Application.Sync.Interfaces;
 using HandySuites.Shared.Multitenancy;
@@ -8,11 +9,13 @@ public class SyncService
 {
     private readonly ISyncRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITransactionManager _transactions;
 
-    public SyncService(ISyncRepository repo, ICurrentTenant tenant)
+    public SyncService(ISyncRepository repo, ICurrentTenant tenant, ITransactionManager transactions)
     {
         _repo = repo;
         _tenant = tenant;
+        _transactions = transactions;
     }
 
     public async Task<SyncResponseDto> SyncAsync(SyncRequestDto request)
@@ -28,6 +31,14 @@ public class SyncService
         var entityTypes = request.EntityTypes ?? new List<string>();
         var syncAll = entityTypes.Count == 0;
 
+        // BR-060 (Audit HIGH-6, Abril 2026): wrap the whole batch in a transaction.
+        // Previous behavior: the outer catch swallowed SaveChangesAsync failures, but
+        // entities staged in the EF change tracker by per-entity upserts could still
+        // commit partial/corrupt state if SaveChangesAsync happened to succeed.
+        // With a transaction, either everything commits cleanly or everything rolls
+        // back — no divergence between mobile and server.
+        await using var tx = await _transactions.BeginTransactionAsync();
+
         try
         {
             // 1. Push client changes to server
@@ -39,11 +50,13 @@ public class SyncService
             // 2. Pull server changes to client
             await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
 
-            // 3. Save all changes
+            // 3. Save all changes atomically
             await _repo.SaveChangesAsync();
+            await _transactions.CommitTransactionAsync();
         }
         catch (Exception ex)
         {
+            await _transactions.RollbackTransactionAsync();
             response.Errors.Add(new SyncErrorDto
             {
                 EntityType = "sync",

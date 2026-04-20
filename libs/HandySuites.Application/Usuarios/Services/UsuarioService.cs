@@ -274,9 +274,19 @@ public class UsuarioService
             throw new UnauthorizedAccessException("No tienes permisos para actualizar este usuario");
         }
 
+        // BR-030 (Audit HIGH-7, Abril 2026): un ADMIN no puede modificar a otro ADMIN
+        // del mismo tenant — solo el propio usuario o un SUPER_ADMIN puede hacerlo.
+        // Previene que un admin bloquee a otro cambiando email/password.
+        var currentUserId = int.TryParse(_tenant.UserId, out var cuid) ? cuid : 0;
+        var isSelf = usuario.Id == currentUserId;
+        if (!_tenant.IsSuperAdmin && !isSelf && usuario.EsAdmin)
+        {
+            throw new UnauthorizedAccessException("Solo el propio usuario o un SUPER_ADMIN puede modificar cuentas de administrador.");
+        }
+
         usuario.Email = dto.Email;
         usuario.Nombre = dto.Nombre;
-        
+
         if (!string.IsNullOrEmpty(dto.Password))
         {
             // Check password against known breaches
