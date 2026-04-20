@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 
 interface ProductoOption {
   id: number;
@@ -44,6 +45,7 @@ export default function LoadInventoryPage() {
   const tr = useTranslations('routes');
   const ts = useTranslations('routes.status');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
@@ -111,8 +113,8 @@ export default function LoadInventoryPage() {
       setSaving(true);
       await routeService.updateEfectivoInicial(rutaId, parseFloat(efectivoInicial) || 0, comentarios || undefined);
       toast.success(t('cashUpdated'));
-    } catch (_err) {
-      toast.error(t('errorSavingCash'));
+    } catch (err) {
+      showApiError(err, t('errorSavingCash'));
     } finally {
       setSaving(false);
     }
@@ -147,8 +149,8 @@ export default function LoadInventoryPage() {
       toast.success(t('productRemoved'));
       const updated = await routeService.getCarga(rutaId);
       setCarga(updated);
-    } catch (_err) {
-      toast.error(t('errorRemovingProduct'));
+    } catch (err) {
+      showApiError(err, t('errorRemovingProduct'));
     }
   };
 
@@ -191,8 +193,8 @@ export default function LoadInventoryPage() {
       ]);
       setCarga(cargaData);
       setPedidos(pedidosData);
-    } catch (_err) {
-      toast.error(t('errorRemovingOrder'));
+    } catch (err) {
+      showApiError(err, t('errorRemovingOrder'));
     }
   };
 

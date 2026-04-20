@@ -40,6 +40,7 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { dateOnlyToUTC } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 
 interface ZoneOption {
   id: number;
@@ -67,6 +68,7 @@ type RouteFormData = z.infer<typeof routeSchema>;
 export default function RoutesPage() {
   const t = useTranslations('routes');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   const router = useRouter();
   const { formatDateOnly } = useFormatters();
   const { data: session } = useSession();
@@ -313,8 +315,8 @@ export default function RoutesPage() {
       toast.success(t('batchSuccess', { count: ids.length, action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() }));
       batch.completeBatch();
       fetchRoutes();
-    } catch {
-      toast.error(t('errorUpdating'));
+    } catch (err) {
+      showApiError(err, t('errorUpdating'));
       batch.setBatchLoading(false);
     }
   };
@@ -331,9 +333,9 @@ export default function RoutesPage() {
         setRoutes(prev => prev.filter(r => r.id !== route.id));
         setTotalItems(prev => prev - 1);
       }
-    } catch {
+    } catch (err) {
       setRoutes(prev => prev.map(r => r.id === route.id ? { ...r, activo: !newActivo } : r));
-      toast.error(t('errorUpdating'));
+      showApiError(err, t('errorUpdating'));
     } finally {
       setTogglingId(null);
     }

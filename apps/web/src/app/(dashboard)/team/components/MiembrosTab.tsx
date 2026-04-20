@@ -35,6 +35,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { getInitials, formatTimeAgo } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
@@ -481,6 +482,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   const t = useTranslations('team.members');
   const td = useTranslations('team.devices');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   const presenceLabels: PresenceLabels = { online: t('online'), agoMinutes: (min: number) => t('supervisor.minutesAgo', { min }), disconnected: t('supervisor.disconnected') };
   const { formatDate } = useFormatters();
   const {
@@ -664,8 +666,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       setIsCreateModalOpen(false);
       setFormData({ email: '', nombre: '', password: '', telefono: '', role: 'VENDEDOR' });
       loadUsers();
-    } catch (_error) {
-      toast.error(t('errorCreating'));
+    } catch (err) {
+      showApiError(err, t('errorCreating'));
     }
   };
 
@@ -683,8 +685,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       setIsEditModalOpen(false);
       setSelectedUser(null);
       loadUsers();
-    } catch (_error) {
-      toast.error(t('errorUpdating'));
+    } catch (err) {
+      showApiError(err, t('errorUpdating'));
     }
   };
 

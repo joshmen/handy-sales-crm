@@ -42,6 +42,7 @@ import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
 
 // Tipos locales para los catálogos (coinciden con el backend)
@@ -93,6 +94,7 @@ export default function ProductsPage() {
   const t = useTranslations('products');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const { formatCurrency } = useFormatters();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -286,7 +288,7 @@ export default function ProductsPage() {
           toast.success(tc('imageUploaded'));
         } catch (imgErr) {
           console.error('Error al subir imagen:', imgErr);
-          toast.error(t('errorSaving'));
+          showApiError(imgErr, t('errorSaving'));
         } finally {
           setUploadingImage(false);
         }
@@ -461,8 +463,8 @@ export default function ProductsPage() {
       await productService.deleteProduct(id);
       toast.success(t('productDeleted'));
       fetchProducts();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

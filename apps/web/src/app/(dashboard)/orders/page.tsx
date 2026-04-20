@@ -15,6 +15,7 @@ import { clientService } from '@/services/api/clients';
 import { productService } from '@/services/api/products';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import {
   Plus,
   RefreshCw,
@@ -179,6 +180,7 @@ interface UsuarioOption {
 export default function OrdersPage() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
@@ -317,8 +319,8 @@ export default function OrdersPage() {
     try {
       const orderDetail = await orderService.getOrderById(parseInt(orderId));
       toast.info(`Pedido ${orderDetail.numeroPedido} - Total: $${orderDetail.total.toFixed(2)}`);
-    } catch (_err) {
-      toast.error(t('errorLoading'));
+    } catch (err) {
+      showApiError(err, t('errorLoading'));
     }
   };
 
@@ -328,8 +330,8 @@ export default function OrdersPage() {
         await orderService.deleteOrder(parseInt(orderId));
         setOrders(orders.filter(o => o.id !== orderId));
         toast.success(t('orderDeleted'));
-      } catch (_err) {
-        toast.error(t('errorDeleting'));
+      } catch (err) {
+        showApiError(err, t('errorDeleting'));
       }
     }
   };
@@ -396,8 +398,8 @@ export default function OrdersPage() {
       await fetchOrders();
       setShowOrderForm(false);
       setEditingOrder(null);
-    } catch (_err) {
-      toast.error(t('errorSaving'));
+    } catch (err) {
+      showApiError(err, t('errorSaving'));
     }
   };
 

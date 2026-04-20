@@ -18,6 +18,7 @@ import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { api } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
@@ -40,6 +41,7 @@ export default function UnitsPage() {
   const t = useTranslations('units');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   // State
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -190,8 +192,8 @@ export default function UnitsPage() {
       await unitService.delete(id);
       toast.success(t('unitDeleted'));
       await loadUnits();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

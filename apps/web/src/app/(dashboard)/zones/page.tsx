@@ -46,6 +46,7 @@ import type { MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { GoogleMap, useJsApiLoader, Marker as GMarker, Circle as GCircle, Autocomplete } from '@react-google-maps/api';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
 const MAPS_LIBRARIES: ('places')[] = ['places'];
@@ -74,6 +75,7 @@ export default function ZonesPage() {
   const t = useTranslations('zones');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const drawerRef = useRef<DrawerHandle>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -320,8 +322,8 @@ export default function ZonesPage() {
       await zoneService.deleteZone(id);
       toast.success(t('zoneDeleted'));
       fetchZones();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

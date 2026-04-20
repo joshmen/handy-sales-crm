@@ -25,6 +25,18 @@ const PATTERNS: Array<{ es: RegExp; en: RegExp; toEs: string; toEn: string }> = 
   { es: /^(\d+) meta(?:s)? renovada(?:s)?$/, en: /^(\d+) goal\(?s?\)? renewed$/, toEs: '$1 meta(s) renovada(s)', toEn: '$1 goal(s) renewed' },
   { es: /^Todos los vendedores están al ≥(\d+)% de su meta$/, en: /^All vendors are at ≥(\d+)% of their goal$/, toEs: 'Todos los vendedores están al ≥$1% de su meta', toEn: 'All vendors are at ≥$1% of their goal' },
   { es: /^Cobro registrado: (.+) — (.+)$/, en: /^Payment registered: (.+) — (.+)$/, toEs: 'Cobro registrado: $1 — $2', toEn: 'Payment registered: $1 — $2' },
+
+  // Business rules from April 2026 audit — dynamic messages with variable placeholders.
+  // Plan-limit rejections (BR-020)
+  { es: /^Tu plan (.+) permite máximo (\d+) usuarios\. Actualmente tienes (\d+)\.$/, en: /^Your (.+) plan allows a maximum of (\d+) users\. You currently have (\d+)\.$/, toEs: 'Tu plan $1 permite máximo $2 usuarios. Actualmente tienes $3.', toEn: 'Your $1 plan allows a maximum of $2 users. You currently have $3.' },
+  { es: /^Tu plan (.+) permite máximo (\d+) productos\. Actualmente tienes (\d+)\.$/, en: /^Your (.+) plan allows a maximum of (\d+) products\. You currently have (\d+)\.$/, toEs: 'Tu plan $1 permite máximo $2 productos. Actualmente tienes $3.', toEn: 'Your $1 plan allows a maximum of $2 products. You currently have $3.' },
+  { es: /^Tu plan (.+) permite máximo (\d+) clientes\. Actualmente tienes (\d+)\.$/, en: /^Your (.+) plan allows a maximum of (\d+) clients\. You currently have (\d+)\.$/, toEs: 'Tu plan $1 permite máximo $2 clientes. Actualmente tienes $3.', toEn: 'Your $1 plan allows a maximum of $2 clients. You currently have $3.' },
+
+  // Inventory movement failure (BR-002)
+  { es: /^No se pudo registrar el movimiento de inventario: (.+)$/, en: /^Could not register inventory movement: (.+)$/, toEs: 'No se pudo registrar el movimiento de inventario: $1', toEn: 'Could not register inventory movement: $1' },
+
+  // Impersonation duration (BR-031)
+  { es: /^La duración solicitada excede el máximo permitido de (\d+) minutos\.$/, en: /^Requested duration exceeds the maximum allowed of (\d+) minutes\.$/, toEs: 'La duración solicitada excede el máximo permitido de $1 minutos.', toEn: 'Requested duration exceeds the maximum allowed of $1 minutes.' },
 ];
 
 /**

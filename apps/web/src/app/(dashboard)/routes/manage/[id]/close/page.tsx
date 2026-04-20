@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 
 export default function CloseRoutePage() {
   const { formatCurrency, formatDate } = useFormatters();
@@ -26,6 +27,7 @@ export default function CloseRoutePage() {
   const tl = useTranslations('routes.detail');
   const t = useTranslations('routes.close');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
 
   // Lifecycle steps for route status timeline
   const LIFECYCLE_STEPS = [
@@ -98,8 +100,8 @@ export default function CloseRoutePage() {
         recAlmacen: updatedItem.recAlmacen,
         cargaVehiculo: updatedItem.cargaVehiculo,
       });
-    } catch (_err) {
-      toast.error(t('errorUpdatingReturn'));
+    } catch (err) {
+      showApiError(err, t('errorUpdatingReturn'));
       fetchData();
     }
   };

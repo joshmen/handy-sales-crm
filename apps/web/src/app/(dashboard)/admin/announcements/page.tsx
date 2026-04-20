@@ -40,6 +40,7 @@ import { tenantService } from '@/services/api/tenants';
 import type { Tenant } from '@/types/tenant';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 const tipoIcons: Record<string, { icon: React.ReactNode; color: string }> = {
@@ -64,6 +65,7 @@ const displayModeIcons: Record<string, { icon: React.ReactNode; color: string }>
 export default function AnnouncementsPage() {
   const t = useTranslations('admin.announcements');
   const ta = useTranslations('admin');
+  const showApiError = useApiErrorToast();
   const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
@@ -167,8 +169,8 @@ export default function AnnouncementsPage() {
       setSelectedTenantIds([]);
       setSelectedRoles([]);
       fetchData();
-    } catch {
-      toast.error(t('errorCreating'));
+    } catch (err) {
+      showApiError(err, t('errorCreating'));
     } finally {
       setCreating(false);
     }
