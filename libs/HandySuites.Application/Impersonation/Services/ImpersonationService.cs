@@ -23,7 +23,9 @@ public class ImpersonationService : IImpersonationService
     private readonly JwtTokenGenerator _tokenGenerator;
     private readonly ILogger<ImpersonationService> _logger;
 
-    // Configuración
+    // Configuración (BR-031). Constantes intencionalmente compile-time: los
+    // valores están atados a política de soporte documentada; cambios requieren
+    // decisión explícita + fix de DTO + tests.
     private const int DefaultSessionMinutes = 60;
     private const int MaxSessionMinutes = 120;
     private const int MinReasonLength = 20;
@@ -63,6 +65,20 @@ public class ImpersonationService : IImpersonationService
             request = request with { Reason = "Revisión de soporte (solo lectura)" };
         }
 
+        // BR-031 (Audit MEDIUM-10, Abril 2026): enforce session duration limits.
+        // Default 60 min; clamp to (1..MaxSessionMinutes). Previously the service
+        // ignored any requested duration and always used 60 — `MaxSessionMinutes`
+        // was declared but never checked.
+        var requestedDuration = request.DurationMinutes ?? DefaultSessionMinutes;
+        if (requestedDuration <= 0)
+        {
+            throw new ArgumentException("La duración de la sesión debe ser mayor a cero minutos.");
+        }
+        if (requestedDuration > MaxSessionMinutes)
+        {
+            throw new ArgumentException($"La duración solicitada excede el máximo permitido de {MaxSessionMinutes} minutos.");
+        }
+
         // Verificar que no hay sesión activa (auto-expirar sesiones vencidas)
         var existingSession = await _repository.GetActiveSessionForUserAsync(superAdminId);
         if (existingSession != null)
@@ -97,7 +113,7 @@ public class ImpersonationService : IImpersonationService
 
         // Crear sesión
         var sessionId = Guid.NewGuid();
-        var expiresAt = DateTime.UtcNow.AddMinutes(DefaultSessionMinutes);
+        var expiresAt = DateTime.UtcNow.AddMinutes(requestedDuration);
 
         var session = new ImpersonationSession
         {

@@ -18,6 +18,7 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
     private const int RESOURCE_USUARIOS = 1;
     private const int RESOURCE_PRODUCTOS = 2;
     private const int RESOURCE_CLIENTES = 3;
+    private const int RESOURCE_TIMBRES = 4;
 
     // BR-020 (Audit CRITICAL-3, Abril 2026): to prevent two concurrent requests
     // from both passing `current < max` and both inserting, we acquire a
@@ -29,8 +30,14 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
     // transaction commits or rolls back. If not in a transaction, this still
     // works but degenerates to a session-scoped lock with an immediate auto-
     // commit, leaving the race window open — callers must respect the contract.
+    //
+    // Provider note: only issued against PostgreSQL. Unit tests run SQLite in-memory
+    // and would fail on `pg_advisory_xact_lock`; we skip silently there since those
+    // tests run single-threaded and don't need concurrency protection anyway.
     private async Task AcquireTenantResourceLockAsync(int tenantId, int resourceId)
     {
+        if (!_db.Database.IsNpgsql()) return;
+
         await _db.Database.ExecuteSqlRawAsync(
             "SELECT pg_advisory_xact_lock({0}, {1})",
             tenantId, resourceId);
@@ -112,6 +119,16 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         if (plan.MaxTimbresMes <= 0)
             return new EnforcementResult(false, "Tu plan no incluye facturación electrónica. Actualiza tu plan para timbrar facturas.");
 
+        // BR-021 (Audit MEDIUM-9, Abril 2026): acquire the same advisory lock that
+        // RegistrarTimbreUsadoAsync implicitly serializes on, so pre-check and
+        // atomic UPDATE see a consistent view of the counter. Caller should be
+        // in a transaction for the lock to survive until the stamp is registered;
+        // if not, the lock releases at the end of this statement and the read
+        // below is still correct but a concurrent request may change things
+        // before RegistrarTimbreUsadoAsync runs — in which case the atomic UPDATE
+        // there will correctly deny the second request.
+        await AcquireTenantResourceLockAsync(tenantId, RESOURCE_TIMBRES);
+
         var tenant = await _db.Tenants
             .IgnoreQueryFilters()
             .AsNoTracking()
@@ -144,6 +161,10 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
     {
         var plan = await GetPlanForTenantAsync(tenantId);
         if (plan == null) return false;
+
+        // BR-021: acquire the same lock CanUsarTimbreAsync uses so the pre-check
+        // and this UPDATE see the same counter state within a transaction.
+        await AcquireTenantResourceLockAsync(tenantId, RESOURCE_TIMBRES);
 
         var tenant = await _db.Tenants
             .IgnoreQueryFilters()
