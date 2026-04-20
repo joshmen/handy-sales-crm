@@ -31,7 +31,7 @@ SELECT
     pr.nombre AS producto_nombre,
     pr.codigo_barra,
     pr.precio_base,
-    pr."ImagenUrl",
+    pr.imagen_url,
     COUNT(*)::int AS frecuencia,
     SUM(d.cantidad)::decimal AS cantidad_total,
     MAX(ped.fecha_pedido) AS ultima_compra,
@@ -47,7 +47,7 @@ WHERE d.activo = true
   AND ped.eliminado_en IS NULL
   AND d.eliminado_en IS NULL
   AND ped.fecha_pedido >= (NOW() - INTERVAL '90 days')
-GROUP BY ped.tenant_id, ped.cliente_id, d.producto_id, pr.nombre, pr.codigo_barra, pr.precio_base, pr."ImagenUrl";
+GROUP BY ped.tenant_id, ped.cliente_id, d.producto_id, pr.nombre, pr.codigo_barra, pr.precio_base, pr.imagen_url;
 
 CREATE UNIQUE INDEX idx_mv_suggested_products_pk
     ON mv_suggested_products (tenant_id, cliente_id, producto_id);
@@ -413,10 +413,22 @@ CREATE INDEX IF NOT EXISTS idx_detallespedido_cliente_producto
     INCLUDE (cantidad, pedido_id)
     WHERE activo = true AND eliminado_en IS NULL;
 
--- Para GPS anomaly detection: ubicación de clientes
-CREATE INDEX IF NOT EXISTS idx_clientes_ubicacion_geo
-    ON "Clientes" USING GIST (ubicacion)
-    WHERE activo = true AND eliminado_en IS NULL;
+-- Para GPS anomaly detection: ubicación de clientes (requiere PostGIS).
+-- Railway managed PostgreSQL no soporta PostGIS → usamos Haversine sobre lat/lng.
+-- Crea el índice solo si la extensión postgis está instalada.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_clientes_ubicacion_geo
+            ON "Clientes" USING GIST (ubicacion)
+            WHERE activo = true AND eliminado_en IS NULL';
+    END IF;
+END $$;
+
+-- Fallback: índice btree sobre lat/lng para filtros de bounding-box cuando no hay PostGIS.
+CREATE INDEX IF NOT EXISTS idx_clientes_lat_lng
+    ON "Clientes" (tenant_id, latitud, longitud)
+    WHERE activo = true AND eliminado_en IS NULL AND latitud IS NOT NULL AND longitud IS NOT NULL;
 
 -- Para demand forecast: ventas semanales
 CREATE INDEX IF NOT EXISTS idx_pedidos_fecha_tenant
