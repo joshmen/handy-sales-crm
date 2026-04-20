@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using HandySuites.Billing.Api.Data;
 using HandySuites.Billing.Api.Models;
 using HandySuites.Billing.Api.DTOs;
@@ -427,7 +428,13 @@ public class FacturasController : ControllerBase
             return BadRequest("No hay configuración fiscal activa. Configure sus datos fiscales en Facturación → Configuración.");
 
         // 6. Build factura from order data
+        // BR-010: folio reservation + factura INSERT must share a transaction so
+        //         that if timbrado/save fails the folio increment rolls back and
+        //         we don't leave a SAT-compliance gap in the series.
         var serie = config.SerieFactura ?? "A";
+
+        await using var folioTx = await _context.Database.BeginTransactionAsync();
+
         var folio = await GetNextFolio(tenantId, serie);
 
         var factura = new Factura
@@ -497,14 +504,15 @@ public class FacturasController : ControllerBase
             });
         }
 
-        // 8. If auto-timbrar: validate everything BEFORE saving to DB
-        //    Only persist the factura if timbrado succeeds (or if not auto-timbrar)
+        // 8. Persist factura + commit folio reservation atomically.
+        //    If we're not auto-timbrando, commit immediately (factura PENDIENTE).
         if (!request.TimbrarInmediatamente)
         {
             _context.Facturas.Add(factura);
             await _context.SaveChangesAsync();
             RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
             await _context.SaveChangesAsync();
+            await folioTx.CommitAsync();
 
             _logger.LogInformation("Factura {Serie}-{Folio} created (pending) from order {NumeroPedido} for tenant {TenantId}",
                 factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
@@ -512,7 +520,9 @@ public class FacturasController : ControllerBase
             return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
         }
 
-        // Auto-timbrar flow: save → timbrar → if fails, rollback
+        // Auto-timbrar flow: save factura inside the same folio transaction so that
+        // if timbrado fails BEFORE any PAC UUID is issued, we roll back BOTH the
+        // factura AND the folio increment — no SAT gap.
         _context.Facturas.Add(factura);
         await _context.SaveChangesAsync();
 
@@ -521,6 +531,7 @@ public class FacturasController : ControllerBase
         {
             RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada y timbrada desde pedido {order.NumeroPedido}", userId);
             await _context.SaveChangesAsync();
+            await folioTx.CommitAsync();
 
             _logger.LogInformation("Factura {Serie}-{Folio} created and timbrada from order {NumeroPedido} for tenant {TenantId}",
                 factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
@@ -528,18 +539,25 @@ public class FacturasController : ControllerBase
             return Ok(okResult.Value);
         }
 
-        // Timbrado failed — delete the factura so it doesn't leave garbage
-        // But ONLY if it wasn't already timbrada at SAT (has UUID)
+        // Timbrado failed.
+        // If factura has a UUID it's already timbrada at SAT — we CANNOT rollback the folio
+        // (SAT has accepted it). Commit the factura so the record reflects SAT reality and
+        // the admin can handle the cancellation flow.
         var reloaded = await _context.Facturas.FindAsync(factura.Id);
-        if (reloaded != null && string.IsNullOrEmpty(reloaded.Uuid))
+        if (reloaded != null && !string.IsNullOrEmpty(reloaded.Uuid))
         {
-            _context.Facturas.Remove(reloaded);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Factura {Serie}-{Folio} deleted after timbrado failure for tenant {TenantId}",
-                factura.Serie, factura.Folio, tenantId);
+            await folioTx.CommitAsync();
+            _logger.LogWarning("Factura {Serie}-{Folio} timbrada at SAT but post-process failed. UUID={Uuid}. Tenant {TenantId}",
+                factura.Serie, factura.Folio, reloaded.Uuid, tenantId);
+            return timbrarResult.Result!;
         }
 
-        // Return the timbrado error to the user
+        // No UUID → timbrado never succeeded at SAT → safe to rollback everything,
+        // including the folio increment. No gap in SAT series.
+        await folioTx.RollbackAsync();
+        _logger.LogInformation("Factura {Serie}-{Folio} rolled back (including folio reservation) after timbrado failure for tenant {TenantId}",
+            factura.Serie, factura.Folio, tenantId);
+
         return timbrarResult.Result!;
     }
 
@@ -1245,19 +1263,33 @@ public class FacturasController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Atomic upsert: INSERT on first use, UPDATE+increment on subsequent calls.
+    ///
+    /// BR-010 (Audit CRITICAL-2 + MEDIUM-12, Abril 2026): the folio increment MUST
+    /// share the ambient EF transaction so that if the subsequent Factura save fails,
+    /// the folio reservation rolls back and no SAT-compliance gap is created.
+    /// Previously this method opened its own NpgsqlConnection, auto-committing the
+    /// increment regardless of the EF transaction outcome.
+    ///
+    /// Callers of this method should wrap GetNextFolio + Factura.Add + SaveChangesAsync
+    /// in a single transaction (via ITransactionManager.BeginTransactionAsync).
+    /// </summary>
     private async Task<int> GetNextFolio(string tenantId, string serie)
     {
-        // Atomic upsert: INSERT on first use, UPDATE+increment on subsequent calls
-        // Uses raw Npgsql to avoid EF 9 non-composable SQL restriction with SqlQueryRaw
-        var connString = _context.Database.GetConnectionString();
-        await using var conn = new Npgsql.NpgsqlConnection(connString);
-        await conn.OpenAsync();
-        var sql = @"INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual, activo, created_at, updated_at)
+        var conn = (Npgsql.NpgsqlConnection)_context.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync();
+
+        var tx = _context.Database.CurrentTransaction?.GetDbTransaction() as Npgsql.NpgsqlTransaction;
+
+        const string sql = @"INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual, activo, created_at, updated_at)
                     VALUES (@tid, 'FACTURA', @serie, 1, 1, true, NOW(), NOW())
                     ON CONFLICT (tenant_id, tipo_documento, serie)
                     DO UPDATE SET folio_actual = numeracion_documentos.folio_actual + 1, updated_at = NOW()
                     RETURNING folio_actual";
-        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
+
+        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn, tx);
         cmd.Parameters.AddWithValue("tid", tenantId);
         cmd.Parameters.AddWithValue("serie", serie);
         var folio = await cmd.ExecuteScalarAsync();

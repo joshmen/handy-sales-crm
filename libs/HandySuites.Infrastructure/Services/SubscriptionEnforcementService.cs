@@ -13,10 +13,35 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         _db = db;
     }
 
+    // Advisory lock classification IDs (must be unique per resource type).
+    // Shared across tenants: lock key is (tenantId, resourceId) so locks are per-tenant.
+    private const int RESOURCE_USUARIOS = 1;
+    private const int RESOURCE_PRODUCTOS = 2;
+    private const int RESOURCE_CLIENTES = 3;
+
+    // BR-020 (Audit CRITICAL-3, Abril 2026): to prevent two concurrent requests
+    // from both passing `current < max` and both inserting, we acquire a
+    // PostgreSQL transaction-scoped advisory lock before the COUNT.
+    //
+    // CALLER CONTRACT: the endpoint must call this method INSIDE an active
+    // DbContext transaction, and the INSERT of the new entity must happen in
+    // that same transaction. The lock is released automatically when the
+    // transaction commits or rolls back. If not in a transaction, this still
+    // works but degenerates to a session-scoped lock with an immediate auto-
+    // commit, leaving the race window open — callers must respect the contract.
+    private async Task AcquireTenantResourceLockAsync(int tenantId, int resourceId)
+    {
+        await _db.Database.ExecuteSqlRawAsync(
+            "SELECT pg_advisory_xact_lock({0}, {1})",
+            tenantId, resourceId);
+    }
+
     public async Task<EnforcementResult> CanCreateUsuarioAsync(int tenantId)
     {
         var plan = await GetPlanForTenantAsync(tenantId);
         if (plan == null) return new EnforcementResult(true);
+
+        await AcquireTenantResourceLockAsync(tenantId, RESOURCE_USUARIOS);
 
         var current = await _db.Usuarios
             .IgnoreQueryFilters()
@@ -38,6 +63,8 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         var plan = await GetPlanForTenantAsync(tenantId);
         if (plan == null) return new EnforcementResult(true);
 
+        await AcquireTenantResourceLockAsync(tenantId, RESOURCE_PRODUCTOS);
+
         var current = await _db.Productos
             .IgnoreQueryFilters()
             .AsNoTracking()
@@ -57,6 +84,8 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
     {
         var plan = await GetPlanForTenantAsync(tenantId);
         if (plan == null) return new EnforcementResult(true);
+
+        await AcquireTenantResourceLockAsync(tenantId, RESOURCE_CLIENTES);
 
         // NOTE: MaxClientesPorMes is a misnomer — it actually limits total active clients,
         // not clients created per month. The query below counts ALL active clients, not monthly ones.

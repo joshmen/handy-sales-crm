@@ -1,5 +1,6 @@
 using HandySuites.Application.Usuarios.Services;
 using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
@@ -139,7 +140,8 @@ public static class UsuarioEndpoints
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IValidator<CrearUsuarioDto> validator,
         [FromServices] AuthService authService,
-        [FromServices] IConfiguration config)
+        [FromServices] IConfiguration config,
+        [FromServices] ITransactionManager transactions)
     {
         try
         {
@@ -147,11 +149,20 @@ public static class UsuarioEndpoints
             if (!validation.IsValid)
                 return Results.BadRequest(new { errors = validation.Errors.Select(e => e.ErrorMessage).ToList() });
 
+            // BR-020: enforcement check + INSERT in same transaction so the per-tenant
+            // advisory lock covers both.
+            await using var tx = await transactions.BeginTransactionAsync();
+
             var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
             if (!check.Allowed)
+            {
+                await transactions.RollbackTransactionAsync();
                 return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+            }
 
             var usuarioId = await service.CrearUsuarioAsync(dto);
+
+            await transactions.CommitTransactionAsync();
 
             // Send invitation email so the new user can set their password
             // App:FrontendUrl is validated at startup in Program.cs

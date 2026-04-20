@@ -9,6 +9,7 @@ using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using ITransactionManager = HandySuites.Application.Common.Interfaces.ITransactionManager;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -34,17 +35,27 @@ public static class ProductoEndpoints
             [FromServices] ProductoService servicio,
             [FromServices] ISubscriptionEnforcementService enforcement,
             [FromServices] ICurrentTenant currentTenant,
-            [FromServices] IAiEmbeddingService embeddingService) =>
+            [FromServices] IAiEmbeddingService embeddingService,
+            [FromServices] ITransactionManager transactions) =>
         {
-            var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
-            if (!check.Allowed)
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
-
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
+            // BR-020: limit check + INSERT under single transaction so the per-tenant
+            // advisory lock covers both operations.
+            await using var tx = await transactions.BeginTransactionAsync();
+
+            var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
+            if (!check.Allowed)
+            {
+                await transactions.RollbackTransactionAsync();
+                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+            }
+
             var id = await servicio.CrearProductoAsync(dto);
+
+            await transactions.CommitTransactionAsync();
 
             var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
             _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);

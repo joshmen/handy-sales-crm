@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.MovimientosInventario.DTOs;
 using HandySuites.Application.MovimientosInventario.Services;
 using HandySuites.Application.Pedidos.DTOs;
@@ -14,28 +15,31 @@ public class PedidoService
     private readonly ICurrentTenant _tenant;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly MovimientoInventarioService _movimientoService;
+    private readonly ITransactionManager _transactions;
 
     public PedidoService(
         IPedidoRepository repository,
         ICurrentTenant tenant,
         IUsuarioRepository usuarioRepository,
-        MovimientoInventarioService movimientoService)
+        MovimientoInventarioService movimientoService,
+        ITransactionManager transactions)
     {
         _repository = repository;
         _tenant = tenant;
         _usuarioRepository = usuarioRepository;
         _movimientoService = movimientoService;
+        _transactions = transactions;
     }
 
     public async Task<int> CrearAsync(PedidoCreateDto dto)
     {
         var usuarioId = int.Parse(_tenant.UserId);
-        var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
 
-        // Venta Directa: validar stock y crear movimientos de inventario SALIDA
+        // BR-001: Para Venta Directa, validar stock ANTES de crear el pedido.
+        // Antes se creaba el pedido primero y la validación fallaba después, dejando
+        // pedidos huérfanos en la DB (Audit CRITICAL-1, Abril 2026).
         if (dto.TipoVenta == TipoVenta.VentaDirecta)
         {
-            // Validate stock availability before creating inventory movements
             var stockErrors = new List<string>();
             foreach (var detalle in dto.Detalles)
             {
@@ -50,10 +54,19 @@ public class PedidoService
             {
                 throw new InvalidOperationException($"Stock insuficiente: {string.Join("; ", stockErrors)}");
             }
+        }
 
+        // BR-002: Pedido + movimientos de inventario en la misma transacción —
+        // si el movimiento falla, el pedido debe rollback.
+        await using var tx = await _transactions.BeginTransactionAsync();
+
+        var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
+
+        if (dto.TipoVenta == TipoVenta.VentaDirecta)
+        {
             foreach (var detalle in dto.Detalles)
             {
-                await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
+                var (_, success, error) = await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
                 {
                     ProductoId = detalle.ProductoId,
                     TipoMovimiento = "SALIDA",
@@ -61,9 +74,16 @@ public class PedidoService
                     Motivo = "VENTA",
                     Comentario = $"Venta directa - Pedido #{pedidoId}"
                 });
+
+                if (!success)
+                {
+                    await _transactions.RollbackTransactionAsync();
+                    throw new InvalidOperationException($"No se pudo registrar el movimiento de inventario: {error ?? "error desconocido"}");
+                }
             }
         }
 
+        await _transactions.CommitTransactionAsync();
         return pedidoId;
     }
 

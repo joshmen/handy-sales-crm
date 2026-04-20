@@ -2,6 +2,7 @@ using FluentValidation;
 using HandySuites.Application.Ai.Interfaces;
 using HandySuites.Application.Clientes.DTOs;
 using HandySuites.Application.Clientes.Services;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
@@ -18,19 +19,32 @@ public static class ClienteEndpoints
             [FromServices] ClienteService servicio,
             [FromServices] ISubscriptionEnforcementService enforcement,
             [FromServices] ICurrentTenant currentTenant,
-            [FromServices] IAiEmbeddingService embeddingService) =>
+            [FromServices] IAiEmbeddingService embeddingService,
+            [FromServices] ITransactionManager transactions) =>
         {
-            var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
-            if (!check.Allowed)
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
-
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
+            // BR-020: plan-limit check + INSERT must happen inside the same transaction
+            // so the per-tenant advisory lock held by CanCreateClienteAsync covers both.
+            await using var tx = await transactions.BeginTransactionAsync();
+
+            var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
+            if (!check.Allowed)
+            {
+                await transactions.RollbackTransactionAsync();
+                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+            }
+
             var result = await servicio.CrearClienteAsync(dto);
             if (!result.Success)
+            {
+                await transactions.RollbackTransactionAsync();
                 return Results.Conflict(new { message = result.Error });
+            }
+
+            await transactions.CommitTransactionAsync();
 
             var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
                 ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
