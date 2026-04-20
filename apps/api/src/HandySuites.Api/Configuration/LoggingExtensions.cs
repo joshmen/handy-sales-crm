@@ -15,23 +15,46 @@ public static class LoggingExtensions
         return hostBuilder.UseSerilog((context, services, configuration) =>
         {
             var appName = "HandySuites.Api";
+            var env = context.HostingEnvironment.EnvironmentName;
+
+            // Per-environment default minimum level. appsettings.{Env}.json can override
+            // individual source contexts via Serilog's Override mechanism in code below.
+            //   Development: Debug (verbose — see everything while coding)
+            //   Staging:     Information (see business events, not EF chatter)
+            //   Production:  Warning (only noteworthy events)
+            var defaultLevel = env switch
+            {
+                "Development" => LogEventLevel.Debug,
+                "Staging" => LogEventLevel.Information,
+                _ => LogEventLevel.Warning,
+            };
+
+            // CloudWatch threshold tracks environment too: ship less to AWS in prod.
+            CloudWatchLevelSwitch.MinimumLevel = env switch
+            {
+                "Development" => LogEventLevel.Error,   // effectively disabled (no AWS creds anyway locally)
+                "Staging" => LogEventLevel.Warning,
+                _ => LogEventLevel.Warning,
+            };
 
             configuration
-                .MinimumLevel.Information()
+                .MinimumLevel.Is(defaultLevel)
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", env == "Production" ? LogEventLevel.Error : LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", env == "Production" ? LogEventLevel.Error : LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Query", env == "Production" ? LogEventLevel.Error : LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Error)
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("Application", appName)
-                .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
+                .Enrich.WithProperty("Environment", env)
                 .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] [{Application}] {Message:lj} {Properties:j}{NewLine}{Exception}")
                 .WriteTo.File($"logs/{appName.ToLower()}-.txt",
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 30,
                     outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
 
-            // AWS CloudWatch — errors and warnings only (when AWS credentials are configured)
+            // AWS CloudWatch — filtered by environment-specific CloudWatchLevelSwitch
             var awsAccessKey = context.Configuration["AWS_ACCESS_KEY_ID"];
             var awsSecretKey = context.Configuration["AWS_SECRET_ACCESS_KEY"];
             if (!string.IsNullOrEmpty(awsAccessKey) && !string.IsNullOrEmpty(awsSecretKey))
@@ -50,18 +73,16 @@ public static class LoggingExtensions
                         cloudWatchClient: cloudWatchClient));
             }
 
-            // Development: Use Seq
+            // Development: Seq for local debugging
             if (context.HostingEnvironment.IsDevelopment())
             {
-                configuration.MinimumLevel.Debug();
-
                 var seqServerUrl = context.Configuration["Seq:ServerUrl"];
                 if (!string.IsNullOrEmpty(seqServerUrl))
                 {
                     configuration.WriteTo.Seq(seqServerUrl);
                 }
             }
-            // Production: Use Application Insights
+            // Non-dev: Application Insights when configured
             else
             {
                 var telemetryConfig = services.GetService<TelemetryConfiguration>();

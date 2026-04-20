@@ -5,8 +5,11 @@ import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { getActiveBanners, dismissBanner, AnnouncementBanner } from '@/services/api/announcements';
 
-const POLL_NORMAL = 15_000;  // 15s when no WebSocket
-const POLL_WS = 30_000;     // 30s when SignalR connected (push handles real-time, poll is safety net)
+// Polling intervals (ms). SignalR push is the source of truth for new banners;
+// polling is a heavy safety net only for silent WS drops.
+const POLL_NO_WS = 60_000;       // 60s when no WebSocket
+const POLL_WS = 5 * 60_000;       // 5min when SignalR connected
+const POLL_BACKGROUND = 0;        // No polling when tab hidden
 
 export function useAnnouncements() {
   const { status } = useSession();
@@ -14,7 +17,7 @@ export function useAnnouncements() {
   const [banners, setBanners] = useState<AnnouncementBanner[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const pollInterval = isConnected ? POLL_WS : POLL_NORMAL;
+  const pollInterval = isConnected ? POLL_WS : POLL_NO_WS;
 
   const fetchBanners = useCallback(async () => {
     if (status !== 'authenticated') return;
@@ -100,16 +103,42 @@ export function useAnnouncements() {
     };
   }, [isConnected, on, off, fetchBanners]);
 
-  // Initial fetch + polling (reduced when WS connected)
+  // Initial fetch + safety-net polling (paused when tab hidden)
   useEffect(() => {
     if (status !== 'authenticated') return;
 
     fetchBanners();
 
-    const id = setInterval(fetchBanners, pollInterval);
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const startPolling = (delay: number) => {
+      if (intervalId) clearInterval(intervalId);
+      if (delay > 0) intervalId = setInterval(fetchBanners, delay);
+    };
 
-    return () => clearInterval(id);
+    startPolling(pollInterval);
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        startPolling(POLL_BACKGROUND);
+      } else {
+        fetchBanners(); // catch-up immediately on return
+        startPolling(pollInterval);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [status, fetchBanners, pollInterval]);
+
+  // Catch-up on SignalR reconnect — covers silent WS drops
+  useEffect(() => {
+    if (isConnected && status === 'authenticated') {
+      fetchBanners();
+    }
+  }, [isConnected, status, fetchBanners]);
 
   const handleDismiss = useCallback(async (id: number) => {
     try {
