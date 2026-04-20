@@ -5,8 +5,16 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace HandySuites.Infrastructure.Persistence;
 
 /// <summary>
-/// Sets app.tenant_id on connection open AND on every command.
-/// Double-ensures RLS context is always correct even with connection pooling.
+/// Sets app.tenant_id + app.is_super_admin on every command so PostgreSQL RLS
+/// policies can enforce tenant isolation at the DB layer.
+///
+/// Context sources (priority order):
+///   1. HttpContext with JWT → use tenant_id + es_super_admin claims.
+///   2. No HttpContext (background workers, webhook handlers, startup tasks) →
+///      treat as trusted system caller: is_super_admin='true', tenant_id=0.
+///      Workers are trusted code that iterate all tenants; bypassing RLS is intentional.
+///
+/// RLS policy evaluates: is_super_admin='true' OR tenant_id = session tenant.
 /// </summary>
 public class TenantRlsInterceptor : DbCommandInterceptor
 {
@@ -64,17 +72,33 @@ public class TenantRlsInterceptor : DbCommandInterceptor
 
     private void PrependSet(DbCommand command)
     {
-        var tenantClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id");
-        if (tenantClaim == null || string.IsNullOrEmpty(tenantClaim.Value)) return;
+        // Avoid re-setting on nested/batch calls
+        if (command.CommandText.StartsWith("SET app.")) return;
 
-        // Don't prepend if already set (avoid double-setting on retries)
-        if (command.CommandText.StartsWith("SET app.tenant_id")) return;
+        string tenantId;
+        string isSuperAdmin;
 
-        // Execute SET as a separate command on the same connection BEFORE the actual command
-        // This avoids issues with batch commands where SET gets mixed into multi-statement batches
+        var httpContext = _httpContextAccessor.HttpContext;
+        var tenantClaim = httpContext?.User?.FindFirst("tenant_id");
+        var superClaim = httpContext?.User?.FindFirst("es_super_admin");
+
+        if (tenantClaim != null && !string.IsNullOrEmpty(tenantClaim.Value))
+        {
+            // Authenticated HTTP request
+            tenantId = tenantClaim.Value;
+            isSuperAdmin = (superClaim?.Value == "True" || superClaim?.Value == "true") ? "true" : "false";
+        }
+        else
+        {
+            // No HttpContext OR no tenant claim (background worker, webhook, anonymous request).
+            // System context: bypass RLS. Trusted code paths only.
+            tenantId = "0";
+            isSuperAdmin = "true";
+        }
+
         using var setCmd = command.Connection!.CreateCommand();
         setCmd.Transaction = command.Transaction;
-        setCmd.CommandText = $"SET app.tenant_id = '{tenantClaim.Value}'";
+        setCmd.CommandText = $"SET app.tenant_id = '{tenantId}'; SET app.is_super_admin = '{isSuperAdmin}'";
         setCmd.ExecuteNonQuery();
     }
 }

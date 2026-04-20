@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace HandySuites.Billing.Api.Services;
 
 /// <summary>
-/// EF Core command interceptor for billing DB — sets app.tenant_id (text) for RLS.
+/// EF Core command interceptor for billing DB — sets app.tenant_id (text) + app.is_super_admin for RLS.
 /// Billing uses string tenant_id (varchar), not int like the main DB.
+///
+/// Context sources (same semantics as TenantRlsInterceptor):
+///   1. HttpContext with JWT → tenant_id + es_super_admin claims.
+///   2. No HttpContext (scheduled PAC jobs, internal sync endpoint without JWT) →
+///      system context: is_super_admin='true', tenant_id=''.
 /// </summary>
 public class BillingTenantRlsInterceptor : DbCommandInterceptor
 {
@@ -48,14 +53,30 @@ public class BillingTenantRlsInterceptor : DbCommandInterceptor
 
     private void SetTenantId(DbCommand command)
     {
-        var tenantClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id");
-        if (tenantClaim == null || string.IsNullOrEmpty(tenantClaim.Value)) return;
+        if (command.CommandText.StartsWith("SET app.")) return;
 
-        if (command.CommandText.StartsWith("SET app.tenant_id")) return;
+        string tenantId;
+        string isSuperAdmin;
+
+        var httpContext = _httpContextAccessor.HttpContext;
+        var tenantClaim = httpContext?.User?.FindFirst("tenant_id");
+        var superClaim = httpContext?.User?.FindFirst("es_super_admin");
+
+        if (tenantClaim != null && !string.IsNullOrEmpty(tenantClaim.Value))
+        {
+            tenantId = tenantClaim.Value;
+            isSuperAdmin = (superClaim?.Value == "True" || superClaim?.Value == "true") ? "true" : "false";
+        }
+        else
+        {
+            // No HTTP context: system/worker. Bypass RLS.
+            tenantId = "";
+            isSuperAdmin = "true";
+        }
 
         using var setCmd = command.Connection!.CreateCommand();
         setCmd.Transaction = command.Transaction;
-        setCmd.CommandText = $"SET app.tenant_id = '{tenantClaim.Value}'";
+        setCmd.CommandText = $"SET app.tenant_id = '{tenantId}'; SET app.is_super_admin = '{isSuperAdmin}'";
         setCmd.ExecuteNonQuery();
     }
 }
