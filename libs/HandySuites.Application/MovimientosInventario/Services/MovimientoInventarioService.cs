@@ -68,9 +68,9 @@ public class MovimientoInventarioService
                 return (0, false, $"Tipo de movimiento inválido: {dto.TipoMovimiento}. Use ENTRADA, SALIDA o AJUSTE");
         }
 
-        // Wrap inventory update + movement creation in a transaction
-        await using var transaction = await _transactionManager.BeginTransactionAsync();
-        try
+        // Wrap inventory update + movement creation in a transaction.
+        // Uses ExecuteInTransactionAsync to be compatible with retrying execution strategy.
+        return await _transactionManager.ExecuteInTransactionAsync<(int, bool, string?)>(async () =>
         {
             // Actualizar el inventario
             var updateDto = new Inventario.DTOs.InventarioUpdateDto
@@ -83,8 +83,7 @@ public class MovimientoInventarioService
             var inventarioActualizado = await _inventarioRepo.ActualizarAsync(dto.ProductoId, updateDto, _tenant.TenantId);
             if (!inventarioActualizado)
             {
-                await _transactionManager.RollbackTransactionAsync();
-                return (0, false, "Error al actualizar el inventario");
+                throw new InvalidOperationException("Error al actualizar el inventario");
             }
 
             // Obtener el usuario ID del claim
@@ -96,14 +95,7 @@ public class MovimientoInventarioService
 
             // Crear el movimiento
             var movimientoId = await _movimientoRepo.CrearAsync(dto, _tenant.TenantId, usuarioId, cantidadAnterior, cantidadNueva);
-
-            await _transactionManager.CommitTransactionAsync();
-            return (movimientoId, true, null);
-        }
-        catch
-        {
-            await _transactionManager.RollbackTransactionAsync();
-            throw;
-        }
+            return (movimientoId, true, (string?)null);
+        });
     }
 }

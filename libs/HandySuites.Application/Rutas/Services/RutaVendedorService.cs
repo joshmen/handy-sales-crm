@@ -52,32 +52,32 @@ public class RutaVendedorService
 
         // BR-040 (Audit HIGH-5, Abril 2026): header + detalles atómico. Si falla
         // cualquier detalle, la ruta entera rollback — no dejamos paradas parciales.
-        await using var tx = await _transactions.BeginTransactionAsync();
-
-        var rutaId = await _repo.CrearAsync(ruta);
-
-        if (dto.Detalles?.Any() == true)
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            foreach (var detalleDto in dto.Detalles.OrderBy(d => d.OrdenVisita))
-            {
-                var detalle = new RutaDetalle
-                {
-                    RutaId = rutaId,
-                    ClienteId = detalleDto.ClienteId,
-                    OrdenVisita = detalleDto.OrdenVisita,
-                    HoraEstimadaLlegada = detalleDto.HoraEstimadaLlegada,
-                    DuracionEstimadaMinutos = detalleDto.DuracionEstimadaMinutos,
-                    Notas = detalleDto.Notas,
-                    Estado = EstadoParada.Pendiente,
-                    CreadoEn = DateTime.UtcNow,
-                    CreadoPor = _tenant.UserId
-                };
-                await _repo.AgregarDetalleAsync(detalle);
-            }
-        }
+            var rutaId = await _repo.CrearAsync(ruta);
 
-        await _transactions.CommitTransactionAsync();
-        return rutaId;
+            if (dto.Detalles?.Any() == true)
+            {
+                foreach (var detalleDto in dto.Detalles.OrderBy(d => d.OrdenVisita))
+                {
+                    var detalle = new RutaDetalle
+                    {
+                        RutaId = rutaId,
+                        ClienteId = detalleDto.ClienteId,
+                        OrdenVisita = detalleDto.OrdenVisita,
+                        HoraEstimadaLlegada = detalleDto.HoraEstimadaLlegada,
+                        DuracionEstimadaMinutos = detalleDto.DuracionEstimadaMinutos,
+                        Notas = detalleDto.Notas,
+                        Estado = EstadoParada.Pendiente,
+                        CreadoEn = DateTime.UtcNow,
+                        CreadoPor = _tenant.UserId
+                    };
+                    await _repo.AgregarDetalleAsync(detalle);
+                }
+            }
+
+            return rutaId;
+        });
     }
 
     public async Task<RutaVendedorDto?> ObtenerPorIdAsync(int id)
@@ -320,30 +320,30 @@ public class RutaVendedorService
         };
 
         // BR-040: instanciación atómica — header + copia de paradas en una transacción.
-        await using var tx = await _transactions.BeginTransactionAsync();
-
-        var rutaId = await _repo.CrearAsync(ruta);
-
-        // Copy paradas from template
-        foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            var nuevoDetalle = new RutaDetalle
-            {
-                RutaId = rutaId,
-                ClienteId = detalle.ClienteId,
-                OrdenVisita = detalle.OrdenVisita,
-                HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
-                DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
-                Notas = detalle.Notas,
-                Estado = EstadoParada.Pendiente,
-                CreadoEn = DateTime.UtcNow,
-                CreadoPor = _tenant.UserId
-            };
-            await _repo.AgregarDetalleAsync(nuevoDetalle);
-        }
+            var rutaId = await _repo.CrearAsync(ruta);
 
-        await _transactions.CommitTransactionAsync();
-        return rutaId;
+            // Copy paradas from template
+            foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+            {
+                var nuevoDetalle = new RutaDetalle
+                {
+                    RutaId = rutaId,
+                    ClienteId = detalle.ClienteId,
+                    OrdenVisita = detalle.OrdenVisita,
+                    HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
+                    DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
+                    Notas = detalle.Notas,
+                    Estado = EstadoParada.Pendiente,
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = _tenant.UserId
+                };
+                await _repo.AgregarDetalleAsync(nuevoDetalle);
+            }
+
+            return rutaId;
+        });
     }
 
     public async Task<int> DuplicarTemplateAsync(int templateId)
@@ -369,30 +369,30 @@ public class RutaVendedorService
         };
 
         // BR-040: duplicación atómica.
-        await using var tx = await _transactions.BeginTransactionAsync();
-
-        var copiaId = await _repo.CrearAsync(copia);
-
-        // Copy paradas from original template
-        foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            var nuevoDetalle = new RutaDetalle
-            {
-                RutaId = copiaId,
-                ClienteId = detalle.ClienteId,
-                OrdenVisita = detalle.OrdenVisita,
-                HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
-                DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
-                Notas = detalle.Notas,
-                Estado = EstadoParada.Pendiente,
-                CreadoEn = DateTime.UtcNow,
-                CreadoPor = _tenant.UserId
-            };
-            await _repo.AgregarDetalleAsync(nuevoDetalle);
-        }
+            var copiaId = await _repo.CrearAsync(copia);
 
-        await _transactions.CommitTransactionAsync();
-        return copiaId;
+            // Copy paradas from original template
+            foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+            {
+                var nuevoDetalle = new RutaDetalle
+                {
+                    RutaId = copiaId,
+                    ClienteId = detalle.ClienteId,
+                    OrdenVisita = detalle.OrdenVisita,
+                    HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
+                    DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
+                    Notas = detalle.Notas,
+                    Estado = EstadoParada.Pendiente,
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = _tenant.UserId
+                };
+                await _repo.AgregarDetalleAsync(nuevoDetalle);
+            }
+
+            return copiaId;
+        });
     }
 
     // Toggle activo

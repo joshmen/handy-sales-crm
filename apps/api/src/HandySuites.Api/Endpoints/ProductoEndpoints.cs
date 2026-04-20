@@ -13,6 +13,8 @@ using ITransactionManager = HandySuites.Application.Common.Interfaces.ITransacti
 
 namespace HandySuites.Api.Endpoints;
 
+internal record TxProductoResult(IResult Response, int CreatedId);
+
 public static class ProductoEndpoints
 {
     public static void MapProductoEndpoints(this IEndpointRouteBuilder app)
@@ -44,23 +46,25 @@ public static class ProductoEndpoints
 
             // BR-020: limit check + INSERT under single transaction so the per-tenant
             // advisory lock covers both operations.
-            await using var tx = await transactions.BeginTransactionAsync();
-
-            var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
-            if (!check.Allowed)
+            var txResult = await transactions.ExecuteInTransactionAsync<TxProductoResult>(async () =>
             {
-                await transactions.RollbackTransactionAsync();
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+                var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
+                if (!check.Allowed)
+                {
+                    return new TxProductoResult(Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402), 0);
+                }
+
+                var id = await servicio.CrearProductoAsync(dto);
+                return new TxProductoResult(Results.Created($"/productos/{id}", new { id }), id);
+            });
+
+            if (txResult.CreatedId > 0)
+            {
+                var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
+                _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", txResult.CreatedId, embeddingText);
             }
 
-            var id = await servicio.CrearProductoAsync(dto);
-
-            await transactions.CommitTransactionAsync();
-
-            var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
-            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
-
-            return Results.Created($"/productos/{id}", new { id });
+            return txResult.Response;
         }).RequireAuthorization();
 
         app.MapPut("/productos/{id:int}", async (

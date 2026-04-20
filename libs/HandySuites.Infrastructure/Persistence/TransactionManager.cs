@@ -1,38 +1,35 @@
 using HandySuites.Application.Common.Interfaces;
-using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 
 namespace HandySuites.Infrastructure.Persistence;
 
 public class TransactionManager : ITransactionManager
 {
     private readonly HandySuitesDbContext _db;
-    private IDbContextTransaction? _currentTransaction;
 
     public TransactionManager(HandySuitesDbContext db) => _db = db;
 
-    public async Task<IAsyncDisposable> BeginTransactionAsync()
+    /// <summary>
+    /// Runs <paramref name="operation"/> inside a DB transaction, wrapped by the
+    /// DbContext's retrying execution strategy. If the operation throws, the
+    /// transaction rolls back and the strategy decides whether to retry.
+    /// </summary>
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
     {
-        _currentTransaction = await _db.Database.BeginTransactionAsync();
-        return _currentTransaction;
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            var result = await operation();
+            await tx.CommitAsync();
+            return result;
+        });
     }
 
-    public async Task CommitTransactionAsync()
-    {
-        if (_currentTransaction != null)
+    public Task ExecuteInTransactionAsync(Func<Task> operation) =>
+        ExecuteInTransactionAsync<object?>(async () =>
         {
-            await _currentTransaction.CommitAsync();
-            await _currentTransaction.DisposeAsync();
-            _currentTransaction = null;
-        }
-    }
-
-    public async Task RollbackTransactionAsync()
-    {
-        if (_currentTransaction != null)
-        {
-            await _currentTransaction.RollbackAsync();
-            await _currentTransaction.DisposeAsync();
-            _currentTransaction = null;
-        }
-    }
+            await operation();
+            return null;
+        });
 }

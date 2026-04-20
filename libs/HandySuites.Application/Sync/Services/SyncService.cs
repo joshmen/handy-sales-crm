@@ -37,26 +37,25 @@ public class SyncService
         // commit partial/corrupt state if SaveChangesAsync happened to succeed.
         // With a transaction, either everything commits cleanly or everything rolls
         // back — no divergence between mobile and server.
-        await using var tx = await _transactions.BeginTransactionAsync();
-
         try
         {
-            // 1. Push client changes to server
-            if (request.ClientChanges != null)
+            await _transactions.ExecuteInTransactionAsync(async () =>
             {
-                await PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId);
-            }
+                // 1. Push client changes to server
+                if (request.ClientChanges != null)
+                {
+                    await PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId);
+                }
 
-            // 2. Pull server changes to client
-            await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
+                // 2. Pull server changes to client
+                await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
 
-            // 3. Save all changes atomically
-            await _repo.SaveChangesAsync();
-            await _transactions.CommitTransactionAsync();
+                // 3. Save all changes atomically
+                await _repo.SaveChangesAsync();
+            });
         }
         catch (Exception ex)
         {
-            await _transactions.RollbackTransactionAsync();
             response.Errors.Add(new SyncErrorDto
             {
                 EntityType = "sync",

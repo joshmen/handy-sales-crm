@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HandySuites.Api.Endpoints;
 
+internal record TxClienteResult(IResult Response, int CreatedId);
+
 public static class ClienteEndpoints
 {
     public static void MapClienteEndpoints(this IEndpointRouteBuilder app)
@@ -28,29 +30,33 @@ public static class ClienteEndpoints
 
             // BR-020: plan-limit check + INSERT must happen inside the same transaction
             // so the per-tenant advisory lock held by CanCreateClienteAsync covers both.
-            await using var tx = await transactions.BeginTransactionAsync();
-
-            var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
-            if (!check.Allowed)
+            // Using ExecuteInTransactionAsync is required by the DbContext's retrying
+            // execution strategy (see ITransactionManager docs).
+            var txResult = await transactions.ExecuteInTransactionAsync<TxClienteResult>(async () =>
             {
-                await transactions.RollbackTransactionAsync();
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+                var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
+                if (!check.Allowed)
+                {
+                    return new TxClienteResult(Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402), 0);
+                }
+
+                var result = await servicio.CrearClienteAsync(dto);
+                if (!result.Success)
+                {
+                    return new TxClienteResult(Results.Conflict(new { message = result.Error }), 0);
+                }
+
+                return new TxClienteResult(Results.Created($"/clientes/{result.Id}", new { id = result.Id }), result.Id);
+            });
+
+            if (txResult.CreatedId > 0)
+            {
+                var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
+                    ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
+                _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Cliente", txResult.CreatedId, embeddingText);
             }
 
-            var result = await servicio.CrearClienteAsync(dto);
-            if (!result.Success)
-            {
-                await transactions.RollbackTransactionAsync();
-                return Results.Conflict(new { message = result.Error });
-            }
-
-            await transactions.CommitTransactionAsync();
-
-            var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
-                ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
-            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Cliente", result.Id, embeddingText);
-
-            return Results.Created($"/clientes/{result.Id}", new { id = result.Id });
+            return txResult.Response;
         }).RequireAuthorization();
 
         app.MapGet("/clientes", async (

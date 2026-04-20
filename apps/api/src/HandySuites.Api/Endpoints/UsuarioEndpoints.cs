@@ -10,6 +10,8 @@ using FluentValidation;
 
 namespace HandySuites.Api.Endpoints;
 
+internal record TxUsuarioResult(IResult Response, int CreatedId);
+
 public static class UsuarioEndpoints
 {
     public static void MapUsuarioEndpoints(this WebApplication app)
@@ -151,26 +153,28 @@ public static class UsuarioEndpoints
 
             // BR-020: enforcement check + INSERT in same transaction so the per-tenant
             // advisory lock covers both.
-            await using var tx = await transactions.BeginTransactionAsync();
-
-            var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
-            if (!check.Allowed)
+            var txResult = await transactions.ExecuteInTransactionAsync<TxUsuarioResult>(async () =>
             {
-                await transactions.RollbackTransactionAsync();
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+                var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
+                if (!check.Allowed)
+                {
+                    return new TxUsuarioResult(Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402), 0);
+                }
+
+                var usuarioId = await service.CrearUsuarioAsync(dto);
+                return new TxUsuarioResult(Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId }), usuarioId);
+            });
+
+            if (txResult.CreatedId > 0)
+            {
+                // Send invitation email so the new user can set their password
+                // App:FrontendUrl is validated at startup in Program.cs
+                var baseUrl = config["App:FrontendUrl"]!;
+                try { await authService.SendInvitationEmailAsync(txResult.CreatedId, baseUrl); }
+                catch { /* logged inside SendInvitationEmailAsync */ }
             }
 
-            var usuarioId = await service.CrearUsuarioAsync(dto);
-
-            await transactions.CommitTransactionAsync();
-
-            // Send invitation email so the new user can set their password
-            // App:FrontendUrl is validated at startup in Program.cs
-            var baseUrl = config["App:FrontendUrl"]!;
-            try { await authService.SendInvitationEmailAsync(usuarioId, baseUrl); }
-            catch { /* logged inside SendInvitationEmailAsync */ }
-
-            return Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId });
+            return txResult.Response;
         }
         catch (UnauthorizedAccessException)
         {

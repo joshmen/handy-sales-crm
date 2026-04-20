@@ -57,34 +57,34 @@ public class PedidoService
         }
 
         // BR-002: Pedido + movimientos de inventario en la misma transacción —
-        // si el movimiento falla, el pedido debe rollback.
-        await using var tx = await _transactions.BeginTransactionAsync();
-
-        var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
-
-        if (dto.TipoVenta == TipoVenta.VentaDirecta)
+        // si el movimiento falla, el pedido debe rollback. ExecutionStrategy
+        // wrapping required because DbContext has EnableRetryOnFailure.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            foreach (var detalle in dto.Detalles)
-            {
-                var (_, success, error) = await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
-                {
-                    ProductoId = detalle.ProductoId,
-                    TipoMovimiento = "SALIDA",
-                    Cantidad = detalle.Cantidad,
-                    Motivo = "VENTA",
-                    Comentario = $"Venta directa - Pedido #{pedidoId}"
-                });
+            var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
 
-                if (!success)
+            if (dto.TipoVenta == TipoVenta.VentaDirecta)
+            {
+                foreach (var detalle in dto.Detalles)
                 {
-                    await _transactions.RollbackTransactionAsync();
-                    throw new InvalidOperationException($"No se pudo registrar el movimiento de inventario: {error ?? "error desconocido"}");
+                    var (_, success, error) = await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
+                    {
+                        ProductoId = detalle.ProductoId,
+                        TipoMovimiento = "SALIDA",
+                        Cantidad = detalle.Cantidad,
+                        Motivo = "VENTA",
+                        Comentario = $"Venta directa - Pedido #{pedidoId}"
+                    });
+
+                    if (!success)
+                    {
+                        throw new InvalidOperationException($"No se pudo registrar el movimiento de inventario: {error ?? "error desconocido"}");
+                    }
                 }
             }
-        }
 
-        await _transactions.CommitTransactionAsync();
-        return pedidoId;
+            return pedidoId;
+        });
     }
 
     public async Task<PedidoDto?> ObtenerPorIdAsync(int id)

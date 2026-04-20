@@ -243,71 +243,78 @@ public class FacturasController : ControllerBase
         }
 
         // BR-010: folio + factura atómicamente (mismo patrón que CreateFacturaFromOrder).
-        await using var folioTx = await _context.Database.BeginTransactionAsync();
-
-        // Obtener siguiente folio
-        var folio = await GetNextFolio(tenantId, request.Serie ?? "A");
-
-        var factura = new Factura
+        // Wrapped via DbContext.CreateExecutionStrategy() because the DbContext has
+        // EnableRetryOnFailure — manual BeginTransactionAsync would throw at runtime.
+        var strategy = _context.Database.CreateExecutionStrategy();
+        var factura = await strategy.ExecuteAsync(async () =>
         {
-            TenantId = tenantId,
-            Serie = request.Serie ?? "A",
-            Folio = folio,
-            FechaEmision = request.FechaEmision ?? DateTime.UtcNow,
-            TipoComprobante = request.TipoComprobante,
-            MetodoPago = request.MetodoPago,
-            FormaPago = request.FormaPago,
-            UsoCfdi = request.UsoCfdi,
-            EmisorRfc = request.EmisorRfc,
-            EmisorNombre = request.EmisorNombre,
-            EmisorRegimenFiscal = request.EmisorRegimenFiscal,
-            ReceptorRfc = request.ReceptorRfc,
-            ReceptorNombre = request.ReceptorNombre,
-            ReceptorUsoCfdi = request.ReceptorUsoCfdi,
-            ReceptorDomicilioFiscal = request.ReceptorDomicilioFiscal,
-            Subtotal = request.Subtotal,
-            Descuento = request.Descuento,
-            TotalImpuestosTrasladados = request.TotalImpuestosTrasladados,
-            TotalImpuestosRetenidos = request.TotalImpuestosRetenidos,
-            Total = request.Total,
-            Moneda = request.Moneda ?? "MXN",
-            TipoCambio = request.TipoCambio ?? 1,
-            ClienteId = request.ClienteId,
-            VendedorId = request.VendedorId,
-            PedidoId = request.PedidoId,
-            Observaciones = request.Observaciones,
-            CreatedBy = userId,
-            Estado = "PENDIENTE"
-        };
+            await using var folioTx = await _context.Database.BeginTransactionAsync();
 
-        // Agregar detalles
-        if (request.Detalles != null)
-        {
-            foreach (var detalle in request.Detalles)
+            // Obtener siguiente folio
+            var folio = await GetNextFolio(tenantId, request.Serie ?? "A");
+
+            var f = new Factura
             {
-                factura.Detalles.Add(new DetalleFactura
+                TenantId = tenantId,
+                Serie = request.Serie ?? "A",
+                Folio = folio,
+                FechaEmision = request.FechaEmision ?? DateTime.UtcNow,
+                TipoComprobante = request.TipoComprobante,
+                MetodoPago = request.MetodoPago,
+                FormaPago = request.FormaPago,
+                UsoCfdi = request.UsoCfdi,
+                EmisorRfc = request.EmisorRfc,
+                EmisorNombre = request.EmisorNombre,
+                EmisorRegimenFiscal = request.EmisorRegimenFiscal,
+                ReceptorRfc = request.ReceptorRfc,
+                ReceptorNombre = request.ReceptorNombre,
+                ReceptorUsoCfdi = request.ReceptorUsoCfdi,
+                ReceptorDomicilioFiscal = request.ReceptorDomicilioFiscal,
+                Subtotal = request.Subtotal,
+                Descuento = request.Descuento,
+                TotalImpuestosTrasladados = request.TotalImpuestosTrasladados,
+                TotalImpuestosRetenidos = request.TotalImpuestosRetenidos,
+                Total = request.Total,
+                Moneda = request.Moneda ?? "MXN",
+                TipoCambio = request.TipoCambio ?? 1,
+                ClienteId = request.ClienteId,
+                VendedorId = request.VendedorId,
+                PedidoId = request.PedidoId,
+                Observaciones = request.Observaciones,
+                CreatedBy = userId,
+                Estado = "PENDIENTE"
+            };
+
+            // Agregar detalles
+            if (request.Detalles != null)
+            {
+                foreach (var detalle in request.Detalles)
                 {
-                    NumeroLinea = detalle.NumeroLinea,
-                    ClaveProdServ = detalle.ClaveProdServ,
-                    NoIdentificacion = detalle.NoIdentificacion,
-                    Descripcion = detalle.Descripcion,
-                    Unidad = detalle.Unidad,
-                    ClaveUnidad = detalle.ClaveUnidad,
-                    Cantidad = detalle.Cantidad,
-                    ValorUnitario = detalle.ValorUnitario,
-                    Importe = detalle.Importe,
-                    Descuento = detalle.Descuento,
-                    ProductoId = detalle.ProductoId
-                });
+                    f.Detalles.Add(new DetalleFactura
+                    {
+                        NumeroLinea = detalle.NumeroLinea,
+                        ClaveProdServ = detalle.ClaveProdServ,
+                        NoIdentificacion = detalle.NoIdentificacion,
+                        Descripcion = detalle.Descripcion,
+                        Unidad = detalle.Unidad,
+                        ClaveUnidad = detalle.ClaveUnidad,
+                        Cantidad = detalle.Cantidad,
+                        ValorUnitario = detalle.ValorUnitario,
+                        Importe = detalle.Importe,
+                        Descuento = detalle.Descuento,
+                        ProductoId = detalle.ProductoId
+                    });
+                }
             }
-        }
 
-        _context.Facturas.Add(factura);
-        await _context.SaveChangesAsync();
+            _context.Facturas.Add(f);
+            await _context.SaveChangesAsync();
 
-        RegistrarAuditoria(tenantId, factura.Id, "CREAR", "Factura creada", userId);
-        await _context.SaveChangesAsync();
-        await folioTx.CommitAsync();
+            RegistrarAuditoria(tenantId, f.Id, "CREAR", "Factura creada", userId);
+            await _context.SaveChangesAsync();
+            await folioTx.CommitAsync();
+            return f;
+        });
 
         return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
     }
@@ -453,134 +460,140 @@ public class FacturasController : ControllerBase
         // BR-010: folio reservation + factura INSERT must share a transaction so
         //         that if timbrado/save fails the folio increment rolls back and
         //         we don't leave a SAT-compliance gap in the series.
+        // Wrapped via CreateExecutionStrategy() because DbContext has EnableRetryOnFailure.
         var serie = config.SerieFactura ?? "A";
 
-        await using var folioTx = await _context.Database.BeginTransactionAsync();
-
-        var folio = await GetNextFolio(tenantId, serie);
-
-        var factura = new Factura
+        var strategy = _context.Database.CreateExecutionStrategy();
+        var txResult = await strategy.ExecuteAsync<(ActionResult<FacturaDto>? ReturnResult, Factura? Factura)>(async () =>
         {
-            TenantId = tenantId,
-            Serie = serie,
-            Folio = folio,
-            FechaEmision = DateTime.UtcNow,
-            TipoComprobante = "I",
-            MetodoPago = request.MetodoPago ?? "PUE",
-            FormaPago = request.FormaPago ?? "01",
-            UsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
-            EmisorRfc = config.Rfc ?? "",
-            EmisorNombre = config.RazonSocial ?? "",
-            EmisorRegimenFiscal = config.RegimenFiscal,
-            ReceptorRfc = order.ClienteRfc,
-            ReceptorNombre = order.ClienteRazonSocial ?? order.ClienteNombre,
-            ReceptorUsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
-            ReceptorDomicilioFiscal = order.ClienteCodigoPostalFiscal,
-            ReceptorRegimenFiscal = order.ClienteRegimenFiscal,
-            Subtotal = order.Subtotal,
-            Descuento = order.Descuento,
-            TotalImpuestosTrasladados = order.Impuestos,
-            TotalImpuestosRetenidos = 0,
-            Total = order.Total,
-            Moneda = "MXN",
-            TipoCambio = 1,
-            ClienteId = order.ClienteId,
-            VendedorId = order.VendedorId,
-            PedidoId = order.PedidoId,
-            Observaciones = request.Observaciones ?? $"Factura generada desde pedido {order.NumeroPedido}",
-            CreatedBy = userId,
-            Estado = "PENDIENTE"
-        };
+            await using var folioTx = await _context.Database.BeginTransactionAsync();
 
-        // 7. Resolve fiscal codes via chain: mapping → producto → defaults → fallback
-        var resolved = await _fiscalCodeResolver.ResolveAsync(tenantId, order.Detalles);
+            var folio = await GetNextFolio(tenantId, serie);
 
-        // Apply overrides from pre-factura review (if any)
-        var overrides = request.Overrides?.ToDictionary(o => o.ProductoId) ?? new();
-
-        var lineNum = 1;
-        foreach (var line in order.Detalles)
-        {
-            var fiscal = resolved.GetValueOrDefault(line.ProductoId,
-                new FiscalCodeResolver.ResolvedFiscalCode("01010101", "H87", "fallback"));
-
-            // Pre-factura overrides take highest priority
-            var claveProdServ = overrides.TryGetValue(line.ProductoId, out var ov) && !string.IsNullOrEmpty(ov.ClaveProdServ)
-                ? ov.ClaveProdServ : fiscal.ClaveProdServ;
-            var claveUnidad = overrides.TryGetValue(line.ProductoId, out var ovU) && !string.IsNullOrEmpty(ovU.ClaveUnidad)
-                ? ovU.ClaveUnidad : fiscal.ClaveUnidad;
-
-            factura.Detalles.Add(new DetalleFactura
+            var factura = new Factura
             {
-                NumeroLinea = lineNum++,
-                ClaveProdServ = claveProdServ,
-                NoIdentificacion = line.ProductoCodigoBarra,
-                Descripcion = line.ProductoNombre,
-                Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
-                ClaveUnidad = claveUnidad,
-                Cantidad = line.Cantidad,
-                ValorUnitario = line.PrecioUnitario,
-                Importe = line.Subtotal,
-                Descuento = line.Descuento,
-                ProductoId = line.ProductoId,
-            });
-        }
+                TenantId = tenantId,
+                Serie = serie,
+                Folio = folio,
+                FechaEmision = DateTime.UtcNow,
+                TipoComprobante = "I",
+                MetodoPago = request.MetodoPago ?? "PUE",
+                FormaPago = request.FormaPago ?? "01",
+                UsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+                EmisorRfc = config.Rfc ?? "",
+                EmisorNombre = config.RazonSocial ?? "",
+                EmisorRegimenFiscal = config.RegimenFiscal,
+                ReceptorRfc = order.ClienteRfc,
+                ReceptorNombre = order.ClienteRazonSocial ?? order.ClienteNombre,
+                ReceptorUsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+                ReceptorDomicilioFiscal = order.ClienteCodigoPostalFiscal,
+                ReceptorRegimenFiscal = order.ClienteRegimenFiscal,
+                Subtotal = order.Subtotal,
+                Descuento = order.Descuento,
+                TotalImpuestosTrasladados = order.Impuestos,
+                TotalImpuestosRetenidos = 0,
+                Total = order.Total,
+                Moneda = "MXN",
+                TipoCambio = 1,
+                ClienteId = order.ClienteId,
+                VendedorId = order.VendedorId,
+                PedidoId = order.PedidoId,
+                Observaciones = request.Observaciones ?? $"Factura generada desde pedido {order.NumeroPedido}",
+                CreatedBy = userId,
+                Estado = "PENDIENTE"
+            };
 
-        // 8. Persist factura + commit folio reservation atomically.
-        //    If we're not auto-timbrando, commit immediately (factura PENDIENTE).
-        if (!request.TimbrarInmediatamente)
-        {
+            // 7. Resolve fiscal codes via chain: mapping → producto → defaults → fallback
+            var resolved = await _fiscalCodeResolver.ResolveAsync(tenantId, order.Detalles);
+
+            // Apply overrides from pre-factura review (if any)
+            var overrides = request.Overrides?.ToDictionary(o => o.ProductoId) ?? new();
+
+            var lineNum = 1;
+            foreach (var line in order.Detalles)
+            {
+                var fiscal = resolved.GetValueOrDefault(line.ProductoId,
+                    new FiscalCodeResolver.ResolvedFiscalCode("01010101", "H87", "fallback"));
+
+                // Pre-factura overrides take highest priority
+                var claveProdServ = overrides.TryGetValue(line.ProductoId, out var ov) && !string.IsNullOrEmpty(ov.ClaveProdServ)
+                    ? ov.ClaveProdServ : fiscal.ClaveProdServ;
+                var claveUnidad = overrides.TryGetValue(line.ProductoId, out var ovU) && !string.IsNullOrEmpty(ovU.ClaveUnidad)
+                    ? ovU.ClaveUnidad : fiscal.ClaveUnidad;
+
+                factura.Detalles.Add(new DetalleFactura
+                {
+                    NumeroLinea = lineNum++,
+                    ClaveProdServ = claveProdServ,
+                    NoIdentificacion = line.ProductoCodigoBarra,
+                    Descripcion = line.ProductoNombre,
+                    Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
+                    ClaveUnidad = claveUnidad,
+                    Cantidad = line.Cantidad,
+                    ValorUnitario = line.PrecioUnitario,
+                    Importe = line.Subtotal,
+                    Descuento = line.Descuento,
+                    ProductoId = line.ProductoId,
+                });
+            }
+
+            // 8. Persist factura + commit folio reservation atomically.
+            //    If we're not auto-timbrando, commit immediately (factura PENDIENTE).
+            if (!request.TimbrarInmediatamente)
+            {
+                _context.Facturas.Add(factura);
+                await _context.SaveChangesAsync();
+                RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
+                await _context.SaveChangesAsync();
+                await folioTx.CommitAsync();
+
+                _logger.LogInformation("Factura {Serie}-{Folio} created (pending) from order {NumeroPedido} for tenant {TenantId}",
+                    factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+
+                return (CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura)), null);
+            }
+
+            // Auto-timbrar flow: save factura inside the same folio transaction so that
+            // if timbrado fails BEFORE any PAC UUID is issued, we roll back BOTH the
+            // factura AND the folio increment — no SAT gap.
             _context.Facturas.Add(factura);
             await _context.SaveChangesAsync();
-            RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
-            await _context.SaveChangesAsync();
-            await folioTx.CommitAsync();
 
-            _logger.LogInformation("Factura {Serie}-{Folio} created (pending) from order {NumeroPedido} for tenant {TenantId}",
-                factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+            var timbrarResult = await TimbrarFactura(factura.Id);
+            if (timbrarResult.Result is OkObjectResult okResult)
+            {
+                RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada y timbrada desde pedido {order.NumeroPedido}", userId);
+                await _context.SaveChangesAsync();
+                await folioTx.CommitAsync();
 
-            return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
-        }
+                _logger.LogInformation("Factura {Serie}-{Folio} created and timbrada from order {NumeroPedido} for tenant {TenantId}",
+                    factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
 
-        // Auto-timbrar flow: save factura inside the same folio transaction so that
-        // if timbrado fails BEFORE any PAC UUID is issued, we roll back BOTH the
-        // factura AND the folio increment — no SAT gap.
-        _context.Facturas.Add(factura);
-        await _context.SaveChangesAsync();
+                return ((ActionResult<FacturaDto>)Ok(okResult.Value), null);
+            }
 
-        var timbrarResult = await TimbrarFactura(factura.Id);
-        if (timbrarResult.Result is OkObjectResult okResult)
-        {
-            RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada y timbrada desde pedido {order.NumeroPedido}", userId);
-            await _context.SaveChangesAsync();
-            await folioTx.CommitAsync();
+            // Timbrado failed.
+            // If factura has a UUID it's already timbrada at SAT — we CANNOT rollback the folio
+            // (SAT has accepted it). Commit the factura so the record reflects SAT reality and
+            // the admin can handle the cancellation flow.
+            var reloaded = await _context.Facturas.FindAsync(factura.Id);
+            if (reloaded != null && !string.IsNullOrEmpty(reloaded.Uuid))
+            {
+                await folioTx.CommitAsync();
+                _logger.LogWarning("Factura {Serie}-{Folio} timbrada at SAT but post-process failed. UUID={Uuid}. Tenant {TenantId}",
+                    factura.Serie, factura.Folio, reloaded.Uuid, tenantId);
+                return ((ActionResult<FacturaDto>)timbrarResult.Result!, null);
+            }
 
-            _logger.LogInformation("Factura {Serie}-{Folio} created and timbrada from order {NumeroPedido} for tenant {TenantId}",
-                factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+            // No UUID → timbrado never succeeded at SAT → safe to rollback everything,
+            // including the folio increment. No gap in SAT series.
+            await folioTx.RollbackAsync();
+            _logger.LogInformation("Factura {Serie}-{Folio} rolled back (including folio reservation) after timbrado failure for tenant {TenantId}",
+                factura.Serie, factura.Folio, tenantId);
+            return ((ActionResult<FacturaDto>)timbrarResult.Result!, null);
+        });
 
-            return Ok(okResult.Value);
-        }
-
-        // Timbrado failed.
-        // If factura has a UUID it's already timbrada at SAT — we CANNOT rollback the folio
-        // (SAT has accepted it). Commit the factura so the record reflects SAT reality and
-        // the admin can handle the cancellation flow.
-        var reloaded = await _context.Facturas.FindAsync(factura.Id);
-        if (reloaded != null && !string.IsNullOrEmpty(reloaded.Uuid))
-        {
-            await folioTx.CommitAsync();
-            _logger.LogWarning("Factura {Serie}-{Folio} timbrada at SAT but post-process failed. UUID={Uuid}. Tenant {TenantId}",
-                factura.Serie, factura.Folio, reloaded.Uuid, tenantId);
-            return timbrarResult.Result!;
-        }
-
-        // No UUID → timbrado never succeeded at SAT → safe to rollback everything,
-        // including the folio increment. No gap in SAT series.
-        await folioTx.RollbackAsync();
-        _logger.LogInformation("Factura {Serie}-{Folio} rolled back (including folio reservation) after timbrado failure for tenant {TenantId}",
-            factura.Serie, factura.Folio, tenantId);
-
-        return timbrarResult.Result!;
+        return txResult.ReturnResult!;
     }
 
     /// <summary>
