@@ -40,7 +40,15 @@ export function CuponRedeemCard({ onRedeemed }: CuponRedeemCardProps) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
       const backendMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(backendMsg ? tApi(backendMsg) : t('errorGeneric'));
+      // Seguridad: solo mostramos el mensaje exacto del backend si es accionable para el user
+      // (ej. "ya canjeaste este cupón"). Para el resto (no encontrado / inactivo / expirado /
+      // max usos), mostramos un genérico — así no permitimos enumerar qué códigos existen.
+      const isAlreadyRedeemed = backendMsg === 'Tu empresa ya ha utilizado este cupón';
+      if (isAlreadyRedeemed) {
+        toast.error(tApi(backendMsg!));
+      } else {
+        toast.error(t('errorGeneric'));
+      }
     } finally {
       setSubmitting(false);
     }

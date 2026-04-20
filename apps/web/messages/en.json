@@ -406,7 +406,7 @@
       "submit": "Redeem",
       "submitting": "Redeeming...",
       "requiredCode": "Enter a coupon code",
-      "errorGeneric": "Could not redeem coupon",
+      "errorGeneric": "We couldn't apply the coupon. Check the code and try again.",
       "successTitle": "Coupon applied!",
       "checkAboveHint": "Your plan has been updated. See it above.",
       "redeemAnother": "Redeem another coupon"

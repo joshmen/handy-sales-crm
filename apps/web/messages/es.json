@@ -406,7 +406,7 @@
       "submit": "Canjear",
       "submitting": "Canjeando...",
       "requiredCode": "Ingresa un código de cupón",
-      "errorGeneric": "No se pudo canjear el cupón",
+      "errorGeneric": "No pudimos aplicar el cupón. Verifica el código e intenta de nuevo.",
       "successTitle": "¡Cupón aplicado!",
       "checkAboveHint": "Tu plan ya se actualizó. Revísalo arriba.",
       "redeemAnother": "Canjear otro cupón"
