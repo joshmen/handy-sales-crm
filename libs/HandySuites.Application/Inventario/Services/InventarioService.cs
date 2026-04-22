@@ -28,6 +28,10 @@ public class InventarioService
 
     public async Task<CrearInventarioResult> CrearInventarioAsync(InventarioCreateDto dto)
     {
+        // Producto debe existir en el tenant (antes caía en 500 por FK violation).
+        if (!await _repo.ExisteProductoEnTenantAsync(dto.ProductoId, _tenant.TenantId))
+            return new CrearInventarioResult(false, Error: "El producto seleccionado no existe o no pertenece a tu empresa.");
+
         // Validar que no exista inventario para este producto
         var existente = await _repo.ObtenerPorProductoIdAsync(dto.ProductoId, _tenant.TenantId);
         if (existente != null)
