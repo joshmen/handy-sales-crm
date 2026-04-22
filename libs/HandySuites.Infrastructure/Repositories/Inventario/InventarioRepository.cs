@@ -136,11 +136,13 @@ public class InventarioRepository : IInventarioRepository
         }
 
         var totalItems = await query.CountAsync();
+        var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
+        var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
         var items = await query
             .OrderBy(i => i.Producto.Nombre)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
             .Select(i => new InventarioListaDto
             {
                 Id = i.Id,
@@ -161,8 +163,12 @@ public class InventarioRepository : IInventarioRepository
         {
             Items = items,
             TotalItems = totalItems,
-            Pagina = filtro.Pagina,
-            TamanoPagina = filtro.TamanoPagina
+            Pagina = pagina,
+            TamanoPagina = tamano
         };
     }
+
+    public Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId)
+        => _db.Productos.AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);
 }

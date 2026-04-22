@@ -51,11 +51,13 @@ public class MovimientoInventarioRepository : IMovimientoInventarioRepository
         }
 
         var totalItems = await query.CountAsync();
+        var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
+        var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
         var items = await query
             .OrderByDescending(m => m.CreadoEn)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
             .Select(m => new MovimientoInventarioListaDto
             {
                 Id = m.Id,
@@ -76,9 +78,9 @@ public class MovimientoInventarioRepository : IMovimientoInventarioRepository
         {
             Items = items,
             TotalItems = totalItems,
-            Pagina = filtro.Pagina,
-            TamanoPagina = filtro.TamanoPagina,
-            TotalPaginas = (int)Math.Ceiling((double)totalItems / filtro.TamanoPagina)
+            Pagina = pagina,
+            TamanoPagina = tamano,
+            TotalPaginas = (int)Math.Ceiling((double)totalItems / tamano)
         };
     }
 

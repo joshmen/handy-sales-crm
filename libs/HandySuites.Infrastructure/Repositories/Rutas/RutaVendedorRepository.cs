@@ -96,12 +96,14 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         }
 
         var totalCount = await query.CountAsync();
+        var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
+        var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
         var items = await query
             .OrderByDescending(r => r.Fecha)
             .ThenBy(r => r.HoraInicioEstimada)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
             .Select(r => new RutaListaDto
             {
                 Id = r.Id,
@@ -771,4 +773,12 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             DistanciaDesdeAnterior = detalle.DistanciaDesdeAnterior
         };
     }
+
+    public Task<bool> ExisteUsuarioEnTenantAsync(int usuarioId, int tenantId)
+        => _db.Usuarios.AsNoTracking()
+            .AnyAsync(u => u.Id == usuarioId && u.TenantId == tenantId);
+
+    public Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId)
+        => _db.Zonas.AsNoTracking()
+            .AnyAsync(z => z.Id == zonaId && z.TenantId == tenantId);
 }
