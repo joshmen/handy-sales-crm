@@ -37,6 +37,18 @@ const PATTERNS: Array<{ es: RegExp; en: RegExp; toEs: string; toEn: string }> = 
 
   // Impersonation duration (BR-031)
   { es: /^La duración solicitada excede el máximo permitido de (\d+) minutos\.$/, en: /^Requested duration exceeds the maximum allowed of (\d+) minutes\.$/, toEs: 'La duración solicitada excede el máximo permitido de $1 minutos.', toEn: 'Requested duration exceeds the maximum allowed of $1 minutes.' },
+
+  // Sweep Abril 2026 — Pedidos existence checks
+  { es: /^El producto con ID (\d+) no existe o no pertenece a tu empresa\.$/, en: /^Product with ID (\d+) does not exist or does not belong to your company\.$/, toEs: 'El producto con ID $1 no existe o no pertenece a tu empresa.', toEn: 'Product with ID $1 does not exist or does not belong to your company.' },
+
+  // Sweep Abril 2026 — Promociones (list of missing product IDs)
+  { es: /^Los productos con IDs (.+) no existen o no pertenecen a tu empresa\.$/, en: /^Products with IDs (.+) do not exist or do not belong to your company\.$/, toEs: 'Los productos con IDs $1 no existen o no pertenecen a tu empresa.', toEn: 'Products with IDs $1 do not exist or do not belong to your company.' },
+
+  // Sweep Abril 2026 — Pedidos detalles duplicados
+  { es: /^El pedido contiene productos duplicados \(IDs: (.+)\)\. Consolida la cantidad en una sola línea\.$/, en: /^The order contains duplicate products \(IDs: (.+)\)\. Merge the quantity into a single line\.$/, toEs: 'El pedido contiene productos duplicados (IDs: $1). Consolida la cantidad en una sola línea.', toEn: 'The order contains duplicate products (IDs: $1). Merge the quantity into a single line.' },
+
+  // Sweep Abril 2026 — Stock insuficiente (mensaje más completo que el patrón previo)
+  { es: /^Stock insuficiente: (.+): solo (.+) disponibles, solicitado (.+)$/, en: /^Insufficient stock: (.+): only (.+) available, requested (.+)$/, toEs: 'Stock insuficiente: $1: solo $2 disponibles, solicitado $3', toEn: 'Insufficient stock: $1: only $2 available, requested $3' },
 ];
 
 /**
@@ -53,13 +65,20 @@ export function useBackendTranslation() {
     (message: string | undefined | null): string => {
       if (!message) return '';
 
-      // 1. Exact match in backendMessages dictionary
-      try {
-        const translated = t(message);
-        if (!translated.startsWith('backendMessages.')) {
-          return translated;
-        }
-      } catch { /* not found */ }
+      // 1. Exact match in backendMessages dictionary.
+      // Skip when the message contains characters that ICU MessageFormat / next-intl
+      // path parsing cannot handle as a key: apostrophe, braces, #, dots inside a phrase.
+      // These appear in dynamic messages like "Ya existe un cliente con el nombre 'X'."
+      // and cause next-intl to throw SYNCRONICALLY past the try/catch.
+      const looksLikeProse = /['{}#]|\. /.test(message) || message.length > 80;
+      if (!looksLikeProse) {
+        try {
+          const translated = t(message);
+          if (!translated.startsWith('backendMessages.')) {
+            return translated;
+          }
+        } catch { /* not found */ }
+      }
 
       // 2. Bidirectional dynamic patterns
       for (const p of PATTERNS) {

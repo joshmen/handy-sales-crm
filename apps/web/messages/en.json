@@ -6178,7 +6178,26 @@
     "No products with zero inventory": "No products with zero inventory",
     "Goals auto-renewed": "Goals auto-renewed",
     "Payment registered successfully": "Payment registered successfully",
-    "An error occurred while executing the automation.": "An error occurred while executing the automation."
+    "An error occurred while executing the automation.": "An error occurred while executing the automation.",
+    "El pedido no pertenece al cliente especificado.": "The order does not belong to the specified client.",
+    "El parámetro 'desde' no es una fecha válida.": "The 'from' parameter is not a valid date.",
+    "El parámetro 'hasta' no es una fecha válida.": "The 'to' parameter is not a valid date.",
+    "La familia seleccionada no existe o no pertenece a tu empresa.": "The selected product family does not exist or does not belong to your company.",
+    "La categoría seleccionada no existe o no pertenece a tu empresa.": "The selected category does not exist or does not belong to your company.",
+    "La unidad de medida seleccionada no existe.": "The selected unit of measure does not exist.",
+    "El producto seleccionado no existe o no pertenece a tu empresa.": "The selected product does not exist or does not belong to your company.",
+    "La lista de precios seleccionada no existe o no pertenece a tu empresa.": "The selected price list does not exist or does not belong to your company.",
+    "La lista de precios especificada no existe o no pertenece a tu empresa.": "The specified price list does not exist or does not belong to your company.",
+    "La zona seleccionada no existe o no pertenece a tu empresa.": "The selected zone does not exist or does not belong to your company.",
+    "Debe seleccionar una familia válida.": "You must select a valid product family.",
+    "Debe seleccionar una unidad de medida válida.": "You must select a valid unit of measure.",
+    "El tipo de venta es inválido.": "The sale type is invalid.",
+    "El motivo de cancelación es obligatorio.": "A cancellation reason is required.",
+    "El motivo de cancelación no puede exceder 500 caracteres.": "The cancellation reason cannot exceed 500 characters.",
+    "No se puede cobrar un pedido cancelado.": "You cannot register a payment on a cancelled order.",
+    "No se puede cobrar un pedido en borrador. Confírmalo primero.": "You cannot register a payment on a draft order. Confirm it first.",
+    "La fecha de cobro no puede ser futura.": "The payment date cannot be in the future.",
+    "La fecha de cobro es demasiado antigua.": "The payment date is too far in the past."
   },
   "helpContent": {
     "dashboard": {

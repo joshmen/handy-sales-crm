@@ -6179,7 +6179,26 @@
     "No products with zero inventory": "Sin productos con inventario en cero",
     "Goals auto-renewed": "Metas auto-renovadas",
     "Payment registered successfully": "Cobro registrado exitosamente",
-    "An error occurred while executing the automation.": "Error al ejecutar la automatización."
+    "An error occurred while executing the automation.": "Error al ejecutar la automatización.",
+    "El pedido no pertenece al cliente especificado.": "El pedido no pertenece al cliente especificado.",
+    "El parámetro 'desde' no es una fecha válida.": "El parámetro 'desde' no es una fecha válida.",
+    "El parámetro 'hasta' no es una fecha válida.": "El parámetro 'hasta' no es una fecha válida.",
+    "La familia seleccionada no existe o no pertenece a tu empresa.": "La familia seleccionada no existe o no pertenece a tu empresa.",
+    "La categoría seleccionada no existe o no pertenece a tu empresa.": "La categoría seleccionada no existe o no pertenece a tu empresa.",
+    "La unidad de medida seleccionada no existe.": "La unidad de medida seleccionada no existe.",
+    "El producto seleccionado no existe o no pertenece a tu empresa.": "El producto seleccionado no existe o no pertenece a tu empresa.",
+    "La lista de precios seleccionada no existe o no pertenece a tu empresa.": "La lista de precios seleccionada no existe o no pertenece a tu empresa.",
+    "La lista de precios especificada no existe o no pertenece a tu empresa.": "La lista de precios especificada no existe o no pertenece a tu empresa.",
+    "La zona seleccionada no existe o no pertenece a tu empresa.": "La zona seleccionada no existe o no pertenece a tu empresa.",
+    "Debe seleccionar una familia válida.": "Debe seleccionar una familia válida.",
+    "Debe seleccionar una unidad de medida válida.": "Debe seleccionar una unidad de medida válida.",
+    "El tipo de venta es inválido.": "El tipo de venta es inválido.",
+    "El motivo de cancelación es obligatorio.": "El motivo de cancelación es obligatorio.",
+    "El motivo de cancelación no puede exceder 500 caracteres.": "El motivo de cancelación no puede exceder 500 caracteres.",
+    "No se puede cobrar un pedido cancelado.": "No se puede cobrar un pedido cancelado.",
+    "No se puede cobrar un pedido en borrador. Confírmalo primero.": "No se puede cobrar un pedido en borrador. Confírmalo primero.",
+    "La fecha de cobro no puede ser futura.": "La fecha de cobro no puede ser futura.",
+    "La fecha de cobro es demasiado antigua.": "La fecha de cobro es demasiado antigua."
   },
   "helpContent": {
     "dashboard": {
