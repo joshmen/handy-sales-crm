@@ -989,7 +989,9 @@
     "statusUpdated": "Estado actualizado",
     "orderCancelled": "Pedido cancelado",
     "errorCancelling": "Error al cancelar pedido",
-    "cancelReason": "Motivo de cancelación (opcional):",
+    "cancelReason": "Motivo de cancelación",
+    "cancelReasonPlaceholder": "Explica por qué se cancela el pedido (opcional)",
+    "confirmCancelOrder": "Cancelar pedido",
     "confirmDelete": "¿Estás seguro de que quieres eliminar este pedido?",
     "columns": {
       "orderNumber": "# Pedido",

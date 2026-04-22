@@ -989,7 +989,9 @@
     "statusUpdated": "Status updated",
     "orderCancelled": "Order cancelled",
     "errorCancelling": "Error cancelling order",
-    "cancelReason": "Cancellation reason (optional):",
+    "cancelReason": "Cancellation reason",
+    "cancelReasonPlaceholder": "Explain why the order is being cancelled (optional)",
+    "confirmCancelOrder": "Cancel order",
     "confirmDelete": "Are you sure you want to delete this order?",
     "columns": {
       "orderNumber": "Order #",
