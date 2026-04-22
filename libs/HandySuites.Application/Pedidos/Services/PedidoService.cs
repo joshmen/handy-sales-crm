@@ -214,6 +214,18 @@ public class PedidoService
         return await _repository.CambiarEstadoAsync(id, EstadoPedido.Confirmado, "Pedido confirmado", _tenant.TenantId);
     }
 
+    public Task<CambiarEstadoOutcome> ConfirmarDetalladoAsync(int id)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.Confirmado, "Pedido confirmado", _tenant.TenantId);
+
+    public Task<CambiarEstadoOutcome> EnviarARutaDetalladoAsync(int id)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.EnRuta, "Pedido en ruta de entrega", _tenant.TenantId);
+
+    public Task<CambiarEstadoOutcome> EntregarDetalladoAsync(int id, string? notas)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.Entregado, notas ?? "Pedido entregado", _tenant.TenantId);
+
+    public Task<CambiarEstadoOutcome> CancelarDetalladoAsync(int id, string? motivo)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.Cancelado, motivo ?? "Pedido cancelado", _tenant.TenantId);
+
     [Obsolete("Use EnviarARutaAsync instead. EnProceso state removed from simplified workflow.")]
     public async Task<bool> IniciarProcesoAsync(int id)
     {

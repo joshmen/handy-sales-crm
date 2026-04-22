@@ -4,7 +4,9 @@ using HandySuites.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Pedidos.Interfaces;
 using HandySuites.Application.Pedidos.Services;
+using HandySuites.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySuites.Api.Endpoints;
@@ -174,8 +176,8 @@ public static class PedidoEndpoints
             int id,
             [FromServices] PedidoService servicio) =>
         {
-            var resultado = await servicio.ConfirmarAsync(id);
-            return resultado ? Results.Ok(new { mensaje = "Pedido confirmado" }) : Results.BadRequest(new { error = "No se pudo confirmar el pedido" });
+            var outcome = await servicio.ConfirmarDetalladoAsync(id);
+            return OutcomeToResult(outcome, "Pedido confirmado", "confirmar");
         })
         .WithSummary("Confirmar pedido")
         .WithDescription("Cambia el estado del pedido de Borrador a Confirmado.")
@@ -201,8 +203,8 @@ public static class PedidoEndpoints
             int id,
             [FromServices] PedidoService servicio) =>
         {
-            var resultado = await servicio.EnviarARutaAsync(id);
-            return resultado ? Results.Ok(new { mensaje = "Pedido en ruta" }) : Results.BadRequest(new { error = "No se pudo enviar a ruta" });
+            var outcome = await servicio.EnviarARutaDetalladoAsync(id);
+            return OutcomeToResult(outcome, "Pedido en ruta", "enviar a ruta");
         })
         .WithSummary("Enviar a ruta")
         .WithDescription("Cambia el estado del pedido de Confirmado a EnRuta (pedido salió para entrega).")
@@ -215,8 +217,8 @@ public static class PedidoEndpoints
             [FromBody] PedidoEstadoDto? dto,
             [FromServices] PedidoService servicio) =>
         {
-            var resultado = await servicio.EntregarAsync(id, dto?.Notas);
-            return resultado ? Results.Ok(new { mensaje = "Pedido entregado" }) : Results.BadRequest(new { error = "No se pudo marcar como entregado" });
+            var outcome = await servicio.EntregarDetalladoAsync(id, dto?.Notas);
+            return OutcomeToResult(outcome, "Pedido entregado", "marcar como entregado");
         })
         .WithSummary("Marcar como entregado")
         .WithDescription("Cambia el estado del pedido a Entregado. Opcionalmente puede incluir notas de entrega.")
@@ -235,8 +237,8 @@ public static class PedidoEndpoints
             if (dto.Notas.Length > 500)
                 return Results.BadRequest(new { error = "El motivo de cancelación no puede exceder 500 caracteres." });
 
-            var resultado = await servicio.CancelarAsync(id, dto.Notas);
-            return resultado ? Results.Ok(new { mensaje = "Pedido cancelado" }) : Results.BadRequest(new { error = "No se pudo cancelar el pedido" });
+            var outcome = await servicio.CancelarDetalladoAsync(id, dto.Notas);
+            return OutcomeToResult(outcome, "Pedido cancelado", "cancelar");
         })
         .WithSummary("Cancelar pedido")
         .WithDescription("Cancela el pedido. Requiere motivo de cancelación. No se pueden cancelar pedidos ya entregados.")
@@ -298,4 +300,32 @@ public static class PedidoEndpoints
         .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status401Unauthorized);
     }
+
+    // Helper: convierte el outcome rico del service en una respuesta HTTP con
+    // mensaje específico según el estado actual del pedido. Antes todas las
+    // transiciones inválidas devolvían "No se pudo X el pedido" sin contexto.
+    private static IResult OutcomeToResult(CambiarEstadoOutcome outcome, string successMsg, string accionVerbo)
+    {
+        return outcome.Status switch
+        {
+            CambiarEstadoStatus.Ok => Results.Ok(new { mensaje = successMsg }),
+            CambiarEstadoStatus.NotFound => Results.NotFound(new { error = "Pedido no encontrado." }),
+            CambiarEstadoStatus.TransicionInvalida => Results.BadRequest(new
+            {
+                error = $"No se puede {accionVerbo} un pedido en estado {EstadoLabel(outcome.EstadoActual)}.",
+                estadoActual = outcome.EstadoActual?.ToString(),
+            }),
+            _ => Results.BadRequest(new { error = $"No se pudo {accionVerbo} el pedido." })
+        };
+    }
+
+    private static string EstadoLabel(EstadoPedido? estado) => estado switch
+    {
+        EstadoPedido.Borrador => "Borrador",
+        EstadoPedido.Confirmado => "Confirmado",
+        EstadoPedido.EnRuta => "En ruta",
+        EstadoPedido.Entregado => "Entregado",
+        EstadoPedido.Cancelado => "Cancelado",
+        _ => estado?.ToString() ?? "desconocido"
+    };
 }

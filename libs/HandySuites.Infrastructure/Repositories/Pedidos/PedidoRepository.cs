@@ -367,14 +367,19 @@ public class PedidoRepository : IPedidoRepository
 
     public async Task<bool> CambiarEstadoAsync(int id, EstadoPedido nuevoEstado, string? notas, int tenantId)
     {
+        var result = await CambiarEstadoDetalladoAsync(id, nuevoEstado, notas, tenantId);
+        return result.Status == CambiarEstadoStatus.Ok;
+    }
+
+    public async Task<CambiarEstadoOutcome> CambiarEstadoDetalladoAsync(int id, EstadoPedido nuevoEstado, string? notas, int tenantId)
+    {
         var pedido = await _db.Pedidos
             .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId && p.Activo);
 
-        if (pedido == null) return false;
+        if (pedido == null) return new CambiarEstadoOutcome(CambiarEstadoStatus.NotFound, null);
 
-        // Validar transiciones de estado válidas
         if (!EsTransicionValida(pedido.Estado, nuevoEstado))
-            return false;
+            return new CambiarEstadoOutcome(CambiarEstadoStatus.TransicionInvalida, pedido.Estado);
 
         pedido.Estado = nuevoEstado;
         pedido.ActualizadoEn = DateTime.UtcNow;
@@ -392,7 +397,7 @@ public class PedidoRepository : IPedidoRepository
         }
 
         await _db.SaveChangesAsync();
-        return true;
+        return new CambiarEstadoOutcome(CambiarEstadoStatus.Ok, nuevoEstado);
     }
 
     public async Task<bool> EliminarAsync(int id, int tenantId)
