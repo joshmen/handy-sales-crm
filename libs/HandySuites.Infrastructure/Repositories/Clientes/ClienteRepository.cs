@@ -134,11 +134,12 @@ public class ClienteRepository : IClienteRepository
         if (cliente == null) return false;
 
         cliente.Nombre = dto.Nombre;
-        cliente.RFC = dto.RFC;
-        cliente.Correo = dto.Correo;
-        cliente.Telefono = dto.Telefono;
-        cliente.Direccion = dto.Direccion;
-        cliente.NumeroExterior = dto.NumeroExterior;
+        // DB columnas NOT NULL → coalesce a string vacío cuando el DTO envía null.
+        cliente.RFC = dto.RFC ?? string.Empty;
+        cliente.Correo = dto.Correo ?? string.Empty;
+        cliente.Telefono = dto.Telefono ?? string.Empty;
+        cliente.Direccion = dto.Direccion ?? string.Empty;
+        cliente.NumeroExterior = dto.NumeroExterior ?? string.Empty;
         cliente.IdZona = dto.IdZona;
         cliente.CategoriaClienteId = dto.CategoriaClienteId;
         // Campos adicionales
