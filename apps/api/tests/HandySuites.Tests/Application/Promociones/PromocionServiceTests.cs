@@ -20,6 +20,9 @@ namespace HandySuites.Tests.Application.Promociones
         public PromocionServiceTests()
         {
             _tenantMock.Setup(t => t.TenantId).Returns(1);
+            // Default: todos los productos existen; vacío = nada faltante.
+            _repoMock.Setup(r => r.ObtenerProductosFaltantesAsync(It.IsAny<List<int>>(), It.IsAny<int>()))
+                .ReturnsAsync(new List<int>());
             _service = new PromocionService(_repoMock.Object, _tenantMock.Object);
         }
 

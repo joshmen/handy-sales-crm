@@ -208,4 +208,15 @@ public class PromocionRepository : IPromocionRepository
             })
             .ToListAsync();
     }
+
+    public async Task<List<int>> ObtenerProductosFaltantesAsync(List<int> productoIds, int tenantId)
+    {
+        if (productoIds.Count == 0) return new List<int>();
+        var existentes = await _db.Productos
+            .AsNoTracking()
+            .Where(p => productoIds.Contains(p.Id) && p.TenantId == tenantId)
+            .Select(p => p.Id)
+            .ToListAsync();
+        return productoIds.Except(existentes).ToList();
+    }
 }
