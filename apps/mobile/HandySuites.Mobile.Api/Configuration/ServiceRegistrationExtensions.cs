@@ -83,19 +83,26 @@ public static class ServiceRegistrationExtensions
 
         if (environment != "Testing")
         {
-            services.AddDbContext<HandySuitesDbContext>(options =>
-                options.UseNpgsql(
-                    config.GetConnectionString("DefaultConnection"),
-                    o =>
-                    {
-                        o.UseVector();
-                        o.EnableRetryOnFailure(
-                            maxRetryCount: 3,
-                            maxRetryDelay: TimeSpan.FromSeconds(5),
-                            errorCodesToAdd: null);
-                        o.CommandTimeout(30);
-                    }
-                ));
+            // Interceptor que emite SET app.tenant_id + app.is_super_admin en cada
+            // comando para que las policies de PostgreSQL RLS (handy_app role)
+            // filtren por tenant. Sin esto, como el user de DB es non-superuser,
+            // TODAS las queries regresan 0 filas → login rompía con "user not found".
+            services.AddScoped<TenantRlsInterceptor>();
+
+            services.AddDbContext<HandySuitesDbContext>((serviceProvider, options) =>
+                options
+                    .UseNpgsql(
+                        config.GetConnectionString("DefaultConnection"),
+                        o =>
+                        {
+                            o.UseVector();
+                            o.EnableRetryOnFailure(
+                                maxRetryCount: 3,
+                                maxRetryDelay: TimeSpan.FromSeconds(5),
+                                errorCodesToAdd: null);
+                            o.CommandTimeout(30);
+                        })
+                    .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>()));
         }
 
         services.AddFluentValidationAutoValidation();
