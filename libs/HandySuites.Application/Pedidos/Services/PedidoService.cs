@@ -35,6 +35,23 @@ public class PedidoService
     {
         var usuarioId = int.Parse(_tenant.UserId);
 
+        // Existence check: lista de precios (opcional) debe pertenecer al tenant.
+        if (dto.ListaPrecioId is int listaId && listaId > 0
+            && !await _repository.ExisteListaPrecioAsync(listaId, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("La lista de precios especificada no existe o no pertenece a tu empresa.");
+        }
+
+        // Detalles duplicados (mismo productoId > 1 vez): rechazar para evitar que
+        // venta directa haga múltiples SALIDAs y que la UI muestre el mismo item 2×.
+        var duplicados = dto.Detalles.GroupBy(d => d.ProductoId)
+            .Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicados.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"El pedido contiene productos duplicados (IDs: {string.Join(", ", duplicados)}). Consolida la cantidad en una sola línea.");
+        }
+
         // BR-001: Para Venta Directa, validar stock ANTES de crear el pedido.
         // Antes se creaba el pedido primero y la validación fallaba después, dejando
         // pedidos huérfanos en la DB (Audit CRITICAL-1, Abril 2026).
@@ -99,6 +116,10 @@ public class PedidoService
 
     public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro)
     {
+        // Sanitizar paginación (evita 500 por offset negativo y overflow en totalPaginas).
+        if ((filtro.Pagina ?? 1) < 1) filtro.Pagina = 1;
+        if ((filtro.TamanoPagina ?? 20) < 1) filtro.TamanoPagina = 20;
+        if ((filtro.TamanoPagina ?? 20) > 200) filtro.TamanoPagina = 200;
         // RBAC: Supervisor ve su equipo, Vendedor solo sus pedidos
         List<int>? filterByUsuarioIds = null;
         if (_tenant.IsSupervisor)
@@ -135,6 +156,23 @@ public class PedidoService
 
     public async Task<bool> ActualizarAsync(int id, PedidoUpdateDto dto)
     {
+        if (dto.ListaPrecioId is int listaId && listaId > 0
+            && !await _repository.ExisteListaPrecioAsync(listaId, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("La lista de precios especificada no existe o no pertenece a tu empresa.");
+        }
+        if (dto.Detalles is not null && dto.Detalles.Count > 0)
+        {
+            var dups = dto.Detalles.GroupBy(d => d.ProductoId).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (dups.Count > 0)
+                throw new InvalidOperationException(
+                    $"El pedido contiene productos duplicados (IDs: {string.Join(", ", dups)}). Consolida la cantidad en una sola línea.");
+            foreach (var det in dto.Detalles)
+            {
+                if (!await _repository.ExisteProductoAsync(det.ProductoId, _tenant.TenantId))
+                    throw new InvalidOperationException($"El producto con ID {det.ProductoId} no existe o no pertenece a tu empresa.");
+            }
+        }
         return await _repository.ActualizarAsync(id, dto, _tenant.TenantId);
     }
 

@@ -23,4 +23,5 @@ public interface IPedidoRepository
     Task<string> ObtenerNombreProductoAsync(int productoId, int tenantId);
     Task<bool> ExisteClienteAsync(int clienteId, int tenantId);
     Task<bool> ExisteProductoAsync(int productoId, int tenantId);
+    Task<bool> ExisteListaPrecioAsync(int listaPrecioId, int tenantId);
 }

@@ -228,7 +228,13 @@ public static class PedidoEndpoints
             [FromBody] PedidoEstadoDto? dto,
             [FromServices] PedidoService servicio) =>
         {
-            var resultado = await servicio.CancelarAsync(id, dto?.Notas);
+            // El motivo de cancelación es obligatorio (auditoría del ciclo de pedido).
+            if (string.IsNullOrWhiteSpace(dto?.Notas))
+                return Results.BadRequest(new { error = "El motivo de cancelación es obligatorio." });
+            if (dto.Notas.Length > 500)
+                return Results.BadRequest(new { error = "El motivo de cancelación no puede exceder 500 caracteres." });
+
+            var resultado = await servicio.CancelarAsync(id, dto.Notas);
             return resultado ? Results.Ok(new { mensaje = "Pedido cancelado" }) : Results.BadRequest(new { error = "No se pudo cancelar el pedido" });
         })
         .WithSummary("Cancelar pedido")
