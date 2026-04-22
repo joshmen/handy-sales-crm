@@ -65,7 +65,7 @@ public static class ProductoEndpoints
             }
 
             return txResult.Response;
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/productos/{id:int}", async (
             int id,
@@ -90,13 +90,13 @@ public static class ProductoEndpoints
                 _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
             }
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/productos/{id:int}", async (int id, [FromServices] ProductoService servicio) =>
         {
             var eliminado = await servicio.EliminarProductoAsync(id);
             return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/productos/{id:int}/activo", async (int id, [FromBody] CambiarActivoDto dto, [FromServices] ProductoService servicio, ILogger<ProductoService> logger) =>
         {
@@ -104,7 +104,7 @@ public static class ProductoEndpoints
             var actualizado = await servicio.CambiarActivoAsync(id, dto.Activo);
             logger.LogInformation("[PATCH /productos/{Id}/activo] Resultado: actualizado={Actualizado}", id, actualizado);
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/productos/batch-toggle", async (ProductoBatchToggleRequest request, [FromServices] ProductoService servicio) =>
         {
@@ -113,7 +113,7 @@ public static class ProductoEndpoints
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPost("/productos/{id:int}/imagen", async (
             int id,
@@ -160,7 +160,7 @@ public static class ProductoEndpoints
             }
         })
         .DisableAntiforgery()
-        .RequireAuthorization();
+        .RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/productos/{id:int}/imagen", async (
             int id,
@@ -180,7 +180,7 @@ public static class ProductoEndpoints
 
             await servicio.ActualizarImagenAsync(id, null);
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 
     private static string? ExtractPublicIdFromUrl(string url)

@@ -42,7 +42,7 @@ public static class PrecioPorProductoEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/precios/{id:int}", async (int id, PrecioPorProductoCreateDto dto, IValidator<PrecioPorProductoCreateDto> validator, [FromServices] PrecioPorProductoService servicio) =>
         {
@@ -63,12 +63,12 @@ public static class PrecioPorProductoEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/precios/{id:int}", async (int id, [FromServices] PrecioPorProductoService servicio) =>
         {
             var eliminado = await servicio.EliminarPrecioAsync(id);
             return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }

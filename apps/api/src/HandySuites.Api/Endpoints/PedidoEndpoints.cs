@@ -148,8 +148,9 @@ public static class PedidoEndpoints
             var pedidos = await servicio.ObtenerPorUsuarioAsync(usuarioId);
             return Results.Ok(pedidos);
         })
+        .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR"))
         .WithSummary("Pedidos por vendedor")
-        .WithDescription("Obtiene todos los pedidos creados por un vendedor específico (solo admin).")
+        .WithDescription("Obtiene todos los pedidos creados por un vendedor específico (ADMIN/SUPER_ADMIN/SUPERVISOR).")
         .Produces<List<PedidoListaDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 

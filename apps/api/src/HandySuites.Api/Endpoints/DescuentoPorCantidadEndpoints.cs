@@ -42,7 +42,7 @@ public static class DescuentosEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/descuentos/{id:int}", async (int id, DescuentoPorCantidadCreateDto dto, IValidator<DescuentoPorCantidadCreateDto> validator, [FromServices] DescuentoPorCantidadService servicio) =>
         {
@@ -63,19 +63,19 @@ public static class DescuentosEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/descuentos/{id:int}", async (int id, [FromServices] DescuentoPorCantidadService servicio) =>
         {
             var eliminado = await servicio.EliminarDescuentoAsync(id);
             return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/descuentos/{id:int}/toggle", async (int id, [FromServices] DescuentoPorCantidadService servicio) =>
         {
             var actualizado = await servicio.ToggleActivoAsync(id);
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // Batch toggle - habilitar/deshabilitar múltiples descuentos
         app.MapPatch("/descuentos/batch-toggle", async (BatchToggleRequest request, [FromServices] DescuentoPorCantidadService servicio) =>
@@ -85,7 +85,7 @@ public static class DescuentosEndpoints
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }
 
