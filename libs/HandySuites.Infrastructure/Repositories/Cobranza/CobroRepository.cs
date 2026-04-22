@@ -266,6 +266,10 @@ public class CobroRepository : ICobroRepository
         var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
         if (entity == null) return false;
 
+        // Idempotencia: anular un cobro ya anulado debe devolver 404, no otro 204,
+        // para que la UI no reporte dos "éxitos" seguidos.
+        if (!entity.Activo) return false;
+
         entity.Activo = false;
         entity.ActualizadoEn = DateTime.UtcNow;
         await _db.SaveChangesAsync();
