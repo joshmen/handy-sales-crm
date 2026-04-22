@@ -19,6 +19,11 @@ public class ClienteVisitaService
     // CRUD
     public async Task<int> CrearAsync(ClienteVisitaCreateDto dto)
     {
+        // Cliente debe existir en el tenant (antes: cliente inexistente → 500 FK,
+        // cliente de OTRO tenant → 201 con cross-tenant leak).
+        if (!await _repository.ExisteClienteEnTenantAsync(dto.ClienteId, _tenant.TenantId))
+            throw new InvalidOperationException("El cliente especificado no existe o no pertenece a tu empresa.");
+
         var usuarioId = int.Parse(_tenant.UserId);
         return await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
     }
