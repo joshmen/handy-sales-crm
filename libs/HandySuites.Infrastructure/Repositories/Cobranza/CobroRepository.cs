@@ -196,6 +196,9 @@ public class CobroRepository : ICobroRepository
             var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
             if (entity == null) return false;
 
+            // Un cobro anulado (soft-deleted) no debe poder editarse: conserva audit trail.
+            if (!entity.Activo || entity.EliminadoEn != null) return false;
+
             // Over-payment guard: lock row + sum cobros atomically (excludes current cobro)
             if (entity.PedidoId.HasValue)
             {
