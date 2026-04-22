@@ -14,4 +14,5 @@ public interface IZonaRepository
     Task<bool> CambiarActivoAsync(int id, bool activo, int tenantId);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<List<(int Id, string Nombre, double Lat, double Lng, double RadioKm)>> ObtenerZonasConCoordenadasAsync(int tenantId, int? excludeId = null);
+    Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null);
 }

@@ -33,6 +33,15 @@ public class RutaVendedorService
 
     public async Task<int> CrearAsync(RutaVendedorCreateDto dto)
     {
+        // RBAC: vendedor/viewer solo puede crear rutas para sí mismo.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && !dto.EsTemplate
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && dto.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("No tienes permisos para asignar rutas a otros vendedores.");
+        }
+
         // Existence checks (antes caían en 500 por FK violation).
         if (!dto.EsTemplate && !await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
             throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
@@ -97,6 +106,14 @@ public class RutaVendedorService
         if (entidad?.TenantId != _tenant.TenantId && !_tenant.IsSuperAdmin)
             throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta");
 
+        // RBAC: vendedor/viewer solo ve sus propias rutas (consistente con ObtenerPorFiltroAsync).
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && entidad?.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta");
+        }
+
         return ruta;
     }
 
@@ -134,6 +151,16 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        // RBAC: vendedor/viewer solo puede editar sus propias rutas y no puede reasignarlas.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId))
+        {
+            if (ruta.UsuarioId != currentUserId)
+                throw new UnauthorizedAccessException("No tienes permisos para editar rutas de otros vendedores.");
+            if (dto.UsuarioId.HasValue && dto.UsuarioId.Value != currentUserId)
+                throw new UnauthorizedAccessException("No tienes permisos para reasignar rutas a otros vendedores.");
+        }
+
         // No permitir editar rutas en progreso o completadas
         if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
             throw new InvalidOperationException("No se puede editar una ruta que ya está en progreso o completada");
@@ -157,6 +184,14 @@ public class RutaVendedorService
     {
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        // RBAC: vendedor/viewer solo puede eliminar sus propias rutas.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && ruta.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("No tienes permisos para eliminar rutas de otros vendedores.");
+        }
 
         // No permitir eliminar rutas en progreso
         if (ruta.Estado == EstadoRuta.EnProgreso)
@@ -184,6 +219,14 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        // Solo el vendedor asignado, admin/super_admin o supervisor pueden completar.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && ruta.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede completar esta ruta");
+        }
+
         return await _repo.CompletarRutaAsync(id, DateTime.UtcNow, kilometrosReales);
     }
 
@@ -191,6 +234,14 @@ public class RutaVendedorService
     {
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        // Solo el vendedor asignado, admin/super_admin o supervisor pueden cancelar.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && ruta.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede cancelar esta ruta");
+        }
 
         return await _repo.CancelarRutaAsync(id, motivo);
     }

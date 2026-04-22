@@ -167,4 +167,13 @@ public class ZonaRepository : IZonaRepository
 
         return items.Select(z => (z.Id, z.Nombre, z.Lat, z.Lng, z.Radio)).ToList();
     }
+
+    public Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null)
+    {
+        var query = _db.Zonas.AsNoTracking()
+            .Where(z => z.TenantId == tenantId && z.Nombre.ToLower() == nombre.ToLower());
+        if (excludeId.HasValue)
+            query = query.Where(z => z.Id != excludeId.Value);
+        return query.AnyAsync();
+    }
 }

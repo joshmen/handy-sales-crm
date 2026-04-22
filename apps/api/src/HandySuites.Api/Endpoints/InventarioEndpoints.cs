@@ -35,10 +35,15 @@ public static class InventarioEndpoints
 
             var result = await servicio.CrearInventarioAsync(dto);
             if (!result.Success)
-                return Results.Conflict(new { message = result.Error });
+            {
+                // Producto inexistente → 400; duplicado → 409.
+                return result.ErrorKind == InventarioService.CrearInventarioErrorKind.ProductoNoExiste
+                    ? Results.BadRequest(new { message = result.Error })
+                    : Results.Conflict(new { message = result.Error });
+            }
 
             return Results.Created($"/inventario/{result.Id}", new { id = result.Id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/inventario/{id:int}", async (int id, InventarioUpdateDto dto, IValidator<InventarioUpdateDto> validator, [FromServices] InventarioService servicio) =>
         {
@@ -52,12 +57,12 @@ public static class InventarioEndpoints
 
             var actualizado = await servicio.ActualizarInventarioAsync(id, dto);
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/inventario/{productoId:int}", async (int productoId, [FromServices] InventarioService servicio) =>
         {
             var eliminado = await servicio.EliminarInventarioAsync(productoId);
             return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }

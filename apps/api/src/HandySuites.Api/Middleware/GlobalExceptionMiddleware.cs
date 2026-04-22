@@ -102,7 +102,8 @@ public class GlobalExceptionMiddleware
         return exception switch
         {
             ArgumentException => (int)HttpStatusCode.BadRequest,
-            UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+            // Usuario autenticado pero sin permisos para la acción → 403 Forbidden (no 401).
+            UnauthorizedAccessException => (int)HttpStatusCode.Forbidden,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             InvalidOperationException => (int)HttpStatusCode.BadRequest,
             // Body JSON malformado / vacío / nulo: System.Text.Json / BadHttpRequestException.

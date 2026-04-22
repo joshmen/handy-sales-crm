@@ -34,7 +34,8 @@ public static class ClienteVisitaEndpoints
             }
             catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = ex.Message });
+                // Validaciones de dominio (cliente inexistente/fuera de tenant, etc.) → 400.
+                return Results.BadRequest(new { message = ex.Message });
             }
         })
         .WithSummary("Programar nueva visita")

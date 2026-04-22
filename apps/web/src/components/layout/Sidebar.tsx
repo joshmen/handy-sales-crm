@@ -236,7 +236,7 @@ const sidebarItems: SidebarItem[] = [
     label: 'Reportes',
     icon: SbReports,
     href: '/reports',
-    permission: 'view_dashboard',
+    permission: 'view_reports',
   },
   {
     id: 'metas',

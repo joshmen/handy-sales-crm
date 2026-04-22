@@ -15,7 +15,11 @@ public static class ReportEndpoints
 
     public static void MapReportEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/reports").RequireAuthorization();
+        // RBAC: Reports expose tenant-wide aggregates (cross-vendedor ventas,
+        // cartera, metas, comisiones, insights). Vendedores/Viewers no deben
+        // verlos — restringir a roles de gestión.
+        var group = app.MapGroup("/api/reports")
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR"));
 
         // ═══════════════════════════════════════════════════════
         // TIER INFO (for frontend gating)
