@@ -13,4 +13,7 @@ public interface IProductoRepository
     Task<bool> CambiarActivoAsync(int id, bool activo, int tenantId);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<bool> ActualizarImagenAsync(int id, string? imagenUrl, int tenantId);
+    Task<bool> ExisteFamiliaAsync(int familiaId, int tenantId);
+    Task<bool> ExisteCategoriaAsync(int categoriaId, int tenantId);
+    Task<bool> ExisteUnidadMedidaAsync(int unidadId);
 }

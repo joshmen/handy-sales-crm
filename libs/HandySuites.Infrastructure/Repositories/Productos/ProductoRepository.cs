@@ -206,4 +206,17 @@ public class ProductoRepository : IProductoRepository
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExisteFamiliaAsync(int familiaId, int tenantId)
+        => await _db.FamiliasProductos.AsNoTracking()
+            .AnyAsync(f => f.Id == familiaId && f.TenantId == tenantId);
+
+    public async Task<bool> ExisteCategoriaAsync(int categoriaId, int tenantId)
+        => await _db.CategoriasProductos.AsNoTracking()
+            .AnyAsync(c => c.Id == categoriaId && c.TenantId == tenantId);
+
+    public async Task<bool> ExisteUnidadMedidaAsync(int unidadId)
+        => await _db.UnidadesMedida.AsNoTracking()
+            .AnyAsync(u => u.Id == unidadId);
+    // Nota: UnidadesMedida aplica global filter por tenant; la query filter se encarga de RLS.
 }

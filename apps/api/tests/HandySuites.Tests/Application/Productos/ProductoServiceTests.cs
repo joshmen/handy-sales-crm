@@ -20,6 +20,10 @@ namespace HandySuites.Tests.Application.Productos
             _repoMock = new Mock<IProductoRepository>();
             _tenantMock = new Mock<ICurrentTenant>();
             _tenantMock.Setup(t => t.TenantId).Returns(1);
+            // FKs válidas por defecto para que las operaciones no-happy pasen el pre-check.
+            _repoMock.Setup(r => r.ExisteFamiliaAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
+            _repoMock.Setup(r => r.ExisteCategoriaAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
+            _repoMock.Setup(r => r.ExisteUnidadMedidaAsync(It.IsAny<int>())).ReturnsAsync(true);
 
             _service = new ProductoService(_repoMock.Object, _tenantMock.Object);
         }

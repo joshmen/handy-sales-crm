@@ -21,11 +21,27 @@ public class ProductoService
     public Task<ProductoDto?> ObtenerPorIdAsync(int id)
         => _repo.ObtenerPorIdAsync(id, _tenant.TenantId);
 
-    public Task<int> CrearProductoAsync(ProductoCreateDto dto)
-        => _repo.CrearAsync(dto, _tenant.TenantId);
+    public async Task<int> CrearProductoAsync(ProductoCreateDto dto)
+    {
+        await ValidarCatalogosFkAsync(dto);
+        return await _repo.CrearAsync(dto, _tenant.TenantId);
+    }
 
-    public Task<bool> ActualizarProductoAsync(int id, ProductoCreateDto dto)
-        => _repo.ActualizarAsync(id, dto, _tenant.TenantId);
+    public async Task<bool> ActualizarProductoAsync(int id, ProductoCreateDto dto)
+    {
+        await ValidarCatalogosFkAsync(dto);
+        return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
+    }
+
+    private async Task ValidarCatalogosFkAsync(ProductoCreateDto dto)
+    {
+        if (!await _repo.ExisteFamiliaAsync(dto.FamiliaId, _tenant.TenantId))
+            throw new InvalidOperationException("La familia seleccionada no existe o no pertenece a tu empresa.");
+        if (!await _repo.ExisteCategoriaAsync(dto.CategoraId, _tenant.TenantId))
+            throw new InvalidOperationException("La categoría seleccionada no existe o no pertenece a tu empresa.");
+        if (!await _repo.ExisteUnidadMedidaAsync(dto.UnidadMedidaId))
+            throw new InvalidOperationException("La unidad de medida seleccionada no existe.");
+    }
 
     public Task<bool> EliminarProductoAsync(int id)
         => _repo.EliminarAsync(id, _tenant.TenantId);

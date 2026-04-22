@@ -46,7 +46,10 @@ namespace HandySuites.Tests.Application.Productos
                 Nombre = "Producto válido",
                 CodigoBarra = "123456",
                 Descripcion = "Detalle",
-                PrecioBase = 99.99m
+                PrecioBase = 99.99m,
+                FamiliaId = 1,
+                CategoraId = 1,
+                UnidadMedidaId = 1
             };
 
             var result = _validator.TestValidate(dto);
