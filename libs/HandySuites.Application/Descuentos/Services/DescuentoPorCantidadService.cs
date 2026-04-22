@@ -28,6 +28,13 @@ public class DescuentoPorCantidadService
     {
         int? productoId = dto.TipoAplicacion == "Global" ? null : dto.ProductoId;
 
+        // Para descuento tipo "Producto", verificar que el producto exista en el tenant
+        // antes de insertar (evita 500 por FK violation).
+        if (productoId is int pid && !await _repo.ExisteProductoEnTenantAsync(pid, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("El producto seleccionado no existe o no pertenece a tu empresa.");
+        }
+
         if (await _repo.ExisteCantidadMinimaAsync(productoId, dto.CantidadMinima, _tenant.TenantId))
         {
             var scope = dto.TipoAplicacion == "Global" ? "global" : "para este producto";
