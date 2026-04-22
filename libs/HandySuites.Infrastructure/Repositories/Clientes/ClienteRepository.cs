@@ -292,6 +292,15 @@ public class ClienteRepository : IClienteRepository
             (excludeId == null || c.Id != excludeId));
     }
 
+    public Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId)
+        => _db.Zonas.AsNoTracking().AnyAsync(z => z.Id == zonaId && z.TenantId == tenantId);
+
+    public Task<bool> ExisteCategoriaEnTenantAsync(int categoriaId, int tenantId)
+        => _db.CategoriasClientes.AsNoTracking().AnyAsync(c => c.Id == categoriaId && c.TenantId == tenantId);
+
+    public Task<bool> ExisteListaPreciosEnTenantAsync(int listaId, int tenantId)
+        => _db.ListasPrecios.AsNoTracking().AnyAsync(l => l.Id == listaId && l.TenantId == tenantId);
+
     public async Task<bool> AprobarProspectoAsync(int id, int tenantId)
     {
         var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);

@@ -25,6 +25,10 @@ namespace HandySuites.Tests.Application.Clientes
             _usuarioRepoMock = new Mock<IUsuarioRepository>();
             _tenantMock.Setup(t => t.TenantId).Returns(1);
             _tenantMock.Setup(t => t.IsAdmin).Returns(true);
+            // Default: FKs del tenant existen para Crear/Actualizar happy paths.
+            _repoMock.Setup(r => r.ExisteZonaEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
+            _repoMock.Setup(r => r.ExisteCategoriaEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
+            _repoMock.Setup(r => r.ExisteListaPreciosEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
 
             _service = new ClienteService(_repoMock.Object, _tenantMock.Object, _usuarioRepoMock.Object);
         }

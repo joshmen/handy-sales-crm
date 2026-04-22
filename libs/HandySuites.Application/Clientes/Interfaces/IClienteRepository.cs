@@ -15,4 +15,7 @@ public interface IClienteRepository
     Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null);
     Task<bool> AprobarProspectoAsync(int id, int tenantId);
     Task<bool> RechazarProspectoAsync(int id, int tenantId);
+    Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId);
+    Task<bool> ExisteCategoriaEnTenantAsync(int categoriaId, int tenantId);
+    Task<bool> ExisteListaPreciosEnTenantAsync(int listaId, int tenantId);
 }

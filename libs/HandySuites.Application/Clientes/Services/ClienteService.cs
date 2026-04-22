@@ -36,6 +36,10 @@ public class ClienteService
         if (existe)
             return new CrearClienteResult(false, Error: $"Ya existe un cliente con el nombre '{dto.Nombre}'.");
 
+        var fkError = await ValidarReferenciasDelTenantAsync(dto);
+        if (fkError is not null)
+            return new CrearClienteResult(false, Error: fkError);
+
         var id = await _repo.CrearAsync(dto, _tenant.TenantId);
         return new CrearClienteResult(true, id);
     }
@@ -47,6 +51,10 @@ public class ClienteService
         var existe = await _repo.ExisteNombreEnTenantAsync(dto.Nombre, _tenant.TenantId, excludeId: id);
         if (existe)
             return new ActualizarClienteResult(false, Error: $"Ya existe otro cliente con el nombre '{dto.Nombre}'.");
+
+        var fkError = await ValidarReferenciasDelTenantAsync(dto);
+        if (fkError is not null)
+            return new ActualizarClienteResult(false, Error: fkError);
 
         var updated = await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
         return updated ? new ActualizarClienteResult(true) : new ActualizarClienteResult(false, Error: "Cliente no encontrado.");
@@ -88,4 +96,20 @@ public class ClienteService
 
     public Task<bool> RechazarProspectoAsync(int id)
         => _repo.RechazarProspectoAsync(id, _tenant.TenantId);
+
+    /// <summary>
+    /// Valida que zona, categoría, lista de precios y vendedor del DTO pertenezcan
+    /// al tenant actual. Previene cross-tenant leakage y FK 500 downstream.
+    /// </summary>
+    private async Task<string?> ValidarReferenciasDelTenantAsync(ClienteCreateDto dto)
+    {
+        if (!await _repo.ExisteZonaEnTenantAsync(dto.IdZona, _tenant.TenantId))
+            return "La zona seleccionada no existe o no pertenece a tu empresa.";
+        if (!await _repo.ExisteCategoriaEnTenantAsync(dto.CategoriaClienteId, _tenant.TenantId))
+            return "La categoría seleccionada no existe o no pertenece a tu empresa.";
+        if (dto.ListaPreciosId is int listaId && listaId > 0
+            && !await _repo.ExisteListaPreciosEnTenantAsync(listaId, _tenant.TenantId))
+            return "La lista de precios seleccionada no existe o no pertenece a tu empresa.";
+        return null;
+    }
 }
