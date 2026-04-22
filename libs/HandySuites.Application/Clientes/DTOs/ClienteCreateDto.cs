@@ -1,19 +1,16 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace HandySuites.Application.Clientes.DTOs;
 
 public class ClienteCreateDto
 {
     public int TenandId { get; set; }
-    [Required]
-    public required string Nombre { get; set; }
+    // NOTA: no usar `required` aquí porque hace fallar la deserialización JSON
+    // ANTES de que FluentValidation corra. El validator ya aplica NotEmpty.
+    public string Nombre { get; set; } = string.Empty;
     public string? RFC { get; set; }
     public string? Correo { get; set; }
     public string? Telefono { get; set; }
-    [Required]
-    public required string Direccion { get; set; }
-    [Required]
-    public required string NumeroExterior { get; set; }
+    public string Direccion { get; set; } = string.Empty;
+    public string NumeroExterior { get; set; } = string.Empty;
     public int IdZona { get; set; }
     public int CategoriaClienteId { get; set; }
 
