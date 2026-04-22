@@ -31,6 +31,15 @@ public class RutaVendedorService
         _logger = logger;
     }
 
+    // Vendedor/Viewer solo pueden operar paradas/estado de sus propias rutas.
+    // Admin, SuperAdmin y Supervisor pueden operar cualquier ruta del tenant.
+    private void EnsureRutaOperable(RutaVendedor ruta)
+    {
+        if (_tenant.IsAdmin || _tenant.IsSuperAdmin || _tenant.IsSupervisor) return;
+        if (int.TryParse(_tenant.UserId, out var currentUserId) && ruta.UsuarioId == currentUserId) return;
+        throw new UnauthorizedAccessException("No tienes permisos para operar esta ruta.");
+    }
+
     public async Task<int> CrearAsync(RutaVendedorCreateDto dto)
     {
         // RBAC: vendedor/viewer solo puede crear rutas para sí mismo.
@@ -253,6 +262,8 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
             throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar");
 
@@ -277,6 +288,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("No se pueden eliminar paradas de una ruta en progreso");
 
@@ -287,6 +300,8 @@ public class RutaVendedorService
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        EnsureRutaOperable(ruta);
 
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("No se pueden reordenar paradas de una ruta en progreso");
@@ -302,6 +317,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(detalle.RutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.EnProgreso)
             throw new InvalidOperationException("La ruta no está en progreso");
 
@@ -316,6 +333,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(detalle.RutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         return await _repo.SalirDeParadaAsync(detalleId, DateTime.UtcNow, dto.VisitaId, dto.PedidoId, dto.Notas);
     }
 
@@ -327,6 +346,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(detalle.RutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         return await _repo.OmitirParadaAsync(detalleId, dto.RazonOmision);
     }
 
@@ -335,6 +356,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return null;
 
+        EnsureRutaOperable(ruta);
+
         return await _repo.ObtenerParadaActualAsync(rutaId);
     }
 
@@ -342,6 +365,8 @@ public class RutaVendedorService
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return null;
+
+        EnsureRutaOperable(ruta);
 
         return await _repo.ObtenerSiguienteParadaAsync(rutaId);
     }

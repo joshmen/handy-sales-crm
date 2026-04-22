@@ -1,3 +1,4 @@
+using FluentValidation;
 using HandySuites.Api.Hubs;
 using HandySuites.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
@@ -20,10 +21,15 @@ public static class ClienteVisitaEndpoints
         // CRUD
         group.MapPost("/", async (
             ClienteVisitaCreateDto dto,
+            IValidator<ClienteVisitaCreateDto> validator,
             [FromServices] ClienteVisitaService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             try
             {
                 var id = await servicio.CrearAsync(dto);
@@ -86,8 +92,13 @@ public static class ClienteVisitaEndpoints
         group.MapPost("/{id:int}/check-in", async (
             int id,
             CheckInDto dto,
+            IValidator<CheckInDto> validator,
             [FromServices] ClienteVisitaService servicio) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var resultado = await servicio.CheckInAsync(id, dto);
             return resultado
                 ? Results.Ok(new { mensaje = "Check-in registrado exitosamente" })
@@ -102,10 +113,15 @@ public static class ClienteVisitaEndpoints
         group.MapPost("/{id:int}/check-out", async (
             int id,
             CheckOutDto dto,
+            IValidator<CheckOutDto> validator,
             [FromServices] ClienteVisitaService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IAiEmbeddingService embeddingService) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var resultado = await servicio.CheckOutAsync(id, dto);
             if (resultado)
             {

@@ -53,12 +53,26 @@ public class ClienteVisitaService
     // Check-in / Check-out
     public async Task<bool> CheckInAsync(int visitaId, CheckInDto dto)
     {
+        await EnsureVisitaOwnedOrAdminAsync(visitaId);
         return await _repository.CheckInAsync(visitaId, dto, _tenant.TenantId);
     }
 
     public async Task<bool> CheckOutAsync(int visitaId, CheckOutDto dto)
     {
+        await EnsureVisitaOwnedOrAdminAsync(visitaId);
         return await _repository.CheckOutAsync(visitaId, dto, _tenant.TenantId);
+    }
+
+    // RBAC: vendedor/viewer sólo puede hacer check-in/check-out de sus propias visitas.
+    private async Task EnsureVisitaOwnedOrAdminAsync(int visitaId)
+    {
+        if (_tenant.IsAdmin || _tenant.IsSuperAdmin || _tenant.IsSupervisor) return;
+        if (!int.TryParse(_tenant.UserId, out var currentUserId)) return;
+
+        var visita = await _repository.ObtenerPorIdAsync(visitaId, _tenant.TenantId);
+        if (visita == null) return; // Repo regresará false y el endpoint traducirá a 400/404.
+        if (visita.UsuarioId != currentUserId)
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede operar esta visita.");
     }
 
     // Consultas del vendedor

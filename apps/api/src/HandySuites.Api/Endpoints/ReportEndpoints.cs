@@ -183,6 +183,10 @@ public static class ReportEndpoints
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
+            // Clamp top a [1, 500] para evitar DoS y resultados sin sentido.
+            if (top < 1) top = 1;
+            if (top > 500) top = 500;
+
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
 
@@ -791,6 +795,9 @@ public static class ReportEndpoints
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
+            if (periodo1Desde > periodo1Hasta || periodo2Desde > periodo2Hasta)
+                return Results.BadRequest(new { message = "La fecha 'desde' no puede ser posterior a 'hasta' en ninguno de los dos periodos." });
+
             async Task<object> GetMetrics(DateTime desde, DateTime hasta, string label)
             {
                 var pedidos = await db.Pedidos
@@ -1087,6 +1094,10 @@ public static class ReportEndpoints
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
+            // Porcentaje de comisión debe estar en rango razonable.
+            if (porcentaje < 0 || porcentaje > 100)
+                return Results.BadRequest(new { message = "El porcentaje de comisión debe estar entre 0 y 100." });
+
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
 
@@ -1153,6 +1164,9 @@ public static class ReportEndpoints
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
+            if (top < 1) top = 1;
+            if (top > 500) top = 500;
+
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-3);
             var fechaHasta = hasta ?? DateTime.UtcNow;
 
@@ -1218,6 +1232,10 @@ public static class ReportEndpoints
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            // Sólo dos tipos válidos para el análisis ABC.
+            if (tipo != "clientes" && tipo != "productos")
+                return Results.BadRequest(new { message = "El parámetro 'tipo' debe ser 'clientes' o 'productos'." });
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-3);
             var fechaHasta = hasta ?? DateTime.UtcNow;
