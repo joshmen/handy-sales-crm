@@ -1,3 +1,4 @@
+using FluentValidation;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Services;
 using HandySuites.Shared.Multitenancy;
@@ -22,8 +23,13 @@ public static class RutaVendedorEndpoints
 
         group.MapPost("/templates", async (
             RutaVendedorCreateDto dto,
+            IValidator<RutaVendedorCreateDto> validator,
             [FromServices] RutaVendedorService servicio) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             dto.EsTemplate = true;
             var id = await servicio.CrearAsync(dto);
             return Results.Created($"/rutas/templates/{id}", new { id });
@@ -110,11 +116,16 @@ public static class RutaVendedorEndpoints
         // CRUD básico
         group.MapPost("/", async (
             RutaVendedorCreateDto dto,
+            IValidator<RutaVendedorCreateDto> validator,
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
             [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var id = await servicio.CrearAsync(dto);
 
             // Push notification to assigned vendedor

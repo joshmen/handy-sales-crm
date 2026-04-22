@@ -33,6 +33,13 @@ public class RutaVendedorService
 
     public async Task<int> CrearAsync(RutaVendedorCreateDto dto)
     {
+        // Existence checks (antes caían en 500 por FK violation).
+        if (!dto.EsTemplate && !await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
+            throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
+        if (dto.ZonaId is int zId && zId > 0
+            && !await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
+            throw new InvalidOperationException("La zona seleccionada no existe o no pertenece a tu empresa.");
+
         var ruta = new RutaVendedor
         {
             TenantId = _tenant.TenantId,

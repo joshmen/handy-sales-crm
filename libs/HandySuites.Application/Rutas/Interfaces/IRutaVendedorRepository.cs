@@ -62,4 +62,8 @@ public interface IRutaVendedorRepository
     Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId, int tenantId);
     Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int tenantId);
     Task CerrarRutaAsync(int rutaId, double montoRecibido, string cerradoPor, int tenantId);
+
+    // === Existence checks ===
+    Task<bool> ExisteUsuarioEnTenantAsync(int usuarioId, int tenantId);
+    Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId);
 }
