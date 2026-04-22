@@ -26,11 +26,15 @@ public static class RutaVendedorEndpoints
             IValidator<RutaVendedorCreateDto> validator,
             [FromServices] RutaVendedorService servicio) =>
         {
+            // Fuerza EsTemplate=true ANTES del validator: cualquier POST a /templates
+            // es un template (el cliente puede omitir el flag), y el validator no debe
+            // exigir UsuarioId para templates.
+            dto.EsTemplate = true;
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
-            dto.EsTemplate = true;
             var id = await servicio.CrearAsync(dto);
             return Results.Created($"/rutas/templates/{id}", new { id });
         });

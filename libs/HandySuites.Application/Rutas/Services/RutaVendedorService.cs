@@ -380,9 +380,15 @@ public class RutaVendedorService
 
     public async Task<int> InstanciarTemplateAsync(int templateId, InstanciarTemplateDto dto)
     {
+        if (dto.UsuarioId <= 0)
+            throw new InvalidOperationException("Debe seleccionar un vendedor para asignar la ruta.");
+
         var template = await _repo.ObtenerTemplateConDetallesAsync(templateId, _tenant.TenantId);
         if (template == null)
             throw new InvalidOperationException("Template no encontrado");
+
+        if (!await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
+            throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
 
         var ruta = new RutaVendedor
         {
