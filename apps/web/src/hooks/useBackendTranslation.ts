@@ -49,6 +49,12 @@ const PATTERNS: Array<{ es: RegExp; en: RegExp; toEs: string; toEn: string }> = 
 
   // Sweep Abril 2026 — Stock insuficiente (mensaje más completo que el patrón previo)
   { es: /^Stock insuficiente: (.+): solo (.+) disponibles, solicitado (.+)$/, en: /^Insufficient stock: (.+): only (.+) available, requested (.+)$/, toEs: 'Stock insuficiente: $1: solo $2 disponibles, solicitado $3', toEn: 'Insufficient stock: $1: only $2 available, requested $3' },
+
+  // Sweep 5 — Producto desactivado
+  { es: /^El producto con ID (\d+) está desactivado y no puede venderse\.$/, en: /^Product with ID (\d+) is inactive and cannot be sold\.$/, toEs: 'El producto con ID $1 está desactivado y no puede venderse.', toEn: 'Product with ID $1 is inactive and cannot be sold.' },
+
+  // Sweep 5 — Descuento excesivo
+  { es: /^El descuento \((.+)\) del producto (\d+) excede el subtotal \((.+)\)\.$/, en: /^The discount \((.+)\) of product (\d+) exceeds the subtotal \((.+)\)\.$/, toEs: 'El descuento ($1) del producto $2 excede el subtotal ($3).', toEn: 'The discount ($1) of product $2 exceeds the subtotal ($3).' },
 ];
 
 /**

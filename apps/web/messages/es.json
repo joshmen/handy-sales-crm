@@ -6198,7 +6198,10 @@
     "No se puede cobrar un pedido cancelado.": "No se puede cobrar un pedido cancelado.",
     "No se puede cobrar un pedido en borrador. Confírmalo primero.": "No se puede cobrar un pedido en borrador. Confírmalo primero.",
     "La fecha de cobro no puede ser futura.": "La fecha de cobro no puede ser futura.",
-    "La fecha de cobro es demasiado antigua.": "La fecha de cobro es demasiado antigua."
+    "La fecha de cobro es demasiado antigua.": "La fecha de cobro es demasiado antigua.",
+    "El cliente seleccionado está desactivado. Reactívalo antes de crear pedidos.": "El cliente seleccionado está desactivado. Reactívalo antes de crear pedidos.",
+    "Implicit body inferred for parameter \"dto\" but no body was provided. Did you mean to use a Service instead?": "El cuerpo de la petición es obligatorio.",
+    "Failed to read parameter \"PedidoCreateDto dto\" from the request body as JSON.": "El cuerpo de la petición no es JSON válido."
   },
   "helpContent": {
     "dashboard": {
