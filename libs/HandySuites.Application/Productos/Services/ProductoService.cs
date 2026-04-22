@@ -47,7 +47,13 @@ public class ProductoService
         => _repo.EliminarAsync(id, _tenant.TenantId);
 
     public Task<ProductoPaginatedResult> ObtenerPorFiltroAsync(ProductoFiltroDto filtro)
-        => _repo.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+    {
+        // Sanitizar paginación (evita 500 por OFFSET negativo y TotalPaginas=int.MinValue por / 0).
+        if (filtro.Pagina is int p && p < 1) filtro.Pagina = 1;
+        if (filtro.TamanoPagina is int t && t < 1) filtro.TamanoPagina = 20;
+        if (filtro.TamanoPagina is int tt && tt > 200) filtro.TamanoPagina = 200;
+        return _repo.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+    }
 
     public Task<bool> CambiarActivoAsync(int id, bool activo)
         => _repo.CambiarActivoAsync(id, activo, _tenant.TenantId);
