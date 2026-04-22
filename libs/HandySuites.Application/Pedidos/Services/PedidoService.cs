@@ -35,6 +35,12 @@ public class PedidoService
     {
         var usuarioId = int.Parse(_tenant.UserId);
 
+        // Cliente debe estar activo: uno desactivado no debe generar pedidos nuevos.
+        if (!await _repository.ClienteActivoAsync(dto.ClienteId, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("El cliente seleccionado está desactivado. Reactívalo antes de crear pedidos.");
+        }
+
         // Existence check: lista de precios (opcional) debe pertenecer al tenant.
         if (dto.ListaPrecioId is int listaId && listaId > 0
             && !await _repository.ExisteListaPrecioAsync(listaId, _tenant.TenantId))
@@ -50,6 +56,26 @@ public class PedidoService
         {
             throw new InvalidOperationException(
                 $"El pedido contiene productos duplicados (IDs: {string.Join(", ", duplicados)}). Consolida la cantidad en una sola línea.");
+        }
+
+        // Validaciones por producto: activo + descuento <= subtotal.
+        foreach (var detalle in dto.Detalles)
+        {
+            // Producto debe estar activo: uno desactivado (descontinuado) no debe venderse.
+            if (!await _repository.ProductoActivoAsync(detalle.ProductoId, _tenant.TenantId))
+            {
+                throw new InvalidOperationException($"El producto con ID {detalle.ProductoId} está desactivado y no puede venderse.");
+            }
+            // Validar que descuento no cree total negativo.
+            if (detalle.PrecioUnitario.HasValue && detalle.Descuento.HasValue)
+            {
+                var subtotal = detalle.Cantidad * detalle.PrecioUnitario.Value;
+                if (detalle.Descuento.Value > subtotal)
+                {
+                    throw new InvalidOperationException(
+                        $"El descuento ({detalle.Descuento.Value:N2}) del producto {detalle.ProductoId} excede el subtotal ({subtotal:N2}).");
+                }
+            }
         }
 
         // BR-001: Para Venta Directa, validar stock ANTES de crear el pedido.

@@ -601,6 +601,14 @@ public class PedidoRepository : IPedidoRepository
             .AnyAsync(l => l.Id == listaPrecioId && l.TenantId == tenantId);
     }
 
+    public Task<bool> ClienteActivoAsync(int clienteId, int tenantId)
+        => _db.Clientes.AsNoTracking()
+            .AnyAsync(c => c.Id == clienteId && c.TenantId == tenantId && c.Activo);
+
+    public Task<bool> ProductoActivoAsync(int productoId, int tenantId)
+        => _db.Productos.AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId && p.Activo);
+
     private async Task RecalcularTotalesAsync(int pedidoId)
     {
         var pedido = await _db.Pedidos.FindAsync(pedidoId);
