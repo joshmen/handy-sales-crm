@@ -223,11 +223,13 @@ public class ClienteRepository : IClienteRepository
         }
 
         var totalItems = await query.CountAsync();
+        var pagina = filtro.Pagina ?? 1;
+        var tamanoPagina = filtro.TamanoPagina ?? 20;
 
         var items = await query
             .OrderBy(c => c.Nombre)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamanoPagina)
+            .Take(tamanoPagina)
             .Select(c => new ClienteListaDto
             {
                 Id = c.Id,
@@ -248,8 +250,8 @@ public class ClienteRepository : IClienteRepository
         {
             Items = items,
             TotalItems = totalItems,
-            Pagina = filtro.Pagina,
-            TamanoPagina = filtro.TamanoPagina
+            Pagina = pagina,
+            TamanoPagina = tamanoPagina
         };
     }
 

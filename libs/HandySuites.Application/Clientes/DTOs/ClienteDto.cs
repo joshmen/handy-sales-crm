@@ -68,8 +68,10 @@ public class ClienteFiltroDto
     public string? Busqueda { get; set; }
     public bool? Activo { get; set; }
     public bool? EsProspecto { get; set; }
-    public int Pagina { get; set; } = 1;
-    public int TamanoPagina { get; set; } = 20;
+    // Nullables para que [AsParameters] no los marque como requeridos
+    // cuando el cliente no los envía explícitamente.
+    public int? Pagina { get; set; }
+    public int? TamanoPagina { get; set; }
 }
 
 public class ClientePaginatedResult

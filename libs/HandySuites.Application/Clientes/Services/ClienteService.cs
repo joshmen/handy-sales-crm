@@ -67,10 +67,10 @@ public class ClienteService
 
     public async Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro)
     {
-        // Sanitizar paginación: valores <= 0 o excesivos causaban 500 (SQL offset negativo)
-        // o overflow en TotalPaginas (divide-by-zero visible como int.MinValue).
-        if (filtro.Pagina < 1) filtro.Pagina = 1;
-        if (filtro.TamanoPagina < 1) filtro.TamanoPagina = 20;
+        // Sanitizar paginación: nulls → defaults; valores <= 0 o excesivos → clamp.
+        // Evita 500 (OFFSET negativo), TotalPaginas=int.MinValue (/0) y parámetro requerido.
+        if (filtro.Pagina is null or < 1) filtro.Pagina = 1;
+        if (filtro.TamanoPagina is null or < 1) filtro.TamanoPagina = 20;
         if (filtro.TamanoPagina > 200) filtro.TamanoPagina = 200;
 
         // RBAC: Supervisor ve su equipo, Vendedor solo sus clientes
