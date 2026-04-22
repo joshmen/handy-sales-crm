@@ -6200,7 +6200,9 @@
     "La fecha de cobro es demasiado antigua.": "The payment date is too far in the past.",
     "El cliente seleccionado está desactivado. Reactívalo antes de crear pedidos.": "The selected client is inactive. Reactivate it before creating orders.",
     "Implicit body inferred for parameter \"dto\" but no body was provided. Did you mean to use a Service instead?": "Request body is required.",
-    "Failed to read parameter \"PedidoCreateDto dto\" from the request body as JSON.": "Request body is not valid JSON."
+    "Failed to read parameter \"PedidoCreateDto dto\" from the request body as JSON.": "Request body is not valid JSON.",
+    "Conflicto de concurrencia: el recurso fue modificado por otra operación. Vuelve a intentarlo.": "Concurrency conflict: the resource was modified by another operation. Please retry.",
+    "El cliente es un prospecto pendiente de aprobación. No se pueden crear pedidos para prospectos.": "The client is a prospect pending approval. Orders cannot be created for prospects."
   },
   "helpContent": {
     "dashboard": {

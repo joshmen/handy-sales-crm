@@ -69,6 +69,13 @@ public class GlobalExceptionMiddleware
 
     private static string GetErrorMessage(Exception exception, IWebHostEnvironment env, int statusCode)
     {
+        // DbUpdateConcurrencyException tiene un mensaje EF-interno que no es útil para el usuario;
+        // usamos mensaje custom siempre.
+        if (exception is Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return "Conflicto de concurrencia: el recurso fue modificado por otra operación. Vuelve a intentarlo.";
+        }
+
         // 4xx: the exception.Message is a user-facing business-rule error ("Stock insuficiente:…"),
         // so return it verbatim even in production — the frontend needs it to show an actionable toast.
         // 5xx: return generic messages to avoid leaking internals.
@@ -85,6 +92,7 @@ public class GlobalExceptionMiddleware
                 ? ex.Message : "Parámetros de solicitud inválidos.",
             UnauthorizedAccessException => "Acceso no autorizado.",
             KeyNotFoundException => "Recurso no encontrado.",
+            Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException => "Conflicto de concurrencia: el recurso fue modificado por otra operación. Vuelve a intentarlo.",
             _ => "Ocurrió un error al procesar tu solicitud."
         };
     }
@@ -100,6 +108,8 @@ public class GlobalExceptionMiddleware
             // Body JSON malformado / vacío / nulo: System.Text.Json / BadHttpRequestException.
             System.Text.Json.JsonException => (int)HttpStatusCode.BadRequest,
             Microsoft.AspNetCore.Http.BadHttpRequestException => (int)HttpStatusCode.BadRequest,
+            // Concurrencia optimistic: el cliente debería reintentar.
+            Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException => (int)HttpStatusCode.Conflict,
             _ => (int)HttpStatusCode.InternalServerError
         };
     }
