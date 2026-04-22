@@ -21,9 +21,11 @@ const ROLE_RESTRICTED_ROUTES = {
   '/users': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/settings': [UserRole.ADMIN], // Solo ADMIN puede acceder a configuración de empresa
   '/global-settings': [UserRole.SUPER_ADMIN], // Solo SUPER_ADMIN puede acceder a configuración global
+  '/reports': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN], // Gestión ve reportes (backend también restringe)
   '/reports/financial': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/routes/admin': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
   '/team': [UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/metas': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
   '/devices': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/activity-logs': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/roles': [UserRole.SUPER_ADMIN],
@@ -34,6 +36,9 @@ const ROLE_RESTRICTED_ROUTES = {
   '/discounts': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/promotions': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/subscription': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/zones': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/client-categories': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/product-categories': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 };
 
 export default withAuth(
