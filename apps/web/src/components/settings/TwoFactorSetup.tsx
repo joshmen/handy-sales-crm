@@ -20,9 +20,9 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Loader2,
 } from 'lucide-react';
 import { SbCheckCircle, SbAlert } from '@/components/layout/DashboardIcons';
+import { Spinner } from '@/components/ui/Spinner';
 import { profileService, TwoFactorSetupResponse } from '@/services/api/profileService';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -212,7 +212,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Spinner size="lg" className="text-primary" />
                 <p className="mt-3 text-sm text-muted-foreground">Generando código QR...</p>
               </div>
             ) : setupData ? (
