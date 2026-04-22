@@ -520,7 +520,10 @@ public class PedidoRepository : IPedidoRepository
         var fecha = DateTime.UtcNow;
         var prefijo = $"{tipo}-{fecha:yyyyMMdd}";
 
+        // IgnoreQueryFilters: la unique-constraint de la DB incluye pedidos soft-deleted,
+        // así que debemos contarlos al calcular la siguiente secuencia para evitar colisión.
         var ultimoNumero = await _db.Pedidos
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(p => p.TenantId == tenantId && p.NumeroPedido.StartsWith(prefijo))
             .OrderByDescending(p => p.NumeroPedido)

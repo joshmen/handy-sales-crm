@@ -88,8 +88,13 @@ public static class PedidoEndpoints
         group.MapPut("/{id:int}", async (
             int id,
             PedidoUpdateDto dto,
+            IValidator<PedidoUpdateDto> validator,
             [FromServices] PedidoService servicio) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var actualizado = await servicio.ActualizarAsync(id, dto);
             return actualizado ? Results.NoContent() : Results.NotFound();
         })
