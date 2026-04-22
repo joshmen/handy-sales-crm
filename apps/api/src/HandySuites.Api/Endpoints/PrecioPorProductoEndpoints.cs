@@ -33,8 +33,15 @@ public static class PrecioPorProductoEndpoints
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
-            var id = await servicio.CrearPrecioAsync(dto);
-            return Results.Created($"/precios/{id}", new { id });
+            try
+            {
+                var id = await servicio.CrearPrecioAsync(dto);
+                return Results.Created($"/precios/{id}", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
         }).RequireAuthorization();
 
         app.MapPut("/precios/{id:int}", async (int id, PrecioPorProductoCreateDto dto, IValidator<PrecioPorProductoCreateDto> validator, [FromServices] PrecioPorProductoService servicio) =>
@@ -47,8 +54,15 @@ public static class PrecioPorProductoEndpoints
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
-            var actualizado = await servicio.ActualizarPrecioAsync(id, dto);
-            return actualizado ? Results.NoContent() : Results.NotFound();
+            try
+            {
+                var actualizado = await servicio.ActualizarPrecioAsync(id, dto);
+                return actualizado ? Results.NoContent() : Results.NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
         }).RequireAuthorization();
 
         app.MapDelete("/precios/{id:int}", async (int id, [FromServices] PrecioPorProductoService servicio) =>

@@ -7,8 +7,8 @@ namespace HandySuites.Application.Precios.Validators
     {
         public PrecioPorProductoCreateDtoValidator()
         {
-            RuleFor(x => x.TenandId)
-                .GreaterThan(0).WithMessage("El tenant es obligatorio.");
+            // NOTE: TenandId es dead code (el tenant se inyecta desde CurrentTenant en el service).
+            // No lo validamos porque el frontend nunca lo envía.
 
             RuleFor(x => x.ProductoId)
                 .GreaterThan(0).WithMessage("El producto es obligatorio.");
