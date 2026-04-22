@@ -113,11 +113,17 @@ public static class ReportEndpoints
         group.MapGet("/ventas-vendedor", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "ventas-vendedor");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
@@ -176,12 +182,18 @@ public static class ReportEndpoints
         group.MapGet("/ventas-producto", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int top = 20) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "ventas-producto");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             // Clamp top a [1, 500] para evitar DoS y resultados sin sentido.
             if (top < 1) top = 1;
@@ -248,11 +260,17 @@ public static class ReportEndpoints
         group.MapGet("/ventas-zona", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "ventas-zona");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
@@ -310,6 +328,7 @@ public static class ReportEndpoints
         group.MapGet("/actividad-clientes", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int? zonaId,
@@ -318,6 +337,11 @@ public static class ReportEndpoints
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "actividad-clientes");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
@@ -614,11 +638,17 @@ public static class ReportEndpoints
         group.MapGet("/cartera-vencida", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "cartera-vencida");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-3);
             var fechaHasta = hasta ?? DateTime.UtcNow;
@@ -698,12 +728,18 @@ public static class ReportEndpoints
         group.MapGet("/cumplimiento-metas", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int? usuarioId) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "cumplimiento-metas");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
@@ -787,6 +823,7 @@ public static class ReportEndpoints
         group.MapGet("/comparativo", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime periodo1Desde,
             [FromQuery] DateTime periodo1Hasta,
             [FromQuery] DateTime periodo2Desde,
@@ -794,6 +831,11 @@ public static class ReportEndpoints
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "comparativo");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             if (periodo1Desde > periodo1Hasta || periodo2Desde > periodo2Hasta)
                 return Results.BadRequest(new { message = "La fecha 'desde' no puede ser posterior a 'hasta' en ninguno de los dos periodos." });
@@ -1018,11 +1060,17 @@ public static class ReportEndpoints
         group.MapGet("/efectividad-visitas", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "efectividad-visitas");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
