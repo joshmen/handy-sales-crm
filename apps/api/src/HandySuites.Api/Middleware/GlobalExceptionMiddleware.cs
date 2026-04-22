@@ -97,6 +97,9 @@ public class GlobalExceptionMiddleware
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             InvalidOperationException => (int)HttpStatusCode.BadRequest,
+            // Body JSON malformado / vacío / nulo: System.Text.Json / BadHttpRequestException.
+            System.Text.Json.JsonException => (int)HttpStatusCode.BadRequest,
+            Microsoft.AspNetCore.Http.BadHttpRequestException => (int)HttpStatusCode.BadRequest,
             _ => (int)HttpStatusCode.InternalServerError
         };
     }
