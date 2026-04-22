@@ -55,6 +55,11 @@ public class CobroService
             var pedido = await _pedidoRepo.ObtenerPorIdAsync(dto.PedidoId.Value, _tenant.TenantId);
             if (pedido == null)
                 throw new InvalidOperationException("El pedido especificado no existe o no pertenece a tu empresa.");
+
+            // BR-050b: el pedido vinculado al cobro debe ser del mismo cliente;
+            // de lo contrario se corrompen los saldos del cliente correcto.
+            if (pedido.ClienteId != dto.ClienteId)
+                throw new InvalidOperationException("El pedido no pertenece al cliente especificado.");
         }
 
         return await _repo.CrearAsync(dto, _tenant.TenantId, int.Parse(_tenant.UserId));
