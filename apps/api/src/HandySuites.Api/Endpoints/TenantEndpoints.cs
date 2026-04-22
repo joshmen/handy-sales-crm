@@ -410,8 +410,12 @@ public static class TenantEndpoints
                 u.Id,
                 u.Nombre,
                 u.Email,
+                // Prioridad: flags > rol legacy string > Role entity > fallback.
+                // Antes sólo miraba u.Role.Nombre y los usuarios con la columna
+                // u.Rol poblada (VENDEDOR/SUPERVISOR) mostraban "Sin rol".
                 u.EsSuperAdmin ? "SUPER_ADMIN" :
                 u.EsAdmin ? "ADMIN" :
+                !string.IsNullOrWhiteSpace(u.Rol) ? u.Rol :
                 u.Role != null ? u.Role.Nombre : "Sin rol",
                 u.Activo
             ))
