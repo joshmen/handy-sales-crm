@@ -60,7 +60,23 @@ public class CobroService
             // de lo contrario se corrompen los saldos del cliente correcto.
             if (pedido.ClienteId != dto.ClienteId)
                 throw new InvalidOperationException("El pedido no pertenece al cliente especificado.");
+
+            // BR-050c: no tiene sentido cobrar un pedido Cancelado (sin saldo) ni uno
+            // en Borrador (aún no se entregó). Sólo Confirmado/EnRuta/Entregado generan saldo.
+            if (pedido.Estado == HandySuites.Domain.Entities.EstadoPedido.Cancelado)
+                throw new InvalidOperationException("No se puede cobrar un pedido cancelado.");
+            if (pedido.Estado == HandySuites.Domain.Entities.EstadoPedido.Borrador)
+                throw new InvalidOperationException("No se puede cobrar un pedido en borrador. Confírmalo primero.");
         }
+
+        // BR-050d: la fecha de cobro no puede estar en el futuro (más de un día de tolerancia
+        // para diferencias de zona horaria del dispositivo). Tampoco aceptamos fechas
+        // ridículamente pasadas (> 20 años) por limpieza de datos.
+        var ahora = DateTime.UtcNow;
+        if (dto.FechaCobro > ahora.AddDays(1))
+            throw new InvalidOperationException("La fecha de cobro no puede ser futura.");
+        if (dto.FechaCobro < ahora.AddYears(-20))
+            throw new InvalidOperationException("La fecha de cobro es demasiado antigua.");
 
         return await _repo.CrearAsync(dto, _tenant.TenantId, int.Parse(_tenant.UserId));
     }
