@@ -12,6 +12,7 @@ import { loginSchema, LoginFormData } from '@/lib/validations';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff, Monitor, Shield, AlertTriangle } from 'lucide-react';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
+import { Spinner } from '@/components/ui/Spinner';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import axios from 'axios';
@@ -362,12 +363,7 @@ function LoginContent() {
     setSavedCredentials(null);
   };
 
-  const spinnerSvg = (
-    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-    </svg>
-  );
+  const spinnerSvg = <Spinner size="sm" className="-ml-1 mr-2 text-white" />;
 
   return (
     <>
@@ -648,7 +644,7 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? ''}>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><Spinner size="lg" className="text-green-600" /></div>}>
         <LoginContent />
       </Suspense>
     </GoogleReCaptchaProvider>

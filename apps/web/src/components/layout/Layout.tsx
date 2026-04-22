@@ -12,15 +12,32 @@ import { ExpirationBanner } from '@/components/subscription/ExpirationBanner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useSidebar } from '@/stores/useUIStore';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
+import { impersonationService } from '@/services/api/impersonation';
 import { cn } from '@/lib/utils';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { open, collapsed, setCollapsed, setOpen } = useSidebar();
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
-  const { isImpersonating } = useImpersonationStore();
+  const { isImpersonating, setFromState } = useImpersonationStore();
   const router = useRouter();
   const { data: session } = useSession();
   const [tourActive, setTourActive] = useState(false);
+
+  // Hidrata el store de impersonación desde el backend si la sesión JWT indica
+  // que hay impersonación activa pero el store está vacío (p.ej. tras hard reload
+  // que hace el ImpersonationModal). Sin esto el Sidebar/Banner no detectan la
+  // impersonación y el usuario ve el menú de SUPER_ADMIN en vez del tenant.
+  useEffect(() => {
+    if (session?.isImpersonating && !isImpersonating) {
+      impersonationService.getCurrentState()
+        .then((state) => {
+          if (state?.isImpersonating && state.tenant && state.sessionId) {
+            setFromState(state);
+          }
+        })
+        .catch(() => { /* token inválido, otros efectos lo manejan */ });
+    }
+  }, [session?.isImpersonating, isImpersonating, setFromState]);
 
   // Redirect to onboarding if not completed (skip for SuperAdmin and impersonation)
   useEffect(() => {
