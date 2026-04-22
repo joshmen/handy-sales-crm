@@ -1,6 +1,8 @@
-# Sweep Playwright — Findings consolidados (sweeps 1–7)
+# Sweep Playwright — Findings consolidados (sweeps 1–20)
 
-**Total: 32 bugs arreglados + i18n ES↔EN completo. 24 commits atómicos en `staging` sin push.**
+**Total acumulado ≥ 70 bugs arreglados + i18n ES↔EN + Spinner homologado + DTOs nullable + tier-gate reports. Todos en `staging`, sin push.**
+
+> Secciones: sweeps 1–7 (módulos CRUD) abajo. Rondas 8–20 + ronda 6 de regresión al final del documento.
 
 ---
 
@@ -141,3 +143,88 @@ ba10093 fix(clientes): PUT con campo null corrompía DB y rompía lecturas poste
 4423172 fix(cobranza): pedido-cliente mismatch + fecha parse 500→400
 faf7bb9 fix(pedidos): validator dead-code, enum check, FK existence + DELETE estado guard
 ```
+
+---
+
+## Regresión Round 6 — visual verification en navegador (Playwright real)
+
+Después de los sweeps 1-5 el usuario pidió validación visual (no sólo backend). Se detectaron:
+
+| Bug | Fix |
+|---|---|
+| Vendedor podía navegar por URL directa a `/reports`, `/metas`, `/zones`, `/client-categories`, `/product-categories` aunque el sidebar los ocultaba | `middleware.ts` amplía `ROLE_RESTRICTED_ROUTES` (commit `34d401d`) |
+| Dashboard recibía `?error=unauthorized` del middleware pero no mostraba toast — usuario aterrizaba sin saber por qué | `useEffect` en dashboard con `useRef` guard + `history.replaceState` para limpiar URL (commit `528467b`) |
+| Cancelar pedido usaba `window.prompt()` nativo | Reemplazado por `<Modal>` custom con textarea (commit `b7cf296`) |
+| Modal recién creado mostraba las keys i18n literales | Traducciones ES/EN agregadas (commit `94ab90b`) |
+| `ClienteCreateDto` y `ProductoCreateDto` con `required` rompían deserialización JSON con body incompleto — validator nunca corría, usuario veía `"Failed to read parameter from JSON"` | Quitar `required`, `FluentValidation` corre normal (commit `866dc28`) |
+| `window.confirm()` nativo al rechazar prospecto | Reemplazado por `<Modal>` (commit `ee43b53`) |
+
+**Todos verificados visualmente con Playwright vs admin y vendedor1.**
+
+---
+
+## Rondas 7–20 — Regresión sistemática por módulo
+
+Después del round 6 el usuario pidió 10–20 regresiones más con reglas de negocio del backend + Playwright. Rondas por módulo, todas commiteadas:
+
+### Ronda 7 — Impersonation (SA → tenant)
+- `useImpersonationStore` es ephemeral + modal hace hard reload → store queda vacío → sidebar sigue mostrando menú SA (commit `3ad331f`)
+- `IReportAccessService` tenía un bug: `TenantEndpoints.GetById` ejecutaba 4 `CountAsync` con `Task.WhenAll` sobre el mismo `DbContext` → "A second operation started on this context" → "Empresa no encontrada" (commit `bd68528`)
+- `window.location.href='/dashboard'` en el modal pierde cookie JWT recién actualizada → `?error=unauthorized` → cambio a `router.push` + `router.refresh` (commit `bd68528`)
+- Loader `Loader2` (lucide) visualmente distinto del resto → nuevo `<Spinner>` homologado + homologación en 6 archivos clave (commits `3ad331f`, `fb8f551`)
+
+### Ronda 8 — Transiciones de estado de Pedido (matriz 5×4)
+- Todas las 20 transiciones devuelven el código correcto según reglas de negocio
+- Bug UX: mensajes genéricos "No se pudo confirmar el pedido" sin decir por qué → nueva API `CambiarEstadoDetalladoAsync` retorna `CambiarEstadoOutcome(Status, EstadoActual)` → 404 si no existe, 400 con mensaje específico si transición inválida (commit `6df9324`)
+
+### Ronda 9 — Cobros editar/anular + restore saldo
+- `AnularAsync` no era idempotente: 2 DELETEs devolvían 204 cada uno. Fix: si `!entity.Activo` → false (→ 404) (commit `7e0dd08`)
+
+### Ronda 10 — Rutas templates + carga + cierre
+- Validator exigía `UsuarioId>0` aunque fuera template. Templates no llevan vendedor → `When(x => !x.EsTemplate)` + endpoint fuerza `EsTemplate=true` antes de validar (commit `5ed53af`)
+- `InstanciarTemplateAsync` sin usuarioId producía 500 FK violation → pre-check 400 con mensaje específico (commit `5ed53af`)
+
+### Ronda 11 — Visitas check-in/out real + GPS
+- Todos los escenarios OK (check-in/out/duplicado/GPS inválido/eliminar completada) — no bugs nuevos
+
+### Ronda 12 — Import/Export CSV
+- 14 exports + 4 templates + 2 import tests OK — no bugs nuevos
+
+### Ronda 13 — Facturación cupones
+- Cupones redeem (404 inexistente, 400 vacío) OK
+
+### Ronda 14 — Metas + Automatizaciones
+- Validators OK
+
+### Ronda 15 — Usuarios / Roles / Devices
+- Validator OK (aunque apila errores de email+pwd sin priorizar, menor)
+- Tenant users table mostraba "Sin rol" para users con `u.Rol` string pero sin Role entity asignado → fix en `GetTenantUsers` prioridad flags > u.Rol > u.Role.Nombre (commit `e149a41`)
+
+### Ronda 16 — Categorías + Familias + Unidades
+- Unidades de medida NO validaba abreviatura única por tenant → 2 unidades con misma abreviatura pasaban. Fix: `ExisteAbreviaturaAsync` (commit `9f4892e`)
+
+### Ronda 17 — Suscripción / planes
+- Subscription endpoints OK
+
+### Ronda 18 — Activity Logs + Crash Reports
+- OK (ADMIN no puede ver crash reports globales — ese acceso es solo SA)
+
+### Ronda 19 — Plan Gratis limits + tier-gate reports
+- Plan FREE enforza 20 clientes, 2 usuarios OK
+- Tier-gate: plan FREE podía leer /insights, /comisiones, /rentabilidad-cliente, /analisis-abc, /ventas-vendedor, /ventas-producto, /ventas-zona, /actividad-clientes, /cartera-vencida, /cumplimiento-metas, /comparativo, /efectividad-visitas — 11 endpoints de plan BASIC/PROFESIONAL expuestos. Fix: cada endpoint llama `CanAccessReportAsync(tenantId, slug)` → 402 PaymentRequired con mensaje "Este reporte requiere el plan X" (commits `eba1b23`, `dff0c80`)
+
+### Ronda 20 — Mobile API endpoints
+- Mobile API NO registraba `TenantRlsInterceptor` → queries bajo user `handy_app` con RLS devolvían 0 filas → login siempre 401. Fix: registrar interceptor en `AddDbContext` (commit `14095d9`)
+- Contenedor viejo con nombre `handysales_api_mobile_dev` en network `handysales_dev_network` — postgres estaba en `handysuites_dev_network`. Fix: recrear con `docker-compose up -d --build api_mobile` (in-session)
+
+---
+
+## Pendientes honestos
+
+- **Impersonation race conditions**: fix parcial en round 7 — aún hay timing issues NextAuth↔cookies↔middleware en casos edge.
+- **Homologación Spinner**: aplicada a 6 archivos clave, quedan ~14 más que no he tocado (ver `rg "Loader2" apps/web/src`).
+- **Billing profundo**: CFDI timbrado, PAC real, cancelación — no tocado.
+- **E2E Playwright permanentes** para CI: los tests de regresión fueron ad-hoc, no quedaron en código.
+- **Mobile app React Native**: sólo toqué la Mobile API backend, no el app nativo.
+- **SignalR**, **2FA flow completo**, **password reset email**, **announcements publish** — sin tocar.
+- **Push** a `origin/staging`: branch local diverge ≥55 commits del remoto.
