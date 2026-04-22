@@ -109,6 +109,15 @@ public class CobroRepository : ICobroRepository
                 var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
                 if (isPostgres)
                 {
+                    // Advisory lock explícito por pedidoId: serializa POST /cobros paralelos
+                    // para el mismo pedido. FOR UPDATE + subquery de Cobros NO era suficiente
+                    // porque la sub-SELECT de SUM(Cobros) no respeta el lock del Pedidos row
+                    // bajo READ COMMITTED; dos transacciones paralelas veían cobrado=0 y ambas
+                    // insertaban, resultando en saldo negativo (sweep 4, abril 2026).
+                    await _db.Database.ExecuteSqlRawAsync(
+                        "SELECT pg_advisory_xact_lock({0}, {1})",
+                        tenantId, dto.PedidoId.Value);
+
                     // Single query: locks pedido row + sums existing cobros atomically
                     var balance = await _db.Database.SqlQueryRaw<PedidoBalanceRow>(
                         @"SELECT p.total AS ""Total"",
