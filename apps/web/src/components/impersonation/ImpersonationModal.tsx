@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
   Dialog,
@@ -67,6 +68,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
   const { startImpersonation } = useImpersonationStore();
   const { update: updateSession } = useSession();
+  const router = useRouter();
 
   // Fetch tenants when modal opens without a pre-selected tenant
   useEffect(() => {
@@ -128,8 +130,11 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
     onClose();
 
-    // Recargar para aplicar el nuevo contexto
-    window.location.href = '/dashboard';
+    // Usar router.push + router.refresh en vez de window.location.href.
+    // Hard reload perdía la sesión updateSession() recién propagada a las cookies,
+    // lo que hacía que el middleware bloqueara /dashboard con ?error=unauthorized.
+    router.push('/dashboard');
+    router.refresh();
   };
 
   const handleStart = async () => {

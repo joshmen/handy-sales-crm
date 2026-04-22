@@ -112,12 +112,13 @@ public static class TenantEndpoints
         if (tenant == null)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
-        var usuariosTask = context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.TenantId == id && u.Activo);
-        var clientesTask = context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync(c => c.TenantId == id);
-        var productosTask = context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
-        var pedidosTask = context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
-        await Task.WhenAll(usuariosTask, clientesTask, productosTask, pedidosTask);
-        var stats = new TenantStatsDto(await usuariosTask, await clientesTask, await productosTask, await pedidosTask);
+        // EF DbContext NO es thread-safe: hacer los counts en secuencia.
+        // Task.WhenAll paralelo disparaba "A second operation was started on this context instance".
+        var usuariosCount = await context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.TenantId == id && u.Activo);
+        var clientesCount = await context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync(c => c.TenantId == id);
+        var productosCount = await context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
+        var pedidosCount = await context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
+        var stats = new TenantStatsDto(usuariosCount, clientesCount, productosCount, pedidosCount);
 
         // Cargar DatosEmpresa
         var datosEmpresa = await context.DatosEmpresa
