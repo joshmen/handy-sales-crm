@@ -864,11 +864,17 @@ public static class ReportEndpoints
         group.MapGet("/insights", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "insights");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
             var fechaHasta = hasta ?? DateTime.UtcNow;
@@ -1087,12 +1093,18 @@ public static class ReportEndpoints
         group.MapGet("/comisiones", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] double porcentaje = 5.0) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "comisiones");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             // Porcentaje de comisión debe estar en rango razonable.
             if (porcentaje < 0 || porcentaje > 100)
@@ -1157,12 +1169,18 @@ public static class ReportEndpoints
         group.MapGet("/rentabilidad-cliente", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int top = 20) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "rentabilidad-cliente");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             if (top < 1) top = 1;
             if (top > 500) top = 500;
@@ -1226,12 +1244,18 @@ public static class ReportEndpoints
         group.MapGet("/analisis-abc", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] IReportAccessService reportAccess,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] string tipo = "clientes") =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+
+            var access = await reportAccess.CanAccessReportAsync(tenantId, "analisis-abc");
+            if (!access.Allowed)
+                return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
+                    statusCode: StatusCodes.Status402PaymentRequired);
 
             // Sólo dos tipos válidos para el análisis ABC.
             if (tipo != "clientes" && tipo != "productos")
