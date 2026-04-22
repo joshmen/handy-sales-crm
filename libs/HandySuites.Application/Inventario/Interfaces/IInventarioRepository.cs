@@ -12,4 +12,5 @@ public interface IInventarioRepository
     Task<bool> EliminarAsync(int id, int tenantId);
     Task<InventarioPaginatedResult> ObtenerPorFiltroAsync(InventarioFiltroDto filtro, int tenantId);
     Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId);
+    Task AcquireProductoLockAsync(int tenantId, int productoId);
 }

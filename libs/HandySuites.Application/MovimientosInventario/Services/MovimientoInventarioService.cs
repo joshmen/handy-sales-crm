@@ -36,37 +36,39 @@ public class MovimientoInventarioService
 
     public async Task<(int MovimientoId, bool Success, string? Error)> CrearMovimientoAsync(MovimientoInventarioCreateDto dto)
     {
-        // Obtener inventario actual del producto
-        var inventario = await _inventarioRepo.ObtenerPorProductoIdAsync(dto.ProductoId, _tenant.TenantId);
+        // Validar tipo de movimiento antes de entrar en transacción (evita lock inútil).
+        var tipoUpper = dto.TipoMovimiento.ToUpperInvariant();
+        if (tipoUpper != "ENTRADA" && tipoUpper != "SALIDA" && tipoUpper != "AJUSTE")
+            return (0, false, $"Tipo de movimiento inválido: {dto.TipoMovimiento}. Use ENTRADA, SALIDA o AJUSTE");
 
-        if (inventario == null)
+        // Wrap inventory update + movement creation in a transaction + advisory lock.
+        // El lock serializa movimientos del mismo (tenant, producto) y previene oversell
+        // cuando dos SALIDA paralelas ven la misma cantidadAnterior (READ COMMITTED).
+        return await _transactionManager.ExecuteInTransactionAsync<(int, bool, string?)>(async () =>
         {
-            return (0, false, $"No existe inventario para el producto con ID {dto.ProductoId}");
-        }
+            await _inventarioRepo.AcquireProductoLockAsync(_tenant.TenantId, dto.ProductoId);
 
-        var cantidadAnterior = inventario.CantidadActual;
-        decimal cantidadNueva;
+            var inventario = await _inventarioRepo.ObtenerPorProductoIdAsync(dto.ProductoId, _tenant.TenantId);
+            if (inventario == null)
+                return (0, false, $"No existe inventario para el producto con ID {dto.ProductoId}");
 
-        // Calcular nueva cantidad según el tipo de movimiento
-        switch (dto.TipoMovimiento.ToUpperInvariant())
-        {
-            case "ENTRADA":
-                cantidadNueva = cantidadAnterior + dto.Cantidad;
-                break;
-            case "SALIDA":
-                if (cantidadAnterior < dto.Cantidad)
-                {
-                    return (0, false, $"Stock insuficiente. Stock actual: {cantidadAnterior}, solicitado: {dto.Cantidad}");
-                }
-                cantidadNueva = cantidadAnterior - dto.Cantidad;
-                break;
-            case "AJUSTE":
-                // En ajuste, la cantidad es el valor absoluto final
-                cantidadNueva = dto.Cantidad;
-                break;
-            default:
-                return (0, false, $"Tipo de movimiento inválido: {dto.TipoMovimiento}. Use ENTRADA, SALIDA o AJUSTE");
-        }
+            var cantidadAnterior = inventario.CantidadActual;
+            decimal cantidadNueva;
+
+            switch (tipoUpper)
+            {
+                case "ENTRADA":
+                    cantidadNueva = cantidadAnterior + dto.Cantidad;
+                    break;
+                case "SALIDA":
+                    if (cantidadAnterior < dto.Cantidad)
+                        return (0, false, $"Stock insuficiente. Stock actual: {cantidadAnterior}, solicitado: {dto.Cantidad}");
+                    cantidadNueva = cantidadAnterior - dto.Cantidad;
+                    break;
+                default: // AJUSTE
+                    cantidadNueva = dto.Cantidad;
+                    break;
+            }
 
         // Wrap inventory update + movement creation in a transaction.
         // Uses ExecuteInTransactionAsync to be compatible with retrying execution strategy.
@@ -80,20 +82,13 @@ public class MovimientoInventarioService
                 StockMaximo = inventario.StockMaximo
             };
 
-            var inventarioActualizado = await _inventarioRepo.ActualizarAsync(dto.ProductoId, updateDto, _tenant.TenantId);
+            var inventarioActualizado = await _inventarioRepo.ActualizarAsync(inventario.Id, updateDto, _tenant.TenantId);
             if (!inventarioActualizado)
             {
                 throw new InvalidOperationException("Error al actualizar el inventario");
             }
 
-            // Obtener el usuario ID del claim
-            int usuarioId = 0;
-            if (int.TryParse(_tenant.UserId, out var uid))
-            {
-                usuarioId = uid;
-            }
-
-            // Crear el movimiento
+            int usuarioId = int.TryParse(_tenant.UserId, out var uid) ? uid : 0;
             var movimientoId = await _movimientoRepo.CrearAsync(dto, _tenant.TenantId, usuarioId, cantidadAnterior, cantidadNueva);
             return (movimientoId, true, (string?)null);
         });

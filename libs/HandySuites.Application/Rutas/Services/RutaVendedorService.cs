@@ -487,14 +487,21 @@ public class RutaVendedorService
 
     // === Carga de inventario ===
 
-    public Task<List<RutaCargaDto>> ObtenerCargaAsync(int rutaId)
-        => _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
+    public async Task<List<RutaCargaDto>> ObtenerCargaAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return new List<RutaCargaDto>();
+        EnsureRutaOperable(ruta);
+        return await _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
+    }
 
     public async Task AsignarProductoVentaAsync(int rutaId, AsignarProductoVentaRequest dto)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
             throw new InvalidOperationException("No se pueden agregar productos a una ruta en este estado");
@@ -508,17 +515,26 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
         await _repo.RemoverProductoCargaAsync(rutaId, productoId, _tenant.TenantId);
     }
 
-    public Task<List<RutaPedidoAsignadoDto>> ObtenerPedidosAsignadosAsync(int rutaId)
-        => _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
+    public async Task<List<RutaPedidoAsignadoDto>> ObtenerPedidosAsignadosAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return new List<RutaPedidoAsignadoDto>();
+        EnsureRutaOperable(ruta);
+        return await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
+    }
 
     public async Task AsignarPedidoAsync(int rutaId, int pedidoId)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         await _repo.AsignarPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
     }
@@ -529,6 +545,8 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
         await _repo.RemoverPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
     }
 
@@ -537,6 +555,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         await _repo.ActualizarEfectivoInicialAsync(rutaId, dto.Monto, dto.Comentarios, _tenant.TenantId);
     }
@@ -547,6 +567,8 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("Solo se pueden enviar a carga rutas planificadas");
 
@@ -555,17 +577,27 @@ public class RutaVendedorService
 
     // === Cierre de ruta ===
 
-    public Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId)
-        => _repo.ObtenerResumenCierreAsync(rutaId, _tenant.TenantId);
+    public async Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta != null && ruta.TenantId == _tenant.TenantId) EnsureRutaOperable(ruta);
+        return await _repo.ObtenerResumenCierreAsync(rutaId, _tenant.TenantId);
+    }
 
-    public Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId)
-        => _repo.ObtenerRetornoInventarioAsync(rutaId, _tenant.TenantId);
+    public async Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta != null && ruta.TenantId == _tenant.TenantId) EnsureRutaOperable(ruta);
+        return await _repo.ObtenerRetornoInventarioAsync(rutaId, _tenant.TenantId);
+    }
 
     public async Task ActualizarRetornoAsync(int rutaId, int productoId, ActualizarRetornoRequest dto)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         await _repo.ActualizarRetornoAsync(rutaId, productoId, dto.Mermas, dto.RecAlmacen, dto.CargaVehiculo, _tenant.TenantId);
     }
@@ -575,6 +607,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         if (ruta.Estado != EstadoRuta.Completada)
             throw new InvalidOperationException("Solo se pueden cerrar rutas completadas/terminadas");

@@ -352,7 +352,7 @@ public static class RutaVendedorEndpoints
                 : Results.BadRequest(new { error = "No se pudo omitir la parada" });
         });
 
-        // Toggle activo
+        // Toggle activo — sólo gestión puede activar/desactivar rutas
         group.MapPatch("/{id:int}/activo", async (
             int id,
             RutaCambiarActivoDto dto,
@@ -360,7 +360,7 @@ public static class RutaVendedorEndpoints
         {
             var result = await servicio.CambiarActivoAsync(id, dto.Activo);
             return result ? Results.Ok() : Results.NotFound();
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR"));
 
         group.MapPatch("/batch-toggle", async (
             RutaBatchToggleRequest request,
@@ -371,7 +371,7 @@ public static class RutaVendedorEndpoints
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { affected = count });
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR"));
 
         // === Carga de inventario ===
         group.MapGet("/{id:int}/carga", async (

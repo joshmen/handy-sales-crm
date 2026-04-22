@@ -171,4 +171,15 @@ public class InventarioRepository : IInventarioRepository
     public Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId)
         => _db.Productos.AsNoTracking()
             .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);
+
+    // Advisory lock (PostgreSQL) para serializar movimientos de inventario sobre el
+    // mismo producto dentro de un tenant. Previene oversell por SALIDA paralelas.
+    // SQLite/otros providers: no-op silencioso (mismos tests unitarios funcionan).
+    public async Task AcquireProductoLockAsync(int tenantId, int productoId)
+    {
+        if (!_db.Database.IsNpgsql()) return;
+        await _db.Database.ExecuteSqlRawAsync(
+            "SELECT pg_advisory_xact_lock({0}, {1})",
+            tenantId, productoId);
+    }
 }
