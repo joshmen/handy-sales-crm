@@ -40,6 +40,9 @@ public static class ZonasEndpoints
             if (exists == null)
                 return Results.NotFound();
 
+            // El Id viene de la URL; asignarlo al DTO antes del validator (que requiere Id > 0).
+            dto.Id = id;
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
