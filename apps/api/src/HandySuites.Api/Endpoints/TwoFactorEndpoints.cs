@@ -53,7 +53,9 @@ public static class TwoFactorEndpoints
             }
             catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { error = "Error al configurar la autenticación de dos factores." });
+                // Muestra el motivo real del servicio (p.ej. "Código TOTP inválido",
+                // "2FA ya está habilitado", etc.) en vez del genérico anterior.
+                return Results.BadRequest(new { error = ex.Message });
             }
         });
 
