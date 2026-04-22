@@ -11,6 +11,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -155,13 +157,22 @@ export default function ClientsPage() {
     }
   };
 
-  const handleRechazarProspecto = async (client: Client) => {
-    if (!window.confirm(t('confirmRejectProspect', { name: client.name }))) return;
+  // Reemplaza window.confirm() nativo (feo en móvil/desktop) por Modal.
+  const [rejectClient, setRejectClient] = useState<Client | null>(null);
+
+  const openRejectProspecto = (client: Client) => {
+    setRejectClient(client);
+  };
+
+  const confirmRejectProspecto = async () => {
+    if (!rejectClient) return;
+    const client = rejectClient;
     try {
       setProspectActionLoading(client.id);
       await clientService.rechazarProspecto(parseInt(client.id));
       toast.success(t('prospectRejected', { name: client.name }));
       setClients(prev => prev.filter(c => c.id !== client.id));
+      setRejectClient(null);
     } catch (err) {
       console.error('Error al rechazar prospecto:', err);
       toast.error(t('errorRejectingProspect'));
@@ -169,6 +180,8 @@ export default function ClientsPage() {
       setProspectActionLoading(null);
     }
   };
+
+  const handleRechazarProspecto = openRejectProspecto;
 
   // Sort state
   const [sortKey, setSortKey] = useState('name');
@@ -567,6 +580,38 @@ export default function ClientsPage() {
           entityLabel={t('title').toLowerCase()}
           loading={batch.batchLoading}
         />
+
+        {/* Modal rechazar prospecto (reemplaza window.confirm() nativo) */}
+        <Modal
+          isOpen={rejectClient !== null}
+          onClose={() => { if (!prospectActionLoading) setRejectClient(null); }}
+          title={tc('confirm') || 'Confirmar'}
+          size="sm"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-text-primary">
+              {rejectClient ? t('confirmRejectProspect', { name: rejectClient.name }) : ''}
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRejectClient(null)}
+                disabled={prospectActionLoading !== null}
+              >
+                {tc('cancel')}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={confirmRejectProspecto}
+                disabled={prospectActionLoading !== null}
+              >
+                {prospectActionLoading !== null ? tc('loading') : (t('rejectProspect') || 'Rechazar')}
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
       </PageHeader>
   );
