@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Modal } from '@/components/ui/Modal';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
@@ -192,6 +193,9 @@ export default function OrdersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -356,17 +360,27 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCancelOrderStatus = async (orderId: string) => {
-    const reason = window.prompt(t('cancelReason'));
-    if (reason === null) return; // User clicked Cancel on the prompt
-    const id = parseInt(orderId);
+  const handleCancelOrderStatus = (orderId: string) => {
+    // Abre modal custom en lugar de window.prompt() nativo.
+    setCancelOrderId(orderId);
+    setCancelReasonText('');
+  };
+
+  const submitCancelOrder = async () => {
+    if (!cancelOrderId) return;
+    const id = parseInt(cancelOrderId);
+    setCancelLoading(true);
     try {
-      await orderService.cancelOrder(id, reason || undefined);
+      await orderService.cancelOrder(id, cancelReasonText.trim() || undefined);
       toast.success(t('orderCancelled'));
+      setCancelOrderId(null);
+      setCancelReasonText('');
       fetchOrders();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('errorCancelling');
       toast.error(message);
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -818,6 +832,52 @@ export default function OrdersPage() {
           onDirtyChange={setFormIsDirty}
         />
       </Drawer>
+
+      {/* Modal: cancelar pedido con motivo (reemplaza window.prompt() nativo) */}
+      <Modal
+        isOpen={cancelOrderId !== null}
+        onClose={() => {
+          if (!cancelLoading) {
+            setCancelOrderId(null);
+            setCancelReasonText('');
+          }
+        }}
+        title={t('cancelReason')}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <textarea
+            autoFocus
+            rows={3}
+            className="w-full rounded-md border border-border-default bg-surface-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+            placeholder={t('cancelReasonPlaceholder') || 'Motivo de la cancelación...'}
+            value={cancelReasonText}
+            onChange={(e) => setCancelReasonText(e.target.value)}
+            disabled={cancelLoading}
+          />
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCancelOrderId(null);
+                setCancelReasonText('');
+              }}
+              disabled={cancelLoading}
+            >
+              {tc('cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={submitCancelOrder}
+              disabled={cancelLoading}
+            >
+              {cancelLoading ? tc('loading') : t('confirmCancelOrder') || 'Cancelar pedido'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
