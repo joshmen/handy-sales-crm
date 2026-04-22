@@ -29,6 +29,10 @@ public class UnidadMedidaService
         if (await _repo.ExisteNombreAsync(dto.Nombre, _tenant.TenantId))
             throw new InvalidOperationException("Ya existe una unidad de medida con ese nombre.");
 
+        if (!string.IsNullOrWhiteSpace(dto.Abreviatura)
+            && await _repo.ExisteAbreviaturaAsync(dto.Abreviatura, _tenant.TenantId))
+            throw new InvalidOperationException("Ya existe una unidad de medida con esa abreviatura.");
+
         return await _repo.CrearAsync(dto, _tenant.TenantId);
     }
 
@@ -36,6 +40,10 @@ public class UnidadMedidaService
     {
         if (await _repo.ExisteNombreAsync(dto.Nombre, _tenant.TenantId, id))
             throw new InvalidOperationException("Ya existe una unidad de medida con ese nombre.");
+
+        if (!string.IsNullOrWhiteSpace(dto.Abreviatura)
+            && await _repo.ExisteAbreviaturaAsync(dto.Abreviatura, _tenant.TenantId, id))
+            throw new InvalidOperationException("Ya existe una unidad de medida con esa abreviatura.");
 
         return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
     }

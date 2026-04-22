@@ -14,4 +14,5 @@ public interface IUnidadMedidaRepository
     Task<bool> CambiarActivoAsync(int id, bool activo, int tenantId);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<bool> ExisteNombreAsync(string nombre, int tenantId, int? excludeId = null);
+    Task<bool> ExisteAbreviaturaAsync(string abreviatura, int tenantId, int? excludeId = null);
 }
