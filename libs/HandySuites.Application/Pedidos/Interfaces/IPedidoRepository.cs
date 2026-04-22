@@ -21,4 +21,6 @@ public interface IPedidoRepository
     Task<decimal> CalcularTotalAsync(int pedidoId, int tenantId);
     Task<decimal> ObtenerStockDisponibleAsync(int productoId, int tenantId);
     Task<string> ObtenerNombreProductoAsync(int productoId, int tenantId);
+    Task<bool> ExisteClienteAsync(int clienteId, int tenantId);
+    Task<bool> ExisteProductoAsync(int productoId, int tenantId);
 }

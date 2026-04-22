@@ -10,6 +10,9 @@ public class PedidoCreateDtoValidator : AbstractValidator<PedidoCreateDto>
         RuleFor(x => x.ClienteId)
             .GreaterThan(0).WithMessage("Debe seleccionar un cliente válido.");
 
+        RuleFor(x => x.TipoVenta)
+            .IsInEnum().WithMessage("El tipo de venta es inválido.");
+
         RuleFor(x => x.Detalles)
             .NotEmpty().WithMessage("El pedido debe contener al menos un producto.")
             .Must(d => d != null && d.Count > 0).WithMessage("El pedido debe contener al menos un producto.");

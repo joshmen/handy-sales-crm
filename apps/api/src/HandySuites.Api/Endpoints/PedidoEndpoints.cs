@@ -1,3 +1,4 @@
+using FluentValidation;
 using HandySuites.Api.Hubs;
 using HandySuites.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
@@ -20,11 +21,16 @@ public static class PedidoEndpoints
         // CRUD básico
         group.MapPost("/", async (
             PedidoCreateDto dto,
+            IValidator<PedidoCreateDto> validator,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHubContext<NotificationHub> hubContext,
             [FromServices] IAiEmbeddingService embeddingService) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var id = await servicio.CrearAsync(dto);
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId > 0)
@@ -230,8 +236,13 @@ public static class PedidoEndpoints
         group.MapPost("/{pedidoId:int}/detalles", async (
             int pedidoId,
             DetallePedidoCreateDto dto,
+            IValidator<DetallePedidoCreateDto> validator,
             [FromServices] PedidoService servicio) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var resultado = await servicio.AgregarDetalleAsync(pedidoId, dto);
             return resultado ? Results.Created($"/pedidos/{pedidoId}/detalles", new { mensaje = "Detalle agregado" }) : Results.BadRequest(new { error = "No se pudo agregar el detalle" });
         })
@@ -245,8 +256,13 @@ public static class PedidoEndpoints
             int pedidoId,
             int detalleId,
             DetallePedidoCreateDto dto,
+            IValidator<DetallePedidoCreateDto> validator,
             [FromServices] PedidoService servicio) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var resultado = await servicio.ActualizarDetalleAsync(pedidoId, detalleId, dto);
             return resultado ? Results.NoContent() : Results.NotFound();
         })

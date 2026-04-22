@@ -402,6 +402,11 @@ public class PedidoRepository : IPedidoRepository
 
         if (pedido == null) return false;
 
+        // Solo se puede eliminar si está en Borrador. Un pedido confirmado/entregado
+        // ya impactó inventario o flujo operativo; soft-deletarlo deja datos inconsistentes.
+        if (pedido.Estado != EstadoPedido.Borrador)
+            return false;
+
         // Soft delete via SaveChangesAsync override
         _db.Pedidos.Remove(pedido);
 
@@ -570,6 +575,20 @@ public class PedidoRepository : IPedidoRepository
             .Where(p => p.Id == productoId && p.TenantId == tenantId)
             .Select(p => p.Nombre)
             .FirstOrDefaultAsync() ?? $"Producto #{productoId}";
+    }
+
+    public async Task<bool> ExisteClienteAsync(int clienteId, int tenantId)
+    {
+        return await _db.Clientes
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == clienteId && c.TenantId == tenantId);
+    }
+
+    public async Task<bool> ExisteProductoAsync(int productoId, int tenantId)
+    {
+        return await _db.Productos
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);
     }
 
     private async Task RecalcularTotalesAsync(int pedidoId)
