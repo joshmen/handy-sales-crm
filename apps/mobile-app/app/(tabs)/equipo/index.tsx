@@ -8,6 +8,7 @@ import { SbTeam } from '@/components/icons/DashboardIcons';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
+import { useAuthStore } from '@/stores';
 
 function KpiCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -46,6 +47,8 @@ function EquipoContent() {
   const { data: dashboard, isLoading: loadingDash, refetch: refetchDash } = useSupervisorDashboard();
   const { data: vendedores, isLoading: loadingVend, refetch: refetchVend } = useMisVendedores();
   const [refreshing, setRefreshing] = useState(false);
+  const role = useAuthStore(s => s.user?.role);
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -113,8 +116,14 @@ function EquipoContent() {
         ) : (
           <View style={styles.emptyState}>
             <SbTeam size={32} />
-            <Text style={styles.emptyText}>No tienes vendedores asignados</Text>
-            <Text style={styles.emptySubtext}>Pide al administrador que te asigne vendedores</Text>
+            <Text style={styles.emptyText}>
+              {isAdmin ? 'Sin vendedores registrados' : 'No tienes vendedores asignados'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {isAdmin
+                ? 'Da de alta vendedores desde el portal web para verlos aquí'
+                : 'Pide al administrador que te asigne vendedores'}
+            </Text>
           </View>
         )}
       </Animated.View>

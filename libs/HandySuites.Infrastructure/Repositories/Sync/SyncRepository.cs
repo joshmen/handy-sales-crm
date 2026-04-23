@@ -375,6 +375,42 @@ public class SyncRepository : ISyncRepository
                     _db.DetallePedidos.Add(detalle);
                 }
 
+                // BR-VD-INV: Para VentaDirecta Entregada, decrementar inventario en la misma
+                // transacción — análogo a lo que hace PedidoService.CrearAsync con
+                // MovimientoInventarioService.CrearMovimientoAsync. Evita stock fantasma
+                // cuando un vendedor cierra ventas directas offline.
+                if (pedido.TipoVenta == TipoVenta.VentaDirecta && pedido.Estado == EstadoPedido.Entregado)
+                {
+                    foreach (var detalle in newDetalles)
+                    {
+                        var inv = await _db.Inventarios
+                            .FirstOrDefaultAsync(i => i.TenantId == tenantId && i.ProductoId == detalle.ProductoId);
+                        if (inv == null) continue; // producto sin inventario — no bloquear la venta
+                        var anterior = inv.CantidadActual;
+                        var nueva = anterior - detalle.Cantidad;
+                        inv.CantidadActual = nueva;
+                        inv.ActualizadoEn = DateTime.UtcNow;
+                        inv.ActualizadoPor = userId;
+                        _db.MovimientosInventario.Add(new MovimientoInventario
+                        {
+                            TenantId = tenantId,
+                            ProductoId = detalle.ProductoId,
+                            TipoMovimiento = "SALIDA",
+                            Cantidad = detalle.Cantidad,
+                            CantidadAnterior = anterior,
+                            CantidadNueva = nueva,
+                            Motivo = "VENTA",
+                            Comentario = $"Venta directa mobile - Pedido #{pedido.Id}",
+                            UsuarioId = usuarioId,
+                            ReferenciaId = pedido.Id,
+                            ReferenciaTipo = "PEDIDO",
+                            CreadoEn = DateTime.UtcNow,
+                            CreadoPor = userId,
+                            Version = 1
+                        });
+                    }
+                }
+
                 return (pedido, wasConflict);
             }
             catch (DbUpdateException ex) when (
@@ -686,12 +722,23 @@ public class SyncRepository : ISyncRepository
         if (dto.Monto <= 0)
             throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
 
-        if (dto.PedidoId.HasValue && dto.PedidoId.Value > 0)
+        // Resolver PedidoLocalId (WDB id) → PedidoId cuando el pedido padre fue creado
+        // en el mismo sync y aún no tiene ServerId en el cliente. Evita cobros huérfanos
+        // con pedido_id NULL en flujo VentaDirecta offline.
+        int? resolvedPedidoId = dto.PedidoId;
+        if ((!resolvedPedidoId.HasValue || resolvedPedidoId.Value <= 0) && !string.IsNullOrEmpty(dto.PedidoLocalId))
+        {
+            var parent = await _db.Pedidos.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.PedidoLocalId);
+            if (parent != null) resolvedPedidoId = parent.Id;
+        }
+
+        if (resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
         {
             var pedido = await _db.Pedidos
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId);
-            if (pedido != null && dto.Monto > pedido.Total)
+                .FirstOrDefaultAsync(p => p.Id == resolvedPedidoId.Value && p.TenantId == tenantId);
+            if (pedido != null && dto.Monto > pedido.Total && pedido.Total > 0)
                 throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
         }
 
@@ -700,7 +747,7 @@ public class SyncRepository : ISyncRepository
             TenantId = tenantId,
             UsuarioId = usuarioId,
             ClienteId = dto.ClienteId,
-            PedidoId = dto.PedidoId,
+            PedidoId = resolvedPedidoId,
             Monto = dto.Monto,
             MetodoPago = (MetodoPago)dto.MetodoPago,
             FechaCobro = dto.FechaCobro != default ? dto.FechaCobro : DateTime.UtcNow,

@@ -287,6 +287,8 @@ public class SyncCobroDto
     public string? LocalId { get; set; }
     public int ClienteId { get; set; }
     public int? PedidoId { get; set; }
+    /// <summary>Mobile WDB id del pedido padre cuando aún no tiene ServerId (offline create).</summary>
+    public string? PedidoLocalId { get; set; }
     public decimal Monto { get; set; }
     public int MetodoPago { get; set; }
     public DateTime FechaCobro { get; set; }

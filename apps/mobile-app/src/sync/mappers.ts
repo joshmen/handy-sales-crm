@@ -581,7 +581,17 @@ function rawToCobroDto(raw: DirtyRaw, operation: number): any {
     id: raw.server_id ?? 0,
     localId: raw.id,
     clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
-    pedidoId: raw.pedido_id ? (parseInt(String(raw.pedido_id), 10) || null) : null,
+    // pedidoId: preferir pedido_server_id (si ya sincronizado) sobre parseInt del WDB id.
+    // Si el pedido fue creado offline y NO tiene server_id aún, mandar pedidoLocalId
+    // para que el server lo resuelva via MobileRecordId (evita cobros huérfanos en VD).
+    pedidoId: raw.pedido_server_id
+      ? Number(raw.pedido_server_id)
+      : (raw.pedido_id && /^\d+$/.test(String(raw.pedido_id))
+          ? parseInt(String(raw.pedido_id), 10)
+          : null),
+    pedidoLocalId: raw.pedido_id && !/^\d+$/.test(String(raw.pedido_id))
+      ? String(raw.pedido_id)
+      : null,
     monto: raw.monto ?? 0,
     metodoPago: raw.metodo_pago ?? 0,
     fechaCobro: new Date(raw.created_at).toISOString(),

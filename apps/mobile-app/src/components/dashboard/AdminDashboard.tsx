@@ -53,11 +53,14 @@ export function AdminDashboard() {
               {getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'}
             </Text>
             <Text style={styles.dateText}>
-              {new Date().toLocaleDateString('es-MX', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
+              {(() => {
+                const s = new Date().toLocaleDateString('es-MX', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                });
+                return s.charAt(0).toUpperCase() + s.slice(1);
+              })()}
             </Text>
           </View>
           <View style={styles.headerAvatar}>
@@ -222,7 +225,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
-    textTransform: 'capitalize',
   },
   kpiRow: { flexDirection: 'row', gap: 10, marginBottom: 24, paddingHorizontal: 16 },
   kpiCard: {
