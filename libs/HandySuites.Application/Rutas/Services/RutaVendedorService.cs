@@ -223,6 +223,18 @@ public class RutaVendedorService
         return await _repo.IniciarRutaAsync(id, DateTime.UtcNow);
     }
 
+    public async Task<bool> AceptarRutaAsync(int id)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(id);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        var usuarioId = int.Parse(_tenant.UserId);
+        if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede aceptar esta ruta");
+
+        return await _repo.AceptarRutaAsync(id, DateTime.UtcNow);
+    }
+
     public async Task<bool> CompletarRutaAsync(int id, double? kilometrosReales = null)
     {
         var ruta = await _repo.ObtenerEntidadAsync(id);

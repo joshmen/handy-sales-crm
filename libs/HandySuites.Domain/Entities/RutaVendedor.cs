@@ -87,6 +87,9 @@ public class RutaVendedor : AuditableEntity
     [Column("cerrado_por")]
     public string? CerradoPor { get; set; }
 
+    [Column("aceptada_en")]
+    public DateTime? AceptadaEn { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Usuario? Usuario { get; set; }

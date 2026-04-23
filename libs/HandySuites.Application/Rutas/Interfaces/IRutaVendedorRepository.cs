@@ -19,6 +19,7 @@ public interface IRutaVendedorRepository
 
     // Gestión de estado
     Task<bool> IniciarRutaAsync(int id, DateTime horaInicio);
+    Task<bool> AceptarRutaAsync(int id, DateTime aceptadaEn);
     Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales);
     Task<bool> CancelarRutaAsync(int id, string? motivo);
 

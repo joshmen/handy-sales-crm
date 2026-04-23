@@ -3,6 +3,8 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } 
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap, useOfflineClients } from '@/hooks';
+import { rutasApi } from '@/api';
+import Toast from 'react-native-toast-message';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { ChevronLeft, Navigation, Map as MapIcon, CheckCircle, Clock } from 'lucide-react-native';
@@ -146,8 +148,8 @@ export default function RutaScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.button} colors={[COLORS.button]} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Accept Route Banner — shown when route is Planificada */}
-        {route.estado === 0 && (
+        {/* Accept Route Banner — shown when route is Planificada o PendienteAceptar */}
+        {(route.estado === 0 || route.estado === 4) && (
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.acceptBanner}>
               <View style={{ flex: 1 }}>
@@ -162,9 +164,29 @@ export default function RutaScreen() {
                 accessibilityRole="button"
                 onPress={async () => {
                   setAccepting(true);
+                  const serverId = route.serverId;
+                  if (!serverId) {
+                    // Ruta aún no sincronizó — solo update local, backend sincroniza después
+                    try {
+                      const freshRoute = await database.get<Ruta>('rutas').find(route.id);
+                      await freshRoute.startRoute();
+                      Toast.show({ type: 'info', text1: 'Aceptada localmente', text2: 'Sincronizará al recuperar conexión' });
+                    } catch { /* ignore */ }
+                    setAccepting(false);
+                    return;
+                  }
+                  // Backend: /aceptar (captura timestamp + transiciona 0|4 → 5) — best-effort.
+                  try {
+                    await rutasApi.aceptar(serverId);
+                  } catch { /* silencioso: si falla seguimos a iniciar */ }
+                  // Local + backend /iniciar (5|0 → 1) — la fuente de verdad de la UI.
+                  try {
+                    await rutasApi.iniciar(serverId);
+                  } catch { /* offline OK, el sync push lo retomará */ }
                   try {
                     const freshRoute = await database.get<Ruta>('rutas').find(route.id);
                     await freshRoute.startRoute();
+                    Toast.show({ type: 'success', text1: 'Ruta aceptada' });
                   } catch { /* ignore */ }
                   setAccepting(false);
                 }}

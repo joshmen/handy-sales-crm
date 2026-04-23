@@ -194,6 +194,22 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return await _db.SaveChangesAsync() > 0;
     }
 
+    public async Task<bool> AceptarRutaAsync(int id, DateTime aceptadaEn)
+    {
+        var ruta = await _db.RutasVendedor.FindAsync(id);
+        if (ruta == null) return false;
+        // Solo transicionar desde PendienteAceptar o Planificada. Idempotente:
+        // si ya fue aceptada/iniciada/cerrada, el endpoint lo reporta via bool.
+        if (ruta.Estado != EstadoRuta.PendienteAceptar && ruta.Estado != EstadoRuta.Planificada)
+            return false;
+
+        ruta.Estado = EstadoRuta.CargaAceptada;
+        ruta.AceptadaEn = aceptadaEn;
+        ruta.ActualizadoEn = DateTime.UtcNow;
+
+        return await _db.SaveChangesAsync() > 0;
+    }
+
     public async Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales)
     {
         var ruta = await _db.RutasVendedor.FindAsync(id);

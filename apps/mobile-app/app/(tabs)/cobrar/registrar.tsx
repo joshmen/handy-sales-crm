@@ -13,6 +13,7 @@ import { Button, ConfirmModal } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { METODO_PAGO } from '@/types/cobro';
 import type Cliente from '@/db/models/Cliente';
+import type RutaDetalleModel from '@/db/models/RutaDetalle';
 import {
   Banknote,
   ArrowRightLeft,
@@ -149,7 +150,7 @@ export default function RegistrarCobroScreen() {
       // Mark parada as completed if cobro came from a route stop
       if (params.paradaId) {
         try {
-          const stopRecord = await database.get('ruta_detalles').find(params.paradaId);
+          const stopRecord = await database.get<RutaDetalleModel>('ruta_detalles').find(params.paradaId);
           if (stopRecord) await stopRecord.depart();
         } catch (e) { /* ignore */ if (__DEV__) console.warn('[Registrar]', e); }
       }

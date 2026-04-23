@@ -68,6 +68,13 @@ class MobileRutasApi {
     return validated.data;
   }
 
+  async aceptar(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<{ success: boolean; message: string }>(
+      `${this.basePath}/${id}/aceptar`
+    );
+    return response.data;
+  }
+
   async completar(id: number, kilometrosReales?: number): Promise<MobileRuta> {
     const response = await api.post<ApiResponse<MobileRuta>>(
       `${this.basePath}/${id}/completar`,

@@ -77,6 +77,32 @@ public static class MobileRutaEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
+        group.MapPost("/{id:int}/aceptar", async (
+            int id,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            try
+            {
+                var resultado = await servicio.AceptarRutaAsync(id);
+                if (!resultado)
+                    return Results.Conflict(new { success = false, message = "Estado inválido para aceptar la ruta" });
+
+                return Results.Ok(new { success = true, message = "Ruta aceptada" });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { success = false, message = ex.Message });
+            }
+        })
+        .WithSummary("Aceptar ruta")
+        .WithDescription("Transiciona la ruta de PendienteAceptar/Planificada a CargaAceptada (vendedor confirma asignación via push).")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status409Conflict);
+
         group.MapPost("/{id:int}/completar", async (
             int id,
             [FromBody] CompletarRutaRequest? request,
