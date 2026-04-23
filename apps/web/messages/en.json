@@ -1030,6 +1030,8 @@
     "directSaleCreated": "Direct sale created and delivered",
     "drawerTitleEdit": "Edit Order",
     "drawerTitleNew": "New Order",
+    "drawerTitleView": "Order Details",
+    "orderReadOnlyBecauseNotDraft": "This order has been confirmed and cannot be edited. Showing read-only view.",
     "saveChanges": "Save Changes",
     "createOrder": "Create Order",
     "orderCount": "{count} order{plural}",

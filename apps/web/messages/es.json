@@ -1030,6 +1030,8 @@
     "directSaleCreated": "Venta directa creada y entregada",
     "drawerTitleEdit": "Editar Pedido",
     "drawerTitleNew": "Nuevo Pedido",
+    "drawerTitleView": "Detalle del Pedido",
+    "orderReadOnlyBecauseNotDraft": "Este pedido ya fue confirmado y no se puede editar. Mostrando modo solo lectura.",
     "saveChanges": "Guardar Cambios",
     "createOrder": "Crear Pedido",
     "orderCount": "{count} pedido{plural}",

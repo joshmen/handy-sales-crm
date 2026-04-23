@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
-import { Order } from '@/types/orders';
+import { Order, OrderItem } from '@/types/orders';
 import { Client, ClientType, Product, UserRole } from '@/types';
 import { orderService, OrderListItem } from '@/services/api/orders';
 import { clientService } from '@/services/api/clients';
@@ -193,6 +193,7 @@ export default function OrdersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReasonText, setCancelReasonText] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -307,26 +308,92 @@ export default function OrdersPage() {
     setShowOrderForm(true);
   };
 
-  const handleEditOrder = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-      if (!formDataLoaded.current) {
-        await fetchFormData();
-        formDataLoaded.current = true;
-      }
-      setEditingOrder(order);
-      setShowOrderForm(true);
-    }
-  };
+  // Abre el drawer cargando el pedido completo (cliente, items reales, notas, totales).
+  // Reglas de negocio (confirmar con backend PedidoService):
+  //   - Solo estado 'Borrador' permite editar (PUT /pedidos: fechaEntrega, notas, notasInternas).
+  //   - Los items solo se modifican vía endpoints /pedidos/{id}/detalles y solo en Borrador.
+  //   - Para Confirmado/EnRuta/Entregado/Cancelado el drawer abre en modo solo-lectura.
+  const openOrderDrawer = async (orderId: string, allowEdit: boolean) => {
+    const listOrder = orders.find(o => o.id === orderId);
+    if (!listOrder) return;
 
-  const handleViewDetails = async (orderId: string) => {
+    if (!formDataLoaded.current) {
+      await fetchFormData();
+      formDataLoaded.current = true;
+    }
+
     try {
-      const orderDetail = await orderService.getOrderById(parseInt(orderId));
-      toast.info(`Pedido ${orderDetail.numeroPedido} - Total: $${orderDetail.total.toFixed(2)}`);
+      const detail = await orderService.getOrderById(parseInt(orderId));
+
+      // Construye un Order con items reales provenientes del backend.
+      // Usamos productos del catálogo cuando existen (para imágenes/unidades),
+      // pero los datos primarios (nombre/precio/cantidad) siempre salen del detalle
+      // del pedido — reflejan el "snapshot" del momento en que se creó.
+      const detalleItems: OrderItem[] = detail.detalles.map(d => {
+        const productoCatalogo = products.find(p => p.id === d.productoId.toString());
+        const product: Product = productoCatalogo ?? {
+          id: d.productoId.toString(),
+          name: d.productoNombre,
+          code: d.productoCodigo || '',
+          description: '',
+          price: d.precioUnitario,
+          stock: 0,
+          category: '',
+          isActive: true,
+          images: [],
+          minStock: 0,
+          unit: '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        return {
+          id: d.id.toString(),
+          orderId: detail.id.toString(),
+          productId: d.productoId.toString(),
+          product,
+          quantity: d.cantidad,
+          unitPrice: d.precioUnitario,
+          discount: d.descuento,
+          total: d.subtotal,
+        };
+      });
+
+      const clientFromCatalog = clients.find(c => c.id === detail.clienteId.toString());
+      const fullOrder: Order = {
+        ...listOrder,
+        client: clientFromCatalog ?? {
+          ...listOrder.client,
+          id: detail.clienteId.toString(),
+          name: detail.clienteNombre,
+          address: detail.clienteDireccion ?? '',
+        },
+        clientId: detail.clienteId.toString(),
+        items: detalleItems,
+        subtotal: detail.subtotal,
+        tax: detail.impuestos,
+        discount: detail.descuento,
+        total: detail.total,
+        notes: detail.notas ?? '',
+        address: detail.clienteDireccion ?? '',
+        deliveryDate: detail.fechaEntregaEstimada ? new Date(detail.fechaEntregaEstimada) : listOrder.deliveryDate,
+      };
+
+      // Si el caller pidió editar pero el estado no lo permite, degradamos a solo-lectura.
+      const canEdit = allowEdit && listOrder.apiEstado === 'Borrador';
+      if (allowEdit && !canEdit) {
+        toast.info(t('orderReadOnlyBecauseNotDraft'));
+      }
+
+      setEditingOrder(fullOrder);
+      setIsViewOnlyMode(!canEdit);
+      setShowOrderForm(true);
     } catch (err) {
       showApiError(err, t('errorLoading'));
     }
   };
+
+  const handleEditOrder = (orderId: string) => openOrderDrawer(orderId, true);
+  const handleViewDetails = (orderId: string) => openOrderDrawer(orderId, false);
 
   const handleDeleteOrder = async (orderId: string) => {
     if (confirm(t('confirmDelete'))) {
@@ -707,7 +774,7 @@ export default function OrdersPage() {
                 emptyIcon={<FileText className="w-16 h-16" />}
                 emptyTitle={t('emptyTitle')}
                 emptyMessage={t('emptyMessage')}
-                onRowClick={(order) => handleEditOrder(order.id)}
+                onRowClick={(order) => order.apiEstado === 'Borrador' ? handleEditOrder(order.id) : handleViewDetails(order.id)}
                 sort={{
                   key: sortKey,
                   direction: sortDir,
@@ -754,12 +821,17 @@ export default function OrdersPage() {
                         <button onClick={() => handleViewDetails(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded">
                           <Eye className="w-3.5 h-3.5 text-blue-400" /> {t('view')}
                         </button>
-                        <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
-                          <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
-                        </button>
-                        <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" /> {tc('delete')}
-                        </button>
+                        {/* Regla de negocio: editar y borrar solo en Borrador — backend rechaza cualquier otro estado con 400/409. */}
+                        {order.apiEstado === 'Borrador' && (
+                          <>
+                            <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
+                              <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
+                            </button>
+                            <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" /> {tc('delete')}
+                            </button>
+                          </>
+                        )}
                         {order.status === 'delivered' && (() => {
                           const inv = invoicedOrders[parseInt(order.id)];
                           return inv ? (
@@ -801,27 +873,37 @@ export default function OrdersPage() {
         onClose={() => {
           setShowOrderForm(false);
           setEditingOrder(null);
+          setIsViewOnlyMode(false);
           setFormIsDirty(false);
         }}
-        title={editingOrder ? t('drawerTitleEdit') : t('drawerTitleNew')}
+        title={
+          !editingOrder
+            ? t('drawerTitleNew')
+            : isViewOnlyMode
+              ? t('drawerTitleView')
+              : t('drawerTitleEdit')
+        }
         icon={<ShoppingCart className="w-5 h-5 text-green-600" />}
         width="lg"
-        isDirty={formIsDirty}
-        onSave={() => orderFormRef.current?.submit()}
+        isDirty={isViewOnlyMode ? false : formIsDirty}
+        onSave={isViewOnlyMode ? undefined : () => orderFormRef.current?.submit()}
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()}>
-              {tc('cancel')}
+              {isViewOnlyMode ? tc('close') : tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
-              {editingOrder ? t('saveChanges') : t('createOrder')}
-            </Button>
+            {!isViewOnlyMode && (
+              <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
+                {editingOrder ? t('saveChanges') : t('createOrder')}
+              </Button>
+            )}
           </div>
         }
       >
         <OrderForm
           ref={orderFormRef}
           order={editingOrder}
+          readOnly={isViewOnlyMode}
           clients={clients}
           products={products}
           onSave={handleSaveOrder}
