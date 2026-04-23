@@ -300,28 +300,33 @@ public class UsuarioService
         return true;
     }
 
-    public async Task<bool> EliminarUsuarioAsync(int id)
+    public record EliminarUsuarioResult(bool Success, string? Error = null, int PedidosActivos = 0);
+
+    public async Task<EliminarUsuarioResult> EliminarUsuarioAsync(int id, bool forzar = false)
     {
         // Obtener el usuario a eliminar para validar permisos
         var usuario = await _repo.ObtenerPorIdAsync(id);
         if (usuario == null)
-            return false;
+            return new EliminarUsuarioResult(false, Error: "Usuario no encontrado");
 
-        // Super Admin puede eliminar cualquier usuario
-        if (_tenant.IsSuperAdmin)
-        {
-            return await _repo.EliminarAsync(id);
-        }
-        // Admin normal solo puede eliminar usuarios de su tenant
-        else if (_tenant.IsAdmin && usuario.TenantId == _tenant.TenantId)
-        {
-            return await _repo.EliminarAsync(id);
-        }
-        // No tiene permisos
-        else
-        {
+        // Validar permisos
+        if (!_tenant.IsSuperAdmin && !(_tenant.IsAdmin && usuario.TenantId == _tenant.TenantId))
             throw new UnauthorizedAccessException("No tienes permisos para eliminar este usuario");
+
+        // Regla: no permitir borrar usuario con pedidos activos creados por él
+        // (perderíamos contexto del creador en reportes via global query filter).
+        // forzar=true bypasa la validación para casos de cleanup explícito.
+        if (!forzar)
+        {
+            var pedidosActivos = await _repo.ContarPedidosActivosPorUsuarioAsync(id, usuario.TenantId);
+            if (pedidosActivos > 0)
+                return new EliminarUsuarioResult(false,
+                    Error: $"El usuario tiene {pedidosActivos} pedido(s) activo(s) a su nombre. Reasigna o cierra esos pedidos primero, o pasa `?forzar=true`.",
+                    PedidosActivos: pedidosActivos);
         }
+
+        var ok = await _repo.EliminarAsync(id);
+        return new EliminarUsuarioResult(ok);
     }
 
     public async Task<string?> UploadAvatarAsync(int usuarioId, IFormFile file)

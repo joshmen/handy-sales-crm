@@ -210,17 +210,21 @@ public static class UsuarioEndpoints
         }
     }
 
-    private static async Task<IResult> DeleteUsuario(int id, UsuarioService service)
+    private static async Task<IResult> DeleteUsuario(int id, bool? forzar, UsuarioService service)
     {
         try
         {
-            var success = await service.EliminarUsuarioAsync(id);
-            if (!success)
-                return Results.NotFound($"Usuario con ID {id} no encontrado");
-
-            return Results.Ok();
+            var result = await service.EliminarUsuarioAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PedidosActivos > 0)
+                return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
+            return Results.NotFound(new { error = result.Error ?? $"Usuario con ID {id} no encontrado" });
         }
-        catch (Exception ex)
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception)
         {
             return Results.Problem("Error al eliminar usuario");
         }

@@ -19,4 +19,10 @@ public interface IUsuarioRepository
     Task<Role?> ObtenerRolPorNombreAsync(string nombre);
     Task<List<UsuarioUbicacionDto>> ObtenerUbicacionesAsync(int tenantId);
     Task<List<int>> ObtenerSubordinadoIdsAsync(int supervisorId, int tenantId);
+    /// <summary>
+    /// Cuenta pedidos no-terminales (Borrador/Confirmado/EnRuta) creados por el
+    /// usuario. Si > 0 no se debería permitir borrar al usuario (pierde contexto
+    /// del creador en reportes por el global query filter).
+    /// </summary>
+    Task<int> ContarPedidosActivosPorUsuarioAsync(int usuarioId, int tenantId);
 }

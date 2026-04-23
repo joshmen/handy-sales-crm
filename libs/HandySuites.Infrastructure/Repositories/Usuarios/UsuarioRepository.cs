@@ -249,4 +249,12 @@ public class UsuarioRepository : IUsuarioRepository
         };
     }
 
+    public async Task<int> ContarPedidosActivosPorUsuarioAsync(int usuarioId, int tenantId)
+    {
+        return await _db.Pedidos
+            .Where(p => p.UsuarioId == usuarioId && p.TenantId == tenantId
+                && p.Estado != Domain.Entities.EstadoPedido.Entregado
+                && p.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .CountAsync();
+    }
 }

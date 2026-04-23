@@ -59,10 +59,13 @@ public static class ListaPrecioEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/listas-precios/{id:int}", async (int id, [FromServices] ListaPrecioService servicio) =>
+        app.MapDelete("/listas-precios/{id:int}", async (int id, bool? forzar, [FromServices] ListaPrecioService servicio) =>
         {
-            var eliminado = await servicio.EliminarListaPrecioAsync(id);
-            return eliminado ? Results.NoContent() : Results.NotFound();
+            var result = await servicio.EliminarListaPrecioAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PreciosActivos > 0)
+                return Results.Conflict(new { error = result.Error, preciosActivos = result.PreciosActivos });
+            return Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/listas-precios/{id:int}/activo", async (int id, [FromBody] ListaPrecioCambiarActivoDto dto, [FromServices] ListaPrecioService servicio) =>

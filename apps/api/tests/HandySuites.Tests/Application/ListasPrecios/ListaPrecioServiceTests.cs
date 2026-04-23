@@ -74,13 +74,26 @@ namespace HandySuites.Tests.Application.ListasPrecios
         }
 
         [Fact]
-        public async Task EliminarListaPrecioAsync_DeberiaRetornarTrue()
+        public async Task EliminarListaPrecioAsync_DeberiaRetornarSuccessSiNoHayPrecios()
         {
+            _repoMock.Setup(r => r.ContarPreciosActivosPorListaAsync(1, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(1, 1)).ReturnsAsync(true);
 
             var result = await _service.EliminarListaPrecioAsync(1);
 
-            result.Should().BeTrue();
+            result.Success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task EliminarListaPrecioAsync_DeberiaRechazarSiHayPreciosAsociados()
+        {
+            _repoMock.Setup(r => r.ContarPreciosActivosPorListaAsync(1, 1)).ReturnsAsync(5);
+
+            var result = await _service.EliminarListaPrecioAsync(1);
+
+            result.Success.Should().BeFalse();
+            result.PreciosActivos.Should().Be(5);
+            _repoMock.Verify(r => r.EliminarAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
     }
 }
