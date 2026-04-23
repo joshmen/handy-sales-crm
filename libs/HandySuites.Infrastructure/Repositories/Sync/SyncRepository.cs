@@ -251,6 +251,7 @@ public class SyncRepository : ISyncRepository
                         var detalle = new DetallePedido
                         {
                             PedidoId = existing.Id,
+                            MobileRecordId = detalleDto.LocalId,
                             ProductoId = detalleDto.ProductoId,
                             Cantidad = detalleDto.Cantidad,
                             PrecioUnitario = serverPrice,
@@ -315,6 +316,7 @@ public class SyncRepository : ISyncRepository
 
                 newDetalles.Add(new DetallePedido
                 {
+                    MobileRecordId = detalleDto.LocalId,
                     ProductoId = detalleDto.ProductoId,
                     Cantidad = detalleDto.Cantidad,
                     PrecioUnitario = serverPrice,

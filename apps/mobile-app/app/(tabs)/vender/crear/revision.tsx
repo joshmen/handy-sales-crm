@@ -50,7 +50,7 @@ export default function CrearPedidoStep3() {
     reset,
   } = useOrderDraftStore();
 
-  const subtotal = useOrderSubtotal;
+  const subtotal = useOrderSubtotal();
   const impuestos = useOrderImpuestos();
   const total = useOrderTotal();
 
@@ -299,7 +299,7 @@ export default function CrearPedidoStep3() {
       {/* Send Button */}
       <View style={styles.footer}>
         <Button
-          title={sending ? 'Procesando...' : isDirecta ? 'Cobrar y Entregar' : 'Levantar Pedido'}
+          title={sending ? 'Procesando...' : isDirecta ? 'Cobrar y Entregar' : 'Registrar Pedido'}
           onPress={handleEnviar}
           loading={sending}
           disabled={items.length === 0 || sending}
@@ -310,7 +310,7 @@ export default function CrearPedidoStep3() {
 
       <ConfirmModal
         visible={showConfirmPedido}
-        title={isDirecta ? 'Venta Directa' : 'Levantar Pedido'}
+        title={isDirecta ? 'Venta Directa' : 'Registrar Pedido'}
         message={isDirecta
           ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total)}`
           : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total)}`}

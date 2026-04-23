@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap, useOfflineClients } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
-import { ChevronLeft, Navigation, Map, CheckCircle, Clock } from 'lucide-react-native';
+import { ChevronLeft, Navigation, Map as MapIcon, CheckCircle, Clock } from 'lucide-react-native';
 import Ruta from '@/db/models/Ruta';
 import { formatTime } from '@/utils/format';
 import { performSync } from '@/sync/syncEngine';
@@ -137,7 +137,7 @@ export default function RutaScreen() {
           accessibilityLabel="Ver mapa de ruta"
           accessibilityRole="button"
         >
-          <Map size={22} color={COLORS.headerText} />
+          <MapIcon size={22} color={COLORS.headerText} />
         </TouchableOpacity>
       </View>
 

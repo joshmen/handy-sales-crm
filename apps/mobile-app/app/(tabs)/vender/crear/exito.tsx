@@ -69,10 +69,10 @@ export default function PedidoExitoScreen() {
 
   const isDirecta = tipo === 'directa';
   const isFromRuta = fromRuta === '1';
-  const title = isDirecta ? 'Venta Completada' : 'Pedido Levantado';
+  const title = isDirecta ? 'Venta Completada' : 'Pedido Registrado';
   const subtitle = isDirecta
     ? 'Venta cobrada y entregada exitosamente'
-    : 'Tu pedido ha sido levantado exitosamente';
+    : 'Tu pedido ha sido registrado exitosamente';
   const iconColor = isDirecta ? '#16a34a' : '#16a34a';
   const badgeBg = isDirecta ? '#dcfce7' : '#dcfce7';
   const badgeBorder = isDirecta ? '#dcfce7' : '#dcfce7';

@@ -189,7 +189,7 @@ export default function VenderListScreen() {
       {/* BottomSheet for order type (Supervisor/Admin) */}
       <BottomSheet
         visible={showOrderTypeSheet}
-        title="Que tipo de pedido?"
+        title="¿Qué tipo de pedido?"
         subtitle="Selecciona el tipo de venta"
         onClose={() => setShowOrderTypeSheet(false)}
       >
@@ -204,7 +204,7 @@ export default function VenderListScreen() {
             <ClipboardList size={24} color="#6b7280" />
             <View style={styles.orderTypeInfo}>
               <Text style={styles.orderTypeTitle}>Preventa</Text>
-              <Text style={styles.orderTypeDesc}>Levantar pedido para entrega posterior</Text>
+              <Text style={styles.orderTypeDesc}>Registrar pedido para entrega posterior</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textTertiary} />
           </TouchableOpacity>

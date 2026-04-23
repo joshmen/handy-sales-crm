@@ -426,7 +426,7 @@ export default function RegistrarCobroScreen() {
       <ConfirmModal
         visible={showConfirmCobro}
         title="Confirmar Cobro"
-        message={`Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`}
+        message={`¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`}
         confirmText="Confirmar"
         onConfirm={executeConfirmarCobro}
         onCancel={() => setShowConfirmCobro(false)}

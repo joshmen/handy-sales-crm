@@ -203,9 +203,11 @@ function extractDetallesPedido(
 
     for (const d of pedido.detalles) {
       const raw: DirtyRaw = {
-        id: detalleMap.get(d.id) || String(d.id),
+        // Prefer mobile_record_id (server echoes LocalId) to dedupe against
+        // locally-created offline record that was already pushed in a prior sync.
+        id: d.localId || detalleMap.get(d.id) || String(d.id),
         server_id: d.id,
-        pedido_id: pedidoMap.get(pedido.id) || String(pedido.id),
+        pedido_id: pedido.localId || pedidoMap.get(pedido.id) || String(pedido.id),
         producto_id: String(d.productoId),
         producto_server_id: d.productoId,
         producto_nombre: d.nombre ?? '',
@@ -317,7 +319,9 @@ function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<
 
 function mapCobroToRaw(c: any, cobroMap: Map<number, string>, clienteMap: Map<number, string>, pedidoMap: Map<number, string>): DirtyRaw {
   return {
-    id: cobroMap.get(c.id) || String(c.id),
+    // Prefer mobile_record_id (server echoes LocalId) to dedupe against
+    // locally-created offline record that was already pushed in a prior sync.
+    id: c.localId || cobroMap.get(c.id) || String(c.id),
     server_id: c.id,
     cliente_id: clienteMap.get(c.clienteId) || String(c.clienteId),
     cliente_server_id: c.clienteId,

@@ -412,6 +412,7 @@ public class SyncService
                 Detalles = p.Detalles?.Select(d => new SyncDetallePedidoDto
                 {
                     Id = d.Id,
+                    LocalId = d.MobileRecordId,
                     ProductoId = d.ProductoId,
                     Nombre = d.Producto?.Nombre,
                     Cantidad = d.Cantidad,
@@ -509,6 +510,7 @@ public class SyncService
             response.ServerChanges.Cobros = cobros.Select(c => new SyncCobroDto
             {
                 Id = c.Id,
+                LocalId = c.MobileRecordId,
                 ClienteId = c.ClienteId,
                 PedidoId = c.PedidoId,
                 Monto = c.Monto,

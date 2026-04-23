@@ -245,7 +245,7 @@ export default function ReciboScreen() {
           {/* Payment Method */}
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
           <View style={styles.totalLine}>
-            <Text style={styles.monoLeft}>METODO DE PAGO</Text>
+            <Text style={styles.monoLeft}>MÉTODO DE PAGO</Text>
             <Text style={styles.monoRight}>{METODO_PAGO[metodoPago] || 'Otro'}</Text>
           </View>
 
@@ -256,8 +256,8 @@ export default function ReciboScreen() {
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
 
           {/* Footer */}
-          <Text style={styles.mono}>LE ATENDIO: {(user?.name || 'VENDEDOR').toUpperCase()}</Text>
-          <Text style={styles.mono}>TOTAL DE ARTICULOS VENDIDOS = {detalles?.length || 1}</Text>
+          <Text style={styles.mono}>LE ATENDIÓ: {(user?.name || 'VENDEDOR').toUpperCase()}</Text>
+          <Text style={styles.mono}>TOTAL DE ARTÍCULOS VENDIDOS = {detalles?.length || 1}</Text>
           <Text style={[styles.mono, { marginTop: 4 }]}>{isFromVD ? '¡Gracias por su compra!' : '¡Gracias por su pago!'}</Text>
 
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
