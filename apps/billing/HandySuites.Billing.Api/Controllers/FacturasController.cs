@@ -9,6 +9,7 @@ using HandySuites.Billing.Api.Services;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 
 namespace HandySuites.Billing.Api.Controllers;
 
@@ -199,7 +200,7 @@ public class FacturasController : ControllerBase
     public async Task<ActionResult<FacturaDto>> GetFactura(long id)
     {
         var tenantId = GetTenantId();
-        
+
         var factura = await _context.Facturas
             .Include(f => f.Detalles)
             .Include(f => f.Impuestos)
@@ -210,6 +211,120 @@ public class FacturasController : ControllerBase
             return NotFound();
 
         return Ok(MapToDto(factura));
+    }
+
+    /// <summary>
+    /// Datos completos para la representación impresa 80mm del CFDI.
+    /// Incluye sellos completos, cadena original, certificados y RFC del PAC
+    /// — campos que el FacturaDto público omite pero que Anexo 20 4.0 exige
+    /// en el ticket físico entregado al cliente.
+    /// </summary>
+    [HttpGet("{id}/ticket-data")]
+    public async Task<ActionResult<FacturaTicketDataDto>> GetTicketData(long id)
+    {
+        var tenantId = GetTenantId();
+
+        var factura = await _context.Facturas
+            .Include(f => f.Detalles)
+            .Where(f => f.Id == id && f.TenantId == tenantId)
+            .FirstOrDefaultAsync();
+
+        if (factura == null) return NotFound();
+
+        if (factura.Estado != "TIMBRADA" || string.IsNullOrEmpty(factura.Uuid))
+            return BadRequest(new { error = "Solo facturas TIMBRADAS pueden imprimirse como ticket." });
+
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        // RfcPac: lo extraemos del TimbreFiscalDigital dentro del XML stored
+        // (no está como columna en Factura). Si falla el parse, devolvemos "".
+        var rfcPac = ExtractRfcPacFromXml(factura.XmlContent);
+
+        // Número de certificado del SAT se guarda en Factura.CertificadoSat (el "NoCertificado"
+        // del TFD). Lo exponemos tal cual.
+        var noCertSat = factura.CertificadoSat ?? string.Empty;
+        var noCertEmisor = factura.NoCertificadoEmisor ?? string.Empty;
+
+        var dto = new FacturaTicketDataDto
+        {
+            EmisorRfc = factura.EmisorRfc,
+            EmisorNombre = factura.EmisorNombre,
+            EmisorRegimenFiscal = factura.EmisorRegimenFiscal,
+            EmisorDireccion = config?.DireccionFiscal,
+            LugarExpedicion = config?.CodigoPostal ?? "00000",
+
+            ReceptorRfc = factura.ReceptorRfc,
+            ReceptorNombre = factura.ReceptorNombre,
+            ReceptorRegimenFiscal = factura.ReceptorRegimenFiscal,
+            ReceptorUsoCfdi = factura.ReceptorUsoCfdi,
+            ReceptorDomicilioFiscal = factura.ReceptorDomicilioFiscal,
+
+            Serie = factura.Serie,
+            Folio = factura.Folio,
+            FechaEmision = factura.FechaEmision,
+            MetodoPago = factura.MetodoPago,
+            FormaPago = factura.FormaPago,
+            TipoExportacion = "01", // Default Anexo 20: "No aplica" (productos/servicios internos)
+
+            Items = factura.Detalles
+                .OrderBy(d => d.NumeroLinea)
+                .Select(d => new FacturaTicketItemDto
+                {
+                    NumeroLinea = d.NumeroLinea,
+                    ClaveProdServ = d.ClaveProdServ,
+                    ClaveUnidad = d.ClaveUnidad,
+                    Unidad = d.Unidad,
+                    Descripcion = d.Descripcion,
+                    Cantidad = d.Cantidad,
+                    ValorUnitario = d.ValorUnitario,
+                    Importe = d.Importe,
+                    Descuento = d.Descuento,
+                    ObjetoImp = d.ObjetoImp,
+                })
+                .ToList(),
+
+            Subtotal = factura.Subtotal,
+            Descuento = factura.Descuento,
+            TotalImpuestosTrasladados = factura.TotalImpuestosTrasladados,
+            Total = factura.Total,
+            Moneda = factura.Moneda,
+
+            Uuid = factura.Uuid,
+            FechaTimbrado = factura.FechaTimbrado ?? factura.FechaCertificacion ?? factura.FechaEmision,
+            NoCertificadoEmisor = noCertEmisor,
+            NoCertificadoSat = noCertSat,
+            RfcPac = rfcPac,
+            SelloCfdi = factura.SelloCfdi ?? string.Empty,
+            SelloSat = factura.SelloSat ?? string.Empty,
+            CadenaOriginalSat = factura.CadenaOriginalSat ?? string.Empty,
+
+            Estado = factura.Estado,
+        };
+
+        return Ok(dto);
+    }
+
+    /// <summary>
+    /// Extrae el atributo RfcProvCertif del elemento TimbreFiscalDigital
+    /// (complemento del CFDI timbrado). Si el XML no está disponible o no
+    /// tiene timbre devuelve string vacío.
+    /// </summary>
+    private static string ExtractRfcPacFromXml(string? xmlContent)
+    {
+        if (string.IsNullOrWhiteSpace(xmlContent)) return string.Empty;
+        try
+        {
+            var doc = XDocument.Parse(xmlContent);
+            var tfdNs = XNamespace.Get("http://www.sat.gob.mx/TimbreFiscalDigital");
+            var tfd = doc.Descendants(tfdNs + "TimbreFiscalDigital").FirstOrDefault();
+            return tfd?.Attribute("RfcProvCertif")?.Value ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     [HttpPost]

@@ -35,15 +35,74 @@ export interface FacturaListItem {
   pedidoId?: number;
 }
 
+/** Payload completo para la representación impresa 80mm del CFDI (ver backend FacturaTicketDataDto). */
+export interface FacturaTicketData {
+  emisorRfc: string;
+  emisorNombre: string;
+  emisorRegimenFiscal?: string | null;
+  emisorDireccion?: string | null;
+  lugarExpedicion: string;
+
+  receptorRfc: string;
+  receptorNombre: string;
+  receptorRegimenFiscal?: string | null;
+  receptorUsoCfdi?: string | null;
+  receptorDomicilioFiscal?: string | null;
+
+  serie?: string | null;
+  folio: number;
+  fechaEmision: string;
+  metodoPago?: string | null;
+  formaPago?: string | null;
+  tipoExportacion: string;
+
+  items: Array<{
+    numeroLinea: number;
+    claveProdServ: string;
+    claveUnidad?: string | null;
+    unidad?: string | null;
+    descripcion: string;
+    cantidad: number;
+    valorUnitario: number;
+    importe: number;
+    descuento: number;
+    objetoImp: string;
+  }>;
+
+  subtotal: number;
+  descuento: number;
+  totalImpuestosTrasladados: number;
+  total: number;
+  moneda: string;
+
+  uuid: string;
+  fechaTimbrado: string;
+  noCertificadoEmisor: string;
+  noCertificadoSat: string;
+  rfcPac: string;
+  selloCfdi: string;
+  selloSat: string;
+  cadenaOriginalSat: string;
+
+  estado: string;
+}
+
 export const facturasApi = {
   createFromOrder: async (pedidoId: number, data: CreateFacturaRequest): Promise<FacturaResult> => {
     const res = await api.post<any>(`/api/mobile/facturas/from-order/${pedidoId}`, data);
     return res.data?.data ?? res.data;
   },
 
-  list: async (): Promise<FacturaListItem[]> => {
-    const res = await api.get<any>('/api/mobile/facturas');
-    return res.data?.data ?? res.data ?? [];
+  list: async (page = 1, pageSize = 50, estado?: string): Promise<FacturaListItem[]> => {
+    const qs = new URLSearchParams();
+    qs.append('page', String(page));
+    qs.append('pageSize', String(pageSize));
+    if (estado) qs.append('estado', estado);
+    const res = await api.get<any>(`/api/mobile/facturas?${qs.toString()}`);
+    // Backend wraps como { success, data: billingArrayOrPagedObj }. El billing devuelve
+    // un array plano de FacturaListDto.
+    const payload = res.data?.data ?? res.data;
+    return Array.isArray(payload) ? payload : (payload?.items ?? []);
   },
 
   getById: async (id: number): Promise<any> => {
@@ -54,6 +113,12 @@ export const facturasApi = {
   getPdfUrl: async (id: number): Promise<string> => {
     const res = await api.get<any>(`/api/mobile/facturas/${id}/pdf`);
     return res.data?.url ?? res.data;
+  },
+
+  getTicketData: async (id: number): Promise<FacturaTicketData> => {
+    const res = await api.get<any>(`/api/mobile/facturas/${id}/ticket-data`);
+    // Mobile API envuelve como { success, data }; billing directo devuelve plano.
+    return (res.data?.data ?? res.data) as FacturaTicketData;
   },
 
   enviar: async (id: number): Promise<void> => {

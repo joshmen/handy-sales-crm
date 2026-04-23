@@ -24,6 +24,7 @@ import {
   Target,
   TrendingUp,
   Package,
+  FileText,
 } from 'lucide-react-native';
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
@@ -63,6 +64,9 @@ function MasScreenContent() {
     setShowLogout(true);
   };
 
+  const role = user?.role;
+  const canSeeFacturas = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
+
   const primaryItems: MenuItem[] = [
     {
       label: 'Clientes',
@@ -94,6 +98,14 @@ function MasScreenContent() {
       iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/historial-rutas' as any),
     },
+    ...(canSeeFacturas
+      ? [{
+          label: 'Facturas',
+          icon: <FileText size={20} color="#6b7280" />,
+          iconBg: COLORS.background,
+          onPress: () => router.push('/(tabs)/facturas' as any),
+        }]
+      : []),
     {
       label: 'Anuncios',
       icon: <Megaphone size={20} color="#6b7280" />,

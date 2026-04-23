@@ -35,3 +35,17 @@ export function useEnviarFactura() {
     mutationFn: (id: number) => facturasApi.enviar(id),
   });
 }
+
+/**
+ * Obtiene el payload completo (sellos, cadena, certificados, RFC PAC) para
+ * la representación impresa 80mm del CFDI. On-demand: solo se llama cuando
+ * el usuario tappea "Imprimir ticket" para no bloatear la lista.
+ */
+export function useFacturaTicketData(id: number | undefined) {
+  return useQuery({
+    queryKey: ['factura-ticket-data', id],
+    queryFn: () => facturasApi.getTicketData(id!),
+    enabled: !!id,
+    staleTime: Infinity, // CFDI timbrado es inmutable; no refetch
+  });
+}

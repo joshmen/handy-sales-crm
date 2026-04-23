@@ -515,6 +515,7 @@ export interface CfdiTicketData {
   emisorRegimenFiscal: string;
   emisorDireccion?: string;
   emisorCp: string;
+  lugarExpedicion: string;          // Anexo 20: C.P. del domicilio fiscal emisor
   // Receptor
   receptorRfc: string;
   receptorNombre: string;
@@ -528,8 +529,17 @@ export interface CfdiTicketData {
   fecha: string;
   formaPago: string;
   metodoPago: string;
-  // Items
-  items: Array<{ descripcion: string; cantidad: number; precioUnitario: number; importe: number }>;
+  tipoExportacion: string;          // Anexo 20 4.0 obligatorio. Default "01 - No aplica"
+  // Items (con claves SAT obligatorias en CFDI 4.0)
+  items: Array<{
+    descripcion: string;
+    cantidad: number;
+    precioUnitario: number;
+    importe: number;
+    claveProductoServ: string;      // ClaveProdServ SAT (8 dígitos)
+    claveUnidad: string;            // ClaveUnidad SAT (ej: "H87", "E48")
+    objetoImpuesto: string;         // "01"|"02"|"03"|"04"
+  }>;
   subtotal: number;
   iva: number;
   total: number;
@@ -540,7 +550,8 @@ export interface CfdiTicketData {
   cadenaOriginal: string;
   noCertificadoEmisor: string;
   noCertificadoSat: string;
-  fechaTimbrado: string;
+  fechaTimbrado: string;            // ISO string desde server; el template formatea con TZ
+  rfcPac: string;                   // RfcProvCertif del TimbreFiscalDigital
   // Extras
   vendedorName: string;
   logoUri?: string;
@@ -566,22 +577,31 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
       try { await printLogo(data.logoUri); } catch { /* skip */ }
     }
 
+    // Helper: wrap texto largo en líneas de W chars. Se usa para sellos y cadena
+    // (Anexo 20 exige imprimirlos completos, sin truncar).
+    const wrap = async (s: string) => {
+      for (let i = 0; i < s.length; i += W) {
+        await P.printText(`${s.slice(i, i + W)}\n`, {});
+      }
+    };
+
     // ── Emisor header ──
     await P.printerAlign(ALIGN.CENTER);
     await P.printText(`${data.emisorNombre}\n`, { widthtimes: 1, heigthtimes: 1 });
     await P.printText(`RFC: ${data.emisorRfc}\n`, {});
-    await P.printText(`Regimen: ${data.emisorRegimenFiscal}\n`, {});
+    await P.printText(`Regimen Fiscal: ${data.emisorRegimenFiscal}\n`, {});
     if (data.emisorDireccion) {
       await P.printText(`${data.emisorDireccion}\n`, {});
     }
     await P.printText(`C.P. ${data.emisorCp}\n`, {});
+    await P.printText(`Lugar de Expedicion: ${data.lugarExpedicion}\n`, {});
     await P.printText('\n', {});
 
     // ── Title ──
     await P.printText('FACTURA ELECTRONICA\n', { widthtimes: 1, heigthtimes: 1 });
     await P.printText(sep, {});
 
-    // ── Serie / Folio / Fecha ──
+    // ── Serie / Folio / Fecha / Tipo Exportación ──
     await P.printerAlign(ALIGN.LEFT);
     if (data.serie || data.folio) {
       await P.printText(`Serie: ${data.serie ?? '-'}  Folio: ${data.folio ?? '-'}\n`, {});
@@ -589,30 +609,35 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     await P.printText(`Fecha: ${data.fecha}\n`, {});
     await P.printText(`Forma Pago: ${data.formaPago}\n`, {});
     await P.printText(`Metodo Pago: ${data.metodoPago}\n`, {});
+    await P.printText(`Tipo Exportacion: ${data.tipoExportacion}\n`, {});
     await P.printText(sepThin, {});
 
     // ── Receptor ──
     await P.printText('RECEPTOR\n', { widthtimes: 0, heigthtimes: 0 });
     await P.printText(`RFC: ${data.receptorRfc}\n`, {});
     await P.printText(`Nombre: ${data.receptorNombre}\n`, {});
-    await P.printText(`Regimen: ${data.receptorRegimenFiscal}\n`, {});
+    await P.printText(`Regimen Fiscal: ${data.receptorRegimenFiscal}\n`, {});
     await P.printText(`Uso CFDI: ${data.receptorUsoCfdi}\n`, {});
     await P.printText(`C.P. ${data.receptorCp}\n`, {});
     await P.printText(sepThin, {});
 
-    // ── Items ──
+    // ── Items con claves SAT ──
     await P.printText('CONCEPTOS\n', {});
     for (const item of data.items) {
       await P.printerAlign(ALIGN.LEFT);
       const left = `${item.descripcion} x${item.cantidad}`;
       const right = fmt(item.importe);
-      // If line is too long, wrap description on first line, total on second
       if (left.length + right.length + 1 > W) {
         await P.printText(`${item.descripcion}\n`, {});
         await P.printText(pad(`  x${item.cantidad} @${fmt(item.precioUnitario)}`, right) + '\n', {});
       } else {
         await P.printText(pad(left, right) + '\n', {});
       }
+      // Sub-línea con claves SAT requeridas por CFDI 4.0
+      await P.printText(
+        `  Clave SAT: ${item.claveProductoServ} | Unidad: ${item.claveUnidad} | ObjImp: ${item.objetoImpuesto}\n`,
+        {}
+      );
     }
     await P.printText(sepThin, {});
 
@@ -636,26 +661,36 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     await P.printText(`${data.uuid}\n`, {});
     await P.printText('\n', {});
 
-    // ── Certificados ──
+    // ── Certificados + fecha timbrado con TZ CDMX ──
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(`No. Cert. Emisor: ${data.noCertificadoEmisor}\n`, {});
     await P.printText(`No. Cert. SAT: ${data.noCertificadoSat}\n`, {});
-    await P.printText(`Fecha Timbrado: ${data.fechaTimbrado}\n`, {});
-    await P.printText(sepThin, {});
-
-    // ── Sellos (truncated for thermal) ──
-    await P.printText('Sello CFDI:\n', {});
-    await P.printText(`${data.selloCfdi.slice(0, 40)}...\n`, {});
-    await P.printText('Sello SAT:\n', {});
-    await P.printText(`${data.selloSat.slice(0, 40)}...\n`, {});
-    await P.printText(sepThin, {});
-
-    // ── Cadena original (wrap at W chars) ──
-    await P.printText('Cadena Original:\n', {});
-    const cadena = data.cadenaOriginal;
-    for (let i = 0; i < cadena.length; i += W) {
-      await P.printText(`${cadena.slice(i, i + W)}\n`, {});
+    await P.printText(`RFC PAC: ${data.rfcPac}\n`, {});
+    {
+      let fechaFmt = data.fechaTimbrado;
+      try {
+        fechaFmt = new Date(data.fechaTimbrado).toLocaleString('es-MX', {
+          timeZone: 'America/Mexico_City',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+        }) + ' (CDMX)';
+      } catch { /* usar el raw si no parsea */ }
+      await P.printText(`Fecha Timbrado: ${fechaFmt}\n`, {});
     }
+    await P.printText(sepThin, {});
+
+    // ── Sellos COMPLETOS (Anexo 20 4.0: no truncar) ──
+    await P.printText('Sello Digital del CFDI:\n', {});
+    await wrap(data.selloCfdi);
+    await P.printText('\n', {});
+    await P.printText('Sello Digital del SAT:\n', {});
+    await wrap(data.selloSat);
+    await P.printText(sepThin, {});
+
+    // ── Cadena original del complemento de certificación ──
+    await P.printText('Cadena Original del Complemento de\n', {});
+    await P.printText('Certificacion Digital del SAT:\n', {});
+    await wrap(data.cadenaOriginal);
     await P.printText(sepThin, {});
 
     // ── Leyenda ──

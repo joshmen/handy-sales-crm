@@ -181,6 +181,7 @@ services:
       Multitenancy__DefaultTenantName: "Default"
       Seq__ServerUrl: "http://seq:5341"
       MAIN_API_URL: "http://api_main:1050"
+      BILLING_API_URL: "http://api_billing:1051"
       RUN_MIGRATIONS: "false"
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
