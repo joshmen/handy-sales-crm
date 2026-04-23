@@ -60,9 +60,25 @@ public class ClienteService
         return updated ? new ActualizarClienteResult(true) : new ActualizarClienteResult(false, Error: "Cliente no encontrado.");
     }
 
-    public async Task<bool> EliminarClienteAsync(int id)
+    public record EliminarClienteResult(bool Success, string? Error = null, int PedidosActivos = 0);
+
+    public async Task<EliminarClienteResult> EliminarClienteAsync(int id, bool forzar = false)
     {
-        return await _repo.EliminarAsync(id, _tenant.TenantId);
+        // Regla de negocio: no permitir borrar cliente con pedidos no-terminales
+        // (Borrador/Confirmado/EnRuta) salvo confirmación explícita del user.
+        // Protege de perder contexto de pedidos en proceso por el global query
+        // filter (Cliente.EliminadoEn == null).
+        if (!forzar)
+        {
+            var pedidosActivos = await _repo.ContarPedidosActivosAsync(id, _tenant.TenantId);
+            if (pedidosActivos > 0)
+                return new EliminarClienteResult(false,
+                    Error: $"El cliente tiene {pedidosActivos} pedido(s) activo(s). Cancélalos o espera a que se entreguen antes de eliminarlo, o pasa `?forzar=true` para eliminarlo de todas formas.",
+                    PedidosActivos: pedidosActivos);
+        }
+
+        var ok = await _repo.EliminarAsync(id, _tenant.TenantId);
+        return new EliminarClienteResult(ok);
     }
 
     public async Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro)

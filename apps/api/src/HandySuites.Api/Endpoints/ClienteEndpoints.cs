@@ -105,10 +105,13 @@ public static class ClienteEndpoints
         }).RequireAuthorization();
 
 
-        app.MapDelete("/clientes/{id:int}", async (int id, [FromServices] ClienteService servicio) =>
+        app.MapDelete("/clientes/{id:int}", async (int id, bool? forzar, [FromServices] ClienteService servicio) =>
         {
-            var deleted = await servicio.EliminarClienteAsync(id);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            var result = await servicio.EliminarClienteAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PedidosActivos > 0)
+                return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
+            return Results.NotFound();
         }).RequireAuthorization();
 
         app.MapPatch("/clientes/{id:int}/activo", async (int id, [FromBody] ClienteCambiarActivoDto dto, [FromServices] ClienteService servicio) =>

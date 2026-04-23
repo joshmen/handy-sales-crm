@@ -242,9 +242,12 @@ class ClientService {
     }
   }
 
-  async deleteClient(id: string | number): Promise<void> {
+  async deleteClient(id: string | number, forzar = false): Promise<void> {
     try {
-      await api.delete(`${this.basePath}/${id}`);
+      const url = forzar
+        ? `${this.basePath}/${id}?forzar=true`
+        : `${this.basePath}/${id}`;
+      await api.delete(url);
     } catch (error) {
       throw handleApiError(error);
     }

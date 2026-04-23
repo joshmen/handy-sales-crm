@@ -325,4 +325,33 @@ public class ClienteRepository : IClienteRepository
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<int> ContarPedidosActivosAsync(int clienteId, int tenantId)
+    {
+        // Estados no-terminales canónicos (post SimplificarEstadosPedido, mar 2026):
+        //   Borrador=0, Confirmado=2, EnRuta=4. Terminales: Entregado=5, Cancelado=6.
+        // Usamos los valores del enum; nota que el enum también incluye los legacy
+        // Enviado=1/EnProceso=3 [Obsolete] — si en BD queda algún pedido viejo con
+        // esos valores, lo tratamos como activo (conservador).
+        return await _db.Pedidos
+            .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId)
+            .Where(p => p.Estado != Domain.Entities.EstadoPedido.Entregado
+                     && p.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .CountAsync();
+    }
+
+    public async Task<decimal> SaldoPendienteTotalAsync(int clienteId, int tenantId)
+    {
+        // Total facturado (no cancelado) - total cobrado activo.
+        var totalFacturado = await _db.Pedidos
+            .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId
+                && p.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .SumAsync(p => (decimal?)p.Total) ?? 0m;
+
+        var totalCobrado = await _db.Cobros
+            .Where(c => c.ClienteId == clienteId && c.TenantId == tenantId && c.Activo)
+            .SumAsync(c => (decimal?)c.Monto) ?? 0m;
+
+        return totalFacturado - totalCobrado;
+    }
 }
