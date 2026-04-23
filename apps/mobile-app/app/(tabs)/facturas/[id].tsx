@@ -34,7 +34,7 @@ export default function FacturaDetailScreen() {
   const id = Number(idParam);
 
   const { data: factura, isLoading } = useFacturaById(id);
-  const { connectedDevice, setPaperWidth } = usePrinterStore();
+  const { connectedDevice, paperWidth } = usePrinterStore();
   const enviarFactura = useEnviarFactura();
   const [printing, setPrinting] = useState(false);
 
@@ -91,11 +91,30 @@ export default function FacturaDetailScreen() {
       return;
     }
     if (!connectedDevice) {
-      Toast.show({
-        type: 'error',
-        text1: 'Impresora no conectada',
-        text2: 'Conecta tu impresora 80mm desde Más → Impresora.',
-      });
+      Alert.alert(
+        'Impresora no conectada',
+        'Conecta una impresora térmica 80mm desde Más → Impresora para poder imprimir el ticket CFDI.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ir a Impresora', onPress: () => router.push('/(tabs)/impresora' as any) },
+        ],
+      );
+      return;
+    }
+
+    // Anexo 20 4.0: la representación impresa del CFDI requiere sellos
+    // completos (~344 chars c/u) + cadena original + claves SAT por línea.
+    // En 58mm (32 chars/línea) el texto queda truncado o ilegible.
+    // No forzamos el setting — validamos la impresora física que el user configuró.
+    if (paperWidth !== 80) {
+      Alert.alert(
+        'Impresora 80mm requerida',
+        `Tu impresora está configurada en ${paperWidth}mm. Los tickets CFDI solo pueden imprimirse en 80mm.\n\nVe a Más → Impresora y cambia el ancho de papel si tienes una 80mm, o conecta una impresora compatible.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ir a Impresora', onPress: () => router.push('/(tabs)/impresora' as any) },
+        ],
+      );
       return;
     }
 
@@ -108,10 +127,6 @@ export default function FacturaDetailScreen() {
         Toast.show({ type: 'error', text1: 'Factura no timbrada', text2: 'Solo se imprimen facturas TIMBRADA.' });
         return;
       }
-
-      // Representación impresa CFDI solo tiene sentido en 80mm (Anexo 20 requiere
-      // sellos completos + cadena original + claves SAT, no caben en 58mm).
-      setPaperWidth(80);
 
       const success = await printCfdiTicket({
         emisorRfc: td.emisorRfc,
@@ -237,6 +252,15 @@ export default function FacturaDetailScreen() {
 
         <View style={{ height: 12 }} />
 
+        {isTimbrada && isNativeAvailable() && connectedDevice && paperWidth !== 80 && (
+          <View style={styles.warnBanner}>
+            <Text style={styles.warnText}>
+              ⚠ Tu impresora está configurada en {paperWidth}mm. Los tickets CFDI requieren 80mm.
+              Ajusta el ancho en Más → Impresora.
+            </Text>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.btnPrimary, (!isTimbrada || printing) && styles.btnDisabled]}
           onPress={handlePrint}
@@ -335,4 +359,13 @@ const styles = StyleSheet.create({
   btnSecondaryText: { color: COLORS.primary, fontSize: 15, fontWeight: '600' },
   btnDisabled: { opacity: 0.5 },
   hint: { fontSize: 12, color: COLORS.textTertiary, marginTop: 12, textAlign: 'center', lineHeight: 18 },
+  warnBanner: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  warnText: { fontSize: 12, color: '#92400e', lineHeight: 18 },
 });
