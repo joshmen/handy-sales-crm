@@ -279,7 +279,7 @@ export default function ParadaDetailScreen() {
           accessibilityRole="button"
         >
           <MapPin size={16} color="#ef4444" />
-          <Text style={styles.gpsBannerText}>Este cliente no tiene ubicacion GPS</Text>
+          <Text style={styles.gpsBannerText}>Este cliente no tiene ubicación GPS</Text>
           <Text style={styles.gpsBannerAction}>Agregar</Text>
         </TouchableOpacity>
         </Animated.View>
@@ -530,7 +530,7 @@ export default function ParadaDetailScreen() {
             />
             {noVisitoReason.length > 0 && noVisitoReason.length < 10 && (
               <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: -14, marginBottom: 10, alignSelf: 'flex-end' }}>
-                {10 - noVisitoReason.length} caracteres mas
+                {10 - noVisitoReason.length} caracteres más
               </Text>
             )}
             <View style={{ alignSelf: 'stretch' }}>

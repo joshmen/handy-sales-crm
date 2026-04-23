@@ -1,4 +1,4 @@
-import { Model } from '@nozbe/watermelondb';
+import { Model, Q } from '@nozbe/watermelondb';
 import { field, text, date, readonly, relation, writer } from '@nozbe/watermelondb/decorators';
 
 export default class RutaDetalle extends Model {
@@ -27,6 +27,21 @@ export default class RutaDetalle extends Model {
   @relation('rutas', 'ruta_id') ruta: any;
 
   @writer async arrive(lat: number, lng: number) {
+    // BR-R1: Solo una parada puede estar EnVisita por ruta a la vez.
+    // Si el vendedor abre otra parada sin cerrar la anterior, la anterior
+    // se revierte a Pendiente (el estado queda como estaba antes del check-in).
+    const siblings = await (this.collection as any).query(
+      Q.where('ruta_id', this.rutaId),
+      Q.where('estado', 1),
+    ).fetch();
+    for (const s of siblings) {
+      if (s.id !== this.id) {
+        await s.update((r: any) => {
+          r.estado = 0;
+          r.horaLlegada = null;
+        });
+      }
+    }
     await this.update((record: any) => {
       record.estado = 1; // EnVisita
       record.horaLlegada = new Date();
