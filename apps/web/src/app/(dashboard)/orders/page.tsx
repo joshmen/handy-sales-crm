@@ -197,6 +197,8 @@ export default function OrdersPage() {
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReasonText, setCancelReasonText] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -395,15 +397,24 @@ export default function OrdersPage() {
   const handleEditOrder = (orderId: string) => openOrderDrawer(orderId, true);
   const handleViewDetails = (orderId: string) => openOrderDrawer(orderId, false);
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (confirm(t('confirmDelete'))) {
-      try {
-        await orderService.deleteOrder(parseInt(orderId));
-        setOrders(orders.filter(o => o.id !== orderId));
-        toast.success(t('orderDeleted'));
-      } catch (err) {
-        showApiError(err, t('errorDeleting'));
-      }
+  const handleDeleteOrder = (orderId: string) => {
+    // Reemplaza window.confirm() nativo por Modal (consistencia con cancelar y
+    // rechazar-prospecto; feedback del user anterior).
+    setDeleteOrderId(orderId);
+  };
+
+  const submitDeleteOrder = async () => {
+    if (!deleteOrderId) return;
+    setDeleteLoading(true);
+    try {
+      await orderService.deleteOrder(parseInt(deleteOrderId));
+      setOrders(orders.filter(o => o.id !== deleteOrderId));
+      toast.success(t('orderDeleted'));
+      setDeleteOrderId(null);
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -956,6 +967,26 @@ export default function OrdersPage() {
               disabled={cancelLoading}
             >
               {cancelLoading ? tc('loading') : t('confirmCancelOrder') || 'Cancelar pedido'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: confirmar eliminación de pedido Borrador (reemplaza window.confirm()). */}
+      <Modal
+        isOpen={deleteOrderId !== null}
+        onClose={() => { if (!deleteLoading) setDeleteOrderId(null); }}
+        title={tc('delete')}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/80">{t('confirmDelete')}</p>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setDeleteOrderId(null)} disabled={deleteLoading}>
+              {tc('cancel')}
+            </Button>
+            <Button type="button" variant="destructive" onClick={submitDeleteOrder} disabled={deleteLoading}>
+              {deleteLoading ? tc('loading') : tc('delete')}
             </Button>
           </div>
         </div>
