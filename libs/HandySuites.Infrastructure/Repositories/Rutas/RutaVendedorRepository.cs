@@ -276,7 +276,10 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     public async Task<bool> LlegarAParadaAsync(int detalleId, DateTime horaLlegada, double latitud, double longitud)
     {
         var detalle = await _db.RutasDetalle.FindAsync(detalleId);
-        if (detalle == null || detalle.Estado != EstadoParada.Pendiente && detalle.Estado != EstadoParada.EnCamino)
+        if (detalle == null) return false;
+        // Bloquea re-arribo si la parada ya fue cerrada (salida) u omitida.
+        if (detalle.HoraSalidaReal.HasValue) return false;
+        if (detalle.Estado != EstadoParada.Pendiente && detalle.Estado != EstadoParada.EnCamino)
             return false;
 
         detalle.Estado = EstadoParada.Visitado;

@@ -577,7 +577,18 @@ public class SyncRepository : ISyncRepository
 
         if (existing == null) return false;
 
-        existing.Estado = (EstadoParada)dto.Estado;
+        // Normalizar estado desde timestamps: mobile y backend tienen enums
+        // divergentes en el valor 1 (mobile=EnVisita, backend=EnCamino). Si hay
+        // HoraSalidaReal el estado efectivo es Visitado (a menos que sea
+        // Omitido). Previene paradas con horaSalida set pero estado inconsistente.
+        var clientEstado = (EstadoParada)dto.Estado;
+        if (clientEstado == EstadoParada.Omitido)
+            existing.Estado = EstadoParada.Omitido;
+        else if (dto.HoraSalidaReal.HasValue)
+            existing.Estado = EstadoParada.Visitado;
+        else
+            existing.Estado = clientEstado;
+
         existing.RazonOmision = dto.RazonOmision;
         existing.HoraLlegadaReal = dto.HoraLlegadaReal;
         existing.HoraSalidaReal = dto.HoraSalidaReal;

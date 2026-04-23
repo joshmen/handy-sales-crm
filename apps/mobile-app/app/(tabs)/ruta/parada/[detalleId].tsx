@@ -145,6 +145,10 @@ export default function ParadaDetailScreen() {
   }, [route?.id, route?.estado]);
 
   const executeNoVisito = useCallback(async () => {
+    // Dismiss keyboard FIRST, then close modal — avoids Android SIGSEGV when
+    // Modal teardown races with keyboard animation.
+    Keyboard.dismiss();
+    await new Promise((r) => setTimeout(r, 80));
     setShowNoVisito(false);
     const reason = noVisitoReason || 'No se visitó';
     try {
@@ -162,7 +166,12 @@ export default function ParadaDetailScreen() {
       await checkAutoCompleteRoute();
       setNoVisitoReason('');
       setNoVisitoPhotos([]);
-      router.back();
+      // Defer navigation until modal fully gone, and fall back to replace if
+      // the stack has no previous screen (edge case when deep-linked).
+      setTimeout(() => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/(tabs)/ruta' as any);
+      }, 120);
     } catch {
       setShowError('No se pudo marcar la parada.');
     }
@@ -199,6 +208,8 @@ export default function ParadaDetailScreen() {
   }, [pedido, stop, router, checkAutoCompleteRoute]);
 
   const executeNoEntrega = useCallback(async () => {
+    Keyboard.dismiss();
+    await new Promise((r) => setTimeout(r, 80));
     setShowNoEntrega(false);
     const reason = noEntregaReason || 'No se entregó';
     setDelivering(true);
@@ -217,7 +228,10 @@ export default function ParadaDetailScreen() {
       await checkAutoCompleteRoute();
       setNoEntregaReason('');
       setNoEntregaPhotos([]);
-      router.back();
+      setTimeout(() => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/(tabs)/ruta' as any);
+      }, 120);
     } catch {
       setShowError('No se pudo omitir la parada.');
     } finally {
@@ -245,9 +259,10 @@ export default function ParadaDetailScreen() {
     );
   }
 
-  const isPendiente = stop.estado === 0;
-  const isEnProgreso = stop.estado === 1;
-  const statusColor = STOP_STATUS_COLORS[stop.estado] || '#6b7280';
+  const effectiveEstado = stop.displayEstado;
+  const isPendiente = effectiveEstado === 0;
+  const isEnProgreso = effectiveEstado === 1;
+  const statusColor = STOP_STATUS_COLORS[effectiveEstado] || '#6b7280';
 
   return (
     <View style={styles.container}>
@@ -258,7 +273,7 @@ export default function ParadaDetailScreen() {
       </TouchableOpacity>
       <Text style={styles.blueHeaderTitle}>Parada #{stop.orden}</Text>
       <Badge
-        label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
+        label={STOP_STATUS_NAMES[effectiveEstado] || 'Desconocido'}
         color={statusColor}
         bgColor={`${statusColor}25`}
         size="md"
@@ -326,7 +341,7 @@ export default function ParadaDetailScreen() {
       <Animated.View entering={FadeInDown.duration(400).delay(100)}>
         <View style={[styles.statusBanner, { backgroundColor: `${statusColor}15`, borderColor: `${statusColor}30` }]}>
           <Badge
-            label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
+            label={STOP_STATUS_NAMES[effectiveEstado] || 'Desconocido'}
             color={statusColor}
             bgColor={`${statusColor}25`}
             size="md"

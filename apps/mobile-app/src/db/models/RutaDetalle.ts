@@ -26,7 +26,19 @@ export default class RutaDetalle extends Model {
 
   @relation('rutas', 'ruta_id') ruta: any;
 
+  // Estado efectivo: si ya hay hora de salida (y no fue Omitida), la parada se
+  // considera Completada aunque `estado` crudo haya quedado en 1 por sync
+  // inconsistente (enum mobile/backend divergente) o data corrupta.
+  get displayEstado(): number {
+    if (this.estado === 3) return 3;
+    if (this.horaSalida) return 2;
+    return this.estado;
+  }
+
   @writer async arrive(lat: number, lng: number) {
+    // Guard: no re-abrir una parada ya completada (horaSalida set) u omitida.
+    if (this.horaSalida || this.estado === 2 || this.estado === 3) return;
+
     // BR-R1: Solo una parada puede estar EnVisita por ruta a la vez.
     // Si el vendedor abre otra parada sin cerrar la anterior, la anterior
     // se revierte a Pendiente (el estado queda como estaba antes del check-in).

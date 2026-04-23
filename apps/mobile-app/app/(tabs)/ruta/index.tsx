@@ -82,8 +82,8 @@ export default function RutaScreen() {
       .fetch()
       .then((stops) => {
         const total = stops.length;
-        const visitadas = stops.filter((d) => d.estado === 2).length;
-        const omitidas = stops.filter((d) => d.estado === 3).length;
+        const visitadas = stops.filter((d) => d.displayEstado === 2).length;
+        const omitidas = stops.filter((d) => d.displayEstado === 3).length;
         setStats({ total, atendidas: visitadas + omitidas, pendientes: total - visitadas - omitidas, omitidas });
       })
       .catch(() => {});
@@ -257,12 +257,13 @@ export default function RutaScreen() {
         <Animated.View entering={FadeInDown.duration(400).delay(300)}>
           <View style={styles.stopsSection}>
             {detalles?.map((stop: RutaDetalle) => {
-              const dotBg = STOP_DOT_COLORS[stop.estado] ?? '#e2e8f0';
-              const dotTextColor = STOP_DOT_TEXT[stop.estado] ?? '#94a3b8';
-              const statusColor = STOP_STATUS_TEXT_COLORS[stop.estado] ?? '#94a3b8';
-              const statusName = STOP_STATUS_NAMES[stop.estado] ?? 'Pendiente';
-              const isPending = stop.estado === 0;
-              const isInProgress = stop.estado === 1;
+              const eff = stop.displayEstado;
+              const dotBg = STOP_DOT_COLORS[eff] ?? '#e2e8f0';
+              const dotTextColor = STOP_DOT_TEXT[eff] ?? '#94a3b8';
+              const statusColor = STOP_STATUS_TEXT_COLORS[eff] ?? '#94a3b8';
+              const statusName = STOP_STATUS_NAMES[eff] ?? 'Pendiente';
+              const isPending = eff === 0;
+              const isInProgress = eff === 1;
 
               return (
                 <TouchableOpacity
