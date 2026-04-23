@@ -1538,6 +1538,7 @@
       "searchClientPlaceholder": "Buscar por nombre...",
       "noClients": "No se encontraron clientes",
       "orderLabel": "Pedido",
+      "maxBalance": "Saldo máximo",
       "selectOrder": "Seleccionar pedido...",
       "searchOrderPlaceholder": "Buscar por número...",
       "noOrders": "No se encontraron pedidos",

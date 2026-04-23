@@ -1538,6 +1538,7 @@
       "searchClientPlaceholder": "Search by name...",
       "noClients": "No clients found",
       "orderLabel": "Order",
+      "maxBalance": "Maximum balance",
       "selectOrder": "Select order...",
       "searchOrderPlaceholder": "Search by number...",
       "noOrders": "No orders found",
