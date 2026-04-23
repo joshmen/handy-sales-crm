@@ -37,12 +37,18 @@ public class PrecioPorProductoService
     public async Task<int> CrearPrecioAsync(PrecioPorProductoCreateDto dto)
     {
         await ValidarFksAsync(dto);
+        // Un combo (producto, lista) debe ser único por tenant — permitir duplicados
+        // lleva a UX ambigua (¿qué precio gana?) y a reportes inconsistentes.
+        if (await _repo.ExisteComboAsync(dto.ProductoId, dto.ListaPrecioId, _tenant.TenantId, excludeId: null))
+            throw new InvalidOperationException("Ya existe un precio para este producto en la lista seleccionada. Edítalo en vez de crear uno nuevo.");
         return await _repo.CrearAsync(dto, _tenant.TenantId);
     }
 
     public async Task<bool> ActualizarPrecioAsync(int id, PrecioPorProductoCreateDto dto)
     {
         await ValidarFksAsync(dto);
+        if (await _repo.ExisteComboAsync(dto.ProductoId, dto.ListaPrecioId, _tenant.TenantId, excludeId: id))
+            throw new InvalidOperationException("Ya existe otro precio para este producto en la lista seleccionada.");
         return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
     }
 

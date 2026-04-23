@@ -104,4 +104,16 @@ public class PrecioPorProductoRepository : IPrecioPorProductoRepository
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExisteComboAsync(int productoId, int listaPrecioId, int tenantId, int? excludeId)
+    {
+        var query = _db.PreciosPorProducto
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId
+                && p.ProductoId == productoId
+                && p.ListaPrecioId == listaPrecioId);
+        if (excludeId.HasValue)
+            query = query.Where(p => p.Id != excludeId.Value);
+        return await query.AnyAsync();
+    }
 }
