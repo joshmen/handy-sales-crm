@@ -42,6 +42,12 @@ public class CobroService
 
     public async Task<int> CrearAsync(CobroCreateDto dto)
     {
+        // BR-C-monto: el monto debe ser estrictamente positivo. Antes el endpoint
+        // mobile aceptaba 0 y negativos porque no había validación en el Service
+        // (la validación existía solo en UpsertCobroAsync del SyncRepository).
+        if (dto.Monto <= 0)
+            throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
+
         // BR-050 (Audit MEDIUM-11, Abril 2026): validar que ClienteId y PedidoId
         // pertenezcan al tenant del caller antes de crear el cobro. RLS ya mitiga
         // a nivel DB pero app-layer debe validar para devolver errores accionables

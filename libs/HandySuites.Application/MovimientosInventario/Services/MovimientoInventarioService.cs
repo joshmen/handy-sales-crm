@@ -36,14 +36,10 @@ public class MovimientoInventarioService
 
     public async Task<(int MovimientoId, bool Success, string? Error)> CrearMovimientoAsync(MovimientoInventarioCreateDto dto)
     {
-        // Validar tipo de movimiento antes de entrar en transacción (evita lock inútil).
         var tipoUpper = dto.TipoMovimiento.ToUpperInvariant();
         if (tipoUpper != "ENTRADA" && tipoUpper != "SALIDA" && tipoUpper != "AJUSTE")
             return (0, false, $"Tipo de movimiento inválido: {dto.TipoMovimiento}. Use ENTRADA, SALIDA o AJUSTE");
 
-        // Wrap inventory update + movement creation in a transaction + advisory lock.
-        // El lock serializa movimientos del mismo (tenant, producto) y previene oversell
-        // cuando dos SALIDA paralelas ven la misma cantidadAnterior (READ COMMITTED).
         return await _transactionManager.ExecuteInTransactionAsync<(int, bool, string?)>(async () =>
         {
             await _inventarioRepo.AcquireProductoLockAsync(_tenant.TenantId, dto.ProductoId);
@@ -65,16 +61,11 @@ public class MovimientoInventarioService
                         return (0, false, $"Stock insuficiente. Stock actual: {cantidadAnterior}, solicitado: {dto.Cantidad}");
                     cantidadNueva = cantidadAnterior - dto.Cantidad;
                     break;
-                default: // AJUSTE
+                default:
                     cantidadNueva = dto.Cantidad;
                     break;
             }
 
-        // Wrap inventory update + movement creation in a transaction.
-        // Uses ExecuteInTransactionAsync to be compatible with retrying execution strategy.
-        return await _transactionManager.ExecuteInTransactionAsync<(int, bool, string?)>(async () =>
-        {
-            // Actualizar el inventario
             var updateDto = new Inventario.DTOs.InventarioUpdateDto
             {
                 CantidadActual = cantidadNueva,
