@@ -24,11 +24,26 @@ public static class MobileSupervisorEndpoints
 
             var supervisorId = int.Parse(tenant.UserId);
 
-            var vendedores = await db.Usuarios
+            // ADMIN/SUPER_ADMIN ven a TODOS los vendedores y supervisores del tenant;
+            // SUPERVISOR ve solo a sus subordinados directos.
+            var baseQuery = db.Usuarios
                 .AsNoTracking()
-                .Where(u => u.SupervisorId == supervisorId
-                         && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
+                .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null);
+
+            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            {
+                // Excluir a uno mismo y a otros admins; mostrar supervisores y vendedores
+                baseQuery = baseQuery.Where(u =>
+                    u.Id != supervisorId
+                    && !u.EsAdmin
+                    && !u.EsSuperAdmin);
+            }
+            else
+            {
+                baseQuery = baseQuery.Where(u => u.SupervisorId == supervisorId);
+            }
+
+            var vendedores = await baseQuery
                 .Select(u => new
                 {
                     u.Id,

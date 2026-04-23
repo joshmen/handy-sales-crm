@@ -476,72 +476,9 @@ export default function CrearClienteScreen() {
 
         {showFiscal && (
           <View>
-            <View style={styles.field}>
-              <Text style={styles.label}>RFC Fiscal {requiereFactura ? '*' : ''}</Text>
-              <TextInput
-                style={[styles.input, touched && errors.rfcFiscal ? styles.inputError : null]}
-                value={rfcFiscal}
-                onChangeText={setRfcFiscal}
-                placeholder="XAXX010101000"
-                placeholderTextColor={COLORS.textTertiary}
-                autoCapitalize="characters"
-                maxLength={13}
-                accessibilityLabel="RFC fiscal"
-              />
-              {touched && <FieldError message={errors.rfcFiscal} />}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Razón Social {requiereFactura ? '*' : ''}</Text>
-              <TextInput
-                style={[styles.input, touched && errors.razonSocial ? styles.inputError : null]}
-                value={razonSocial}
-                onChangeText={setRazonSocial}
-                placeholder="Nombre o razón social"
-                placeholderTextColor={COLORS.textTertiary}
-                accessibilityLabel="Razón social"
-              />
-              {touched && <FieldError message={errors.razonSocial} />}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Régimen Fiscal {requiereFactura ? '*' : ''}</Text>
-              <SatDropdown
-                label="Régimen Fiscal"
-                items={REGIMEN_FISCAL}
-                selectedValue={regimenFiscal}
-                onSelect={setRegimenFiscal}
-                placeholder="Seleccionar régimen..."
-              />
-              {touched && <FieldError message={errors.regimenFiscal} />}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Uso CFDI</Text>
-              <SatDropdown
-                label="Uso CFDI"
-                items={USO_CFDI}
-                selectedValue={usoCfdi}
-                onSelect={setUsoCfdi}
-                placeholder="Seleccionar uso CFDI..."
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Código Postal Fiscal {requiereFactura ? '*' : ''}</Text>
-              <TextInput
-                style={[styles.input, touched && errors.cpFiscal ? styles.inputError : null]}
-                value={cpFiscal}
-                onChangeText={setCpFiscal}
-                placeholder="44100"
-                placeholderTextColor={COLORS.textTertiary}
-                keyboardType="number-pad"
-                maxLength={5}
-                accessibilityLabel="Código postal fiscal"
-              />
-              {touched && <FieldError message={errors.cpFiscal} />}
-            </View>
-
+            {/* Toggle arriba: controla si los campos son obligatorios.
+                Cuando está apagado, solo muestra el switch y oculta los campos
+                para no abrumar al vendedor con inputs que no va a llenar. */}
             <View style={styles.toggleRow}>
               <Text style={styles.label}>Requiere factura</Text>
               <Switch
@@ -550,6 +487,76 @@ export default function CrearClienteScreen() {
                 trackColor={{ false: COLORS.borderMedium, true: COLORS.headerBg }}
               />
             </View>
+
+            {requiereFactura && (
+              <>
+                <View style={styles.field}>
+                  <Text style={styles.label}>RFC Fiscal *</Text>
+                  <TextInput
+                    style={[styles.input, touched && errors.rfcFiscal ? styles.inputError : null]}
+                    value={rfcFiscal}
+                    onChangeText={setRfcFiscal}
+                    placeholder="XAXX010101000"
+                    placeholderTextColor={COLORS.textTertiary}
+                    autoCapitalize="characters"
+                    maxLength={13}
+                    accessibilityLabel="RFC fiscal"
+                  />
+                  {touched && <FieldError message={errors.rfcFiscal} />}
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Razón Social *</Text>
+                  <TextInput
+                    style={[styles.input, touched && errors.razonSocial ? styles.inputError : null]}
+                    value={razonSocial}
+                    onChangeText={setRazonSocial}
+                    placeholder="Nombre o razón social"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Razón social"
+                  />
+                  {touched && <FieldError message={errors.razonSocial} />}
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Régimen Fiscal *</Text>
+                  <SatDropdown
+                    label="Régimen Fiscal"
+                    items={REGIMEN_FISCAL}
+                    selectedValue={regimenFiscal}
+                    onSelect={setRegimenFiscal}
+                    placeholder="Seleccionar régimen..."
+                  />
+                  {touched && <FieldError message={errors.regimenFiscal} />}
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Uso CFDI</Text>
+                  <SatDropdown
+                    label="Uso CFDI"
+                    items={USO_CFDI}
+                    selectedValue={usoCfdi}
+                    onSelect={setUsoCfdi}
+                    placeholder="Seleccionar uso CFDI..."
+                  />
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Código Postal Fiscal *</Text>
+                  <TextInput
+                    style={[styles.input, touched && errors.cpFiscal ? styles.inputError : null]}
+                    value={cpFiscal}
+                    onChangeText={setCpFiscal}
+                    placeholder="44100"
+                    placeholderTextColor={COLORS.textTertiary}
+                    keyboardType="number-pad"
+                    maxLength={5}
+                    accessibilityLabel="Código postal fiscal"
+                  />
+                  {touched && <FieldError message={errors.cpFiscal} />}
+                </View>
+              </>
+            )}
           </View>
         )}
       </ScrollView>
