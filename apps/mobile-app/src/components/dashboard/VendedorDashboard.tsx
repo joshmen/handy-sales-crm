@@ -116,7 +116,7 @@ export function VendedorDashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos dias';
+    if (hour < 12) return 'Buenos días';
     if (hour < 18) return 'Buenas tardes';
     return 'Buenas noches';
   };
@@ -151,7 +151,7 @@ export function VendedorDashboard() {
 
       {/* KPI Cards — white bg, no pastel, no icon circles */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-        <Text style={styles.sectionLabel}>RESUMEN DEL DIA</Text>
+        <Text style={styles.sectionLabel}>RESUMEN DEL DÍA</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.kpiRow}>
         <View style={styles.kpiCard}>
@@ -232,7 +232,7 @@ export function VendedorDashboard() {
 
       {/* Route Progress */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)}>
-        <Text style={styles.sectionLabel}>RUTA DEL DIA</Text>
+        <Text style={styles.sectionLabel}>RUTA DEL DÍA</Text>
         {loadingRuta ? (
           <LoadingSpinner size="small" />
         ) : route ? (
@@ -275,7 +275,7 @@ export function VendedorDashboard() {
 
       {/* Quick Actions — white cards with gray icons */}
       <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-        <Text style={styles.sectionLabel}>ACCIONES RAPIDAS</Text>
+        <Text style={styles.sectionLabel}>ACCIONES RÁPIDAS</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
@@ -306,7 +306,7 @@ export function VendedorDashboard() {
       <Card className="mb-4">
         <View style={styles.activityEmpty}>
           <Text style={styles.activityEmptyText}>
-            Aqui veras los ultimos eventos del dia
+            Aquí verás los últimos eventos del día
           </Text>
         </View>
       </Card>

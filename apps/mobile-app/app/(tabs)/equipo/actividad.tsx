@@ -131,7 +131,7 @@ export default function ActividadEquipoScreen() {
           <EmptyState
             icon={<Clock size={48} color={COLORS.textTertiary} />}
             title="Sin actividad reciente"
-            message="Aqui veras la actividad del equipo en tiempo real"
+            message="Aquí verás la actividad del equipo en tiempo real"
           />
         }
       />

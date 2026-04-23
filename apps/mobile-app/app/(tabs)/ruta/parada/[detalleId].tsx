@@ -516,10 +516,10 @@ export default function ParadaDetailScreen() {
           <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
             <SbWarning size={48} />
             <Text style={styles.modalTitle}>No se visitó</Text>
-            <Text style={styles.modalMessage}>Indica el motivo (minimo 10 caracteres):</Text>
+            <Text style={styles.modalMessage}>Indica el motivo (mínimo 10 caracteres):</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: Cliente cerrado, no habia quien recibiera..."
+              placeholder="Ej: Cliente cerrado, no había quien recibiera..."
               placeholderTextColor="#94a3b8"
               value={noVisitoReason}
               onChangeText={setNoVisitoReason}
@@ -582,10 +582,10 @@ export default function ParadaDetailScreen() {
           <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
             <SbWarning size={48} />
             <Text style={styles.modalTitle}>No se entregó</Text>
-            <Text style={styles.modalMessage}>Indica el motivo (minimo 10 caracteres):</Text>
+            <Text style={styles.modalMessage}>Indica el motivo (mínimo 10 caracteres):</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: Cliente cerrado, no habia quien recibiera..."
+              placeholder="Ej: Cliente cerrado, no había quien recibiera..."
               placeholderTextColor="#94a3b8"
               value={noEntregaReason}
               onChangeText={setNoEntregaReason}
@@ -637,9 +637,9 @@ export default function ParadaDetailScreen() {
             try {
               await client.updateFields({ latitud: coord.latitude, longitud: coord.longitude });
               setShowGpsModal(false);
-              setShowError('Ubicacion de ' + (client.nombre ?? 'cliente') + ' guardada correctamente');
+              setShowError('Ubicación de ' + (client.nombre ?? 'cliente') + ' guardada correctamente');
             } catch {
-              setShowError('No se pudo guardar la ubicacion');
+              setShowError('No se pudo guardar la ubicación');
             }
           }}
           onCancel={() => setShowGpsModal(false)}

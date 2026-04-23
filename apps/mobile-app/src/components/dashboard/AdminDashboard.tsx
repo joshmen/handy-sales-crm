@@ -27,7 +27,7 @@ export function AdminDashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos dias';
+    if (hour < 12) return 'Buenos días';
     if (hour < 18) return 'Buenas tardes';
     return 'Buenas noches';
   };
@@ -145,7 +145,7 @@ export function AdminDashboard() {
 
       {/* Quick Actions */}
       <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-        <Text style={styles.sectionLabel}>ACCIONES RAPIDAS</Text>
+        <Text style={styles.sectionLabel}>ACCIONES RÁPIDAS</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}

@@ -145,7 +145,7 @@ export default function LoginScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Handy Suites® — Gestión de ventas en ruta
+            Handy Suites®
           </Text>
         </View>
         </ScrollView>

@@ -24,7 +24,7 @@ function formatTimeAgo(dateStr: string): string {
   if (mins < 60) return `hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `hace ${hrs}h`;
-  return `hace ${Math.floor(hrs / 24)} dias`;
+  return `hace ${Math.floor(hrs / 24)} días`;
 }
 
 function VendedorDetalleContent() {
@@ -97,7 +97,7 @@ function VendedorDetalleContent() {
       {/* Today's stats — white cards, no colored top borders */}
       <Animated.View entering={FadeInDown.duration(400).delay(200)}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>RESUMEN DEL DIA</Text>
+          <Text style={styles.sectionLabel}>RESUMEN DEL DÍA</Text>
           <View style={styles.statGrid} testID="vendedor-stats">
             <StatCard label="Pedidos" value={hoy.pedidos} />
             <StatCard label="Ventas" value={formatMoney(hoy.ventas)} isMoney />
@@ -116,7 +116,7 @@ function VendedorDetalleContent() {
             <View style={styles.locationCard}>
               <View style={styles.locationRow}>
                 <MapPin size={18} color={COLORS.headerBg} />
-                <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicacion desconocida'}</Text>
+                <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicación desconocida'}</Text>
               </View>
               <View style={styles.locationRow}>
                 <Clock size={14} color={COLORS.textTertiary} />
