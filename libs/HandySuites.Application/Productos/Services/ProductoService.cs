@@ -24,12 +24,19 @@ public class ProductoService
     public async Task<int> CrearProductoAsync(ProductoCreateDto dto)
     {
         await ValidarCatalogosFkAsync(dto);
+        // Unicidad de código de barras por tenant — evita escaneos ambiguos.
+        if (!string.IsNullOrWhiteSpace(dto.CodigoBarra)
+            && await _repo.ExisteCodigoBarraAsync(dto.CodigoBarra, _tenant.TenantId, excludeId: null))
+            throw new InvalidOperationException($"Ya existe un producto con el código de barras '{dto.CodigoBarra}'.");
         return await _repo.CrearAsync(dto, _tenant.TenantId);
     }
 
     public async Task<bool> ActualizarProductoAsync(int id, ProductoCreateDto dto)
     {
         await ValidarCatalogosFkAsync(dto);
+        if (!string.IsNullOrWhiteSpace(dto.CodigoBarra)
+            && await _repo.ExisteCodigoBarraAsync(dto.CodigoBarra, _tenant.TenantId, excludeId: id))
+            throw new InvalidOperationException($"Ya existe otro producto con el código de barras '{dto.CodigoBarra}'.");
         return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
     }
 
@@ -43,8 +50,24 @@ public class ProductoService
             throw new InvalidOperationException("La unidad de medida seleccionada no existe.");
     }
 
-    public Task<bool> EliminarProductoAsync(int id)
-        => _repo.EliminarAsync(id, _tenant.TenantId);
+    public record EliminarProductoResult(bool Success, string? Error = null, int PedidosActivos = 0);
+
+    public async Task<EliminarProductoResult> EliminarProductoAsync(int id, bool forzar = false)
+    {
+        // Regla: no permitir borrar producto con detalles en pedidos no-terminales
+        // (Borrador/Confirmado/EnRuta) salvo forzar. Protege de perder visibilidad
+        // del producto en pedidos en curso por el global query filter.
+        if (!forzar)
+        {
+            var pedidosActivos = await _repo.ContarPedidosActivosAsync(id, _tenant.TenantId);
+            if (pedidosActivos > 0)
+                return new EliminarProductoResult(false,
+                    Error: $"El producto aparece en {pedidosActivos} pedido(s) activo(s). Termínalos o cancélalos primero, o pasa `?forzar=true` para borrar de todas formas.",
+                    PedidosActivos: pedidosActivos);
+        }
+        var ok = await _repo.EliminarAsync(id, _tenant.TenantId);
+        return new EliminarProductoResult(ok);
+    }
 
     public Task<ProductoPaginatedResult> ObtenerPorFiltroAsync(ProductoFiltroDto filtro)
     {

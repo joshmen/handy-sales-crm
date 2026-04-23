@@ -82,7 +82,10 @@ namespace HandySuites.Tests.Integration.Productos
         [Fact]
         public async Task DeleteProducto_DeberiaEliminarProductoExistente()
         {
-            var response = await _client.DeleteAsync("/productos/1");
+            // ronda32: delete sin ?forzar puede devolver 409 si el producto está
+            // en pedidos activos (nueva regla de negocio). Forzamos para probar
+            // el happy path sin depender de fixtures de pedidos.
+            var response = await _client.DeleteAsync("/productos/1?forzar=true");
             if (response.StatusCode == HttpStatusCode.NotFound) return;
             response.EnsureSuccessStatusCode();
         }

@@ -92,10 +92,13 @@ public static class ProductoEndpoints
             return actualizado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/productos/{id:int}", async (int id, [FromServices] ProductoService servicio) =>
+        app.MapDelete("/productos/{id:int}", async (int id, bool? forzar, [FromServices] ProductoService servicio) =>
         {
-            var eliminado = await servicio.EliminarProductoAsync(id);
-            return eliminado ? Results.NoContent() : Results.NotFound();
+            var result = await servicio.EliminarProductoAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PedidosActivos > 0)
+                return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
+            return Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/productos/{id:int}/activo", async (int id, [FromBody] CambiarActivoDto dto, [FromServices] ProductoService servicio, ILogger<ProductoService> logger) =>
