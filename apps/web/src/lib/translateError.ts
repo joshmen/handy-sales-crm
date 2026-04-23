@@ -185,6 +185,13 @@ export function translateError(message: string): string {
       replacement: { en: message.replace("Ya existe un rol con el nombre", "A role with the name").replace("already exists", "") + " already exists" },
     },
     {
+      pattern: /^Stock insuficiente:.*solo .+ disponibles?, solicitado .+$/,
+      replacement: { en: message.replace(
+        /^Stock insuficiente: (.+): solo (.+) disponibles?, solicitado (.+)$/,
+        'Insufficient stock: $1: only $2 available, requested $3'
+      ) },
+    },
+    {
       pattern: /^Stock insuficiente:/,
       replacement: { en: message.replace('Stock insuficiente:', 'Insufficient stock:') },
     },
