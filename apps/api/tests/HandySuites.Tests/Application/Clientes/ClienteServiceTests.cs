@@ -84,13 +84,40 @@ namespace HandySuites.Tests.Application.Clientes
         }
 
         [Fact]
-        public async Task EliminarClienteAsync_DeberiaRetornarTrueSiElimina()
+        public async Task EliminarClienteAsync_DeberiaRetornarSuccessSiNoHayPedidosActivos()
         {
+            _repoMock.Setup(r => r.ContarPedidosActivosAsync(4, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(4, 1)).ReturnsAsync(true);
 
             var resultado = await _service.EliminarClienteAsync(4);
 
-            resultado.Should().BeTrue();
+            resultado.Success.Should().BeTrue();
+            resultado.PedidosActivos.Should().Be(0);
+        }
+
+        [Fact]
+        public async Task EliminarClienteAsync_DeberiaRechazarSiHayPedidosActivos()
+        {
+            _repoMock.Setup(r => r.ContarPedidosActivosAsync(4, 1)).ReturnsAsync(3);
+
+            var resultado = await _service.EliminarClienteAsync(4);
+
+            resultado.Success.Should().BeFalse();
+            resultado.PedidosActivos.Should().Be(3);
+            resultado.Error.Should().Contain("3 pedido");
+            _repoMock.Verify(r => r.EliminarAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task EliminarClienteAsync_DeberiaEliminarSiForzarTrueConPedidosActivos()
+        {
+            _repoMock.Setup(r => r.EliminarAsync(4, 1)).ReturnsAsync(true);
+
+            var resultado = await _service.EliminarClienteAsync(4, forzar: true);
+
+            resultado.Success.Should().BeTrue();
+            _repoMock.Verify(r => r.ContarPedidosActivosAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            _repoMock.Verify(r => r.EliminarAsync(4, 1), Times.Once);
         }
     }
 }

@@ -84,7 +84,10 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task DeleteCliente_DeberiaEliminarClienteExistente()
     {
-        var response = await _client.DeleteAsync("/clientes/1");
+        // ronda31: delete sin ?forzar puede devolver 409 si el cliente tiene pedidos
+        // activos (regla de negocio). Forzamos para que el test solo valide la ruta
+        // delete-ok sin depender de fixtures de pedidos.
+        var response = await _client.DeleteAsync("/clientes/1?forzar=true");
         if (response.StatusCode == HttpStatusCode.NotFound) return;
         response.EnsureSuccessStatusCode();
     }
