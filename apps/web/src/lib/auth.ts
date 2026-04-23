@@ -118,7 +118,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
         loginResponse: { label: 'Login Response', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         // Mode 1: Pre-authenticated (after 2FA verify or force-login)
         // The login page already called the API and got tokens — just establish the session
         if (credentials?.loginResponse) {
@@ -162,7 +162,7 @@ export const authOptions: NextAuthOptions = {
           const response = (await serverApiCall('post', '/auth/login', {
             email: credentials.email,
             password: credentials.password,
-          })) as ApiLoginResponse;
+          }, undefined, req?.headers)) as ApiLoginResponse;
 
           // Caso 1: { success: true, data: { user, token, refreshToken } }
           if (isWrappedSuccess(response)) {
