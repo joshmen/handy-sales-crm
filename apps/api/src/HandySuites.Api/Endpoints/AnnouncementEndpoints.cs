@@ -182,9 +182,17 @@ public static class AnnouncementEndpoints
                 if (dto.TargetTenantIds is { Count: > 0 })
                     targetUserQuery = targetUserQuery.Where(u => dto.TargetTenantIds.Contains(u.TenantId));
 
-                // Filter by target roles (Role.Nombre matches role names like "Admin", "Vendedor", etc.)
+                // Filter by target roles — Role.Nombre en BD es UPPERCASE (ADMIN/SUPERVISOR/VENDEDOR/VIEWER/SUPER_ADMIN).
+                // Normalizamos la lista recibida a uppercase para evitar que valores titlecase legacy
+                // ("Admin"/"Vendedor") no matcheen y se pierdan las NotificationHistory.
                 if (dto.TargetRoles is { Count: > 0 })
-                    targetUserQuery = targetUserQuery.Where(u => u.Role != null && dto.TargetRoles.Contains(u.Role.Nombre));
+                {
+                    var normalizedRoles = dto.TargetRoles
+                        .Select(r => r?.ToUpperInvariant() ?? string.Empty)
+                        .Select(r => r == "SUPERADMIN" ? "SUPER_ADMIN" : r)
+                        .ToList();
+                    targetUserQuery = targetUserQuery.Where(u => u.Role != null && normalizedRoles.Contains(u.Role.Nombre));
+                }
 
                 var targetUsers = await targetUserQuery
                     .Select(u => new { u.Id, u.TenantId })
@@ -491,7 +499,11 @@ public static class AnnouncementEndpoints
             var now = DateTime.UtcNow;
             var userId = int.Parse(tenant.UserId);
             var tenantId = tenant.TenantId;
-            var userRole = tenant.IsSuperAdmin ? "SuperAdmin" : tenant.IsAdmin ? "Admin" : "Vendedor";
+            // Rol canónico en mayúsculas (coincide con roles.nombre y usuarios.rol en BD):
+            // SUPER_ADMIN / ADMIN / SUPERVISOR / VENDEDOR / VIEWER.
+            // Antes mapeábamos a "Admin"/"Vendedor" titlecase y supervisores quedaban
+            // enmascarados como "Admin" (filtraban anuncios dirigidos solo a admins).
+            var userRole = tenant.Role;
 
             // Get active, non-expired announcements that should show as banners
             var announcements = await db.Announcements
@@ -521,7 +533,11 @@ public static class AnnouncementEndpoints
                         if (string.IsNullOrEmpty(a.TargetRoles))
                             return false; // Not targeted to any role = meant for tenants, not SA
                         var saRoles = JsonSerializer.Deserialize<List<string>>(a.TargetRoles);
-                        if (saRoles == null || !saRoles.Contains("SuperAdmin"))
+                        // Match case-insensitive — acepta SUPER_ADMIN canónico y el
+                        // legacy "SuperAdmin" de registros viejos.
+                        if (saRoles == null || !saRoles.Any(r =>
+                            string.Equals(r, "SUPER_ADMIN", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)))
                             return false; // Not explicitly targeted to SuperAdmin
                     }
 
@@ -537,11 +553,17 @@ public static class AnnouncementEndpoints
                             return false;
                     }
 
-                    // Check role targeting
+                    // Check role targeting (case-insensitive para soportar valores
+                    // legacy titlecase como "Admin"/"Vendedor" de registros viejos).
                     if (!string.IsNullOrEmpty(a.TargetRoles))
                     {
                         var targetRoles = JsonSerializer.Deserialize<List<string>>(a.TargetRoles);
-                        if (targetRoles != null && !targetRoles.Contains(userRole))
+                        if (targetRoles != null && !targetRoles.Any(r =>
+                            string.Equals(r, userRole, StringComparison.OrdinalIgnoreCase) ||
+                            // Mapeos legacy: "Admin" titlecase debe matchear ADMIN,
+                            // "Vendedor" debe matchear VENDEDOR.
+                            (string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase) && userRole == "ADMIN") ||
+                            (string.Equals(r, "Vendedor", StringComparison.OrdinalIgnoreCase) && userRole == "VENDEDOR")))
                             return false;
                     }
 

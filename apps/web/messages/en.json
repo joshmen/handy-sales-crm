@@ -5115,6 +5115,8 @@
       "selectAtLeastOneRole": "Select at least one role",
       "roleAdmins": "Administrators",
       "roleSellers": "Sellers",
+      "roleSupervisors": "Supervisors",
+      "roleViewers": "Viewers",
       "onlyUsersWithRole": "Only users with role: {roles}",
       "titleLabel": "Title",
       "titlePlaceholder": "Announcement title",

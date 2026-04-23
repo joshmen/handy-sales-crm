@@ -5115,6 +5115,8 @@
       "selectAtLeastOneRole": "Selecciona al menos un rol",
       "roleAdmins": "Administradores",
       "roleSellers": "Vendedores",
+      "roleSupervisors": "Supervisores",
+      "roleViewers": "Observadores",
       "onlyUsersWithRole": "Solo usuarios con rol: {roles}",
       "titleLabel": "Titulo",
       "titlePlaceholder": "Titulo del anuncio",

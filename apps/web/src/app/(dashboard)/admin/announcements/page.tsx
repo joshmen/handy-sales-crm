@@ -572,10 +572,10 @@ export default function AnnouncementsPage() {
               </div>
             )}
 
-            {/* Role multi-select */}
+            {/* Role multi-select — valores canónicos uppercase que coinciden con roles.nombre en BD */}
             {targetMode === 'roles' && (
               <div className="mt-2 space-y-1 border border-border-subtle rounded-lg p-2">
-                {['Admin', 'Vendedor'].map(role => (
+                {(['ADMIN', 'SUPERVISOR', 'VENDEDOR', 'VIEWER'] as const).map(role => (
                   <label key={role} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-surface-1 cursor-pointer">
                     <input
                       type="checkbox"
@@ -585,7 +585,12 @@ export default function AnnouncementsPage() {
                       )}
                       className="w-4 h-4 rounded border-border-default text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm text-foreground/80">{role === 'Admin' ? t('roleAdmins') : t('roleSellers')}</span>
+                    <span className="text-sm text-foreground/80">
+                      {role === 'ADMIN' ? t('roleAdmins')
+                        : role === 'VENDEDOR' ? t('roleSellers')
+                        : role === 'SUPERVISOR' ? t('roleSupervisors')
+                        : t('roleViewers')}
+                    </span>
                   </label>
                 ))}
                 {selectedRoles.length > 0 && (
