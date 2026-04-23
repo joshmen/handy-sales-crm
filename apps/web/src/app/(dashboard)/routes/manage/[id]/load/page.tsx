@@ -198,14 +198,21 @@ export default function LoadInventoryPage() {
     }
   };
 
-  const handleEnviarACarga = async () => {
-    if (!confirm(t('confirmSendToLoad'))) return;
+  const [showSendModal, setShowSendModal] = useState(false);
+
+  const handleEnviarACarga = () => {
+    // Reemplaza confirm() nativo por Modal (feedback del user).
+    setShowSendModal(true);
+  };
+
+  const submitEnviarACarga = async () => {
     try {
       setSending(true);
       // Save efectivo first
       await routeService.updateEfectivoInicial(rutaId, parseFloat(efectivoInicial) || 0, comentarios || undefined);
       await routeService.enviarACarga(rutaId);
       toast.success(t('sentSuccess'));
+      setShowSendModal(false);
       router.push('/routes');
     } catch (err: unknown) {
       toast.error((err instanceof Error ? err.message : null) || t('errorSending'));
@@ -598,6 +605,37 @@ export default function LoadInventoryPage() {
               )}
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Modal: confirmar envío a carga (reemplaza confirm() nativo). */}
+      <Modal
+        isOpen={showSendModal}
+        onClose={() => { if (!sending) setShowSendModal(false); }}
+        title={t('sendToLoadTitle', { defaultValue: 'Enviar a carga' })}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/80">{t('confirmSendToLoad')}</p>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowSendModal(false)}
+              disabled={sending}
+              className="px-4 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={submitEnviarACarga}
+              disabled={sending}
+              className="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+            >
+              {sending && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('sendAction', { defaultValue: 'Enviar a carga' })}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

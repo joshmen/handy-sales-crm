@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { routeService, RouteDetail, CierreResumen, RetornoItem, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { Modal } from '@/components/ui/Modal';
 import {
   Loader2,
   User,
@@ -131,13 +132,18 @@ export default function CloseRoutePage() {
     );
   };
 
-  const handleCerrarRuta = async () => {
+  const [showCloseModal, setShowCloseModal] = useState(false);
+
+  const handleCerrarRuta = () => {
     if (!montoRecibido) {
       toast.error(t('enterAmountReceived'));
       return;
     }
-    if (!confirm(t('confirmClose'))) return;
+    // Reemplaza confirm() nativo por Modal (feedback del user).
+    setShowCloseModal(true);
+  };
 
+  const submitCerrarRuta = async () => {
     try {
       setClosing(true);
       await routeService.cerrarRuta(rutaId, {
@@ -150,6 +156,7 @@ export default function CloseRoutePage() {
         })),
       });
       toast.success(t('closedSuccess'));
+      setShowCloseModal(false);
       fetchData();
     } catch (err: unknown) {
       toast.error((err instanceof Error ? err.message : null) || t('errorClosing'));
@@ -510,6 +517,37 @@ export default function CloseRoutePage() {
           )}
         </div>
       </div>
+
+      {/* Modal: confirmar cierre de ruta (reemplaza confirm() nativo). */}
+      <Modal
+        isOpen={showCloseModal}
+        onClose={() => { if (!closing) setShowCloseModal(false); }}
+        title={t('closeRouteTitle', { defaultValue: 'Cerrar ruta' })}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/80">{t('confirmClose')}</p>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowCloseModal(false)}
+              disabled={closing}
+              className="px-4 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={submitCerrarRuta}
+              disabled={closing}
+              className="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+            >
+              {closing && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('closeAction', { defaultValue: 'Cerrar ruta' })}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

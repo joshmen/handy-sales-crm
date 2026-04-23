@@ -70,6 +70,7 @@ export default function RouteAdminPage() {
   // UI state
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deletingTemplate, setDeletingTemplate] = useState<RouteTemplate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterZone, setFilterZone] = useState<string>('all');
 
@@ -244,12 +245,18 @@ export default function RouteAdminPage() {
     }
   };
 
-  const handleDelete = async (template: RouteTemplate) => {
-    if (!confirm(t('templates.confirmDelete', { name: template.nombre }))) return;
+  const handleDelete = (template: RouteTemplate) => {
+    // Reemplaza confirm() nativo por Modal (feedback del user: no más nativos).
+    setDeletingTemplate(template);
+  };
+
+  const submitDeleteTemplate = async () => {
+    if (!deletingTemplate) return;
     try {
       setActionLoading(true);
-      await routeService.deleteTemplate(template.id);
+      await routeService.deleteTemplate(deletingTemplate.id);
       toast.success(t('templates.templateDeleted'));
+      setDeletingTemplate(null);
       fetchTemplates();
     } catch {
       toast.error(t('templates.errorDeleting'));
@@ -668,6 +675,39 @@ export default function RouteAdminPage() {
           </form>
         </Modal>
       )}
+
+      {/* Modal: confirmar eliminación template (reemplaza confirm() nativo). */}
+      <Modal
+        isOpen={deletingTemplate !== null}
+        onClose={() => { if (!actionLoading) setDeletingTemplate(null); }}
+        title={t('templates.deleteTitle', { defaultValue: 'Eliminar plantilla' })}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/80">
+            {deletingTemplate ? t('templates.confirmDelete', { name: deletingTemplate.nombre }) : ''}
+          </p>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setDeletingTemplate(null)}
+              disabled={actionLoading}
+              className="px-4 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
+            >
+              {tc('cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={submitDeleteTemplate}
+              disabled={actionLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {tc('delete')}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </PageHeader>
   );
 }
