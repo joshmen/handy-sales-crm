@@ -115,17 +115,26 @@ export async function registerTokenWithServer(pushToken: string): Promise<void> 
 export function addNotificationReceivedListener(
   callback: (notification: any) => void
 ) {
-  if (isExpoGo) return { remove: () => {} };
-  const Notifications = getNotificationsModule();
-  return Notifications.addNotificationReceivedListener(callback);
+  // Los listeners LOCALES funcionan incluso en Expo Go (solo el PUSH REMOTO está
+  // deshabilitado desde SDK 53+). Permitir que se registren para que notifs
+  // locales (scheduleNotificationAsync / pushSimulator) disparen handlers.
+  try {
+    const Notifications = getNotificationsModule();
+    return Notifications.addNotificationReceivedListener(callback);
+  } catch {
+    return { remove: () => {} };
+  }
 }
 
 export function addNotificationResponseListener(
   callback: (response: any) => void
 ) {
-  if (isExpoGo) return { remove: () => {} };
-  const Notifications = getNotificationsModule();
-  return Notifications.addNotificationResponseReceivedListener(callback);
+  try {
+    const Notifications = getNotificationsModule();
+    return Notifications.addNotificationResponseReceivedListener(callback);
+  } catch {
+    return { remove: () => {} };
+  }
 }
 
 export async function getBadgeCount(): Promise<number> {

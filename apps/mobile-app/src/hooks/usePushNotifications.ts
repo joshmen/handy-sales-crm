@@ -64,17 +64,21 @@ export function usePushNotifications() {
   const responseListener = useRef<EventSubscription | undefined>(undefined);
 
   useEffect(() => {
-    if (!isAuthenticated || isExpoGo) return;
+    if (!isAuthenticated) return;
 
     // Lazy import to avoid side-effect crash in Expo Go
     const Notifications = require('expo-notifications');
 
-    // Register for push and send token to server
-    registerForPushNotifications().then((token: string | null) => {
-      if (token) {
-        registerTokenWithServer(token);
-      }
-    });
+    // Register for push and send token to server — SOLO fuera de Expo Go
+    // (remote push removido del Expo Go en SDK 53+). Los listeners de abajo
+    // sí se registran SIEMPRE para captar notifs locales en DEV.
+    if (!isExpoGo) {
+      registerForPushNotifications().then((token: string | null) => {
+        if (token) {
+          registerTokenWithServer(token);
+        }
+      });
+    }
 
     // Handle notifications received while app is foregrounded
     notificationListener.current =

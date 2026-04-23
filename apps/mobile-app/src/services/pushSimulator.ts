@@ -35,6 +35,23 @@ export async function simulateRoutePublishedPush(rutaServerId: number): Promise<
           shouldShowList: true,
         }),
       });
+
+      // Android requiere un canal o la notif no se renderiza. El canal 'routes'
+      // definido en pushNotifications.ts sólo se crea si !isExpoGo. Acá nos
+      // aseguramos que exista en Expo Go para que el simulador funcione.
+      try {
+        const { Platform } = require('react-native') as typeof import('react-native');
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('routes', {
+            name: 'Rutas',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#2563eb',
+          });
+        }
+      } catch (e) {
+        console.warn('[pushSimulator] no se pudo crear canal Android:', e);
+      }
     }
 
     await Notifications.scheduleNotificationAsync({
@@ -46,6 +63,7 @@ export async function simulateRoutePublishedPush(rutaServerId: number): Promise<
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds: 2,
+        channelId: 'routes',
       } as any,
     });
 
