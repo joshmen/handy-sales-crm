@@ -5,6 +5,7 @@ import { MapPin, Clock, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
+import { useTenantLocale } from '@/hooks';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 
@@ -34,14 +35,13 @@ function VendedorDetalleContent() {
   const router = useRouter();
   const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId);
   const [refreshing, setRefreshing] = useState(false);
+  const { money: formatMoney } = useTenantLocale();
 
   const onRefresh = async () => {
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
   };
-
-  const formatMoney = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`;
 
   const Header = (
     <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
