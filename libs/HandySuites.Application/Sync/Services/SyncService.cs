@@ -329,6 +329,7 @@ public class SyncService
             response.ServerChanges.Clientes = clientes.Select(c => new SyncClienteDto
             {
                 Id = c.Id,
+                LocalId = c.MobileRecordId,
                 Nombre = c.Nombre,
                 RFC = c.RFC,
                 Correo = c.Correo,

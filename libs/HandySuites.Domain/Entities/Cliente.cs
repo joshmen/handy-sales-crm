@@ -100,6 +100,9 @@ public class Cliente : AuditableEntity
     [Column("facturable")]
     public bool Facturable { get; set; }
 
+    [Column("mobile_record_id")]
+    public string? MobileRecordId { get; set; }
+
     // === Navegación ===
     public Tenant Tenant { get; set; } = null!;
 

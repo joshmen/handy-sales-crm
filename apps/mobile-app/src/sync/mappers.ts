@@ -105,7 +105,9 @@ function splitByOperation(
 
 function mapClienteToRaw(c: any, clienteMap: Map<number, string>): DirtyRaw {
   return {
-    id: clienteMap.get(c.id) || String(c.id),
+    // Prefer mapping by server_id; fall back to localId echoed by server (for offline-created
+    // records that just got their backend id) before treating as a brand new record.
+    id: clienteMap.get(c.id) || (c.localId ? String(c.localId) : String(c.id)),
     server_id: c.id,
     nombre: c.nombre || '',
     nombre_comercial: c.nombreComercial ?? null,

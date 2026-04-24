@@ -152,6 +152,19 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Dedupe offline-created records by MobileRecordId so retries don't duplicate
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var byMobile = await _db.Clientes
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.MobileRecordId == dto.LocalId);
+            if (byMobile != null)
+            {
+                return (byMobile, wasConflict);
+            }
+        }
+
+        int? vendedorId = int.TryParse(userId, out var uid) ? uid : (int?)null;
+
         // Create new
         var cliente = new Cliente
         {
@@ -163,6 +176,7 @@ public class SyncRepository : ISyncRepository
             Direccion = dto.Direccion,
             IdZona = dto.IdZona,
             CategoriaClienteId = dto.CategoriaClienteId,
+            VendedorId = vendedorId,
             Latitud = dto.Latitud,
             Longitud = dto.Longitud,
             RfcFiscal = dto.RfcFiscal,
@@ -172,6 +186,7 @@ public class SyncRepository : ISyncRepository
             CodigoPostalFiscal = dto.CpFiscal,
             Facturable = dto.RequiereFactura,
             Activo = dto.Activo,
+            MobileRecordId = dto.LocalId,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = userId,
             Version = 1
