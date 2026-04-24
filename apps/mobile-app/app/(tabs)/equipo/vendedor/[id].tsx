@@ -43,18 +43,35 @@ function VendedorDetalleContent() {
 
   const formatMoney = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`;
 
+  const Header = (
+    <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+      <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+        <ChevronLeft size={22} color={COLORS.headerText} />
+      </TouchableOpacity>
+      <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>
+      <View style={{ width: 32 }} />
+    </View>
+  );
+
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={styles.container}>
+        {Header}
+        <View style={[styles.center, { flex: 1 }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
       </View>
     );
   }
 
   if (!resumen) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <Text style={styles.errorText}>Vendedor no encontrado</Text>
+      <View style={styles.container}>
+        {Header}
+        <View style={[styles.center, { flex: 1, paddingHorizontal: 24 }]}>
+          <Text style={styles.errorText}>Vendedor no encontrado</Text>
+          <Text style={styles.errorHint}>Es posible que ya no pertenezca a tu equipo o haya sido desactivado.</Text>
+        </View>
       </View>
     );
   }
@@ -145,7 +162,8 @@ const styles = StyleSheet.create({
   blueHeader: { backgroundColor: COLORS.headerBg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 14 },
   blueHeaderTitle: { fontSize: 17, fontWeight: '700', color: COLORS.headerText, textAlign: 'center', flex: 1 },
   scrollContent: { paddingTop: 8 },
-  errorText: { marginTop: 12, fontSize: 15, color: COLORS.textSecondary },
+  errorText: { fontSize: 16, fontWeight: '600', color: COLORS.foreground, textAlign: 'center' },
+  errorHint: { marginTop: 8, fontSize: 13, color: COLORS.textSecondary, textAlign: 'center' },
   profileHeader: { alignItems: 'center', paddingVertical: 24 },
   avatarLarge: {
     width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.background,

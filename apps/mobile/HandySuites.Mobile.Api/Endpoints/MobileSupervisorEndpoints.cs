@@ -343,13 +343,16 @@ public static class MobileSupervisorEndpoints
             var supervisorId = int.Parse(tenant.UserId);
             var hoy = DateTime.UtcNow.Date;
 
-            // Verify this vendedor belongs to this supervisor
-            var vendedor = await db.Usuarios
+            // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
+            var vendedorQuery = db.Usuarios
                 .AsNoTracking()
                 .Where(u => u.Id == id
-                         && u.SupervisorId == supervisorId
                          && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
+                         && u.EliminadoEn == null);
+            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+                vendedorQuery = vendedorQuery.Where(u => u.SupervisorId == supervisorId);
+
+            var vendedor = await vendedorQuery
                 .Select(u => new { u.Id, u.Nombre, u.Email, u.AvatarUrl, u.Activo })
                 .FirstOrDefaultAsync();
 
