@@ -117,7 +117,7 @@ export function addNotificationReceivedListener(
 ) {
   // Los listeners LOCALES funcionan incluso en Expo Go (solo el PUSH REMOTO está
   // deshabilitado desde SDK 53+). Permitir que se registren para que notifs
-  // locales (scheduleNotificationAsync / pushSimulator) disparen handlers.
+  // locales (scheduleNotificationAsync) disparen handlers.
   try {
     const Notifications = getNotificationsModule();
     return Notifications.addNotificationReceivedListener(callback);

@@ -4,8 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
-import { useLogout, useOfflineRutaHoy } from '@/hooks';
-import { simulateRoutePublishedPush } from '@/services/pushSimulator';
+import { useLogout } from '@/hooks';
 import Toast from 'react-native-toast-message';
 import { Badge, ConfirmModal } from '@/components/ui';
 import {
@@ -27,7 +26,6 @@ import {
   TrendingUp,
   Package,
   FileText,
-  Bug,
 } from 'lucide-react-native';
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
@@ -61,8 +59,6 @@ function MasScreenContent() {
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const logoutMutation = useLogout();
-  const { data: rutasHoy } = useOfflineRutaHoy();
-  const rutaHoyServerId = rutasHoy?.[0]?.serverId ?? null;
   const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
@@ -246,36 +242,6 @@ function MasScreenContent() {
         ))}
       </Animated.View>
 
-      {/* DEV — solo en __DEV__ */}
-      {__DEV__ && (
-        <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.section}>
-          <Text style={styles.sectionTitle}>🧪 DEV</Text>
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.7}
-            accessibilityLabel="Simular push ruta"
-            accessibilityRole="button"
-            onPress={async () => {
-              if (!rutaHoyServerId) {
-                Toast.show({ type: 'info', text1: 'Sin ruta hoy', text2: 'Asigna una ruta primero desde el backoffice' });
-                return;
-              }
-              const ok = await simulateRoutePublishedPush(rutaHoyServerId);
-              if (ok) {
-                Toast.show({ type: 'success', text1: 'Notificación programada', text2: 'Aparecerá en 2s — pasa la app a background' });
-              } else {
-                Toast.show({ type: 'error', text1: 'No se pudo programar', text2: 'Ver logs Metro' });
-              }
-            }}
-          >
-            <View style={[styles.menuIcon, { backgroundColor: '#fef3c7' }]}>
-              <Bug size={20} color="#d97706" />
-            </View>
-            <Text style={styles.menuLabel}>Simular push ruta</Text>
-            <ChevronRight size={18} color="#cbd5e1" />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
 
       {/* Logout */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.section}>
