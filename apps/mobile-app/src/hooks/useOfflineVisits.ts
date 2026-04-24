@@ -34,11 +34,11 @@ export function useOfflineTodayVisits() {
   const [dateKey, setDateKey] = useState(() => new Date().toDateString());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().toDateString();
-      if (now !== dateKey) setDateKey(now);
-    }, 60_000); // check every minute
-    return () => clearInterval(interval);
+    const nextMidnight = new Date();
+    nextMidnight.setHours(24, 0, 0, 0);
+    const msUntilMidnight = nextMidnight.getTime() - Date.now();
+    const timeout = setTimeout(() => setDateKey(new Date().toDateString()), msUntilMidnight);
+    return () => clearTimeout(timeout);
   }, [dateKey]);
 
   const observable = useMemo(() => {

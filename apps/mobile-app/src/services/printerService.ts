@@ -380,7 +380,7 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
 
     return true;
   } catch (e) {
-    console.error('[Printer] Print failed:', e);
+    if (__DEV__) console.error('[Printer] Print failed:', e);
     return false;
   }
 }
@@ -501,7 +501,7 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
 
     return true;
   } catch (e) {
-    console.error('[Printer] Order ticket print failed:', e);
+    if (__DEV__) console.error('[Printer] Order ticket print failed:', e);
     return false;
   }
 }
@@ -712,7 +712,7 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
 
     return true;
   } catch (e) {
-    console.error('[Printer] CFDI ticket print failed:', e);
+    if (__DEV__) console.error('[Printer] CFDI ticket print failed:', e);
     return false;
   }
 }

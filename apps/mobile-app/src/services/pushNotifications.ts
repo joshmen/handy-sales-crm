@@ -92,7 +92,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       projectId,
     });
   } catch (e) {
-    console.error('[Push] Failed to get push token:', e);
+    if (__DEV__) console.error('[Push] Failed to get push token:', e);
     return null;
   }
 
@@ -108,7 +108,7 @@ export async function registerTokenWithServer(pushToken: string): Promise<void> 
     });
     console.log('[Push] Token registered with server');
   } catch (error) {
-    console.error('[Push] Failed to register token:', error);
+    if (__DEV__) console.error('[Push] Failed to register token:', error);
   }
 }
 
