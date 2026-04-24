@@ -34,6 +34,7 @@ export { useLocationTracking } from './useLocationTracking';
 
 // Facturación (gating por país — multi-país-ready)
 export { useFacturacionEnabled } from './useFacturacionEnabled';
+export { useFacturasList, useFacturaById, useCreateFactura, useEnviarFactura, useFacturaTicketData } from './useFacturas';
 
 // Localización (TZ + currency + language del tenant)
 export { useTenantLocale } from './useTenantLocale';
