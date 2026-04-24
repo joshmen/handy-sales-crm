@@ -40,7 +40,19 @@ interface SyncOptions {
   onError?: (error: Error) => void;
 }
 
+// WatermelonDB no permite synchronize() concurrentes. Deduplicamos llamadas paralelas
+// (típico cuando llegan varios eventos SignalR juntos) reusando la misma promesa.
+let inflightSync: Promise<void> | null = null;
+
 export async function performSync(options?: SyncOptions): Promise<void> {
+  if (inflightSync) return inflightSync;
+  inflightSync = doPerformSync(options).finally(() => {
+    inflightSync = null;
+  });
+  return inflightSync;
+}
+
+async function doPerformSync(options?: SyncOptions): Promise<void> {
   options?.onStart?.();
 
   let pullCount = 0;

@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores';
 import { signalR, HubConnectionState } from '@/services/signalr';
 import { performSync } from '@/sync/syncEngine';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 /**
  * Mantiene una conexión SignalR mientras hay sesión y la app está en foreground.
@@ -12,11 +13,15 @@ import { performSync } from '@/sync/syncEngine';
  */
 export function useRealtime() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isConnected: isOnline } = useNetworkStatus();
   const queryClient = useQueryClient();
   const [state, setState] = useState<HubConnectionState>(HubConnectionState.Disconnected);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // App offline-first: la app trabaja sin red la mayor parte del tiempo.
+    // Solo intentamos conectar cuando hay sesión Y red. Cualquier otra cosa
+    // queda silenciosa — los fallos de connect ya están atrapados en el service.
+    if (!isAuthenticated || !isOnline) {
       signalR.stop().catch(() => {});
       return;
     }
@@ -93,7 +98,7 @@ export function useRealtime() {
       unsubs.forEach((u) => u());
       appSub.remove();
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, isOnline, queryClient]);
 
   return { state, isConnected: state === HubConnectionState.Connected };
 }

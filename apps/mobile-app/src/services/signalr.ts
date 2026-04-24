@@ -4,11 +4,28 @@ import {
   HubConnectionState,
   HttpTransportType,
   LogLevel,
+  type ILogger,
 } from '@microsoft/signalr';
 import { API_CONFIG } from '@/utils/constants';
 import { getAccessToken } from '@/api/client';
 
 type Handler = (...args: unknown[]) => void;
+
+/**
+ * Logger silencioso. La app es offline-first y SignalR loguea por console.error
+ * cosas como "WebSocket closed 1006" cada vez que pierde red — son eventos
+ * normales, no errores accionables. En prod no mostramos nada; en DEV solo
+ * info crítica como warnings (no errors).
+ */
+const silentLogger: ILogger = {
+  log(level, message) {
+    if (!__DEV__) return;
+    if (level >= LogLevel.Warning) {
+      // eslint-disable-next-line no-console
+      console.warn('[SignalR]', message);
+    }
+  },
+};
 
 class SignalRClient {
   private connection: HubConnection | null = null;
@@ -49,7 +66,7 @@ class SignalRClient {
           skipNegotiation: true,
         })
         .withAutomaticReconnect([0, 2000, 5000, 10_000, 30_000])
-        .configureLogging(__DEV__ ? LogLevel.Warning : LogLevel.Error)
+        .configureLogging(silentLogger)
         .build();
 
       conn.onreconnecting(() => this.notifyState(HubConnectionState.Reconnecting));
