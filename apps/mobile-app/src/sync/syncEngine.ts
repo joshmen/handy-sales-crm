@@ -186,7 +186,13 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     options?.onFinish?.(summary);
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    console.error('[Sync] Failed:', err.message);
+    // Sync failures por red caída son normales en una app offline-first;
+    // solo logueamos a warn para no disparar el RedBox/Toast de RN.
+    const isNetworkError = /network|timeout|fetch|abort|ECONN/i.test(err.message);
+    if (__DEV__) {
+      if (isNetworkError) console.warn('[Sync] Network unavailable:', err.message);
+      else console.warn('[Sync] Failed:', err.message);
+    }
     options?.onError?.(err);
     throw err;
   } finally {

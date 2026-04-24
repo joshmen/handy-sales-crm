@@ -75,7 +75,7 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   // Back handler — confirm exit on home screen
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const isHome = segments[0] === '(tabs)' && !segments[1];
+    const isHome = segments[0] === '(tabs)' && !(segments as string[])[1];
     if (!isHome) return;
 
     const handler = BackHandler.addEventListener('hardwareBackPress', () => {
