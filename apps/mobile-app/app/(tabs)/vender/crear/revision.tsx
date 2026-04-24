@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOrderDraftStore, useOrderSubtotal, useOrderImpuestos, useOrderTotal } from '@/stores';
+import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
 import { database } from '@/db/database';
@@ -50,14 +50,27 @@ export default function CrearPedidoStep3() {
     reset,
   } = useOrderDraftStore();
 
-  const subtotal = useOrderSubtotal();
-  const impuestos = useOrderImpuestos();
-  const total = useOrderTotal();
+  const subtotalRaw = useOrderSubtotal();
 
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
   const { getPricing } = usePricingMap(clienteListaPreciosId);
   const hasSpecialPricing = !!clienteListaPreciosId;
+
+  // Aplicar descuentos por cantidad + promociones por línea, con totales corregidos.
+  const pricedItems = useMemo(() =>
+    items.map((item) => {
+      const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+      const lineTotal = pricing.precioConDescuento * item.cantidad;
+      return { item, pricing, lineTotal };
+    }),
+    [items, getPricing],
+  );
+  const subtotal = pricedItems.reduce((s, p) => s + p.lineTotal, 0);
+  const descuentoTotal = subtotalRaw - subtotal;
+  const IVA_RATE = 0.16;
+  const impuestos = subtotal * IVA_RATE;
+  const total = subtotal + impuestos;
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
@@ -68,13 +81,19 @@ export default function CrearPedidoStep3() {
     setShowConfirmPedido(false);
     setSending(true);
     try {
-      const mappedItems = items.map((item) => ({
-        productoId: item.productoId,
-        productoServerId: item.productoServerId,
-        productoNombre: item.nombre,
-        cantidad: item.cantidad,
-        precioUnitario: item.precioUnitario,
-      }));
+      // Backend re-valida precio_unitario contra Producto.PrecioBase por seguridad,
+      // así que enviamos el precio base + descuento por separado (no precio descontado).
+      const mappedItems = pricedItems.map(({ item, pricing }) => {
+        const descuentoLinea = (item.precioUnitario - pricing.precioConDescuento) * item.cantidad;
+        return {
+          productoId: item.productoId,
+          productoServerId: item.productoServerId,
+          productoNombre: item.nombre,
+          cantidad: item.cantidad,
+          precioUnitario: item.precioUnitario,
+          descuento: descuentoLinea > 0 ? descuentoLinea : 0,
+        };
+      });
 
       if (isDirecta) {
         const montoTotal = total;
@@ -186,24 +205,29 @@ export default function CrearPedidoStep3() {
           <Text style={styles.sectionTitle}>Productos ({items.length})</Text>
         </View>
 
-        {items.map((item) => {
-          const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+        {pricedItems.map(({ item, pricing, lineTotal }) => {
+          const tieneDescuento = pricing.mejorDescuento > 0;
           return (
             <View key={item.productoId} style={styles.lineItem}>
               <View style={styles.lineContent}>
                 <Text style={styles.lineName} numberOfLines={1}>{item.nombre}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.linePrice, pricing.tieneListaPrecios && { color: '#16a34a' }]}>
-                    {formatCurrency(item.precioUnitario)} c/u
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Text style={[styles.linePrice, (tieneDescuento || pricing.tieneListaPrecios) && { color: '#16a34a' }]}>
+                    {formatCurrency(pricing.precioConDescuento)} c/u
                   </Text>
-                  {pricing.tieneListaPrecios && pricing.precioBase !== item.precioUnitario && (
+                  {tieneDescuento && (
                     <Text style={{ fontSize: 11, color: '#94a3b8', textDecorationLine: 'line-through' }}>
-                      {formatCurrency(pricing.precioBase)}
+                      {formatCurrency(item.precioUnitario)}
                     </Text>
                   )}
                   {pricing.promo && (
                     <Text style={{ fontSize: 9, color: '#d97706', fontWeight: '600', backgroundColor: '#fef3c7', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
-                      -{pricing.promo.porcentaje}%
+                      Promo -{pricing.promo.porcentaje}%
+                    </Text>
+                  )}
+                  {pricing.descuentoVolumen && (
+                    <Text style={{ fontSize: 9, color: '#7c3aed', fontWeight: '600', backgroundColor: '#ede9fe', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
+                      Vol -{pricing.descuentoVolumen.porcentaje}%
                     </Text>
                   )}
                 </View>
@@ -216,7 +240,7 @@ export default function CrearPedidoStep3() {
                 }}
               />
               <Text style={styles.lineTotal}>
-                {formatCurrency(item.precioUnitario * item.cantidad)}
+                {formatCurrency(lineTotal)}
               </Text>
             </View>
           );
@@ -224,6 +248,18 @@ export default function CrearPedidoStep3() {
 
         {/* Totals */}
         <Card className="mx-4 mt-3 mb-3">
+          {descuentoTotal > 0.005 && (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal sin descuento</Text>
+                <Text style={[styles.totalValue, { color: '#94a3b8', textDecorationLine: 'line-through' }]}>{formatCurrency(subtotalRaw)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={[styles.totalLabel, { color: '#16a34a' }]}>Descuentos</Text>
+                <Text style={[styles.totalValue, { color: '#16a34a' }]}>−{formatCurrency(descuentoTotal)}</Text>
+              </View>
+            </>
+          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>

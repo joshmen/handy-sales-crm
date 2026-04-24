@@ -61,6 +61,8 @@ export interface OfflineOrderItem {
   productoNombre: string;
   cantidad: number;
   precioUnitario: number;
+  descuento?: number;
+  porcentajeDescuento?: number;
 }
 
 const IVA_RATE = 0.16;
@@ -79,8 +81,9 @@ export async function createPedidoOffline(
   estado: number = 0
 ): Promise<Pedido> {
   const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
-  const impuesto = subtotal * IVA_RATE;
-  const total = subtotal + impuesto;
+  const descuentoTotal = items.reduce((sum, i) => sum + (i.descuento ?? 0), 0);
+  const impuesto = (subtotal - descuentoTotal) * IVA_RATE;
+  const total = subtotal - descuentoTotal + impuesto;
 
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
@@ -93,7 +96,7 @@ export async function createPedidoOffline(
       record.estado = estado;
       record.tipoVenta = tipoVenta;
       record.subtotal = subtotal;
-      record.descuento = 0;
+      record.descuento = descuentoTotal;
       record.impuesto = impuesto;
       record.total = total;
       record.notas = notas || null;
@@ -112,7 +115,7 @@ export async function createPedidoOffline(
         record.productoNombre = item.productoNombre;
         record.cantidad = item.cantidad;
         record.precioUnitario = item.precioUnitario;
-        record.descuento = 0;
+        record.descuento = item.descuento ?? 0;
         record.subtotal = lineSubtotal;
         record.version = 1;
         record.updatedAt = new Date();
@@ -138,8 +141,9 @@ export async function createVentaDirectaOffline(
   notas?: string
 ): Promise<{ pedido: Pedido; cobro: Cobro }> {
   const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
-  const impuesto = subtotal * IVA_RATE;
-  const total = subtotal + impuesto;
+  const descuentoTotal = items.reduce((sum, i) => sum + (i.descuento ?? 0), 0);
+  const impuesto = (subtotal - descuentoTotal) * IVA_RATE;
+  const total = subtotal - descuentoTotal + impuesto;
 
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
@@ -152,7 +156,7 @@ export async function createVentaDirectaOffline(
       record.estado = 5; // Entregado
       record.tipoVenta = 1; // VentaDirecta
       record.subtotal = subtotal;
-      record.descuento = 0;
+      record.descuento = descuentoTotal;
       record.impuesto = impuesto;
       record.total = total;
       record.notas = notas || null;
@@ -171,7 +175,7 @@ export async function createVentaDirectaOffline(
         record.productoNombre = item.productoNombre;
         record.cantidad = item.cantidad;
         record.precioUnitario = item.precioUnitario;
-        record.descuento = 0;
+        record.descuento = item.descuento ?? 0;
         record.subtotal = lineSubtotal;
         record.version = 1;
         record.updatedAt = new Date();
