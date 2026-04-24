@@ -64,16 +64,15 @@ export default function ParadaDetailScreen() {
   const [showGpsModal, setShowGpsModal] = useState(false);
 
   // Keyboard offset for modals — moves card up when keyboard appears
+  // NOTE: se removió la RNAnimated.timing con useNativeDriver:true sobre
+  // transform translateY dentro del modal. Causaba crash silencioso (app
+  // reinicia) al escribir en el TextInput multiline del modal 'No se
+  // visitó' en Android. El Modal con statusBarTranslucent + multiline
+  // TextInput ya se acomoda razonablemente con windowSoftInputMode
+  // adjustResize. Si en el futuro se quiere re-animar, usar
+  // useNativeDriver:false o LayoutAnimation en lugar de animación manual
+  // encadenada con Keyboard listener + transform.
   const keyboardOffset = useRef(new RNAnimated.Value(0)).current;
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      RNAnimated.timing(keyboardOffset, { toValue: -(e.endCoordinates.height / 2.5), duration: 200, useNativeDriver: true }).start();
-    });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      RNAnimated.timing(keyboardOffset, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-    });
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
 
   // Get route + stop from WDB
   const { data: rutas, isLoading: rutaLoading } = useOfflineRutaHoy();
