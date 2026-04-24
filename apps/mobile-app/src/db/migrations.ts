@@ -135,5 +135,27 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 9,
+      steps: [
+        addColumns({
+          table: 'clientes',
+          columns: [
+            // Dirección desglosada
+            { name: 'numero_exterior', type: 'string', isOptional: true },
+            { name: 'colonia', type: 'string', isOptional: true },
+            // Contacto
+            { name: 'encargado', type: 'string', isOptional: true },
+            // Comerciales
+            { name: 'descuento', type: 'number' },
+            { name: 'saldo', type: 'number' },
+            { name: 'venta_minima_efectiva', type: 'number' },
+            // Reglas de pago
+            { name: 'tipos_pago_permitidos', type: 'string' },
+            { name: 'tipo_pago_predeterminado', type: 'string' },
+          ],
+        }),
+      ],
+    },
   ],
 });

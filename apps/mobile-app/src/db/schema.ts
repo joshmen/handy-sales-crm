@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 8,
+  version: 9,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -14,9 +14,12 @@ export const schema = appSchema({
         { name: 'telefono', type: 'string', isOptional: true },
         { name: 'email', type: 'string', isOptional: true },
         { name: 'direccion', type: 'string', isOptional: true },
+        { name: 'numero_exterior', type: 'string', isOptional: true },
+        { name: 'colonia', type: 'string', isOptional: true },
         { name: 'ciudad', type: 'string', isOptional: true },
         { name: 'estado', type: 'string', isOptional: true },
         { name: 'codigo_postal', type: 'string', isOptional: true },
+        { name: 'encargado', type: 'string', isOptional: true },
         { name: 'latitud', type: 'number', isOptional: true },
         { name: 'longitud', type: 'number', isOptional: true },
         { name: 'zona_id', type: 'number', isOptional: true },
@@ -24,6 +27,11 @@ export const schema = appSchema({
         { name: 'vendedor_id', type: 'number', isOptional: true },
         { name: 'limite_credito', type: 'number' },
         { name: 'dias_credito', type: 'number' },
+        { name: 'descuento', type: 'number' },
+        { name: 'saldo', type: 'number' },
+        { name: 'venta_minima_efectiva', type: 'number' },
+        { name: 'tipos_pago_permitidos', type: 'string' },
+        { name: 'tipo_pago_predeterminado', type: 'string' },
         { name: 'notas', type: 'string', isOptional: true },
         { name: 'lista_precios_id', type: 'number', isOptional: true },
         { name: 'es_prospecto', type: 'boolean' },

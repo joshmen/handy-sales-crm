@@ -128,11 +128,29 @@ public class SyncClienteDto
     public string Correo { get; set; } = string.Empty;
     public string Telefono { get; set; } = string.Empty;
     public string Direccion { get; set; } = string.Empty;
+    // Dirección desglosada
+    public string? NumeroExterior { get; set; }
+    public string? Colonia { get; set; }
+    public string? Ciudad { get; set; }
+    public string? CodigoPostal { get; set; }
+    public string? Encargado { get; set; }
     public int IdZona { get; set; }
     public int CategoriaClienteId { get; set; }
+    public int? VendedorId { get; set; }
     public int? ListaPreciosId { get; set; }
     public double? Latitud { get; set; }
     public double? Longitud { get; set; }
+    // Crédito / comerciales
+    public decimal LimiteCredito { get; set; }
+    public int DiasCredito { get; set; }
+    public decimal Descuento { get; set; }
+    public decimal Saldo { get; set; }
+    public decimal VentaMinimaEfectiva { get; set; }
+    // Reglas de pago
+    public string TiposPagoPermitidos { get; set; } = "efectivo";
+    public string TipoPagoPredeterminado { get; set; } = "efectivo";
+    public bool EsProspecto { get; set; }
+    public string? Comentarios { get; set; }
     // Datos fiscales (CFDI)
     public string? RfcFiscal { get; set; }
     public string? RazonSocial { get; set; }
