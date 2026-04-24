@@ -52,6 +52,9 @@ public static class MobileEmpresaEndpoints
                     logoUrl = settings?.LogoUrl,
                     country,
                     billingEnabled = BillingCountrySupport.IsSupported(country),
+                    timezone = settings?.Timezone ?? "America/Mexico_City",
+                    currency = settings?.Currency ?? "MXN",
+                    language = settings?.Language ?? "es",
                 }
             });
         })

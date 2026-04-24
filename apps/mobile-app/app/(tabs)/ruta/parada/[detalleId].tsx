@@ -25,7 +25,7 @@ import { PhotoEvidence } from '@/components/evidence/PhotoEvidence';
 import { saveAttachmentRecord } from '@/services/evidenceManager';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { performSync } from '@/sync/syncEngine';
-import { formatTime, formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import {
   MapPin,
   Clock,
@@ -50,6 +50,7 @@ export default function ParadaDetailScreen() {
   const { detalleId } = useLocalSearchParams<{ detalleId: string }>();
   const router = useRouter();
   const { location } = useUserLocation();
+  const { time: formatTime, money: formatCurrency } = useTenantLocale();
 
   const [showError, setShowError] = useState<string | null>(null);
   const [showConfirmEntrega, setShowConfirmEntrega] = useState(false);

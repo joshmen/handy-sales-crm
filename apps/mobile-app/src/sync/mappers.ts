@@ -239,8 +239,8 @@ function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
     usuario_id: r.usuarioId ?? 0,
     estado: r.estado ?? 0,
     km_recorridos: r.kilometrosReales ?? null,
-    hora_inicio: toTimestamp(r.horaInicioReal),
-    hora_fin: toTimestamp(r.horaFinReal),
+    hora_inicio: toNullableTimestamp(r.horaInicioReal),
+    hora_fin: toNullableTimestamp(r.horaFinReal),
     hora_inicio_estimada: r.horaInicioEstimada ?? null,
     hora_fin_estimada: r.horaFinEstimada ?? null,
     notas: r.notas ?? null,
@@ -278,8 +278,8 @@ function extractDetallesRuta(
         orden: d.ordenVisita ?? 0,
         pedido_id: d.pedidoId ? (pedidoMap.get(d.pedidoId) || String(d.pedidoId)) : null,
         estado: d.estado ?? 0,
-        hora_llegada: toTimestamp(d.horaLlegadaReal),
-        hora_salida: toTimestamp(d.horaSalidaReal),
+        hora_llegada: toNullableTimestamp(d.horaLlegadaReal),
+        hora_salida: toNullableTimestamp(d.horaSalidaReal),
         latitud_llegada: d.latitudLlegada ?? null,
         longitud_llegada: d.longitudLlegada ?? null,
         notas: d.notas ?? null,
@@ -306,8 +306,8 @@ function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<
     ruta_id: null,
     tipo: 0,
     resultado: v.estado ?? 0,
-    check_in_at: toTimestamp(v.fechaHoraInicio),
-    check_out_at: toTimestamp(v.fechaHoraFin),
+    check_in_at: toNullableTimestamp(v.fechaHoraInicio),
+    check_out_at: toNullableTimestamp(v.fechaHoraFin),
     latitud_check_in: v.latitudInicio ?? null,
     longitud_check_in: v.longitudInicio ?? null,
     distancia_check_in: null,
@@ -615,8 +615,23 @@ function rawToCobroDto(raw: DirtyRaw, operation: number): any {
 
 // ── Helpers ──
 
+/**
+ * Usado para campos que SIEMPRE deben tener valor (created_at, updated_at).
+ * Si el backend no envía, cae a Date.now() como último recurso.
+ */
 function toTimestamp(dateStr: string | null | undefined): number {
   if (!dateStr) return Date.now();
   const ms = new Date(dateStr).getTime();
   return isNaN(ms) ? Date.now() : ms;
+}
+
+/**
+ * Usado para campos timestamp opcionales (hora_llegada, hora_salida,
+ * aceptada_en, etc). Preserva null — crítico para que `displayEstado` no
+ * infiera "Completada" cuando el backend dijo que aún no hay hora_salida.
+ */
+function toNullableTimestamp(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const ms = new Date(dateStr).getTime();
+  return isNaN(ms) ? null : ms;
 }

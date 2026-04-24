@@ -9,7 +9,7 @@ import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { ChevronLeft, Navigation, Map as MapIcon, CheckCircle, Clock } from 'lucide-react-native';
 import Ruta from '@/db/models/Ruta';
-import { formatTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { performSync } from '@/sync/syncEngine';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
@@ -50,6 +50,7 @@ export default function RutaScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const { time: formatTime } = useTenantLocale();
 
   const { data: rutas, isLoading } = useOfflineRutaHoy();
   const route = rutas?.[0] ?? null;
