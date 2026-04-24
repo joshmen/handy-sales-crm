@@ -36,10 +36,17 @@ import { database } from '@/db/database';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
+import { useRealtime } from '@/hooks';
 
 function GlobalPermissionDialog() {
   const { visible, title, message, confirmText, cancelText, handleConfirm, handleCancel } = usePermissionDialogStore();
   return <ConfirmModal visible={visible} title={title} message={message} confirmText={confirmText} cancelText={cancelText} onConfirm={handleConfirm} onCancel={handleCancel} />;
+}
+
+// Mantiene la conexión SignalR mientras hay sesión + cablea eventos a invalidaciones React Query.
+function RealtimeBridge() {
+  useRealtime();
+  return null;
 }
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)
 
@@ -156,6 +163,7 @@ export default function RootLayout() {
           <QueryProvider>
             <StatusBar style={showSplash ? 'light' : 'dark'} />
             <AuthGate onReady={handleAppReady} />
+            <RealtimeBridge />
             {showSplash && appReady && (
               <AnimatedSplash
                 onFinish={handleSplashFinish}

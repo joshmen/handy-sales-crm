@@ -39,8 +39,17 @@ const getApiUrl = (): string => {
   return url;
 };
 
+// Main API (puerto 1050) hospeda el hub SignalR en /hubs/notifications.
+// Reusa la misma lógica de host para que apunte al mismo Metro/IP del API mobile.
+const getMainApiUrl = (): string => {
+  const mobile = getApiUrl();
+  // Sustituye solo el puerto si es local (1052 → 1050). Producción ya viene apuntando al gateway.
+  return mobile.replace(/:1052(\b|$)/, ':1050');
+};
+
 export const API_CONFIG = {
   BASE_URL: getApiUrl(),
+  MAIN_BASE_URL: getMainApiUrl(),
   TIMEOUT: 15000,
 } as const;
 
