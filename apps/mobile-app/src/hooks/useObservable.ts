@@ -24,7 +24,7 @@ export function useObservable<T>(observable: Observable<T> | null): {
         setIsLoading(false);
       },
       error: (err) => {
-        console.error('[useObservable] Error:', err);
+        if (__DEV__) console.error('[useObservable] Error:', err);
         setIsLoading(false);
       },
     });

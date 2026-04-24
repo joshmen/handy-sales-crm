@@ -37,7 +37,7 @@ function loadNativeModules() {
 
   const isExpoGo = Constants.appOwnership === 'expo';
   if (isExpoGo) {
-    console.log('[Printer] Running in Expo Go — native modules not available');
+    if (__DEV__) console.log('[Printer] Running in Expo Go — native modules not available');
     return;
   }
 
@@ -47,7 +47,7 @@ function loadNativeModules() {
     BluetoothEscposPrinter = mod.BluetoothEscposPrinter;
     NetPrinter = mod.NetPrinter ?? null;
     nativeAvailable = true;
-    console.log('[Printer] Native modules loaded (BT + Net)');
+    if (__DEV__) console.log('[Printer] Native modules loaded (BT + Net)');
   } catch (e) {
     if (__DEV__) console.warn('[Printer] Native modules not available:', e);
   }

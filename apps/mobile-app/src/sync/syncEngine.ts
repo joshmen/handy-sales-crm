@@ -65,7 +65,7 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     try {
       await crashReporter.flushPendingReports();
     } catch (flushError) {
-      console.warn('[Sync] Crash report flush failed (non-fatal):', flushError);
+      if (__DEV__) console.warn('[Sync] Crash report flush failed (non-fatal):', flushError);
     }
 
     await synchronize({
@@ -170,7 +170,7 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
         await cleanUploadedFiles();
       }
     } catch (attachmentError) {
-      console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
+      if (__DEV__) console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
     }
 
     // Phase 4: Flush pending crash reports (deferred from offline)

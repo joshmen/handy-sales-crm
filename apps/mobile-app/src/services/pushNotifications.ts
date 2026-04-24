@@ -26,12 +26,12 @@ if (!isExpoGo) {
 export async function registerForPushNotifications(): Promise<string | null> {
   // Push notifications require a dev build — skip entirely in Expo Go
   if (isExpoGo) {
-    console.log('[Push] Skipping — push notifications not supported in Expo Go (SDK 53+)');
+    if (__DEV__) console.log('[Push] Skipping — push notifications not supported in Expo Go (SDK 53+)');
     return null;
   }
 
   if (!Device.isDevice) {
-    console.log('[Push] Must use physical device for push notifications');
+    if (__DEV__) console.log('[Push] Must use physical device for push notifications');
     return null;
   }
 
@@ -47,7 +47,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   if (finalStatus !== 'granted') {
-    console.log('[Push] Permission not granted');
+    if (__DEV__) console.log('[Push] Permission not granted');
     return null;
   }
 
@@ -82,7 +82,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   const projectId =
     Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
   if (!projectId) {
-    console.log('[Push] No projectId found — configure EAS project first');
+    if (__DEV__) console.log('[Push] No projectId found — configure EAS project first');
     return null;
   }
 
@@ -106,7 +106,7 @@ export async function registerTokenWithServer(pushToken: string): Promise<void> 
       platform: Platform.OS,
       deviceName: Device.deviceName ?? 'Unknown',
     });
-    console.log('[Push] Token registered with server');
+    if (__DEV__) console.log('[Push] Token registered with server');
   } catch (error) {
     if (__DEV__) console.error('[Push] Failed to register token:', error);
   }

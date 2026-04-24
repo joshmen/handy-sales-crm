@@ -107,7 +107,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 
     if (isOffline && hasCachedData) {
       // Offline but have data — let the user in
-      console.log(`[Offline] Skipping sync — last synced ${Math.round(hoursAgo)}h ago`);
+      if (__DEV__) console.log(`[Offline] Skipping sync — last synced ${Math.round(hoursAgo)}h ago`);
       setSyncPhase(6);
       onSyncComplete?.();
       setTimeout(() => {
@@ -120,7 +120,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 
     if (!isStale && hasCachedData) {
       // Online but data is fresh (< 12h) — skip sync, enter fast
-      console.log(`[Fresh] Data is ${Math.round(hoursAgo)}h old (< ${MAX_SYNC_AGE_HOURS}h) — skipping startup sync`);
+      if (__DEV__) console.log(`[Fresh] Data is ${Math.round(hoursAgo)}h old (< ${MAX_SYNC_AGE_HOURS}h) — skipping startup sync`);
       setSyncPhase(6);
       onSyncComplete?.();
       setTimeout(() => {
@@ -132,7 +132,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
     }
 
     // Online + stale data (or first sync) — run full sync
-    console.log(`[Sync] Data is ${hasCachedData ? Math.round(hoursAgo) + 'h old' : 'empty'} — running sync`);
+    if (__DEV__) console.log(`[Sync] Data is ${hasCachedData ? Math.round(hoursAgo) + 'h old' : 'empty'} — running sync`);
 
     try {
       // Online — run full sync
