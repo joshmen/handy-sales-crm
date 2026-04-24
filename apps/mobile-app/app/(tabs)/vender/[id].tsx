@@ -3,10 +3,9 @@ import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido, useOfflineClientById, useFacturacionEnabled, useCreateFactura, useTenantLocale } from '@/hooks';
+import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido, useTenantLocale } from '@/hooks';
 import { LoadingSpinner, ConfirmModal } from '@/components/ui';
-import { DatosFiscalesModal, type FiscalData } from '@/components/shared/DatosFiscalesModal';
-import { XCircle, Package, CheckCircle, Truck, ArrowRight, ChevronLeft, FileText } from 'lucide-react-native';
+import { XCircle, Package, CheckCircle, Truck, ArrowRight, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { COLORS } from '@/theme/colors';
@@ -30,12 +29,6 @@ export default function OrderDetailScreen() {
   const enRutaMutation = useEnRutaPedido();
   const entregarMutation = useEntregarPedido();
   const cancelarMutation = useCancelarPedido();
-
-  // Facturación (solo si el país del tenant soporta CFDI)
-  const facturacionEnabled = useFacturacionEnabled();
-  const { data: cliente } = useOfflineClientById(order?.clienteId);
-  const crearFacturaMutation = useCreateFactura();
-  const [showFacturarModal, setShowFacturarModal] = useState(false);
 
   const [notasEntrega, setNotasEntrega] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void; destructive?: boolean; confirmText?: string; icon?: React.ReactNode }>({ visible: false, title: '', message: '', onConfirm: () => {} });
@@ -69,25 +62,6 @@ export default function OrderDetailScreen() {
   const canCancel = isSynced && estado >= 0 && estado <= 4;
   const clienteNombre = clientNames.get(order.clienteId) || 'Cliente';
   const estadoColor = ORDER_STATUS_COLORS[estado] ?? ORDER_STATUS_COLORS[0];
-
-  // Facturar: solo visible si tenant soporta país + pedido entregado + sincronizado
-  const canFacturar = facturacionEnabled && estado === 5 && isSynced;
-
-  const handleFacturar = (data: FiscalData) => {
-    crearFacturaMutation.mutate(
-      { pedidoId: serverId, data },
-      {
-        onSuccess: () => {
-          setShowFacturarModal(false);
-          Toast.show({ type: 'success', text1: 'Factura generada', text2: 'CFDI timbrado correctamente' });
-        },
-        onError: (e: any) => {
-          const msg = e?.response?.data?.message ?? e?.message ?? 'Error al facturar';
-          Toast.show({ type: 'error', text1: 'Error al facturar', text2: msg });
-        },
-      }
-    );
-  };
 
   const handleTransition = (title: string, message: string, onConfirm: () => void) => {
     setConfirmModal({ visible: true, title, message, onConfirm, confirmText: 'Confirmar', icon: <SbOrders size={48} /> });
@@ -182,22 +156,6 @@ export default function OrderDetailScreen() {
               <Text style={styles.actionBtnText}>Marcar Entregado</Text>
             </TouchableOpacity>
           </View>
-        );
-      case 5: // Entregado → opción de Facturar (si país lo soporta)
-        if (!canFacturar) return null;
-        return (
-          <TouchableOpacity
-            testID="btn-facturar"
-            style={[styles.actionBtn, { backgroundColor: COLORS.button }]}
-            onPress={() => setShowFacturarModal(true)}
-            disabled={crearFacturaMutation.isPending}
-            activeOpacity={0.8}
-            accessibilityLabel="Facturar pedido"
-            accessibilityRole="button"
-          >
-            <FileText size={18} color="#fff" />
-            <Text style={styles.actionBtnText}>Facturar</Text>
-          </TouchableOpacity>
         );
       default:
         return null;
@@ -340,18 +298,6 @@ export default function OrderDetailScreen() {
         onCancel={() => setConfirmModal((prev) => ({ ...prev, visible: false }))}
         destructive={confirmModal.destructive}
         icon={confirmModal.icon}
-      />
-
-      <DatosFiscalesModal
-        visible={showFacturarModal}
-        onConfirm={handleFacturar}
-        onCancel={() => setShowFacturarModal(false)}
-        loading={crearFacturaMutation.isPending}
-        initialRfc={cliente?.rfcFiscal || cliente?.rfc || ''}
-        initialNombre={cliente?.razonSocial || cliente?.nombre || ''}
-        initialRegimen={cliente?.regimenFiscal || ''}
-        initialUsoCfdi={cliente?.usoCfdi || 'G03'}
-        initialCp={cliente?.cpFiscal || ''}
       />
     </ScrollView>
   );
