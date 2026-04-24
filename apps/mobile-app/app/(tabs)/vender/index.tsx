@@ -12,7 +12,7 @@ import { Card, LoadingSpinner, EmptyState, BottomSheet } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency, formatDate } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { ShoppingCart, ChevronRight, Calendar, Plus, ClipboardList, Truck } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -29,6 +29,7 @@ const STATUS_FILTERS = [
 
 export default function VenderListScreen() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency, date: formatDate } = useTenantLocale();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
   const [showOrderTypeSheet, setShowOrderTypeSheet] = useState(false);
   const router = useRouter();

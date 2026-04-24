@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineCobros, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
-import { formatCurrency, formatTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
 import { Receipt, Banknote, ArrowRightLeft, FileText, CreditCard, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
@@ -24,6 +24,7 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 export default function HistorialCobrosScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, time: formatTime } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const { data: cobros, isLoading } = useOfflineCobros();
   const clientNames = useClientNameMap();

@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, FileText, ChevronRight } from 'lucide-react-native';
 import { useFacturasList } from '@/hooks/useFacturas';
 import { EmptyState, LoadingSpinner } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { COLORS } from '@/theme/colors';
 import type { FacturaListItem } from '@/api/facturas';
 
@@ -28,6 +28,7 @@ function formatDate(iso: string | undefined | null): string {
 export default function FacturasListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency } = useTenantLocale();
   const { data, isLoading, isRefetching, refetch } = useFacturasList();
 
   const facturas: FacturaListItem[] = Array.isArray(data) ? data : [];

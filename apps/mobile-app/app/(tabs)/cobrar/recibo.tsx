@@ -6,7 +6,7 @@ import { captureRef } from 'react-native-view-shot';
 import { useRef, useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency, formatDateTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
@@ -18,6 +18,7 @@ import Toast from 'react-native-toast-message';
 export default function ReciboScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { user } = useAuthStore();
   const params = useLocalSearchParams<{
     clienteNombre: string;

@@ -10,7 +10,7 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { CartBar } from '@/components/shared/CartBar';
 import { EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { Package, Search, Plus, ChevronLeft } from 'lucide-react-native';
 import type Producto from '@/db/models/Producto';
 
@@ -19,6 +19,7 @@ const STEPS = ['Cliente', 'Productos', 'Revisar'];
 export default function CrearPedidoStep2() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const { fromParada } = useLocalSearchParams<{ fromParada?: string }>();
 
   const handleBack = useCallback(() => {

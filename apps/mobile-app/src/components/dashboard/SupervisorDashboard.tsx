@@ -6,12 +6,13 @@ import { useAuthStore } from '@/stores';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { COLORS } from '@/theme/colors';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function SupervisorDashboard() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);

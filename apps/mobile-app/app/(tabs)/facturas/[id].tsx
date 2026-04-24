@@ -8,7 +8,7 @@ import { facturasApi } from '@/api/facturas';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printCfdiTicket, isNativeAvailable } from '@/services/printerService';
 import { LoadingSpinner } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { COLORS } from '@/theme/colors';
 import Toast from 'react-native-toast-message';
 import type { FacturaTicketData } from '@/api/facturas';
@@ -30,6 +30,7 @@ function numeroALetras(n: number): string {
 export default function FacturaDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency } = useTenantLocale();
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const id = Number(idParam);
 

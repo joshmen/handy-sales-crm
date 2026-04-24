@@ -9,7 +9,7 @@ import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import { Card, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
@@ -19,6 +19,7 @@ import { Target } from 'lucide-react-native';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);

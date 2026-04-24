@@ -5,7 +5,7 @@ import { Clock } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SbOrders, SbMap, SbPayments } from '@/components/icons/DashboardIcons';
 import { EmptyState } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { useActividadEquipo } from '@/hooks/useSupervisor';
 import { COLORS } from '@/theme/colors';
 import type { ActividadItem } from '@/api/schemas/supervisor';
@@ -42,6 +42,7 @@ function formatRelativeTime(isoDate: string): string {
 
 export default function ActividadEquipoScreen() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const { data: actividad, isLoading, refetch } = useActividadEquipo();
 

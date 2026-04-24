@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
 import { useOfflineCobroById, useClientNameMap } from '@/hooks';
-import { formatCurrency, formatDateTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
 import { ChevronLeft, Printer, Share2 } from 'lucide-react-native';
 import { usePrinterStore } from '@/stores/printerStore';
@@ -18,6 +18,7 @@ export default function DetalleCobroScreen() {
   const insets = useSafeAreaInsets();
   const { cobroId } = useLocalSearchParams<{ cobroId: string }>();
   const router = useRouter();
+  const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { user } = useAuthStore();
   const { data: cobro } = useOfflineCobroById(cobroId);
   const clientNames = useClientNameMap();

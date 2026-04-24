@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from '@/hooks';
 import { LoadingSpinner, ConfirmModal } from '@/components/ui';
-import { formatCurrency, formatDateTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { XCircle, Package, CheckCircle, Truck, ArrowRight, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
@@ -21,6 +21,7 @@ const normalizeEstado = (e: number): number => (e === 1 || e === 3) ? 2 : e;
 export default function OrderDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: order, isLoading } = useOfflineOrderById(id!);
   const { data: detalles } = useOfflineOrderDetalles(id!);

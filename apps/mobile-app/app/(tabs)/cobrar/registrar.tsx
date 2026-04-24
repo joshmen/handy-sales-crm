@@ -10,7 +10,7 @@ import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
 import { Button, ConfirmModal } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
 import type Cliente from '@/db/models/Cliente';
 import type RutaDetalleModel from '@/db/models/RutaDetalle';
@@ -43,6 +43,7 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 export default function RegistrarCobroScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const params = useLocalSearchParams<{
     clienteId: string;

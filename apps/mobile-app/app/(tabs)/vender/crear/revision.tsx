@@ -10,7 +10,7 @@ import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { usePricingMap } from '@/hooks/usePricing';
@@ -29,6 +29,7 @@ const METODO_PAGO_OPTIONS = [
 export default function CrearPedidoStep3() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const [sending, setSending] = useState(false);
   const [showConfirmPedido, setShowConfirmPedido] = useState(false);

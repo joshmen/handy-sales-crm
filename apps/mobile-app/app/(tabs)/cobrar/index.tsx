@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { Wallet, ChevronRight, User, TrendingUp } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -57,6 +57,7 @@ function getPeriodStart(period: PeriodFilter): Date | null {
 export default function CobrarScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
 
