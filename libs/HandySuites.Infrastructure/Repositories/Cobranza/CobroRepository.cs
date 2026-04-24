@@ -310,11 +310,18 @@ public class CobroRepository : ICobroRepository
 
         if (pedidosPorCliente.Count == 0) return new List<SaldoClienteDto>();
 
-        // Get all active cobros for these clients
+        // Get all active cobros for these clients.
+        // Incluye cobros LIGADOS a un pedido en ventana AND cobros "a cuenta" (PedidoId=null)
+        // del cliente — el sum del cobrado por cliente debe reflejar TODO lo pagado,
+        // no solo lo asociado a un pedido específico (cobros a cuenta son un caso válido
+        // cuando se cobra anticipado o se concilia saldo global).
         var allPedidoIds = pedidosPorCliente.SelectMany(p => p.PedidoIds).ToList();
+        var clienteIds = pedidosPorCliente.Select(p => p.ClienteId).ToList();
         var cobrosRaw = await _db.Cobros
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && allPedidoIds.Contains(c.PedidoId.Value))
+            .Where(c => c.TenantId == tenantId && c.Activo &&
+                        clienteIds.Contains(c.ClienteId) &&
+                        ((c.PedidoId.HasValue && allPedidoIds.Contains(c.PedidoId.Value)) || !c.PedidoId.HasValue))
             .Select(c => new { c.ClienteId, c.Monto })
             .ToListAsync();
 
@@ -381,9 +388,12 @@ public class CobroRepository : ICobroRepository
             .ToListAsync();
 
         var pedidoIds = pedidos.Select(p => p.Id).ToList();
+        // Incluye cobros ligados a estos pedidos AND cobros "a cuenta" (PedidoId=null) del cliente.
+        // Consistente con ObtenerSaldosAsync.
         var cobros = await _db.Cobros
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && pedidoIds.Contains(c.PedidoId.Value))
+            .Where(c => c.TenantId == tenantId && c.Activo && c.ClienteId == clienteId &&
+                        ((c.PedidoId.HasValue && pedidoIds.Contains(c.PedidoId.Value)) || !c.PedidoId.HasValue))
             .Select(c => new { c.Id, c.PedidoId, c.Monto, c.MetodoPago, c.FechaCobro, c.Referencia })
             .ToListAsync();
 
