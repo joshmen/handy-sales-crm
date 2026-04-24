@@ -6,8 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
-import { database } from '@/db/database';
-import RutaDetalle from '@/db/models/RutaDetalle';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -99,6 +97,9 @@ export default function CrearPedidoStep3() {
         const montoTotal = total;
         const metodo = metodoPago ?? 0;
         const nombre = clienteNombre || 'Cliente';
+        const paradaId = useOrderDraftStore.getState().fromParadaId;
+        // Pedido + Cobro + parada.Completada en una sola transacción WDB:
+        // si cualquier paso falla, nada se persiste (evita parada colgada).
         const { pedido } = await createVentaDirectaOffline(
           clienteId || '',
           clienteServerId,
@@ -107,17 +108,9 @@ export default function CrearPedidoStep3() {
           metodo,
           montoTotal,
           undefined,
-          notas || undefined
+          notas || undefined,
+          paradaId
         );
-        // Mark parada as completed if this came from a route stop (WDB sync pushes to server)
-        const paradaId = useOrderDraftStore.getState().fromParadaId;
-        if (paradaId) {
-          try {
-            // database imported at top
-            const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
-            if (stopRecord) await stopRecord.depart();
-          } catch { /* ignore */ }
-        }
 
         // Navigate to cobro receipt for printing (VD = sale + immediate payment)
         router.replace({
@@ -137,6 +130,8 @@ export default function CrearPedidoStep3() {
         reset();
         // WDB sync will push pedido to server automatically via withChangesForTables
       } else {
+        const paradaId = useOrderDraftStore.getState().fromParadaId;
+        // Pedido + parada.Completada atómicos en una sola transacción WDB.
         const pedido = await createPedidoOffline(
           clienteId || '',
           clienteServerId,
@@ -144,17 +139,9 @@ export default function CrearPedidoStep3() {
           mappedItems,
           notas || undefined,
           0, // tipoVenta = Preventa
-          2  // estado = Confirmado (simplified flow: skip Enviado)
+          2, // estado = Confirmado (simplified flow: skip Enviado)
+          paradaId
         );
-        // Mark parada as completed if this came from a route stop
-        const paradaId = useOrderDraftStore.getState().fromParadaId;
-        if (paradaId) {
-          try {
-            // database imported at top
-            const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
-            if (stopRecord) await stopRecord.depart();
-          } catch { /* ignore */ }
-        }
         router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}${paradaId ? '&fromRuta=1' : ''}` as any);
         reset();
         // WDB sync will push pedido + ruta_detalle to server automatically

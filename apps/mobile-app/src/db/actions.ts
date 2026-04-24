@@ -4,6 +4,7 @@ import DetallePedido from './models/DetallePedido';
 import Cobro from './models/Cobro';
 import Visita from './models/Visita';
 import Cliente from './models/Cliente';
+import RutaDetalle from './models/RutaDetalle';
 
 /**
  * Create a cliente offline in WatermelonDB.
@@ -70,6 +71,9 @@ const IVA_RATE = 0.16;
 /**
  * Create a pedido + detalles offline in WatermelonDB.
  * WDB marks them as `created` — next sync push sends them to server.
+ *
+ * Si se pasa `paradaId`, la parada se marca como Completada (estado=2) dentro
+ * del mismo `database.write()` para que sea atómico con la creación del pedido.
  */
 export async function createPedidoOffline(
   clienteId: string,
@@ -78,7 +82,8 @@ export async function createPedidoOffline(
   items: OfflineOrderItem[],
   notas?: string,
   tipoVenta: number = 0,
-  estado: number = 0
+  estado: number = 0,
+  paradaId?: string | null
 ): Promise<Pedido> {
   const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
   const descuentoTotal = items.reduce((sum, i) => sum + (i.descuento ?? 0), 0);
@@ -122,6 +127,14 @@ export async function createPedidoOffline(
       });
     }
 
+    if (paradaId) {
+      const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
+      await stopRecord.update((record: any) => {
+        record.estado = 2; // Completada
+        record.horaSalida = new Date();
+      });
+    }
+
     return pedido;
   });
 }
@@ -129,6 +142,11 @@ export async function createPedidoOffline(
 /**
  * Create a venta directa offline: atomically creates a Pedido (estado=5, tipoVenta=1)
  * + Cobro linked by pedido_id in a single database.write() call.
+ *
+ * Si se pasa `paradaId`, la parada se marca como completada (estado=2) dentro
+ * del MISMO `database.write()` → si cualquier paso falla, nada se persiste.
+ * Esto cierra la brecha donde el pedido/cobro quedaba creado pero la parada
+ * quedaba colgada "EnVisita" si `stopRecord.depart()` fallaba después.
  */
 export async function createVentaDirectaOffline(
   clienteId: string,
@@ -138,7 +156,8 @@ export async function createVentaDirectaOffline(
   metodoPago: number,
   monto: number,
   referencia?: string,
-  notas?: string
+  notas?: string,
+  paradaId?: string | null
 ): Promise<{ pedido: Pedido; cobro: Cobro }> {
   const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
   const descuentoTotal = items.reduce((sum, i) => sum + (i.descuento ?? 0), 0);
@@ -196,6 +215,17 @@ export async function createVentaDirectaOffline(
       record.version = 1;
       record.updatedAt = new Date();
     });
+
+    // Atomicidad con la parada: si viene de ruta, se marca como Completada
+    // en la misma transacción. No usamos el @writer `depart()` porque WDB
+    // no permite writes anidados — hacemos update() directo.
+    if (paradaId) {
+      const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
+      await stopRecord.update((record: any) => {
+        record.estado = 2; // Completada
+        record.horaSalida = new Date();
+      });
+    }
 
     return { pedido, cobro };
   });

@@ -14,6 +14,8 @@ export interface DatosEmpresa {
   codigoPostal: string | null;
   sitioWeb: string | null;
   logoUrl: string | null;
+  country: string | null;
+  billingEnabled: boolean;
 }
 
 export function useEmpresa() {

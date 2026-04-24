@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Billing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,6 +59,20 @@ public static class MobileFacturaEndpoints
             var (tenantId, userId) = GetContext(context);
             if (tenantId <= 0 || userId <= 0)
                 return Results.Unauthorized();
+
+            // 0. Country gate — facturación electrónica solo para países con integración fiscal.
+            //    Hoy: solo MX (SAT CFDI). Mañana se agregan más extendiendo BillingCountrySupport.
+            var tenantCountry = await db.Set<HandySuites.Domain.Entities.CompanySetting>()
+                .AsNoTracking()
+                .Where(s => s.TenantId == tenantId)
+                .Select(s => s.Country)
+                .FirstOrDefaultAsync() ?? "MX";
+
+            if (!BillingCountrySupport.IsSupported(tenantCountry))
+                return Results.Problem(
+                    detail: $"Facturación electrónica no disponible para país '{tenantCountry}'.",
+                    statusCode: StatusCodes.Status403Forbidden,
+                    title: "Facturación no disponible");
 
             // 1. Validate pedido exists and is ENTREGADO (estado=5)
             var pedido = await db.Pedidos

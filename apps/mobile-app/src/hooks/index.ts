@@ -31,3 +31,6 @@ export { useUnreadNotificationCount } from './useNotificationCount';
 // Map hooks
 export { useMapData } from './useMapData';
 export { useLocationTracking } from './useLocationTracking';
+
+// Facturación (gating por país — multi-país-ready)
+export { useFacturacionEnabled } from './useFacturacionEnabled';

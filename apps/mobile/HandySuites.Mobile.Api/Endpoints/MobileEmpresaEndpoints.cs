@@ -1,4 +1,5 @@
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Billing;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ public static class MobileEmpresaEndpoints
             if (datos == null)
                 return Results.NotFound(new { success = false, message = "Datos de empresa no configurados" });
 
+            var country = settings?.Country ?? "MX";
+
             return Results.Ok(new
             {
                 success = true,
@@ -47,6 +50,8 @@ public static class MobileEmpresaEndpoints
                     codigoPostal = datos.CodigoPostal,
                     sitioWeb = datos.SitioWeb,
                     logoUrl = settings?.LogoUrl,
+                    country,
+                    billingEnabled = BillingCountrySupport.IsSupported(country),
                 }
             });
         })

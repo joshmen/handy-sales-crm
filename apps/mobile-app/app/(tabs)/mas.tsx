@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
-import { useLogout } from '@/hooks';
+import { useLogout, useFacturacionEnabled } from '@/hooks';
 import Toast from 'react-native-toast-message';
 import { Badge, ConfirmModal } from '@/components/ui';
 import {
@@ -66,7 +66,8 @@ function MasScreenContent() {
   };
 
   const role = user?.role;
-  const canSeeFacturas = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
+  const facturacionEnabled = useFacturacionEnabled();
+  const canSeeFacturas = facturacionEnabled && (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR');
 
   const primaryItems: MenuItem[] = [
     {
