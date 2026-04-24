@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
-import { useOrderDraftStore, useOrderItemCount, useOrderTotal } from '@/stores';
+import { useOrderDraftStore, useOrderItemCount } from '@/stores';
 import { usePricingMap } from '@/hooks/usePricing';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -47,11 +47,19 @@ export default function CrearPedidoStep2() {
   const removeItem = useOrderDraftStore(s => s.removeItem);
   const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
   const itemCount = useOrderItemCount();
-  const total = useOrderTotal();
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
   const { getPricing, loading: pricingLoading } = usePricingMap(clienteListaPreciosId);
   const categorias = useCategoriasProducto();
+
+  // Total con descuentos por línea aplicados (alineado con la pantalla Revisar)
+  const total = useMemo(() => {
+    const sub = items.reduce((acc, item) => {
+      const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+      return acc + pricing.precioConDescuento * item.cantidad;
+    }, 0);
+    return sub * 1.16; // IVA 16%
+  }, [items, getPricing]);
 
   const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
 

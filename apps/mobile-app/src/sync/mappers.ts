@@ -420,14 +420,22 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
       (ped: any) => ped.localId === detalle.pedido_id || String(ped.id) === detalle.pedido_id
     );
     if (pedido && !pedido.isDeleted) {
+      const cantidad = detalle.cantidad ?? 0;
+      const precioUnitario = detalle.precio_unitario ?? 0;
+      const descuento = detalle.descuento ?? 0;
+      const baseLinea = precioUnitario * cantidad;
+      // Derive porcentaje from monto: descuento / (precio × cantidad) × 100, two decimals
+      const porcentajeDescuento = baseLinea > 0 && descuento > 0
+        ? Math.round((descuento / baseLinea) * 10000) / 100
+        : 0;
       pedido.detalles.push({
         id: detalle.server_id ?? 0,
         localId: detalle.id,
         productoId: detalle.producto_server_id ?? (parseInt(String(detalle.producto_id), 10) || 0),
-        cantidad: detalle.cantidad ?? 0,
-        precioUnitario: detalle.precio_unitario ?? 0,
-        descuento: detalle.descuento ?? 0,
-        porcentajeDescuento: 0,
+        cantidad,
+        precioUnitario,
+        descuento,
+        porcentajeDescuento,
         subtotal: detalle.subtotal ?? 0,
         impuesto: (detalle.subtotal ?? 0) * 0.16,
         total: (detalle.subtotal ?? 0) * 1.16,
