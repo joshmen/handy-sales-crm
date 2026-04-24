@@ -123,6 +123,24 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
     });
   }, [isAuthenticated]);
 
+  // Prefetch catálogos silencioso al startup post-auth (cubre caso de user
+  // ya logueado que reabre la app: el prefetch de useLogin solo corre en
+  // login fresh). Crítico para offline-first: zonas/categorías deben estar
+  // en cache TanStack (persist AsyncStorage) para que crear cliente sin red
+  // muestre los pickers con datos.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Import dinámico para evitar ciclo de módulos en startup
+    import('@/providers/QueryProvider').then(({ queryClient }) => {
+      import('@/api').then(({ catalogosApi }) => {
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'zonas'], queryFn: () => catalogosApi.getZonas() });
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-cliente'], queryFn: () => catalogosApi.getCategoriasCliente() });
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-producto'], queryFn: () => catalogosApi.getCategoriasProducto() });
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'familias-producto'], queryFn: () => catalogosApi.getFamiliasProducto() });
+      });
+    });
+  }, [isAuthenticated]);
+
   if (isLoading || onboardingDone === null) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
