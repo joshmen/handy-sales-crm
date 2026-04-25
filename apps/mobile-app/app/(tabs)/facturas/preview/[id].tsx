@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Image }
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { facturasApi } from '@/api/facturas';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingSpinner } from '@/components/ui';
@@ -239,10 +240,14 @@ export default function CfdiPreviewScreen() {
 
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
 
-          {/* QR — en preview solo URL (la térmica imprime el QR real vía P.printQRCode) */}
-          <Text style={styles.center}>URL de verificación SAT</Text>
+          {/* QR de verificación SAT (mismo que se imprime en la térmica via P.printQRCode) */}
+          <Text style={styles.center}>QR de verificación SAT</Text>
+          {qrUrl ? (
+            <View style={styles.qrWrap}>
+              <QRCode value={qrUrl} size={180} ecl="M" />
+            </View>
+          ) : null}
           <Text style={styles.urlLink} selectable numberOfLines={4}>{qrUrl}</Text>
-          <Text style={styles.legend}>(El ticket impreso incluye el QR escaneable)</Text>
           <Text style={styles.legend}>Este documento es una representación impresa de un CFDI</Text>
 
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
@@ -419,6 +424,12 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
   center: { fontFamily: MONO, fontSize: 11, color: '#475569', textAlign: 'center', marginTop: 6 },
+  qrWrap: {
+    alignSelf: 'center',
+    marginVertical: 10,
+    padding: 8,
+    backgroundColor: '#ffffff',
+  },
   urlLink: {
     fontFamily: MONO,
     fontSize: 9,
