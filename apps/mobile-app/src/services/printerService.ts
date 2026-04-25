@@ -525,6 +525,15 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
 
 // ---------- CFDI Ticket Printing (80mm) ----------
 
+export interface CfdiImpuestoConcepto {
+  tipo: string;          // TRASLADO | RETENCION
+  impuesto: string;      // 001=ISR, 002=IVA, 003=IEPS
+  tipoFactor: string;    // Tasa | Cuota | Exento
+  tasaOCuota?: number | null;
+  base: number;
+  importe?: number | null;
+}
+
 export interface CfdiTicketData {
   // Emisor
   emisorRfc: string;
@@ -544,21 +553,29 @@ export interface CfdiTicketData {
   serie?: string;
   folio?: string;
   fecha: string;
+  tipoComprobante: string;          // Anexo 20 4.0: I/E/T/N/P (Ingreso, Egreso, Traslado, Nómina, Pago)
   formaPago: string;
   metodoPago: string;
   tipoExportacion: string;          // Anexo 20 4.0 obligatorio. Default "01 - No aplica"
+  moneda: string;                   // ISO 4217: MXN, USD, EUR
+  tipoCambio: number;               // 1 si MXN, otro valor si moneda extranjera
   // Items (con claves SAT obligatorias en CFDI 4.0)
   items: Array<{
     descripcion: string;
     cantidad: number;
     precioUnitario: number;
     importe: number;
+    descuento: number;
     claveProductoServ: string;      // ClaveProdServ SAT (8 dígitos)
     claveUnidad: string;            // ClaveUnidad SAT (ej: "H87", "E48")
+    unidad?: string | null;         // Texto descriptivo (ej: "Pieza", "Litro")
     objetoImpuesto: string;         // "01"|"02"|"03"|"04"
+    impuestos: CfdiImpuestoConcepto[];
   }>;
   subtotal: number;
-  iva: number;
+  descuento: number;                // Descuento global (suma de descuentos de líneas)
+  iva: number;                      // Total impuestos trasladados
+  totalRetenciones: number;         // Total impuestos retenidos
   total: number;
   totalLetra: string;
   // Timbrado
@@ -568,10 +585,37 @@ export interface CfdiTicketData {
   noCertificadoEmisor: string;
   noCertificadoSat: string;
   fechaTimbrado: string;            // ISO string desde server; el template formatea con TZ
+  fechaCertificacion?: string | null;
   rfcPac: string;                   // RfcProvCertif del TimbreFiscalDigital
   // Extras
   vendedorName: string;
   logoUri?: string;
+}
+
+/**
+ * Mapea TipoComprobante (1 letra) a su nombre Anexo 20 4.0 para representación impresa.
+ */
+export function tipoComprobanteLabel(t: string): string {
+  switch ((t || '').toUpperCase()) {
+    case 'I': return 'Ingreso';
+    case 'E': return 'Egreso';
+    case 'T': return 'Traslado';
+    case 'N': return 'Nómina';
+    case 'P': return 'Pago';
+    default:  return t || '-';
+  }
+}
+
+/**
+ * Mapea Impuesto (clave SAT 3 dígitos) a nombre legible.
+ */
+export function impuestoLabel(codigo: string): string {
+  switch (codigo) {
+    case '001': return 'ISR';
+    case '002': return 'IVA';
+    case '003': return 'IEPS';
+    default:    return codigo;
+  }
 }
 
 export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
@@ -618,14 +662,21 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     await P.printText('FACTURA ELECTRONICA\n', { widthtimes: 1, heigthtimes: 1 });
     await P.printText(sep, {});
 
-    // ── Serie / Folio / Fecha / Tipo Exportación ──
+    // ── Serie / Folio / Fecha / Tipo Comprobante / Pago / Moneda / Tipo Exportación ──
     await P.printerAlign(ALIGN.LEFT);
     if (data.serie || data.folio) {
       await P.printText(`Serie: ${data.serie ?? '-'}  Folio: ${data.folio ?? '-'}\n`, {});
     }
     await P.printText(`Fecha: ${data.fecha}\n`, {});
+    await P.printText(`Tipo Comprobante: ${data.tipoComprobante} - ${tipoComprobanteLabel(data.tipoComprobante)}\n`, {});
     await P.printText(`Forma Pago: ${data.formaPago}\n`, {});
     await P.printText(`Metodo Pago: ${data.metodoPago}\n`, {});
+    await P.printText(`Moneda: ${data.moneda}`, {});
+    if (data.moneda && data.moneda !== 'MXN' && data.tipoCambio && data.tipoCambio !== 1) {
+      await P.printText(`  Tipo Cambio: ${data.tipoCambio.toFixed(4)}\n`, {});
+    } else {
+      await P.printText('\n', {});
+    }
     await P.printText(`Tipo Exportacion: ${data.tipoExportacion}\n`, {});
     await P.printText(sepThin, {});
 
@@ -651,17 +702,39 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
         await P.printText(pad(left, right) + '\n', {});
       }
       // Sub-línea con claves SAT requeridas por CFDI 4.0
+      const unidadTxt = item.unidad ? ` (${item.unidad})` : '';
       await P.printText(
-        `  Clave SAT: ${item.claveProductoServ} | Unidad: ${item.claveUnidad} | ObjImp: ${item.objetoImpuesto}\n`,
+        `  Clave SAT: ${item.claveProductoServ} | Unidad: ${item.claveUnidad}${unidadTxt} | ObjImp: ${item.objetoImpuesto}\n`,
         {}
       );
+      // Descuento por concepto (si > 0)
+      if (item.descuento && item.descuento > 0) {
+        await P.printText(pad('  Descuento:', `-${fmt(item.descuento)}`) + '\n', {});
+      }
+      // Impuestos por concepto (Anexo 20 4.0: desglose obligatorio si ObjetoImp=02)
+      for (const imp of item.impuestos ?? []) {
+        const tasa = imp.tasaOCuota != null
+          ? (imp.tipoFactor === 'Tasa' ? `${(imp.tasaOCuota * 100).toFixed(2)}%` : imp.tasaOCuota.toFixed(6))
+          : 'Exento';
+        const importeImp = imp.importe != null ? fmt(imp.importe) : '-';
+        await P.printText(
+          `  ${imp.tipo === 'RETENCION' ? 'Ret.' : 'Tras.'} ${impuestoLabel(imp.impuesto)} ${tasa}: ${importeImp}\n`,
+          {}
+        );
+      }
     }
     await P.printText(sepThin, {});
 
     // ── Totals ──
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(pad('SUBTOTAL:', fmt(data.subtotal)) + '\n', {});
-    await P.printText(pad('IVA 16%:', fmt(data.iva)) + '\n', {});
+    if (data.descuento && data.descuento > 0) {
+      await P.printText(pad('DESCUENTO:', `-${fmt(data.descuento)}`) + '\n', {});
+    }
+    await P.printText(pad('IVA Trasladado:', fmt(data.iva)) + '\n', {});
+    if (data.totalRetenciones && data.totalRetenciones > 0) {
+      await P.printText(pad('Retenciones:', `-${fmt(data.totalRetenciones)}`) + '\n', {});
+    }
     await P.printText(sep, {});
     await P.printerAlign(ALIGN.CENTER);
     await P.printText(`TOTAL: ${fmt(data.total)}\n`, { widthtimes: 2, heigthtimes: 2 });

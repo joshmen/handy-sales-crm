@@ -92,6 +92,7 @@ public class FacturaTicketDataDto
     public string? Serie { get; set; }
     public int Folio { get; set; }
     public DateTime FechaEmision { get; set; }
+    public string TipoComprobante { get; set; } = "I"; // I/E/T/N/P
     public string? MetodoPago { get; set; }
     public string? FormaPago { get; set; }
     public string TipoExportacion { get; set; } = "01"; // Default "No aplica"
@@ -103,12 +104,15 @@ public class FacturaTicketDataDto
     public decimal Subtotal { get; set; }
     public decimal Descuento { get; set; }
     public decimal TotalImpuestosTrasladados { get; set; }
+    public decimal TotalImpuestosRetenidos { get; set; }
     public decimal Total { get; set; }
     public string Moneda { get; set; } = "MXN";
+    public decimal TipoCambio { get; set; } = 1m;
 
     // Timbrado (requeridos por Anexo 20 4.0 en representación impresa)
     public string Uuid { get; set; } = default!;
     public DateTime FechaTimbrado { get; set; }
+    public DateTime? FechaCertificacion { get; set; }
     public string NoCertificadoEmisor { get; set; } = default!;
     public string NoCertificadoSat { get; set; } = default!;
     public string RfcPac { get; set; } = default!;
@@ -132,6 +136,18 @@ public class FacturaTicketItemDto
     public decimal Importe { get; set; }
     public decimal Descuento { get; set; }
     public string ObjetoImp { get; set; } = "02";
+    // Impuestos por concepto (Anexo 20 4.0 — desglose obligatorio si ObjetoImp=="02")
+    public List<FacturaTicketImpuestoDto> Impuestos { get; set; } = new();
+}
+
+public class FacturaTicketImpuestoDto
+{
+    public string Tipo { get; set; } = default!;          // TRASLADO | RETENCION
+    public string Impuesto { get; set; } = default!;      // 001=ISR, 002=IVA, 003=IEPS
+    public string TipoFactor { get; set; } = default!;    // Tasa | Cuota | Exento
+    public decimal? TasaOCuota { get; set; }              // Ej. 0.16 para IVA 16%
+    public decimal Base { get; set; }
+    public decimal? Importe { get; set; }
 }
 
 public class CreateFacturaRequest

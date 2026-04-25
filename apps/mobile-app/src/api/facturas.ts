@@ -35,6 +35,15 @@ export interface FacturaListItem {
   pedidoId?: number;
 }
 
+export interface FacturaTicketImpuesto {
+  tipo: string;            // TRASLADO | RETENCION
+  impuesto: string;        // 001=ISR, 002=IVA, 003=IEPS
+  tipoFactor: string;      // Tasa | Cuota | Exento
+  tasaOCuota?: number | null;
+  base: number;
+  importe?: number | null;
+}
+
 /** Payload completo para la representación impresa 80mm del CFDI (ver backend FacturaTicketDataDto). */
 export interface FacturaTicketData {
   emisorRfc: string;
@@ -52,6 +61,7 @@ export interface FacturaTicketData {
   serie?: string | null;
   folio: number;
   fechaEmision: string;
+  tipoComprobante: string;       // I/E/T/N/P
   metodoPago?: string | null;
   formaPago?: string | null;
   tipoExportacion: string;
@@ -67,16 +77,20 @@ export interface FacturaTicketData {
     importe: number;
     descuento: number;
     objetoImp: string;
+    impuestos: FacturaTicketImpuesto[];
   }>;
 
   subtotal: number;
   descuento: number;
   totalImpuestosTrasladados: number;
+  totalImpuestosRetenidos: number;
   total: number;
   moneda: string;
+  tipoCambio: number;
 
   uuid: string;
   fechaTimbrado: string;
+  fechaCertificacion?: string | null;
   noCertificadoEmisor: string;
   noCertificadoSat: string;
   rfcPac: string;

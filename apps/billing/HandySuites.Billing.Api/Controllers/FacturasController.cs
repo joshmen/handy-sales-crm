@@ -226,6 +226,7 @@ public class FacturasController : ControllerBase
 
         var factura = await _context.Facturas
             .Include(f => f.Detalles)
+                .ThenInclude(d => d.Impuestos)
             .Where(f => f.Id == id && f.TenantId == tenantId)
             .FirstOrDefaultAsync();
 
@@ -264,6 +265,7 @@ public class FacturasController : ControllerBase
             Serie = factura.Serie,
             Folio = factura.Folio,
             FechaEmision = factura.FechaEmision,
+            TipoComprobante = factura.TipoComprobante,
             MetodoPago = factura.MetodoPago,
             FormaPago = factura.FormaPago,
             TipoExportacion = "01", // Default Anexo 20: "No aplica" (productos/servicios internos)
@@ -282,17 +284,31 @@ public class FacturasController : ControllerBase
                     Importe = d.Importe,
                     Descuento = d.Descuento,
                     ObjetoImp = d.ObjetoImp,
+                    Impuestos = d.Impuestos
+                        .Select(i => new FacturaTicketImpuestoDto
+                        {
+                            Tipo = i.Tipo,
+                            Impuesto = i.Impuesto,
+                            TipoFactor = i.TipoFactor,
+                            TasaOCuota = i.TasaOCuota,
+                            Base = i.Base,
+                            Importe = i.Importe,
+                        })
+                        .ToList(),
                 })
                 .ToList(),
 
             Subtotal = factura.Subtotal,
             Descuento = factura.Descuento,
             TotalImpuestosTrasladados = factura.TotalImpuestosTrasladados,
+            TotalImpuestosRetenidos = factura.TotalImpuestosRetenidos,
             Total = factura.Total,
             Moneda = factura.Moneda,
+            TipoCambio = factura.TipoCambio,
 
             Uuid = factura.Uuid,
             FechaTimbrado = factura.FechaTimbrado ?? factura.FechaCertificacion ?? factura.FechaEmision,
+            FechaCertificacion = factura.FechaCertificacion,
             NoCertificadoEmisor = noCertEmisor,
             NoCertificadoSat = noCertSat,
             RfcPac = rfcPac,

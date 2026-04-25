@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Printer, Mail, FileText } from 'lucide-react-native';
+import { ChevronLeft, Printer, Mail, FileText, Eye } from 'lucide-react-native';
 import { useFacturaById, useEnviarFactura } from '@/hooks/useFacturas';
 import { facturasApi } from '@/api/facturas';
 import { usePrinterStore } from '@/stores/printerStore';
@@ -145,20 +145,35 @@ export default function FacturaDetailScreen() {
         serie: td.serie ?? undefined,
         folio: String(td.folio),
         fecha: td.fechaEmision,
+        tipoComprobante: td.tipoComprobante,
         formaPago: td.formaPago ?? '',
         metodoPago: td.metodoPago ?? '',
         tipoExportacion: td.tipoExportacion,
+        moneda: td.moneda,
+        tipoCambio: Number(td.tipoCambio ?? 1),
         items: td.items.map((i) => ({
           descripcion: i.descripcion,
           cantidad: Number(i.cantidad),
           precioUnitario: Number(i.valorUnitario),
           importe: Number(i.importe),
+          descuento: Number(i.descuento ?? 0),
           claveProductoServ: i.claveProdServ,
           claveUnidad: i.claveUnidad ?? '',
+          unidad: i.unidad,
           objetoImpuesto: i.objetoImp,
+          impuestos: (i.impuestos ?? []).map((x) => ({
+            tipo: x.tipo,
+            impuesto: x.impuesto,
+            tipoFactor: x.tipoFactor,
+            tasaOCuota: x.tasaOCuota,
+            base: Number(x.base),
+            importe: x.importe != null ? Number(x.importe) : null,
+          })),
         })),
         subtotal: Number(td.subtotal),
+        descuento: Number(td.descuento ?? 0),
         iva: Number(td.totalImpuestosTrasladados),
+        totalRetenciones: Number(td.totalImpuestosRetenidos ?? 0),
         total: Number(td.total),
         totalLetra: numeroALetras(Number(td.total)),
         selloCfdi: td.selloCfdi,
@@ -167,6 +182,7 @@ export default function FacturaDetailScreen() {
         noCertificadoEmisor: td.noCertificadoEmisor,
         noCertificadoSat: td.noCertificadoSat,
         fechaTimbrado: td.fechaTimbrado,
+        fechaCertificacion: td.fechaCertificacion ?? null,
         rfcPac: td.rfcPac,
         vendedorName: '', // Mobile no guarda nombre de vendedor de la factura — omitir o leer del user actual
       });
@@ -261,6 +277,18 @@ export default function FacturaDetailScreen() {
             </Text>
           </View>
         )}
+
+        <TouchableOpacity
+          style={[styles.btnSecondary, !isTimbrada && styles.btnDisabled]}
+          onPress={() => router.push(`/(tabs)/facturas/preview/${id}` as any)}
+          disabled={!isTimbrada}
+          activeOpacity={0.85}
+          accessibilityLabel="Vista previa CFDI"
+          accessibilityRole="button"
+        >
+          <Eye size={18} color={COLORS.primary} />
+          <Text style={styles.btnSecondaryText}>Vista previa Anexo 20</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.btnPrimary, (!isTimbrada || printing) && styles.btnDisabled]}

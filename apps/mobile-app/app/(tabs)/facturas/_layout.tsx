@@ -14,6 +14,7 @@ export default function FacturasLayout() {
       >
         <Stack.Screen name="index" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="[id]" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="preview/[id]" options={{ headerShown: false }} />
       </Stack>
     </ErrorBoundary>
   );
