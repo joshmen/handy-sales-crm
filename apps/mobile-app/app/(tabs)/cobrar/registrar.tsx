@@ -43,7 +43,7 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 export default function RegistrarCobroScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { money: formatCurrency } = useTenantLocale();
+  const { money: formatCurrency, number: formatNumber } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const params = useLocalSearchParams<{
     clienteId: string;
@@ -117,7 +117,7 @@ export default function RegistrarCobroScreen() {
 
   const handleConfirmar = () => {
     if (!isValid) {
-      if (montoNum > MAX_MONTO) setMontoError(`Máximo ${MAX_MONTO.toLocaleString('es-MX')}`);
+      if (montoNum > MAX_MONTO) setMontoError(`Máximo ${formatNumber(MAX_MONTO)}`);
       return;
     }
     setShowConfirmCobro(true);

@@ -263,6 +263,11 @@ export interface ReceiptData {
   facturaUuid?: string;
   facturaUrl?: string;
   paperWidth?: 58 | 80;
+  // Locale/TZ del tenant para formatear fecha y moneda en el ticket.
+  // Si no se provee, cae a 'es-MX' / 'America/Mexico_City' / 'MXN' (legacy default).
+  locale?: string;
+  timezone?: string;
+  currency?: string;
 }
 
 export async function printReceipt(data: ReceiptData): Promise<boolean> {
@@ -304,14 +309,18 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(`Cliente: ${data.clienteNombre}\n`, {});
 
-    // Date
-    const fechaStr = new Date(data.fecha).toLocaleString('es-MX');
+    // Date — usa TZ/locale del tenant si se proveyó (printerService no es React,
+    // el caller debe pasar locale/timezone obtenidos de useTenantLocale)
+    const printLocale = data.locale ?? 'es-MX';
+    const printTz = data.timezone ?? 'America/Mexico_City';
+    const printCurrency = data.currency ?? 'MXN';
+    const fechaStr = new Intl.DateTimeFormat(printLocale, { timeZone: printTz, dateStyle: 'short', timeStyle: 'short' }).format(new Date(data.fecha));
     await P.printText(`Fecha: ${fechaStr}\n`, {});
 
     // Items (if present — Venta Directa)
     if (data.items && data.items.length > 0) {
       await P.printText('--------------------------------\n', {});
-      const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      const fmt = (n: number) => new Intl.NumberFormat(printLocale, { style: 'currency', currency: printCurrency }).format(n);
       const W = 32; // thermal printer char width
       for (const item of data.items) {
         await P.printerAlign(ALIGN.LEFT);
@@ -412,6 +421,11 @@ export interface OrderTicketData {
   logoUri?: string;
   facturaUrl?: string;
   paperWidth?: 58 | 80;
+  // Locale/TZ del tenant (caller los provee de useTenantLocale).
+  // Default fallback: 'es-MX' / 'America/Mexico_City' / 'MXN'.
+  locale?: string;
+  timezone?: string;
+  currency?: string;
 }
 
 export async function printOrderTicket(data: OrderTicketData): Promise<boolean> {
@@ -421,8 +435,11 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
   try {
     const P = BluetoothEscposPrinter;
     const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
+    const printLocale = data.locale ?? 'es-MX';
+    const printTz = data.timezone ?? 'America/Mexico_City';
+    const printCurrency = data.currency ?? 'MXN';
     const fmt = (n: number) =>
-      new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      new Intl.NumberFormat(printLocale, { style: 'currency', currency: printCurrency }).format(n);
 
     // Logo
     if (data.logoUri) {
@@ -450,7 +467,7 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(`Pedido: ${data.numeroPedido}\n`, {});
     await P.printText(`Cliente: ${data.clienteNombre}\n`, {});
-    await P.printText(`Fecha: ${new Date(data.fecha).toLocaleString('es-MX')}\n`, {});
+    await P.printText(`Fecha: ${new Intl.DateTimeFormat(printLocale, { timeZone: printTz, dateStyle: 'short', timeStyle: 'short' }).format(new Date(data.fecha))}\n`, {});
     await P.printText(`Tipo: ${data.tipoVenta}\n`, {});
     await P.printText('--------------------------------\n', {});
 

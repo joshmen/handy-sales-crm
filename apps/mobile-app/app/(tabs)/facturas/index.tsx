@@ -16,19 +16,14 @@ const ESTADO_COLORS: Record<string, string> = {
   ERROR: '#dc2626',
 };
 
-function formatDate(iso: string | undefined | null): string {
-  if (!iso) return '--';
-  try {
-    return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch {
-    return '--';
-  }
-}
-
 export default function FacturasListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { money: formatCurrency } = useTenantLocale();
+  const { money: formatCurrency, date: dateLocale } = useTenantLocale();
+  const formatDate = (iso: string | undefined | null) => {
+    if (!iso) return '--';
+    try { return dateLocale(iso); } catch { return '--'; }
+  };
   const { data, isLoading, isRefetching, refetch } = useFacturasList();
 
   const facturas: FacturaListItem[] = Array.isArray(data) ? data : [];

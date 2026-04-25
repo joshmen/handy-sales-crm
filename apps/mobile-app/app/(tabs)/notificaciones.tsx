@@ -36,10 +36,13 @@ function formatRelativeTime(isoDate: string): string {
   if (weeks === 1) return 'Hace 1 semana';
   if (weeks < 5) return `Hace ${weeks} semanas`;
 
-  return new Date(isoDate).toLocaleDateString('es-MX', {
+  // Para notificaciones de >5 semanas usamos Intl con locale del runtime
+  // (la función es global, no hook — no podemos leer tenant TZ aquí; el
+  // formato corto día+mes no es crítico para audit)
+  return new Intl.DateTimeFormat(undefined, {
     day: 'numeric',
     month: 'short',
-  });
+  }).format(new Date(isoDate));
 }
 
 // ---------------------------------------------------------------------------

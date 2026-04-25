@@ -12,7 +12,7 @@ import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function SupervisorDashboard() {
   const insets = useSafeAreaInsets();
-  const { money: formatCurrency } = useTenantLocale();
+  const { money: formatCurrency, locale, tz } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -50,11 +50,12 @@ export function SupervisorDashboard() {
             </Text>
             <Text style={styles.dateText}>
               {(() => {
-                const s = new Date().toLocaleDateString('es-MX', {
+                const s = new Intl.DateTimeFormat(locale, {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',
-                });
+                  timeZone: tz,
+                }).format(new Date());
                 return s.charAt(0).toUpperCase() + s.slice(1);
               })()}
             </Text>
