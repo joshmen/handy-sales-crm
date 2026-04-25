@@ -185,8 +185,16 @@ export default function CrearClienteScreen() {
   const [rfc, setRfc] = useState('');
   const [direccion, setDireccion] = useState('');
   const [numeroExterior, setNumeroExterior] = useState('');
+  const [colonia, setColonia] = useState('');
+  const [ciudad, setCiudad] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [encargado, setEncargado] = useState('');
   const [zonaId, setZonaId] = useState<number | undefined>(undefined);
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+  // Comerciales
+  const [descuentoPct, setDescuentoPct] = useState(''); // string para input, parse a number
+  const [ventaMinima, setVentaMinima] = useState('');
+  const [notas, setNotas] = useState('');
   const [touched, setTouched] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -227,8 +235,17 @@ export default function CrearClienteScreen() {
         setCorreo(client.correo || '');
         setRfc(client.rfc || '');
         setDireccion(client.direccion || '');
+        setNumeroExterior(client.numeroExterior || '');
+        setColonia(client.colonia || '');
+        setCiudad(client.ciudad || '');
+        setCodigoPostal(client.codigoPostal || '');
+        setEncargado(client.encargado || '');
         setZonaId(client.idZona || undefined);
         setCategoriaId(client.categoriaClienteId || undefined);
+        // Comerciales
+        if (client.descuento != null) setDescuentoPct(String(client.descuento));
+        if (client.ventaMinimaEfectiva != null) setVentaMinima(String(client.ventaMinimaEfectiva));
+        if (client.comentarios) setNotas(client.comentarios);
         if (client.latitud && client.longitud) {
           setLocation({ lat: client.latitud, lng: client.longitud });
         }
@@ -285,10 +302,17 @@ export default function CrearClienteScreen() {
             rfc: data.rfc,
             direccion: data.direccion || '',
             numeroExterior: data.numeroExterior,
+            colonia: data.colonia,
+            ciudad: data.ciudad,
+            codigoPostal: data.codigoPostal,
+            encargado: data.encargado,
             zonaId: data.idZona || 0,
             categoriaId: data.categoriaClienteId || 0,
             latitud: data.latitud,
             longitud: data.longitud,
+            descuento: data.descuento,
+            ventaMinimaEfectiva: data.ventaMinimaEfectiva,
+            notas: data.comentarios,
             rfcFiscal: data.rfcFiscal,
             razonSocial: data.razonSocial,
             regimenFiscal: data.regimenFiscal,
@@ -357,10 +381,18 @@ export default function CrearClienteScreen() {
       rfc: rfc || undefined,
       direccion: direccion.trim(),
       numeroExterior: numeroExterior.trim(),
+      colonia: colonia.trim() || undefined,
+      ciudad: ciudad.trim() || undefined,
+      codigoPostal: codigoPostal.trim() || undefined,
+      encargado: encargado.trim() || undefined,
       idZona: zonaId as number,
       categoriaClienteId: categoriaId as number,
       latitud: location?.lat,
       longitud: location?.lng,
+      // Comerciales
+      descuento: descuentoPct ? parseFloat(descuentoPct) : undefined,
+      ventaMinimaEfectiva: ventaMinima ? parseFloat(ventaMinima) : undefined,
+      comentarios: notas.trim() || undefined,
       // Fiscal
       rfcFiscal: rfcFiscal || undefined,
       razonSocial: razonSocial || undefined,
@@ -421,6 +453,21 @@ export default function CrearClienteScreen() {
           {touched && <FieldError message={errors.numeroExterior} />}
         </View>
 
+        <View style={styles.field}>
+          <Text style={styles.label}>Colonia</Text>
+          <TextInput style={styles.input} placeholder="Colonia (opcional)" placeholderTextColor={COLORS.textTertiary} value={colonia} onChangeText={setColonia} accessibilityLabel="Colonia" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Ciudad</Text>
+          <TextInput style={styles.input} placeholder="Ciudad (opcional)" placeholderTextColor={COLORS.textTertiary} value={ciudad} onChangeText={setCiudad} accessibilityLabel="Ciudad" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Código postal</Text>
+          <TextInput style={[styles.input, { width: 140 }]} placeholder="5 dígitos (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="number-pad" maxLength={5} value={codigoPostal} onChangeText={setCodigoPostal} accessibilityLabel="Código postal" />
+        </View>
+
         {/* ═══ INFORMACIÓN GENERAL ═══ */}
         <Text style={styles.sectionLabel}>INFORMACIÓN GENERAL</Text>
 
@@ -448,6 +495,11 @@ export default function CrearClienteScreen() {
           {touched && <FieldError message={errors.rfc} />}
         </View>
 
+        <View style={styles.field}>
+          <Text style={styles.label}>Encargado / Contacto</Text>
+          <TextInput style={styles.input} placeholder="Nombre del encargado (opcional)" placeholderTextColor={COLORS.textTertiary} value={encargado} onChangeText={setEncargado} accessibilityLabel="Encargado" />
+        </View>
+
         {/* ═══ CLASIFICACIÓN ═══ */}
         <Text style={styles.sectionLabel}>CLASIFICACIÓN</Text>
 
@@ -461,6 +513,24 @@ export default function CrearClienteScreen() {
           <Text style={styles.label}>Categoría *</Text>
           <SearchableDropdown label="Categoría" required items={categorias.data || []} selectedId={categoriaId} onSelect={setCategoriaId} placeholder="Seleccionar categoría..." />
           {touched && <FieldError message={errors.categoria} />}
+        </View>
+
+        {/* ═══ COMERCIAL ═══ */}
+        <Text style={styles.sectionLabel}>COMERCIAL</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Descuento %</Text>
+          <TextInput style={[styles.input, { width: 140 }]} placeholder="0" placeholderTextColor={COLORS.textTertiary} keyboardType="decimal-pad" maxLength={5} value={descuentoPct} onChangeText={setDescuentoPct} accessibilityLabel="Descuento porcentual" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Venta mínima efectiva</Text>
+          <TextInput style={[styles.input, { width: 180 }]} placeholder="0" placeholderTextColor={COLORS.textTertiary} keyboardType="decimal-pad" value={ventaMinima} onChangeText={setVentaMinima} accessibilityLabel="Venta mínima efectiva" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Notas / Comentarios</Text>
+          <TextInput style={[styles.input, { minHeight: 70 }]} placeholder="Notas internas sobre el cliente (opcional)" placeholderTextColor={COLORS.textTertiary} value={notas} onChangeText={setNotas} multiline accessibilityLabel="Notas del cliente" />
         </View>
 
         {/* ═══ DATOS FISCALES (colapsable) ═══ */}

@@ -8,6 +8,12 @@ export const MobileClienteSchema = z
     correo: z.string(),
     telefono: z.string(),
     direccion: z.string(),
+    // Dirección desglosada
+    numeroExterior: z.string().nullable().optional(),
+    colonia: z.string().nullable().optional(),
+    ciudad: z.string().nullable().optional(),
+    codigoPostal: z.string().nullable().optional(),
+    encargado: z.string().nullable().optional(),
     idZona: z.number(),
     categoriaClienteId: z.number(),
     latitud: z.number().optional(),
@@ -15,6 +21,13 @@ export const MobileClienteSchema = z
     vendedorId: z.number().optional(),
     esProspecto: z.boolean().optional(),
     activo: z.boolean(),
+    // Comerciales
+    descuento: z.number().nullable().optional(),
+    saldo: z.number().nullable().optional(),
+    ventaMinimaEfectiva: z.number().nullable().optional(),
+    tiposPagoPermitidos: z.string().nullable().optional(),
+    tipoPagoPredeterminado: z.string().nullable().optional(),
+    comentarios: z.string().nullable().optional(),
     // Fiscal
     rfcFiscal: z.string().nullable().optional(),
     razonSocial: z.string().nullable().optional(),
@@ -49,10 +62,19 @@ export interface ClienteCreateRequest {
   rfc?: string;
   direccion: string;
   numeroExterior: string;
+  // Dirección desglosada
+  colonia?: string;
+  ciudad?: string;
+  codigoPostal?: string;
+  encargado?: string;
   idZona: number;
   categoriaClienteId: number;
   latitud?: number;
   longitud?: number;
+  // Comerciales
+  descuento?: number;
+  ventaMinimaEfectiva?: number;
+  comentarios?: string;
   // Fiscal
   rfcFiscal?: string;
   razonSocial?: string;
