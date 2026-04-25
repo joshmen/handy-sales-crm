@@ -191,7 +191,11 @@ function mapPedidoToRaw(p: any, pedidoMap: Map<number, string>, clienteMap: Map<
     notas: p.notas ?? null,
     activo: p.activo ?? true,
     version: p.version ?? 1,
-    created_at: toTimestamp(p.actualizadoEn),
+    // created_at = fechaPedido (when the order was created), NOT actualizadoEn
+    // (which is updated on every state change). El filter "Pedidos hoy" cuenta
+    // pedidos creados hoy y se rompía cuando un pedido viejo se actualizaba —
+    // todos los pedidos actualizados hoy aparecían como "creados hoy".
+    created_at: toTimestamp(p.fechaPedido),
     updated_at: toTimestamp(p.actualizadoEn),
   };
 }
