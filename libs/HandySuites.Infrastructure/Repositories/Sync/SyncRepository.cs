@@ -494,6 +494,7 @@ public class SyncRepository : ISyncRepository
         var visita = new ClienteVisita
         {
             TenantId = tenantId,
+            MobileRecordId = dto.LocalId,
             UsuarioId = usuarioId,
             ClienteId = dto.ClienteId,
             FechaProgramada = dto.FechaProgramada,
@@ -771,6 +772,7 @@ public class SyncRepository : ISyncRepository
         var cobro = new Cobro
         {
             TenantId = tenantId,
+            MobileRecordId = dto.LocalId,
             UsuarioId = usuarioId,
             ClienteId = dto.ClienteId,
             PedidoId = resolvedPedidoId,
