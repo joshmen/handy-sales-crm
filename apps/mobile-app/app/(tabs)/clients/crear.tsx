@@ -161,6 +161,18 @@ function SatDropdown({
 // ── Validation helpers ───────────────────────────────────────
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhone = (phone: string) => /^\d{10}$/.test(phone);
+// RFC SAT México:
+//   Persona Física: 4 letras + 6 dígitos (YYMMDD) + 3 alfanuméricos (homoclave) → 13 chars
+//   Persona Moral: 3 letras + 6 dígitos + 3 alfanuméricos → 12 chars
+//   El RFC genérico extranjero "XEXX010101000" (13) o nacional "XAXX010101000" (13) son válidos.
+//   Validación estructural — backend revalida contra catálogo SAT al timbrar.
+const RFC_PERSONA_FISICA = /^[A-ZÑ&]{4}\d{6}[A-Z\d]{3}$/i;
+const RFC_PERSONA_MORAL = /^[A-ZÑ&]{3}\d{6}[A-Z\d]{3}$/i;
+const isValidRfc = (rfc: string) => {
+  if (!rfc) return true; // opcional
+  const upper = rfc.toUpperCase().trim();
+  return RFC_PERSONA_FISICA.test(upper) || RFC_PERSONA_MORAL.test(upper);
+};
 
 // ── Error label ──────────────────────────────────────────────
 function FieldError({ message }: { message?: string }) {
@@ -349,14 +361,15 @@ export default function CrearClienteScreen() {
     if (!nombre.trim() || nombre.trim().length < 2) e.nombre = 'Mínimo 2 caracteres';
     if (telefono && !isValidPhone(telefono)) e.telefono = 'Debe ser 10 dígitos';
     if (correo && !isValidEmail(correo)) e.correo = 'Formato inválido';
-    if (rfc && (rfc.length < 12 || rfc.length > 13)) e.rfc = 'Debe ser 12-13 caracteres';
+    if (rfc && !isValidRfc(rfc)) e.rfc = 'RFC inválido (formato SAT: 12 o 13 caracteres)';
     if (!direccion.trim()) e.direccion = 'Obligatorio';
     if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
     if (!zonaId) e.zona = 'Selecciona una zona';
     if (!categoriaId) e.categoria = 'Selecciona una categoría';
     // Fiscal fields — obligatorios cuando requiere factura
     if (requiereFactura) {
-      if (!rfcFiscal.trim() || rfcFiscal.length < 12) e.rfcFiscal = 'RFC fiscal obligatorio (12-13 caracteres)';
+      if (!rfcFiscal.trim()) e.rfcFiscal = 'RFC fiscal obligatorio';
+      else if (!isValidRfc(rfcFiscal)) e.rfcFiscal = 'RFC inválido (formato SAT)';
       if (!razonSocial.trim()) e.razonSocial = 'Razón social obligatoria';
       if (!regimenFiscal) e.regimenFiscal = 'Régimen fiscal obligatorio';
       if (!cpFiscal.trim() || cpFiscal.length !== 5) e.cpFiscal = 'C.P. fiscal obligatorio (5 dígitos)';
