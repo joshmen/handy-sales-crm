@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, Animated as RNAnimated, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
@@ -63,16 +63,13 @@ export default function ParadaDetailScreen() {
   const [noEntregaPhotos, setNoEntregaPhotos] = useState<string[]>([]);
   const [showGpsModal, setShowGpsModal] = useState(false);
 
-  // Keyboard offset for modals — moves card up when keyboard appears
-  // NOTE: se removió la RNAnimated.timing con useNativeDriver:true sobre
-  // transform translateY dentro del modal. Causaba crash silencioso (app
-  // reinicia) al escribir en el TextInput multiline del modal 'No se
-  // visitó' en Android. El Modal con statusBarTranslucent + multiline
-  // TextInput ya se acomoda razonablemente con windowSoftInputMode
-  // adjustResize. Si en el futuro se quiere re-animar, usar
-  // useNativeDriver:false o LayoutAnimation en lugar de animación manual
-  // encadenada con Keyboard listener + transform.
-  const keyboardOffset = useRef(new RNAnimated.Value(0)).current;
+  // NOTE histórica: hubo aquí un keyboardOffset RNAnimated.Value animado vía
+  // Keyboard listeners con useNativeDriver:true sobre transform translateY del
+  // modal. Causaba crash silencioso al teclear en el TextInput multiline del
+  // modal 'No se visitó' en Android. Se removió completamente: ahora los
+  // modales usan View regular y windowSoftInputMode=adjustResize maneja el
+  // espacio. Si se necesita animación al keyboard, usar Reanimated worklet o
+  // LayoutAnimation, NUNCA RNAnimated.timing dentro de keyboardDidShow listener.
 
   // Get route + stop from WDB
   const { data: rutas, isLoading: rutaLoading } = useOfflineRutaHoy();
@@ -528,7 +525,7 @@ export default function ParadaDetailScreen() {
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
-          <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
+          <View style={styles.modalCard}>
             <SbWarning size={48} />
             <Text style={styles.modalTitle}>No se visitó</Text>
             <Text style={styles.modalMessage}>Indica el motivo (mínimo 10 caracteres):</Text>
@@ -571,7 +568,7 @@ export default function ParadaDetailScreen() {
                 <Text style={styles.modalConfirmText}>Confirmar</Text>
               </TouchableOpacity>
             </View>
-          </RNAnimated.View>
+          </View>
         </View>
       </Modal>
 
@@ -594,7 +591,7 @@ export default function ParadaDetailScreen() {
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
-          <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
+          <View style={styles.modalCard}>
             <SbWarning size={48} />
             <Text style={styles.modalTitle}>No se entregó</Text>
             <Text style={styles.modalMessage}>Indica el motivo (mínimo 10 caracteres):</Text>
@@ -637,7 +634,7 @@ export default function ParadaDetailScreen() {
                 <Text style={styles.modalConfirmText}>Confirmar</Text>
               </TouchableOpacity>
             </View>
-          </RNAnimated.View>
+          </View>
         </View>
       </Modal>
 
