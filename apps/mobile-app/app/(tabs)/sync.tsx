@@ -40,7 +40,7 @@ export default function SyncScreen() {
     >
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sincronización</Text>
@@ -160,6 +160,9 @@ export default function SyncScreen() {
         onPress={sync}
         disabled={!isOnline || isSyncing}
         activeOpacity={0.8}
+        accessibilityLabel="Sincronizar ahora"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !isOnline || isSyncing, busy: isSyncing }}
       >
         <RefreshCcw size={18} color={COLORS.headerText} />
         <Text style={styles.syncButtonText}>

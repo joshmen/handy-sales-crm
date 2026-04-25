@@ -29,7 +29,13 @@ function VendedorRow({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress:
     .toUpperCase();
 
   return (
-    <Pressable style={styles.vendedorRow} onPress={onPress} testID={`vendedor-${vendedor.id}`}>
+    <Pressable
+      style={styles.vendedorRow}
+      onPress={onPress}
+      testID={`vendedor-${vendedor.id}`}
+      accessibilityLabel={`${vendedor.nombre}, ${vendedor.activo ? 'Activo' : 'Inactivo'}`}
+      accessibilityRole="button"
+    >
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{initials}</Text>
       </View>
@@ -93,10 +99,22 @@ function EquipoContent() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.title}>Mi Equipo</Text>
         <View style={styles.headerButtons}>
-          <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/equipo/actividad')} testID="ver-actividad">
+          <Pressable
+            style={styles.headerBtn}
+            onPress={() => router.push('/(tabs)/equipo/actividad')}
+            testID="ver-actividad"
+            accessibilityLabel="Ver actividad del equipo"
+            accessibilityRole="button"
+          >
             <Text style={styles.headerBtnText}>Actividad</Text>
           </Pressable>
-          <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/equipo/mapa')} testID="ver-mapa">
+          <Pressable
+            style={styles.headerBtn}
+            onPress={() => router.push('/(tabs)/equipo/mapa')}
+            testID="ver-mapa"
+            accessibilityLabel="Ver mapa del equipo"
+            accessibilityRole="button"
+          >
             <Text style={styles.headerBtnText}>Ver mapa</Text>
           </Pressable>
         </View>

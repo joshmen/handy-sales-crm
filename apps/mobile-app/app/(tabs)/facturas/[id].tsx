@@ -59,7 +59,7 @@ export default function FacturaDetailScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Factura</Text>
@@ -223,7 +223,7 @@ export default function FacturaDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{folio}</Text>
@@ -295,6 +295,9 @@ export default function FacturaDetailScreen() {
           onPress={handlePrint}
           disabled={!isTimbrada || printing}
           activeOpacity={0.85}
+          accessibilityLabel="Imprimir ticket 80mm"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isTimbrada || printing, busy: printing }}
         >
           <Printer size={18} color="#ffffff" />
           <Text style={styles.btnPrimaryText}>{printing ? 'Imprimiendo…' : 'Imprimir ticket 80mm'}</Text>
@@ -305,6 +308,9 @@ export default function FacturaDetailScreen() {
           onPress={handleEnviar}
           disabled={!isTimbrada || enviarFactura.isPending}
           activeOpacity={0.85}
+          accessibilityLabel="Enviar factura por correo"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isTimbrada || enviarFactura.isPending, busy: enviarFactura.isPending }}
         >
           <Mail size={18} color={COLORS.primary} />
           <Text style={styles.btnSecondaryText}>

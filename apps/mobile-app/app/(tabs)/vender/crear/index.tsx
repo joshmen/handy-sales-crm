@@ -54,6 +54,9 @@ export default function CrearPedidoStep1() {
           style={[styles.clientItem, isSelected && styles.clientItemSelected]}
           onPress={() => handleSelect(item)}
           activeOpacity={0.7}
+          accessibilityLabel={`Cliente ${item.nombre}`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isSelected }}
         >
           <View style={[styles.clientAvatar, isSelected && styles.clientAvatarSelected]}>
             {isSelected ? (
@@ -92,7 +95,7 @@ export default function CrearPedidoStep1() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Seleccionar Cliente</Text>

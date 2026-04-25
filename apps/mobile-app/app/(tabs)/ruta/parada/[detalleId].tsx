@@ -557,6 +557,8 @@ export default function ParadaDetailScreen() {
               <TouchableOpacity
                 style={styles.modalCancelBtn}
                 onPress={() => { setShowNoVisito(false); setNoVisitoReason(''); setNoVisitoPhotos([]); }}
+                accessibilityLabel="Cancelar No se visitó"
+                accessibilityRole="button"
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
@@ -564,6 +566,9 @@ export default function ParadaDetailScreen() {
                 style={[styles.modalConfirmBtn, noVisitoReason.length < 10 && { opacity: 0.4 }]}
                 onPress={executeNoVisito}
                 disabled={noVisitoReason.length < 10}
+                accessibilityLabel="Confirmar No se visitó"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: noVisitoReason.length < 10 }}
               >
                 <Text style={styles.modalConfirmText}>Confirmar</Text>
               </TouchableOpacity>
@@ -623,6 +628,8 @@ export default function ParadaDetailScreen() {
               <TouchableOpacity
                 style={styles.modalCancelBtn}
                 onPress={() => { setShowNoEntrega(false); setNoEntregaReason(''); setNoEntregaPhotos([]); }}
+                accessibilityLabel="Cancelar No se entregó"
+                accessibilityRole="button"
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
@@ -630,6 +637,9 @@ export default function ParadaDetailScreen() {
                 style={[styles.modalConfirmBtn, noEntregaReason.length < 10 && { opacity: 0.4 }]}
                 onPress={executeNoEntrega}
                 disabled={noEntregaReason.length < 10}
+                accessibilityLabel="Confirmar No se entregó"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: noEntregaReason.length < 10 }}
               >
                 <Text style={styles.modalConfirmText}>Confirmar</Text>
               </TouchableOpacity>

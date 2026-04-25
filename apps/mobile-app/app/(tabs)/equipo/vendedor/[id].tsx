@@ -83,7 +83,7 @@ function VendedorDetalleContent() {
     <View style={styles.container}>
       {/* Blue Header — fixed outside scroll */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>

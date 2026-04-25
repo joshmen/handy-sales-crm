@@ -86,7 +86,7 @@ export default function CfdiPreviewScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Vista Previa</Text>
