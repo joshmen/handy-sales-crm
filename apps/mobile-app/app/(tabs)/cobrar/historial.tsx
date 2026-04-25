@@ -42,6 +42,8 @@ export default function HistorialCobrosScreen() {
         style={styles.cobroItem}
         activeOpacity={0.7}
         onPress={() => router.push(`/(tabs)/cobrar/detalle-cobro/${item.id}` as any)}
+        accessibilityLabel={`Cobro ${formatCurrency(item.monto)} ${clientNames.get(item.clienteId) || ''}`}
+        accessibilityRole="button"
       >
         <View style={styles.cobroIconWrap}>
           {METODO_ICONS[item.metodoPago] || <Receipt size={16} color="#6b7280" />}
@@ -82,7 +84,7 @@ export default function HistorialCobrosScreen() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Historial de Cobros</Text>

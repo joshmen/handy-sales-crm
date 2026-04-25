@@ -30,7 +30,7 @@ export default function DetalleCobroScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Detalle de Cobro</Text>
@@ -173,6 +173,9 @@ export default function DetalleCobroScreen() {
               onPress={handlePrint}
               disabled={printing}
               activeOpacity={0.8}
+              accessibilityLabel="Reimprimir recibo"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: printing }}
             >
               <Printer size={18} color="#ffffff" />
               <Text style={styles.btnPrintText}>
@@ -182,8 +185,9 @@ export default function DetalleCobroScreen() {
             <TouchableOpacity
               style={styles.btnShare}
               onPress={handleShare}
-              disabled={false}
               activeOpacity={0.8}
+              accessibilityLabel="Compartir recibo"
+              accessibilityRole="button"
             >
               <Share2 size={18} color="#64748b" />
               <Text style={styles.btnShareText}>

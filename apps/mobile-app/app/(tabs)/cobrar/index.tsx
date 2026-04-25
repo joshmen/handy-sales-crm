@@ -255,6 +255,7 @@ export default function CobrarScreen() {
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/cobrar/estado-cuenta/${item.clienteId}` as any)}
+        accessibilityLabel={`Estado de cuenta de ${item.clienteNombre}, saldo ${formatCurrency(item.saldoPendiente)}`}
       >
         <View style={styles.clientRow}>
           <View style={styles.clientAvatar}>
