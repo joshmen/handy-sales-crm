@@ -64,16 +64,16 @@ function EquipoContent() {
     setRefreshing(false);
   };
 
-  // Compact KPI format: $1.5M / $250K / $987 — usa Intl.NumberFormat compact con
-  // currency del tenant. Si tenant es MX → $1.5M; si CO → COP 1.5M; etc.
+  // KPI format: valores pequeños se muestran completos ($17.17), grandes se
+  // abrevian ($1.5M / $250K) para no romper layout en cards estrechos.
   const formatMoney = (n: number) => {
     try {
+      // Solo notation:compact si la magnitud justifica la abreviatura.
+      const useCompact = Math.abs(n) >= 1000;
       return new Intl.NumberFormat(locale, {
-        notation: 'compact',
-        compactDisplay: 'short',
+        ...(useCompact ? { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 } : {}),
         style: 'currency',
         currency: currency || 'MXN',
-        maximumFractionDigits: 1,
       }).format(n);
     } catch {
       return `$${n.toFixed(0)}`;
