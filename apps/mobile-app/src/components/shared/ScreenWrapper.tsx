@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,11 +39,15 @@ export function ScreenWrapper({
   );
 
   if (withKeyboard) {
+    // behavior="padding" es seguro en ambas plataformas. behavior="height" en
+    // Android causa layout thrashing notorio con TextInput multiline (issue
+    // recurrente en Android RN). Si en el futuro alguien necesita 'height',
+    // que lo justifique con un test específico — por ahora 'padding' funciona.
     return (
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={0}
       >
         {content}
       </KeyboardAvoidingView>

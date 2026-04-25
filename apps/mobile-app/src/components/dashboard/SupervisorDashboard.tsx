@@ -7,12 +7,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
 import { useTenantLocale } from '@/hooks';
+import { getGreetingForTz } from '@/utils/greeting';
 import { COLORS } from '@/theme/colors';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function SupervisorDashboard() {
   const insets = useSafeAreaInsets();
   const { money: formatCurrency, locale, tz } = useTenantLocale();
+  const greeting = getGreetingForTz(tz);
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -23,13 +25,6 @@ export function SupervisorDashboard() {
     setRefreshing(true);
     await Promise.all([performSync(), refetchDash(), refetchVend()]);
     setRefreshing(false);
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
   };
 
   const initials = (user?.name ?? 'S')
@@ -46,7 +41,7 @@ export function SupervisorDashboard() {
         <View style={styles.headerRow}>
           <View style={styles.headerTextContainer}>
             <Text style={styles.greeting}>
-              {getGreeting()}, {user?.name?.split(' ')[0] || 'Supervisor'}
+              {greeting}, {user?.name?.split(' ')[0] || 'Supervisor'}
             </Text>
             <Text style={styles.dateText}>
               {(() => {

@@ -10,6 +10,7 @@ import { Q } from '@nozbe/watermelondb';
 import { Card, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useTenantLocale } from '@/hooks';
+import { getGreetingForTz } from '@/utils/greeting';
 import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
@@ -19,7 +20,8 @@ import { Target } from 'lucide-react-native';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
-  const { money: formatCurrency } = useTenantLocale();
+  const { money: formatCurrency, tz } = useTenantLocale();
+  const greeting = getGreetingForTz(tz);
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -115,12 +117,6 @@ export function VendedorDashboard() {
     setRefreshing(false);
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
-  };
 
   return (
     <ScrollView
@@ -141,7 +137,7 @@ export function VendedorDashboard() {
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>
-              {getGreeting()}, {user?.name?.split(' ')[0] || 'Vendedor'}
+              {greeting}, {user?.name?.split(' ')[0] || 'Vendedor'}
             </Text>
           </View>
           <View style={styles.headerAvatar}>
