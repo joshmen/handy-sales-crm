@@ -323,7 +323,7 @@ export default function RegistrarCobroScreen() {
           {montoError ? (
             <Text style={styles.montoError}>{montoError}</Text>
           ) : isOverSaldo ? (
-            <Text style={[styles.montoError, { color: '#ea580c' }]}>Monto excede el saldo pendiente (${effectiveSaldo.toFixed(2)})</Text>
+            <Text style={[styles.montoError, { color: '#ea580c' }]}>Monto excede el saldo pendiente ({formatCurrency(effectiveSaldo)})</Text>
           ) : null}
         </View>
 
