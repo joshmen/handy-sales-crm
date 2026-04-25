@@ -133,10 +133,28 @@ public class SyncRepository : ISyncRepository
                 existing.Correo = dto.Correo;
                 existing.Telefono = dto.Telefono;
                 existing.Direccion = dto.Direccion;
+                // Dirección desglosada (Cliente field gap fix — antes se perdían en update)
+                existing.NumeroExterior = dto.NumeroExterior;
+                existing.Colonia = dto.Colonia;
+                existing.Ciudad = dto.Ciudad;
+                existing.CodigoPostal = dto.CodigoPostal;
+                existing.Encargado = dto.Encargado;
                 existing.IdZona = dto.IdZona;
                 existing.CategoriaClienteId = dto.CategoriaClienteId;
+                existing.ListaPreciosId = dto.ListaPreciosId;
                 existing.Latitud = dto.Latitud;
                 existing.Longitud = dto.Longitud;
+                // Comerciales
+                existing.LimiteCredito = dto.LimiteCredito;
+                existing.DiasCredito = dto.DiasCredito;
+                existing.Descuento = dto.Descuento;
+                existing.Saldo = dto.Saldo;
+                existing.VentaMinimaEfectiva = dto.VentaMinimaEfectiva;
+                // Reglas de pago
+                existing.TiposPagoPermitidos = dto.TiposPagoPermitidos;
+                existing.TipoPagoPredeterminado = dto.TipoPagoPredeterminado;
+                existing.Comentarios = dto.Comentarios;
+                // Datos fiscales
                 existing.RfcFiscal = dto.RfcFiscal;
                 existing.RazonSocial = dto.RazonSocial;
                 existing.RegimenFiscal = dto.RegimenFiscal;
@@ -174,11 +192,29 @@ public class SyncRepository : ISyncRepository
             Correo = dto.Correo,
             Telefono = dto.Telefono,
             Direccion = dto.Direccion,
+            // Dirección desglosada (Cliente field gap fix — antes se perdían en create)
+            NumeroExterior = dto.NumeroExterior,
+            Colonia = dto.Colonia,
+            Ciudad = dto.Ciudad,
+            CodigoPostal = dto.CodigoPostal,
+            Encargado = dto.Encargado,
             IdZona = dto.IdZona,
             CategoriaClienteId = dto.CategoriaClienteId,
             VendedorId = vendedorId,
+            ListaPreciosId = dto.ListaPreciosId,
             Latitud = dto.Latitud,
             Longitud = dto.Longitud,
+            // Comerciales
+            LimiteCredito = dto.LimiteCredito,
+            DiasCredito = dto.DiasCredito,
+            Descuento = dto.Descuento,
+            Saldo = dto.Saldo,
+            VentaMinimaEfectiva = dto.VentaMinimaEfectiva,
+            // Reglas de pago
+            TiposPagoPermitidos = dto.TiposPagoPermitidos,
+            TipoPagoPredeterminado = dto.TipoPagoPredeterminado,
+            Comentarios = dto.Comentarios,
+            // Datos fiscales
             RfcFiscal = dto.RfcFiscal,
             RazonSocial = dto.RazonSocial,
             RegimenFiscal = dto.RegimenFiscal,

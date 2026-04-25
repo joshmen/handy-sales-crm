@@ -17,10 +17,22 @@ export async function createClienteOffline(data: {
   rfc?: string;
   direccion: string;
   numeroExterior?: string;
+  colonia?: string;
+  ciudad?: string;
+  codigoPostal?: string;
+  encargado?: string;
   zonaId: number;
   categoriaId: number;
   latitud?: number;
   longitud?: number;
+  // Comerciales
+  descuento?: number;
+  ventaMinimaEfectiva?: number;
+  // Reglas de pago
+  tiposPagoPermitidos?: string;
+  tipoPagoPredeterminado?: string;
+  notas?: string;
+  // Fiscales
   rfcFiscal?: string;
   razonSocial?: string;
   regimenFiscal?: string;
@@ -36,13 +48,25 @@ export async function createClienteOffline(data: {
       record.email = data.correo || null;
       record.rfc = data.rfc || null;
       record.direccion = data.direccion;
+      // Dirección desglosada (antes se perdían los campos al guardar)
+      record.numeroExterior = data.numeroExterior || null;
+      record.colonia = data.colonia || null;
+      record.ciudad = data.ciudad || null;
+      record.codigoPostal = data.codigoPostal || null;
+      record.encargado = data.encargado || null;
       record.zonaId = data.zonaId;
       record.categoriaId = data.categoriaId;
       record.latitud = data.latitud ?? null;
       record.longitud = data.longitud ?? null;
       record.limiteCredito = 0;
       record.diasCredito = 0;
+      record.descuento = data.descuento ?? 0;
+      record.saldo = 0;
+      record.ventaMinimaEfectiva = data.ventaMinimaEfectiva ?? 0;
+      record.tiposPagoPermitidos = data.tiposPagoPermitidos ?? 'efectivo';
+      record.tipoPagoPredeterminado = data.tipoPagoPredeterminado ?? 'efectivo';
       record.esProspecto = false;
+      record.notas = data.notas || null;
       record.rfcFiscal = data.rfcFiscal || null;
       record.razonSocial = data.razonSocial || null;
       record.regimenFiscal = data.regimenFiscal || null;
