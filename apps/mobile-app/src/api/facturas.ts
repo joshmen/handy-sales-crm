@@ -1,26 +1,8 @@
 import { api } from './client';
 
-export interface CreateFacturaRequest {
-  rfcReceptor: string;
-  nombreReceptor: string;
-  regimenFiscalReceptor: string;
-  usoCfdiReceptor: string;
-  cpReceptor: string;
-}
-
-export interface FacturaResult {
-  facturaId: number;
-  uuid: string;
-  selloCfdi: string;
-  selloSat: string;
-  cadenaOriginal: string;
-  noCertificadoEmisor: string;
-  noCertificadoSat: string;
-  fechaTimbrado: string;
-  qrSatUrl: string;
-  pdfUrl: string;
-  estado: string;
-}
+// NOTA: el móvil NO timbra facturas. El timbrado (CFDI 4.0 → PAC → SAT) ocurre
+// SIEMPRE desde el backoffice web. El móvil solo lista, ve detalle, imprime
+// ticket 80mm y reenvía PDF/XML por correo de facturas ya TIMBRADAS.
 
 export interface FacturaListItem {
   id: number;
@@ -102,11 +84,6 @@ export interface FacturaTicketData {
 }
 
 export const facturasApi = {
-  createFromOrder: async (pedidoId: number, data: CreateFacturaRequest): Promise<FacturaResult> => {
-    const res = await api.post<any>(`/api/mobile/facturas/from-order/${pedidoId}`, data);
-    return res.data?.data ?? res.data;
-  },
-
   list: async (page = 1, pageSize = 50, estado?: string): Promise<FacturaListItem[]> => {
     const qs = new URLSearchParams();
     qs.append('page', String(page));

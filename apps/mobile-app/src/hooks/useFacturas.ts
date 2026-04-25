@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { facturasApi } from '@/api/facturas';
-import type { CreateFacturaRequest } from '@/api/facturas';
+
+// NOTA: el móvil NO timbra facturas. No exponemos un useCreateFactura.
+// El timbrado ocurre desde el backoffice web. Aquí solo se consulta y reenvía.
 
 export function useFacturasList() {
   return useQuery({
@@ -14,19 +16,6 @@ export function useFacturaById(id: number | undefined) {
     queryKey: ['factura', id],
     queryFn: () => facturasApi.getById(id!),
     enabled: !!id,
-  });
-}
-
-export function useCreateFactura() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ pedidoId, data }: { pedidoId: number; data: CreateFacturaRequest }) =>
-      facturasApi.createFromOrder(pedidoId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['facturas'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
   });
 }
 
