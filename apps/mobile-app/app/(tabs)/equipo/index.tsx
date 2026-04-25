@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
+import { useTenantLocale } from '@/hooks';
 import { SbTeam } from '@/components/icons/DashboardIcons';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
@@ -49,6 +50,7 @@ function EquipoContent() {
   const [refreshing, setRefreshing] = useState(false);
   const role = useAuthStore(s => s.user?.role);
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const { currency, locale } = useTenantLocale();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -56,10 +58,20 @@ function EquipoContent() {
     setRefreshing(false);
   };
 
+  // Compact KPI format: $1.5M / $250K / $987 — usa Intl.NumberFormat compact con
+  // currency del tenant. Si tenant es MX → $1.5M; si CO → COP 1.5M; etc.
   const formatMoney = (n: number) => {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-    return `$${n.toFixed(0)}`;
+    try {
+      return new Intl.NumberFormat(locale, {
+        notation: 'compact',
+        compactDisplay: 'short',
+        style: 'currency',
+        currency: currency || 'MXN',
+        maximumFractionDigits: 1,
+      }).format(n);
+    } catch {
+      return `$${n.toFixed(0)}`;
+    }
   };
 
   if (loadingDash && loadingVend) {

@@ -347,11 +347,11 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
       await P.printText('--------------------------------\n', {});
     }
 
-    // Amount (big)
+    // Amount (big) — locale/currency del tenant (legacy default es-MX/MXN)
     await P.printerAlign(ALIGN.CENTER);
-    const montoStr = new Intl.NumberFormat('es-MX', {
+    const montoStr = new Intl.NumberFormat(data.locale ?? 'es-MX', {
       style: 'currency',
-      currency: 'MXN',
+      currency: data.currency ?? 'MXN',
     }).format(data.monto);
     await P.printText(`TOTAL\n`, {});
     await P.printText(`${montoStr}\n`, { widthtimes: 2, heigthtimes: 2 });
@@ -626,8 +626,10 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     const P = BluetoothEscposPrinter;
     const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
     const W = 48; // 80mm thermal printer char width
+    // CFDI usa data.moneda (Anexo 20: campo obligatorio en el comprobante).
+    // El locale tenant define separadores. Default 'es-MX' es coherente con SAT.
     const fmt = (n: number) =>
-      new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      new Intl.NumberFormat('es-MX', { style: 'currency', currency: data.moneda || 'MXN' }).format(n);
     const pad = (l: string, r: string, w = W) =>
       l + ' '.repeat(Math.max(1, w - l.length - r.length)) + r;
     const sep = '================================================\n';
