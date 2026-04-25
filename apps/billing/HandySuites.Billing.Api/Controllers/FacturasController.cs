@@ -72,6 +72,38 @@ public class FacturasController : ControllerBase
         ?? throw new UnauthorizedAccessException("Token missing tenant_id claim");
     private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
+    /// <summary>
+    /// Defense-in-depth guard: rechaza operaciones de facturación si el tenant
+    /// no opera en un país con integración fiscal soportada (ver
+    /// <see cref="BillingCountrySupport"/>). Mobile UI ya hace gating por país,
+    /// pero este guard cubre llamadas directas vía API y bypass de UI.
+    /// Devuelve null si está OK; ActionResult con 403 si hay que rechazar.
+    /// </summary>
+    private async Task<ActionResult?> EnsureBillingSupportedAsync(string tenantId)
+    {
+        var pais = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId)
+            .Select(c => c.Pais)
+            .FirstOrDefaultAsync();
+
+        // Si no hay ConfiguracionFiscal aún, asumimos default "México" (MX) coherente
+        // con el default del modelo. El gating real corta cuando explícitamente otro país.
+        var paisEffective = string.IsNullOrWhiteSpace(pais) ? "México" : pais;
+
+        if (!BillingCountrySupport.IsSupported(paisEffective))
+        {
+            _logger.LogWarning(
+                "Bloqueando operación de facturación: tenant {TenantId} tiene país '{Pais}' (ISO '{Iso}') no soportado",
+                tenantId, paisEffective, BillingCountrySupport.NormalizeToIso(paisEffective));
+            return StatusCode(403, new
+            {
+                error = $"Facturación electrónica no disponible para país '{paisEffective}'.",
+                pais = paisEffective,
+            });
+        }
+        return null;
+    }
+
     private async Task<byte[]?> DownloadLogoAsync(string? logoUrl)
     {
         if (string.IsNullOrEmpty(logoUrl)) return null;
@@ -349,6 +381,10 @@ public class FacturasController : ControllerBase
         var tenantId = GetTenantId();
         var userId = GetUserId();
 
+        // Country gate: solo emite si el tenant opera en un país con integración fiscal.
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
+
         // Validate RFC format
         if (!IsValidRfc(request.EmisorRfc))
             return BadRequest(new { error = "RFC del emisor no tiene formato válido" });
@@ -455,6 +491,10 @@ public class FacturasController : ControllerBase
     {
         var tenantId = GetTenantId();
 
+        // Country gate (preview también — evita exponer cálculos fiscales a tenants no soportados)
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
+
         // Reuse validation logic
         var order = await _orderReaderService.GetOrderForInvoiceAsync(tenantId, request.PedidoId);
         if (order == null)
@@ -545,6 +585,10 @@ public class FacturasController : ControllerBase
     {
         var tenantId = GetTenantId();
         var userId = GetUserId();
+
+        // Country gate
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
 
         // 1. Check if this order was already invoiced
         var existingFactura = await _context.Facturas
@@ -739,6 +783,10 @@ public class FacturasController : ControllerBase
         var tenantId = GetTenantId();
         var userId = GetUserId();
 
+        // Country gate
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
+
         // Validate periodicidad (SAT catalog)
         var periodicidadesValidas = new[] { "01", "02", "03", "04", "05" };
         if (!periodicidadesValidas.Contains(request.Periodicidad))
@@ -858,6 +906,10 @@ public class FacturasController : ControllerBase
     {
         var tenantId = GetTenantId();
         var userId = GetUserId();
+
+        // Country gate
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
 
         // Atomic state transition to prevent concurrent double-stamps
         var updated = await _context.Facturas
