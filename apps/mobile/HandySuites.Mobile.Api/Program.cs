@@ -71,6 +71,19 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+    // Política específica para login móvil: 5 intentos/min por IP. Sin esto el
+    // global limiter (120/min) permite ~2 intentos/seg, suficiente para brute
+    // force con diccionarios. Aplicar via .RequireRateLimiting("mobile-auth")
+    // en endpoints sensibles (login, force-login).
+    options.AddPolicy("mobile-auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
     options.OnRejected = async (context, cancellationToken) =>
     {
         context.HttpContext.Response.ContentType = "application/json";
