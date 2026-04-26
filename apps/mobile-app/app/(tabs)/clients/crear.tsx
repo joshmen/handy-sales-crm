@@ -14,6 +14,7 @@ import { COLORS } from '@/theme/colors';
 import { GpsMapModal } from '@/components/shared/GpsMapModal';
 import { REGIMEN_FISCAL, USO_CFDI } from '@/constants/sat';
 import type { ClienteCreateRequest } from '@/types/client';
+import { ClienteCreateRequestSchema } from '@/api/schemas/client';
 
 // ── Inline SearchableDropdown ────────────────────────────────
 function SearchableDropdown({
@@ -383,36 +384,55 @@ export default function CrearClienteScreen() {
     },
   });
 
-  // Validation — correo and telefono are optional, fiscal fields required when requiereFactura
+  // Validation — usa el schema Zod centralizado en `@/api/schemas/client.ts`.
+  // Antes había regex inline (isValidRfc, isValidEmail, etc.) duplicado entre
+  // varias pantallas. El schema unifica las reglas + permite reusarlo en mobile,
+  // y la inferencia de tipos garantiza que el data submitted matchea el contrato.
   const errors = useMemo(() => {
+    const candidate = {
+      nombre: nombre.trim(),
+      telefono: telefono || undefined,
+      correo: correo ? correo.trim().toLowerCase() : undefined,
+      rfc: rfc || undefined,
+      direccion: direccion.trim(),
+      numeroExterior: numeroExterior.trim(),
+      colonia: colonia.trim() || undefined,
+      ciudad: ciudad.trim() || undefined,
+      codigoPostal: codigoPostal.trim() || undefined,
+      encargado: encargado.trim() || undefined,
+      idZona: zonaId ?? 0,
+      categoriaClienteId: categoriaId ?? 0,
+      latitud: location?.lat,
+      longitud: location?.lng,
+      descuento: descuentoPct ? parseFloat(descuentoPct) : undefined,
+      ventaMinimaEfectiva: ventaMinima ? parseFloat(ventaMinima) : undefined,
+      comentarios: notas.trim() || undefined,
+      rfcFiscal: rfcFiscal || undefined,
+      razonSocial: razonSocial || undefined,
+      regimenFiscal: regimenFiscal || undefined,
+      usoCFDIPredeterminado: usoCfdi || undefined,
+      codigoPostalFiscal: cpFiscal || undefined,
+      facturable: requiereFactura,
+    };
+    const result = ClienteCreateRequestSchema.safeParse(candidate);
+    if (result.success) return {};
+    // Mapea el path[0] del Zod issue al key que usa la UI inline.
+    // Aliases: idZona → zona, categoriaClienteId → categoria, codigoPostalFiscal → cpFiscal
+    // (preservar nombres legacy del JSX para no reescribir los inputs).
+    const aliasMap: Record<string, string> = {
+      idZona: 'zona',
+      categoriaClienteId: 'categoria',
+      codigoPostalFiscal: 'cpFiscal',
+      ventaMinimaEfectiva: 'ventaMinima',
+    };
     const e: Record<string, string> = {};
-    if (!nombre.trim() || nombre.trim().length < 2) e.nombre = 'Mínimo 2 caracteres';
-    if (telefono && !isValidPhone(telefono)) e.telefono = 'Debe ser 10 dígitos';
-    if (correo && !isValidEmail(correo)) e.correo = 'Formato inválido';
-    if (rfc && !isValidRfc(rfc)) e.rfc = 'RFC inválido (formato SAT: 12 o 13 caracteres)';
-    if (!direccion.trim()) e.direccion = 'Obligatorio';
-    if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
-    if (!zonaId) e.zona = 'Selecciona una zona';
-    if (!categoriaId) e.categoria = 'Selecciona una categoría';
-    // Comerciales — rangos numéricos para no mandar valores absurdos al backend
-    if (descuentoPct) {
-      const d = parseFloat(descuentoPct);
-      if (Number.isNaN(d) || d < 0 || d > 100) e.descuento = 'Descuento debe ser entre 0 y 100';
-    }
-    if (ventaMinima) {
-      const v = parseFloat(ventaMinima);
-      if (Number.isNaN(v) || v < 0) e.ventaMinima = 'Venta mínima no puede ser negativa';
-    }
-    // Fiscal fields — obligatorios cuando requiere factura
-    if (requiereFactura) {
-      if (!rfcFiscal.trim()) e.rfcFiscal = 'RFC fiscal obligatorio';
-      else if (!isValidRfc(rfcFiscal)) e.rfcFiscal = 'RFC inválido (formato SAT)';
-      if (!razonSocial.trim()) e.razonSocial = 'Razón social obligatoria';
-      if (!regimenFiscal) e.regimenFiscal = 'Régimen fiscal obligatorio';
-      if (!cpFiscal.trim() || cpFiscal.length !== 5) e.cpFiscal = 'C.P. fiscal obligatorio (5 dígitos)';
+    for (const issue of result.error.issues) {
+      const k = String(issue.path[0] ?? '');
+      const uiKey = aliasMap[k] ?? k;
+      if (!e[uiKey]) e[uiKey] = issue.message;
     }
     return e;
-  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId, descuentoPct, ventaMinima, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, cpFiscal]);
+  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, colonia, ciudad, codigoPostal, encargado, zonaId, categoriaId, location, descuentoPct, ventaMinima, notas, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, usoCfdi, cpFiscal]);
 
   const isValid = Object.keys(errors).length === 0;
 

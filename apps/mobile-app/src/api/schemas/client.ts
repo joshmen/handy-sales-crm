@@ -54,32 +54,48 @@ export const ClienteLocationSchema = z
 
 export type ClienteLocation = z.infer<typeof ClienteLocationSchema>;
 
-// Request types (outgoing — no Zod validation needed)
-export interface ClienteCreateRequest {
-  nombre: string;
-  telefono?: string;
-  correo?: string;
-  rfc?: string;
-  direccion: string;
-  numeroExterior: string;
-  // Dirección desglosada
-  colonia?: string;
-  ciudad?: string;
-  codigoPostal?: string;
-  encargado?: string;
-  idZona: number;
-  categoriaClienteId: number;
-  latitud?: number;
-  longitud?: number;
-  // Comerciales
-  descuento?: number;
-  ventaMinimaEfectiva?: number;
-  comentarios?: string;
-  // Fiscal
-  rfcFiscal?: string;
-  razonSocial?: string;
-  regimenFiscal?: string;
-  usoCFDIPredeterminado?: string;
-  codigoPostalFiscal?: string;
-  facturable?: boolean;
-}
+// Request schema (outgoing) — Zod schema para validar el form ANTES de submit.
+// Antes los campos se validaban manualmente con regex inline en clients/crear.tsx.
+// Esto centraliza las reglas y permite type-inference desde el schema.
+const RFC_REGEX = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+const PHONE_REGEX = /^[0-9+\-\s()]{7,20}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CP_REGEX = /^\d{5}$/;
+
+export const ClienteCreateRequestSchema = z
+  .object({
+    nombre: z.string().trim().min(2, 'Nombre debe tener al menos 2 caracteres'),
+    telefono: z.string().trim().regex(PHONE_REGEX, 'Teléfono inválido').optional().or(z.literal('')),
+    correo: z.string().trim().regex(EMAIL_REGEX, 'Correo inválido').optional().or(z.literal('')),
+    rfc: z.string().trim().toUpperCase().regex(RFC_REGEX, 'RFC inválido').optional().or(z.literal('')),
+    direccion: z.string().trim().min(3, 'Dirección requerida'),
+    numeroExterior: z.string().trim().min(1, 'Número exterior requerido'),
+    colonia: z.string().trim().optional().or(z.literal('')),
+    ciudad: z.string().trim().optional().or(z.literal('')),
+    codigoPostal: z.string().trim().regex(CP_REGEX, 'Código postal debe tener 5 dígitos').optional().or(z.literal('')),
+    encargado: z.string().trim().optional().or(z.literal('')),
+    idZona: z.number().int().positive('Selecciona una zona'),
+    categoriaClienteId: z.number().int().positive('Selecciona una categoría'),
+    latitud: z.number().optional(),
+    longitud: z.number().optional(),
+    descuento: z.number().min(0, 'Descuento no puede ser negativo').max(100, 'Descuento no puede exceder 100%').optional(),
+    ventaMinimaEfectiva: z.number().min(0).optional(),
+    comentarios: z.string().optional().or(z.literal('')),
+    rfcFiscal: z.string().trim().toUpperCase().regex(RFC_REGEX, 'RFC fiscal inválido').optional().or(z.literal('')),
+    razonSocial: z.string().trim().optional().or(z.literal('')),
+    regimenFiscal: z.string().optional().or(z.literal('')),
+    usoCFDIPredeterminado: z.string().optional().or(z.literal('')),
+    codigoPostalFiscal: z.string().trim().regex(CP_REGEX, 'CP fiscal debe tener 5 dígitos').optional().or(z.literal('')),
+    facturable: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Si es facturable, RFC fiscal + razón social + CP fiscal + régimen fiscal son obligatorios.
+    if (data.facturable) {
+      if (!data.rfcFiscal) ctx.addIssue({ code: 'custom', path: ['rfcFiscal'], message: 'RFC fiscal requerido para clientes facturables' });
+      if (!data.razonSocial) ctx.addIssue({ code: 'custom', path: ['razonSocial'], message: 'Razón social requerida para clientes facturables' });
+      if (!data.codigoPostalFiscal) ctx.addIssue({ code: 'custom', path: ['codigoPostalFiscal'], message: 'CP fiscal requerido para clientes facturables' });
+      if (!data.regimenFiscal) ctx.addIssue({ code: 'custom', path: ['regimenFiscal'], message: 'Régimen fiscal requerido para clientes facturables' });
+    }
+  });
+
+export type ClienteCreateRequest = z.infer<typeof ClienteCreateRequestSchema>;
