@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Security;
@@ -55,7 +56,7 @@ public class MobileAuthService
                     (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
 
             // Device binding check — only for non-admin users
-            if (!usuario.EsAdmin && !usuario.EsSuperAdmin && usuario.Rol != "SUPERVISOR")
+            if (!usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
             {
                 // Check if there's ANY session with a different fingerprint
                 var boundSession = await _db.DeviceSessions

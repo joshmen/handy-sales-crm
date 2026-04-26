@@ -369,7 +369,7 @@ public class AuthService
         }
 
         // Check tenant is active (SuperAdmin is exempt — they don't belong to a regular tenant)
-        if (!usuario.EsSuperAdmin)
+        if (!usuario.IsSuperAdmin)
         {
             var tenant = await _db.Tenants.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
@@ -402,7 +402,7 @@ public class AuthService
             string? lastActivity = null;
             string? maskedIp = null;
 
-            if (!usuario.EsSuperAdmin)
+            if (!usuario.IsSuperAdmin)
             {
                 var latestSession = await _db.DeviceSessions
                     .IgnoreQueryFilters()
@@ -436,7 +436,7 @@ public class AuthService
 
         // Check for active sessions (single session enforcement)
         // SuperAdmin is exempt from single session restriction
-        if (!usuario.EsSuperAdmin)
+        if (!usuario.IsSuperAdmin)
         {
             var activeSessions = await _db.DeviceSessions
                 .IgnoreQueryFilters()
@@ -494,7 +494,7 @@ public class AuthService
             return null;
 
         // Check tenant is active before allowing 2FA completion
-        if (!usuario.EsSuperAdmin)
+        if (!usuario.IsSuperAdmin)
         {
             var tenant = await _db.Tenants.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
@@ -568,7 +568,7 @@ public class AuthService
             return null;
 
         // Check tenant is active
-        if (!usuario.EsSuperAdmin)
+        if (!usuario.IsSuperAdmin)
         {
             var tenant = await _db.Tenants.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
@@ -685,7 +685,7 @@ public class AuthService
             return null;
 
         // Check tenant is active
-        if (!usuario.EsSuperAdmin)
+        if (!usuario.IsSuperAdmin)
         {
             var tenant = await _db.Tenants.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
@@ -763,7 +763,7 @@ public class AuthService
 
         // Check if tenant has completed onboarding
         var onboardingCompleted = true; // default for SuperAdmin or edge cases
-        if (!usuario.EsSuperAdmin)
+        if (!usuario.IsSuperAdmin)
         {
             var tenant = await _db.Tenants.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
@@ -834,7 +834,7 @@ public class AuthService
             return null;
 
         // Check tenant is active before refreshing
-        if (!tokenEntity.Usuario.EsSuperAdmin)
+        if (!tokenEntity.Usuario.IsSuperAdmin)
         {
             var tenant = await _db.Tenants.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == tokenEntity.Usuario.TenantId);

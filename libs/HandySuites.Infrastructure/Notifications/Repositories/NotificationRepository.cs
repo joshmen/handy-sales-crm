@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HandySuites.Application.Notifications.DTOs;
 using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -185,8 +186,8 @@ public class NotificationRepository : INotificationRepository
                     where d.TenantId == tenantId
                         && d.Status == SessionStatus.Active
                         && !string.IsNullOrEmpty(d.PushToken)
-                        && !u.EsAdmin
-                        && !u.EsSuperAdmin
+                        && u.RolExplicito != RoleNames.Admin
+                        && u.RolExplicito != RoleNames.SuperAdmin
                     select new { d.UsuarioId, SessionId = d.Id, d.PushToken };
 
         // Filtrar por zona requeriría tener la relación Usuario-Zona

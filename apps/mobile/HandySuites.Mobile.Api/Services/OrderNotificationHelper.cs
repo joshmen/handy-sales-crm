@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Notifications.Services;
 using HandySuites.Infrastructure.Persistence;
@@ -158,7 +159,7 @@ public class OrderNotificationHelper
             .Where(u => u.TenantId == tenantId &&
                         u.Activo &&
                         u.EliminadoEn == null &&
-                        (u.RolExplicito == "SUPERVISOR" || u.RolExplicito == "ADMIN" || u.EsAdmin))
+                        (u.RolExplicito == RoleNames.Supervisor || u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin))
             .Select(u => u.Id)
             .ToListAsync();
     }
@@ -187,7 +188,7 @@ public class OrderNotificationHelper
             .Where(u => u.TenantId == tenantId &&
                         u.Activo &&
                         u.EliminadoEn == null &&
-                        (u.RolExplicito == "ADMIN" || u.EsAdmin))
+                        (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin))
             .Select(u => u.Id)
             .ToListAsync();
 

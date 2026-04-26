@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Shared.Multitenancy;
 using HandySuites.Shared.Security;
@@ -96,18 +97,16 @@ public class UsuarioService
         if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
             throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
 
-        // Role resolution
-        var rolUpper = dto.Rol?.ToUpperInvariant() ?? "VENDEDOR";
-        bool esAdmin = false;
+        // Role resolution — RolExplicito es la fuente de verdad ahora.
+        var rolUpper = dto.Rol?.ToUpperInvariant() ?? RoleNames.Vendedor;
         int? roleId = null;
 
-        if (rolUpper == "ADMIN")
+        if (rolUpper == RoleNames.Admin)
         {
             if (!_tenant.IsSuperAdmin)
                 throw new UnauthorizedAccessException("Solo el SuperAdmin puede crear administradores");
-            esAdmin = true;
         }
-        else
+        else if (rolUpper != RoleNames.Vendedor)
         {
             var role = await _repo.ObtenerRolPorNombreAsync(rolUpper);
             if (role != null) roleId = role.Id;
@@ -119,8 +118,9 @@ public class UsuarioService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Nombre = dto.Nombre,
             TenantId = _tenant.TenantId,
-            EsAdmin = esAdmin,
-            EsSuperAdmin = false,
+            RolExplicito = rolUpper,
+            EsAdmin = rolUpper == RoleNames.Admin || rolUpper == RoleNames.SuperAdmin, // legacy — se elimina al dropear columnas
+            EsSuperAdmin = rolUpper == RoleNames.SuperAdmin,
             RoleId = roleId,
             Activo = true,
             CreadoPor = _tenant.UserId
@@ -148,7 +148,7 @@ public class UsuarioService
         else if (_tenant.IsAdmin)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
-            usuarios = todosUsuarios.Where(u => !u.EsAdmin && !u.EsSuperAdmin).ToList();
+            usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
         }
         // Usuarios normales no pueden ver otros usuarios
         else
@@ -196,7 +196,7 @@ public class UsuarioService
         else if (_tenant.IsAdmin)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
-            usuarios = todosUsuarios.Where(u => !u.EsAdmin && !u.EsSuperAdmin).ToList();
+            usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
         }
         // Usuarios normales no pueden ver otros usuarios
         else
@@ -279,7 +279,7 @@ public class UsuarioService
         // Previene que un admin bloquee a otro cambiando email/password.
         var currentUserId = int.TryParse(_tenant.UserId, out var cuid) ? cuid : 0;
         var isSelf = usuario.Id == currentUserId;
-        if (!_tenant.IsSuperAdmin && !isSelf && usuario.EsAdmin)
+        if (!_tenant.IsSuperAdmin && !isSelf && usuario.IsAdminOrAbove)
         {
             throw new UnauthorizedAccessException("Solo el propio usuario o un SUPER_ADMIN puede modificar cuentas de administrador.");
         }

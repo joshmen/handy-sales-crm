@@ -315,7 +315,7 @@ public static class TenantEndpoints
             // Send deactivation email to admin users
             var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
             var tenantName = tenant?.NombreEmpresa ?? "Empresa";
-            var adminEmails = tenantUsers.Where(u => u.EsAdmin).Select(u => u.Email).ToList();
+            var adminEmails = tenantUsers.Where(u => u.IsAdminOrAbove).Select(u => u.Email).ToList();
             if (adminEmails.Count > 0)
             {
                 var html = EmailTemplates.TenantDeactivated(tenantName);
@@ -410,12 +410,9 @@ public static class TenantEndpoints
                 u.Id,
                 u.Nombre,
                 u.Email,
-                // Prioridad: flags > rol legacy string > Role entity > fallback.
-                // Antes sólo miraba u.Role.Nombre y los usuarios con la columna
-                // u.Rol poblada (VENDEDOR/SUPERVISOR) mostraban "Sin rol".
-                u.EsSuperAdmin ? "SUPER_ADMIN" :
-                u.EsAdmin ? "ADMIN" :
-                !string.IsNullOrWhiteSpace(u.Rol) ? u.Rol :
+                // Post-backfill: RolExplicito siempre tiene valor. Role entity
+                // se mantiene como fallback para tablas migradas con NULL.
+                !string.IsNullOrWhiteSpace(u.RolExplicito) ? u.RolExplicito :
                 u.Role != null ? u.Role.Nombre : "Sin rol",
                 u.Activo
             ))

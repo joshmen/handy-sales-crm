@@ -1,4 +1,5 @@
 using HandySuites.Api.Hubs;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
@@ -151,7 +152,7 @@ public class ScheduledActionProcessor : BackgroundService
 
         // Send email notifications
         var adminEmails = tenantUsers
-            .Where(u => u.EsAdmin && !string.IsNullOrEmpty(u.Email))
+            .Where(u => (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && !string.IsNullOrEmpty(u.Email))
             .Select(u => u.Email)
             .ToList();
 
@@ -173,7 +174,7 @@ public class ScheduledActionProcessor : BackgroundService
         var adminEmails = await db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(u => u.TenantId == action.TargetId && u.EsAdmin && u.Activo)
+            .Where(u => u.TenantId == action.TargetId && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
             .Select(u => u.Email)
             .ToListAsync(ct);
 

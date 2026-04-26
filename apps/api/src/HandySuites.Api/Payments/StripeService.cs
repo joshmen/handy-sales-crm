@@ -1,4 +1,5 @@
 using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
@@ -310,7 +311,7 @@ public class StripeService : IStripeService
         var adminEmails = await _db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+            .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
             .Select(u => u.Email)
             .ToListAsync();
 
@@ -347,7 +348,7 @@ public class StripeService : IStripeService
         var adminEmails = await _db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+            .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
             .Select(u => u.Email)
             .ToListAsync();
 
@@ -499,7 +500,7 @@ public class StripeService : IStripeService
         var adminEmails = await _db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+            .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
             .Select(u => u.Email)
             .ToListAsync();
 
@@ -532,7 +533,7 @@ public class StripeService : IStripeService
         var adminEmails = await _db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+            .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
             .Select(u => u.Email)
             .ToListAsync();
 

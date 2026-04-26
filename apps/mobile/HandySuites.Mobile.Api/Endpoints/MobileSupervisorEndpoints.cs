@@ -1,4 +1,5 @@
 using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Domain.Common;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.EntityFrameworkCore;
@@ -35,8 +36,8 @@ public static class MobileSupervisorEndpoints
                 // Excluir a uno mismo y a otros admins; mostrar supervisores y vendedores
                 baseQuery = baseQuery.Where(u =>
                     u.Id != supervisorId
-                    && !u.EsAdmin
-                    && !u.EsSuperAdmin);
+                    && u.RolExplicito != RoleNames.Admin
+                    && u.RolExplicito != RoleNames.SuperAdmin);
             }
             else
             {
@@ -49,7 +50,7 @@ public static class MobileSupervisorEndpoints
                     u.Id,
                     u.Nombre,
                     u.Email,
-                    Rol = u.RolExplicito ?? (u.EsSuperAdmin ? "SUPER_ADMIN" : u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+                    Rol = u.RolExplicito ?? RoleNames.Vendedor,
                     u.Activo,
                     u.AvatarUrl
                 })

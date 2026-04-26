@@ -99,7 +99,7 @@ public class ImpersonationService : IImpersonationService
 
         // Obtener datos del SUPER_ADMIN
         var superAdmin = await _usuarioRepository.ObtenerPorIdAsync(superAdminId);
-        if (superAdmin == null || !superAdmin.EsSuperAdmin)
+        if (superAdmin == null || !superAdmin.IsSuperAdmin)
         {
             throw new UnauthorizedAccessException("Solo SUPER_ADMIN puede iniciar sesiones de impersonación.");
         }
@@ -309,7 +309,7 @@ public class ImpersonationService : IImpersonationService
         {
             // Obtener admins activos del tenant target (sin filtro de tenant, ya que corremos en contexto SuperAdmin)
             var tenantUsers = await _usuarioRepository.ObtenerPorTenantSinFiltroAsync(session.TargetTenantId);
-            var admins = tenantUsers.Where(u => u.EsAdmin && u.Activo).ToList();
+            var admins = tenantUsers.Where(u => u.IsAdminOrAbove && u.Activo).ToList();
 
             if (admins.Count == 0)
             {

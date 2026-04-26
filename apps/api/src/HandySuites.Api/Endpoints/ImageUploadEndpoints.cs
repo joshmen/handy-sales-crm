@@ -226,7 +226,7 @@ public static class ImageUploadEndpoints
                     usuario.AvatarUrl = result.SecureUrl;
                     await dbContext.SaveChangesAsync();
                 }
-                else if (request.Type == "logo" && (usuario.EsAdmin || usuario.EsSuperAdmin))
+                else if (request.Type == "logo" && usuario.IsAdminOrAbove)
                 {
                     var companySetting = await dbContext.CompanySettings
                         .FirstOrDefaultAsync(cs => cs.TenantId == usuario.TenantId);

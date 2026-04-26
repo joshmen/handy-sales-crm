@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using HandySuites.Application.Notifications.DTOs;
 using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
@@ -100,11 +101,10 @@ public record AutomationContext(
 
         if (Destinatario is "vendedores" or "ambos")
         {
-            // Vendedor = RolExplicito == "VENDEDOR" OR (RolExplicito is null AND not admin/superadmin)
+            // Vendedor = RolExplicito == "VENDEDOR" (post-backfill rol nunca es null)
             var vendIds = await Db.Usuarios
                 .Where(u => u.TenantId == TenantId && u.Activo
-                    && (u.RolExplicito == "VENDEDOR"
-                        || (u.RolExplicito == null && !u.EsAdmin && !u.EsSuperAdmin)))
+                    && u.RolExplicito == RoleNames.Vendedor)
                 .Select(u => u.Id)
                 .ToListAsync(ct);
             ids.AddRange(vendIds);
@@ -259,15 +259,13 @@ public record AutomationContext(
 
     /// <summary>
     /// Find the first active ADMIN user for this tenant.
-    /// NOTE: Must use mapped DB columns — Rol is [NotMapped] and can't be used in LINQ-to-SQL.
+    /// NOTE: Must use mapped DB columns — IsAdminOrAbove/Rol son [NotMapped] y EF no los traduce.
     /// </summary>
     public async Task<int?> GetAdminUserIdAsync(CancellationToken ct)
     {
-        // Admin = RolExplicito == "ADMIN" OR (RolExplicito is null AND EsAdmin AND not SuperAdmin)
         return await Db.Usuarios
             .Where(u => u.TenantId == TenantId && u.Activo
-                && (u.RolExplicito == "ADMIN"
-                    || (u.RolExplicito == null && u.EsAdmin && !u.EsSuperAdmin)))
+                && u.RolExplicito == RoleNames.Admin)
             .Select(u => (int?)u.Id)
             .FirstOrDefaultAsync(ct);
     }

@@ -60,8 +60,7 @@ public static class InternalPushEndpoints
                     .Where(u => u.TenantId == request.TenantId &&
                                 u.Activo &&
                                 u.EliminadoEn == null &&
-                                (request.Roles.Contains(u.RolExplicito!) ||
-                                 (request.Roles.Contains("ADMIN") && u.EsAdmin)))
+                                request.Roles.Contains(u.RolExplicito!))
                     .Select(u => u.Id)
                     .ToListAsync();
 

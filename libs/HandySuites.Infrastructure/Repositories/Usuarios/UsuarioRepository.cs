@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -99,15 +100,21 @@ public class UsuarioRepository : IUsuarioRepository
                                    u.Email.ToLower().Contains(search));
         }
 
-        // Filter by admin status
+        // Filter by admin status — el Esadmin legacy incluye SUPER_ADMIN.
         if (searchDto.EsAdmin.HasValue)
         {
-            query = query.Where(u => u.EsAdmin == searchDto.EsAdmin.Value);
+            if (searchDto.EsAdmin.Value)
+                query = query.Where(u => u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin);
+            else
+                query = query.Where(u => u.RolExplicito != RoleNames.Admin && u.RolExplicito != RoleNames.SuperAdmin);
         }
 
         if (searchDto.EsSuperAdmin.HasValue)
         {
-            query = query.Where(u => u.EsSuperAdmin == searchDto.EsSuperAdmin.Value);
+            if (searchDto.EsSuperAdmin.Value)
+                query = query.Where(u => u.RolExplicito == RoleNames.SuperAdmin);
+            else
+                query = query.Where(u => u.RolExplicito != RoleNames.SuperAdmin);
         }
 
         // Filter by active status
