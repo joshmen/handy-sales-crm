@@ -183,6 +183,19 @@ public static class CuponEndpoints
         if (cupon.FechaExpiracion.HasValue && cupon.FechaExpiracion.Value < DateTime.UtcNow)
             return Results.BadRequest(new { message = "Este cupón ha expirado" });
 
+        // Race condition guard: dos requests concurrentes podían leer UsosActuales=N-1
+        // y ambos pasar el check < MaxUsos, terminando con UsosActuales = MaxUsos+1.
+        // Postgres pg_advisory_xact_lock(cuponId) serializa el redeem por cupón;
+        // se libera al COMMIT/ROLLBACK de la transacción.
+        await using var tx = await db.Database.BeginTransactionAsync();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({cupon.Id})");
+
+        // Re-leer dentro del lock para evitar stale data del Find anterior
+        cupon = await db.Cupones.FirstOrDefaultAsync(c => c.Id == cupon.Id);
+        if (cupon == null)
+            return Results.NotFound(new { message = "Cupón no encontrado" });
+
         if (cupon.UsosActuales >= cupon.MaxUsos)
             return Results.BadRequest(new { message = "Este cupón ha alcanzado el máximo de usos" });
 
@@ -262,6 +275,7 @@ public static class CuponEndpoints
         db.CuponRedenciones.Add(redencion);
         cupon.UsosActuales++;
         await db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return Results.Ok(new
         {
