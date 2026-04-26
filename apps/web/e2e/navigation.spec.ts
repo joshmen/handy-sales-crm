@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
-// Authenticated test fixture - run serially to avoid session conflicts
+/**
+ * Navigation tests — verify each main page is reachable.
+ * Post-Pencil redesign usa direct URL navigation en vez de sidebar links
+ * (sidebar puede estar colapsado y los links pueden estar en sub-menus).
+ */
 test.describe('Navigation (Authenticated)', () => {
-  // Run these tests serially to avoid parallel login conflicts
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
@@ -11,49 +14,50 @@ test.describe('Navigation (Authenticated)', () => {
   });
 
   test('should be on Dashboard after login', async ({ page }) => {
-    // Already on dashboard after beforeEach login
     await expect(page).toHaveURL(/dashboard/);
   });
 
-  test.skip('should navigate to Clients page', async ({ page }) => {
-    // TODO: Update selectors after Pencil redesign
-    await page.getByRole('link', { name: /clientes|clients/i }).click();
-    await expect(page).toHaveURL(/client/, { timeout: 10000 });
+  test('should navigate to Clients page', async ({ page }) => {
+    await page.goto('/clients');
+    await expect(page).toHaveURL(/client/);
+    await expect(page.getByRole('heading', { name: /Clientes/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should navigate to Products page', async ({ page }) => {
-    // TODO: Update selectors after Pencil redesign
-    await page.getByRole('link', { name: /productos|products/i }).click();
-    await expect(page).toHaveURL(/product/, { timeout: 10000 });
+  test('should navigate to Products page', async ({ page }) => {
+    await page.goto('/products');
+    await expect(page).toHaveURL(/product/);
+    await expect(page.getByRole('heading', { name: /Productos/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should navigate to Orders page', async ({ page }) => {
-    // TODO: Update selectors after Pencil redesign
-    await page.getByRole('link', { name: /pedidos|orders/i }).click();
-    await expect(page).toHaveURL(/order|pedido/, { timeout: 10000 });
+  test('should navigate to Orders page', async ({ page }) => {
+    await page.goto('/orders');
+    await expect(page).toHaveURL(/order/);
+    await expect(page.getByRole('heading', { name: /Pedidos/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should navigate to Inventory page', async ({ page }) => {
-    // TODO: Update selectors after Pencil redesign
-    await page.getByRole('link', { name: /inventario|inventory/i }).click();
-    await expect(page).toHaveURL(/inventory|inventario/, { timeout: 10000 });
+  test('should navigate to Inventory page', async ({ page }) => {
+    await page.goto('/inventory');
+    await expect(page).toHaveURL(/inventory/);
+    // Inventario heading puede ser "Inventario" o "Stock"
+    await expect(page.getByRole('heading', { name: /Inventario|Stock/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should navigate to Routes page', async ({ page }) => {
-    // Skip - Routes might not be in sidebar
-    await page.getByRole('link', { name: /rutas|routes/i }).click();
-    await expect(page).toHaveURL(/route|ruta/, { timeout: 10000 });
+  test('should navigate to Routes page', async ({ page }) => {
+    await page.goto('/routes');
+    await expect(page).toHaveURL(/routes/);
+    await expect(page.getByRole('heading', { name: /Rutas/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should navigate to Users page', async ({ page }) => {
-    // Skip - Users might not be in sidebar
-    await page.getByRole('link', { name: /usuarios|users/i }).click();
-    await expect(page).toHaveURL(/user|usuario/, { timeout: 10000 });
+  test('should navigate to Team page', async ({ page }) => {
+    // Pencil redesign: usuarios del tenant viven en /team (no /users)
+    await page.goto('/team');
+    await expect(page).toHaveURL(/team/);
+    await expect(page.getByRole('heading', { name: /Equipo|Usuarios|Team/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should navigate to Settings page', async ({ page }) => {
-    // Skip - Settings might not be in sidebar
-    await page.getByRole('link', { name: /configuración|settings/i }).click();
-    await expect(page).toHaveURL(/setting|config/, { timeout: 10000 });
+  test('should navigate to Settings page', async ({ page }) => {
+    await page.goto('/settings');
+    await expect(page).toHaveURL(/settings/);
+    await expect(page.getByRole('heading', { name: /Configuraci[oó]n/i }).first()).toBeVisible({ timeout: 10000 });
   });
 });
