@@ -3,14 +3,11 @@ import { loginAsSuperAdmin } from './helpers/auth';
 
 /**
  * Cupones SuperAdmin tests.
- * URL: /admin/cupones (era /superadmin/cupones en versión antigua)
- *
- * NOTA: loginAsSuperAdmin actualmente tiene un bug NextAuth con SA login
- * (custom /auth/login OK, NextAuth callback OK, pero session no se establece).
- * Por eso estos tests fallan en login. Cuando se debug ese issue, los tests
- * deberían pasar. Por ahora marco describe.skip.
+ * URL: /admin/cupones
+ * SA único: xjoshmenx@gmail.com. Tests serial para evitar conflictos de sesión.
  */
-test.describe.skip('Cupones SuperAdmin', () => {
+test.describe.configure({ mode: 'serial' });
+test.describe('Cupones SuperAdmin', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsSuperAdmin(page);
   });

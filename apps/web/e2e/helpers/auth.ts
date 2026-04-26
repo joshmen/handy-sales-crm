@@ -59,16 +59,13 @@ export function getTestEmails() {
   const saSlot = SA_SLOT[fileName];
   const vendSlot = VEND_SLOT[fileName];
 
-  let superAdmin: string;
-  if (saSlot) {
-    superAdmin = isMobile
-      ? `e2e-mob-sa-${saSlot}@handysales.com`
-      : `e2e-sa-${saSlot}@handysales.com`;
-  } else {
-    superAdmin = isMobile
-      ? 'e2e-mobile-sa@handysales.com'
-      : 'superadmin@handysales.com';
-  }
+  // SOLO xjoshmenx@gmail.com es SUPER_ADMIN en el sistema (real prod intent).
+  // Los slots e2e-sa-* fueron demoteados a ADMIN; no son válidos para tests SA.
+  // Como hay un único SA, los SA tests no pueden correr en paralelo (sesión única).
+  // saSlot se ignora; la dedupe via test.describe.configure({ mode: 'serial' })
+  // dentro de cada spec es responsabilidad del autor del test.
+  void saSlot;
+  const superAdmin = 'xjoshmenx@gmail.com';
 
   let vendedor: string;
   if (vendSlot) {
@@ -143,10 +140,24 @@ export async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 /**
+ * Clears both cookies AND localStorage. Without clearing localStorage, the
+ * admin storageState leaves stale token state that causes 401 cascades for the
+ * new role's session and triggers an unwanted signOut redirect to /login.
+ */
+async function clearAuthStorage(page: Page): Promise<void> {
+  await page.context().clearCookies();
+  await page.goto('/login');
+  await page.evaluate(() => {
+    try { window.localStorage.clear(); } catch { /* ignore */ }
+    try { window.sessionStorage.clear(); } catch { /* ignore */ }
+  });
+}
+
+/**
  * Login as Vendedor (per-file dedicated user). Clears admin storageState first.
  */
 export async function loginAsVendedor(page: Page): Promise<void> {
-  await page.context().clearCookies();
+  await clearAuthStorage(page);
   const { vendedor } = getTestEmails();
   await fillLoginForm(page, vendedor, TEST_PASSWORD);
   await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
@@ -156,7 +167,7 @@ export async function loginAsVendedor(page: Page): Promise<void> {
  * Login as SuperAdmin (per-file dedicated user). Clears admin storageState first.
  */
 export async function loginAsSuperAdmin(page: Page): Promise<void> {
-  await page.context().clearCookies();
+  await clearAuthStorage(page);
   const { superAdmin } = getTestEmails();
   await fillLoginForm(page, superAdmin, TEST_PASSWORD);
   await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
