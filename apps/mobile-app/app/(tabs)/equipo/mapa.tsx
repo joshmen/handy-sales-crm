@@ -68,9 +68,11 @@ function MapaEquipoContent() {
       <MapView
         style={styles.map}
         initialRegion={initialRegion}
-        showsUserLocation
         showsPointsOfInterest
       >
+        {/* showsUserLocation removido: el supervisor ve el mapa de su equipo, NO
+            necesita su propio dot. Mantenerlo disparaba un permission prompt
+            inesperado (Android) en una pantalla que no requiere GPS local. */}
         {ubicaciones?.map(u => (
           <Marker
             key={u.usuarioId}
@@ -98,7 +100,7 @@ function MapaEquipoContent() {
               >
                 <View style={styles.bottomAvatar}>
                   <Text style={styles.bottomAvatarText}>
-                    {u.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                    {u.nombre.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
                   </Text>
                 </View>
                 <View style={styles.bottomInfo}>

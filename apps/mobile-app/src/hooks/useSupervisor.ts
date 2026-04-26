@@ -16,9 +16,13 @@ export function useMisVendedores() {
 }
 
 export function useUbicacionesEquipo() {
+  // staleTime corto + refetchInterval — el mapa muestra ubicaciones "en vivo".
+  // Sin esto, el supervisor podría ver pins de hace horas sin saberlo.
   return useQuery({
     queryKey: ['supervisor', 'ubicaciones'],
     queryFn: () => supervisorApi.getUbicaciones(),
+    staleTime: 60_000,        // 1 min — datos GPS no envejecen instantáneamente
+    refetchInterval: 60_000,  // refresca cada 1 min mientras la pantalla esté visible
   });
 }
 
