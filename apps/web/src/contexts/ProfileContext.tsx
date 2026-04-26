@@ -54,10 +54,8 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           nombre: session.user.name || 'Usuario',
           email: session.user.email || 'usuario@example.com',
           tenantId: 1,
-          esAdmin: session.user.role === 'ADMIN',
-          esSuperAdmin: session.user.role === 'SUPER_ADMIN',
+          rol: session.user.role || 'VENDEDOR',
           avatarUrl: session.user.image || undefined,
-          role: session.user.role || 'VENDEDOR',
         };
         setProfile(fallbackProfile);
       }
@@ -69,10 +67,8 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         nombre: session.user.name || 'Usuario',
         email: session.user.email || 'usuario@example.com',
         tenantId: 1,
-        esAdmin: session.user.role === 'ADMIN',
-        esSuperAdmin: session.user.role === 'SUPER_ADMIN',
+        rol: session.user.role || 'VENDEDOR',
         avatarUrl: session.user.image || undefined,
-        role: session.user.role || 'VENDEDOR',
       };
       setProfile(fallbackProfile);
     } finally {

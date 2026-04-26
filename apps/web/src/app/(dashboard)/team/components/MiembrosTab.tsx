@@ -568,7 +568,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         companyId: apiUser.tenantId?.toString() || '1',
         email: apiUser.email,
         name: apiUser.nombre || apiUser.email.split('@')[0],
-        role: apiUser.esSuperAdmin ? UserRole.SUPER_ADMIN : apiUser.esAdmin ? UserRole.ADMIN : UserRole.VENDEDOR,
+        role: (apiUser.rol as UserRole) || UserRole.VENDEDOR,
         status: apiUser.activo ? UserStatus.ACTIVE : UserStatus.INACTIVE,
         phone: apiUser.telefono,
         isVerified: apiUser.verificado || false,
@@ -677,7 +677,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       await updateUserMutation.mutateAsync({
         id: parseInt(selectedUser.id),
         nombre: selectedUser.name,
-        esAdmin: selectedUser.role === UserRole.ADMIN,
+        rol: selectedUser.role,
         activo: selectedUser.status === UserStatus.ACTIVE,
         telefono: selectedUser.phone,
       });

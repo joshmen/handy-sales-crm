@@ -9,8 +9,8 @@ export interface User {
   telefono?: string;
   verificado?: boolean;
   fechaVerificacion?: string;
-  esAdmin?: boolean;
-  esSuperAdmin?: boolean;
+  /** Rol del usuario: SUPER_ADMIN | ADMIN | SUPERVISOR | VIEWER | VENDEDOR */
+  rol?: string;
   activo?: boolean;
   creadoEn?: string;
   actualizadoEn?: string;
@@ -50,7 +50,8 @@ export interface CreateUserRequest {
 
 export interface UpdateUserRequest {
   nombre: string;
-  esAdmin: boolean;
+  /** Rol del usuario: SUPER_ADMIN | ADMIN | SUPERVISOR | VIEWER | VENDEDOR */
+  rol: string;
   activo: boolean;
   telefono?: string;
   verificado?: boolean;

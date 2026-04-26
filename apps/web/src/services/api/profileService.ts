@@ -6,10 +6,9 @@ export interface UserProfile {
   nombre: string;
   email: string;
   tenantId: number;
-  esAdmin: boolean;
-  esSuperAdmin: boolean;
+  /** Rol del usuario: SUPER_ADMIN | ADMIN | SUPERVISOR | VIEWER | VENDEDOR */
+  rol: string;
   avatarUrl?: string;
-  role?: string;
 }
 
 export interface UpdateProfileRequest {

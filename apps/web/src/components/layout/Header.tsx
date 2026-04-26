@@ -169,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
         id: sUser.id ?? '1',
         name: profile?.nombre || (sUser.name ?? 'Usuario'),
         email: profile?.email || (sUser.email ?? 'usuario@handysuites.com'),
-        role: profile?.role || (sUser.role ?? 'VENDEDOR'),
+        role: profile?.rol || (sUser.role ?? 'VENDEDOR'),
         // El avatar del header SIEMPRE es la foto personal del perfil
         avatar: profile?.avatarUrl || '',
       }

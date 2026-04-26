@@ -153,9 +153,9 @@ export default function ProfilePage() {
     message: t('discardChangesDesc'),
   });
 
-  // Role-based permissions
-  const isSuperAdmin = profile?.esSuperAdmin || false;
-  const isAdmin = profile?.esAdmin || false;
+  // Role-based permissions — single source of truth: profile.rol
+  const isSuperAdmin = profile?.rol === 'SUPER_ADMIN';
+  const isAdmin = profile?.rol === 'ADMIN';
   const isVendedor = !isAdmin && !isSuperAdmin;
 
   if (isLoading) {
@@ -276,12 +276,13 @@ export default function ProfilePage() {
                       [UserRole.ADMIN]: 'bg-blue-100 text-blue-800',
                       [UserRole.SUPERVISOR]: 'bg-green-100 text-green-800',
                       [UserRole.VENDEDOR]: 'bg-yellow-100 text-yellow-800',
-                    }[profile.role as UserRole] || 'bg-surface-3 text-foreground'
+                    }[profile.rol as UserRole] || 'bg-surface-3 text-foreground'
                   }
                 >
-                  {profile.esSuperAdmin && t('roles.superAdmin')}
-                  {profile.esAdmin && !profile.esSuperAdmin && t('roles.admin')}
-                  {!profile.esAdmin && !profile.esSuperAdmin && t('roles.vendor')}
+                  {profile.rol === 'SUPER_ADMIN' && t('roles.superAdmin')}
+                  {profile.rol === 'ADMIN' && t('roles.admin')}
+                  {profile.rol === 'SUPERVISOR' && t('roles.supervisor')}
+                  {profile.rol === 'VENDEDOR' && t('roles.vendor')}
                 </Badge>
                 <Badge variant="outline">
                   <Building className="h-3 w-3 mr-1" />
@@ -400,10 +401,12 @@ export default function ProfilePage() {
                   <Label>{t('role')}</Label>
                   <Input
                     value={
-                      profile.esSuperAdmin
+                      profile.rol === 'SUPER_ADMIN'
                         ? t('roles.superAdmin')
-                        : profile.esAdmin
+                        : profile.rol === 'ADMIN'
                         ? t('roles.admin')
+                        : profile.rol === 'SUPERVISOR'
+                        ? t('roles.supervisor')
                         : t('roles.vendor')
                     }
                     disabled

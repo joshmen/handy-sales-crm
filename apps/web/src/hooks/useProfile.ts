@@ -26,10 +26,8 @@ export const useProfile = () => {
           nombre: session?.user?.name || 'Usuario',
           email: session?.user?.email || 'usuario@example.com',
           tenantId: 1,
-          esAdmin: false,
-          esSuperAdmin: false,
+          rol: session?.user?.role || 'VENDEDOR',
           avatarUrl: session?.user?.image || undefined,
-          role: session?.user?.role || 'VENDEDOR',
         };
         setProfile(mockProfile);
         setIsLoading(false);
@@ -47,10 +45,8 @@ export const useProfile = () => {
             nombre: session.user.name || 'Usuario',
             email: session.user.email || 'usuario@example.com',
             tenantId: 1,
-            esAdmin: session.user.role === 'ADMIN',
-            esSuperAdmin: session.user.role === 'SUPER_ADMIN',
+            rol: session.user.role || 'VENDEDOR',
             avatarUrl: session.user.image || undefined,
-            role: session.user.role || 'VENDEDOR',
           };
           setProfile(fallbackProfile);
         }
