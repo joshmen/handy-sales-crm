@@ -325,6 +325,17 @@ function extractDetallesRuta(
 }
 
 function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<number, string>): DirtyRaw {
+  // Backend emite `fotos` como string JSON array o ya-array. Normalizamos a string
+  // para storage WDB consistente. Si no hay fotos, dejamos null para que la UI
+  // sepa que no hay nada que mostrar (vs '[]' que sería "array vacío").
+  let fotosJson: string | null = null;
+  if (v.fotos != null) {
+    if (typeof v.fotos === 'string' && v.fotos.trim() !== '' && v.fotos.trim() !== '[]') {
+      fotosJson = v.fotos;
+    } else if (Array.isArray(v.fotos) && v.fotos.length > 0) {
+      fotosJson = JSON.stringify(v.fotos);
+    }
+  }
   return {
     id: visitaMap.get(v.id) || String(v.id),
     server_id: v.id,
@@ -340,6 +351,7 @@ function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<
     longitud_check_in: v.longitudInicio ?? null,
     distancia_check_in: null,
     notas: v.notas ?? null,
+    fotos_json: fotosJson,
     activo: v.activo ?? true,
     version: v.version ?? 1,
     created_at: toTimestamp(v.actualizadoEn),

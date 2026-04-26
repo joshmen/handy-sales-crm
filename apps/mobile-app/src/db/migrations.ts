@@ -185,5 +185,22 @@ export const migrations = schemaMigrations({
         unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_ruta_detalles_estado ON ruta_detalles(estado);'),
       ],
     },
+    {
+      // v11: fotos_json en visitas. El backend (ClienteVisita.Fotos) emite un JSON
+      // array de URLs de fotos ya subidas. Antes el mapper lo ignoraba y el
+      // supervisor no veia evidencia de visitas creadas en otras apps. Esta
+      // columna NO reemplaza la tabla attachments (visitas creadas localmente
+      // siguen usando attachments con upload retry); solo es para mostrar
+      // evidencia ya hecha cuando se hace pull del server.
+      toVersion: 11,
+      steps: [
+        addColumns({
+          table: 'visitas',
+          columns: [
+            { name: 'fotos_json', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

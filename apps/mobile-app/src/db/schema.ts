@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 10,
+  version: 11,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -176,6 +176,11 @@ export const schema = appSchema({
         { name: 'longitud_check_in', type: 'number', isOptional: true },
         { name: 'distancia_check_in', type: 'number', isOptional: true },
         { name: 'notas', type: 'string', isOptional: true },
+        // Fotos del server (JSON array de URLs). Las visitas creadas localmente
+        // usan la tabla `attachments` con upload_status — esta col es solo para
+        // mostrar evidencia ya subida cuando el supervisor revisa una visita
+        // pulled desde el backend.
+        { name: 'fotos_json', type: 'string', isOptional: true },
         { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },

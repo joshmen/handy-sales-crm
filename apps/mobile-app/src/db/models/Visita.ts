@@ -17,6 +17,9 @@ export default class Visita extends Model {
   @field('longitud_check_in') longitudCheckIn!: number | null;
   @field('distancia_check_in') distanciaCheckIn!: number | null;
   @text('notas') notas!: string | null;
+  /** JSON array de URLs de fotos ya subidas al server (solo para visitas pulled).
+   *  Visitas creadas localmente usan la tabla `attachments`. */
+  @text('fotos_json') fotosJson!: string | null;
   @field('activo') activo!: boolean;
   @field('version') version!: number;
   @readonly @date('created_at') createdAt!: Date;
