@@ -17,14 +17,12 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyAWdukOqiCChoHstYwtWkb5M4p_Uh-I9NU"
+        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyAWdukOqiCChoHstYwtWkb5M4p_Uh-I9NU"
+        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app"
       }
     }
   },

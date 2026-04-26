@@ -186,7 +186,7 @@ services:
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       InternalApiKey: "DktQvBp0c01HyuVlNKGhbAPyNIpgvo-OO832AYqCSGQ"
-      GOOGLE_MAPS_API_KEY: "${GOOGLE_MAPS_API_KEY:-AIzaSyAWdukOqiCChoHstYwtWkb5M4p_Uh-I9NU}"
+      GOOGLE_MAPS_API_KEY: "${GOOGLE_MAPS_API_KEY}"
     ports:
       - "1052:1052"
     depends_on:
