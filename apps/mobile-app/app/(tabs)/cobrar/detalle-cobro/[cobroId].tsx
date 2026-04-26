@@ -9,7 +9,7 @@ import { ChevronLeft, Printer, Share2 } from 'lucide-react-native';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import Toast from 'react-native-toast-message';
@@ -21,7 +21,8 @@ export default function DetalleCobroScreen() {
   const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { user } = useAuthStore();
   const { data: cobro } = useOfflineCobroById(cobroId);
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(() => (cobro ? [cobro.clienteId] : []), [cobro]);
+  const clientNames = useClientNameMap(clienteIds);
   const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();
   const [printing, setPrinting] = useState(false);

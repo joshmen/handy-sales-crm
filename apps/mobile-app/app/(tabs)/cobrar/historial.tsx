@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +27,11 @@ export default function HistorialCobrosScreen() {
   const { money: formatCurrency, time: formatTime } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const { data: cobros, isLoading } = useOfflineCobros();
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(
+    () => Array.from(new Set((cobros ?? []).map(c => c.clienteId))),
+    [cobros]
+  );
+  const clientNames = useClientNameMap(clienteIds);
 
   const onRefresh = async () => {
     setRefreshing(true);

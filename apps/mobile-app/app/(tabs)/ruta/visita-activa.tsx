@@ -41,13 +41,15 @@ export default function VisitaActivaScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: todayVisits, isLoading } = useOfflineTodayVisits();
-  const clientNames = useClientNameMap();
 
   // Active visit = today's visit with no checkout
   const visita = useMemo(
     () => todayVisits?.find((v) => v.checkInAt && !v.checkOutAt) ?? null,
     [todayVisits]
   );
+
+  const clienteIds = useMemo(() => (visita ? [visita.clienteId] : []), [visita]);
+  const clientNames = useClientNameMap(clienteIds);
 
   const [resultado, setResultado] = useState(1);
   const [notas, setNotas] = useState('');

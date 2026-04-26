@@ -56,7 +56,13 @@ function CobrarScreenContent() {
 
   const { data: pedidos, isLoading: loadingPedidos } = useOfflineOrders();
   const { data: cobros, isLoading: loadingCobros } = useOfflineCobros();
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(() => {
+    const set = new Set<string>();
+    pedidos?.forEach(p => set.add(p.clienteId));
+    cobros?.forEach(c => set.add(c.clienteId));
+    return Array.from(set);
+  }, [pedidos, cobros]);
+  const clientNames = useClientNameMap(clienteIds);
 
   // Filter cobros by period
   const { filteredCobros, periodStats } = useMemo(() => {

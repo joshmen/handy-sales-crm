@@ -40,7 +40,11 @@ function VenderListScreenContent() {
   const _role = role; // kept for future role-based filtering
 
   const { data: allOrders, isLoading } = useOfflineOrders();
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(
+    () => Array.from(new Set((allOrders ?? []).map(p => p.clienteId))),
+    [allOrders]
+  );
+  const clientNames = useClientNameMap(clienteIds);
 
   const orders = useMemo(() => {
     if (!allOrders) return [];

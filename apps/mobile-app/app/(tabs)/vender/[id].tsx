@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido, useTenantLocale } from '@/hooks';
 import { LoadingSpinner, ConfirmModal } from '@/components/ui';
@@ -24,7 +24,8 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: order, isLoading } = useOfflineOrderById(id!);
   const { data: detalles } = useOfflineOrderDetalles(id!);
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(() => (order ? [order.clienteId] : []), [order]);
+  const clientNames = useClientNameMap(clienteIds);
   const confirmarMutation = useConfirmarPedido();
   const enRutaMutation = useEnRutaPedido();
   const entregarMutation = useEntregarPedido();

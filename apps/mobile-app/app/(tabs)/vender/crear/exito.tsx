@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -22,7 +22,8 @@ export default function PedidoExitoScreen() {
   // Data for printing
   const { data: order } = useOfflineOrderById(id);
   const { data: detalles } = useOfflineOrderDetalles(id || '');
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(() => (order ? [order.clienteId] : []), [order]);
+  const clientNames = useClientNameMap(clienteIds);
   const user = useAuthStore(s => s.user);
   const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();

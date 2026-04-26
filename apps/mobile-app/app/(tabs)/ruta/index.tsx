@@ -56,7 +56,11 @@ export default function RutaScreen() {
   const route = rutas?.[0] ?? null;
 
   const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(
+    () => Array.from(new Set((detalles ?? []).map(s => s.clienteId))),
+    [detalles]
+  );
+  const clientNames = useClientNameMap(clienteIds);
   const { data: allClients } = useOfflineClients();
 
   // Build coordinate lookup from clients and compute polyline coordinates
