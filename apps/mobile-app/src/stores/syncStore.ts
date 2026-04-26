@@ -55,10 +55,15 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 }));
 
-// Initialize cursors asynchronously and hydrate the store once loaded
+// Initialize cursors asynchronously and hydrate the store once loaded.
+// Catch silently: si SecureStore está corrupto/no disponible, dejamos los
+// defaults (lastSyncAt=null) — el primer pull/push del usuario reseteará
+// los cursores. No queremos crashear app boot por un error de hydration.
 syncCursors.init().then(() => {
   useSyncStore.setState({
     lastSyncAt: syncCursors.getLastSyncAt(),
     lastSummary: syncCursors.getLastSyncSummary(),
   });
+}).catch((err) => {
+  if (__DEV__) console.warn('[syncStore] cursor init failed:', err);
 });
