@@ -120,6 +120,14 @@ export async function uploadPendingAttachments(): Promise<number> {
         const remoteUrl = body.url || body.data?.url || '';
         await attachment.markUploaded(remoteUrl);
         uploaded++;
+      } else if (response.status === 401) {
+        // Token expirado/inválido: NO contar como retry porque el problema no es
+        // el attachment, es el access token. uploadAsync usa fetch directo y bypassa
+        // el axios interceptor que refrescaría — la próxima axios request normal
+        // gatillará el refresh, y el siguiente flushPending leerá el token nuevo
+        // desde getAccessToken(). Marcar pending de nuevo (sin incrementar retryCount).
+        await attachment.markPending();
+        if (__DEV__) console.warn('[Evidence] upload 401 — esperando refresh axios');
       } else {
         await attachment.markFailed();
       }
