@@ -12,7 +12,7 @@ test.describe('Logo & Branding Verification', () => {
     }
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     // Take full-page screenshot
@@ -59,7 +59,7 @@ test.describe('Logo & Branding Verification', () => {
     }
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.screenshot({ path: 'test-results/landing-mobile-full.png', fullPage: true });
@@ -78,7 +78,7 @@ test.describe('Logo & Branding Verification', () => {
     }
 
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.screenshot({ path: 'test-results/login-desktop-full.png', fullPage: true });
@@ -112,7 +112,7 @@ test.describe('Logo & Branding Verification', () => {
     }
 
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.screenshot({ path: 'test-results/login-mobile-full.png', fullPage: true });
@@ -149,7 +149,7 @@ test.describe('Logo & Branding Verification', () => {
     }
 
     await loginAsAdmin(page);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({ path: 'test-results/dashboard-with-header.png', fullPage: false });
@@ -183,7 +183,7 @@ test.describe('Logo & Branding Verification', () => {
     }
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click "Comienza gratis" in hero
     await page.getByRole('link', { name: /Comienza gratis/i }).first().click();
