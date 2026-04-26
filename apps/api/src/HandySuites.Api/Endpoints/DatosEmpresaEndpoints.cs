@@ -1,8 +1,10 @@
+using HandySuites.Api.Hubs;
 using HandySuites.Application.BillingSync;
 using HandySuites.Application.DatosEmpresa.DTOs;
 using HandySuites.Application.DatosEmpresa.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -39,6 +41,7 @@ public static class DatosEmpresaEndpoints
             [FromServices] IDatosEmpresaService service,
             [FromServices] IBillingSyncService billingSync,
             [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext,
             CancellationToken ct) =>
         {
             if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
@@ -68,6 +71,10 @@ public static class DatosEmpresaEndpoints
                 result.RazonSocial,
                 result.Direccion,
                 result.CodigoPostal), userJwt, ct);
+
+            // Notificar a clients del tenant para que invaliden el cache de empresa
+            // (mobile useEmpresa staleTime 1h se actualiza inmediatamente).
+            await hubContext.Clients.Group($"tenant:{result.TenantId}").SendAsync("EmpresaUpdated", ct);
 
             return Results.Ok(result);
         })
