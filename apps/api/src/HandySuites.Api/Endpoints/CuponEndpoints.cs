@@ -186,10 +186,15 @@ public static class CuponEndpoints
         // Race condition guard: dos requests concurrentes podían leer UsosActuales=N-1
         // y ambos pasar el check < MaxUsos, terminando con UsosActuales = MaxUsos+1.
         // Postgres pg_advisory_xact_lock(cuponId) serializa el redeem por cupón;
-        // se libera al COMMIT/ROLLBACK de la transacción.
+        // se libera al COMMIT/ROLLBACK de la transacción. SQLite (test) no soporta
+        // advisory locks; xUnit corre serial así que la transacción sola alcanza.
+        var isPostgres = db.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
         await using var tx = await db.Database.BeginTransactionAsync();
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({cupon.Id})");
+        if (isPostgres)
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock({cupon.Id})");
+        }
 
         // Re-leer dentro del lock para evitar stale data del Find anterior
         cupon = await db.Cupones.FirstOrDefaultAsync(c => c.Id == cupon.Id);
