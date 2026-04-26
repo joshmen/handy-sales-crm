@@ -92,10 +92,11 @@ INSERT INTO company_settings (tenant_id, company_name, primary_color, secondary_
 
 -- Super Admin user
 -- Password: test123 (CHANGE THIS after first login!)
-INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, es_admin, es_super_admin, rol, role_id, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
+-- Single source of truth: rol (string). es_admin/es_super_admin removed Apr 2026.
+INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, rol, role_id, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
 (1, 'xjoshmenx@gmail.com',
  '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO',
- 'Super Administrador', true, true, 'SUPER_ADMIN',
+ 'Super Administrador', 'SUPER_ADMIN',
  (SELECT id FROM roles WHERE nombre = 'SUPER_ADMIN'),
  true, 0, false, true, NOW(), 1);
 
@@ -113,15 +114,15 @@ INSERT INTO company_settings (tenant_id, company_name, primary_color, secondary_
 (2, 'Jeyma S.A. de C.V.', '#16A34A', '#0F766E', 'America/Mexico_City', 'es', 'MXN', 'system', true, NOW(), 1);
 
 -- Jeyma users (password: test123 — CHANGE after first login)
-INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, es_admin, es_super_admin, rol, role_id, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
+INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, rol, role_id, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
 (2, 'admin@jeyma.com',
  '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO',
- 'Administrador Jeyma', true, false, 'ADMIN',
+ 'Administrador Jeyma', 'ADMIN',
  (SELECT id FROM roles WHERE nombre = 'ADMIN'),
  true, 0, false, true, NOW(), 1),
 (2, 'vendedor@jeyma.com',
  '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO',
- 'Vendedor Jeyma', false, false, 'VENDEDOR',
+ 'Vendedor Jeyma', 'VENDEDOR',
  (SELECT id FROM roles WHERE nombre = 'VENDEDOR'),
  true, 0, false, true, NOW(), 1);
 
