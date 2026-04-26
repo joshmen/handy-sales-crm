@@ -82,8 +82,12 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
           entityTypes: null,
         });
 
-        const body = response.data as any;
-        const rawServerChanges = body.data ?? body;
+        // Defensive parse: pull endpoint puede devolver `{data: {...}}` o
+        // directamente `{...}` legado. Si body es null/undefined (network falla
+        // o backend devuelve vacío), tratamos como pull sin cambios para evitar
+        // crash en el resto del pipeline.
+        const body = (response.data ?? {}) as Record<string, any>;
+        const rawServerChanges = (body.data ?? body) as Record<string, any>;
         const serverTimestamp = body.serverTimestamp ?? rawServerChanges.serverTimestamp;
 
         // Security: discard any records that belong to a different tenant.

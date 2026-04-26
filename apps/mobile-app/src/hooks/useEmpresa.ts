@@ -26,7 +26,10 @@ export function useEmpresa() {
     queryKey: ['empresa'],
     queryFn: async (): Promise<DatosEmpresa> => {
       const response = await api.get('/api/mobile/empresa');
-      const data = (response.data as any).data;
+      // Defensive parse: backend siempre devuelve `{success, data}`, pero si
+      // retorna unwrapped por bug o test, fall through a response.data directo.
+      const body = (response.data ?? {}) as { data?: DatosEmpresa };
+      const data = body.data ?? (response.data as unknown as DatosEmpresa);
 
       // Prefetch logo into RN image cache so it renders instantly
       if (data?.logoUrl) {

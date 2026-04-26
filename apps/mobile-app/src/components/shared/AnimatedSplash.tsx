@@ -79,6 +79,10 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncStarted, setSyncStarted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Mounted flag — runSync corre awaits largos. Si user logout/unmount durante
+  // performSync, los setSyncPhase posteriores generan warning "state update on
+  // unmounted component". Evitamos checkeando este flag antes de cada setState.
+  const mountedRef = useRef(true);
 
   const progress = syncMode ? (syncPhase / (SYNC_TEXTS.length - 1)) : 0;
 
@@ -138,12 +142,14 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
       // Online — run full sync
       let phase = 0;
       timerRef.current = setInterval(() => {
+        if (!mountedRef.current) return;
         phase++;
         if (phase < 4) setSyncPhase(phase);
       }, 2500);
 
       await performSync();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (!mountedRef.current) return;
 
       // Empresa
       setSyncPhase(4);
@@ -155,6 +161,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
           if (data.logoUrl) RNImage.prefetch(data.logoUrl).catch(() => {});
         }
       } catch { /* non-fatal */ }
+      if (!mountedRef.current) return;
 
       // Catalogos
       setSyncPhase(5);
@@ -166,6 +173,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
           api.get('/api/mobile/catalogos/familias-producto'),
         ]);
       } catch { /* non-fatal */ }
+      if (!mountedRef.current) return;
 
       // Done!
       setSyncPhase(6);
@@ -173,6 +181,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 
       // Fade out after showing "Listo"
       setTimeout(() => {
+        if (!mountedRef.current) return;
         Animated.timing(containerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
           onFinish();
         });
@@ -180,6 +189,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 
     } catch (err) {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (!mountedRef.current) return;
       setSyncError(err instanceof Error ? err.message : 'Error de sincronización');
     }
   };
@@ -211,6 +221,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
     });
 
     return () => {
+      mountedRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
