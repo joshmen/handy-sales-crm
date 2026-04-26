@@ -298,7 +298,7 @@ export default function OrdersPage() {
         const items = Array.isArray(data) ? data : data.items || [];
         setUsuarios(items);
       })
-      .catch(() => {});
+      .catch((err) => console.error('[Orders] failed to load usuarios for filter:', err));
   }, [isAdmin]);
 
   const handleCreateOrder = async () => {

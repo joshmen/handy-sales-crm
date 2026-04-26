@@ -227,7 +227,7 @@ export default function CobranzaPage() {
   useEffect(() => {
     clientService.getClients({ limit: 500 }).then((res) => {
       setClientOptions(res.clients.map((c) => ({ value: Number(c.id), label: c.name })));
-    }).catch(() => {});
+    }).catch((err) => console.error('[Cobranza] failed to load clients for dropdown:', err));
   }, []);
 
   // When client changes in form, load their pending pedidos
