@@ -285,11 +285,15 @@ public class SyncProductoDto
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
+    /// <summary>Backward-compat alias de CodigoBarra. Usar CodigoBarra para nuevos consumers.</summary>
     public string SKU { get; set; } = string.Empty;
+    public string? CodigoBarra { get; set; }
     public decimal Precio { get; set; }
     public int CategoriaProductoId { get; set; }
     public int? FamiliaProductoId { get; set; }
     public int? UnidadMedidaId { get; set; }
+    /// <summary>Nombre de la unidad (ej: "Pieza", "Kg"). Permite a mobile mostrar la unidad sin catálogo separado.</summary>
+    public string? UnidadMedidaNombre { get; set; }
     public string? ImagenUrl { get; set; }
     public decimal StockDisponible { get; set; }
     public decimal StockMinimo { get; set; }

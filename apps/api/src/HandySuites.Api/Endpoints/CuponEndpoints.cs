@@ -188,38 +188,57 @@ public static class CuponEndpoints
         // Postgres pg_advisory_xact_lock(cuponId) serializa el redeem por cupón;
         // se libera al COMMIT/ROLLBACK de la transacción. SQLite (test) no soporta
         // advisory locks; xUnit corre serial así que la transacción sola alcanza.
+        //
+        // ExecuteAsync envuelve toda la unidad transaccional dentro del retry strategy
+        // de Npgsql (RetryOnFailure habilitado en DbContext). Sin esto truena con
+        // "execution strategy does not support user-initiated transactions".
         var isPostgres = db.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
-        await using var tx = await db.Database.BeginTransactionAsync();
-        if (isPostgres)
+        var cuponId = cupon.Id;
+        var tenantId = currentTenant.TenantId;
+        var strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<IResult>(async () =>
         {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"SELECT pg_advisory_xact_lock({cupon.Id})");
-        }
+            await using var tx = await db.Database.BeginTransactionAsync();
+            if (isPostgres)
+            {
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT pg_advisory_xact_lock({cuponId})");
+            }
 
-        // Re-leer dentro del lock para evitar stale data del Find anterior
-        cupon = await db.Cupones.FirstOrDefaultAsync(c => c.Id == cupon.Id);
-        if (cupon == null)
-            return Results.NotFound(new { message = "Cupón no encontrado" });
+            // Re-leer dentro del lock para evitar stale data del Find anterior
+            var lockedCupon = await db.Cupones.FirstOrDefaultAsync(c => c.Id == cuponId);
+            if (lockedCupon == null)
+                return Results.NotFound(new { message = "Cupón no encontrado" });
 
-        if (cupon.UsosActuales >= cupon.MaxUsos)
-            return Results.BadRequest(new { message = "Este cupón ha alcanzado el máximo de usos" });
+            if (lockedCupon.UsosActuales >= lockedCupon.MaxUsos)
+                return Results.BadRequest(new { message = "Este cupón ha alcanzado el máximo de usos" });
 
-        // Check if tenant already redeemed this coupon
-        var yaRedimido = await db.CuponRedenciones
-            .IgnoreQueryFilters()
-            .AnyAsync(r => r.CuponId == cupon.Id
-                        && r.TenantId == currentTenant.TenantId
-                        && r.EliminadoEn == null);
+            // Check if tenant already redeemed this coupon
+            var yaRedimido = await db.CuponRedenciones
+                .IgnoreQueryFilters()
+                .AnyAsync(r => r.CuponId == lockedCupon.Id
+                            && r.TenantId == tenantId
+                            && r.EliminadoEn == null);
 
-        if (yaRedimido)
-            return Results.BadRequest(new { message = "Tu empresa ya ha utilizado este cupón" });
+            if (yaRedimido)
+                return Results.BadRequest(new { message = "Tu empresa ya ha utilizado este cupón" });
 
-        // Get tenant
-        var tenant = await db.Tenants
-            .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+            // Get tenant
+            var tenant = await db.Tenants
+                .FirstOrDefaultAsync(t => t.Id == tenantId);
 
-        if (tenant == null)
-            return Results.NotFound(new { message = "Tenant no encontrado" });
+            if (tenant == null)
+                return Results.NotFound(new { message = "Tenant no encontrado" });
+
+            // ── Apply benefit + persist + commit (todo dentro del strategy) ──
+            return await ApplyBenefitAndCommitAsync(db, lockedCupon, tenant, tenantId, tx);
+        });
+    }
+
+    private static async Task<IResult> ApplyBenefitAndCommitAsync(
+        HandySuitesDbContext db, Cupon cupon, Tenant tenant, int tenantId,
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction tx)
+    {
 
         // Apply benefit based on type
         string beneficioAplicado;
@@ -272,7 +291,7 @@ public static class CuponEndpoints
         var redencion = new CuponRedencion
         {
             CuponId = cupon.Id,
-            TenantId = currentTenant.TenantId,
+            TenantId = tenantId,
             FechaRedencion = DateTime.UtcNow,
             BeneficioAplicado = beneficioAplicado
         };

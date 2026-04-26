@@ -29,7 +29,10 @@ public class SyncRepository : ISyncRepository
 
     public async Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since)
     {
-        var query = _db.Productos.AsNoTracking().Where(p => p.TenantId == tenantId);
+        // Include UnidadMedida para que el sync mande Nombre al mobile sin catálogo separado.
+        var query = _db.Productos.AsNoTracking()
+            .Include(p => p.UnidadMedida)
+            .Where(p => p.TenantId == tenantId);
 
         if (since.HasValue)
         {

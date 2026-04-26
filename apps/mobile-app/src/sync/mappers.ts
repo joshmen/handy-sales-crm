@@ -171,13 +171,16 @@ function mapProductoToRaw(p: any): DirtyRaw {
     server_id: p.id,
     nombre: p.nombre || '',
     descripcion: p.descripcion ?? null,
-    sku: p.sku ?? null,
-    codigo_barras: null,
+    // SKU es alias legacy de CodigoBarra en el DTO backend. Preferimos
+    // codigoBarra que es el campo canónico; fallback a sku si el server
+    // emite versión vieja.
+    sku: p.codigoBarra ?? p.sku ?? null,
+    codigo_barras: p.codigoBarra ?? null,
     precio: p.precio ?? 0,
     categoria_id: p.categoriaProductoId ?? null,
     familia_id: p.familiaProductoId ?? null,
     unidad_medida_id: p.unidadMedidaId ?? null,
-    unidad_medida_nombre: null,
+    unidad_medida_nombre: p.unidadMedidaNombre ?? null,
     stock_disponible: p.stockDisponible ?? 0,
     stock_minimo: p.stockMinimo ?? 0,
     imagen_url: p.imagenUrl ?? null,
