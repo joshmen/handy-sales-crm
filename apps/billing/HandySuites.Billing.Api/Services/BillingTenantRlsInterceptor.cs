@@ -60,12 +60,13 @@ public class BillingTenantRlsInterceptor : DbCommandInterceptor
 
         var httpContext = _httpContextAccessor.HttpContext;
         var tenantClaim = httpContext?.User?.FindFirst("tenant_id");
-        var superClaim = httpContext?.User?.FindFirst("es_super_admin");
+        var roleClaim = httpContext?.User?.FindFirst("role")
+                        ?? httpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.Role);
 
         if (tenantClaim != null && !string.IsNullOrEmpty(tenantClaim.Value))
         {
             tenantId = tenantClaim.Value;
-            isSuperAdmin = (superClaim?.Value == "True" || superClaim?.Value == "true") ? "true" : "false";
+            isSuperAdmin = roleClaim?.Value == "SUPER_ADMIN" ? "true" : "false";
         }
         else
         {

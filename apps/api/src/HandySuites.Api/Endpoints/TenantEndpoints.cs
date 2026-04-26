@@ -482,8 +482,6 @@ public static class TenantEndpoints
             Nombre = dto.Nombre,
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            EsAdmin = isAdmin,
-            EsSuperAdmin = false,
             EmailVerificado = false,
             RoleId = roleId,
             RolExplicito = isAdmin ? "ADMIN" : rolNormalized,

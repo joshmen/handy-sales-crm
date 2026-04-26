@@ -23,15 +23,12 @@ public class JwtTokenGenerator
 
     public string GenerateTokenWithRoles(string userId, int tenantId, string role, int sessionVersion = 1)
     {
-        var isAdmin = role == "ADMIN" || role == "SUPER_ADMIN" || role == "SUPERVISOR";
-        var isSuperAdmin = role == "SUPER_ADMIN";
-
+        // Single source of truth: claim "role" (string).
+        // Los claims booleanos legacy "es_admin" / "es_super_admin" se eliminaron en abril 2026.
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId),
             new Claim("tenant_id", tenantId.ToString()),
-            new Claim("es_admin", isAdmin.ToString()),
-            new Claim("es_super_admin", isSuperAdmin.ToString()),
             new Claim("session_version", sessionVersion.ToString()),
             new Claim("role", role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
@@ -57,15 +54,11 @@ public class JwtTokenGenerator
     /// </summary>
     public string GenerateTempToken(string userId, int tenantId, string role)
     {
-        var isAdmin = role == "ADMIN" || role == "SUPER_ADMIN" || role == "SUPERVISOR";
-        var isSuperAdmin = role == "SUPER_ADMIN";
-
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId),
             new Claim("tenant_id", tenantId.ToString()),
-            new Claim("es_admin", isAdmin.ToString()),
-            new Claim("es_super_admin", isSuperAdmin.ToString()),
+            new Claim("role", role),
             new Claim("2fa_pending", "true"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
@@ -99,8 +92,6 @@ public class JwtTokenGenerator
         {
             new Claim(JwtRegisteredClaimNames.Sub, superAdminUserId),
             new Claim("tenant_id", targetTenantId.ToString()),
-            new Claim("es_admin", "true"),
-            new Claim("es_super_admin", "true"),
             new Claim("role", "SUPER_ADMIN"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             // Claims de impersonación

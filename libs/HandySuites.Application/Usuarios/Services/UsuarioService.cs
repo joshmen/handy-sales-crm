@@ -119,8 +119,6 @@ public class UsuarioService
             Nombre = dto.Nombre,
             TenantId = _tenant.TenantId,
             RolExplicito = rolUpper,
-            EsAdmin = rolUpper == RoleNames.Admin || rolUpper == RoleNames.SuperAdmin, // legacy — se elimina al dropear columnas
-            EsSuperAdmin = rolUpper == RoleNames.SuperAdmin,
             RoleId = roleId,
             Activo = true,
             CreadoPor = _tenant.UserId
@@ -162,8 +160,6 @@ public class UsuarioService
             Email = u.Email,
             TenantId = u.TenantId,
             Nombre = u.Nombre,
-            EsAdmin = u.EsAdmin,
-            EsSuperAdmin = u.EsSuperAdmin,
             Rol = u.Rol,
             AvatarUrl = u.AvatarUrl,
             Activo = u.Activo
@@ -216,8 +212,6 @@ public class UsuarioService
                 Email = u.Email,
                 TenantId = u.TenantId,
                 Nombre = u.Nombre,
-                EsAdmin = u.EsAdmin,
-                EsSuperAdmin = u.EsSuperAdmin,
                 Rol = u.Rol,
                 AvatarUrl = u.AvatarUrl,
                 Activo = u.Activo
@@ -254,8 +248,6 @@ public class UsuarioService
             Email = usuario.Email,
             Nombre = usuario.Nombre,
             TenantId = usuario.TenantId,
-            EsAdmin = usuario.EsAdmin,
-            EsSuperAdmin = usuario.EsSuperAdmin,
             Rol = usuario.Rol,
             AvatarUrl = usuario.AvatarUrl,
             Activo = usuario.Activo
@@ -479,8 +471,7 @@ public class UsuarioService
             Email = usuario.Email,
             Nombre = usuario.Nombre,
             TenantId = usuario.TenantId,
-            EsAdmin = usuario.EsAdmin,
-            EsSuperAdmin = usuario.EsSuperAdmin,
+            Rol = usuario.Rol,
             AvatarUrl = usuario.AvatarUrl,
             RoleId = usuario.RoleId,
             RoleName = usuario.Role?.Nombre,
@@ -552,8 +543,6 @@ public class UsuarioService
             Email = u.Email,
             TenantId = u.TenantId,
             Nombre = u.Nombre,
-            EsAdmin = u.EsAdmin,
-            EsSuperAdmin = u.EsSuperAdmin,
             Rol = u.Rol,
             AvatarUrl = u.AvatarUrl,
             Activo = u.Activo

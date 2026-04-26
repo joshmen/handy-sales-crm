@@ -52,9 +52,10 @@ public class MaintenanceMiddleware
             return;
         }
 
-        // SuperAdmin is always exempt
-        var isSuperAdmin = context.User.FindFirstValue("es_super_admin") == "True"
-                          || context.User.HasClaim(ClaimTypes.Role, "SUPER_ADMIN");
+        // SuperAdmin is always exempt — claim "role" es la única fuente de verdad.
+        var role = context.User.FindFirstValue("role")
+                   ?? context.User.FindFirstValue(ClaimTypes.Role);
+        var isSuperAdmin = role == "SUPER_ADMIN";
 
         if (isSuperAdmin)
         {

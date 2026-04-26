@@ -100,21 +100,10 @@ public class UsuarioRepository : IUsuarioRepository
                                    u.Email.ToLower().Contains(search));
         }
 
-        // Filter by admin status — el Esadmin legacy incluye SUPER_ADMIN.
-        if (searchDto.EsAdmin.HasValue)
+        // Filter by exact rol (SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR)
+        if (!string.IsNullOrEmpty(searchDto.Rol))
         {
-            if (searchDto.EsAdmin.Value)
-                query = query.Where(u => u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin);
-            else
-                query = query.Where(u => u.RolExplicito != RoleNames.Admin && u.RolExplicito != RoleNames.SuperAdmin);
-        }
-
-        if (searchDto.EsSuperAdmin.HasValue)
-        {
-            if (searchDto.EsSuperAdmin.Value)
-                query = query.Where(u => u.RolExplicito == RoleNames.SuperAdmin);
-            else
-                query = query.Where(u => u.RolExplicito != RoleNames.SuperAdmin);
+            query = query.Where(u => u.RolExplicito == searchDto.Rol);
         }
 
         // Filter by active status

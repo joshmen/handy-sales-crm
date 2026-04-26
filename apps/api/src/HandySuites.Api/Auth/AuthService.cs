@@ -116,7 +116,6 @@ public class AuthService
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Nombre = dto.Nombre,
-            EsAdmin = true,
             RolExplicito = "ADMIN",
             Activo = true,
             TenantId = tenant.Id,
@@ -192,7 +191,6 @@ public class AuthService
             PasswordHash = string.Empty, // Sin password — login solo por OAuth
             Nombre = dto.Nombre,
             AvatarUrl = dto.AvatarUrl,
-            EsAdmin = true,
             RolExplicito = "ADMIN",
             Activo = true,
             TenantId = tenant.Id,
