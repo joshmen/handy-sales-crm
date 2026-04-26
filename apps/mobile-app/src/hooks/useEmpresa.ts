@@ -4,6 +4,9 @@ import { Image } from 'react-native';
 
 export interface DatosEmpresa {
   razonSocial: string | null;
+  /** Nombre canónico (RFC en MX, NIT en CO, etc.). Preferir sobre `rfc` para nuevos consumers. */
+  identificadorFiscal: string | null;
+  /** @deprecated Alias legacy de `identificadorFiscal`. Se mantiene mientras alguna pantalla lo lea. */
   rfc: string | null;
   telefono: string | null;
   email: string | null;

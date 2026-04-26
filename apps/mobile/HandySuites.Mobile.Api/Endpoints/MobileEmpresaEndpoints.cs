@@ -40,6 +40,9 @@ public static class MobileEmpresaEndpoints
                 data = new
                 {
                     razonSocial = datos.RazonSocial,
+                    // identificadorFiscal: nombre canónico genérico (RFC en MX, NIT en CO, etc.).
+                    // rfc se mantiene como alias para versiones viejas del cliente mobile que aún lo leen.
+                    identificadorFiscal = datos.IdentificadorFiscal,
                     rfc = datos.IdentificadorFiscal,
                     telefono = datos.Telefono,
                     email = datos.Email,
