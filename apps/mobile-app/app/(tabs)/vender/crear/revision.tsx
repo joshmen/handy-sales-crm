@@ -7,6 +7,7 @@ import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
@@ -27,7 +28,7 @@ const METODO_PAGO_OPTIONS = [
   { value: 5, label: 'Otro', icon: MoreHorizontal },
 ];
 
-export default function CrearPedidoStep3() {
+function CrearPedidoStep3() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { money: formatCurrency } = useTenantLocale();
@@ -460,3 +461,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
 });
+
+export default withErrorBoundary(CrearPedidoStep3, 'CrearPedidoStep3');

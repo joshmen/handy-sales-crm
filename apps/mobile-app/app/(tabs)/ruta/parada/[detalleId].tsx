@@ -21,6 +21,7 @@ import Ruta from '@/db/models/Ruta';
 import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { PhotoEvidence } from '@/components/evidence/PhotoEvidence';
 import { saveAttachmentRecord } from '@/services/evidenceManager';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
@@ -45,7 +46,7 @@ const STOP_STATUS_NAMES: Record<number, string> = {
   0: 'Pendiente', 1: 'En Progreso', 2: 'Completada', 3: 'Omitida',
 };
 
-export default function ParadaDetailScreen() {
+function ParadaDetailScreen() {
   const insets = useSafeAreaInsets();
   const { detalleId } = useLocalSearchParams<{ detalleId: string }>();
   const router = useRouter();
@@ -945,3 +946,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 });
+
+export default withErrorBoundary(ParadaDetailScreen, 'ParadaDetailScreen');

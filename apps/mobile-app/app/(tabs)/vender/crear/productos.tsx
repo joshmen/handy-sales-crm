@@ -12,11 +12,12 @@ import { EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
 import { Package, Search, Plus, ChevronLeft } from 'lucide-react-native';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import type Producto from '@/db/models/Producto';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
-export default function CrearPedidoStep2() {
+function CrearPedidoStep2() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { money: formatCurrency } = useTenantLocale();
@@ -306,3 +307,5 @@ const styles = StyleSheet.create({
   addButtonText: { fontSize: 13, fontWeight: '600', color: '#ffffff' },
   footer: { paddingVertical: 16, alignItems: 'center' },
 });
+
+export default withErrorBoundary(CrearPedidoStep2, 'CrearPedidoStep2');

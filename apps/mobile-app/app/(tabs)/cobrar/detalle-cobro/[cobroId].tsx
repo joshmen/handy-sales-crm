@@ -13,8 +13,9 @@ import { useState, useMemo } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import Toast from 'react-native-toast-message';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 
-export default function DetalleCobroScreen() {
+function DetalleCobroScreen() {
   const insets = useSafeAreaInsets();
   const { cobroId } = useLocalSearchParams<{ cobroId: string }>();
   const router = useRouter();
@@ -310,3 +311,5 @@ const styles = StyleSheet.create({
   },
   btnShareText: { color: '#64748b', fontWeight: '700', fontSize: 14 },
 });
+
+export default withErrorBoundary(DetalleCobroScreen, 'DetalleCobroScreen');

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { LoadingSpinner, EmptyState, Button } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
 import { User, Search, Check, ChevronLeft } from 'lucide-react-native';
@@ -12,7 +13,7 @@ import type Cliente from '@/db/models/Cliente';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
-export default function CrearPedidoStep1() {
+function CrearPedidoStep1() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
@@ -216,3 +217,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
 });
+
+export default withErrorBoundary(CrearPedidoStep1, 'CrearPedidoStep1');

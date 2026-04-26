@@ -10,6 +10,7 @@ import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
 import { Button, ConfirmModal } from '@/components/ui';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { useTenantLocale } from '@/hooks';
 import { round2 } from '@/utils/money';
 import { METODO_PAGO } from '@/types/cobro';
@@ -41,7 +42,7 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
   5: <MoreHorizontal size={20} color="#6b7280" />,
 };
 
-export default function RegistrarCobroScreen() {
+function RegistrarCobroScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { money: formatCurrency, number: formatNumber } = useTenantLocale();
@@ -715,3 +716,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
 });
+
+export default withErrorBoundary(RegistrarCobroScreen, 'RegistrarCobroScreen');
