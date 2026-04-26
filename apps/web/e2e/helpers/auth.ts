@@ -99,7 +99,10 @@ async function fillLoginForm(page: Page, email: string, password: string): Promi
   await page.locator('#password').first().fill(password);
   await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
 
-  const replaceBtn = page.getByRole('button', { name: /Cerrar sesión anterior/i });
+  // Botón actualizado: el modal de "Ya tienes una sesión abierta" ahora usa
+  // "Continuar aquí" (i18n: continueHere) en vez del legacy "Cerrar sesión
+  // anterior". Aceptamos ambos para ser robustos a futuros renames.
+  const replaceBtn = page.getByRole('button', { name: /Continuar aqu[ií]|Cerrar sesión anterior/i });
   try {
     await Promise.race([
       page.waitForURL(/dashboard/, { timeout: 10000 }),
