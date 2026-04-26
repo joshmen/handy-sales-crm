@@ -98,6 +98,9 @@ var app = builder.Build();
 // MIDDLEWARE
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
+// Security headers — OWASP defense-in-depth. Aplicar antes de UseCors para
+// que estén presentes en respuestas preflight también.
+app.UseMiddleware<HandySuites.Mobile.Api.Middleware.SecurityHeadersMiddleware>();
 
 // Swagger configuration
 app.UseSwaggerConfiguration(app.Environment);
