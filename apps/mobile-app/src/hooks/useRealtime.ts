@@ -84,6 +84,14 @@ export function useRealtime() {
       signalR.on('ReceiveNotification', () => {
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
       }),
+      // Cuando admin/super-admin edita datos de empresa o logo/branding desde
+      // el backoffice web, el backend emite este evento → mobile invalida el
+      // cache (staleTime de 1h) sin esperar a que expire naturalmente.
+      // Backend backlog: emitir desde DatosEmpresaController + CompanySettingsController
+      // tras Update con success.
+      signalR.on('EmpresaUpdated', () => {
+        queryClient.invalidateQueries({ queryKey: ['empresa'] });
+      }),
     ];
 
     // Reconectar al volver a foreground si la conexión se cayó.

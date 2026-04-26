@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { Badge } from '@/components/ui';
 import { Phone, ChevronRight, ChevronLeft, Users, Plus } from 'lucide-react-native';
@@ -53,7 +54,7 @@ const ClientListItem = memo(({ item, onPress }: { item: Cliente; onPress: () => 
   </Card>
 ), (prev, next) => prev.item.id === next.item.id && prev.item.nombre === next.item.nombre && prev.item.activo === next.item.activo);
 
-export default function ClientsListScreen() {
+function ClientsListScreenContent() {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -304,3 +305,11 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 });
+
+export default function ClientsListScreen() {
+  return (
+    <ErrorBoundary componentName="TabClientes">
+      <ClientsListScreenContent />
+    </ErrorBoundary>
+  );
+}

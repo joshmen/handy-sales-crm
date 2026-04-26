@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, FileText, ChevronRight } from 'lucide-react-native';
 import { useFacturasList } from '@/hooks/useFacturas';
 import { EmptyState, LoadingSpinner } from '@/components/ui';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useTenantLocale } from '@/hooks';
 import { COLORS } from '@/theme/colors';
 import type { FacturaListItem } from '@/api/facturas';
@@ -16,7 +17,7 @@ const ESTADO_COLORS: Record<string, string> = {
   ERROR: '#dc2626',
 };
 
-export default function FacturasListScreen() {
+function FacturasListScreenContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { money: formatCurrency, date: dateLocale } = useTenantLocale();
@@ -159,3 +160,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
+
+export default function FacturasListScreen() {
+  return (
+    <ErrorBoundary componentName="TabFacturas">
+      <FacturasListScreenContent />
+    </ErrorBoundary>
+  );
+}

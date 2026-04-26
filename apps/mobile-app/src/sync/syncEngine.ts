@@ -185,8 +185,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     }
 
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
-    syncCursors.setLastSyncAt(Date.now());
-    syncCursors.setLastSyncSummary(summary);
+    // Atomic batch write — await garantiza persistencia antes de resolver el
+    // sync. Sin esto, un logout justo después podía dejar storage stale.
+    await syncCursors.commitSyncResult(summary);
     options?.onFinish?.(summary);
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));

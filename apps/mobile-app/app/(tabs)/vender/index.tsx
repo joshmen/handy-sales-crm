@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
 import { useAuthStore, useOrderDraftStore } from '@/stores';
 import { Card, LoadingSpinner, EmptyState, BottomSheet } from '@/components/ui';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { COLORS } from '@/theme/colors';
@@ -27,7 +28,7 @@ const STATUS_FILTERS = [
   { label: 'Cancelado', value: 6 },
 ];
 
-export default function VenderListScreen() {
+function VenderListScreenContent() {
   const insets = useSafeAreaInsets();
   const { money: formatCurrency, date: formatDate } = useTenantLocale();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
@@ -274,3 +275,11 @@ const styles = StyleSheet.create({
   orderTypeTitle: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
   orderTypeDesc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
 });
+
+export default function VenderListScreen() {
+  return (
+    <ErrorBoundary componentName="TabVender">
+      <VenderListScreenContent />
+    </ErrorBoundary>
+  );
+}

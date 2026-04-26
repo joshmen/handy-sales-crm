@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useTenantLocale } from '@/hooks';
 import { startOfDayInTz, startOfWeekInTz, startOfMonthInTz } from '@/utils/dateTz';
 import { Wallet, ChevronRight, User, TrendingUp } from 'lucide-react-native';
@@ -46,7 +47,7 @@ function getPeriodStart(period: PeriodFilter, tz: string): Date | null {
   }
 }
 
-export default function CobrarScreen() {
+function CobrarScreenContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { money: formatCurrency, tz } = useTenantLocale();
@@ -461,3 +462,11 @@ const styles = StyleSheet.create({
     color: COLORS.headerText,
   },
 });
+
+export default function CobrarScreen() {
+  return (
+    <ErrorBoundary componentName="TabCobrar">
+      <CobrarScreenContent />
+    </ErrorBoundary>
+  );
+}
