@@ -11,6 +11,7 @@ import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
 import { Button, ConfirmModal } from '@/components/ui';
 import { useTenantLocale } from '@/hooks';
+import { round2 } from '@/utils/money';
 import { METODO_PAGO } from '@/types/cobro';
 import type Cliente from '@/db/models/Cliente';
 import type RutaDetalleModel from '@/db/models/RutaDetalle';
@@ -110,10 +111,13 @@ export default function RegistrarCobroScreen() {
     setSearchText('');
   };
 
-  const montoNum = parseFloat(monto) || 0;
+  // Redondear monto a 2 decimales antes de comparar con saldo: float drift
+  // (e.g. 999.9999999 vs 1000.0) podría rechazar pagos válidos al usuario.
+  const montoNum = round2(parseFloat(monto) || 0);
+  const saldoRounded = round2(effectiveSaldo);
   const MAX_MONTO = 999999.99;
   const isValid = montoNum > 0 && montoNum <= MAX_MONTO && !!effectiveClienteId;
-  const isOverSaldo = effectiveSaldo > 0 && montoNum > effectiveSaldo;
+  const isOverSaldo = saldoRounded > 0 && montoNum > saldoRounded;
 
   const handleConfirmar = () => {
     if (!isValid) {

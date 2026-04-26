@@ -5,6 +5,7 @@ import Cobro from './models/Cobro';
 import Visita from './models/Visita';
 import Cliente from './models/Cliente';
 import RutaDetalle from './models/RutaDetalle';
+import { round2 } from '@/utils/money';
 
 /**
  * Create a cliente offline in WatermelonDB.
@@ -109,10 +110,12 @@ export async function createPedidoOffline(
   estado: number = 0,
   paradaId?: string | null
 ): Promise<Pedido> {
-  const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
-  const descuentoTotal = items.reduce((sum, i) => sum + (i.descuento ?? 0), 0);
-  const impuesto = (subtotal - descuentoTotal) * IVA_RATE;
-  const total = subtotal - descuentoTotal + impuesto;
+  // Redondear cada cantidad monetaria a 2 decimales para evitar drift de float
+  // que el backend rechazaría con error "monto no coincide" en el sync push.
+  const subtotal = round2(items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0));
+  const descuentoTotal = round2(items.reduce((sum, i) => sum + (i.descuento ?? 0), 0));
+  const impuesto = round2((subtotal - descuentoTotal) * IVA_RATE);
+  const total = round2(subtotal - descuentoTotal + impuesto);
 
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
@@ -183,10 +186,11 @@ export async function createVentaDirectaOffline(
   notas?: string,
   paradaId?: string | null
 ): Promise<{ pedido: Pedido; cobro: Cobro }> {
-  const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
-  const descuentoTotal = items.reduce((sum, i) => sum + (i.descuento ?? 0), 0);
-  const impuesto = (subtotal - descuentoTotal) * IVA_RATE;
-  const total = subtotal - descuentoTotal + impuesto;
+  // Redondear cada cantidad monetaria a 2 decimales — ver comentario en createPedidoOffline.
+  const subtotal = round2(items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0));
+  const descuentoTotal = round2(items.reduce((sum, i) => sum + (i.descuento ?? 0), 0));
+  const impuesto = round2((subtotal - descuentoTotal) * IVA_RATE);
+  const total = round2(subtotal - descuentoTotal + impuesto);
 
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {

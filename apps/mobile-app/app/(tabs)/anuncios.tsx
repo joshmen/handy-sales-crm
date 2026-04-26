@@ -81,12 +81,17 @@ export default function AnunciosScreen() {
   };
 
   const handleDismiss = async (id: number) => {
+    // Optimistic dismiss: quitar localmente PRIMERO para UX inmediata, y revertir
+    // si la API falla. Sin rollback el item desaparece visualmente pero persiste
+    // server-side → al refrescar reaparece confundiendo al usuario.
+    const snapshot = announcements;
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
     try {
       await api.post(`/api/mobile/announcements/${id}/dismiss`);
-      setAnnouncements(prev => prev.filter(a => a.id !== id));
     } catch (e) {
       if (__DEV__) console.warn('[Anuncios]', e);
-      Toast.show({ type: 'error', text1: 'Anuncios', text2: 'No se pudo descartar el anuncio.' });
+      setAnnouncements(snapshot); // rollback
+      Toast.show({ type: 'error', text1: 'Anuncios', text2: 'No se pudo descartar. Intenta de nuevo.' });
     }
   };
 

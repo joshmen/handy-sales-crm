@@ -11,6 +11,7 @@ import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
+import { round2 } from '@/utils/money';
 import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { usePricingMap } from '@/hooks/usePricing';
@@ -65,11 +66,13 @@ export default function CrearPedidoStep3() {
     }),
     [items, getPricing],
   );
-  const subtotal = pricedItems.reduce((s, p) => s + p.lineTotal, 0);
-  const descuentoTotal = subtotalRaw - subtotal;
+  // Redondear a centavos en cada agregación monetaria — sin esto, sumar muchos
+  // items con precios fraccionarios produce drift visible (e.g. $1716.99 vs $1717.00).
+  const subtotal = round2(pricedItems.reduce((s, p) => s + p.lineTotal, 0));
+  const descuentoTotal = round2(subtotalRaw - subtotal);
   const IVA_RATE = 0.16;
-  const impuestos = subtotal * IVA_RATE;
-  const total = subtotal + impuestos;
+  const impuestos = round2(subtotal * IVA_RATE);
+  const total = round2(subtotal + impuestos);
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
@@ -83,7 +86,9 @@ export default function CrearPedidoStep3() {
       // Backend re-valida precio_unitario contra Producto.PrecioBase por seguridad,
       // así que enviamos el precio base + descuento por separado (no precio descontado).
       const mappedItems = pricedItems.map(({ item, pricing }) => {
-        const descuentoLinea = (item.precioUnitario - pricing.precioConDescuento) * item.cantidad;
+        // round2 antes de mandar al backend: el server compara con su propio
+        // cálculo y rechaza con error "monto no coincide" si hay drift.
+        const descuentoLinea = round2((item.precioUnitario - pricing.precioConDescuento) * item.cantidad);
         return {
           productoId: item.productoId,
           productoServerId: item.productoServerId,
