@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,51 +14,7 @@ import { Save, Upload } from 'lucide-react';
 import { toast } from '@/hooks/useToast';
 import { useTranslations } from 'next-intl';
 
-interface BillingData {
-  // Datos básicos
-  rfc: string;
-  razonSocial: string;
-  nombreComercial: string;
-  
-  // Domicilio fiscal
-  calle: string;
-  numeroExterior: string;
-  numeroInterior: string;
-  colonia: string;
-  municipio: string;
-  estado: string;
-  codigoPostal: string;
-  
-  // Régimen fiscal
-  regimenFiscal: string;
-  usoCFDI: string;
-  
-  // Contacto
-  correoElectronico: string;
-  telefono: string;
-  
-  // Certificados
-  certificadoCSD: string;
-  llaveCSD: string;
-  passwordCSD: string;
-  
-  // Serie y folio
-  serie: string;
-  folioInicial: number;
-  
-  // PAC
-  nombrePAC: string;
-  usuarioPAC: string;
-  passwordPAC: string;
-  
-  // Configuración
-  facturacionActiva: boolean;
-  lugarExpedicion: string;
-  tipoComprobantePredeterminado: string;
-  formaPagoPredeterminada: string;
-  metodoPagoPredeterminado: string;
-}
-
+// ── Catálogos SAT (constantes locales) ────────────────────────────────────
 const REGIMENES_FISCALES = [
   { value: '601', label: '601 - General de Ley Personas Morales' },
   { value: '603', label: '603 - Personas Morales con Fines no Lucrativos' },
@@ -100,94 +61,160 @@ const TIPOS_COMPROBANTE = [
   { value: 'P', label: 'P - Pago' },
 ];
 
+// ── Schema Zod: cuando facturacion esta apagada los campos no se validan
+// (todos opcionales). Cuando esta activa, validamos formato SAT estricto en
+// `superRefine` para dar errores accionables campo por campo. ────────────
+const billingSchema = z
+  .object({
+    facturacionActiva: z.boolean(),
+
+    // Datos del contribuyente
+    rfc: z.string().trim().toUpperCase().default(''),
+    razonSocial: z.string().trim().default(''),
+    nombreComercial: z.string().trim().default(''),
+    regimenFiscal: z.string().default('601'),
+
+    // Domicilio fiscal
+    calle: z.string().trim().default(''),
+    numeroExterior: z.string().trim().default(''),
+    numeroInterior: z.string().trim().default(''),
+    colonia: z.string().trim().default(''),
+    municipio: z.string().trim().default(''),
+    estado: z.string().trim().default(''),
+    codigoPostal: z.string().trim().default(''),
+
+    // Comprobantes
+    serie: z.string().trim().toUpperCase().max(10).default(''),
+    folioInicial: z.coerce.number().int().min(1).default(1),
+    lugarExpedicion: z.string().trim().default(''),
+    usoCFDI: z.string().default('G03'),
+    tipoComprobantePredeterminado: z.string().default('I'),
+    formaPagoPredeterminada: z.string().default('01'),
+    metodoPagoPredeterminado: z.string().default('PUE'),
+
+    // CSD
+    certificadoCSD: z.string().default(''),
+    llaveCSD: z.string().default(''),
+    passwordCSD: z.string().default(''),
+
+    // PAC
+    nombrePAC: z.string().trim().default(''),
+    usuarioPAC: z.string().trim().default(''),
+    passwordPAC: z.string().default(''),
+
+    // Contacto
+    correoElectronico: z.string().trim().default(''),
+    telefono: z.string().trim().default(''),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.facturacionActiva) return; // Sin facturacion, no se valida nada
+
+    const RFC = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+    if (data.rfc && !RFC.test(data.rfc)) {
+      ctx.addIssue({ code: 'custom', path: ['rfc'], message: 'RFC inválido' });
+    }
+    if (data.codigoPostal && !/^\d{5}$/.test(data.codigoPostal)) {
+      ctx.addIssue({ code: 'custom', path: ['codigoPostal'], message: 'Código postal debe tener 5 dígitos' });
+    }
+    if (data.lugarExpedicion && !/^\d{5}$/.test(data.lugarExpedicion)) {
+      ctx.addIssue({ code: 'custom', path: ['lugarExpedicion'], message: 'Lugar de expedición debe ser un CP de 5 dígitos' });
+    }
+    if (data.correoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correoElectronico)) {
+      ctx.addIssue({ code: 'custom', path: ['correoElectronico'], message: 'Correo inválido' });
+    }
+  });
+
+// Con .default() en Zod, z.input ≠ z.output. RHF necesita el input (defaults son
+// opcionales en el form initial) y el output viene resuelto en handleSubmit.
+type BillingInput = z.input<typeof billingSchema>;
+type BillingOutput = z.output<typeof billingSchema>;
+
+const DEFAULT_VALUES: BillingInput = {
+  facturacionActiva: false,
+  rfc: '',
+  razonSocial: '',
+  nombreComercial: '',
+  regimenFiscal: '601',
+  calle: '',
+  numeroExterior: '',
+  numeroInterior: '',
+  colonia: '',
+  municipio: '',
+  estado: '',
+  codigoPostal: '',
+  serie: '',
+  folioInicial: 1,
+  lugarExpedicion: '',
+  usoCFDI: 'G03',
+  tipoComprobantePredeterminado: 'I',
+  formaPagoPredeterminada: '01',
+  metodoPagoPredeterminado: 'PUE',
+  certificadoCSD: '',
+  llaveCSD: '',
+  passwordCSD: '',
+  nombrePAC: '',
+  usuarioPAC: '',
+  passwordPAC: '',
+  correoElectronico: '',
+  telefono: '',
+};
+
 interface BillingTabProps {
   isUpdating: boolean;
 }
 
 export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
   const t = useTranslations('billing.settingsTab');
-  const [billingData, setBillingData] = useState<BillingData>({
-    rfc: '',
-    razonSocial: '',
-    nombreComercial: '',
-    calle: '',
-    numeroExterior: '',
-    numeroInterior: '',
-    colonia: '',
-    municipio: '',
-    estado: '',
-    codigoPostal: '',
-    regimenFiscal: '601',
-    usoCFDI: 'G03',
-    correoElectronico: '',
-    telefono: '',
-    certificadoCSD: '',
-    llaveCSD: '',
-    passwordCSD: '',
-    serie: '',
-    folioInicial: 1,
-    nombrePAC: '',
-    usuarioPAC: '',
-    passwordPAC: '',
-    facturacionActiva: false,
-    lugarExpedicion: '',
-    tipoComprobantePredeterminado: 'I',
-    formaPagoPredeterminada: '01',
-    metodoPagoPredeterminado: 'PUE',
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<BillingInput, unknown, BillingOutput>({
+    resolver: zodResolver(billingSchema),
+    defaultValues: DEFAULT_VALUES,
+    mode: 'onBlur',
   });
 
-  const [hasChanges, setHasChanges] = useState(false);
-  const [originalData, setOriginalData] = useState<BillingData>(billingData);
+  const facturacionActiva = watch('facturacionActiva');
 
-  useEffect(() => {
-    const changed = JSON.stringify(billingData) !== JSON.stringify(originalData);
-    setHasChanges(changed);
-  }, [billingData, originalData]);
-
-  const handleSave = async () => {
-    // Validar RFC
-    if (billingData.rfc && !validarRFC(billingData.rfc)) {
-      toast({
-        title: 'Error',
-        description: t('invalidRfc'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validar código postal
-    if (billingData.codigoPostal && billingData.codigoPostal.length !== 5) {
-      toast({
-        title: 'Error',
-        description: t('invalidPostalCode'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Aquí iría la lógica para guardar en el backend
+  // Submit handler — validación pasó ya cuando llegamos aquí
+  const onSubmit = async (_data: BillingOutput) => {
+    // TODO: cablear al endpoint backend cuando esté disponible.
+    // Hoy la lógica de save real no existe — el toast solo confirma validación.
     toast({
       title: t('configSaved'),
       description: t('configSavedDesc'),
     });
-    setOriginalData(billingData);
-    setHasChanges(false);
+    // Reset al input actual para limpiar isDirty (los valores ya están en el form).
+    reset(undefined, { keepValues: true });
   };
 
-  const validarRFC = (rfc: string): boolean => {
-    const rfcPattern = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
-    return rfcPattern.test(rfc.toUpperCase());
+  const onInvalid = (errs: typeof errors) => {
+    // Mostrar el primer error con su mensaje específico (no el genérico anterior).
+    const firstError = Object.values(errs).find((e) => e?.message);
+    if (firstError?.message) {
+      toast({
+        title: 'Error',
+        description: firstError.message,
+        variant: 'destructive',
+      });
+    }
   };
 
+  // Subir archivo CSD (.cer / .key). Sin endpoint real aún; guardamos solo el nombre.
   const handleFileUpload = (field: 'certificadoCSD' | 'llaveCSD') => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = field === 'certificadoCSD' ? '.cer' : '.key';
-    input.onchange = async (e) => {
+    input.onchange = (e) => {
       const file = (e.target as HTMLInputElement)?.files?.[0];
       if (file) {
-        // Aquí iría la lógica para subir el archivo
-        setBillingData({ ...billingData, [field]: file.name });
+        setValue(field, file.name, { shouldDirty: true });
         toast({
           title: t('fileUploaded'),
           description: t('fileUploadedDesc', { name: file.name }),
@@ -197,8 +224,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
     input.click();
   };
 
+  // Helper para errores debajo del input
+  const errorOf = (key: keyof BillingInput) =>
+    errors[key]?.message ? <p className="text-xs text-red-600 mt-1">{errors[key]?.message as string}</p> : null;
+
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
       {/* Activar facturación */}
       <Card>
         <CardHeader>
@@ -208,15 +239,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>{t('enableBilling')}</Label>
-              <p className="text-sm text-muted-foreground">
-                {t('enableBillingDesc')}
-              </p>
+              <p className="text-sm text-muted-foreground">{t('enableBillingDesc')}</p>
             </div>
-            <Switch
-              checked={billingData.facturacionActiva}
-              onCheckedChange={(checked) =>
-                setBillingData({ ...billingData, facturacionActiva: checked })
-              }
+            <Controller
+              name="facturacionActiva"
+              control={control}
+              render={({ field }) => (
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
+              )}
             />
           </div>
         </CardContent>
@@ -233,25 +263,27 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="rfc">{t('rfc')}</Label>
               <Input
                 id="rfc"
-                value={billingData.rfc}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, rfc: e.target.value.toUpperCase() })
-                }
+                {...register('rfc', { setValueAs: (v: string) => v.toUpperCase() })}
                 placeholder="XAXX010101000"
                 maxLength={13}
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
+              {errorOf('rfc')}
             </div>
             <div className="space-y-2">
               <Label htmlFor="regimen">{t('taxRegime')}</Label>
-              <SearchableSelect
-                value={billingData.regimenFiscal}
-                onChange={(value) =>
-                  setBillingData({ ...billingData, regimenFiscal: String(value) })
-                }
-                options={REGIMENES_FISCALES}
-                placeholder={t('selectTaxRegime')}
-                disabled={!billingData.facturacionActiva}
+              <Controller
+                name="regimenFiscal"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value ?? ''}
+                    onChange={(value) => field.onChange(String(value))}
+                    options={REGIMENES_FISCALES}
+                    placeholder={t('selectTaxRegime')}
+                    disabled={!facturacionActiva}
+                  />
+                )}
               />
             </div>
           </div>
@@ -260,12 +292,9 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
             <Label htmlFor="razonSocial">{t('businessName')}</Label>
             <Input
               id="razonSocial"
-              value={billingData.razonSocial}
-              onChange={(e) =>
-                setBillingData({ ...billingData, razonSocial: e.target.value })
-              }
+              {...register('razonSocial')}
               placeholder="Empresa S.A. de C.V."
-              disabled={!billingData.facturacionActiva}
+              disabled={!facturacionActiva}
             />
           </div>
 
@@ -273,12 +302,9 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
             <Label htmlFor="nombreComercial">{t('commercialName')}</Label>
             <Input
               id="nombreComercial"
-              value={billingData.nombreComercial}
-              onChange={(e) =>
-                setBillingData({ ...billingData, nombreComercial: e.target.value })
-              }
+              {...register('nombreComercial')}
               placeholder="Mi Empresa"
-              disabled={!billingData.facturacionActiva}
+              disabled={!facturacionActiva}
             />
           </div>
         </CardContent>
@@ -293,37 +319,16 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 space-y-2">
               <Label htmlFor="calle">{t('street')}</Label>
-              <Input
-                id="calle"
-                value={billingData.calle}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, calle: e.target.value })
-                }
-                disabled={!billingData.facturacionActiva}
-              />
+              <Input id="calle" {...register('calle')} disabled={!facturacionActiva} />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="numExt">{t('extNumber')}</Label>
-                <Input
-                  id="numExt"
-                  value={billingData.numeroExterior}
-                  onChange={(e) =>
-                    setBillingData({ ...billingData, numeroExterior: e.target.value })
-                  }
-                  disabled={!billingData.facturacionActiva}
-                />
+                <Input id="numExt" {...register('numeroExterior')} disabled={!facturacionActiva} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="numInt">{t('intNumber')}</Label>
-                <Input
-                  id="numInt"
-                  value={billingData.numeroInterior}
-                  onChange={(e) =>
-                    setBillingData({ ...billingData, numeroInterior: e.target.value })
-                  }
-                  disabled={!billingData.facturacionActiva}
-                />
+                <Input id="numInt" {...register('numeroInterior')} disabled={!facturacionActiva} />
               </div>
             </div>
           </div>
@@ -331,51 +336,23 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="colonia">{t('neighborhood')}</Label>
-              <Input
-                id="colonia"
-                value={billingData.colonia}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, colonia: e.target.value })
-                }
-                disabled={!billingData.facturacionActiva}
-              />
+              <Input id="colonia" {...register('colonia')} disabled={!facturacionActiva} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="cp">{t('postalCode')}</Label>
-              <Input
-                id="cp"
-                value={billingData.codigoPostal}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, codigoPostal: e.target.value })
-                }
-                maxLength={5}
-                disabled={!billingData.facturacionActiva}
-              />
+              <Input id="cp" {...register('codigoPostal')} maxLength={5} disabled={!facturacionActiva} />
+              {errorOf('codigoPostal')}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="municipio">{t('municipality')}</Label>
-              <Input
-                id="municipio"
-                value={billingData.municipio}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, municipio: e.target.value })
-                }
-                disabled={!billingData.facturacionActiva}
-              />
+              <Input id="municipio" {...register('municipio')} disabled={!facturacionActiva} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="estado">{t('state')}</Label>
-              <Input
-                id="estado"
-                value={billingData.estado}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, estado: e.target.value })
-                }
-                disabled={!billingData.facturacionActiva}
-              />
+              <Input id="estado" {...register('estado')} disabled={!facturacionActiva} />
             </div>
           </div>
         </CardContent>
@@ -392,13 +369,10 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="serie">{t('series')}</Label>
               <Input
                 id="serie"
-                value={billingData.serie}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, serie: e.target.value.toUpperCase() })
-                }
+                {...register('serie', { setValueAs: (v: string) => v.toUpperCase() })}
                 placeholder="A"
                 maxLength={10}
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
             </div>
             <div className="space-y-2">
@@ -406,12 +380,9 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Input
                 id="folio"
                 type="number"
-                value={billingData.folioInicial}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, folioInicial: parseInt(e.target.value) || 1 })
-                }
+                {...register('folioInicial', { valueAsNumber: true })}
                 min="1"
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
             </div>
           </div>
@@ -421,25 +392,27 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="lugarExp">{t('issuancePlace')}</Label>
               <Input
                 id="lugarExp"
-                value={billingData.lugarExpedicion}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, lugarExpedicion: e.target.value })
-                }
+                {...register('lugarExpedicion')}
                 placeholder="06000"
                 maxLength={5}
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
+              {errorOf('lugarExpedicion')}
             </div>
             <div className="space-y-2">
               <Label htmlFor="usoCfdi">{t('defaultCfdiUse')}</Label>
-              <SearchableSelect
-                value={billingData.usoCFDI}
-                onChange={(value) =>
-                  setBillingData({ ...billingData, usoCFDI: String(value) })
-                }
-                options={USOS_CFDI}
-                placeholder={t('selectCfdiUse')}
-                disabled={!billingData.facturacionActiva}
+              <Controller
+                name="usoCFDI"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value ?? ''}
+                    onChange={(value) => field.onChange(String(value))}
+                    options={USOS_CFDI}
+                    placeholder={t('selectCfdiUse')}
+                    disabled={!facturacionActiva}
+                  />
+                )}
               />
             </div>
           </div>
@@ -447,38 +420,50 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tipoComp">{t('voucherType')}</Label>
-              <SearchableSelect
-                value={billingData.tipoComprobantePredeterminado}
-                onChange={(value) =>
-                  setBillingData({ ...billingData, tipoComprobantePredeterminado: String(value) })
-                }
-                options={TIPOS_COMPROBANTE}
-                placeholder={t('selectVoucherType')}
-                disabled={!billingData.facturacionActiva}
+              <Controller
+                name="tipoComprobantePredeterminado"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value ?? ''}
+                    onChange={(value) => field.onChange(String(value))}
+                    options={TIPOS_COMPROBANTE}
+                    placeholder={t('selectVoucherType')}
+                    disabled={!facturacionActiva}
+                  />
+                )}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="formaPago">{t('paymentForm')}</Label>
-              <SearchableSelect
-                value={billingData.formaPagoPredeterminada}
-                onChange={(value) =>
-                  setBillingData({ ...billingData, formaPagoPredeterminada: String(value) })
-                }
-                options={FORMAS_PAGO}
-                placeholder={t('selectPaymentForm')}
-                disabled={!billingData.facturacionActiva}
+              <Controller
+                name="formaPagoPredeterminada"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value ?? ''}
+                    onChange={(value) => field.onChange(String(value))}
+                    options={FORMAS_PAGO}
+                    placeholder={t('selectPaymentForm')}
+                    disabled={!facturacionActiva}
+                  />
+                )}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="metodoPago">{t('paymentMethodLabel')}</Label>
-              <SearchableSelect
-                value={billingData.metodoPagoPredeterminado}
-                onChange={(value) =>
-                  setBillingData({ ...billingData, metodoPagoPredeterminado: String(value) })
-                }
-                options={METODOS_PAGO}
-                placeholder={t('selectPaymentMethod')}
-                disabled={!billingData.facturacionActiva}
+              <Controller
+                name="metodoPagoPredeterminado"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value ?? ''}
+                    onChange={(value) => field.onChange(String(value))}
+                    options={METODOS_PAGO}
+                    placeholder={t('selectPaymentMethod')}
+                    disabled={!facturacionActiva}
+                  />
+                )}
               />
             </div>
           </div>
@@ -495,16 +480,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
             <div className="space-y-2">
               <Label>{t('certificate')}</Label>
               <div className="flex gap-2">
-                <Input
-                  value={billingData.certificadoCSD}
-                  placeholder={t('noCertificateLoaded')}
-                  disabled
-                />
+                <Input value={watch('certificadoCSD')} placeholder={t('noCertificateLoaded')} disabled />
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => handleFileUpload('certificadoCSD')}
-                  disabled={!billingData.facturacionActiva}
+                  disabled={!facturacionActiva}
                 >
                   <Upload className="mr-2 h-4 w-4" />
                   {t('load')}
@@ -515,16 +497,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
             <div className="space-y-2">
               <Label>{t('privateKey')}</Label>
               <div className="flex gap-2">
-                <Input
-                  value={billingData.llaveCSD}
-                  placeholder={t('noKeyLoaded')}
-                  disabled
-                />
+                <Input value={watch('llaveCSD')} placeholder={t('noKeyLoaded')} disabled />
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => handleFileUpload('llaveCSD')}
-                  disabled={!billingData.facturacionActiva}
+                  disabled={!facturacionActiva}
                 >
                   <Upload className="mr-2 h-4 w-4" />
                   {t('load')}
@@ -537,11 +516,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Input
                 id="passwordCSD"
                 type="password"
-                value={billingData.passwordCSD}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, passwordCSD: e.target.value })
-                }
-                disabled={!billingData.facturacionActiva}
+                {...register('passwordCSD')}
+                disabled={!facturacionActiva}
               />
             </div>
           </div>
@@ -559,24 +535,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="pac">{t('pacName')}</Label>
               <Input
                 id="pac"
-                value={billingData.nombrePAC}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, nombrePAC: e.target.value })
-                }
+                {...register('nombrePAC')}
                 placeholder={t('pacNamePlaceholder')}
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="usuarioPac">{t('pacUser')}</Label>
-              <Input
-                id="usuarioPac"
-                value={billingData.usuarioPAC}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, usuarioPAC: e.target.value })
-                }
-                disabled={!billingData.facturacionActiva}
-              />
+              <Input id="usuarioPac" {...register('usuarioPAC')} disabled={!facturacionActiva} />
             </div>
           </div>
 
@@ -585,11 +551,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
             <Input
               id="passwordPac"
               type="password"
-              value={billingData.passwordPAC}
-              onChange={(e) =>
-                setBillingData({ ...billingData, passwordPAC: e.target.value })
-              }
-              disabled={!billingData.facturacionActiva}
+              {...register('passwordPAC')}
+              disabled={!facturacionActiva}
             />
           </div>
         </CardContent>
@@ -607,24 +570,19 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Input
                 id="email"
                 type="email"
-                value={billingData.correoElectronico}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, correoElectronico: e.target.value })
-                }
+                {...register('correoElectronico')}
                 placeholder={t('emailPlaceholder')}
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
+              {errorOf('correoElectronico')}
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefono">{t('phone')}</Label>
               <Input
                 id="telefono"
-                value={billingData.telefono}
-                onChange={(e) =>
-                  setBillingData({ ...billingData, telefono: e.target.value })
-                }
+                {...register('telefono')}
                 placeholder={t('phonePlaceholder')}
-                disabled={!billingData.facturacionActiva}
+                disabled={!facturacionActiva}
               />
             </div>
           </div>
@@ -633,14 +591,11 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
 
       {/* Botón guardar */}
       <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={isUpdating || !hasChanges || !billingData.facturacionActiva}
-        >
+        <Button type="submit" disabled={isUpdating || !isDirty || !facturacionActiva}>
           <Save className="mr-2 h-4 w-4" />
           {isUpdating ? t('saving') : t('saveBillingConfig')}
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
