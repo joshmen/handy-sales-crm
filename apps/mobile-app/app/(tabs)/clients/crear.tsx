@@ -223,16 +223,35 @@ export default function CrearClienteScreen() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [gpsUnavailable, setGpsUnavailable] = useState<'denied' | 'error' | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const Location = require('expo-location') as typeof import('expo-location');
-        const { status } = await Location.getForegroundPermissionsAsync();
-        if (status !== 'granted') return;
+        let { status } = await Location.getForegroundPermissionsAsync();
+        // Si está undetermined, pedir explícitamente — sin esto el usuario no sabe que necesitamos GPS
+        if (status === 'undetermined') {
+          const req = await Location.requestForegroundPermissionsAsync();
+          status = req.status;
+        }
+        if (status !== 'granted') {
+          setGpsUnavailable('denied');
+          Toast.show({
+            type: 'info',
+            text1: 'GPS desactivado',
+            text2: 'Podrás seleccionar la ubicación manualmente en el mapa.',
+            visibilityTime: 4000,
+          });
+          return;
+        }
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      } catch { /* permission denied or unavailable */ }
+      } catch (err) {
+        if (__DEV__) console.warn('[ClientesCrear] GPS unavailable:', err);
+        setGpsUnavailable('error');
+        // No spamear toast por error técnico; el usuario puede usar el mapa manualmente
+      }
     })();
   }, []);
 
