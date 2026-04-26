@@ -77,7 +77,7 @@ function VendedorDetalleContent() {
   }
 
   const { vendedor, hoy, totalClientes, ultimaUbicacion } = resumen;
-  const initials = vendedor.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = vendedor.nombre.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <View style={styles.container}>

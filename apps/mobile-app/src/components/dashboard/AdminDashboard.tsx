@@ -30,6 +30,7 @@ export function AdminDashboard() {
 
   const initials = (user?.name ?? 'A')
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
@@ -163,8 +164,10 @@ export function AdminDashboard() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo')}
+            onPress={() => router.push('/(tabs)/equipo/actividad' as any)}
             activeOpacity={0.85}
+            accessibilityLabel="Ver reportes de actividad del equipo"
+            accessibilityRole="button"
           >
             <Text style={styles.quickActionText}>Reportes</Text>
           </TouchableOpacity>
@@ -178,6 +181,7 @@ export function AdminDashboard() {
 function PersonCard({ person, onPress }: { person: VendedorEquipo; onPress: () => void }) {
   const initials = person.nombre
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)

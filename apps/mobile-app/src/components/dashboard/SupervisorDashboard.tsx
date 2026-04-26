@@ -29,6 +29,7 @@ export function SupervisorDashboard() {
 
   const initials = (user?.name ?? 'S')
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
@@ -153,6 +154,7 @@ export function SupervisorDashboard() {
 function VendedorCard({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress: () => void }) {
   const initials = vendedor.nombre
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)

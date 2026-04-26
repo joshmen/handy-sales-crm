@@ -106,6 +106,7 @@ export function VendedorDashboard() {
 
   const initials = (user?.name ?? 'V')
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)

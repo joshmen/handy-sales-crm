@@ -23,6 +23,7 @@ function KpiCard({ label, value }: { label: string; value: string | number }) {
 function VendedorRow({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress: () => void }) {
   const initials = vendedor.nombre
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
