@@ -5,6 +5,8 @@ import Ruta from '@/db/models/Ruta';
 import RutaDetalle from '@/db/models/RutaDetalle';
 import { useObservable } from './useObservable';
 import { useAuthStore } from '@/stores';
+import { useEmpresa } from './useEmpresa';
+import { startOfDayInTz } from '@/utils/dateTz';
 
 export function useOfflineRoutes() {
   const user = useAuthStore((s) => s.user);
@@ -25,15 +27,19 @@ export function useOfflineRoutes() {
 
 export function useOfflineRutaHoy() {
   const user = useAuthStore((s) => s.user);
+  const { data: empresa } = useEmpresa();
+  const tz = empresa?.timezone || 'America/Mexico_City';
+
   const observable = useMemo(() => {
     if (!user?.id) return null;
-    // Widen the window to ±12h around today to handle any timezone offset.
-    // A route dated "2026-03-26T00:00:00Z" should show on March 25 local (Mexico UTC-6)
-    // and also on March 26 local. This ensures the route always appears on the intended day.
-    const now = new Date();
-    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const windowStart = localMidnight - 12 * 3600000; // 12h before local midnight
-    const windowEnd = localMidnight + 36 * 3600000;   // 36h after local midnight (covers full day + offset)
+    // Window de ±12h alrededor del inicio de día en TZ tenant.
+    // Un ruta con fecha "2026-03-26T00:00:00Z" debe aparecer tanto en marzo 25
+    // local (Mexico UTC-6) como marzo 26 local. El ±12h cubre cualquier offset.
+    // Usar tenant TZ en vez de device TZ corrige el bug cuando vendedor tiene
+    // device en otra zona o tenant opera en TZ distinta a CDMX.
+    const tenantMidnight = startOfDayInTz(tz).getTime();
+    const windowStart = tenantMidnight - 12 * 3600000;
+    const windowEnd = tenantMidnight + 36 * 3600000;
 
     return database
       .get<Ruta>('rutas')
@@ -44,7 +50,7 @@ export function useOfflineRutaHoy() {
         Q.where('fecha', Q.lt(windowEnd))
       )
       .observe();
-  }, [user?.id]);
+  }, [user?.id, tz]);
 
   return useObservable(observable);
 }

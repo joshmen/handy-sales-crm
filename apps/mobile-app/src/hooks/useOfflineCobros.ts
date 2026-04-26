@@ -3,6 +3,8 @@ import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Cobro from '@/db/models/Cobro';
 import { useObservable } from './useObservable';
+import { useEmpresa } from './useEmpresa';
+import { startOfDayInTz } from '@/utils/dateTz';
 
 export function useOfflineCobros(clienteId?: string) {
   const observable = useMemo(() => {
@@ -30,10 +32,13 @@ export function useOfflineCobroById(id: string | undefined) {
 }
 
 export function useOfflineTodayCobros() {
+  const { data: empresa } = useEmpresa();
+  const tz = empresa?.timezone || 'America/Mexico_City';
+
   const observable = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
+    // "Hoy" en TZ del tenant — sin esto el filtro usa device TZ y excluye
+    // cobros entre 23:00-00:00 cuando device != tenant TZ.
+    const todayMs = startOfDayInTz(tz).getTime();
 
     return database
       .get<Cobro>('cobros')
@@ -43,7 +48,7 @@ export function useOfflineTodayCobros() {
         Q.sortBy('created_at', Q.desc)
       )
       .observe();
-  }, []);
+  }, [tz]);
 
   return useObservable(observable);
 }
