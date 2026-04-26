@@ -8,6 +8,7 @@ import {
   uploadAsync,
   FileSystemUploadType,
 } from 'expo-file-system/legacy';
+import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Attachment from '@/db/models/Attachment';
 import { API_CONFIG } from '@/utils/constants';
@@ -84,11 +85,11 @@ export async function saveAttachmentRecord(params: {
 
 export async function uploadPendingAttachments(): Promise<number> {
   const collection = database.get<Attachment>('attachments');
-  const pending = await collection.query().fetch();
-
-  const toUpload = pending.filter(
-    (a) => a.uploadStatus === 'pending' || a.uploadStatus === 'failed'
-  );
+  // Filtrar en SQL en vez de cargar todos los attachments y filtrar en JS.
+  // Antes con 500+ uploaded files cada flush iteraba sobre todos.
+  const toUpload = await collection
+    .query(Q.where('upload_status', Q.oneOf(['pending', 'failed'])))
+    .fetch();
 
   let uploaded = 0;
 
@@ -141,16 +142,18 @@ export async function uploadPendingAttachments(): Promise<number> {
 
 export async function getPendingCount(): Promise<number> {
   const collection = database.get<Attachment>('attachments');
-  const pending = await collection.query().fetch();
-  return pending.filter(
-    (a) => a.uploadStatus === 'pending' || a.uploadStatus === 'failed'
-  ).length;
+  // Usar Q.fetchCount para evitar materializar records solo para contar.
+  return await collection
+    .query(Q.where('upload_status', Q.oneOf(['pending', 'failed'])))
+    .fetchCount();
 }
 
 export async function cleanUploadedFiles(): Promise<void> {
   const collection = database.get<Attachment>('attachments');
-  const uploaded = await collection.query().fetch();
-  const toClean = uploaded.filter((a) => a.uploadStatus === 'uploaded');
+  // Filtrar en SQL — antes traía todos y filtraba en JS.
+  const toClean = await collection
+    .query(Q.where('upload_status', 'uploaded'))
+    .fetch();
 
   for (const attachment of toClean) {
     try {

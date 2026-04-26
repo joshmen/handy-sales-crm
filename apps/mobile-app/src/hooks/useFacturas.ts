@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facturasApi } from '@/api/facturas';
 
 // NOTA: el móvil NO timbra facturas. No exponemos un useCreateFactura.
@@ -20,8 +20,15 @@ export function useFacturaById(id: number | undefined) {
 }
 
 export function useEnviarFactura() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => facturasApi.enviar(id),
+    // Invalida lista + detalle para reflejar el estado "Enviada" tras éxito.
+    // Sin esto, el usuario veía la factura aún como "no enviada" hasta refresh.
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['facturas'] });
+      queryClient.invalidateQueries({ queryKey: ['factura', id] });
+    },
   });
 }
 

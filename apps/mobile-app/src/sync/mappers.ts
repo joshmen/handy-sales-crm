@@ -51,14 +51,26 @@ export async function mapPullToWatermelon(
 ): Promise<SyncDatabaseChangeSet> {
   const isFirstSync = !lastPulledAt;
 
-  // Pre-load lookup maps for entities created locally (prevents duplicates on pull)
-  const pedidoMap = await buildServerIdMap('pedidos');
-  const detalleMap = await buildServerIdMap('detalle_pedidos');
-  const cobroMap = await buildServerIdMap('cobros');
-  const visitaMap = await buildServerIdMap('visitas');
-  const clienteMap = await buildServerIdMap('clientes');
-  const rutaMap = await buildServerIdMap('rutas');
-  const rutaDetalleMap = await buildServerIdMap('ruta_detalles');
+  // Pre-load lookup maps for entities created locally (prevents duplicates on pull).
+  // Paralelizar las 7 fetches — cada una es bloqueante pero independiente.
+  // Antes corrían secuencialmente sumando 2-5s; ahora corren simultáneas.
+  const [
+    pedidoMap,
+    detalleMap,
+    cobroMap,
+    visitaMap,
+    clienteMap,
+    rutaMap,
+    rutaDetalleMap,
+  ] = await Promise.all([
+    buildServerIdMap('pedidos'),
+    buildServerIdMap('detalle_pedidos'),
+    buildServerIdMap('cobros'),
+    buildServerIdMap('visitas'),
+    buildServerIdMap('clientes'),
+    buildServerIdMap('rutas'),
+    buildServerIdMap('ruta_detalles'),
+  ]);
 
   return {
     clientes: splitByOperation(server.clientes, isFirstSync, (c) => mapClienteToRaw(c, clienteMap), clienteMap),
