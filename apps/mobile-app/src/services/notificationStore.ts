@@ -16,7 +16,16 @@ export interface StoredNotification {
 export const notificationStore = {
   async getAll(): Promise<StoredNotification[]> {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as StoredNotification[];
+    } catch (e) {
+      // AsyncStorage corrupto: limpiar y empezar de cero en vez de crashear
+      // todos los consumers que llaman getAll() (NotificacionesScreen, badge counter, etc.)
+      if (__DEV__) console.warn('[notificationStore] corrupted JSON, resetting:', e);
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      return [];
+    }
   },
 
   async add(notification: Omit<StoredNotification, 'id' | 'receivedAt' | 'read'>): Promise<void> {

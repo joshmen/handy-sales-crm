@@ -271,7 +271,16 @@ export default function CrearClienteScreen() {
           setRequiereFactura(true);
           setShowFiscal(true);
         }
-      } catch { /* ignore load errors */ }
+      } catch (e) {
+        // Si falla la carga (offline o error), avisar al usuario en vez de mostrar form vacío.
+        // El form vacío sería confuso — usuario podría sobreescribir datos sin querer.
+        if (__DEV__) console.warn('[ClienteCrear] load existing client failed:', e);
+        Toast.show({
+          type: 'error',
+          text1: 'No se pudo cargar el cliente',
+          text2: 'Verifica tu conexión y regresa atrás para reintentar',
+        });
+      }
       setLoaded(true);
     })();
   }, [editId, loaded]);
@@ -366,6 +375,15 @@ export default function CrearClienteScreen() {
     if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
     if (!zonaId) e.zona = 'Selecciona una zona';
     if (!categoriaId) e.categoria = 'Selecciona una categoría';
+    // Comerciales — rangos numéricos para no mandar valores absurdos al backend
+    if (descuentoPct) {
+      const d = parseFloat(descuentoPct);
+      if (Number.isNaN(d) || d < 0 || d > 100) e.descuento = 'Descuento debe ser entre 0 y 100';
+    }
+    if (ventaMinima) {
+      const v = parseFloat(ventaMinima);
+      if (Number.isNaN(v) || v < 0) e.ventaMinima = 'Venta mínima no puede ser negativa';
+    }
     // Fiscal fields — obligatorios cuando requiere factura
     if (requiereFactura) {
       if (!rfcFiscal.trim()) e.rfcFiscal = 'RFC fiscal obligatorio';
@@ -375,7 +393,7 @@ export default function CrearClienteScreen() {
       if (!cpFiscal.trim() || cpFiscal.length !== 5) e.cpFiscal = 'C.P. fiscal obligatorio (5 dígitos)';
     }
     return e;
-  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, cpFiscal]);
+  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId, descuentoPct, ventaMinima, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, cpFiscal]);
 
   const isValid = Object.keys(errors).length === 0;
 

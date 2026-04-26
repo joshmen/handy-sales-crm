@@ -172,23 +172,42 @@ export default function RutaScreen() {
                       const freshRoute = await database.get<Ruta>('rutas').find(route.id);
                       await freshRoute.startRoute();
                       Toast.show({ type: 'info', text1: 'Aceptada localmente', text2: 'Sincronizará al recuperar conexión' });
-                    } catch { /* ignore */ }
+                    } catch (e) {
+                      if (__DEV__) console.warn('[Ruta] startRoute local sin serverId failed:', e);
+                      Toast.show({ type: 'error', text1: 'No se pudo aceptar', text2: 'Intenta de nuevo' });
+                    }
                     setAccepting(false);
                     return;
                   }
                   // Backend: /aceptar (captura timestamp + transiciona 0|4 → 5) — best-effort.
+                  let backendOk = false;
                   try {
                     await rutasApi.aceptar(serverId);
-                  } catch { /* silencioso: si falla seguimos a iniciar */ }
+                    backendOk = true;
+                  } catch (e) {
+                    if (__DEV__) console.warn('[Ruta] aceptar backend failed (continuando):', e);
+                  }
                   // Local + backend /iniciar (5|0 → 1) — la fuente de verdad de la UI.
                   try {
                     await rutasApi.iniciar(serverId);
-                  } catch { /* offline OK, el sync push lo retomará */ }
+                    backendOk = true;
+                  } catch (e) {
+                    if (__DEV__) console.warn('[Ruta] iniciar backend failed (offline retry vía sync push):', e);
+                  }
+                  let localOk = false;
                   try {
                     const freshRoute = await database.get<Ruta>('rutas').find(route.id);
                     await freshRoute.startRoute();
+                    localOk = true;
+                  } catch (e) {
+                    if (__DEV__) console.warn('[Ruta] startRoute local failed:', e);
+                  }
+                  // Toast: si AL MENOS local OK → success. Si todo falla → error explícito.
+                  if (localOk) {
                     Toast.show({ type: 'success', text1: 'Ruta aceptada' });
-                  } catch { /* ignore */ }
+                  } else if (!backendOk) {
+                    Toast.show({ type: 'error', text1: 'No se pudo aceptar la ruta', text2: 'Verifica tu conexión' });
+                  }
                   setAccepting(false);
                 }}
               >

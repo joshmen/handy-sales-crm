@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Linking, Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,8 +77,25 @@ function MapaScreenContent() {
   } = useMapData();
 
   // Location
-  const { location, loading: locLoading } = useUserLocation();
+  const { location, loading: locLoading, error: locError } = useUserLocation();
   const { position: trackingPosition } = useLocationTracking(isRouteActive);
+
+  // Si falla la ubicación inicial, mostrar Alert con shortcut a Settings (en vez de
+  // dejar el mapa centrado en CDMX default sin contexto). Solo dispara una vez por mount.
+  const [locErrorShown, setLocErrorShown] = useState(false);
+  useEffect(() => {
+    if (locError && !locLoading && !locErrorShown) {
+      setLocErrorShown(true);
+      Alert.alert(
+        'Ubicación no disponible',
+        'No pudimos acceder al GPS. Activa los permisos en Ajustes para ver tu ubicación y registrar visitas.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir Ajustes', onPress: () => Linking.openSettings().catch(() => {}) },
+        ]
+      );
+    }
+  }, [locError, locLoading, locErrorShown]);
   const currentPos = trackingPosition || (location ? { latitude: location.latitude, longitude: location.longitude } : null);
 
   const initialRegion: Region = useMemo(() => {
