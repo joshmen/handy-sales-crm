@@ -1,4 +1,4 @@
-import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns, createTable, unsafeExecuteSql } from '@nozbe/watermelondb/Schema/migrations';
 
 export const migrations = schemaMigrations({
   migrations: [
@@ -155,6 +155,34 @@ export const migrations = schemaMigrations({
             { name: 'tipo_pago_predeterminado', type: 'string' },
           ],
         }),
+      ],
+    },
+    {
+      // v10: índices en columnas hot path identificadas en sweep de performance.
+      // Sin estos, queries con .where() y .sortBy() sobre estas columnas hacen
+      // full table scan — perceptible con 1000+ filas.
+      toVersion: 10,
+      steps: [
+        // clientes: búsqueda por nombre (Q.like en useOfflineClients) + filtro activo
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON clientes(nombre);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_clientes_activo ON clientes(activo);'),
+        // pedidos: filtros estado + sort created_at + activo
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON pedidos(estado);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_pedidos_activo ON pedidos(activo);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON pedidos(created_at);'),
+        // cobros: filtro Q.gte(today) + activo + sort
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_cobros_activo ON cobros(activo);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_cobros_created_at ON cobros(created_at);'),
+        // visitas: filtro Q.gte(check_in_at) + activo
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_visitas_activo ON visitas(activo);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_visitas_check_in_at ON visitas(check_in_at);'),
+        // attachments: filtro upload_status oneOf
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_attachments_upload_status ON attachments(upload_status);'),
+        // rutas: filtro fecha window + usuario_id
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_rutas_fecha ON rutas(fecha);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_rutas_usuario_id ON rutas(usuario_id);'),
+        // ruta_detalles: filtro estado
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_ruta_detalles_estado ON ruta_detalles(estado);'),
       ],
     },
   ],

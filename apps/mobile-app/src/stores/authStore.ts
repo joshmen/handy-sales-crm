@@ -42,6 +42,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     setAccessToken(null);
+    // Cancelar mutations en flight ANTES de limpiar el cache. Si una mutation
+    // termina post-logout, su onSuccess intenta setear state en componente
+    // unmounted o accede a queryClient ya limpio → warning + posible crash.
+    await queryClient.cancelQueries();
     queryClient.clear();
     // CRÍTICO: limpiar sync cursors. Sin esto, si user A logea, sincroniza, hace
     // logout, y luego user B (mismo device, distinto tenant) logea, los cursores
