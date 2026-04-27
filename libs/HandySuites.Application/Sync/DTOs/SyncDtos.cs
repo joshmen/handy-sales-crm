@@ -252,11 +252,48 @@ public class SyncRutaDto
     public double? KilometrosReales { get; set; }
     public string? Notas { get; set; }
     public List<SyncRutaDetalleDto>? Detalles { get; set; }
+
+    /// <summary>
+    /// Pedidos asignados a la ruta (la "carga" del camión, junction RutasPedidos).
+    /// Antes el sync no incluía este campo y el vendedor en mobile no veía qué pedidos
+    /// llevaba para entregar. Reportado 2026-04-27.
+    /// </summary>
+    public List<SyncRutaPedidoDto>? Pedidos { get; set; }
+
+    /// <summary>
+    /// Productos sueltos cargados en el camión (junction RutasCarga) para venta directa
+    /// en ruta — independientes de pedidos asignados.
+    /// </summary>
+    public List<SyncRutaCargaDto>? Carga { get; set; }
+
     public bool Activo { get; set; } = true;
     public long Version { get; set; }
     public DateTime? ActualizadoEn { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Update;
     public bool IsDeleted { get; set; }
+}
+
+public class SyncRutaPedidoDto
+{
+    public int Id { get; set; }
+    public int RutaId { get; set; }
+    public int PedidoId { get; set; }
+    public int Estado { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime? CreadoEn { get; set; }
+}
+
+public class SyncRutaCargaDto
+{
+    public int Id { get; set; }
+    public int RutaId { get; set; }
+    public int ProductoId { get; set; }
+    public int CantidadEntrega { get; set; }
+    public int CantidadVenta { get; set; }
+    public int CantidadTotal { get; set; }
+    public double PrecioUnitario { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime? CreadoEn { get; set; }
 }
 
 public class SyncRutaDetalleDto

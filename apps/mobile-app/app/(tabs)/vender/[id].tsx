@@ -117,21 +117,12 @@ export default function OrderDetailScreen() {
             <Text style={styles.actionBtnText}>Confirmar Pedido</Text>
           </TouchableOpacity>
         );
-      case 2: // Confirmado → En Ruta
-        return (
-          <TouchableOpacity
-            testID="btn-en-ruta"
-            style={[styles.actionBtn, { backgroundColor: '#ea580c' }]}
-            onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(4), onError: (e: any) => { if (!e?.response || e.code === 'ERR_NETWORK') { updateLocalStatus(4); Toast.show({ type: 'success', text1: 'Guardado offline', text2: 'Se sincronizará automáticamente' }); } } }))}
-            disabled={anyLoading}
-            activeOpacity={0.8}
-            accessibilityLabel="Poner en Ruta"
-            accessibilityRole="button"
-          >
-            <Truck size={18} color="#fff" />
-            <Text style={styles.actionBtnText}>Poner en Ruta</Text>
-          </TouchableOpacity>
-        );
+      case 2: // Confirmado — el vendedor NO debe poner pedidos en ruta.
+        // Esa acción es responsabilidad del admin/supervisor desde el dashboard
+        // web (que valida que el pedido esté asignado a una RutaVendedor activa).
+        // Reportado 2026-04-27: si dejábamos el botón aquí, el vendedor recibía
+        // un 400 confuso al tocarlo porque el pedido no estaba en ninguna ruta.
+        return null;
       case 4: // EnRuta → Entregar
         return (
           <View>

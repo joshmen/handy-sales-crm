@@ -102,16 +102,56 @@ public class SyncRepository : ISyncRepository
         var query = _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Detalles)
+            .Include(r => r.PedidosAsignados)
             .Where(r => r.TenantId == tenantId
                      && r.UsuarioId.HasValue && r.UsuarioId.Value == usuarioId
                      && !r.EsTemplate);
 
         if (since.HasValue)
         {
-            query = query.Where(r => r.ActualizadoEn > since || r.CreadoEn > since);
+            // Una ruta se incluye si: cambió la ruta, O cambió alguna de sus paradas,
+            // O se le asignó/removió un pedido (RutasPedidos), O se modificó la carga
+            // (RutasCarga). Antes la ruta solo se sincronizaba cuando r.ActualizadoEn
+            // cambiaba, así que asignar un pedido a una ruta en progreso no se propagaba
+            // al mobile (reportado 2026-04-27).
+            // RutaDetalle no tiene tenant_id propio; nos apoyamos en navegación.
+            var detallesModificados = _db.Set<RutaDetalle>()
+                .AsNoTracking()
+                .Where(d => d.Ruta.TenantId == tenantId
+                            && (d.ActualizadoEn > since || d.CreadoEn > since))
+                .Select(d => d.RutaId);
+            var pedidosAsignadosMod = _db.Set<RutaPedido>()
+                .AsNoTracking()
+                .Where(rp => rp.TenantId == tenantId
+                             && (rp.ActualizadoEn > since || rp.CreadoEn > since))
+                .Select(rp => rp.RutaId);
+            var cargaMod = _db.Set<RutaCarga>()
+                .AsNoTracking()
+                .Where(rc => rc.TenantId == tenantId
+                             && (rc.ActualizadoEn > since || rc.CreadoEn > since))
+                .Select(rc => rc.RutaId);
+
+            query = query.Where(r =>
+                r.ActualizadoEn > since
+                || r.CreadoEn > since
+                || detallesModificados.Contains(r.Id)
+                || pedidosAsignadosMod.Contains(r.Id)
+                || cargaMod.Contains(r.Id));
         }
 
         return await query.OrderBy(r => r.Id).ToListAsync();
+    }
+
+    public async Task<Dictionary<int, List<RutaCarga>>> GetRutasCargaForRutasAsync(int tenantId, List<int> rutaIds)
+    {
+        if (rutaIds.Count == 0) return new Dictionary<int, List<RutaCarga>>();
+
+        var carga = await _db.RutasCarga
+            .AsNoTracking()
+            .Where(rc => rc.TenantId == tenantId && rutaIds.Contains(rc.RutaId) && rc.Activo)
+            .ToListAsync();
+
+        return carga.GroupBy(rc => rc.RutaId).ToDictionary(g => g.Key, g => g.ToList());
     }
 
     public async Task<(Cliente entity, bool wasConflict)> UpsertClienteAsync(int tenantId, SyncClienteDto dto, string userId)

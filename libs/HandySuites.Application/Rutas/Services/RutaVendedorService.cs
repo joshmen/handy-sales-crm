@@ -546,7 +546,13 @@ public class RutaVendedorService
         return await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
     }
 
-    public async Task AsignarPedidoAsync(int rutaId, int pedidoId)
+    /// <summary>
+    /// Asigna un pedido a la ruta. Retorna info necesaria para que el endpoint
+    /// emita push notification al vendedor cuando la ruta ya está activa
+    /// (CargaAceptada o EnProgreso) — antes el admin asignaba pedidos a una
+    /// ruta corriendo y el vendedor no se enteraba hasta el siguiente sync manual.
+    /// </summary>
+    public async Task<(EstadoRuta Estado, int? VendedorId)> AsignarPedidoAsync(int rutaId, int pedidoId)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
@@ -555,6 +561,8 @@ public class RutaVendedorService
         EnsureRutaOperable(ruta);
 
         await _repo.AsignarPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+
+        return (ruta.Estado, ruta.UsuarioId);
     }
 
     public async Task RemoverPedidoAsync(int rutaId, int pedidoId)
@@ -589,6 +597,24 @@ public class RutaVendedorService
 
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("Solo se pueden enviar a carga rutas planificadas");
+
+        // BR-RUTA-Carga: validar que la ruta tiene los 3 elementos mínimos antes de enviarla
+        // al vendedor: paradas (clientes a visitar), pedidos asignados (carga del camión) y
+        // productos para venta directa en ruta. Reportado 2026-04-27: el admin podía enviar
+        // una ruta vacía y el vendedor recibía push de "ruta asignada" sin nada que entregar.
+        var faltantes = new List<string>();
+        if (ruta.Detalles == null || !ruta.Detalles.Any(d => d.Activo))
+            faltantes.Add("paradas (clientes a visitar)");
+        var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
+        if (pedidosAsignados.Count == 0)
+            faltantes.Add("pedidos asignados");
+        var carga = await _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
+        if (carga.Count == 0)
+            faltantes.Add("productos de carga");
+
+        if (faltantes.Count > 0)
+            throw new InvalidOperationException(
+                $"No se puede enviar la ruta a carga: faltan {string.Join(", ", faltantes)}.");
 
         await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId);
     }

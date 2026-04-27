@@ -259,50 +259,12 @@ public static class MobilePedidoEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
-        // Legacy endpoint for backwards compatibility — redirects to EnviarARutaAsync
-        group.MapPost("/{id:int}/procesar", async (
-            int id,
-            HttpContext context,
-            [FromServices] PedidoService servicio,
-            [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config,
-            [FromServices] IServiceScopeFactory scopeFactory) =>
-        {
-            var resultado = await servicio.EnviarARutaAsync(id);
-            if (!resultado)
-                return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
-
-            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.EnRuta);
-            return Results.Ok(new { success = true, message = "Pedido en ruta" });
-        })
-        .WithSummary("[Legacy] Procesar pedido → En Ruta")
-        .WithDescription("Legacy: redirige a EnRuta. Cambia estado de Confirmado a EnRuta.")
-        .Produces<object>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        group.MapPost("/{id:int}/en-ruta", async (
-            int id,
-            HttpContext context,
-            [FromServices] PedidoService servicio,
-            [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config,
-            [FromServices] IServiceScopeFactory scopeFactory) =>
-        {
-            var resultado = await servicio.EnviarARutaAsync(id);
-            if (!resultado)
-                return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
-
-            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.EnRuta);
-            return Results.Ok(new { success = true, message = "Pedido en ruta" });
-        })
-        .WithSummary("Poner en ruta")
-        .WithDescription("Cambia estado de Confirmado a EnRuta.")
-        .Produces<object>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest);
+        // Endpoints /procesar y /en-ruta REMOVIDOS de la mobile API (2026-04-27).
+        // Poner pedido EnRuta es responsabilidad exclusiva del admin/supervisor desde
+        // el dashboard web — requiere asignar el pedido a una RutaVendedor activa
+        // (validación BR-RUTA-EnRuta en PedidoRepository.CambiarEstadoDetalladoAsync).
+        // El vendedor en mobile no debería tener este botón; si llega un cliente con
+        // el endpoint cacheado recibirá 404, lo cual es preferible a 400 confuso.
 
         group.MapPost("/{id:int}/entregar", async (
             int id,

@@ -1,6 +1,8 @@
+using System.Net.Http.Json;
 using FluentValidation;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Services;
+using HandySuites.Domain.Entities;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +10,51 @@ namespace HandySuites.Api.Endpoints;
 
 public static class RutaVendedorEndpoints
 {
+    // Marker para ILogger genérico
+    private sealed class RutaVendedorEndpointsLog { }
+
+    /// <summary>
+    /// Fire-and-forget push notification al vendedor cuando se le asignan items
+    /// a una ruta YA ACTIVA (CargaAceptada o EnProgreso). Antes el admin podía
+    /// asignar pedidos a una ruta corriendo y el vendedor no se enteraba hasta
+    /// el siguiente sync manual. Reportado 2026-04-27.
+    /// </summary>
+    private static void NotifyMobileRouteAssignment(
+        IHttpClientFactory factory,
+        int tenantId,
+        int vendedorId,
+        int rutaId,
+        int pedidoId,
+        ILogger logger)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var client = factory.CreateClient("MobileApi");
+                var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                {
+                    tenantId,
+                    userIds = new[] { vendedorId },
+                    title = "Nuevo pedido asignado a tu ruta",
+                    body = $"Se agregó un pedido a tu ruta en curso. Sincroniza para verlo.",
+                    data = new Dictionary<string, string>
+                    {
+                        ["type"] = "route.pedido_assigned",
+                        ["rutaId"] = rutaId.ToString(),
+                        ["pedidoId"] = pedidoId.ToString(),
+                    }
+                });
+                if (!resp.IsSuccessStatusCode)
+                    logger.LogWarning("Mobile API push-notify returned {Status} for ruta {RutaId} pedido {PedidoId}", resp.StatusCode, rutaId, pedidoId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to notify Mobile API of route assignment ruta {RutaId} pedido {PedidoId}", rutaId, pedidoId);
+            }
+        });
+    }
+
     public static void MapRutaVendedorEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/rutas").RequireAuthorization();
@@ -415,9 +462,23 @@ public static class RutaVendedorEndpoints
         group.MapPost("/{id:int}/carga/pedidos", async (
             int id,
             AsignarPedidoRequest dto,
-            [FromServices] RutaVendedorService servicio) =>
+            HttpContext context,
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
         {
-            await servicio.AsignarPedidoAsync(id, dto.PedidoId);
+            var (estado, vendedorId) = await servicio.AsignarPedidoAsync(id, dto.PedidoId);
+
+            // Si la ruta ya está activa (vendedor la aceptó o ya empezó) y tenemos
+            // tenantId + vendedor: dispara push fire-and-forget para que el mobile
+            // sepa que tiene un pedido nuevo sin esperar al pull manual.
+            if ((estado == EstadoRuta.CargaAceptada || estado == EstadoRuta.EnProgreso)
+                && vendedorId.HasValue
+                && int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
+            {
+                NotifyMobileRouteAssignment(httpClientFactory, tenantId, vendedorId.Value, id, dto.PedidoId, logger);
+            }
+
             return Results.Ok(new { mensaje = "Pedido asignado" });
         });
 

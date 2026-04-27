@@ -516,8 +516,46 @@ public class SyncService
                     PedidoId = d.PedidoId,
                     Notas = d.Notas,
                     Version = d.Version
-                }).ToList()
+                }).ToList(),
+                Pedidos = r.PedidosAsignados?
+                    .Where(rp => rp.Activo)
+                    .Select(rp => new SyncRutaPedidoDto
+                    {
+                        Id = rp.Id,
+                        RutaId = rp.RutaId,
+                        PedidoId = rp.PedidoId,
+                        Estado = (int)rp.Estado,
+                        Activo = rp.Activo,
+                        CreadoEn = rp.CreadoEn,
+                    }).ToList(),
             }).ToList();
+
+            // RutasCarga no está en navigation property — cargar bulk para todas las
+            // rutas pulled y mapear por rutaId.
+            var rutaIds = rutas.Select(r => r.Id).ToList();
+            if (rutaIds.Count > 0)
+            {
+                var cargaPorRuta = await _repo.GetRutasCargaForRutasAsync(tenantId, rutaIds);
+                foreach (var dto in response.ServerChanges.Rutas)
+                {
+                    if (cargaPorRuta.TryGetValue(dto.Id, out var items))
+                    {
+                        dto.Carga = items.Select(rc => new SyncRutaCargaDto
+                        {
+                            Id = rc.Id,
+                            RutaId = rc.RutaId,
+                            ProductoId = rc.ProductoId,
+                            CantidadEntrega = rc.CantidadEntrega,
+                            CantidadVenta = rc.CantidadVenta,
+                            CantidadTotal = rc.CantidadTotal,
+                            PrecioUnitario = rc.PrecioUnitario,
+                            Activo = rc.Activo,
+                            CreadoEn = rc.CreadoEn,
+                        }).ToList();
+                    }
+                }
+            }
+
             response.Summary.RutasPulled = rutas.Count;
         }
 

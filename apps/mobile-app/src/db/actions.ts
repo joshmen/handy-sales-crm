@@ -4,6 +4,7 @@ import DetallePedido from './models/DetallePedido';
 import Cobro from './models/Cobro';
 import Visita from './models/Visita';
 import Cliente from './models/Cliente';
+import Producto from './models/Producto';
 import RutaDetalle from './models/RutaDetalle';
 import { round2 } from '@/utils/money';
 
@@ -243,6 +244,26 @@ export async function createVentaDirectaOffline(
       record.version = 1;
       record.updatedAt = new Date();
     });
+
+    // Decrementar stock local de cada producto en la misma transacción WDB.
+    // Antes la venta directa no actualizaba `productos.stockDisponible` localmente
+    // — el server SÍ descontaba (vía SyncRepository.UpsertPedidoAsync) pero el mobile
+    // mostraba el stock viejo hasta el siguiente sync delta. Reportado 2026-04-27:
+    // "hago venta de 3 cocas y mobile sigue mostrando 100".
+    // Si el stock local diverge del server (por ventas concurrentes), el sync delta
+    // posterior reemplazará el valor con la cantidad real del backend.
+    for (const item of items) {
+      try {
+        const producto = await database.get<Producto>('productos').find(item.productoId);
+        await producto.update((record: any) => {
+          record.stockDisponible = Math.max(0, (record.stockDisponible ?? 0) - item.cantidad);
+        });
+      } catch {
+        // Producto no encontrado en WDB local (poco probable porque el flujo
+        // de venta requiere seleccionarlo del catálogo). Si pasa, dejamos que el
+        // sync delta del server traiga la verdad — no rompemos la venta.
+      }
+    }
 
     // Atomicidad con la parada: si viene de ruta, se marca como Completada
     // en la misma transacción. No usamos el @writer `depart()` porque WDB
