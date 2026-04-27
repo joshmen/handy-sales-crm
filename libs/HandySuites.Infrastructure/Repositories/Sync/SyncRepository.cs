@@ -36,7 +36,22 @@ public class SyncRepository : ISyncRepository
 
         if (since.HasValue)
         {
-            query = query.Where(p => p.ActualizadoEn > since || p.CreadoEn > since);
+            // Un producto se incluye si: el producto cambió, O el inventario del producto
+            // cambió desde el último sync. Antes solo se filtraba por Producto.ActualizadoEn,
+            // así una SALIDA (venta) que solo toca Inventario.CantidadActual no propagaba el
+            // nuevo stock al mobile — la app seguía mostrando el cache anterior. Reportado
+            // 2026-04-27: vendedor hizo venta directa, web reflejó stock OK pero mobile
+            // seguía mostrando cantidad pre-venta tras re-login.
+            var productosConInventarioModificado = _db.Set<HandySuites.Domain.Entities.Inventario>()
+                .AsNoTracking()
+                .Where(i => i.TenantId == tenantId
+                            && (i.ActualizadoEn > since || i.CreadoEn > since))
+                .Select(i => i.ProductoId);
+
+            query = query.Where(p =>
+                p.ActualizadoEn > since
+                || p.CreadoEn > since
+                || productosConInventarioModificado.Contains(p.Id));
         }
 
         return await query.OrderBy(p => p.Id).ToListAsync();

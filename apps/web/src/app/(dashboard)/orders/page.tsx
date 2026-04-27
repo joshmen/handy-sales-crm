@@ -433,8 +433,11 @@ export default function OrdersPage() {
       toast.success(t('statusUpdated'));
       fetchOrders();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : tc('errorChangingStatus');
-      toast.error(message);
+      // ApiError es interface (objeto plano), no clase Error. El check `instanceof Error`
+      // siempre fallaba y caía al fallback genérico, ocultando el mensaje específico
+      // del backend (p.ej. "primero debe estar asignado a una ruta de vendedor activa").
+      // useApiErrorToast lee directamente .message del objeto thrown sin instanceof.
+      showApiError(err, tc('errorChangingStatus'));
     }
   };
 
@@ -455,8 +458,8 @@ export default function OrdersPage() {
       setCancelReasonText('');
       fetchOrders();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('errorCancelling');
-      toast.error(message);
+      // Mismo bug que en handleAdvanceStatus: ApiError no es Error instance.
+      showApiError(err, t('errorCancelling'));
     } finally {
       setCancelLoading(false);
     }
