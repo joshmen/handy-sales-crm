@@ -67,6 +67,10 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Ya existe una familia de productos con ese nombre.': { es: 'Ya existe una familia de productos con ese nombre.', en: 'A product family with that name already exists.' },
 
   // Route errors
+  'No se puede poner el pedido En Ruta: primero debe estar asignado a una ruta de vendedor activa (con carga aceptada o en progreso).': {
+    es: 'No se puede poner el pedido En Ruta: primero debe estar asignado a una ruta de vendedor activa (con carga aceptada o en progreso).',
+    en: 'Cannot move order to In Route: it must first be assigned to an active vendor route (with load accepted or in progress).',
+  },
   'La ruta no está en progreso': { es: 'La ruta no está en progreso', en: 'Route is not in progress' },
   'No se puede editar una ruta que ya está en progreso o completada': { es: 'No se puede editar una ruta que ya está en progreso o completada', en: 'Cannot edit a route that is already in progress or completed' },
   'No se puede eliminar una ruta en progreso': { es: 'No se puede eliminar una ruta en progreso', en: 'Cannot delete a route in progress' },
@@ -189,6 +193,31 @@ export function translateError(message: string): string {
       replacement: { en: message.replace(
         /^Stock insuficiente: (.+): solo (.+) disponibles?, solicitado (.+)$/,
         'Insufficient stock: $1: only $2 available, requested $3'
+      ) },
+    },
+    {
+      // OutcomeToResult.TransicionInvalida — `No se puede {accionVerbo} un pedido en estado {EstadoLabel}.`
+      // EstadoLabel y accionVerbo son sets cerrados (PedidoEndpoints.cs). Mapeamos ambos.
+      pattern: /^No se puede (?:confirmar|enviar a ruta|marcar como entregado|cancelar) un pedido en estado .+\.$/,
+      replacement: { en: message.replace(
+        /^No se puede (.+) un pedido en estado (.+)\.$/,
+        (_full, verbo: string, estado: string) => {
+          const verboMap: Record<string, string> = {
+            'confirmar': 'confirm',
+            'enviar a ruta': 'send to route',
+            'marcar como entregado': 'mark as delivered',
+            'cancelar': 'cancel',
+          };
+          const estadoMap: Record<string, string> = {
+            'Borrador': 'Draft',
+            'Confirmado': 'Confirmed',
+            'En ruta': 'In route',
+            'Entregado': 'Delivered',
+            'Cancelado': 'Cancelled',
+            'desconocido': 'unknown',
+          };
+          return `Cannot ${verboMap[verbo] || verbo} an order in ${estadoMap[estado] || estado} status.`;
+        }
       ) },
     },
     {
