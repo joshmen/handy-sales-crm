@@ -215,17 +215,23 @@ export default function RouteDetailPage() {
   const isEditable = isPlanificada || isPendienteAceptar;
 
   // Actions — uso showApiError para mostrar el message real del backend
-  // (p.ej. "No se puede iniciar la ruta: faltan paradas, pedidos asignados.")
-  // en vez del fallback genérico "Error starting route". Reportado 2026-04-27.
-  const handleIniciar = async () => {
+  // (p.ej. "No se puede enviar la ruta a carga: faltan paradas, pedidos asignados.")
+  // en vez del fallback genérico. Reportado 2026-04-27.
+  //
+  // El admin desde web NO inicia la ruta — solo la envía a carga (PendienteAceptar).
+  // Después el vendedor recibe push, abre mobile, presiona "Aceptar" y eso dispara
+  // aceptar+iniciar consecutivos del lado del vendedor (flujo natural). Antes este
+  // botón llamaba IniciarRutaAsync directo y saltaba el paso de aceptación, dejando
+  // AceptadaEn null y rompiendo el banner "Aceptar ruta" del mobile.
+  const handleSendToLoad = async () => {
     if (!route) return;
     try {
       setActionLoading(true);
-      await routeService.iniciarRuta(route.id);
-      toast.success(t('detail.routeStarted'));
+      await routeService.enviarACarga(route.id);
+      toast.success(t('detail.routeSentToLoad'));
       fetchRoute();
     } catch (err) {
-      showApiError(err, t('detail.errorStarting'));
+      showApiError(err, t('detail.errorSendingToLoad'));
     } finally {
       setActionLoading(false);
     }
@@ -435,12 +441,12 @@ export default function RouteDetailPage() {
             {isPlanificada && (
               <>
                 <button
-                  onClick={handleIniciar}
+                  onClick={handleSendToLoad}
                   disabled={actionLoading}
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
                 >
                   <Play className="w-4 h-4" />
-                  {t('detail.startRoute')}
+                  {t('detail.sendToLoad')}
                 </button>
                 <button
                   onClick={() => setIsCancelOpen(true)}
