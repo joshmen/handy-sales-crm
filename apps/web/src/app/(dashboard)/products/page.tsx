@@ -15,6 +15,7 @@ import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useBusinessEvents } from '@/hooks/useBusinessEvents';
 import {
   Plus,
   Pencil,
@@ -204,6 +205,15 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Refresh stock automáticamente cuando un mobile sincroniza ventas / pedidos.
+  // Antes el admin tenia que hacer refresh manual para ver el stock actualizado
+  // tras una venta directa del vendedor (reportado 2026-04-27). Backend emite
+  // estos eventos via SignalR cuando el mobile push llega via /api/internal/sync-notify.
+  useBusinessEvents({
+    onSyncCompleted: () => fetchProducts(),
+    onPedidoCreated: () => fetchProducts(),
+  });
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
