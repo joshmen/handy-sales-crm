@@ -253,8 +253,20 @@ public class RutaVendedorService
 
     public async Task<bool> CancelarRutaAsync(int id, string? motivo)
     {
+        var (ok, _, _) = await CancelarRutaDetalladoAsync(id, motivo);
+        return ok;
+    }
+
+    /// <summary>
+    /// Cancela la ruta y retorna info necesaria para que el endpoint web emita
+    /// push notification al vendedor cuando la ruta estaba activa (CargaAceptada o
+    /// EnProgreso). Antes el admin podía cancelar una ruta corriendo y el vendedor
+    /// no se enteraba hasta el siguiente sync manual.
+    /// </summary>
+    public async Task<(bool Ok, EstadoRuta? EstadoPrevio, int? VendedorId)> CancelarRutaDetalladoAsync(int id, string? motivo)
+    {
         var ruta = await _repo.ObtenerEntidadAsync(id);
-        if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return (false, null, null);
 
         // Solo el vendedor asignado, admin/super_admin o supervisor pueden cancelar.
         if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
@@ -264,7 +276,9 @@ public class RutaVendedorService
             throw new UnauthorizedAccessException("Solo el vendedor asignado puede cancelar esta ruta");
         }
 
-        return await _repo.CancelarRutaAsync(id, motivo);
+        var estadoPrevio = ruta.Estado;
+        var ok = await _repo.CancelarRutaAsync(id, motivo);
+        return (ok, estadoPrevio, ruta.UsuarioId);
     }
 
     // Gestión de paradas

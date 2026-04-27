@@ -228,16 +228,88 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         var ruta = await _db.RutasVendedor.FindAsync(id);
         if (ruta == null) return false;
 
-        // Only allow cancellation from states that haven't started or completed
-        if (ruta.Estado is EstadoRuta.EnProgreso or EstadoRuta.Completada or EstadoRuta.Cerrada)
+        // Rutas Completadas o Cerradas NO se pueden cancelar — son terminales con
+        // cobros/inventarios ya consolidados; cancelarlas dejaría datos contables
+        // inconsistentes. Para el resto (Planificada, PendienteAceptar, CargaAceptada,
+        // EnProgreso) hacemos cleanup atómico de items asociados.
+        if (ruta.Estado is EstadoRuta.Completada or EstadoRuta.Cerrada or EstadoRuta.Cancelada)
             return false;
 
+        var ahora = DateTime.UtcNow;
+        var motivoFmt = string.IsNullOrWhiteSpace(motivo) ? "Ruta cancelada" : $"Ruta cancelada: {motivo}";
+
+        // BR-RUTA-Cancelar (cleanup atómico): al cancelar una ruta hay que dejar
+        // los items en estado coherente — antes solo cambiaba ruta.Estado y dejaba
+        // pedidos/paradas/carga huérfanos referenciando una ruta cancelada.
+        // Reportado 2026-04-27.
+
+        // 1) Pedidos asignados (RutasPedidos): los NO entregados regresan a Confirmado
+        //    y se desvinculan (Activo=false) para que puedan asignarse a otra ruta.
+        //    Los que ya están Entregado/Cancelado se mantienen como están.
+        var asignaciones = await _db.RutasPedidos
+            .Where(rp => rp.RutaId == id && rp.Activo)
+            .ToListAsync();
+        if (asignaciones.Count > 0)
+        {
+            var pedidoIds = asignaciones.Select(rp => rp.PedidoId).Distinct().ToList();
+            var pedidos = await _db.Pedidos.Where(p => pedidoIds.Contains(p.Id)).ToListAsync();
+            foreach (var p in pedidos)
+            {
+                if (p.Estado == EstadoPedido.EnRuta)
+                {
+                    // Pedido salió a ruta pero no se entregó → revertir a Confirmado.
+                    p.Estado = EstadoPedido.Confirmado;
+                    p.ActualizadoEn = ahora;
+                    p.Notas = string.IsNullOrEmpty(p.Notas)
+                        ? $"[{motivoFmt}] regresado a Confirmado"
+                        : $"{p.Notas}\n[{motivoFmt}] regresado a Confirmado";
+                }
+            }
+            foreach (var rp in asignaciones)
+            {
+                rp.Activo = false;
+                rp.ActualizadoEn = ahora;
+            }
+        }
+
+        // 2) Paradas (RutasDetalle): las que estaban Pendiente o EnVisita se marcan
+        //    Omitidas con razón. Las Visitadas u Omitidas se mantienen.
+        var paradas = await _db.RutasDetalle
+            .Where(d => d.RutaId == id)
+            .ToListAsync();
+        foreach (var d in paradas)
+        {
+            if (d.Estado == EstadoParada.Pendiente || d.Estado == EstadoParada.EnCamino)
+            {
+                d.Estado = EstadoParada.Omitido;
+                d.RazonOmision = string.IsNullOrEmpty(d.RazonOmision)
+                    ? motivoFmt
+                    : $"{d.RazonOmision} | {motivoFmt}";
+                d.ActualizadoEn = ahora;
+            }
+        }
+
+        // 3) Productos de carga (RutasCarga): se desactivan. No se revierte inventario
+        //    porque RutasCarga NO descuenta stock al asignar — el descuento ocurre
+        //    cuando se entrega un pedido (vía MovimientoInventarioService).
+        var carga = await _db.RutasCarga
+            .Where(rc => rc.RutaId == id && rc.Activo)
+            .ToListAsync();
+        foreach (var rc in carga)
+        {
+            rc.Activo = false;
+            rc.ActualizadoEn = ahora;
+        }
+
+        // 4) Finalmente la ruta misma
         ruta.Estado = EstadoRuta.Cancelada;
         ruta.Notas = string.IsNullOrEmpty(ruta.Notas)
             ? $"[Cancelada] {motivo}"
             : $"{ruta.Notas}\n[Cancelada] {motivo}";
-        ruta.ActualizadoEn = DateTime.UtcNow;
+        ruta.ActualizadoEn = ahora;
 
+        // Todos los cambios en una sola SaveChangesAsync — EF agrupa en una tx
+        // implícita. Si cualquier cosa falla, nada se persiste.
         return await _db.SaveChangesAsync() > 0;
     }
 

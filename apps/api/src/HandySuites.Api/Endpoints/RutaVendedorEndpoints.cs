@@ -14,6 +14,49 @@ public static class RutaVendedorEndpoints
     private sealed class RutaVendedorEndpointsLog { }
 
     /// <summary>
+    /// Fire-and-forget push al vendedor cuando admin cancela su ruta activa.
+    /// Reportado 2026-04-27 — sin esto, el vendedor seguiría viendo la ruta como
+    /// activa hasta el próximo sync manual y podría intentar visitar paradas
+    /// que ya no aplican.
+    /// </summary>
+    private static void NotifyMobileRouteCancelled(
+        IHttpClientFactory factory,
+        int tenantId,
+        int vendedorId,
+        int rutaId,
+        string? motivo,
+        ILogger logger)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var client = factory.CreateClient("MobileApi");
+                var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                {
+                    tenantId,
+                    userIds = new[] { vendedorId },
+                    title = "Ruta cancelada",
+                    body = string.IsNullOrWhiteSpace(motivo)
+                        ? "Tu ruta de hoy fue cancelada por el administrador."
+                        : $"Tu ruta de hoy fue cancelada: {motivo}",
+                    data = new Dictionary<string, string>
+                    {
+                        ["type"] = "route.cancelled",
+                        ["rutaId"] = rutaId.ToString(),
+                    }
+                });
+                if (!resp.IsSuccessStatusCode)
+                    logger.LogWarning("Mobile API push-notify (route cancelled) returned {Status} for ruta {RutaId}", resp.StatusCode, rutaId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to notify Mobile API of route cancellation ruta {RutaId}", rutaId);
+            }
+        });
+    }
+
+    /// <summary>
     /// Fire-and-forget push notification al vendedor cuando se le asignan items
     /// a una ruta YA ACTIVA (CargaAceptada o EnProgreso). Antes el admin podía
     /// asignar pedidos a una ruta corriendo y el vendedor no se enteraba hasta
@@ -331,12 +374,25 @@ public static class RutaVendedorEndpoints
         group.MapPost("/{id:int}/cancelar", async (
             int id,
             [FromBody] CancelarRutaDto? dto,
-            [FromServices] RutaVendedorService servicio) =>
+            HttpContext context,
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
         {
-            var resultado = await servicio.CancelarRutaAsync(id, dto?.Motivo);
-            return resultado
-                ? Results.Ok(new { mensaje = "Ruta cancelada" })
-                : Results.BadRequest(new { error = "No se pudo cancelar la ruta" });
+            var (ok, estadoPrevio, vendedorId) = await servicio.CancelarRutaDetalladoAsync(id, dto?.Motivo);
+            if (!ok)
+                return Results.BadRequest(new { error = "No se pudo cancelar la ruta. Verifica que no esté completada o ya cancelada." });
+
+            // Push al vendedor si la ruta estaba activa — sin esto el vendedor seguiría
+            // viendo la ruta como activa hasta el próximo sync manual.
+            if ((estadoPrevio == EstadoRuta.CargaAceptada || estadoPrevio == EstadoRuta.EnProgreso)
+                && vendedorId.HasValue
+                && int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
+            {
+                NotifyMobileRouteCancelled(httpClientFactory, tenantId, vendedorId.Value, id, dto?.Motivo, logger);
+            }
+
+            return Results.Ok(new { mensaje = "Ruta cancelada" });
         });
 
         // Gestión de paradas
