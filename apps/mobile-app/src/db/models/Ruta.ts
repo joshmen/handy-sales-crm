@@ -30,18 +30,33 @@ export default class Ruta extends Model {
   @children('ruta_detalles') detalles: any;
 
   /**
-   * Parser de la columna `zonas_json` a array de números. Si la columna está
-   * vacía o el JSON es inválido, retorna []. Caller usa esto en UI para
-   * mostrar chips de zonas.
+   * Parser de la columna `zonas_json` a array de zonas con id+nombre.
+   * Backward compat: si el JSON es array de numbers (legacy) o array de objects,
+   * normaliza a `Array<{id, nombre}>` para que la UI siempre vea el mismo shape.
    */
-  get zonaIds(): number[] {
+  get zonas(): Array<{ id: number; nombre: string }> {
     if (!this.zonasJson) return [];
     try {
       const parsed = JSON.parse(this.zonasJson);
-      return Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number') : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((z) => {
+          // Soporta tanto array de numbers (legacy) como objects.
+          if (typeof z === 'number') return { id: z, nombre: '' };
+          if (z && typeof z === 'object' && typeof z.id === 'number') {
+            return { id: z.id, nombre: typeof z.nombre === 'string' ? z.nombre : '' };
+          }
+          return null;
+        })
+        .filter((z): z is { id: number; nombre: string } => z !== null);
     } catch {
       return [];
     }
+  }
+
+  /** Solo IDs (compat con código viejo que usaba `zonaIds`). */
+  get zonaIds(): number[] {
+    return this.zonas.map((z) => z.id);
   }
 
   @writer async updateEstado(estado: number) {

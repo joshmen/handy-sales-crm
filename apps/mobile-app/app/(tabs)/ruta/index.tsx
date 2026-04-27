@@ -263,6 +263,20 @@ export default function RutaScreen() {
           <View style={styles.progressSection}>
             <Text style={styles.routeName}>{route.nombre}</Text>
 
+            {/* Zonas que cubre la ruta — chips. Multi-zona alineado con SFA/CPG
+                industria (Handy.la, SAP, Salesforce). Reportado 2026-04-27. */}
+            {route.zonas && route.zonas.length > 0 && (
+              <View style={styles.zonasRow}>
+                {route.zonas.map((z: { id: number; nombre: string }) => (
+                  <View key={z.id} style={styles.zonaChip}>
+                    <Text style={styles.zonaChipText}>
+                      {z.nombre || `Zona ${z.id}`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Horario estimado */}
             {(route.horaInicioEstimada || route.horaFinEstimada) && (
               <View style={styles.horarioRow}>
@@ -477,6 +491,16 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   routeName: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  zonasRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
+  zonaChip: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#93c5fd',
+  },
+  zonaChipText: { fontSize: 11, fontWeight: '600', color: '#1e40af' },
   horarioRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, marginTop: 2 },
   horarioText: { fontSize: 12, color: '#94a3b8' },
   progressTrack: { height: 8, borderRadius: 4, backgroundColor: '#e2e8f0', overflow: 'hidden' },

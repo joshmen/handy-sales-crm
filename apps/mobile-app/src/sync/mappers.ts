@@ -270,14 +270,20 @@ function extractDetallesPedido(
 }
 
 function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
-  // Multi-zona: backend ahora envía `zonaIds: number[]` (commit 26dab2a). Si no
-  // viene (apps mobile-api viejas pre-multi-zona) caemos a `[zonaId]` legacy.
-  // Si tampoco hay zonaId, dejamos null para que el getter `Ruta.zonaIds` regrese [].
+  // Multi-zona: backend envía `zonas: [{id, nombre}, ...]` (commit nuevo). Si solo
+  // viene `zonaIds: number[]` (apps mobile-api intermedias), sintetizamos objetos
+  // sin nombre. Si tampoco hay nada, fallback a `[zonaId]` legacy.
+  // Storage en `zonas_json` siempre como objects para que el getter del modelo
+  // pueda retornar nombre + id sin lookups adicionales.
   let zonasJson: string | null = null;
-  if (Array.isArray(r.zonaIds) && r.zonaIds.length > 0) {
-    zonasJson = JSON.stringify(r.zonaIds);
+  if (Array.isArray(r.zonas) && r.zonas.length > 0) {
+    zonasJson = JSON.stringify(
+      r.zonas.map((z: any) => ({ id: z.id, nombre: z.nombre || '' }))
+    );
+  } else if (Array.isArray(r.zonaIds) && r.zonaIds.length > 0) {
+    zonasJson = JSON.stringify(r.zonaIds.map((id: number) => ({ id, nombre: '' })));
   } else if (r.zonaId != null) {
-    zonasJson = JSON.stringify([r.zonaId]);
+    zonasJson = JSON.stringify([{ id: r.zonaId, nombre: '' }]);
   }
   return {
     id: rutaMap.get(r.id) || String(r.id),

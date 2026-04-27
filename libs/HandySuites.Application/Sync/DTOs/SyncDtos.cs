@@ -234,6 +234,12 @@ public class SyncVisitaDto
     public bool IsDeleted { get; set; }
 }
 
+public class SyncZonaResumenDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+}
+
 public class SyncRutaDto
 {
     public int Id { get; set; }
@@ -241,8 +247,10 @@ public class SyncRutaDto
     public int? UsuarioId { get; set; }
     /// <summary>Legacy: primera zona (compat con apps mobile pre-multi-zona).</summary>
     public int? ZonaId { get; set; }
-    /// <summary>Multi-zona: lista completa de IDs de zonas que cubre la ruta. Reportado 2026-04-27 — alineado con SFA/CPG industria.</summary>
+    /// <summary>Multi-zona: lista de IDs (compat). Apps nuevas usan <see cref="Zonas"/>.</summary>
     public List<int>? ZonaIds { get; set; }
+    /// <summary>Multi-zona: lista completa de zonas con id+nombre para que mobile UI muestre chips legibles. 2026-04-27.</summary>
+    public List<SyncZonaResumenDto>? Zonas { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }

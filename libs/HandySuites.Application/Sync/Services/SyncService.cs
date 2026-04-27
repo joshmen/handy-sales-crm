@@ -489,6 +489,14 @@ public class SyncService
                 ZonaIds = r.Zonas != null && r.Zonas.Count > 0
                     ? r.Zonas.Select(rz => rz.ZonaId).Distinct().ToList()
                     : (r.ZonaId.HasValue ? new List<int> { r.ZonaId.Value } : new List<int>()),
+                // Multi-zona con nombres (UI mobile muestra chips legibles).
+                Zonas = r.Zonas != null && r.Zonas.Count > 0
+                    ? r.Zonas.Where(rz => rz.Zona != null)
+                        .Select(rz => new SyncZonaResumenDto { Id = rz.ZonaId, Nombre = rz.Zona!.Nombre })
+                        .ToList()
+                    : (r.Zona != null
+                        ? new List<SyncZonaResumenDto> { new() { Id = r.Zona.Id, Nombre = r.Zona.Nombre } }
+                        : new List<SyncZonaResumenDto>()),
                 Nombre = r.Nombre,
                 Descripcion = r.Descripcion,
                 Fecha = r.Fecha,
