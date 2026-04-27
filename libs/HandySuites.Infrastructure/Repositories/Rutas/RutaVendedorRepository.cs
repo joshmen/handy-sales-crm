@@ -28,6 +28,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .AsNoTracking()
             .Include(r => r.Usuario)
             .Include(r => r.Zona)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
             .Include(r => r.Detalles)
                 .ThenInclude(d => d.Cliente)
             .FirstOrDefaultAsync(r => r.Id == id);
@@ -41,6 +43,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     {
         return await _db.RutasVendedor
             .Include(r => r.Detalles)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 
@@ -59,12 +63,45 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return await _db.SaveChangesAsync() > 0;
     }
 
+    /// <summary>
+    /// Reemplaza completamente las zonas asignadas a la ruta. Patrón delete-then-insert
+    /// — más simple que merge, idempotente, OK porque RutasZonas no tiene data que
+    /// preservar (es solo M:N junction).
+    /// </summary>
+    public async Task ReemplazarZonasAsync(int rutaId, List<int> zonaIds, int tenantId)
+    {
+        // Delete existing
+        var existing = await _db.RutasZonas
+            .Where(rz => rz.RutaId == rutaId && rz.TenantId == tenantId)
+            .ToListAsync();
+        if (existing.Count > 0)
+            _db.RutasZonas.RemoveRange(existing);
+
+        // Insert new (deduplicated)
+        var seen = new HashSet<int>();
+        foreach (var zonaId in zonaIds)
+        {
+            if (zonaId <= 0 || !seen.Add(zonaId)) continue;
+            _db.RutasZonas.Add(new RutaZona
+            {
+                RutaId = rutaId,
+                ZonaId = zonaId,
+                TenantId = tenantId,
+                CreadoEn = DateTime.UtcNow
+            });
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<(List<RutaListaDto> Items, int TotalCount)> ObtenerPorFiltroAsync(int tenantId, RutaFiltroDto filtro)
     {
         var query = _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Usuario)
             .Include(r => r.Zona)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
             .Include(r => r.Detalles)
             .Where(r => r.TenantId == tenantId && !r.EsTemplate)
             .AsQueryable();
@@ -76,7 +113,14 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             query = query.Where(r => r.UsuarioId == filtro.UsuarioId);
 
         if (filtro.ZonaId.HasValue)
-            query = query.Where(r => r.ZonaId == filtro.ZonaId);
+        {
+            // Filtra rutas que tengan la zona en cualquier slot:
+            // - en el legacy ZonaId (rutas viejas no migradas)
+            // - O en la junction RutasZonas (rutas multi-zona)
+            // Después del backfill ambos coinciden, pero mantenemos el OR para defensiva.
+            query = query.Where(r => r.ZonaId == filtro.ZonaId
+                                    || r.Zonas.Any(rz => rz.ZonaId == filtro.ZonaId));
+        }
 
         if (filtro.Estado.HasValue)
             query = query.Where(r => r.Estado == filtro.Estado);
@@ -111,6 +155,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Nombre = r.Nombre,
                 UsuarioNombre = r.Usuario != null ? r.Usuario.Nombre : "",
                 ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,
+                Zonas = r.Zonas.Where(rz => rz.Zona != null)
+                               .Select(rz => new ZonaResumenDto { Id = rz.ZonaId, Nombre = rz.Zona!.Nombre })
+                               .ToList(),
                 Fecha = r.Fecha,
                 Estado = r.Estado,
                 TotalParadas = r.Detalles.Count,
@@ -811,6 +858,17 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     private RutaVendedorDto MapToDto(RutaVendedor ruta)
     {
+        // Multi-zona: si hay entradas en RutasZonas, usar esa lista. Si la ruta es vieja
+        // (creada antes del feature multi-zona) y solo tiene Zona legacy, sintetizamos
+        // una lista de 1 elemento para que el frontend nuevo funcione consistente.
+        var zonasResumen = ruta.Zonas?.Where(rz => rz.Zona != null)
+            .Select(rz => new ZonaResumenDto { Id = rz.ZonaId, Nombre = rz.Zona!.Nombre })
+            .ToList() ?? new List<ZonaResumenDto>();
+        if (zonasResumen.Count == 0 && ruta.Zona != null)
+        {
+            zonasResumen.Add(new ZonaResumenDto { Id = ruta.Zona.Id, Nombre = ruta.Zona.Nombre });
+        }
+
         return new RutaVendedorDto
         {
             Id = ruta.Id,
@@ -818,6 +876,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             UsuarioNombre = ruta.Usuario?.Nombre ?? "",
             ZonaId = ruta.ZonaId,
             ZonaNombre = ruta.Zona?.Nombre,
+            Zonas = zonasResumen,
             Nombre = ruta.Nombre,
             Descripcion = ruta.Descripcion,
             Fecha = ruta.Fecha,

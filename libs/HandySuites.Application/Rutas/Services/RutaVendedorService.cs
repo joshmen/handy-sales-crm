@@ -51,18 +51,29 @@ public class RutaVendedorService
             throw new UnauthorizedAccessException("No tienes permisos para asignar rutas a otros vendedores.");
         }
 
+        // Resolver zonas finales (multi-zona): preferir ZonaIds del dto. Si no viene,
+        // hacer fallback a [ZonaId] legacy. Si tampoco hay zonaId, ruta sin zonas.
+        var zonaIds = ResolveZonaIds(dto.ZonaIds, dto.ZonaId);
+
         // Existence checks (antes caían en 500 por FK violation).
         if (!dto.EsTemplate && !await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
             throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
-        if (dto.ZonaId is int zId && zId > 0
-            && !await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
-            throw new InvalidOperationException("La zona seleccionada no existe o no pertenece a tu empresa.");
+        foreach (var zId in zonaIds)
+        {
+            if (!await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
+                throw new InvalidOperationException($"La zona con ID {zId} no existe o no pertenece a tu empresa.");
+        }
+
+        // Para mantener compat con queries que aún filtran por r.ZonaId, persistimos
+        // la primera zona como la legacy ZonaId. La junction RutasZonas tiene la lista
+        // completa.
+        var legacyZonaId = zonaIds.FirstOrDefault();
 
         var ruta = new RutaVendedor
         {
             TenantId = _tenant.TenantId,
             UsuarioId = dto.EsTemplate ? null : dto.UsuarioId,
-            ZonaId = dto.ZonaId,
+            ZonaId = legacyZonaId == 0 ? null : legacyZonaId,
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
             Fecha = dto.EsTemplate ? DateTime.UtcNow.Date : dto.Fecha.Date,
@@ -80,6 +91,12 @@ public class RutaVendedorService
         return await _transactions.ExecuteInTransactionAsync(async () =>
         {
             var rutaId = await _repo.CrearAsync(ruta);
+
+            // Persist multi-zona junction
+            if (zonaIds.Count > 0)
+            {
+                await _repo.ReemplazarZonasAsync(rutaId, zonaIds, _tenant.TenantId);
+            }
 
             if (dto.Detalles?.Any() == true)
             {
@@ -103,6 +120,22 @@ public class RutaVendedorService
 
             return rutaId;
         });
+    }
+
+    /// <summary>
+    /// Combina ZonaIds (multi-zona, preferred) y ZonaId legacy (single) en una lista
+    /// final de IDs de zonas. Reglas:
+    /// - Si ZonaIds está poblada → usar esa (deduplicada).
+    /// - Si ZonaIds null/empty pero ZonaId tiene valor → [ZonaId].
+    /// - Si ambos null → lista vacía (ruta sin zonas).
+    /// </summary>
+    private static List<int> ResolveZonaIds(List<int>? zonaIds, int? zonaIdLegacy)
+    {
+        if (zonaIds is { Count: > 0 })
+            return zonaIds.Where(z => z > 0).Distinct().ToList();
+        if (zonaIdLegacy is int z && z > 0)
+            return new List<int> { z };
+        return new List<int>();
     }
 
     public async Task<RutaVendedorDto?> ObtenerPorIdAsync(int id)
@@ -175,7 +208,35 @@ public class RutaVendedorService
             throw new InvalidOperationException("No se puede editar una ruta que ya está en progreso o completada");
 
         if (dto.UsuarioId.HasValue) ruta.UsuarioId = dto.UsuarioId.Value;
-        if (dto.ZonaId.HasValue) ruta.ZonaId = dto.ZonaId;
+
+        // Multi-zona: si se envía ZonaIds (puede ser lista vacía explícita = quitar todas
+        // las zonas), reemplaza junction. Si solo se envía ZonaId legacy, sincroniza
+        // junction con [ZonaId]. Si ninguno se envía, no toca zonas.
+        var zonasUpdated = false;
+        List<int>? newZonaIds = null;
+        if (dto.ZonaIds != null)
+        {
+            newZonaIds = ResolveZonaIds(dto.ZonaIds, null);
+            zonasUpdated = true;
+        }
+        else if (dto.ZonaId.HasValue)
+        {
+            newZonaIds = ResolveZonaIds(null, dto.ZonaId);
+            zonasUpdated = true;
+        }
+
+        if (zonasUpdated && newZonaIds != null)
+        {
+            // Validate cada zona
+            foreach (var zId in newZonaIds)
+            {
+                if (!await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
+                    throw new InvalidOperationException($"La zona con ID {zId} no existe o no pertenece a tu empresa.");
+            }
+            // Sync legacy field con primera zona
+            ruta.ZonaId = newZonaIds.FirstOrDefault() == 0 ? null : newZonaIds.First();
+        }
+
         if (!string.IsNullOrEmpty(dto.Nombre)) ruta.Nombre = dto.Nombre;
         if (dto.Descripcion != null) ruta.Descripcion = dto.Descripcion;
         if (dto.Fecha.HasValue) ruta.Fecha = dto.Fecha.Value.Date;
@@ -186,7 +247,16 @@ public class RutaVendedorService
         ruta.ActualizadoEn = DateTime.UtcNow;
         ruta.ActualizadoPor = _tenant.UserId;
 
-        return await _repo.ActualizarAsync(ruta);
+        // Atomic: ruta header + zonas reemplazadas en una sola tx implícita.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
+        {
+            var ok = await _repo.ActualizarAsync(ruta);
+            if (ok && zonasUpdated && newZonaIds != null)
+            {
+                await _repo.ReemplazarZonasAsync(id, newZonaIds, _tenant.TenantId);
+            }
+            return ok;
+        });
     }
 
     public async Task<bool> EliminarAsync(int id)

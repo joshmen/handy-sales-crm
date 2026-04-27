@@ -7,8 +7,12 @@ public class RutaVendedorDto
     public int Id { get; set; }
     public int UsuarioId { get; set; }
     public string UsuarioNombre { get; set; } = string.Empty;
+    /// <summary>Legacy: primera zona de la ruta. Mantenido para compat con apps mobile viejas. El frontend nuevo usa <see cref="Zonas"/>.</summary>
     public int? ZonaId { get; set; }
+    /// <summary>Legacy: nombre de la primera zona.</summary>
     public string? ZonaNombre { get; set; }
+    /// <summary>Multi-zona: lista completa de zonas que cubre la ruta. Source of truth nuevo.</summary>
+    public List<ZonaResumenDto> Zonas { get; set; } = new();
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
@@ -54,10 +58,20 @@ public class RutaDetalleDto
     public double? DistanciaDesdeAnterior { get; set; }
 }
 
+/// <summary>Resumen ligero de zona para usar en DTOs de ruta (multi-zona).</summary>
+public class ZonaResumenDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+}
+
 public class RutaVendedorCreateDto
 {
     public int UsuarioId { get; set; }
+    /// <summary>Legacy: si solo se manda zonaId (sin zonaIds), el service lo convierte a [zonaId]. Apps frontend nuevas deben usar ZonaIds.</summary>
     public int? ZonaId { get; set; }
+    /// <summary>Multi-zona: lista de zonas que cubre la ruta. Si está null y ZonaId tiene valor, se usa [ZonaId].</summary>
+    public List<int>? ZonaIds { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
@@ -80,7 +94,10 @@ public class RutaDetalleCreateDto
 public class RutaVendedorUpdateDto
 {
     public int? UsuarioId { get; set; }
+    /// <summary>Legacy single-zone, ver RutaVendedorCreateDto.</summary>
     public int? ZonaId { get; set; }
+    /// <summary>Multi-zona: si se manda, reemplaza completamente el set de zonas de la ruta.</summary>
+    public List<int>? ZonaIds { get; set; }
     public string? Nombre { get; set; }
     public string? Descripcion { get; set; }
     public DateTime? Fecha { get; set; }
@@ -108,7 +125,10 @@ public class RutaListaDto
     public int UsuarioId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string UsuarioNombre { get; set; } = string.Empty;
+    /// <summary>Legacy: primera zona. Listas que muestran todas usan <see cref="Zonas"/>.</summary>
     public string? ZonaNombre { get; set; }
+    /// <summary>Multi-zona: lista de zonas para mostrar como chips en la lista.</summary>
+    public List<ZonaResumenDto> Zonas { get; set; } = new();
     public DateTime Fecha { get; set; }
     public EstadoRuta Estado { get; set; }
     public string EstadoNombre => Estado.ToString();

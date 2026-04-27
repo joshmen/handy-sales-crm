@@ -23,6 +23,9 @@ public interface IRutaVendedorRepository
     Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales);
     Task<bool> CancelarRutaAsync(int id, string? motivo);
 
+    /// <summary>Reemplaza las zonas de una ruta por la lista dada (delete-then-insert idempotente).</summary>
+    Task ReemplazarZonasAsync(int rutaId, List<int> zonaIds, int tenantId);
+
     // Gestión de detalles
     Task<int> AgregarDetalleAsync(RutaDetalle detalle);
     Task<bool> ActualizarDetalleAsync(RutaDetalle detalle);
