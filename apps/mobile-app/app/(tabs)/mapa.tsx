@@ -23,6 +23,7 @@ import { MapModeToggle, type MapMode } from '@/components/map/MapModeToggle';
 import { StopMarker } from '@/components/map/StopMarker';
 import { ClusterMarker } from '@/components/map/ClusterMarker';
 import { ClientDetailPanel } from '@/components/map/ClientDetailPanel';
+import { isGoogleMapsConfigured } from '@/utils/maps';
 import { NextStopPanel } from '@/components/map/NextStopPanel';
 import { CheckInPanel } from '@/components/map/CheckInPanel';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
@@ -242,6 +243,20 @@ function MapaScreenContent() {
   const handleMapPress = useCallback(() => {
     setSelectedClient(null);
   }, []);
+
+  // Sin Google Maps API key configurada → MapView crashea al renderizar.
+  // Mostramos placeholder con instrucción en vez de cerrar la app.
+  if (!isGoogleMapsConfigured()) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <MapPin size={48} color={COLORS.primary} />
+          <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 12 }]}>Mapas no disponibles en esta versión</Text>
+          <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 8, textAlign: 'center', paddingHorizontal: 24 }}>El administrador debe configurar la API key de Google Maps en el build.</Text>
+        </View>
+      </View>
+    );
+  }
 
   // --- Loading ---
   if (isLoading || locLoading) {

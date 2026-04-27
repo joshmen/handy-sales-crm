@@ -14,6 +14,9 @@ import { performSync } from '@/sync/syncEngine';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+// Carga lazy de react-native-maps + guard de API key. El mini-map en
+// esta pantalla solo se renderiza si AMBOS son verdaderos. Sin la key
+// MapView crashea al primer tile (reportado 2026-04-27).
 let MapView: any = null;
 let Marker: any = null;
 let Polyline: any = null;
@@ -23,6 +26,8 @@ try {
   Marker = maps.Marker;
   Polyline = maps.Polyline;
 } catch { /* maps not available */ }
+import { isGoogleMapsConfigured } from '@/utils/maps';
+const MAPS_OK = isGoogleMapsConfigured();
 import RutaDetalle from '@/db/models/RutaDetalle';
 import RutaPedido from '@/db/models/RutaPedido';
 import RutaCarga from '@/db/models/RutaCarga';
@@ -293,7 +298,7 @@ export default function RutaScreen() {
         </Animated.View>
 
         {/* Mini Route Map with Polyline */}
-        {MapView && routeCoordinates.length > 1 && (
+        {MAPS_OK && MapView && routeCoordinates.length > 1 && (
           <Animated.View entering={FadeInDown.duration(400).delay(200)}>
             <View style={styles.miniMapContainer}>
               <MapView

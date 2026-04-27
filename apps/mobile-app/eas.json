@@ -23,9 +23,11 @@
       },
       "env": {
         "_comment": "preview apunta a STAGING mobile API + PRODUCTION main API. Main API NO tiene servicio staging deployado en Railway (solo Mobile API). Si se agrega un servicio Main API staging, actualizar EXPO_PUBLIC_MAIN_API_URL aquí.",
+        "_maps_comment": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: pegar la key real de Google Cloud Console (restringida por package com.handysuites.app + SHA fingerprint). Sin ella las pantallas de mapa muestran placeholder en vez de crashear. Ver docs/deployment/GOOGLE_MAPS_SETUP.md.",
         "EXPO_PUBLIC_API_URL": "https://mobile-api-staging.up.railway.app",
         "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
-        "EXPO_PUBLIC_ENV": "staging"
+        "EXPO_PUBLIC_ENV": "staging",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": ""
       }
     },
     "production": {
@@ -35,7 +37,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
         "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
-        "EXPO_PUBLIC_ENV": "production"
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": ""
       }
     }
   },

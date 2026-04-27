@@ -9,6 +9,7 @@ import { TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 import type { UbicacionVendedor } from '@/api/schemas/supervisor';
+import { isGoogleMapsConfigured } from '@/utils/maps';
 
 // Using standard MapView instead of MapView for Expo Go compatibility
 
@@ -35,6 +36,27 @@ function MapaEquipoContent() {
   const insets = useSafeAreaInsets();
   const { data: ubicaciones, isLoading } = useUbicacionesEquipo();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Sin Google Maps API key configurada, MapView crashea al renderizar.
+  // Mostramos placeholder en vez de crashear la app entera.
+  if (!isGoogleMapsConfigured()) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+            <ChevronLeft size={22} color={COLORS.headerText} />
+          </TouchableOpacity>
+          <Text style={styles.blueHeaderTitle}>Mapa del Equipo</Text>
+          <View style={{ width: 32 }} />
+        </View>
+        <View style={[styles.center, { flex: 1, padding: 24 }]}>
+          <MapPin size={48} color={COLORS.primary} />
+          <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 12 }]}>Mapas no disponibles en esta versión</Text>
+          <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 8, textAlign: 'center' }}>El administrador debe configurar la API key de Google Maps en el build.</Text>
+        </View>
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (
