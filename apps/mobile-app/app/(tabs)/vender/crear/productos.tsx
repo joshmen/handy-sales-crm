@@ -76,8 +76,14 @@ function CrearPedidoStep2() {
       const stock = item.stockDisponible ?? 0;
       const noStock = stock <= 0;
       const lowStock = stock > 0 && stock <= (item.stockMinimo || 0);
-      const blocked = isDirecta && noStock;
-      const maxQty = isDirecta ? stock : undefined;
+      // Bloqueo y tope de cantidad por stock se aplican tanto en Venta Directa
+      // como en Preventa. Antes solo aplicaba a Venta Directa, lo que permitía
+      // crear preventas con cantidades superiores al stock real (reportado
+      // 2026-04-27: vendedor pidió 100 unidades teniendo stock=2 en preventa).
+      // El admin sigue siendo quien aprueba la preventa desde web; este es el
+      // primer filtro UX para que el vendedor no genere pedidos imposibles.
+      const blocked = noStock;
+      const maxQty = stock;
 
       // Dynamic pricing
       const pricing = getPricing(item.serverId ?? 0, item.precio, qty || 1);

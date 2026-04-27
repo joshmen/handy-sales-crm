@@ -146,7 +146,7 @@ function CrearPedidoStep3() {
           mappedItems,
           notas || undefined,
           0, // tipoVenta = Preventa
-          2, // estado = Confirmado (simplified flow: skip Enviado)
+          0, // estado = Borrador → admin/supervisor confirma desde web antes de meter a ruta
           paradaId
         );
         router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}${paradaId ? '&fromRuta=1' : ''}` as any);
