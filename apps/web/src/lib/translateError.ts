@@ -196,6 +196,40 @@ export function translateError(message: string): string {
       ) },
     },
     {
+      // RutaVendedorService.IniciarRutaAsync / EnviarACargaAsync — mensajes
+      // dinámicos con lista de items faltantes. Reportado 2026-04-27: el toast
+      // mostraba "Error starting route" en vez del mensaje real.
+      pattern: /^No se puede (iniciar la ruta|enviar la ruta a carga): faltan .+\.$/,
+      replacement: { en: message.replace(
+        /^No se puede (iniciar la ruta|enviar la ruta a carga): faltan (.+)\.$/,
+        (_full, accion: string, faltantes: string) => {
+          const accionMap: Record<string, string> = {
+            'iniciar la ruta': 'start the route',
+            'enviar la ruta a carga': 'send the route to loading',
+          };
+          // Traducir items individuales de la lista
+          const itemsMap: Record<string, string> = {
+            'paradas (clientes a visitar)': 'stops (clients to visit)',
+            'paradas': 'stops',
+            'pedidos asignados': 'assigned orders',
+            'productos de carga': 'loading products',
+          };
+          const translatedItems = faltantes
+            .split(',')
+            .map(s => s.trim())
+            .map(s => itemsMap[s] || s)
+            .join(', ');
+          return `Cannot ${accionMap[accion] || accion}: missing ${translatedItems}.`;
+        }
+      ) },
+    },
+    {
+      // CancelarRutaAsync nuevo error — defensa en profundidad si el frontend
+      // no captura el shape ApiError.
+      pattern: /^No se pudo cancelar la ruta\. Verifica que no esté completada o ya cancelada\.$/,
+      replacement: { en: 'Could not cancel the route. Make sure it is not completed or already cancelled.' },
+    },
+    {
       // OutcomeToResult.TransicionInvalida — `No se puede {accionVerbo} un pedido en estado {EstadoLabel}.`
       // EstadoLabel y accionVerbo son sets cerrados (PedidoEndpoints.cs). Mapeamos ambos.
       pattern: /^No se puede (?:confirmar|enviar a ruta|marcar como entregado|cancelar) un pedido en estado .+\.$/,

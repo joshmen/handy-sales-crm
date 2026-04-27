@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado, RouteUpdateRequest, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { zoneService } from '@/services/api/zones';
 import { api } from '@/lib/api';
@@ -76,6 +77,7 @@ export default function RouteDetailPage() {
   const router = useRouter();
   const routeId = Number(params.id);
 
+  const showApiError = useApiErrorToast();
   const [route, setRoute] = useState<RouteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -212,7 +214,9 @@ export default function RouteDetailPage() {
   const isPendienteAceptar = route?.estado === 4;
   const isEditable = isPlanificada || isPendienteAceptar;
 
-  // Actions
+  // Actions — uso showApiError para mostrar el message real del backend
+  // (p.ej. "No se puede iniciar la ruta: faltan paradas, pedidos asignados.")
+  // en vez del fallback genérico "Error starting route". Reportado 2026-04-27.
   const handleIniciar = async () => {
     if (!route) return;
     try {
@@ -220,8 +224,8 @@ export default function RouteDetailPage() {
       await routeService.iniciarRuta(route.id);
       toast.success(t('detail.routeStarted'));
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorStarting'));
+    } catch (err) {
+      showApiError(err, t('detail.errorStarting'));
     } finally {
       setActionLoading(false);
     }
@@ -234,8 +238,8 @@ export default function RouteDetailPage() {
       await routeService.completarRuta(route.id);
       toast.success(t('detail.routeCompleted'));
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorCompleting'));
+    } catch (err) {
+      showApiError(err, t('detail.errorCompleting'));
     } finally {
       setActionLoading(false);
     }
@@ -250,8 +254,8 @@ export default function RouteDetailPage() {
       setIsCancelOpen(false);
       setCancelMotivo('');
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorCancelling'));
+    } catch (err) {
+      showApiError(err, t('detail.errorCancelling'));
     } finally {
       setActionLoading(false);
     }
@@ -279,8 +283,8 @@ export default function RouteDetailPage() {
       setIsAddStopOpen(false);
       setStopForm({ clienteId: 0, duracion: 30, notas: '' });
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorAddingStop'));
+    } catch (err) {
+      showApiError(err, t('detail.errorAddingStop'));
     } finally {
       setActionLoading(false);
     }
@@ -292,8 +296,8 @@ export default function RouteDetailPage() {
       await routeService.deleteParada(route.id, detalleId);
       toast.success(t('detail.stopDeleted'));
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorDeletingStop'));
+    } catch (err) {
+      showApiError(err, t('detail.errorDeletingStop'));
     }
   };
 
@@ -310,8 +314,8 @@ export default function RouteDetailPage() {
     try {
       await routeService.reorderParadas(route.id, newOrder);
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorReordering'));
+    } catch (err) {
+      showApiError(err, t('detail.errorReordering'));
     }
   };
 
@@ -346,8 +350,8 @@ export default function RouteDetailPage() {
       setIsPedidoModalOpen(false);
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
-    } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || t('detail.errorAssigningOrder'));
+    } catch (err) {
+      showApiError(err, t('detail.errorAssigningOrder'));
     }
   };
 
@@ -358,8 +362,8 @@ export default function RouteDetailPage() {
       toast.success(t('detail.orderRemoved'));
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
-    } catch {
-      toast.error(t('detail.errorRemovingOrder'));
+    } catch (err) {
+      showApiError(err, t('detail.errorRemovingOrder'));
     }
   };
 
