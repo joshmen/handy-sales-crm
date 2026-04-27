@@ -93,7 +93,10 @@ public class RutaVendedor : AuditableEntity
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Usuario? Usuario { get; set; }
+    /// <summary>Legacy: primera zona de la ruta. Se mantiene para compat hacia atrás (mobile API y queries existentes). Source of truth nuevo es <see cref="Zonas"/> (junction multi-zona).</summary>
     public Zona? Zona { get; set; }
+    /// <summary>Junction multi-zona (N:M). Una ruta puede cubrir múltiples zonas — alineado con Handy.la, Salesforce, SAP. Reportado 2026-04-27.</summary>
+    public List<RutaZona> Zonas { get; set; } = new();
     public List<RutaDetalle> Detalles { get; set; } = new();
     public List<RutaCarga> Cargas { get; set; } = new();
     public List<RutaPedido> PedidosAsignados { get; set; } = new();
