@@ -84,7 +84,7 @@ services:
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       InternalApiKey: "DktQvBp0c01HyuVlNKGhbAPyNIpgvo-OO832AYqCSGQ"
-      MobileApiUrl: "http://mobile_api:1052"
+      MobileApiUrl: "http://api_mobile:1052"
       App__FrontendUrl: "http://localhost:1083"
       BILLING_API_URL: "http://api_billing:1051"
       BILLING_INTERNAL_API_KEY: "dev-billing-sync-key-change-in-prod-0123456789"
