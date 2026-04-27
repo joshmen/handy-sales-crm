@@ -1,5 +1,4 @@
 using HandySuites.Application.Usuarios.DTOs;
-using HandySuites.Application.Auth.DTOs;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Mobile.Api.Services;
