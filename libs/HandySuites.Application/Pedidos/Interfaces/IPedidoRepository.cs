@@ -3,7 +3,7 @@ using HandySuites.Domain.Entities;
 
 namespace HandySuites.Application.Pedidos.Interfaces;
 
-public enum CambiarEstadoStatus { Ok, NotFound, TransicionInvalida }
+public enum CambiarEstadoStatus { Ok, NotFound, TransicionInvalida, SinRutaActiva }
 public record CambiarEstadoOutcome(CambiarEstadoStatus Status, EstadoPedido? EstadoActual);
 
 public interface IPedidoRepository

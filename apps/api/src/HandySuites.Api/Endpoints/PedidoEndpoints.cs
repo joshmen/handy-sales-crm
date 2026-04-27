@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Security.Claims;
 using FluentValidation;
 using HandySuites.Api.Hubs;
 using HandySuites.Application.Ai.Interfaces;
@@ -174,9 +176,14 @@ public static class PedidoEndpoints
 
         group.MapPost("/{id:int}/confirmar", async (
             int id,
-            [FromServices] PedidoService servicio) =>
+            HttpContext context,
+            [FromServices] PedidoService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<PedidoEndpointsLog> logger) =>
         {
             var outcome = await servicio.ConfirmarDetalladoAsync(id);
+            if (outcome.Status == CambiarEstadoStatus.Ok)
+                NotifyMobileOrderStateChange(httpClientFactory, context, id, EstadoPedido.Confirmado, logger);
             return OutcomeToResult(outcome, "Pedido confirmado", "confirmar");
         })
         .WithSummary("Confirmar pedido")
@@ -201,23 +208,33 @@ public static class PedidoEndpoints
 
         group.MapPost("/{id:int}/en-ruta", async (
             int id,
-            [FromServices] PedidoService servicio) =>
+            HttpContext context,
+            [FromServices] PedidoService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<PedidoEndpointsLog> logger) =>
         {
             var outcome = await servicio.EnviarARutaDetalladoAsync(id);
+            if (outcome.Status == CambiarEstadoStatus.Ok)
+                NotifyMobileOrderStateChange(httpClientFactory, context, id, EstadoPedido.EnRuta, logger);
             return OutcomeToResult(outcome, "Pedido en ruta", "enviar a ruta");
         })
         .WithSummary("Enviar a ruta")
-        .WithDescription("Cambia el estado del pedido de Confirmado a EnRuta (pedido salió para entrega).")
+        .WithDescription("Cambia el estado del pedido de Confirmado a EnRuta. Requiere que el pedido esté asignado a una RutaVendedor con estado CargaAceptada o EnProgreso (si no, devuelve 400). Al cambiar dispara push notification al vendedor asignado.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPost("/{id:int}/entregar", async (
             int id,
+            HttpContext context,
             [FromBody] PedidoEstadoDto? dto,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<PedidoEndpointsLog> logger) =>
         {
             var outcome = await servicio.EntregarDetalladoAsync(id, dto?.Notas);
+            if (outcome.Status == CambiarEstadoStatus.Ok)
+                NotifyMobileOrderStateChange(httpClientFactory, context, id, EstadoPedido.Entregado, logger);
             return OutcomeToResult(outcome, "Pedido entregado", "marcar como entregado");
         })
         .WithSummary("Marcar como entregado")
@@ -228,8 +245,11 @@ public static class PedidoEndpoints
 
         group.MapPost("/{id:int}/cancelar", async (
             int id,
+            HttpContext context,
             [FromBody] PedidoEstadoDto? dto,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<PedidoEndpointsLog> logger) =>
         {
             // El motivo de cancelación es obligatorio (auditoría del ciclo de pedido).
             if (string.IsNullOrWhiteSpace(dto?.Notas))
@@ -238,6 +258,8 @@ public static class PedidoEndpoints
                 return Results.BadRequest(new { error = "El motivo de cancelación no puede exceder 500 caracteres." });
 
             var outcome = await servicio.CancelarDetalladoAsync(id, dto.Notas);
+            if (outcome.Status == CambiarEstadoStatus.Ok)
+                NotifyMobileOrderStateChange(httpClientFactory, context, id, EstadoPedido.Cancelado, logger);
             return OutcomeToResult(outcome, "Pedido cancelado", "cancelar");
         })
         .WithSummary("Cancelar pedido")
@@ -301,6 +323,48 @@ public static class PedidoEndpoints
         .Produces(StatusCodes.Status401Unauthorized);
     }
 
+    // Marker para el ILogger genérico (logger category = "HandySuites.Api.Endpoints.PedidoEndpoints+PedidoEndpointsLog").
+    private sealed class PedidoEndpointsLog { }
+
+    // Fire-and-forget HTTP POST a Mobile API para que dispare push notification al vendedor.
+    // Antes este flujo solo existía en MobilePedidoEndpoints — al cambiar estado desde la web
+    // (admin pone pedido EnRuta, etc.) no llegaba push y el vendedor solo se enteraba al sync.
+    // Reportado en staging 2026-04-27.
+    private static void NotifyMobileOrderStateChange(
+        IHttpClientFactory factory,
+        HttpContext context,
+        int pedidoId,
+        EstadoPedido newState,
+        ILogger logger)
+    {
+        var tenantId = int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tid) ? tid : 0;
+        var currentUserId = int.TryParse(
+            context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("sub")?.Value, out var uid) ? uid : 0;
+        if (tenantId <= 0) return;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var client = factory.CreateClient("MobileApi");
+                var resp = await client.PostAsJsonAsync("/api/internal/notify-order-state", new
+                {
+                    pedidoId,
+                    tenantId,
+                    currentUserId,
+                    newState = (int)newState
+                });
+                if (!resp.IsSuccessStatusCode)
+                    logger.LogWarning("Mobile API notify-order-state returned {Status} for pedido {PedidoId}", resp.StatusCode, pedidoId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to notify Mobile API of order state change for pedido {PedidoId}", pedidoId);
+            }
+        });
+    }
+
     // Helper: convierte el outcome rico del service en una respuesta HTTP con
     // mensaje específico según el estado actual del pedido. Antes todas las
     // transiciones inválidas devolvían "No se pudo X el pedido" sin contexto.
@@ -313,6 +377,11 @@ public static class PedidoEndpoints
             CambiarEstadoStatus.TransicionInvalida => Results.BadRequest(new
             {
                 error = $"No se puede {accionVerbo} un pedido en estado {EstadoLabel(outcome.EstadoActual)}.",
+                estadoActual = outcome.EstadoActual?.ToString(),
+            }),
+            CambiarEstadoStatus.SinRutaActiva => Results.BadRequest(new
+            {
+                error = "No se puede poner el pedido En Ruta: primero debe estar asignado a una ruta de vendedor activa (con carga aceptada o en progreso).",
                 estadoActual = outcome.EstadoActual?.ToString(),
             }),
             _ => Results.BadRequest(new { error = $"No se pudo {accionVerbo} el pedido." })

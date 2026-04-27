@@ -381,6 +381,28 @@ public class PedidoRepository : IPedidoRepository
         if (!EsTransicionValida(pedido.Estado, nuevoEstado))
             return new CambiarEstadoOutcome(CambiarEstadoStatus.TransicionInvalida, pedido.Estado);
 
+        // BR-RUTA-EnRuta: para que un pedido pase a EnRuta debe estar asignado a una RutaVendedor
+        // cuyo estado sea CargaAceptada o EnProgreso. Antes web permitía pasar Confirmado→EnRuta sin
+        // RutaVendedor planificada, dejando el pedido "en ruta" fantasma sin asignación a un viaje real
+        // (reportado en staging 2026-04-27). Solo aplica al cambio explícito a EnRuta — otros cambios
+        // de estado (Entregado, Cancelado) no deben re-validar la ruta.
+        if (nuevoEstado == EstadoPedido.EnRuta)
+        {
+            var hasActiveRoute = await (from rp in _db.RutasPedidos
+                                        join rv in _db.RutasVendedor.IgnoreQueryFilters()
+                                            on rp.RutaId equals rv.Id
+                                        where rp.PedidoId == id
+                                              && rp.TenantId == tenantId
+                                              && rp.Activo
+                                              && rv.TenantId == tenantId
+                                              && rv.EliminadoEn == null
+                                              && (rv.Estado == EstadoRuta.CargaAceptada
+                                                  || rv.Estado == EstadoRuta.EnProgreso)
+                                        select rv.Id).AnyAsync();
+            if (!hasActiveRoute)
+                return new CambiarEstadoOutcome(CambiarEstadoStatus.SinRutaActiva, pedido.Estado);
+        }
+
         pedido.Estado = nuevoEstado;
         pedido.ActualizadoEn = DateTime.UtcNow;
 
