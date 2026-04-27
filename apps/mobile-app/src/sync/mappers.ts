@@ -270,6 +270,15 @@ function extractDetallesPedido(
 }
 
 function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
+  // Multi-zona: backend ahora envía `zonaIds: number[]` (commit 26dab2a). Si no
+  // viene (apps mobile-api viejas pre-multi-zona) caemos a `[zonaId]` legacy.
+  // Si tampoco hay zonaId, dejamos null para que el getter `Ruta.zonaIds` regrese [].
+  let zonasJson: string | null = null;
+  if (Array.isArray(r.zonaIds) && r.zonaIds.length > 0) {
+    zonasJson = JSON.stringify(r.zonaIds);
+  } else if (r.zonaId != null) {
+    zonasJson = JSON.stringify([r.zonaId]);
+  }
   return {
     id: rutaMap.get(r.id) || String(r.id),
     server_id: r.id,
@@ -287,6 +296,7 @@ function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
     version: r.version ?? 1,
     created_at: toTimestamp(r.actualizadoEn),
     updated_at: toTimestamp(r.actualizadoEn),
+    zonas_json: zonasJson,
   };
 }
 

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 12,
+  version: 13,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -134,6 +134,10 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v13 (2026-04-27): multi-zona. JSON array de ids de zonas que cubre la
+        // ruta. Más simple que junction local porque mobile es read-only de este
+        // dato (admin decide desde web). El parsing está en el modelo Ruta.
+        { name: 'zonas_json', type: 'string', isOptional: true },
       ],
     }),
 

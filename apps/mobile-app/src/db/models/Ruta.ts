@@ -23,8 +23,26 @@ export default class Ruta extends Model {
   @field('version') version!: number;
   @readonly @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
+  /// Multi-zona: JSON array de IDs de zonas que cubre la ruta. Read-only en
+  /// mobile (admin define desde web). v13 schema (2026-04-27).
+  @text('zonas_json') zonasJson!: string | null;
 
   @children('ruta_detalles') detalles: any;
+
+  /**
+   * Parser de la columna `zonas_json` a array de números. Si la columna está
+   * vacía o el JSON es inválido, retorna []. Caller usa esto en UI para
+   * mostrar chips de zonas.
+   */
+  get zonaIds(): number[] {
+    if (!this.zonasJson) return [];
+    try {
+      const parsed = JSON.parse(this.zonasJson);
+      return Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number') : [];
+    } catch {
+      return [];
+    }
+  }
 
   @writer async updateEstado(estado: number) {
     await this.update((record: any) => {

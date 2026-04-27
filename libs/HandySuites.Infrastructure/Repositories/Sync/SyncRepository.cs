@@ -103,6 +103,7 @@ public class SyncRepository : ISyncRepository
             .AsNoTracking()
             .Include(r => r.Detalles)
             .Include(r => r.PedidosAsignados)
+            .Include(r => r.Zonas)
             .Where(r => r.TenantId == tenantId
                      && r.UsuarioId.HasValue && r.UsuarioId.Value == usuarioId
                      && !r.EsTemplate);

@@ -484,6 +484,11 @@ public class SyncService
                 Id = r.Id,
                 UsuarioId = r.UsuarioId,
                 ZonaId = r.ZonaId,
+                // Multi-zona: lista de IDs desde junction. Si no hay junction (ruta vieja),
+                // sintetizar [ZonaId] para que el mobile reciba al menos la zona legacy.
+                ZonaIds = r.Zonas != null && r.Zonas.Count > 0
+                    ? r.Zonas.Select(rz => rz.ZonaId).Distinct().ToList()
+                    : (r.ZonaId.HasValue ? new List<int> { r.ZonaId.Value } : new List<int>()),
                 Nombre = r.Nombre,
                 Descripcion = r.Descripcion,
                 Fecha = r.Fecha,

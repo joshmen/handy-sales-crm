@@ -241,5 +241,21 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v13: multi-zona en rutas. Backend ahora envía SyncRutaDto.ZonaIds[]
+      // (commit 26dab2a) — agregar columna JSON local para almacenar la lista.
+      // Más simple que junction local porque mobile no puede modificar zonas
+      // (read-only). Reportado 2026-04-27 — alineado con SFA/CPG industria
+      // (Handy.la, Salesforce Field Service, SAP Sales Cloud, Onfleet).
+      toVersion: 13,
+      steps: [
+        addColumns({
+          table: 'rutas',
+          columns: [
+            { name: 'zonas_json', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

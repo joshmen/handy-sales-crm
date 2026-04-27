@@ -239,7 +239,10 @@ public class SyncRutaDto
     public int Id { get; set; }
     public string? LocalId { get; set; }
     public int? UsuarioId { get; set; }
+    /// <summary>Legacy: primera zona (compat con apps mobile pre-multi-zona).</summary>
     public int? ZonaId { get; set; }
+    /// <summary>Multi-zona: lista completa de IDs de zonas que cubre la ruta. Reportado 2026-04-27 — alineado con SFA/CPG industria.</summary>
+    public List<int>? ZonaIds { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
