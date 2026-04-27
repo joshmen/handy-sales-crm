@@ -123,14 +123,22 @@ export default function RouteDetailPage() {
     }
   }, [routeId]);
 
-  const fetchClients = async (search?: string) => {
+  const fetchClients = useCallback(async (search?: string) => {
     try {
-      const response = await clientService.getClients({ search, limit: 50, isActive: true });
+      // Si la ruta tiene zona asignada, filtrar por esa zona — el admin esperaría
+      // que las paradas vengan de los clientes de la zona de la ruta. Si la ruta
+      // no tiene zona, mostrar todos los clientes activos como fallback.
+      const response = await clientService.getClients({
+        search,
+        limit: 200,
+        isActive: true,
+        zoneId: route?.zonaId,
+      });
       setClients(response.clients.map(c => ({ value: c.id, label: c.name })));
     } catch {
       console.error('Error al cargar clientes');
     }
-  };
+  }, [route?.zonaId]);
 
   useEffect(() => {
     fetchRoute();
@@ -138,7 +146,7 @@ export default function RouteDetailPage() {
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [fetchClients]);
 
   // Edit drawer: fetch dropdown data
   const fetchEditDropdowns = async () => {
@@ -390,6 +398,12 @@ export default function RouteDetailPage() {
 
   const badge = getEstadoBadge(route.estado);
   const sortedStops = [...route.detalles].sort((a, b) => a.ordenVisita - b.ordenVisita);
+
+  // Excluir del dropdown del modal "Add Stop" los clientes que YA tienen una parada
+  // activa en esta ruta. Cuando se elimina una parada (sortedStops cambia), el cliente
+  // vuelve a aparecer automáticamente. Reportado 2026-04-27.
+  const assignedClientIds = new Set(sortedStops.map(s => String(s.clienteId)));
+  const availableClients = clients.filter(c => !assignedClientIds.has(c.value));
 
   return (
     <div className="flex flex-col h-full">
@@ -794,7 +808,7 @@ export default function RouteDetailPage() {
               {t('detail.client')} <span className="text-red-500">*</span>
             </label>
             <SearchableSelect
-              options={clients}
+              options={availableClients}
               value={stopForm.clienteId ? stopForm.clienteId.toString() : ''}
               onChange={(val) => setStopForm({ ...stopForm, clienteId: val ? parseInt(String(val)) : 0 })}
               placeholder={t('detail.searchClient')}

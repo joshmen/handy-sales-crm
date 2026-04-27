@@ -220,6 +220,21 @@ public class RutaVendedorService
         if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
             throw new UnauthorizedAccessException("Solo el vendedor asignado puede iniciar esta ruta");
 
+        // BR-RUTA-Iniciar (defensa en profundidad): la validación principal está en
+        // EnviarACargaAsync, pero si por algún flujo (template, importación, bug en
+        // otro endpoint) una ruta llega a CargaAceptada sin items, bloqueamos también
+        // aquí. Reportado 2026-04-27: usuario logró iniciar una ruta sin paradas
+        // saltándose la validación de EnviarACargaAsync.
+        var faltantes = new List<string>();
+        if (ruta.Detalles == null || !ruta.Detalles.Any(d => d.Activo))
+            faltantes.Add("paradas");
+        var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(id, _tenant.TenantId);
+        if (pedidosAsignados.Count == 0)
+            faltantes.Add("pedidos asignados");
+        if (faltantes.Count > 0)
+            throw new InvalidOperationException(
+                $"No se puede iniciar la ruta: faltan {string.Join(", ", faltantes)}.");
+
         return await _repo.IniciarRutaAsync(id, DateTime.UtcNow);
     }
 
