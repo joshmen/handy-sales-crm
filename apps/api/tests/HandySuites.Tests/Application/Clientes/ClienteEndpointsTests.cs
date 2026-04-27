@@ -18,12 +18,16 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task PostCliente_DeberiaCrearCliente()
     {
-        var unique = Guid.NewGuid().ToString("N")[..8];
+        // RFC SAT regex: ^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$ — los 6 chars del medio
+        // DEBEN ser dígitos. El test viejo usaba `Guid.ToString("N")[..6]` que es hex
+        // y a veces incluye letras a-f, generando RFCs inválidos como `TESTa3b1c2XX0`
+        // que fallan la regex y devuelven 400. Random.Shared.Next garantiza 6 dígitos.
+        var unique = Random.Shared.Next(100000, 1000000); // 6 dígitos exactos
         var dto = new ClienteCreateDto
         {
             TenandId = 1,
             Nombre = $"Cliente Test {unique}",
-            RFC = $"TEST{unique[..6]}XX0",
+            RFC = $"TEST{unique}XX0",
             Correo = $"cliente-{unique}@test.com",
             Telefono = "5551234567",
             Direccion = "Calle Falsa 123",
