@@ -125,22 +125,34 @@ export default function RouteDetailPage() {
     }
   }, [routeId]);
 
+  // Lista plana de clientes con metadata de zona — usada para agrupar el dropdown
+  // de "Add stop" en sugeridos (zonas de la ruta) vs otros. Antes el filtro era
+  // estricto por zona única (commit fde28ee) y mostraba 1 cliente cuando la zona
+  // tenía pocos. Reportado 2026-04-27 — ahora alineado con SFA/CPG industria
+  // (Handy.la, Salesforce, SAP) donde el admin ve todos los clientes y la zona
+  // es solo sugerencia visual.
+  const [clientsRaw, setClientsRaw] = useState<{ value: string; label: string; zoneId?: number; zoneName?: string }[]>([]);
+
   const fetchClients = useCallback(async (search?: string) => {
     try {
-      // Si la ruta tiene zona asignada, filtrar por esa zona — el admin esperaría
-      // que las paradas vengan de los clientes de la zona de la ruta. Si la ruta
-      // no tiene zona, mostrar todos los clientes activos como fallback.
       const response = await clientService.getClients({
         search,
-        limit: 200,
+        limit: 500,
         isActive: true,
-        zoneId: route?.zonaId,
+        // SIN zoneId filter — traemos todos. El agrupamiento es del lado UI.
       });
-      setClients(response.clients.map(c => ({ value: c.id, label: c.name })));
+      const items = response.clients.map(c => ({
+        value: c.id,
+        label: c.zoneName ? `${c.name} · ${c.zoneName}` : c.name,
+        zoneId: c.zoneId,
+        zoneName: c.zoneName,
+      }));
+      setClientsRaw(items);
+      setClients(items.map(({ value, label }) => ({ value, label })));
     } catch {
       console.error('Error al cargar clientes');
     }
-  }, [route?.zonaId]);
+  }, []);
 
   useEffect(() => {
     fetchRoute();
@@ -413,7 +425,52 @@ export default function RouteDetailPage() {
   // activa en esta ruta. Cuando se elimina una parada (sortedStops cambia), el cliente
   // vuelve a aparecer automáticamente. Reportado 2026-04-27.
   const assignedClientIds = new Set(sortedStops.map(s => String(s.clienteId)));
-  const availableClients = clients.filter(c => !assignedClientIds.has(c.value));
+
+  // IDs de las zonas que cubre la ruta (multi-zona). Si solo hay zonaId legacy y
+  // el backend aún no migró Zonas, fallback al field viejo.
+  const routeZonaIds = new Set<number>(
+    (route.zonas?.length ? route.zonas.map(z => z.id) : route.zonaId ? [route.zonaId] : [])
+  );
+  const routeZonaNombres = (route.zonas?.length
+    ? route.zonas.map(z => z.nombre)
+    : route.zonaNombre ? [route.zonaNombre] : []
+  ).join(', ');
+
+  // Agrupar clientes en 2 secciones: sugeridos (de las zonas de la ruta) + otros.
+  // Antes el filtro estricto por zona única (commit fde28ee) mostraba solo 1 cliente
+  // cuando la zona tenía pocos. Ahora todos visibles, agrupados visualmente.
+  const availableClientsAll = clientsRaw.filter(c => !assignedClientIds.has(c.value));
+  const suggestedClients = routeZonaIds.size > 0
+    ? availableClientsAll.filter(c => c.zoneId != null && routeZonaIds.has(c.zoneId))
+    : [];
+  const otherClients = routeZonaIds.size > 0
+    ? availableClientsAll.filter(c => c.zoneId == null || !routeZonaIds.has(c.zoneId))
+    : availableClientsAll;
+  // Lista final con separadores virtuales (compatibles con SearchableSelect que
+  // solo acepta { value, label }). Los separadores son entradas con value="" deshabilitables.
+  const groupedClientOptions: { value: string; label: string; isDivider?: boolean }[] = [];
+  if (suggestedClients.length > 0) {
+    groupedClientOptions.push({
+      value: '__divider_suggested',
+      label: `── ${t('detail.suggestedFromZones', { defaultValue: 'Sugeridos de las zonas de la ruta' })} ──`,
+      isDivider: true,
+    });
+    groupedClientOptions.push(...suggestedClients.map(({ value, label }) => ({ value, label })));
+  }
+  if (otherClients.length > 0) {
+    if (suggestedClients.length > 0) {
+      groupedClientOptions.push({
+        value: '__divider_other',
+        label: `── ${t('detail.otherZones', { defaultValue: 'Otras zonas' })} ──`,
+        isDivider: true,
+      });
+    }
+    groupedClientOptions.push(...otherClients.map(({ value, label }) => ({ value, label })));
+  }
+  // Fallback: si el SearchableSelect no soporta dividers (selecciona "" como valor),
+  // mantenemos la versión sin separadores como opción simple. Aquí preferimos UX
+  // con dividers — el handler onChange ignora valores que empiecen con "__divider".
+  const availableClients = groupedClientOptions;
 
   return (
     <div className="flex flex-col h-full">
@@ -813,6 +870,16 @@ export default function RouteDetailPage() {
         title={t('detail.addStop')}
       >
         <div className="space-y-4">
+          {/* Nota informativa: explica que los clientes están agrupados por zona */}
+          {routeZonaIds.size > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200">
+              <span className="mr-1">📍</span>
+              {t('detail.zoneInfoNote', {
+                zones: routeZonaNombres,
+                defaultValue: `Esta ruta cubre las zonas: ${routeZonaNombres}. Te sugerimos clientes de esas zonas arriba, pero puedes agregar clientes de cualquier zona.`,
+              })}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-1">
               {t('detail.client')} <span className="text-red-500">*</span>
@@ -820,7 +887,12 @@ export default function RouteDetailPage() {
             <SearchableSelect
               options={availableClients}
               value={stopForm.clienteId ? stopForm.clienteId.toString() : ''}
-              onChange={(val) => setStopForm({ ...stopForm, clienteId: val ? parseInt(String(val)) : 0 })}
+              onChange={(val) => {
+                const v = String(val ?? '');
+                // Ignorar selección de dividers virtuales (__divider_suggested, __divider_other).
+                if (v.startsWith('__divider')) return;
+                setStopForm({ ...stopForm, clienteId: v ? parseInt(v) : 0 });
+              }}
               placeholder={t('detail.searchClient')}
             />
           </div>

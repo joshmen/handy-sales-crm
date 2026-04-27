@@ -237,6 +237,7 @@ public class ClienteRepository : IClienteRepository
                 RFC = c.RFC,
                 Correo = c.Correo,
                 Telefono = c.Telefono,
+                IdZona = c.IdZona,
                 ZonaNombre = c.Zona != null ? c.Zona.Nombre : null,
                 CategoriaNombre = c.Categoria != null ? c.Categoria.Nombre : null,
                 VendedorId = c.VendedorId,

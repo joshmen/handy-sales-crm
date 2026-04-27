@@ -1,12 +1,20 @@
 import { api, handleApiError } from '@/lib/api';
 
 // Backend DTOs (matching the API)
+export interface ZonaResumenDto {
+  id: number;
+  nombre: string;
+}
+
 export interface RutaListaDto {
   id: number;
   usuarioId: number;
   nombre: string;
   usuarioNombre: string;
+  /** Legacy: nombre de la primera zona. Listas que muestran todas usan `zonas`. */
   zonaNombre?: string;
+  /** Multi-zona: lista de zonas para mostrar como chips. */
+  zonas?: ZonaResumenDto[];
   fecha: string;
   estado: number;
   estadoNombre: string;
@@ -368,8 +376,12 @@ export interface RouteDetail {
   id: number;
   usuarioId: number;
   usuarioNombre: string;
+  /** Legacy: primera zona. Frontend nuevo usa `zonas`. */
   zonaId?: number;
+  /** Legacy: nombre de la primera zona. */
   zonaNombre?: string;
+  /** Multi-zona: lista completa de zonas que cubre la ruta. */
+  zonas?: ZonaResumenDto[];
   nombre: string;
   descripcion?: string;
   fecha: string;
@@ -421,7 +433,10 @@ export interface AddStopRequest {
 
 export interface RouteCreateRequest {
   usuarioId: number;
+  /** Legacy single-zone. Frontend nuevo prefiere zonaIds. */
   zonaId?: number | null;
+  /** Multi-zona: lista de IDs de zonas. Si se manda gana sobre zonaId. */
+  zonaIds?: number[] | null;
   nombre: string;
   descripcion?: string;
   fecha: string;
@@ -432,7 +447,10 @@ export interface RouteCreateRequest {
 
 export interface RouteUpdateRequest {
   usuarioId?: number;
+  /** Legacy. */
   zonaId?: number | null;
+  /** Multi-zona: si se manda (incluso lista vacía), reemplaza el set de zonas. */
+  zonaIds?: number[] | null;
   nombre?: string;
   descripcion?: string;
   fecha?: string;
