@@ -16,7 +16,7 @@ export { useObservable } from './useObservable';
 export { useOfflineClients, useOfflineClientById } from './useOfflineClients';
 export { useOfflineProducts, useOfflineProductById } from './useOfflineProducts';
 export { useOfflineOrders, useOfflineOrderById, useOfflineOrderDetalles } from './useOfflineOrders';
-export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles } from './useOfflineRoutes';
+export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga } from './useOfflineRoutes';
 export { useOfflineVisits, useOfflineVisitById, useOfflineTodayVisits } from './useOfflineVisits';
 export { useOfflineCobros, useOfflineCobroById, useOfflineTodayCobros } from './useOfflineCobros';
 export { usePendingCount } from './usePendingCount';

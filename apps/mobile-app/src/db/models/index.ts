@@ -4,6 +4,8 @@ import Pedido from './Pedido';
 import DetallePedido from './DetallePedido';
 import Ruta from './Ruta';
 import RutaDetalle from './RutaDetalle';
+import RutaPedido from './RutaPedido';
+import RutaCarga from './RutaCarga';
 import Visita from './Visita';
 import Cobro from './Cobro';
 import Attachment from './Attachment';
@@ -18,6 +20,8 @@ export {
   DetallePedido,
   Ruta,
   RutaDetalle,
+  RutaPedido,
+  RutaCarga,
   Visita,
   Cobro,
   Attachment,
@@ -33,6 +37,8 @@ export const modelClasses = [
   DetallePedido,
   Ruta,
   RutaDetalle,
+  RutaPedido,
+  RutaCarga,
   Visita,
   Cobro,
   Attachment,

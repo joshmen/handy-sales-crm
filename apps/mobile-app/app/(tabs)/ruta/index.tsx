@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap, useOfflineClients } from '@/hooks';
+import { useOfflineRutaHoy, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga, useClientNameMap, useOfflineClients, useOfflineProducts } from '@/hooks';
 import { rutasApi } from '@/api';
 import Toast from 'react-native-toast-message';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
@@ -24,7 +24,12 @@ try {
   Polyline = maps.Polyline;
 } catch { /* maps not available */ }
 import RutaDetalle from '@/db/models/RutaDetalle';
+import RutaPedido from '@/db/models/RutaPedido';
+import RutaCarga from '@/db/models/RutaCarga';
 import Cliente from '@/db/models/Cliente';
+import Producto from '@/db/models/Producto';
+import Pedido from '@/db/models/Pedido';
+import { Package } from 'lucide-react-native';
 
 const STOP_DOT_COLORS: Record<number, string> = {
   0: '#e2e8f0', // Pendiente — gray
@@ -56,12 +61,38 @@ export default function RutaScreen() {
   const route = rutas?.[0] ?? null;
 
   const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
+  const { data: pedidosCargados } = useOfflineRutaPedidos(route?.id ?? '');
+  const { data: cargaProductos } = useOfflineRutaCarga(route?.id ?? '');
   const clienteIds = useMemo(
     () => Array.from(new Set((detalles ?? []).map(s => s.clienteId))),
     [detalles]
   );
   const clientNames = useClientNameMap(clienteIds);
   const { data: allClients } = useOfflineClients();
+  const { data: allProducts } = useOfflineProducts();
+
+  // Lookups por id local de WDB (evita hacer N queries por cada item).
+  const productNames = useMemo(() => {
+    const map = new Map<string, string>();
+    (allProducts as Producto[] | undefined)?.forEach((p) => map.set(p.id, p.nombre));
+    return map;
+  }, [allProducts]);
+
+  // Para los pedidos cargados, mostrar número y total. Hago lookup batch.
+  const [pedidosLookup, setPedidosLookup] = useState<Map<string, { numero: string | null; total: number }>>(new Map());
+  useFocusEffect(useCallback(() => {
+    const ids = (pedidosCargados as RutaPedido[] | undefined)?.map((rp) => rp.pedidoId) ?? [];
+    if (ids.length === 0) { setPedidosLookup(new Map()); return; }
+    database.get<Pedido>('pedidos')
+      .query(Q.where('id', Q.oneOf(ids)))
+      .fetch()
+      .then((peds) => {
+        const map = new Map<string, { numero: string | null; total: number }>();
+        for (const p of peds) map.set(p.id, { numero: p.numeroPedido, total: p.total });
+        setPedidosLookup(map);
+      })
+      .catch(() => setPedidosLookup(new Map()));
+  }, [pedidosCargados]));
 
   // Build coordinate lookup from clients and compute polyline coordinates
   const routeCoordinates = useMemo(() => {
@@ -299,6 +330,51 @@ export default function RutaScreen() {
           </Animated.View>
         )}
 
+        {/* Pedidos cargados en el camión — solo si admin asignó al menos uno */}
+        {(pedidosCargados as RutaPedido[] | undefined)?.length ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(250)}>
+            <View style={styles.cargaSection}>
+              <View style={styles.cargaHeader}>
+                <Package size={16} color={COLORS.headerBg} />
+                <Text style={styles.cargaTitle}>Pedidos cargados ({(pedidosCargados as RutaPedido[]).length})</Text>
+              </View>
+              {(pedidosCargados as RutaPedido[]).map((rp) => {
+                const info = pedidosLookup.get(rp.pedidoId);
+                const label = info?.numero ?? `Pedido #${rp.pedidoServerId}`;
+                return (
+                  <View key={rp.id} style={styles.cargaItem}>
+                    <Text style={styles.cargaItemName}>{label}</Text>
+                    {info?.total != null && (
+                      <Text style={styles.cargaItemMeta}>${info.total.toFixed(2)}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        ) : null}
+
+        {/* Productos sueltos para venta directa */}
+        {(cargaProductos as RutaCarga[] | undefined)?.length ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(275)}>
+            <View style={styles.cargaSection}>
+              <View style={styles.cargaHeader}>
+                <Package size={16} color="#16a34a" />
+                <Text style={styles.cargaTitle}>Productos para venta directa ({(cargaProductos as RutaCarga[]).length})</Text>
+              </View>
+              {(cargaProductos as RutaCarga[]).map((rc) => {
+                const nombre = productNames.get(rc.productoId) ?? `Producto #${rc.productoServerId}`;
+                return (
+                  <View key={rc.id} style={styles.cargaItem}>
+                    <Text style={styles.cargaItemName} numberOfLines={1}>{nombre}</Text>
+                    <Text style={styles.cargaItemMeta}>{rc.cantidadTotal} u.</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        ) : null}
+
         {/* Stops — simple list with numbered dots */}
         <Animated.View entering={FadeInDown.duration(400).delay(300)}>
           <View style={styles.stopsSection}>
@@ -408,6 +484,30 @@ const styles = StyleSheet.create({
   // Mini Map
   miniMapContainer: { marginHorizontal: 16, marginTop: 12, borderRadius: 16, overflow: 'hidden' },
   miniMap: { height: 160, borderRadius: 16 },
+
+  // Carga (pedidos asignados + productos sueltos en el camión)
+  cargaSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cargaHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  cargaTitle: { fontSize: 14, fontWeight: '700', color: COLORS.foreground },
+  cargaItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  cargaItemName: { flex: 1, fontSize: 13, color: COLORS.foreground, marginRight: 8 },
+  cargaItemMeta: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
 
   // Stops
   stopsSection: { paddingHorizontal: 20, paddingTop: 12 },

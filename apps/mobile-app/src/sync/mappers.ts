@@ -56,7 +56,7 @@ export async function mapPullToWatermelon(
   const isFirstSync = !lastPulledAt;
 
   // Pre-load lookup maps for entities created locally (prevents duplicates on pull).
-  // Paralelizar las 7 fetches — cada una es bloqueante pero independiente.
+  // Paralelizar las fetches — cada una es bloqueante pero independiente.
   // Antes corrían secuencialmente sumando 2-5s; ahora corren simultáneas.
   const [
     pedidoMap,
@@ -64,16 +64,22 @@ export async function mapPullToWatermelon(
     cobroMap,
     visitaMap,
     clienteMap,
+    productoMap,
     rutaMap,
     rutaDetalleMap,
+    rutaPedidoMap,
+    rutaCargaMap,
   ] = await Promise.all([
     buildServerIdMap('pedidos'),
     buildServerIdMap('detalle_pedidos'),
     buildServerIdMap('cobros'),
     buildServerIdMap('visitas'),
     buildServerIdMap('clientes'),
+    buildServerIdMap('productos'),
     buildServerIdMap('rutas'),
     buildServerIdMap('ruta_detalles'),
+    buildServerIdMap('ruta_pedidos'),
+    buildServerIdMap('ruta_carga'),
   ]);
 
   return {
@@ -83,6 +89,8 @@ export async function mapPullToWatermelon(
     detalle_pedidos: extractDetallesPedido(server.pedidos, isFirstSync, detalleMap, pedidoMap),
     rutas: splitByOperation(server.rutas, isFirstSync, (r) => mapRutaToRaw(r, rutaMap), rutaMap),
     ruta_detalles: extractDetallesRuta(server.rutas, isFirstSync, rutaDetalleMap, rutaMap, clienteMap, pedidoMap),
+    ruta_pedidos: extractRutaPedidos(server.rutas, rutaPedidoMap, rutaMap, pedidoMap),
+    ruta_carga: extractRutaCarga(server.rutas, rutaCargaMap, rutaMap, productoMap),
     visitas: splitByOperation(server.visitas, isFirstSync, (v) => mapVisitaToRaw(v, visitaMap, clienteMap), visitaMap),
     cobros: splitByOperation(server.cobros, isFirstSync, (c) => mapCobroToRaw(c, cobroMap, clienteMap, pedidoMap), cobroMap),
     precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
@@ -280,6 +288,80 @@ function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
     created_at: toTimestamp(r.actualizadoEn),
     updated_at: toTimestamp(r.actualizadoEn),
   };
+}
+
+/**
+ * Extrae los pedidos asignados (carga) de cada ruta y los aplana para WDB.
+ * El backend manda `ruta.pedidos: [{ id, rutaId, pedidoId, estado, activo, creadoEn }]`
+ * por cada ruta sincronizada. Si una ruta llega sin `pedidos[]` (sync delta antes
+ * de v12 backend o ruta sin asignaciones) tratamos como vacío sin error.
+ */
+function extractRutaPedidos(
+  rutas: any[] | undefined,
+  rutaPedidoMap: Map<number, string>,
+  rutaMap: Map<number, string>,
+  pedidoMap: Map<number, string>
+): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
+  if (!rutas?.length) return { created: [], updated: [], deleted: [] };
+
+  const updated: DirtyRaw[] = [];
+  for (const ruta of rutas) {
+    if (ruta.isDeleted || ruta.operation === 2) continue;
+    if (!ruta.pedidos?.length) continue;
+
+    for (const rp of ruta.pedidos) {
+      updated.push({
+        id: rutaPedidoMap.get(rp.id) || String(rp.id),
+        server_id: rp.id,
+        ruta_id: rutaMap.get(ruta.id) || String(ruta.id),
+        pedido_id: pedidoMap.get(rp.pedidoId) || String(rp.pedidoId),
+        pedido_server_id: rp.pedidoId,
+        estado: rp.estado ?? 0,
+        activo: rp.activo ?? true,
+        created_at: toTimestamp(rp.creadoEn ?? ruta.actualizadoEn),
+        updated_at: toTimestamp(rp.creadoEn ?? ruta.actualizadoEn),
+      });
+    }
+  }
+  return { created: [], updated, deleted: [] };
+}
+
+/**
+ * Extrae los productos sueltos de carga (RutasCarga) de cada ruta.
+ * Backend manda `ruta.carga: [{ id, productoId, cantidadEntrega, cantidadVenta,
+ * cantidadTotal, precioUnitario, activo, creadoEn }]`.
+ */
+function extractRutaCarga(
+  rutas: any[] | undefined,
+  rutaCargaMap: Map<number, string>,
+  rutaMap: Map<number, string>,
+  productoMap: Map<number, string>
+): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
+  if (!rutas?.length) return { created: [], updated: [], deleted: [] };
+
+  const updated: DirtyRaw[] = [];
+  for (const ruta of rutas) {
+    if (ruta.isDeleted || ruta.operation === 2) continue;
+    if (!ruta.carga?.length) continue;
+
+    for (const rc of ruta.carga) {
+      updated.push({
+        id: rutaCargaMap.get(rc.id) || String(rc.id),
+        server_id: rc.id,
+        ruta_id: rutaMap.get(ruta.id) || String(ruta.id),
+        producto_id: productoMap.get(rc.productoId) || String(rc.productoId),
+        producto_server_id: rc.productoId,
+        cantidad_entrega: rc.cantidadEntrega ?? 0,
+        cantidad_venta: rc.cantidadVenta ?? 0,
+        cantidad_total: rc.cantidadTotal ?? 0,
+        precio_unitario: rc.precioUnitario ?? 0,
+        activo: rc.activo ?? true,
+        created_at: toTimestamp(rc.creadoEn ?? ruta.actualizadoEn),
+        updated_at: toTimestamp(rc.creadoEn ?? ruta.actualizadoEn),
+      });
+    }
+  }
+  return { created: [], updated, deleted: [] };
 }
 
 function extractDetallesRuta(

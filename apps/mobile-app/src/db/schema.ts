@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 11,
+  version: 12,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -132,6 +132,43 @@ export const schema = appSchema({
         { name: 'notas', type: 'string', isOptional: true },
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Ruta Pedidos (pedidos cargados en el camión, junction RutasPedidos) ───
+    // Carga del camión: pedidos que el vendedor lleva físicamente para entregar
+    // en su ruta. Se sincroniza desde server (read-only en mobile).
+    tableSchema({
+      name: 'ruta_pedidos',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'ruta_id', type: 'string', isIndexed: true },
+        { name: 'pedido_id', type: 'string', isIndexed: true },
+        { name: 'pedido_server_id', type: 'number' },
+        { name: 'estado', type: 'number' }, // 0=Asignado, 1=Entregado, 2=Devuelto
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Ruta Carga (productos sueltos en el camión, junction RutasCarga) ──
+    // Productos para venta directa que el vendedor lleva al camión, NO ligados
+    // a un pedido específico. Se sincroniza desde server (read-only en mobile).
+    tableSchema({
+      name: 'ruta_carga',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'ruta_id', type: 'string', isIndexed: true },
+        { name: 'producto_id', type: 'string', isIndexed: true },
+        { name: 'producto_server_id', type: 'number' },
+        { name: 'cantidad_entrega', type: 'number' },
+        { name: 'cantidad_venta', type: 'number' },
+        { name: 'cantidad_total', type: 'number' },
+        { name: 'precio_unitario', type: 'number' },
+        { name: 'activo', type: 'boolean' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

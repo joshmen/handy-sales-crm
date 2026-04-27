@@ -202,5 +202,44 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v12: tablas ruta_pedidos y ruta_carga. Antes el sync solo traía paradas
+      // (ruta_detalles); el vendedor en mobile no veía qué pedidos llevaba en el
+      // camión ni qué productos sueltos tenía para venta directa. Reportado
+      // 2026-04-27. Backend ya envía estos campos (commit 670e1b5) — esta
+      // migration crea las tablas locales para consumirlos.
+      toVersion: 12,
+      steps: [
+        createTable({
+          name: 'ruta_pedidos',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'ruta_id', type: 'string', isIndexed: true },
+            { name: 'pedido_id', type: 'string', isIndexed: true },
+            { name: 'pedido_server_id', type: 'number' },
+            { name: 'estado', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'ruta_carga',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'ruta_id', type: 'string', isIndexed: true },
+            { name: 'producto_id', type: 'string', isIndexed: true },
+            { name: 'producto_server_id', type: 'number' },
+            { name: 'cantidad_entrega', type: 'number' },
+            { name: 'cantidad_venta', type: 'number' },
+            { name: 'cantidad_total', type: 'number' },
+            { name: 'precio_unitario', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

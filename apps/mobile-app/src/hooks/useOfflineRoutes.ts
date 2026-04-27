@@ -3,6 +3,8 @@ import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Ruta from '@/db/models/Ruta';
 import RutaDetalle from '@/db/models/RutaDetalle';
+import RutaPedido from '@/db/models/RutaPedido';
+import RutaCarga from '@/db/models/RutaCarga';
 import { useObservable } from './useObservable';
 import { useAuthStore } from '@/stores';
 import { useEmpresa } from './useEmpresa';
@@ -69,6 +71,38 @@ export function useOfflineRutaDetalles(rutaId: string) {
     return database
       .get<RutaDetalle>('ruta_detalles')
       .query(Q.where('ruta_id', rutaId), Q.sortBy('orden', Q.asc))
+      .observe();
+  }, [rutaId]);
+
+  return useObservable(observable);
+}
+
+/**
+ * Pedidos cargados a la ruta (admin asigna desde web). Read-only en mobile.
+ * Permite al vendedor ver qué pedidos lleva físicamente en el camión para entregar.
+ */
+export function useOfflineRutaPedidos(rutaId: string) {
+  const observable = useMemo(() => {
+    if (!rutaId) return null;
+    return database
+      .get<RutaPedido>('ruta_pedidos')
+      .query(Q.where('ruta_id', rutaId), Q.where('activo', true))
+      .observe();
+  }, [rutaId]);
+
+  return useObservable(observable);
+}
+
+/**
+ * Productos sueltos cargados a la ruta para venta directa libre durante el día.
+ * Read-only en mobile (admin define la carga desde web).
+ */
+export function useOfflineRutaCarga(rutaId: string) {
+  const observable = useMemo(() => {
+    if (!rutaId) return null;
+    return database
+      .get<RutaCarga>('ruta_carga')
+      .query(Q.where('ruta_id', rutaId), Q.where('activo', true))
       .observe();
   }, [rutaId]);
 
