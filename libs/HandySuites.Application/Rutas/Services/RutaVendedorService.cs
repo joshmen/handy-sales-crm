@@ -664,6 +664,45 @@ public class RutaVendedorService
         return (ruta.Estado, ruta.UsuarioId);
     }
 
+    /// <summary>
+    /// Asigna múltiples pedidos a la ruta de forma tolerante a fallos parciales:
+    /// si un pedido individual falla (ya asignado a otra ruta, cancelado, etc.),
+    /// se reporta en `Fallidos` pero el resto se procesa. Retorna también
+    /// `EstadoRuta` y `VendedorId` para que el endpoint emita push notification
+    /// si la ruta ya está activa.
+    /// </summary>
+    public async Task<(AsignarPedidosBatchResultDto Resultado, EstadoRuta Estado, int? VendedorId)>
+        AsignarPedidosBatchAsync(int rutaId, List<int> pedidoIds)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        var resultado = new AsignarPedidosBatchResultDto();
+        var idsUnicos = pedidoIds?.Distinct().ToList() ?? new List<int>();
+
+        foreach (var pedidoId in idsUnicos)
+        {
+            try
+            {
+                await _repo.AsignarPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+                resultado.Asignados.Add(pedidoId);
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidos.Add(new AsignarPedidoFalloDto
+                {
+                    PedidoId = pedidoId,
+                    Motivo = ex.Message
+                });
+            }
+        }
+
+        return (resultado, ruta.Estado, ruta.UsuarioId);
+    }
+
     public async Task RemoverPedidoAsync(int rutaId, int pedidoId)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);

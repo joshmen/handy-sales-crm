@@ -67,11 +67,13 @@ export default function LoadInventoryPage() {
   const [cantidadVenta, setCantidadVenta] = useState<string>('1');
   const [precioVenta, setPrecioVenta] = useState<string>('');
 
-  // Add pedido modal
+  // Add pedido modal — multi-select
   const [isPedidoModalOpen, setIsPedidoModalOpen] = useState(false);
   const [availablePedidos, setAvailablePedidos] = useState<PedidoOption[]>([]);
   const [pedidoSearch, setPedidoSearch] = useState('');
   const [loadingPedidos, setLoadingPedidos] = useState(false);
+  const [selectedPedidoIds, setSelectedPedidoIds] = useState<Set<number>>(new Set());
+  const [batchAssigning, setBatchAssigning] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -167,19 +169,50 @@ export default function LoadInventoryPage() {
     }
   };
 
-  const handleAddPedido = async (pedidoId: number) => {
+  const togglePedidoSelected = (pedidoId: number) => {
+    setSelectedPedidoIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pedidoId)) next.delete(pedidoId);
+      else next.add(pedidoId);
+      return next;
+    });
+  };
+
+  const closePedidoModal = () => {
+    setIsPedidoModalOpen(false);
+    setSelectedPedidoIds(new Set());
+    setPedidoSearch('');
+  };
+
+  const handleAssignSelected = async () => {
+    const ids = Array.from(selectedPedidoIds);
+    if (ids.length === 0) return;
+    setBatchAssigning(true);
     try {
-      await routeService.addPedido(rutaId, pedidoId);
-      toast.success(t('orderAssigned'));
-      setIsPedidoModalOpen(false);
+      const result = await routeService.addPedidosBatch(rutaId, ids);
       const [cargaData, pedidosData] = await Promise.all([
         routeService.getCarga(rutaId),
         routeService.getPedidosAsignados(rutaId),
       ]);
       setCarga(cargaData);
       setPedidos(pedidosData);
+
+      if (result.totalAsignados > 0 && result.totalFallidos === 0) {
+        toast.success(t('ordersBatchAssigned', { count: result.totalAsignados }));
+      } else if (result.totalAsignados > 0 && result.totalFallidos > 0) {
+        toast.success(t('ordersBatchPartial', {
+          ok: result.totalAsignados,
+          failed: result.totalFallidos,
+        }));
+      } else {
+        toast.error(t('errorAssigningOrder'));
+      }
+
+      closePedidoModal();
     } catch (err: unknown) {
       toast.error((err instanceof Error ? err.message : null) || t('errorAssigningOrder'));
+    } finally {
+      setBatchAssigning(false);
     }
   };
 
@@ -543,10 +576,10 @@ export default function LoadInventoryPage() {
         )}
       </div>
 
-      {/* Add Pedido Modal */}
+      {/* Add Pedido Modal — multi-select */}
       <Modal
         isOpen={isPedidoModalOpen}
-        onClose={() => setIsPedidoModalOpen(false)}
+        onClose={closePedidoModal}
         title={t('assignOrdersForDelivery')}
         size="lg"
       >
@@ -566,45 +599,116 @@ export default function LoadInventoryPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-green-600" />
             </div>
-          ) : (
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {availablePedidos
-                .filter(p => {
-                  if (!pedidoSearch) return true;
-                  const search = pedidoSearch.toLowerCase();
-                  return (
-                    p.numeroPedido?.toLowerCase().includes(search) ||
-                    p.clienteNombre?.toLowerCase().includes(search)
-                  );
-                })
-                .map((p) => {
-                  const alreadyAssigned = pedidos.some(assigned => assigned.pedidoId === p.id);
-                  return (
-                    <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-border-subtle rounded-lg hover:bg-surface-1">
-                      <div>
-                        <span className="text-[13px] font-medium text-foreground">#{p.numeroPedido || p.id}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{p.clienteNombre || t('noClient')}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{formatCurrency(p.total || 0)}</span>
-                      </div>
-                      <button
-                        onClick={() => handleAddPedido(p.id)}
-                        disabled={alreadyAssigned}
-                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+          ) : (() => {
+            const filteredPedidos = availablePedidos.filter(p => {
+              if (!pedidoSearch) return true;
+              const search = pedidoSearch.toLowerCase();
+              return (
+                p.numeroPedido?.toLowerCase().includes(search) ||
+                p.clienteNombre?.toLowerCase().includes(search)
+              );
+            });
+            const selectablePedidos = filteredPedidos.filter(
+              p => !pedidos.some(a => a.pedidoId === p.id)
+            );
+            const allSelectableSelected = selectablePedidos.length > 0
+              && selectablePedidos.every(p => selectedPedidoIds.has(p.id));
+
+            const toggleSelectAll = () => {
+              setSelectedPedidoIds(prev => {
+                const next = new Set(prev);
+                if (allSelectableSelected) {
+                  selectablePedidos.forEach(p => next.delete(p.id));
+                } else {
+                  selectablePedidos.forEach(p => next.add(p.id));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <>
+                {selectablePedidos.length > 0 && (
+                  <div className="flex items-center justify-between px-1">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={allSelectableSelected}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
+                      {allSelectableSelected ? t('deselectAll') : t('selectAll')}
+                    </label>
+                    {selectedPedidoIds.size > 0 && (
+                      <span className="text-xs font-medium text-foreground">
+                        {t('selectedCount', { count: selectedPedidoIds.size })}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {filteredPedidos.map((p) => {
+                    const alreadyAssigned = pedidos.some(a => a.pedidoId === p.id);
+                    const isSelected = selectedPedidoIds.has(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        className={`flex items-center gap-3 px-3 py-2 border rounded-lg transition-colors ${
                           alreadyAssigned
-                            ? 'bg-surface-3 text-muted-foreground cursor-not-allowed'
-                            : 'bg-success text-success-foreground hover:bg-success/90'
+                            ? 'border-border-subtle bg-surface-2 cursor-not-allowed opacity-60'
+                            : isSelected
+                              ? 'border-green-500 bg-green-50 dark:bg-green-950/30 cursor-pointer'
+                              : 'border-border-subtle hover:bg-surface-1 cursor-pointer'
                         }`}
                       >
-                        {alreadyAssigned ? t('assigned') : t('assign')}
-                      </button>
-                    </div>
-                  );
-                })}
-              {availablePedidos.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">{t('noConfirmedOrders')}</p>
-              )}
-            </div>
-          )}
+                        <input
+                          type="checkbox"
+                          checked={alreadyAssigned || isSelected}
+                          disabled={alreadyAssigned}
+                          onChange={() => !alreadyAssigned && togglePedidoSelected(p.id)}
+                          className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <span className="text-[13px] font-medium text-foreground">#{p.numeroPedido || p.id}</span>
+                          <span className="text-xs text-muted-foreground ml-2">{p.clienteNombre || t('noClient')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">{formatCurrency(p.total || 0)}</span>
+                        </div>
+                        {alreadyAssigned && (
+                          <span className="text-xs text-muted-foreground">{t('assigned')}</span>
+                        )}
+                      </label>
+                    );
+                  })}
+                  {filteredPedidos.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">{t('noConfirmedOrders')}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+                  <button
+                    type="button"
+                    onClick={closePedidoModal}
+                    disabled={batchAssigning}
+                    className="px-3 py-1.5 text-xs font-medium rounded border border-border-subtle bg-surface-1 text-foreground hover:bg-surface-2 disabled:opacity-50"
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignSelected}
+                    disabled={selectedPedidoIds.size === 0 || batchAssigning}
+                    className="px-4 py-1.5 text-xs font-medium rounded bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {batchAssigning && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {selectedPedidoIds.size > 0
+                      ? t('assignSelectedCount', { count: selectedPedidoIds.size })
+                      : t('assignSelected')}
+                  </button>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </Modal>
 

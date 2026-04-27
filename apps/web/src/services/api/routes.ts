@@ -256,6 +256,18 @@ class RouteService {
     }
   }
 
+  async addPedidosBatch(rutaId: number, pedidoIds: number[]): Promise<AsignarPedidosBatchResult> {
+    try {
+      const response = await api.post<AsignarPedidosBatchResult>(
+        `${this.basePath}/${rutaId}/carga/pedidos/batch`,
+        { pedidoIds },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async removePedido(rutaId: number, pedidoId: number): Promise<void> {
     try {
       await api.delete(`${this.basePath}/${rutaId}/carga/pedidos/${pedidoId}`);
@@ -457,6 +469,20 @@ export interface RouteUpdateRequest {
   horaInicioEstimada?: string | null;
   horaFinEstimada?: string | null;
   notas?: string;
+}
+
+// Resultado de asignación batch de pedidos a una ruta. Tolerante a fallos
+// parciales: cada pedido reporta success o motivo de fallo.
+export interface AsignarPedidoFallo {
+  pedidoId: number;
+  motivo: string;
+}
+
+export interface AsignarPedidosBatchResult {
+  asignados: number[];
+  fallidos: AsignarPedidoFallo[];
+  totalAsignados: number;
+  totalFallidos: number;
 }
 
 // Carga de inventario interfaces

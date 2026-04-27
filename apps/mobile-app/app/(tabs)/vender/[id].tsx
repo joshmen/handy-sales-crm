@@ -1,7 +1,8 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { performSync } from '@/sync/syncEngine';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido, useTenantLocale } from '@/hooks';
 import { LoadingSpinner, ConfirmModal } from '@/components/ui';
@@ -23,7 +24,10 @@ export default function OrderDetailScreen() {
   const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: order, isLoading } = useOfflineOrderById(id!);
-  const { data: detalles } = useOfflineOrderDetalles(id!);
+  // detalles siempre se buscan por el id local del pedido resuelto. Si el `id`
+  // de la URL es un server_id (push notification), `order.id` ya viene como
+  // UUID local de WatermelonDB.
+  const { data: detalles } = useOfflineOrderDetalles(order?.id ?? '');
   const clienteIds = useMemo(() => (order ? [order.clienteId] : []), [order]);
   const clientNames = useClientNameMap(clienteIds);
   const confirmarMutation = useConfirmarPedido();
@@ -34,6 +38,18 @@ export default function OrderDetailScreen() {
   const [notasEntrega, setNotasEntrega] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void; destructive?: boolean; confirmText?: string; icon?: React.ReactNode }>({ visible: false, title: '', message: '', onConfirm: () => {} });
 
+  // Cuando llegamos desde un push (id numérico = server_id) y el pedido aún
+  // no se sincronizó (app en background/killed cuando llegó el push), forzar
+  // un pull para que aparezca en lugar de "Pedido no encontrado".
+  useEffect(() => {
+    if (!id) return;
+    const isServerId = /^\d+$/.test(id);
+    if (isServerId && !order && !isLoading) {
+      performSync().catch((e) => {
+        if (__DEV__) console.warn('[OrderDetail] performSync failed:', e);
+      });
+    }
+  }, [id, order, isLoading]);
 
   if (isLoading) {
     return <View style={styles.container}><LoadingSpinner message="Cargando pedido..." /></View>;

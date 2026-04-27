@@ -226,6 +226,25 @@ public class AsignarPedidoRequest
     public int PedidoId { get; set; }
 }
 
+public class AsignarPedidosBatchRequest
+{
+    public List<int> PedidoIds { get; set; } = new();
+}
+
+public class AsignarPedidosBatchResultDto
+{
+    public List<int> Asignados { get; set; } = new();
+    public List<AsignarPedidoFalloDto> Fallidos { get; set; } = new();
+    public int TotalAsignados => Asignados.Count;
+    public int TotalFallidos => Fallidos.Count;
+}
+
+public class AsignarPedidoFalloDto
+{
+    public int PedidoId { get; set; }
+    public string Motivo { get; set; } = string.Empty;
+}
+
 public class ActualizarEfectivoRequest
 {
     public double Monto { get; set; }

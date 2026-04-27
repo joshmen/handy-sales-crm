@@ -1901,7 +1901,15 @@
       "assigned": "Assigned",
       "assign": "Assign",
       "noClient": "No client",
-      "noConfirmedOrders": "No confirmed orders available"
+      "noConfirmedOrders": "No confirmed orders available",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selectedCount": "{count} selected",
+      "assignSelected": "Assign selected",
+      "assignSelectedCount": "Assign {count} order{count, plural, one {} other {s}}",
+      "cancel": "Cancel",
+      "ordersBatchAssigned": "{count} order{count, plural, one {} other {s}} assigned",
+      "ordersBatchPartial": "{ok} assigned, {failed} failed"
     },
     "inventoryLoader": {
       "assignProducts": "Assign products for sale",

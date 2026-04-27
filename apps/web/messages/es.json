@@ -1901,7 +1901,15 @@
       "assigned": "Asignado",
       "assign": "Asignar",
       "noClient": "Sin cliente",
-      "noConfirmedOrders": "No hay pedidos confirmados disponibles"
+      "noConfirmedOrders": "No hay pedidos confirmados disponibles",
+      "selectAll": "Seleccionar todos",
+      "deselectAll": "Deseleccionar todos",
+      "selectedCount": "{count} seleccionado{count, plural, one {} other {s}}",
+      "assignSelected": "Asignar seleccionados",
+      "assignSelectedCount": "Asignar {count} pedido{count, plural, one {} other {s}}",
+      "cancel": "Cancelar",
+      "ordersBatchAssigned": "{count} pedido{count, plural, one {} other {s}} asignado{count, plural, one {} other {s}}",
+      "ordersBatchPartial": "{ok} asignado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}"
     },
     "inventoryLoader": {
       "assignProducts": "Asignar productos para venta",

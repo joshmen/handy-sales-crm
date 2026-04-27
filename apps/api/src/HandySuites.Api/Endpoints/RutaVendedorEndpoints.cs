@@ -538,6 +538,38 @@ public static class RutaVendedorEndpoints
             return Results.Ok(new { mensaje = "Pedido asignado" });
         });
 
+        // Batch: asigna múltiples pedidos en un solo round-trip. Tolerante a fallos
+        // parciales: cada pedido se procesa individualmente y se reporta cuáles
+        // tuvieron éxito y cuáles fallaron (ej: pedido ya asignado a otra ruta).
+        group.MapPost("/{id:int}/carga/pedidos/batch", async (
+            int id,
+            AsignarPedidosBatchRequest dto,
+            HttpContext context,
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
+        {
+            if (dto.PedidoIds == null || dto.PedidoIds.Count == 0)
+                return Results.BadRequest(new { mensaje = "Debe enviar al menos un pedidoId" });
+
+            var (resultado, estado, vendedorId) = await servicio.AsignarPedidosBatchAsync(id, dto.PedidoIds);
+
+            // Push solo por los pedidos que se asignaron exitosamente y solo si
+            // la ruta está activa. Mismo patrón que el endpoint single.
+            if ((estado == EstadoRuta.CargaAceptada || estado == EstadoRuta.EnProgreso)
+                && vendedorId.HasValue
+                && resultado.Asignados.Count > 0
+                && int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
+            {
+                foreach (var pedidoIdAsignado in resultado.Asignados)
+                {
+                    NotifyMobileRouteAssignment(httpClientFactory, tenantId, vendedorId.Value, id, pedidoIdAsignado, logger);
+                }
+            }
+
+            return Results.Ok(resultado);
+        });
+
         group.MapDelete("/{id:int}/carga/pedidos/{pedidoId:int}", async (
             int id,
             int pedidoId,
