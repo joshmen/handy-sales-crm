@@ -42,42 +42,49 @@
 - Restringir a "Maps SDK for Android" + "Maps SDK for iOS" únicamente.
   Sin esto la key puede usarse para Geocoding/Places y se cobra.
 
-### 5. Pegar la key en `eas.json`
+### 5. Configurar la key — usar EAS Secrets (NUNCA commitear)
 
-Editar `apps/mobile-app/eas.json` y reemplazar `""` con la key real en los
-profiles `preview` y `production`:
+La key NO debe estar en `eas.json` porque ese archivo se commitea. Usamos **EAS Secrets**: la key se guarda en servidores de Expo, ningún commit la toca, y EAS la inyecta automáticamente al build cuando no está definida en `eas.json env`.
 
-```json
-{
-  "build": {
-    "preview": {
-      "env": {
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyXXXXX..."
-      }
-    },
-    "production": {
-      "env": {
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyXXXXX..."
-      }
-    }
-  }
-}
+```bash
+cd apps/mobile-app
+
+# Crear la secret (una sola vez)
+npx eas secret:create \
+  --scope project \
+  --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY \
+  --value AIzaSyXXXXX...la_key_real...
+
+# Verificar que quedó registrada
+npx eas secret:list
+
+# Si rotaste la key y necesitas actualizarla:
+npx eas secret:delete --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+npx eas secret:create --scope project \
+  --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY \
+  --value AIzaSy...nueva...
 ```
 
-> **Alternativa más segura**: usar **EAS Secrets** en vez de hardcodear en
-> eas.json (que se commitea). Setear vía `npx eas secret:create --name
-> EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value AIzaSy...` y referenciar desde
-> eas.json. La key restringida ya es segura porque no funciona fuera del
-> package + SHA, pero igual es buena práctica no commitear secretos.
+**Importante**: en `eas.json` la variable NO debe aparecer en el bloque `env`. Si aparece (aunque sea como `""`), sobrescribe la EAS Secret y vuelve a romper los mapas.
 
-### 6. Rebuild APK
+### 6. Para desarrollo local (Expo Go)
+
+EAS Secrets solo aplican a builds de EAS. Para correr `npx expo start --go` localmente con mapas funcionales, crear `apps/mobile-app/.env.local` (gitignoreado por `.env*.local`):
+
+```bash
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyXXXXX...la_key_real...
+```
+
+Expo lee `.env.local` automáticamente al iniciar Metro. Este archivo NO se commitea (`apps/mobile-app/.gitignore` ya lo excluye).
+
+### 7. Rebuild APK
 
 ```bash
 cd apps/mobile-app
 npx eas build --platform android --profile preview
 ```
 
-Una vez instalado el APK nuevo, las pantallas de mapas funcionan.
+EAS detecta la secret + la inyecta como env var en build time. Una vez instalado el APK nuevo, las pantallas de mapas funcionan.
 
 ## Validación post-instalación
 
