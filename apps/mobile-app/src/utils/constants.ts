@@ -40,10 +40,16 @@ const getApiUrl = (): string => {
 };
 
 // Main API (puerto 1050) hospeda el hub SignalR en /hubs/notifications.
-// Reusa la misma lógica de host para que apunte al mismo Metro/IP del API mobile.
+// En dev/local usa el mismo host del Mobile API cambiando puerto. En builds EAS
+// (preview/production) hay que pasar EXPO_PUBLIC_MAIN_API_URL explícito porque
+// las URLs de Railway no tienen puerto y el `.replace(:1052,:1050)` queda no-op
+// (terminaba apuntando al Mobile API por error → SignalR notifications rotas).
 const getMainApiUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_MAIN_API_URL) {
+    return process.env.EXPO_PUBLIC_MAIN_API_URL;
+  }
   const mobile = getApiUrl();
-  // Sustituye solo el puerto si es local (1052 → 1050). Producción ya viene apuntando al gateway.
+  // Local dev: sustituye el puerto 1052 → 1050. Sin efecto en URLs Railway.
   return mobile.replace(/:1052(\b|$)/, ':1050');
 };
 
