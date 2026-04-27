@@ -400,6 +400,40 @@ public class CobroRepository : ICobroRepository
         var totalFacturado = pedidos.Sum(p => p.Total);
         var totalCobrado = cobros.Sum(c => c.Monto);
 
+        // Lista plana de movimientos (facturas + cobros) en orden cronológico ascendente
+        // con saldo running. Mobile consume este campo. Web consume Pedidos.
+        // Id sintético: pedidoId para factura, 1_000_000 + cobroId para cobro (evita
+        // colisión en FlatList.keyExtractor del mobile).
+        var movimientosRaw = new List<(DateTime fecha, int id, string tipo, string concepto, decimal monto)>(pedidos.Count + cobros.Count);
+        foreach (var p in pedidos)
+            movimientosRaw.Add((p.FechaPedido, p.Id, "factura", $"Pedido {p.NumeroPedido}", p.Total));
+        foreach (var c in cobros)
+        {
+            var nombrePago = GetMetodoPagoNombre(c.MetodoPago);
+            var concepto = string.IsNullOrEmpty(c.Referencia) ? $"Cobro ({nombrePago})" : $"Cobro ({nombrePago}) — {c.Referencia}";
+            movimientosRaw.Add((c.FechaCobro, 1_000_000 + c.Id, "cobro", concepto, c.Monto));
+        }
+
+        decimal saldoRunning = 0m;
+        var movimientos = movimientosRaw
+            .OrderBy(m => m.fecha)
+            .ThenBy(m => m.tipo == "factura" ? 0 : 1) // si misma fecha: factura antes que cobro
+            .Select(m =>
+            {
+                if (m.tipo == "factura") saldoRunning += m.monto;
+                else saldoRunning -= m.monto;
+                return new EstadoCuentaMovimientoDto
+                {
+                    Id = m.id,
+                    Tipo = m.tipo,
+                    Fecha = m.fecha,
+                    Concepto = m.concepto,
+                    Monto = m.monto,
+                    Saldo = saldoRunning,
+                };
+            })
+            .ToList();
+
         return new EstadoCuentaDto
         {
             ClienteId = clienteId,
@@ -430,6 +464,7 @@ public class CobroRepository : ICobroRepository
                     }).ToList(),
                 };
             }).ToList(),
+            Movimientos = movimientos,
         };
     }
 }
