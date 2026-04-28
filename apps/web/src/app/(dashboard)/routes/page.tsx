@@ -283,10 +283,10 @@ export default function RoutesPage() {
       cellRenderer: (route) => (
         <div onClick={(e) => e.stopPropagation()}>
           {(route.estado === 0) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
+            <button onClick={() => router.push(`/routes/${route.id}?tab=carga`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
           )}
           {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-foreground/70 hover:text-foreground bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
+            <button onClick={() => router.push(`/routes/${route.id}?tab=carga`)} className="text-[11px] font-medium text-foreground/70 hover:text-foreground bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
           )}
           {route.estado === 2 && (
             <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>

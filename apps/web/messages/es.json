@@ -1786,6 +1786,12 @@
       "errorLoadingZones": "Error al cargar zonas",
       "errorLoadingUsers": "Error al cargar usuarios"
     },
+    "tabs": {
+      "resumen": "Resumen",
+      "paradas": "Paradas",
+      "pedidos": "Pedidos",
+      "carga": "Carga"
+    },
     "detail": {
       "errorLoading": "Error al cargar la ruta",
       "routeStarted": "Ruta iniciada",

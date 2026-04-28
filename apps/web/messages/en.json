@@ -1786,6 +1786,12 @@
       "errorLoadingZones": "Error loading zones",
       "errorLoadingUsers": "Error loading users"
     },
+    "tabs": {
+      "resumen": "Summary",
+      "paradas": "Stops",
+      "pedidos": "Orders",
+      "carga": "Load"
+    },
     "detail": {
       "errorLoading": "Error loading route",
       "routeStarted": "Route started",
