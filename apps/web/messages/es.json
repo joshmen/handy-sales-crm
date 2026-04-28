@@ -1920,6 +1920,8 @@
       "confirmSendToLoad": "Se enviará la carga al vendedor. ¿Continuar?",
       "sentSuccess": "Ruta enviada a carga exitosamente",
       "errorSending": "Error al enviar a carga",
+      "alreadySentTitle": "Ruta enviada a carga",
+      "alreadySentBody": "La carga fue enviada al vendedor. Está pendiente de aceptación. Cuando la acepte, esta vista pasará a modo de solo lectura.",
       "orderAssigned": "Pedido asignado",
       "errorAssigningOrder": "Error al asignar pedido",
       "orderRemoved": "Pedido removido",

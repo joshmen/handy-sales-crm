@@ -1920,6 +1920,8 @@
       "confirmSendToLoad": "The load will be sent to the vendor. Continue?",
       "sentSuccess": "Route sent to load successfully",
       "errorSending": "Error sending to load",
+      "alreadySentTitle": "Route sent to load",
+      "alreadySentBody": "The load was sent to the vendor. It is pending acceptance. Once accepted, this view will become read-only.",
       "orderAssigned": "Order assigned",
       "errorAssigningOrder": "Error assigning order",
       "orderRemoved": "Order removed",

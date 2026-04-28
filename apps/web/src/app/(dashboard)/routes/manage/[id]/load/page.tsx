@@ -260,9 +260,14 @@ export default function LoadInventoryPage() {
   const totalEntregas = pedidos.length;
   const totalProductos = carga.length;
   const totalAsignado = carga.reduce((sum, c) => sum + c.cantidadTotal * c.precioUnitario, 0);
-  // Read-only once the vendor has accepted the load or route is in progress/completed/closed
-  const isReadOnly = ruta ? ruta.estado >= ESTADO_RUTA.CargaAceptada : false;
-  const canSendToCarga = ruta ? (ruta.estado === ESTADO_RUTA.Planificada || ruta.estado === ESTADO_RUTA.PendienteAceptar) : false;
+  // Solo Planificada permite editar carga/pedidos/paradas. Una vez enviada
+  // (PendienteAceptar/CargaAceptada/EnProgreso/etc) la pantalla queda read-only
+  // — si el admin necesita modificar debe cancelar la ruta y crear otra.
+  // Reportado 2026-04-28: el admin podia agregar productos/pedidos/paradas
+  // despues de hacer Send to Load, dejando el resumen del vendedor obsoleto.
+  const isReadOnly = ruta ? ruta.estado !== ESTADO_RUTA.Planificada : false;
+  const canSendToCarga = ruta ? ruta.estado === ESTADO_RUTA.Planificada : false;
+  const isPendingAccept = ruta?.estado === ESTADO_RUTA.PendienteAceptar;
 
   if (loading) {
     return (
@@ -574,6 +579,21 @@ export default function LoadInventoryPage() {
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {t('sendToLoad')}
             </button>
+          </div>
+        )}
+
+        {/* Aviso: ruta ya enviada, esperando que el vendedor la acepte */}
+        {isPendingAccept && (
+          <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800 rounded-md p-4 mt-4 flex items-start gap-3">
+            <span className="text-2xl leading-none">⏳</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                {t('alreadySentTitle', { defaultValue: 'Ruta enviada a carga' })}
+              </p>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+                {t('alreadySentBody', { defaultValue: 'La carga fue enviada al vendedor. Está pendiente de aceptación. Cuando la acepte, esta vista pasará a modo de solo lectura.' })}
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -203,9 +203,11 @@ public class RutaVendedorService
                 throw new UnauthorizedAccessException("No tienes permisos para reasignar rutas a otros vendedores.");
         }
 
-        // No permitir editar rutas en progreso o completadas
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("No se puede editar una ruta que ya está en progreso o completada");
+        // Una vez enviada a carga la ruta es inmutable: si admin necesita cambiar
+        // datos, debe cancelar y crear nueva (sino el resumen del vendedor queda
+        // obsoleto). Reportado 2026-04-28.
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden editar rutas planificadas. Si la ruta ya fue enviada a carga, cancelala y crea una nueva.");
 
         if (dto.UsuarioId.HasValue) ruta.UsuarioId = dto.UsuarioId.Value;
 
@@ -375,8 +377,11 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar");
+        // Una vez enviada a carga (PendienteAceptar/CargaAceptada/etc) la ruta
+        // queda inmutable. Si el admin necesita cambiar, debe cancelar y recrear.
+        // Sin esto, el resumen del vendedor queda obsoleto. Reportado 2026-04-28.
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas");
 
         var detalle = new RutaDetalle
         {
@@ -421,8 +426,8 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar");
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas");
 
         var resultado = new AgregarParadasBatchResultDto();
         var idsUnicos = dto.ClienteIds?.Distinct().ToList() ?? new List<int>();
@@ -720,8 +725,8 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("No se pueden agregar productos a una ruta en este estado");
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden agregar productos a rutas planificadas");
 
         await _repo.AsignarProductoVentaAsync(rutaId, dto.ProductoId, dto.Cantidad, dto.PrecioUnitario ?? 0, _tenant.TenantId);
     }
@@ -733,6 +738,9 @@ public class RutaVendedorService
             throw new InvalidOperationException("Ruta no encontrada");
 
         EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden remover productos de rutas planificadas. Si la ruta ya fue enviada a carga, cancelala.");
 
         await _repo.RemoverProductoCargaAsync(rutaId, productoId, _tenant.TenantId);
     }
@@ -759,6 +767,9 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden asignar pedidos a rutas planificadas. Si la ruta ya fue enviada a carga, cancelala y crea una nueva.");
+
         await _repo.AsignarPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
 
         return (ruta.Estado, ruta.UsuarioId);
@@ -779,6 +790,9 @@ public class RutaVendedorService
             throw new InvalidOperationException("Ruta no encontrada");
 
         EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden asignar pedidos a rutas planificadas. Si la ruta ya fue enviada a carga, cancelala y crea una nueva.");
 
         var resultado = new AsignarPedidosBatchResultDto();
         var idsUnicos = pedidoIds?.Distinct().ToList() ?? new List<int>();
@@ -811,6 +825,9 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden remover pedidos de rutas planificadas. Si la ruta ya fue enviada a carga, cancelala.");
+
         await _repo.RemoverPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
     }
 
@@ -826,6 +843,9 @@ public class RutaVendedorService
             throw new InvalidOperationException("Ruta no encontrada");
 
         EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden remover pedidos de rutas planificadas. Si la ruta ya fue enviada a carga, cancelala.");
 
         var resultado = new RemoverPedidosBatchResultDto();
         var idsUnicos = pedidoIds?.Distinct().ToList() ?? new List<int>();

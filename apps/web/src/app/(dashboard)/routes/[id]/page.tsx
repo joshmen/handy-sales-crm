@@ -241,7 +241,11 @@ export default function RouteDetailPage() {
   const isPlanificada = route?.estado === 0;
   const isEnProgreso = route?.estado === 1;
   const isPendienteAceptar = route?.estado === 4;
-  const isEditable = isPlanificada || isPendienteAceptar;
+  // Solo Planificada permite editar: una vez enviada a carga, la ruta se vuelve
+  // inmutable para no invalidar el resumen ya enviado al vendedor por push.
+  // Reportado 2026-04-28: el admin podia agregar paradas/pedidos despues del
+  // Send to Load.
+  const isEditable = isPlanificada;
 
   // Actions — uso showApiError para mostrar el message real del backend
   // (p.ej. "No se puede enviar la ruta a carga: faltan paradas, pedidos asignados.")
