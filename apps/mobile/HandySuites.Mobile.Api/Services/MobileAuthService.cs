@@ -41,10 +41,14 @@ public class MobileAuthService
             return new LoginResult { Success = false, Message = "Cuenta desactivada" };
 
         // --- Device session management ---
-        if (!string.IsNullOrEmpty(deviceFingerprint))
+        // Cambio 2026-04-28: el binding check ahora aplica aunque el cliente
+        // NO mande fingerprint (caso APK viejo). Antes el if externo bypaseaba
+        // la restriccion completa para esos clientes.
+        DeviceSession? existingSession = null;
+        if (!string.IsNullOrEmpty(deviceFingerprint) || !string.IsNullOrEmpty(deviceId))
         {
-            // Find existing session by fingerprint or deviceId
-            var existingSession = await _db.DeviceSessions
+            // Find existing session by fingerprint or deviceId (reuse same device session)
+            existingSession = await _db.DeviceSessions
                 .IgnoreQueryFilters()
                 .Where(ds => ds.UsuarioId == usuario.Id &&
                              ds.TenantId == usuario.TenantId &&
@@ -52,61 +56,74 @@ public class MobileAuthService
                              (ds.Status == SessionStatus.Active || ds.Status == SessionStatus.LoggedOut))
                 .OrderByDescending(ds => ds.LastActivity)
                 .FirstOrDefaultAsync(ds =>
-                    ds.DeviceFingerprint == deviceFingerprint ||
+                    (!string.IsNullOrEmpty(deviceFingerprint) && ds.DeviceFingerprint == deviceFingerprint) ||
                     (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
-
-            // Device binding check — only for non-admin users
-            if (!usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
-            {
-                // Check if there's ANY session with a different fingerprint
-                var boundSession = await _db.DeviceSessions
-                    .IgnoreQueryFilters()
-                    .Where(ds => ds.UsuarioId == usuario.Id &&
-                                 ds.TenantId == usuario.TenantId &&
-                                 ds.EliminadoEn == null &&
-                                 (ds.Status == SessionStatus.Active || ds.Status == SessionStatus.LoggedOut) &&
-                                 !string.IsNullOrEmpty(ds.DeviceFingerprint) &&
-                                 ds.DeviceFingerprint != deviceFingerprint)
-                    .OrderByDescending(ds => ds.LastActivity)
-                    .FirstOrDefaultAsync();
-
-                if (boundSession != null)
-                {
-                    return new LoginResult
-                    {
-                        Success = false,
-                        DeviceBound = true,
-                        Message = "Esta cuenta está vinculada a otro dispositivo. Contacta a tu administrador para desvincular."
-                    };
-                }
-            }
-
-            // Reuse existing session or create new one
-            if (existingSession != null)
-            {
-                existingSession.DeviceFingerprint = deviceFingerprint;
-                existingSession.DeviceId = deviceId ?? existingSession.DeviceId;
-                existingSession.LastActivity = DateTime.UtcNow;
-                existingSession.Status = SessionStatus.Active;
-            }
-            else if (!string.IsNullOrEmpty(deviceId))
-            {
-                _db.DeviceSessions.Add(new DeviceSession
-                {
-                    TenantId = usuario.TenantId,
-                    UsuarioId = usuario.Id,
-                    DeviceId = deviceId,
-                    DeviceFingerprint = deviceFingerprint,
-                    DeviceName = null,
-                    DeviceType = DeviceType.Unknown,
-                    Status = SessionStatus.Active,
-                    LastActivity = DateTime.UtcNow,
-                    LoggedInAt = DateTime.UtcNow
-                });
-            }
-
-            await _db.SaveChangesAsync();
         }
+
+        // Device binding check — only for non-admin users.
+        // Reportado 2026-04-28: la version anterior tenia 3 escapes:
+        // 1) Solo aplicaba si cliente mandaba fingerprint (el if externo)
+        // 2) Excluia sesiones con fingerprint NULL (legacy)
+        // 3) Permitia status LoggedOut como activo
+        // Ahora la regla es: si EXISTE OTRA sesion Active del mismo usuario
+        // (con o sin fingerprint), bloquear. Esto refuerza el modelo de
+        // negocio "1 vendedor = 1 device".
+        if (!usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
+        {
+            var boundSession = await _db.DeviceSessions
+                .IgnoreQueryFilters()
+                .Where(ds => ds.UsuarioId == usuario.Id &&
+                             ds.TenantId == usuario.TenantId &&
+                             ds.EliminadoEn == null &&
+                             ds.Status == SessionStatus.Active &&
+                             (
+                                 (!string.IsNullOrEmpty(ds.DeviceFingerprint)
+                                   && ds.DeviceFingerprint != deviceFingerprint) ||
+                                 (string.IsNullOrEmpty(ds.DeviceFingerprint)
+                                   && !string.IsNullOrEmpty(ds.DeviceId)
+                                   && (string.IsNullOrEmpty(deviceId) || ds.DeviceId != deviceId)) ||
+                                 (string.IsNullOrEmpty(ds.DeviceFingerprint)
+                                   && string.IsNullOrEmpty(ds.DeviceId))
+                             ))
+                .OrderByDescending(ds => ds.LastActivity)
+                .FirstOrDefaultAsync();
+
+            if (boundSession != null)
+            {
+                return new LoginResult
+                {
+                    Success = false,
+                    DeviceBound = true,
+                    Message = "Tu cuenta está activa en otro dispositivo. Por seguridad, solo se permite una sesión a la vez."
+                };
+            }
+        }
+
+        // Reuse existing session or create new one
+        if (existingSession != null)
+        {
+            existingSession.DeviceFingerprint = deviceFingerprint;
+            existingSession.DeviceId = deviceId ?? existingSession.DeviceId;
+            existingSession.LastActivity = DateTime.UtcNow;
+            existingSession.Status = SessionStatus.Active;
+        }
+        else if (!string.IsNullOrEmpty(deviceId))
+        {
+            _db.DeviceSessions.Add(new DeviceSession
+            {
+                TenantId = usuario.TenantId,
+                UsuarioId = usuario.Id,
+                DeviceId = deviceId,
+                DeviceFingerprint = deviceFingerprint,
+                DeviceName = null,
+                DeviceType = DeviceType.Unknown,
+                Status = SessionStatus.Active,
+                LastActivity = DateTime.UtcNow,
+                LoggedInAt = DateTime.UtcNow
+            });
+        }
+
+        await _db.SaveChangesAsync();
 
         var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
 
@@ -332,5 +349,85 @@ public class MobileAuthService
     {
         var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token));
         return Convert.ToBase64String(hash);
+    }
+
+    /// <summary>
+    /// Login forzado: ignora el check DEVICE_BOUND y revoca todas las sesiones
+    /// activas del usuario excepto la que se va a crear. El cliente lo invoca
+    /// solo despues de que el usuario confirma en un modal "Continuar aqui"
+    /// tras recibir DEVICE_BOUND en el login normal.
+    /// </summary>
+    public async Task<LoginResult> ForceLoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null)
+    {
+        var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+        var loginSuccess = usuario != null && BCrypt.Net.BCrypt.Verify(password, usuario.PasswordHash);
+        if (!loginSuccess || usuario == null)
+            return new LoginResult { Success = false };
+        if (!usuario.Activo)
+            return new LoginResult { Success = false, Message = "Cuenta desactivada" };
+
+        // Revocar TODAS las sesiones Active del usuario (incluida la actual si la
+        // hubiera con otro fingerprint). El cliente las re-creara via la nueva.
+        var activeSessions = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == usuario.Id &&
+                         ds.TenantId == usuario.TenantId &&
+                         ds.EliminadoEn == null &&
+                         ds.Status == SessionStatus.Active)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        foreach (var s in activeSessions)
+        {
+            s.Status = SessionStatus.RevokedByUser;
+            s.LoggedOutAt = now;
+            s.ActualizadoEn = now;
+        }
+
+        // Crear nueva sesion para el device actual (si tiene identificador).
+        if (!string.IsNullOrEmpty(deviceId) || !string.IsNullOrEmpty(deviceFingerprint))
+        {
+            _db.DeviceSessions.Add(new DeviceSession
+            {
+                TenantId = usuario.TenantId,
+                UsuarioId = usuario.Id,
+                DeviceId = deviceId ?? string.Empty,
+                DeviceFingerprint = deviceFingerprint,
+                DeviceName = null,
+                DeviceType = DeviceType.Unknown,
+                Status = SessionStatus.Active,
+                LastActivity = now,
+                LoggedInAt = now
+            });
+        }
+
+        await _db.SaveChangesAsync();
+
+        var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
+        var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);
+
+        var companyLogo = await _db.CompanySettings
+            .AsNoTracking()
+            .Where(cs => cs.TenantId == usuario.TenantId)
+            .Select(cs => cs.LogoUrl)
+            .FirstOrDefaultAsync();
+
+        return new LoginResult
+        {
+            Success = true,
+            Data = new
+            {
+                user = new
+                {
+                    id = usuario.Id.ToString(),
+                    email = usuario.Email,
+                    name = usuario.Nombre,
+                    role = usuario.Rol,
+                    tenantLogo = companyLogo ?? ""
+                },
+                token = token,
+                refreshToken = plainRefreshToken
+            }
+        };
     }
 }
