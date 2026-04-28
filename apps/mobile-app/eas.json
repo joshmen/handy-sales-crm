@@ -38,6 +38,18 @@
         "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
         "EXPO_PUBLIC_ENV": "production"
       }
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "_comment": "production-apk apunta a PROD APIs pero genera APK para distribucion directa al cliente (sin pasar por Play Store). Mismas URLs que production.",
+        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
+        "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
+        "EXPO_PUBLIC_ENV": "production"
+      }
     }
   },
   "submit": {
