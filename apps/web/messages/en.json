@@ -1854,7 +1854,13 @@
       "assignSelectedCount": "Assign {count} order{count, plural, one {} other {s}}",
       "cancel": "Cancel",
       "ordersBatchAssigned": "{count} order{count, plural, one {} other {s}} assigned",
-      "ordersBatchPartial": "{ok} assigned, {failed} failed"
+      "ordersBatchPartial": "{ok} assigned, {failed} failed",
+      "removeSelectedCount": "Remove {count} order{count, plural, one {} other {s}}",
+      "ordersBatchRemoved": "{count} order{count, plural, one {} other {s}} removed",
+      "ordersBatchRemovedPartial": "{ok} removed, {failed} failed",
+      "paginationRange": "Showing {from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
     },
     "load": {
       "title": "Load route inventory",

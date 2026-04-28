@@ -1854,7 +1854,13 @@
       "assignSelectedCount": "Asignar {count} pedido{count, plural, one {} other {s}}",
       "cancel": "Cancelar",
       "ordersBatchAssigned": "{count} pedido{count, plural, one {} other {s}} asignado{count, plural, one {} other {s}}",
-      "ordersBatchPartial": "{ok} asignado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}"
+      "ordersBatchPartial": "{ok} asignado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}",
+      "removeSelectedCount": "Eliminar {count} pedido{count, plural, one {} other {s}}",
+      "ordersBatchRemoved": "{count} pedido{count, plural, one {} other {s}} eliminado{count, plural, one {} other {s}}",
+      "ordersBatchRemovedPartial": "{ok} eliminado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}",
+      "paginationRange": "Mostrando {from}–{to} de {total}",
+      "previous": "Anterior",
+      "next": "Siguiente"
     },
     "load": {
       "title": "Cargar inventario de ruta",

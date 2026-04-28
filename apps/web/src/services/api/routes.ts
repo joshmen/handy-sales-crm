@@ -268,6 +268,18 @@ class RouteService {
     }
   }
 
+  async removePedidosBatch(rutaId: number, pedidoIds: number[]): Promise<RemoverPedidosBatchResult> {
+    try {
+      const response = await api.post<RemoverPedidosBatchResult>(
+        `${this.basePath}/${rutaId}/carga/pedidos/batch-remove`,
+        { pedidoIds },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async removePedido(rutaId: number, pedidoId: number): Promise<void> {
     try {
       await api.delete(`${this.basePath}/${rutaId}/carga/pedidos/${pedidoId}`);
@@ -482,6 +494,13 @@ export interface AsignarPedidosBatchResult {
   asignados: number[];
   fallidos: AsignarPedidoFallo[];
   totalAsignados: number;
+  totalFallidos: number;
+}
+
+export interface RemoverPedidosBatchResult {
+  removidos: number[];
+  fallidos: AsignarPedidoFallo[];
+  totalRemovidos: number;
   totalFallidos: number;
 }
 

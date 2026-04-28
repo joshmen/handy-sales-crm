@@ -100,6 +100,12 @@ export default function RouteDetailPage() {
   const [selectedPedidoIds, setSelectedPedidoIds] = useState<Set<number>>(new Set());
   const [batchAssigning, setBatchAssigning] = useState(false);
 
+  // Pedidos asignados — paginacion + multi-select para remover
+  const ASSIGNED_PER_PAGE = 10;
+  const [assignedPage, setAssignedPage] = useState(1);
+  const [selectedAssignedIds, setSelectedAssignedIds] = useState<Set<number>>(new Set());
+  const [batchRemoving, setBatchRemoving] = useState(false);
+
   // Edit drawer
   const editDrawerRef = useRef<DrawerHandle>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -413,8 +419,51 @@ export default function RouteDetailPage() {
       toast.success(t('detail.orderRemoved'));
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
+      // Asegura que la pagina actual no quede vacia tras remover el ultimo de la pagina.
+      setSelectedAssignedIds(prev => {
+        const next = new Set(prev);
+        next.delete(pedidoId);
+        return next;
+      });
     } catch (err) {
       showApiError(err, t('detail.errorRemovingOrder'));
+    }
+  };
+
+  const toggleAssignedSelected = (pedidoId: number) => {
+    setSelectedAssignedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pedidoId)) next.delete(pedidoId);
+      else next.add(pedidoId);
+      return next;
+    });
+  };
+
+  const handleRemoveSelectedPedidos = async () => {
+    if (!route) return;
+    const ids = Array.from(selectedAssignedIds);
+    if (ids.length === 0) return;
+    setBatchRemoving(true);
+    try {
+      const result = await routeService.removePedidosBatch(route.id, ids);
+      const pedidosData = await routeService.getPedidosAsignados(route.id);
+      setPedidos(pedidosData);
+      setSelectedAssignedIds(new Set());
+
+      if (result.totalRemovidos > 0 && result.totalFallidos === 0) {
+        toast.success(t('detail.ordersBatchRemoved', { count: result.totalRemovidos }));
+      } else if (result.totalRemovidos > 0 && result.totalFallidos > 0) {
+        toast.success(t('detail.ordersBatchRemovedPartial', {
+          ok: result.totalRemovidos,
+          failed: result.totalFallidos,
+        }));
+      } else {
+        toast.error(t('detail.errorRemovingOrder'));
+      }
+    } catch (err) {
+      showApiError(err, t('detail.errorRemovingOrder'));
+    } finally {
+      setBatchRemoving(false);
     }
   };
 
@@ -705,84 +754,183 @@ export default function RouteDetailPage() {
                 {pedidos.length}
               </span>
             </div>
-            {isEditable && pedidos.length > 0 && (
-              <button
-                onClick={handleOpenAddPedido}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t('detail.assignOrder')}
-              </button>
-            )}
-          </div>
-
-          <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
-            {/* Table Header */}
-            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
-              <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('detail.orderNumber')}</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
-              <div className="w-[120px] text-xs font-semibold text-foreground/70 text-right">{t('detail.amount')}</div>
-              <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.products')}</div>
-              <div className="w-[110px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
-              {isEditable && (
-                <div className="w-[70px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
+            <div className="flex items-center gap-2">
+              {isEditable && selectedAssignedIds.size > 0 && (
+                <button
+                  onClick={handleRemoveSelectedPedidos}
+                  disabled={batchRemoving}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  {batchRemoving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {t('detail.removeSelectedCount', { count: selectedAssignedIds.size })}
+                </button>
+              )}
+              {isEditable && pedidos.length > 0 && (
+                <button
+                  onClick={handleOpenAddPedido}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {t('detail.assignOrder')}
+                </button>
               )}
             </div>
+          </div>
 
-            {/* Table Body */}
-            {pedidos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Package className="w-12 h-12 text-muted-foreground/60 mb-3" />
-                <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noOrders')}</p>
-                <p className="text-xs text-muted-foreground mb-3">{t('detail.assignConfirmedOrders')}</p>
-                {isEditable && (
-                  <button
-                    onClick={handleOpenAddPedido}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    {t('detail.assignOrder')}
-                  </button>
-                )}
-              </div>
-            ) : (
-              pedidos.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
-                >
-                  <div className="w-[100px]">
-                    <span className="text-[13px] font-medium text-foreground">#{p.pedidoId}</span>
-                  </div>
-                  <div className="flex-1 min-w-[160px]">
-                    <p className="text-[13px] font-medium text-foreground truncate">{p.clienteNombre}</p>
-                  </div>
-                  <div className="w-[120px] text-right">
-                    <span className="text-[13px] text-foreground/70">{formatCurrency(p.montoTotal)}</span>
-                  </div>
-                  <div className="w-[60px] text-center">
-                    <span className="text-[13px] text-foreground/70">{p.totalProductos}</span>
-                  </div>
-                  <div className="w-[110px] text-center">
-                    <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
-                      {p.estadoNombre}
-                    </span>
-                  </div>
-                  {isEditable && (
-                    <div className="w-[70px] flex items-center justify-center">
-                      <button
-                        onClick={() => handleRemovePedido(p.pedidoId)}
-                        className="p-1 text-muted-foreground hover:text-red-600 rounded"
-                        title={t('detail.removeOrder')}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+          {(() => {
+            // Paginacion client-side
+            const totalPages = Math.max(1, Math.ceil(pedidos.length / ASSIGNED_PER_PAGE));
+            const safePage = Math.min(assignedPage, totalPages);
+            if (safePage !== assignedPage) {
+              // No mutamos en render: la siguiente interaccion lo corrige.
+            }
+            const startIdx = (safePage - 1) * ASSIGNED_PER_PAGE;
+            const pagePedidos = pedidos.slice(startIdx, startIdx + ASSIGNED_PER_PAGE);
+            const allOnPageSelected = pagePedidos.length > 0
+              && pagePedidos.every(p => selectedAssignedIds.has(p.pedidoId));
+
+            const toggleSelectAllOnPage = () => {
+              setSelectedAssignedIds(prev => {
+                const next = new Set(prev);
+                if (allOnPageSelected) {
+                  pagePedidos.forEach(p => next.delete(p.pedidoId));
+                } else {
+                  pagePedidos.forEach(p => next.add(p.pedidoId));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
+                  {isEditable && pedidos.length > 0 && (
+                    <div className="w-[28px] flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={toggleSelectAllOnPage}
+                        aria-label={t('detail.selectAll')}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
                     </div>
                   )}
+                  <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('detail.orderNumber')}</div>
+                  <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
+                  <div className="w-[120px] text-xs font-semibold text-foreground/70 text-right">{t('detail.amount')}</div>
+                  <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.products')}</div>
+                  <div className="w-[110px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
+                  {isEditable && (
+                    <div className="w-[70px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
+                  )}
                 </div>
-              ))
-            )}
-          </div>
+
+                {/* Table Body */}
+                {pedidos.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Package className="w-12 h-12 text-muted-foreground/60 mb-3" />
+                    <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noOrders')}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{t('detail.assignConfirmedOrders')}</p>
+                    {isEditable && (
+                      <button
+                        onClick={handleOpenAddPedido}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {t('detail.assignOrder')}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {pagePedidos.map((p) => {
+                      const isSelected = selectedAssignedIds.has(p.pedidoId);
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center gap-3 px-4 py-3 border-b border-border-subtle transition-colors ${
+                            isSelected ? 'bg-green-50 dark:bg-green-950/30' : 'hover:bg-surface-1'
+                          }`}
+                        >
+                          {isEditable && (
+                            <div className="w-[28px] flex items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleAssignedSelected(p.pedidoId)}
+                                aria-label={`Seleccionar pedido ${p.pedidoId}`}
+                                className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                              />
+                            </div>
+                          )}
+                          <div className="w-[100px]">
+                            <span className="text-[13px] font-medium text-foreground">#{p.pedidoId}</span>
+                          </div>
+                          <div className="flex-1 min-w-[160px]">
+                            <p className="text-[13px] font-medium text-foreground truncate">{p.clienteNombre}</p>
+                          </div>
+                          <div className="w-[120px] text-right">
+                            <span className="text-[13px] text-foreground/70">{formatCurrency(p.montoTotal)}</span>
+                          </div>
+                          <div className="w-[60px] text-center">
+                            <span className="text-[13px] text-foreground/70">{p.totalProductos}</span>
+                          </div>
+                          <div className="w-[110px] text-center">
+                            <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
+                              {p.estadoNombre}
+                            </span>
+                          </div>
+                          {isEditable && (
+                            <div className="w-[70px] flex items-center justify-center">
+                              <button
+                                onClick={() => handleRemovePedido(p.pedidoId)}
+                                className="p-1 text-muted-foreground hover:text-red-600 rounded"
+                                title={t('detail.removeOrder')}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-2 bg-surface-1 border-t border-border-subtle">
+                        <span className="text-xs text-muted-foreground">
+                          {t('detail.paginationRange', {
+                            from: startIdx + 1,
+                            to: Math.min(startIdx + ASSIGNED_PER_PAGE, pedidos.length),
+                            total: pedidos.length,
+                          })}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setAssignedPage(p => Math.max(1, p - 1))}
+                            disabled={safePage <= 1}
+                            className="px-2 py-1 text-xs font-medium border border-border-subtle rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-2"
+                          >
+                            {t('detail.previous')}
+                          </button>
+                          <span className="text-xs text-foreground/70 px-2">
+                            {safePage} / {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setAssignedPage(p => Math.min(totalPages, p + 1))}
+                            disabled={safePage >= totalPages}
+                            className="px-2 py-1 text-xs font-medium border border-border-subtle rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-2"
+                          >
+                            {t('detail.next')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Stops Section */}

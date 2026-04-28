@@ -714,6 +714,42 @@ public class RutaVendedorService
         await _repo.RemoverPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
     }
 
+    /// <summary>
+    /// Remueve multiples pedidos de la ruta. Tolerante a fallos parciales:
+    /// si un pedido individual falla (ej. ya no existe), se reporta en Fallidos
+    /// pero el resto se procesa.
+    /// </summary>
+    public async Task<RemoverPedidosBatchResultDto> RemoverPedidosBatchAsync(int rutaId, List<int> pedidoIds)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        var resultado = new RemoverPedidosBatchResultDto();
+        var idsUnicos = pedidoIds?.Distinct().ToList() ?? new List<int>();
+
+        foreach (var pedidoId in idsUnicos)
+        {
+            try
+            {
+                await _repo.RemoverPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+                resultado.Removidos.Add(pedidoId);
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidos.Add(new AsignarPedidoFalloDto
+                {
+                    PedidoId = pedidoId,
+                    Motivo = ex.Message
+                });
+            }
+        }
+
+        return resultado;
+    }
+
     public async Task ActualizarEfectivoInicialAsync(int rutaId, ActualizarEfectivoRequest dto)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);

@@ -579,6 +579,20 @@ public static class RutaVendedorEndpoints
             return Results.NoContent();
         });
 
+        // Batch: remueve multiples pedidos en un solo round-trip. Tolerante a fallos
+        // parciales (similar al endpoint batch de asignacion).
+        group.MapPost("/{id:int}/carga/pedidos/batch-remove", async (
+            int id,
+            RemoverPedidosBatchRequest dto,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            if (dto.PedidoIds == null || dto.PedidoIds.Count == 0)
+                return Results.BadRequest(new { mensaje = "Debe enviar al menos un pedidoId" });
+
+            var resultado = await servicio.RemoverPedidosBatchAsync(id, dto.PedidoIds);
+            return Results.Ok(resultado);
+        });
+
         group.MapPatch("/{id:int}/carga/efectivo", async (
             int id,
             ActualizarEfectivoRequest dto,

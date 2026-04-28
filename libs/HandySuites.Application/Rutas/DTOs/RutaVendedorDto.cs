@@ -245,6 +245,19 @@ public class AsignarPedidoFalloDto
     public string Motivo { get; set; } = string.Empty;
 }
 
+public class RemoverPedidosBatchRequest
+{
+    public List<int> PedidoIds { get; set; } = new();
+}
+
+public class RemoverPedidosBatchResultDto
+{
+    public List<int> Removidos { get; set; } = new();
+    public List<AsignarPedidoFalloDto> Fallidos { get; set; } = new();
+    public int TotalRemovidos => Removidos.Count;
+    public int TotalFallidos => Fallidos.Count;
+}
+
 public class ActualizarEfectivoRequest
 {
     public double Monto { get; set; }
