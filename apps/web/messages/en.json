@@ -1842,11 +1842,19 @@
       "cancelConfirm": "Are you sure you want to cancel this route? This action cannot be undone.",
       "reasonOptional": "Reason (optional)",
       "reasonPlaceholder": "Cancellation reason...",
-      "assignOrderToRoute": "Assign order to route",
+      "assignOrderToRoute": "Assign orders to route",
       "searchOrderPlaceholder": "Search by client or order number...",
       "assign": "Assign",
       "noClient": "No client",
-      "noConfirmedOrders": "No confirmed orders available"
+      "noConfirmedOrders": "No confirmed orders available",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selectedCount": "{count} selected",
+      "assignSelected": "Assign selected",
+      "assignSelectedCount": "Assign {count} order{count, plural, one {} other {s}}",
+      "cancel": "Cancel",
+      "ordersBatchAssigned": "{count} order{count, plural, one {} other {s}} assigned",
+      "ordersBatchPartial": "{ok} assigned, {failed} failed"
     },
     "load": {
       "title": "Load route inventory",

@@ -1842,11 +1842,19 @@
       "cancelConfirm": "¿Estás seguro de que deseas cancelar esta ruta? Esta acción no se puede deshacer.",
       "reasonOptional": "Motivo (opcional)",
       "reasonPlaceholder": "Motivo de la cancelación...",
-      "assignOrderToRoute": "Asignar pedido a la ruta",
+      "assignOrderToRoute": "Asignar pedidos a la ruta",
       "searchOrderPlaceholder": "Buscar por cliente o número de pedido...",
       "assign": "Asignar",
       "noClient": "Sin cliente",
-      "noConfirmedOrders": "No hay pedidos confirmados disponibles"
+      "noConfirmedOrders": "No hay pedidos confirmados disponibles",
+      "selectAll": "Seleccionar todos",
+      "deselectAll": "Deseleccionar todos",
+      "selectedCount": "{count} seleccionado{count, plural, one {} other {s}}",
+      "assignSelected": "Asignar seleccionados",
+      "assignSelectedCount": "Asignar {count} pedido{count, plural, one {} other {s}}",
+      "cancel": "Cancelar",
+      "ordersBatchAssigned": "{count} pedido{count, plural, one {} other {s}} asignado{count, plural, one {} other {s}}",
+      "ordersBatchPartial": "{ok} asignado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}"
     },
     "load": {
       "title": "Cargar inventario de ruta",

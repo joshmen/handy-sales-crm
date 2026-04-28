@@ -91,12 +91,14 @@ export default function RouteDetailPage() {
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState('');
 
-  // Pedidos
+  // Pedidos — modal multi-select
   const [pedidos, setPedidos] = useState<PedidoAsignado[]>([]);
   const [isPedidoModalOpen, setIsPedidoModalOpen] = useState(false);
   const [availablePedidos, setAvailablePedidos] = useState<PedidoOption[]>([]);
   const [loadingPedidos, setLoadingPedidos] = useState(false);
   const [pedidoSearch, setPedidoSearch] = useState('');
+  const [selectedPedidoIds, setSelectedPedidoIds] = useState<Set<number>>(new Set());
+  const [batchAssigning, setBatchAssigning] = useState(false);
 
   // Edit drawer
   const editDrawerRef = useRef<DrawerHandle>(null);
@@ -360,16 +362,47 @@ export default function RouteDetailPage() {
     }
   };
 
-  const handleAddPedido = async (pedidoId: number) => {
+  const togglePedidoSelected = (pedidoId: number) => {
+    setSelectedPedidoIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pedidoId)) next.delete(pedidoId);
+      else next.add(pedidoId);
+      return next;
+    });
+  };
+
+  const closePedidoModal = () => {
+    setIsPedidoModalOpen(false);
+    setSelectedPedidoIds(new Set());
+    setPedidoSearch('');
+  };
+
+  const handleAssignSelectedPedidos = async () => {
     if (!route) return;
+    const ids = Array.from(selectedPedidoIds);
+    if (ids.length === 0) return;
+    setBatchAssigning(true);
     try {
-      await routeService.addPedido(route.id, pedidoId);
-      toast.success(t('detail.orderAssigned'));
-      setIsPedidoModalOpen(false);
+      const result = await routeService.addPedidosBatch(route.id, ids);
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
+
+      if (result.totalAsignados > 0 && result.totalFallidos === 0) {
+        toast.success(t('detail.ordersBatchAssigned', { count: result.totalAsignados }));
+      } else if (result.totalAsignados > 0 && result.totalFallidos > 0) {
+        toast.success(t('detail.ordersBatchPartial', {
+          ok: result.totalAsignados,
+          failed: result.totalFallidos,
+        }));
+      } else {
+        toast.error(t('detail.errorAssigningOrder'));
+      }
+
+      closePedidoModal();
     } catch (err) {
       showApiError(err, t('detail.errorAssigningOrder'));
+    } finally {
+      setBatchAssigning(false);
     }
   };
 
@@ -1078,10 +1111,10 @@ export default function RouteDetailPage() {
         </form>
       </Drawer>
 
-      {/* Add Pedido Modal */}
+      {/* Add Pedido Modal — multi-select */}
       <Modal
         isOpen={isPedidoModalOpen}
-        onClose={() => setIsPedidoModalOpen(false)}
+        onClose={closePedidoModal}
         title={t('detail.assignOrderToRoute')}
         size="lg"
       >
@@ -1101,49 +1134,115 @@ export default function RouteDetailPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-green-600" />
             </div>
-          ) : (
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {availablePedidos
-                .filter((p) => {
-                  if (!pedidoSearch) return true;
-                  const search = pedidoSearch.toLowerCase();
-                  return (
-                    p.numeroPedido?.toLowerCase().includes(search) ||
-                    p.clienteNombre?.toLowerCase().includes(search) ||
-                    p.id.toString().includes(search)
-                  );
-                })
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between px-3 py-2 border border-border-subtle rounded-lg hover:bg-surface-1"
-                  >
-                    <div>
-                      <span className="text-[13px] font-medium text-foreground">
-                        #{p.numeroPedido || p.id}
+          ) : (() => {
+            const filteredPedidos = availablePedidos.filter((p) => {
+              if (!pedidoSearch) return true;
+              const search = pedidoSearch.toLowerCase();
+              return (
+                p.numeroPedido?.toLowerCase().includes(search) ||
+                p.clienteNombre?.toLowerCase().includes(search) ||
+                p.id.toString().includes(search)
+              );
+            });
+            const allSelected = filteredPedidos.length > 0
+              && filteredPedidos.every((p) => selectedPedidoIds.has(p.id));
+
+            const toggleSelectAll = () => {
+              setSelectedPedidoIds(prev => {
+                const next = new Set(prev);
+                if (allSelected) {
+                  filteredPedidos.forEach(p => next.delete(p.id));
+                } else {
+                  filteredPedidos.forEach(p => next.add(p.id));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <>
+                {filteredPedidos.length > 0 && (
+                  <div className="flex items-center justify-between px-1">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
+                      {allSelected ? t('detail.deselectAll') : t('detail.selectAll')}
+                    </label>
+                    {selectedPedidoIds.size > 0 && (
+                      <span className="text-xs font-medium text-foreground">
+                        {t('detail.selectedCount', { count: selectedPedidoIds.size })}
                       </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {p.clienteNombre || t('detail.noClient')}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {formatCurrency(p.total || 0)}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleAddPedido(p.id)}
-                      className="px-3 py-1 text-xs font-medium rounded bg-success text-success-foreground hover:bg-success/90 transition-colors"
-                    >
-                      {t('detail.assign')}
-                    </button>
+                    )}
                   </div>
-                ))}
-              {availablePedidos.length === 0 && !loadingPedidos && (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  {t('detail.noConfirmedOrders')}
-                </p>
-              )}
-            </div>
-          )}
+                )}
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {filteredPedidos.map((p) => {
+                    const isSelected = selectedPedidoIds.has(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        className={`flex items-center gap-3 px-3 py-2 border rounded-lg transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                            : 'border-border-subtle hover:bg-surface-1'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => togglePedidoSelected(p.id)}
+                          className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <span className="text-[13px] font-medium text-foreground">
+                            #{p.numeroPedido || p.id}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {p.clienteNombre || t('detail.noClient')}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {formatCurrency(p.total || 0)}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {filteredPedidos.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      {t('detail.noConfirmedOrders')}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+                  <button
+                    type="button"
+                    onClick={closePedidoModal}
+                    disabled={batchAssigning}
+                    className="px-3 py-1.5 text-xs font-medium rounded border border-border-subtle bg-surface-1 text-foreground hover:bg-surface-2 disabled:opacity-50"
+                  >
+                    {t('detail.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignSelectedPedidos}
+                    disabled={selectedPedidoIds.size === 0 || batchAssigning}
+                    className="px-4 py-1.5 text-xs font-medium rounded bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {batchAssigning && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {selectedPedidoIds.size > 0
+                      ? t('detail.assignSelectedCount', { count: selectedPedidoIds.size })
+                      : t('detail.assignSelected')}
+                  </button>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </Modal>
     </div>
