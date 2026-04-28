@@ -12,6 +12,10 @@ import Attachment from './Attachment';
 import PrecioPorProducto from './PrecioPorProducto';
 import Descuento from './Descuento';
 import Promocion from './Promocion';
+import Zona from './Zona';
+import CategoriaCliente from './CategoriaCliente';
+import CategoriaProducto from './CategoriaProducto';
+import FamiliaProducto from './FamiliaProducto';
 
 export {
   Cliente,
@@ -28,6 +32,10 @@ export {
   PrecioPorProducto,
   Descuento,
   Promocion,
+  Zona,
+  CategoriaCliente,
+  CategoriaProducto,
+  FamiliaProducto,
 };
 
 export const modelClasses = [
@@ -45,4 +53,8 @@ export const modelClasses = [
   PrecioPorProducto,
   Descuento,
   Promocion,
+  Zona,
+  CategoriaCliente,
+  CategoriaProducto,
+  FamiliaProducto,
 ];

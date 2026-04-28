@@ -19,6 +19,11 @@ interface ServerChanges {
   preciosPorProducto?: any[];
   descuentos?: any[];
   promociones?: any[];
+  // Catalogos basicos read-only (v14, 2026-04-28)
+  zonas?: any[];
+  categoriasCliente?: any[];
+  categoriasProducto?: any[];
+  familiasProducto?: any[];
 }
 
 // Build a map of server_id → local WDB id for deduplication.
@@ -96,6 +101,11 @@ export async function mapPullToWatermelon(
     precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
     descuentos: splitByOperation(server.descuentos, isFirstSync, mapDescuentoToRaw),
     promociones: splitByOperation(server.promociones, isFirstSync, mapPromocionToRaw),
+    // Catalogos basicos (read-only en mobile, persisten en WDB para offline real)
+    zonas: splitByOperation(server.zonas, isFirstSync, mapZonaCatalogoToRaw),
+    categorias_cliente: splitByOperation(server.categoriasCliente, isFirstSync, mapCategoriaClienteToRaw),
+    categorias_producto: splitByOperation(server.categoriasProducto, isFirstSync, mapCategoriaProductoToRaw),
+    familias_producto: splitByOperation(server.familiasProducto, isFirstSync, mapFamiliaProductoToRaw),
     attachments: { created: [], updated: [], deleted: [] },
   };
 }
@@ -526,6 +536,37 @@ function mapPromocionToRaw(p: any): DirtyRaw {
     created_at: toTimestamp(p.actualizadoEn),
     updated_at: toTimestamp(p.actualizadoEn),
   };
+}
+
+// ── Catalogos basicos (read-only). Mismo shape para los 4 ──
+
+function mapCatalogoBasicoToRaw(c: any): DirtyRaw {
+  return {
+    id: String(c.id),
+    server_id: c.id,
+    tenant_id: c.tenantId ?? 0,
+    nombre: c.nombre || '',
+    descripcion: c.descripcion ?? null,
+    activo: c.activo ?? true,
+    created_at: toTimestamp(c.actualizadoEn),
+    updated_at: toTimestamp(c.actualizadoEn),
+  };
+}
+
+function mapZonaCatalogoToRaw(z: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(z);
+}
+
+function mapCategoriaClienteToRaw(c: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(c);
+}
+
+function mapCategoriaProductoToRaw(c: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(c);
+}
+
+function mapFamiliaProductoToRaw(f: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(f);
 }
 
 // ────────────────────────────────────────────────────────────────

@@ -913,4 +913,70 @@ public class SyncRepository : ISyncRepository
 
         return $"{prefijo}{secuencia:D4}";
     }
+
+    // === Catalogos basicos (read-only en mobile) ===
+    // IgnoreQueryFilters incluye registros con EliminadoEn != null para que el mobile
+    // procese soft-deletes via IsDeleted=true en el DTO. Sin esto, una zona eliminada
+    // en web seguiria apareciendo en los dropdowns mobile hasta que el usuario re-loguee
+    // (que era exactamente el bug reportado 2026-04-28 antes de mover a sync delta).
+
+    public async Task<List<Zona>> GetZonasModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.Zonas.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(z => z.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(z =>
+                z.ActualizadoEn > since
+                || z.CreadoEn > since
+                || (z.EliminadoEn != null && z.EliminadoEn > since));
+        }
+        return await query.OrderBy(z => z.Id).ToListAsync();
+    }
+
+    public async Task<List<CategoriaCliente>> GetCategoriasClienteModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.CategoriasClientes.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(c => c.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(c =>
+                c.ActualizadoEn > since
+                || c.CreadoEn > since
+                || (c.EliminadoEn != null && c.EliminadoEn > since));
+        }
+        return await query.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    public async Task<List<CategoriaProducto>> GetCategoriasProductoModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.CategoriasProductos.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(c => c.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(c =>
+                c.ActualizadoEn > since
+                || c.CreadoEn > since
+                || (c.EliminadoEn != null && c.EliminadoEn > since));
+        }
+        return await query.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    public async Task<List<FamiliaProducto>> GetFamiliasProductoModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.FamiliasProductos.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(f => f.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(f =>
+                f.ActualizadoEn > since
+                || f.CreadoEn > since
+                || (f.EliminadoEn != null && f.EliminadoEn > since));
+        }
+        return await query.OrderBy(f => f.Id).ToListAsync();
+    }
 }

@@ -602,5 +602,76 @@ public class SyncService
             response.ServerChanges.Descuentos = await _repo.GetDescuentosAsync(tenantId, since);
             response.ServerChanges.Promociones = await _repo.GetPromocionesAsync(tenantId, since);
         }
+
+        // Pull catalogos basicos (zonas, categorias, familias) — read-only on mobile.
+        // Antes solo se cargaban via /api/mobile/catalogos/* en React Query memory y se
+        // perdian al cerrar sesion. Ahora persisten en WatermelonDB para offline real
+        // (reportado 2026-04-28 — el vendedor tenia que re-loguear cada vez).
+        if (syncAll || entityTypes.Contains("zonas", StringComparer.OrdinalIgnoreCase))
+        {
+            var zonas = await _repo.GetZonasModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.Zonas = zonas.Select(z => new SyncZonaCatalogoDto
+            {
+                Id = z.Id,
+                TenantId = z.TenantId,
+                Nombre = z.Nombre,
+                Descripcion = z.Descripcion,
+                Activo = z.Activo,
+                ActualizadoEn = z.ActualizadoEn ?? z.CreadoEn,
+                IsDeleted = !z.Activo || z.EliminadoEn != null,
+            }).ToList();
+            response.Summary.ZonasPulled = zonas.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("categoriasCliente", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("categorias-cliente", StringComparer.OrdinalIgnoreCase))
+        {
+            var categorias = await _repo.GetCategoriasClienteModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.CategoriasCliente = categorias.Select(c => new SyncCategoriaClienteCatalogoDto
+            {
+                Id = c.Id,
+                TenantId = c.TenantId,
+                Nombre = c.Nombre,
+                Descripcion = c.Descripcion,
+                Activo = c.Activo,
+                ActualizadoEn = c.ActualizadoEn ?? c.CreadoEn,
+                IsDeleted = !c.Activo || c.EliminadoEn != null,
+            }).ToList();
+            response.Summary.CategoriasClientePulled = categorias.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("categoriasProducto", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("categorias-producto", StringComparer.OrdinalIgnoreCase))
+        {
+            var categorias = await _repo.GetCategoriasProductoModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.CategoriasProducto = categorias.Select(c => new SyncCategoriaProductoCatalogoDto
+            {
+                Id = c.Id,
+                TenantId = c.TenantId,
+                Nombre = c.Nombre,
+                Descripcion = c.Descripcion,
+                Activo = c.Activo,
+                ActualizadoEn = c.ActualizadoEn ?? c.CreadoEn,
+                IsDeleted = !c.Activo || c.EliminadoEn != null,
+            }).ToList();
+            response.Summary.CategoriasProductoPulled = categorias.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("familiasProducto", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("familias-producto", StringComparer.OrdinalIgnoreCase))
+        {
+            var familias = await _repo.GetFamiliasProductoModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.FamiliasProducto = familias.Select(f => new SyncFamiliaProductoCatalogoDto
+            {
+                Id = f.Id,
+                TenantId = f.TenantId,
+                Nombre = f.Nombre,
+                Descripcion = f.Descripcion,
+                Activo = f.Activo,
+                ActualizadoEn = f.ActualizadoEn ?? f.CreadoEn,
+                IsDeleted = !f.Activo || f.EliminadoEn != null,
+            }).ToList();
+            response.Summary.FamiliasProductoPulled = familias.Count;
+        }
     }
 }

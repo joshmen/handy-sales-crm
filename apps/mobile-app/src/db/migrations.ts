@@ -257,5 +257,63 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v14: persistir catalogos (zonas, categorias_cliente, categorias_producto,
+      // familias_producto) en WatermelonDB. Antes solo vivian en React Query memory
+      // y se perdian al cerrar sesion — el vendedor tenia que re-loguear cada vez
+      // para tenerlos. Backend ahora los incluye en /api/mobile/sync/pull (commit
+      // pendiente). Reportado 2026-04-28.
+      toVersion: 14,
+      steps: [
+        createTable({
+          name: 'zonas',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'categorias_cliente',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'categorias_producto',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'familias_producto',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

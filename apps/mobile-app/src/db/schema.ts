@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 13,
+  version: 14,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -309,6 +309,58 @@ export const schema = appSchema({
         { name: 'producto_ids', type: 'string' }, // JSON array of server IDs
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Catalogos basicos read-only (v14, 2026-04-28) ────────
+    // Antes vivian en React Query memory y se perdian al cerrar sesion.
+    // Ahora persisten en WDB para offline real.
+    tableSchema({
+      name: 'zonas',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'categorias_cliente',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'categorias_producto',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'familias_producto',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

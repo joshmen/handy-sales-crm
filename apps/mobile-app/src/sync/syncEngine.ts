@@ -105,6 +105,11 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
               preciosPorProducto: rawServerChanges.preciosPorProducto,  // Read-only catalogs — already tenant-filtered server-side
               descuentos:         rawServerChanges.descuentos,
               promociones:        rawServerChanges.promociones,
+              // Catalogos basicos (read-only, tenant-filtered server-side)
+              zonas:              rawServerChanges.zonas,
+              categoriasCliente:  rawServerChanges.categoriasCliente,
+              categoriasProducto: rawServerChanges.categoriasProducto,
+              familiasProducto:   rawServerChanges.familiasProducto,
             }
           : rawServerChanges;
 

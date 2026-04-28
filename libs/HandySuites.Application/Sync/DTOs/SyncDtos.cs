@@ -36,6 +36,14 @@ public class SyncChangesDto
     public List<SyncPrecioPorProductoDto>? PreciosPorProducto { get; set; }
     public List<SyncDescuentoDto>? Descuentos { get; set; }
     public List<SyncPromocionDto>? Promociones { get; set; }
+
+    // Catalogos read-only (mobile no los push, solo pull). Antes vivian en React Query
+    // memory y se perdian al cerrar sesion — el vendedor tenia que re-loguear para
+    // tenerlos. Ahora se persisten en WatermelonDB para offline real (2026-04-28).
+    public List<SyncZonaCatalogoDto>? Zonas { get; set; }
+    public List<SyncCategoriaClienteCatalogoDto>? CategoriasCliente { get; set; }
+    public List<SyncCategoriaProductoCatalogoDto>? CategoriasProducto { get; set; }
+    public List<SyncFamiliaProductoCatalogoDto>? FamiliasProducto { get; set; }
 }
 
 /// <summary>
@@ -95,6 +103,57 @@ public class SyncSummaryDto
     public int RutaDetallesPushed { get; set; }
     public int ConflictsFound { get; set; }
     public int ErrorsFound { get; set; }
+    public int ZonasPulled { get; set; }
+    public int CategoriasClientePulled { get; set; }
+    public int CategoriasProductoPulled { get; set; }
+    public int FamiliasProductoPulled { get; set; }
+}
+
+/// <summary>
+/// Catalogo read-only sincronizado al WatermelonDB local. Mobile NO push estos.
+/// </summary>
+public class SyncZonaCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncCategoriaClienteCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncCategoriaProductoCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncFamiliaProductoCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
 }
 
 public class SyncConflictDto
