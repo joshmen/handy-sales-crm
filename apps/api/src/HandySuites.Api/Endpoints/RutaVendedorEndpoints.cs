@@ -98,6 +98,48 @@ public static class RutaVendedorEndpoints
         });
     }
 
+    /// <summary>
+    /// Fire-and-forget push notification al vendedor cuando admin envia ruta a carga.
+    /// Antes EnviarACargaAsync solo cambiaba estado de ruta y NO avisaba al vendedor
+    /// (reportado 2026-04-27). Ahora le llega push con resumen completo.
+    /// </summary>
+    private static void NotifyMobileRouteSentToLoad(
+        IHttpClientFactory factory,
+        int tenantId,
+        RutaVendedorService.EnviarACargaResumen resumen,
+        ILogger logger)
+    {
+        if (!resumen.VendedorId.HasValue) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var client = factory.CreateClient("MobileApi");
+                var body = $"Ruta: {resumen.RutaNombre}. {resumen.TotalParadas} parada{(resumen.TotalParadas == 1 ? "" : "s")}, "
+                         + $"{resumen.TotalPedidos} pedido{(resumen.TotalPedidos == 1 ? "" : "s")}. "
+                         + $"Total a entregar: ${resumen.MontoTotalEntrega:0.00}. Toca para revisar y aceptar.";
+                var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                {
+                    tenantId,
+                    userIds = new[] { resumen.VendedorId.Value },
+                    title = "Nueva carga asignada",
+                    body,
+                    data = new Dictionary<string, string>
+                    {
+                        ["type"] = "route.published",
+                        ["rutaId"] = resumen.RutaId.ToString(),
+                    }
+                });
+                if (!resp.IsSuccessStatusCode)
+                    logger.LogWarning("Mobile API push-notify returned {Status} for send-to-load ruta {RutaId}", resp.StatusCode, resumen.RutaId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to notify Mobile API of send-to-load ruta {RutaId}", resumen.RutaId);
+            }
+        });
+    }
+
     public static void MapRutaVendedorEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/rutas").RequireAuthorization();
@@ -604,10 +646,24 @@ public static class RutaVendedorEndpoints
 
         group.MapPost("/{id:int}/carga/enviar", async (
             int id,
-            [FromServices] RutaVendedorService servicio) =>
+            HttpContext context,
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
         {
-            await servicio.EnviarACargaAsync(id);
-            return Results.Ok(new { mensaje = "Ruta enviada a carga" });
+            var resumen = await servicio.EnviarACargaAsync(id);
+
+            // Push fire-and-forget con resumen para el vendedor.
+            if (int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
+            {
+                NotifyMobileRouteSentToLoad(httpClientFactory, tenantId, resumen, logger);
+            }
+
+            return Results.Ok(new
+            {
+                mensaje = "Ruta enviada a carga",
+                resumen,
+            });
         });
 
         // === Cierre de ruta ===

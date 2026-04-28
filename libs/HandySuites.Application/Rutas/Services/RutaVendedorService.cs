@@ -761,7 +761,22 @@ public class RutaVendedorService
         await _repo.ActualizarEfectivoInicialAsync(rutaId, dto.Monto, dto.Comentarios, _tenant.TenantId);
     }
 
-    public async Task EnviarACargaAsync(int rutaId)
+    /// <summary>
+    /// Resumen de envio a carga — el endpoint usa estos datos para emitir push
+    /// notification al vendedor con info concreta (no solo "tienes una ruta nueva").
+    /// </summary>
+    public class EnviarACargaResumen
+    {
+        public int RutaId { get; set; }
+        public string RutaNombre { get; set; } = string.Empty;
+        public int? VendedorId { get; set; }
+        public int TotalParadas { get; set; }
+        public int TotalPedidos { get; set; }
+        public int TotalProductosCarga { get; set; }
+        public double MontoTotalEntrega { get; set; }
+    }
+
+    public async Task<EnviarACargaResumen> EnviarACargaAsync(int rutaId)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
@@ -777,7 +792,8 @@ public class RutaVendedorService
         // productos para venta directa en ruta. Reportado 2026-04-27: el admin podía enviar
         // una ruta vacía y el vendedor recibía push de "ruta asignada" sin nada que entregar.
         var faltantes = new List<string>();
-        if (ruta.Detalles == null || !ruta.Detalles.Any(d => d.Activo))
+        var totalParadas = ruta.Detalles?.Count(d => d.Activo) ?? 0;
+        if (totalParadas == 0)
             faltantes.Add("paradas (clientes a visitar)");
         var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
         if (pedidosAsignados.Count == 0)
@@ -790,7 +806,22 @@ public class RutaVendedorService
             throw new InvalidOperationException(
                 $"No se puede enviar la ruta a carga: faltan {string.Join(", ", faltantes)}.");
 
-        await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId);
+        // Atomico: cambiar estado ruta + cambiar estado batch de los pedidos asignados.
+        // Reportado 2026-04-27: el admin tenia que cambiar el estado de cada pedido
+        // uno por uno desde /pedidos. Ahora "Send to Load" lo hace automatico.
+        var pedidoIds = pedidosAsignados.Select(p => p.PedidoId).ToList();
+        await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId, pedidoIds);
+
+        return new EnviarACargaResumen
+        {
+            RutaId = rutaId,
+            RutaNombre = ruta.Nombre,
+            VendedorId = ruta.UsuarioId,
+            TotalParadas = totalParadas,
+            TotalPedidos = pedidosAsignados.Count,
+            TotalProductosCarga = carga.Count,
+            MontoTotalEntrega = pedidosAsignados.Sum(p => p.MontoTotal),
+        };
     }
 
     // === Cierre de ruta ===

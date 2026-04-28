@@ -636,7 +636,7 @@ export const ESTADO_RUTA_KEYS: Record<number, string> = {
   1: 'inProgress',
   2: 'completed',
   3: 'cancelled',
-  4: 'pendingAcceptance',
+  4: 'pendingAccept', // i18n key existente — antes decia 'pendingAcceptance' y mostraba la key literal
   5: 'loadAccepted',
   6: 'closed',
 };

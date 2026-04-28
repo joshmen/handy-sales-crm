@@ -826,17 +826,34 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         }
     }
 
-    public async Task EnviarACargaAsync(int rutaId, int tenantId)
+    public async Task EnviarACargaAsync(int rutaId, int tenantId, List<int>? pedidoIdsToTransition = null)
     {
         var ruta = await _db.RutasVendedor
             .FirstOrDefaultAsync(r => r.Id == rutaId && r.TenantId == tenantId);
 
-        if (ruta != null)
+        if (ruta == null) return;
+
+        ruta.Estado = EstadoRuta.PendienteAceptar;
+        ruta.ActualizadoEn = DateTime.UtcNow;
+
+        // Cambio batch atomico de pedidos asignados a EnRuta. Antes el admin tenia
+        // que cambiar el estado de cada pedido uno por uno desde /pedidos
+        // (reportado 2026-04-27).
+        if (pedidoIdsToTransition is { Count: > 0 })
         {
-            ruta.Estado = EstadoRuta.PendienteAceptar;
-            ruta.ActualizadoEn = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
+            var pedidos = await _db.Pedidos
+                .Where(p => pedidoIdsToTransition.Contains(p.Id)
+                         && p.TenantId == tenantId
+                         && p.Estado == EstadoPedido.Confirmado)
+                .ToListAsync();
+            foreach (var p in pedidos)
+            {
+                p.Estado = EstadoPedido.EnRuta;
+                p.ActualizadoEn = DateTime.UtcNow;
+            }
         }
+
+        await _db.SaveChangesAsync();
     }
 
     // === Cierre de ruta ===

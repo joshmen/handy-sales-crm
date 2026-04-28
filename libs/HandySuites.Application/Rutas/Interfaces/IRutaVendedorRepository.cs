@@ -59,7 +59,7 @@ public interface IRutaVendedorRepository
     Task AsignarPedidoAsync(int rutaId, int pedidoId, int tenantId);
     Task RemoverPedidoAsync(int rutaId, int pedidoId, int tenantId);
     Task ActualizarEfectivoInicialAsync(int rutaId, double monto, string? comentarios, int tenantId);
-    Task EnviarACargaAsync(int rutaId, int tenantId);
+    Task EnviarACargaAsync(int rutaId, int tenantId, List<int>? pedidoIdsToTransition = null);
 
     // === Cierre de ruta ===
     Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId, int tenantId);
