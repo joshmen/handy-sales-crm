@@ -315,5 +315,78 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v15 (2026-04-28): catalogos criticos faltantes — listas_precio (cliente
+      // tenia listaPreciosId pero mobile no sabia el nombre, vendedor offline no
+      // sabia que lista aplicar), usuarios (equipo para supervisores que asignan
+      // rutas), metas_vendedor (dashboard), datos_empresa (logo + razon social
+      // que antes solo vivian en GET /api/mobile/empresa en memory).
+      toVersion: 15,
+      steps: [
+        createTable({
+          name: 'listas_precio',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'usuarios',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'email', type: 'string' },
+            { name: 'rol', type: 'string', isOptional: true },
+            { name: 'avatar_url', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'metas_vendedor',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'usuario_id', type: 'number', isIndexed: true },
+            { name: 'tipo', type: 'string' },
+            { name: 'periodo', type: 'string' },
+            { name: 'monto', type: 'number' },
+            { name: 'fecha_inicio', type: 'number' },
+            { name: 'fecha_fin', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'datos_empresa',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'razon_social', type: 'string', isOptional: true },
+            { name: 'identificador_fiscal', type: 'string', isOptional: true },
+            { name: 'tipo_identificador_fiscal', type: 'string' },
+            { name: 'telefono', type: 'string', isOptional: true },
+            { name: 'email', type: 'string', isOptional: true },
+            { name: 'contacto', type: 'string', isOptional: true },
+            { name: 'direccion', type: 'string', isOptional: true },
+            { name: 'ciudad', type: 'string', isOptional: true },
+            { name: 'estado', type: 'string', isOptional: true },
+            { name: 'codigo_postal', type: 'string', isOptional: true },
+            { name: 'sitio_web', type: 'string', isOptional: true },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

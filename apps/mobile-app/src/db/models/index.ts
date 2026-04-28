@@ -16,6 +16,10 @@ import Zona from './Zona';
 import CategoriaCliente from './CategoriaCliente';
 import CategoriaProducto from './CategoriaProducto';
 import FamiliaProducto from './FamiliaProducto';
+import ListaPrecio from './ListaPrecio';
+import Usuario from './Usuario';
+import MetaVendedor from './MetaVendedor';
+import DatosEmpresa from './DatosEmpresa';
 
 export {
   Cliente,
@@ -36,6 +40,10 @@ export {
   CategoriaCliente,
   CategoriaProducto,
   FamiliaProducto,
+  ListaPrecio,
+  Usuario,
+  MetaVendedor,
+  DatosEmpresa,
 };
 
 export const modelClasses = [
@@ -57,4 +65,8 @@ export const modelClasses = [
   CategoriaCliente,
   CategoriaProducto,
   FamiliaProducto,
+  ListaPrecio,
+  Usuario,
+  MetaVendedor,
+  DatosEmpresa,
 ];

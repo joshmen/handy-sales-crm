@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 14,
+  version: 15,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -361,6 +361,72 @@ export const schema = appSchema({
         { name: 'nombre', type: 'string' },
         { name: 'descripcion', type: 'string', isOptional: true },
         { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── v15 (2026-04-28): catálogos críticos faltantes ────────
+    tableSchema({
+      name: 'listas_precio',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'usuarios',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'email', type: 'string' },
+        { name: 'rol', type: 'string', isOptional: true },
+        { name: 'avatar_url', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'metas_vendedor',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'usuario_id', type: 'number', isIndexed: true },
+        { name: 'tipo', type: 'string' },
+        { name: 'periodo', type: 'string' },
+        { name: 'monto', type: 'number' },
+        { name: 'fecha_inicio', type: 'number' },
+        { name: 'fecha_fin', type: 'number' },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // datos_empresa: 1:1 por tenant. Singleton local.
+    tableSchema({
+      name: 'datos_empresa',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'razon_social', type: 'string', isOptional: true },
+        { name: 'identificador_fiscal', type: 'string', isOptional: true },
+        { name: 'tipo_identificador_fiscal', type: 'string' },
+        { name: 'telefono', type: 'string', isOptional: true },
+        { name: 'email', type: 'string', isOptional: true },
+        { name: 'contacto', type: 'string', isOptional: true },
+        { name: 'direccion', type: 'string', isOptional: true },
+        { name: 'ciudad', type: 'string', isOptional: true },
+        { name: 'estado', type: 'string', isOptional: true },
+        { name: 'codigo_postal', type: 'string', isOptional: true },
+        { name: 'sitio_web', type: 'string', isOptional: true },
+        { name: 'descripcion', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

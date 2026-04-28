@@ -110,6 +110,11 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
               categoriasCliente:  rawServerChanges.categoriasCliente,
               categoriasProducto: rawServerChanges.categoriasProducto,
               familiasProducto:   rawServerChanges.familiasProducto,
+              // Catalogos criticos (v15)
+              listasPrecio:       rawServerChanges.listasPrecio,
+              usuarios:           rawServerChanges.usuarios,
+              metasVendedor:      rawServerChanges.metasVendedor,
+              datosEmpresa:       rawServerChanges.datosEmpresa,
             }
           : rawServerChanges;
 

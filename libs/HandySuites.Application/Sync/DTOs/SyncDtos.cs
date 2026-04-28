@@ -44,6 +44,10 @@ public class SyncChangesDto
     public List<SyncCategoriaClienteCatalogoDto>? CategoriasCliente { get; set; }
     public List<SyncCategoriaProductoCatalogoDto>? CategoriasProducto { get; set; }
     public List<SyncFamiliaProductoCatalogoDto>? FamiliasProducto { get; set; }
+    public List<SyncListaPrecioCatalogoDto>? ListasPrecio { get; set; }
+    public List<SyncUsuarioCatalogoDto>? Usuarios { get; set; }
+    public List<SyncMetaVendedorCatalogoDto>? MetasVendedor { get; set; }
+    public SyncDatosEmpresaCatalogoDto? DatosEmpresa { get; set; }
 }
 
 /// <summary>
@@ -107,6 +111,10 @@ public class SyncSummaryDto
     public int CategoriasClientePulled { get; set; }
     public int CategoriasProductoPulled { get; set; }
     public int FamiliasProductoPulled { get; set; }
+    public int ListasPrecioPulled { get; set; }
+    public int UsuariosPulled { get; set; }
+    public int MetasVendedorPulled { get; set; }
+    public bool DatosEmpresaPulled { get; set; }
 }
 
 /// <summary>
@@ -154,6 +162,67 @@ public class SyncFamiliaProductoCatalogoDto
     public bool Activo { get; set; }
     public DateTime ActualizadoEn { get; set; }
     public bool IsDeleted { get; set; }
+}
+
+public class SyncListaPrecioCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncUsuarioCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Rol { get; set; }
+    public string? AvatarUrl { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncMetaVendedorCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public int UsuarioId { get; set; }
+    public string Tipo { get; set; } = string.Empty;
+    public string Periodo { get; set; } = string.Empty;
+    public decimal Monto { get; set; }
+    public DateTime FechaInicio { get; set; }
+    public DateTime FechaFin { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+/// <summary>
+/// DatosEmpresa es 1:1 por tenant — siempre 1 sola entrada o ninguna.
+/// </summary>
+public class SyncDatosEmpresaCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string? RazonSocial { get; set; }
+    public string? IdentificadorFiscal { get; set; }
+    public string TipoIdentificadorFiscal { get; set; } = "RFC";
+    public string? Telefono { get; set; }
+    public string? Email { get; set; }
+    public string? Contacto { get; set; }
+    public string? Direccion { get; set; }
+    public string? Ciudad { get; set; }
+    public string? Estado { get; set; }
+    public string? CodigoPostal { get; set; }
+    public string? SitioWeb { get; set; }
+    public string? Descripcion { get; set; }
+    public DateTime ActualizadoEn { get; set; }
 }
 
 public class SyncConflictDto

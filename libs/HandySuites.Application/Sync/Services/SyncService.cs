@@ -673,5 +673,89 @@ public class SyncService
             }).ToList();
             response.Summary.FamiliasProductoPulled = familias.Count;
         }
+
+        if (syncAll || entityTypes.Contains("listasPrecio", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("listas-precio", StringComparer.OrdinalIgnoreCase))
+        {
+            var listas = await _repo.GetListasPrecioModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.ListasPrecio = listas.Select(l => new SyncListaPrecioCatalogoDto
+            {
+                Id = l.Id,
+                TenantId = l.TenantId,
+                Nombre = l.Nombre,
+                Descripcion = l.Descripcion,
+                Activo = l.Activo,
+                ActualizadoEn = l.ActualizadoEn ?? l.CreadoEn,
+                IsDeleted = !l.Activo || l.EliminadoEn != null,
+            }).ToList();
+            response.Summary.ListasPrecioPulled = listas.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("usuarios", StringComparer.OrdinalIgnoreCase))
+        {
+            var usuarios = await _repo.GetUsuariosModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.Usuarios = usuarios.Select(u => new SyncUsuarioCatalogoDto
+            {
+                Id = u.Id,
+                TenantId = u.TenantId,
+                Nombre = u.Nombre,
+                Email = u.Email,
+                Rol = u.RolExplicito,
+                AvatarUrl = u.AvatarUrl,
+                Activo = u.Activo,
+                ActualizadoEn = u.ActualizadoEn ?? u.CreadoEn,
+                IsDeleted = !u.Activo || u.EliminadoEn != null,
+            }).ToList();
+            response.Summary.UsuariosPulled = usuarios.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("metas", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("metasVendedor", StringComparer.OrdinalIgnoreCase))
+        {
+            var metas = await _repo.GetMetasVendedorModifiedSinceAsync(tenantId, usuarioId, since);
+            response.ServerChanges.MetasVendedor = metas.Select(m => new SyncMetaVendedorCatalogoDto
+            {
+                Id = m.Id,
+                TenantId = m.TenantId,
+                UsuarioId = m.UsuarioId,
+                Tipo = m.Tipo,
+                Periodo = m.Periodo,
+                Monto = m.Monto,
+                FechaInicio = m.FechaInicio,
+                FechaFin = m.FechaFin,
+                Activo = m.Activo,
+                ActualizadoEn = m.ActualizadoEn ?? m.CreadoEn,
+                IsDeleted = !m.Activo || m.EliminadoEn != null,
+            }).ToList();
+            response.Summary.MetasVendedorPulled = metas.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("datosEmpresa", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("empresa", StringComparer.OrdinalIgnoreCase))
+        {
+            var empresa = await _repo.GetDatosEmpresaIfModifiedAsync(tenantId, since);
+            if (empresa != null)
+            {
+                response.ServerChanges.DatosEmpresa = new SyncDatosEmpresaCatalogoDto
+                {
+                    Id = empresa.Id,
+                    TenantId = empresa.TenantId,
+                    RazonSocial = empresa.RazonSocial,
+                    IdentificadorFiscal = empresa.IdentificadorFiscal,
+                    TipoIdentificadorFiscal = empresa.TipoIdentificadorFiscal,
+                    Telefono = empresa.Telefono,
+                    Email = empresa.Email,
+                    Contacto = empresa.Contacto,
+                    Direccion = empresa.Direccion,
+                    Ciudad = empresa.Ciudad,
+                    Estado = empresa.Estado,
+                    CodigoPostal = empresa.CodigoPostal,
+                    SitioWeb = empresa.SitioWeb,
+                    Descripcion = empresa.Descripcion,
+                    ActualizadoEn = empresa.ActualizadoEn ?? empresa.CreadoEn,
+                };
+                response.Summary.DatosEmpresaPulled = true;
+            }
+        }
     }
 }

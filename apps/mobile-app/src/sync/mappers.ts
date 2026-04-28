@@ -24,6 +24,11 @@ interface ServerChanges {
   categoriasCliente?: any[];
   categoriasProducto?: any[];
   familiasProducto?: any[];
+  // Catalogos criticos faltantes (v15, 2026-04-28 audit)
+  listasPrecio?: any[];
+  usuarios?: any[];
+  metasVendedor?: any[];
+  datosEmpresa?: any | null;
 }
 
 // Build a map of server_id → local WDB id for deduplication.
@@ -106,6 +111,13 @@ export async function mapPullToWatermelon(
     categorias_cliente: splitByOperation(server.categoriasCliente, isFirstSync, mapCategoriaClienteToRaw),
     categorias_producto: splitByOperation(server.categoriasProducto, isFirstSync, mapCategoriaProductoToRaw),
     familias_producto: splitByOperation(server.familiasProducto, isFirstSync, mapFamiliaProductoToRaw),
+    // Catalogos criticos (v15, 2026-04-28 audit)
+    listas_precio: splitByOperation(server.listasPrecio, isFirstSync, mapListaPrecioToRaw),
+    usuarios: splitByOperation(server.usuarios, isFirstSync, mapUsuarioToRaw),
+    metas_vendedor: splitByOperation(server.metasVendedor, isFirstSync, mapMetaVendedorToRaw),
+    datos_empresa: server.datosEmpresa
+      ? { created: [], updated: [mapDatosEmpresaToRaw(server.datosEmpresa)], deleted: [] }
+      : { created: [], updated: [], deleted: [] },
     attachments: { created: [], updated: [], deleted: [] },
   };
 }
@@ -567,6 +579,64 @@ function mapCategoriaProductoToRaw(c: any): DirtyRaw {
 
 function mapFamiliaProductoToRaw(f: any): DirtyRaw {
   return mapCatalogoBasicoToRaw(f);
+}
+
+function mapListaPrecioToRaw(l: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(l);
+}
+
+function mapUsuarioToRaw(u: any): DirtyRaw {
+  return {
+    id: String(u.id),
+    server_id: u.id,
+    tenant_id: u.tenantId ?? 0,
+    nombre: u.nombre || '',
+    email: u.email || '',
+    rol: u.rol ?? null,
+    avatar_url: u.avatarUrl ?? null,
+    activo: u.activo ?? true,
+    created_at: toTimestamp(u.actualizadoEn),
+    updated_at: toTimestamp(u.actualizadoEn),
+  };
+}
+
+function mapMetaVendedorToRaw(m: any): DirtyRaw {
+  return {
+    id: String(m.id),
+    server_id: m.id,
+    tenant_id: m.tenantId ?? 0,
+    usuario_id: m.usuarioId ?? 0,
+    tipo: m.tipo || 'ventas',
+    periodo: m.periodo || 'mensual',
+    monto: m.monto ?? 0,
+    fecha_inicio: toTimestamp(m.fechaInicio),
+    fecha_fin: toTimestamp(m.fechaFin),
+    activo: m.activo ?? true,
+    created_at: toTimestamp(m.actualizadoEn),
+    updated_at: toTimestamp(m.actualizadoEn),
+  };
+}
+
+function mapDatosEmpresaToRaw(d: any): DirtyRaw {
+  return {
+    id: String(d.id),
+    server_id: d.id,
+    tenant_id: d.tenantId ?? 0,
+    razon_social: d.razonSocial ?? null,
+    identificador_fiscal: d.identificadorFiscal ?? null,
+    tipo_identificador_fiscal: d.tipoIdentificadorFiscal ?? 'RFC',
+    telefono: d.telefono ?? null,
+    email: d.email ?? null,
+    contacto: d.contacto ?? null,
+    direccion: d.direccion ?? null,
+    ciudad: d.ciudad ?? null,
+    estado: d.estado ?? null,
+    codigo_postal: d.codigoPostal ?? null,
+    sitio_web: d.sitioWeb ?? null,
+    descripcion: d.descripcion ?? null,
+    created_at: toTimestamp(d.actualizadoEn),
+    updated_at: toTimestamp(d.actualizadoEn),
+  };
 }
 
 // ────────────────────────────────────────────────────────────────
