@@ -1855,12 +1855,19 @@
       "cancel": "Cancelar",
       "ordersBatchAssigned": "{count} pedido{count, plural, one {} other {s}} asignado{count, plural, one {} other {s}}",
       "ordersBatchPartial": "{ok} asignado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}",
-      "removeSelectedCount": "Eliminar {count} pedido{count, plural, one {} other {s}}",
+      "removeSelectedCount": "Eliminar {count} seleccionado{count, plural, one {} other {s}}",
       "ordersBatchRemoved": "{count} pedido{count, plural, one {} other {s}} eliminado{count, plural, one {} other {s}}",
       "ordersBatchRemovedPartial": "{ok} eliminado{ok, plural, one {} other {s}}, {failed} fallido{failed, plural, one {} other {s}}",
       "paginationRange": "Mostrando {from}–{to} de {total}",
       "previous": "Anterior",
-      "next": "Siguiente"
+      "next": "Siguiente",
+      "addStops": "Agregar paradas",
+      "addStopsCount": "Agregar {count} parada{count, plural, one {} other {s}}",
+      "noClientsAvailable": "No hay clientes disponibles",
+      "stopsBatchAdded": "{count} parada{count, plural, one {} other {s}} agregada{count, plural, one {} other {s}}",
+      "stopsBatchPartial": "{ok} agregada{ok, plural, one {} other {s}}, {failed} fallida{failed, plural, one {} other {s}}",
+      "stopsBatchRemoved": "{count} parada{count, plural, one {} other {s}} eliminada{count, plural, one {} other {s}}",
+      "stopsBatchRemovedPartial": "{ok} eliminada{ok, plural, one {} other {s}}, {failed} fallida{failed, plural, one {} other {s}}"
     },
     "load": {
       "title": "Cargar inventario de ruta",

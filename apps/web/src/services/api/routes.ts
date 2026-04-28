@@ -180,6 +180,37 @@ class RouteService {
     }
   }
 
+  async addParadasBatch(
+    rutaId: number,
+    clienteIds: number[],
+    duracionEstimadaMinutos?: number,
+  ): Promise<AgregarParadasBatchResult> {
+    try {
+      const response = await api.post<AgregarParadasBatchResult>(
+        `${this.basePath}/${rutaId}/paradas/batch`,
+        { clienteIds, duracionEstimadaMinutos },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async removeParadasBatch(
+    rutaId: number,
+    detalleIds: number[],
+  ): Promise<RemoverParadasBatchResult> {
+    try {
+      const response = await api.post<RemoverParadasBatchResult>(
+        `${this.basePath}/${rutaId}/paradas/batch-remove`,
+        { detalleIds },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async reorderParadas(rutaId: number, ordenDetalleIds: number[]): Promise<void> {
     try {
       await api.post(`${this.basePath}/${rutaId}/paradas/reordenar`, { ordenDetalleIds });
@@ -502,6 +533,30 @@ export interface RemoverPedidosBatchResult {
   fallidos: AsignarPedidoFallo[];
   totalRemovidos: number;
   totalFallidos: number;
+}
+
+export interface AgregarParadaFallo {
+  clienteId: number;
+  motivo: string;
+}
+
+export interface AgregarParadasBatchResult {
+  agregadas: number[]; // RutaDetalle ids creados
+  fallidas: AgregarParadaFallo[];
+  totalAgregadas: number;
+  totalFallidas: number;
+}
+
+export interface RemoverParadaFallo {
+  detalleId: number;
+  motivo: string;
+}
+
+export interface RemoverParadasBatchResult {
+  removidas: number[];
+  fallidas: RemoverParadaFallo[];
+  totalRemovidas: number;
+  totalFallidas: number;
 }
 
 // Carga de inventario interfaces

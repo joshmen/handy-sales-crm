@@ -456,6 +456,32 @@ public static class RutaVendedorEndpoints
             return eliminado ? Results.NoContent() : Results.NotFound();
         });
 
+        // Batch: agregar varias paradas en una sola operacion. Tolerante a fallos parciales.
+        group.MapPost("/{rutaId:int}/paradas/batch", async (
+            int rutaId,
+            AgregarParadasBatchRequest dto,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            if (dto.ClienteIds == null || dto.ClienteIds.Count == 0)
+                return Results.BadRequest(new { mensaje = "Debe enviar al menos un clienteId" });
+
+            var resultado = await servicio.AgregarParadasBatchAsync(rutaId, dto);
+            return Results.Ok(resultado);
+        });
+
+        // Batch: remover varias paradas en una sola operacion.
+        group.MapPost("/{rutaId:int}/paradas/batch-remove", async (
+            int rutaId,
+            RemoverParadasBatchRequest dto,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            if (dto.DetalleIds == null || dto.DetalleIds.Count == 0)
+                return Results.BadRequest(new { mensaje = "Debe enviar al menos un detalleId" });
+
+            var resultado = await servicio.RemoverParadasBatchAsync(rutaId, dto.DetalleIds);
+            return Results.Ok(resultado);
+        });
+
         group.MapPost("/{rutaId:int}/paradas/reordenar", async (
             int rutaId,
             ReordenarParadasDto dto,

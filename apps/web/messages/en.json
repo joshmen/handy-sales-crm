@@ -1855,12 +1855,19 @@
       "cancel": "Cancel",
       "ordersBatchAssigned": "{count} order{count, plural, one {} other {s}} assigned",
       "ordersBatchPartial": "{ok} assigned, {failed} failed",
-      "removeSelectedCount": "Remove {count} order{count, plural, one {} other {s}}",
+      "removeSelectedCount": "Remove {count} selected",
       "ordersBatchRemoved": "{count} order{count, plural, one {} other {s}} removed",
       "ordersBatchRemovedPartial": "{ok} removed, {failed} failed",
       "paginationRange": "Showing {from}–{to} of {total}",
       "previous": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "addStops": "Add stops",
+      "addStopsCount": "Add {count} stop{count, plural, one {} other {s}}",
+      "noClientsAvailable": "No clients available",
+      "stopsBatchAdded": "{count} stop{count, plural, one {} other {s}} added",
+      "stopsBatchPartial": "{ok} added, {failed} failed",
+      "stopsBatchRemoved": "{count} stop{count, plural, one {} other {s}} removed",
+      "stopsBatchRemovedPartial": "{ok} removed, {failed} failed"
     },
     "load": {
       "title": "Load route inventory",

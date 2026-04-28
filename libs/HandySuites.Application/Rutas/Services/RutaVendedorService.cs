@@ -407,6 +407,106 @@ public class RutaVendedorService
         return await _repo.EliminarDetalleAsync(detalleId);
     }
 
+    /// <summary>
+    /// Agrega multiples paradas (clientes) a la ruta en una sola operacion.
+    /// Tolerante a fallos parciales: si un cliente falla (ej. ya esta en la ruta),
+    /// se reporta en Fallidas[] pero el resto se procesa. Asigna ordenVisita
+    /// incremental empezando desde el max actual + 1.
+    /// </summary>
+    public async Task<AgregarParadasBatchResultDto> AgregarParadasBatchAsync(int rutaId, AgregarParadasBatchRequest dto)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
+            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar");
+
+        var resultado = new AgregarParadasBatchResultDto();
+        var idsUnicos = dto.ClienteIds?.Distinct().ToList() ?? new List<int>();
+        if (idsUnicos.Count == 0) return resultado;
+
+        var ordenInicial = (ruta.Detalles?.Where(d => d.Activo).Max(d => (int?)d.OrdenVisita) ?? 0) + 1;
+        var duracionDefault = dto.DuracionEstimadaMinutos ?? 30;
+
+        var ordenActual = ordenInicial;
+        foreach (var clienteId in idsUnicos)
+        {
+            try
+            {
+                var detalle = new RutaDetalle
+                {
+                    RutaId = rutaId,
+                    ClienteId = clienteId,
+                    OrdenVisita = ordenActual,
+                    DuracionEstimadaMinutos = duracionDefault,
+                    Estado = EstadoParada.Pendiente,
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = _tenant.UserId,
+                };
+                var detalleId = await _repo.AgregarDetalleAsync(detalle);
+                resultado.Agregadas.Add(detalleId);
+                ordenActual++;
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidas.Add(new AgregarParadaFalloDto
+                {
+                    ClienteId = clienteId,
+                    Motivo = ex.Message,
+                });
+            }
+        }
+
+        return resultado;
+    }
+
+    /// <summary>
+    /// Remueve multiples paradas en una sola operacion, tolerante a fallos.
+    /// </summary>
+    public async Task<RemoverParadasBatchResultDto> RemoverParadasBatchAsync(int rutaId, List<int> detalleIds)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("No se pueden eliminar paradas de una ruta en progreso");
+
+        var resultado = new RemoverParadasBatchResultDto();
+        var idsUnicos = detalleIds?.Distinct().ToList() ?? new List<int>();
+
+        foreach (var detalleId in idsUnicos)
+        {
+            try
+            {
+                var ok = await _repo.EliminarDetalleAsync(detalleId);
+                if (ok)
+                    resultado.Removidas.Add(detalleId);
+                else
+                    resultado.Fallidas.Add(new RemoverParadaFalloDto
+                    {
+                        DetalleId = detalleId,
+                        Motivo = "No encontrada"
+                    });
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidas.Add(new RemoverParadaFalloDto
+                {
+                    DetalleId = detalleId,
+                    Motivo = ex.Message,
+                });
+            }
+        }
+
+        return resultado;
+    }
+
     public async Task<bool> ReordenarParadasAsync(int rutaId, ReordenarParadasDto dto)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);

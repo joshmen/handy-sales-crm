@@ -258,6 +258,45 @@ public class RemoverPedidosBatchResultDto
     public int TotalFallidos => Fallidos.Count;
 }
 
+public class AgregarParadasBatchRequest
+{
+    public List<int> ClienteIds { get; set; } = new();
+    public int? DuracionEstimadaMinutos { get; set; }
+}
+
+public class AgregarParadaFalloDto
+{
+    public int ClienteId { get; set; }
+    public string Motivo { get; set; } = string.Empty;
+}
+
+public class AgregarParadasBatchResultDto
+{
+    public List<int> Agregadas { get; set; } = new(); // IDs de RutaDetalle creadas
+    public List<AgregarParadaFalloDto> Fallidas { get; set; } = new();
+    public int TotalAgregadas => Agregadas.Count;
+    public int TotalFallidas => Fallidas.Count;
+}
+
+public class RemoverParadasBatchRequest
+{
+    public List<int> DetalleIds { get; set; } = new();
+}
+
+public class RemoverParadaFalloDto
+{
+    public int DetalleId { get; set; }
+    public string Motivo { get; set; } = string.Empty;
+}
+
+public class RemoverParadasBatchResultDto
+{
+    public List<int> Removidas { get; set; } = new();
+    public List<RemoverParadaFalloDto> Fallidas { get; set; } = new();
+    public int TotalRemovidas => Removidas.Count;
+    public int TotalFallidas => Fallidas.Count;
+}
+
 public class ActualizarEfectivoRequest
 {
     public double Monto { get; set; }
