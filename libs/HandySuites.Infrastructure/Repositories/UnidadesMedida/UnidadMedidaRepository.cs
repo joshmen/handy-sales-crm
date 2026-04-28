@@ -147,4 +147,18 @@ public class UnidadMedidaRepository : IUnidadMedidaRepository
 
         return await query.AnyAsync();
     }
+
+    public async Task<bool> ExisteAbreviaturaAsync(string abreviatura, int tenantId, int? excludeId = null)
+    {
+        if (string.IsNullOrWhiteSpace(abreviatura)) return false;
+
+        var query = _db.UnidadesMedida
+            .AsNoTracking()
+            .Where(u => u.TenantId == tenantId && u.Abreviatura != null && u.Abreviatura.ToLower() == abreviatura.ToLower());
+
+        if (excludeId.HasValue)
+            query = query.Where(u => u.Id != excludeId.Value);
+
+        return await query.AnyAsync();
+    }
 }

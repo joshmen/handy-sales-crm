@@ -20,6 +20,8 @@ namespace HandySuites.Tests.Application.Inventario
             _repoMock = new Mock<IInventarioRepository>();
             _tenantMock = new Mock<ICurrentTenant>();
             _tenantMock.Setup(t => t.TenantId).Returns(1);
+            // Producto existe por defecto (happy path).
+            _repoMock.Setup(r => r.ExisteProductoEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
             _service = new InventarioService(_repoMock.Object, _tenantMock.Object);
         }
 

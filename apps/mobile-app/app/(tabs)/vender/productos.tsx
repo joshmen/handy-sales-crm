@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { Package, Search, ChevronRight } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import type Producto from '@/db/models/Producto';
@@ -13,6 +13,7 @@ import type Producto from '@/db/models/Producto';
 export default function ProductosListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
 

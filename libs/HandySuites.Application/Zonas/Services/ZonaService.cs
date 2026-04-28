@@ -27,6 +27,10 @@ public class ZonaService
 
     public async Task<ZonaMutationResult> CrearZonaAsync(CreateZonaDto dto, string creadoPor)
     {
+        // Unicidad de nombre dentro del tenant (case-insensitive).
+        if (await _repo.ExisteNombreEnTenantAsync(dto.Nombre.Trim(), _tenant.TenantId))
+            return new ZonaMutationResult(false, "Ya existe una zona con ese nombre.");
+
         var coordError = ValidarCoordenadas(dto.CentroLatitud, dto.CentroLongitud, dto.RadioKm);
         if (coordError != null)
             return new ZonaMutationResult(false, coordError);
@@ -45,6 +49,9 @@ public class ZonaService
 
     public async Task<ZonaMutationResult> ActualizarZonaAsync(int id, UpdateZonaDto dto, string actualizadoPor)
     {
+        if (await _repo.ExisteNombreEnTenantAsync(dto.Nombre.Trim(), _tenant.TenantId, excludeId: id))
+            return new ZonaMutationResult(false, "Ya existe otra zona con ese nombre.");
+
         var coordError = ValidarCoordenadas(dto.CentroLatitud, dto.CentroLongitud, dto.RadioKm);
         if (coordError != null)
             return new ZonaMutationResult(false, coordError);

@@ -107,7 +107,9 @@ export default function ReportsPage() {
   const [tierInfo, setTierInfo] = useState<ReportTierInfo | null>(null);
 
   React.useEffect(() => {
-    getReportTierInfo().then(setTierInfo).catch(() => {});
+    getReportTierInfo()
+      .then(setTierInfo)
+      .catch((err) => console.warn('[Reports] failed to load tier info; allowing all reports:', err));
   }, []);
 
   const isReportLocked = (reportId: string) => {

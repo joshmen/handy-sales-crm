@@ -94,22 +94,24 @@ INSERT INTO company_settings (tenant_id, company_name, primary_color, secondary_
 -- BCrypt: $2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO
 -- =====================================================
 
-INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, es_admin, es_super_admin, rol, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
+-- Single source of truth: rol (string). es_admin/es_super_admin removed in
+-- migration DropEsAdminEsSuperAdminFromUsuarios (Apr 2026).
+INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, rol, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
 -- Super Admin (plataforma)
-(1, 'superadmin@handysales.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Super Administrador', true, true, 'SUPER_ADMIN', true, 0, false, true, NOW(), 1),
+(1, 'superadmin@handysales.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Super Administrador', 'SUPER_ADMIN', true, 0, false, true, NOW(), 1),
 -- Admins (1 per tenant)
-(1, 'admin@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Jeyma', true, false, 'ADMIN', true, 0, false, true, NOW(), 1),
-(2, 'admin@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Huichol', true, false, 'ADMIN', true, 0, false, true, NOW(), 1),
-(3, 'admin@centro.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Centro', true, false, 'ADMIN', true, 0, false, true, NOW(), 1),
-(4, 'admin@rutasnorte.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Rutas Norte', true, false, 'ADMIN', true, 0, false, true, NOW(), 1),
+(1, 'admin@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Jeyma', 'ADMIN', true, 0, false, true, NOW(), 1),
+(2, 'admin@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Huichol', 'ADMIN', true, 0, false, true, NOW(), 1),
+(3, 'admin@centro.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Centro', 'ADMIN', true, 0, false, true, NOW(), 1),
+(4, 'admin@rutasnorte.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Rutas Norte', 'ADMIN', true, 0, false, true, NOW(), 1),
 -- Vendedores (Jeyma + Huichol)
-(1, 'vendedor1@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 1 Jeyma', false, false, 'VENDEDOR', true, 0, false, true, NOW(), 1),
-(1, 'vendedor2@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 2 Jeyma', false, false, 'VENDEDOR', true, 0, false, true, NOW(), 1),
-(2, 'vendedor1@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 1 Huichol', false, false, 'VENDEDOR', true, 0, false, true, NOW(), 1),
-(2, 'vendedor2@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 2 Huichol', false, false, 'VENDEDOR', true, 0, false, true, NOW(), 1),
+(1, 'vendedor1@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 1 Jeyma', 'VENDEDOR', true, 0, false, true, NOW(), 1),
+(1, 'vendedor2@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 2 Jeyma', 'VENDEDOR', true, 0, false, true, NOW(), 1),
+(2, 'vendedor1@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 1 Huichol', 'VENDEDOR', true, 0, false, true, NOW(), 1),
+(2, 'vendedor2@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Vendedor 2 Huichol', 'VENDEDOR', true, 0, false, true, NOW(), 1),
 -- Viewer + Supervisor (Jeyma)
-(1, 'viewer@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Viewer Jeyma', false, false, 'VIEWER', true, 0, false, true, NOW(), 1),
-(1, 'supervisor@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Supervisor Jeyma', false, false, 'SUPERVISOR', true, 0, false, true, NOW(), 1);
+(1, 'viewer@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Viewer Jeyma', 'VIEWER', true, 0, false, true, NOW(), 1),
+(1, 'supervisor@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Supervisor Jeyma', 'SUPERVISOR', true, 0, false, true, NOW(), 1);
 
 -- Link vendedores to supervisor
 UPDATE "Usuarios" SET supervisor_id = (SELECT id FROM "Usuarios" WHERE email = 'supervisor@jeyma.com')

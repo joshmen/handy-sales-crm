@@ -74,7 +74,9 @@ export default function GlobalUsersPage() {
 
   // Load tenants for filter dropdown
   useEffect(() => {
-    tenantService.getAll().then(setTenants).catch(() => {});
+    tenantService.getAll()
+      .then(setTenants)
+      .catch((err) => console.error('[GlobalUsers] failed to load tenants for filter:', err));
   }, []);
 
   const fetchUsers = useCallback(async () => {

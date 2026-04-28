@@ -37,8 +37,26 @@ public class ListaPrecioService
         return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
     }
 
-    public Task<bool> EliminarListaPrecioAsync(int id)
-        => _repo.EliminarAsync(id, _tenant.TenantId);
+    public record EliminarListaResult(bool Success, string? Error = null, int PreciosActivos = 0);
+
+    public async Task<EliminarListaResult> EliminarListaPrecioAsync(int id, bool forzar = false)
+    {
+        // Si la lista tiene precios por producto asociados, bloqueamos por defecto
+        // — borrarla dejaría huérfanos en PreciosPorProducto (no hay FK cascade).
+        // El user puede pasar forzar=true para limpiar de todas formas (los precios
+        // quedarán orfanos pero la tabla tiene query filter por TenantId así que
+        // no se expone a otros tenants; en un futuro se puede hacer hard cleanup).
+        if (!forzar)
+        {
+            var preciosActivos = await _repo.ContarPreciosActivosPorListaAsync(id, _tenant.TenantId);
+            if (preciosActivos > 0)
+                return new EliminarListaResult(false,
+                    Error: $"La lista tiene {preciosActivos} precio(s) por producto asociado(s). Elimínalos primero o pasa `?forzar=true`.",
+                    PreciosActivos: preciosActivos);
+        }
+        var ok = await _repo.EliminarAsync(id, _tenant.TenantId);
+        return new EliminarListaResult(ok);
+    }
 
     public Task<bool> CambiarActivoAsync(int id, bool activo)
         => _repo.CambiarActivoAsync(id, activo, _tenant.TenantId);

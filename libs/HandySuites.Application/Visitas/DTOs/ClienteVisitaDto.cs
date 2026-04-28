@@ -83,8 +83,8 @@ public class ClienteVisitaFiltroDto
     public TipoVisita? TipoVisita { get; set; }
     public ResultadoVisita? Resultado { get; set; }
     public bool? SoloPendientes { get; set; }
-    public int Pagina { get; set; } = 1;
-    public int TamanoPagina { get; set; } = 20;
+    public int? Pagina { get; set; }
+    public int? TamanoPagina { get; set; }
 }
 
 public class VisitaResumenDiarioDto

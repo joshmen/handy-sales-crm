@@ -18,6 +18,8 @@ namespace HandySuites.Tests.Application.Descuentos
         public DescuentoPorCantidadServiceTests()
         {
             _tenantMock.Setup(t => t.TenantId).Returns(1);
+            // Default: producto existe para que happy paths pasen el pre-check.
+            _repoMock.Setup(r => r.ExisteProductoEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
             _service = new DescuentoPorCantidadService(_repoMock.Object, _tenantMock.Object);
         }
 

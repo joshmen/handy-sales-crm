@@ -26,7 +26,5 @@ export function useActiveVisit() {
   return useQuery({
     queryKey: ['visits', 'active'],
     queryFn: () => visitasApi.getActiva(),
-    refetchInterval: 30000,
-    refetchIntervalInBackground: false,
   });
 }

@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
+import { useTenantLocale } from '@/hooks';
 import { SbTeam } from '@/components/icons/DashboardIcons';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
+import { useAuthStore } from '@/stores';
 
 function KpiCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -21,13 +23,20 @@ function KpiCard({ label, value }: { label: string; value: string | number }) {
 function VendedorRow({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress: () => void }) {
   const initials = vendedor.nombre
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
 
   return (
-    <Pressable style={styles.vendedorRow} onPress={onPress} testID={`vendedor-${vendedor.id}`}>
+    <Pressable
+      style={styles.vendedorRow}
+      onPress={onPress}
+      testID={`vendedor-${vendedor.id}`}
+      accessibilityLabel={`${vendedor.nombre}, ${vendedor.activo ? 'Activo' : 'Inactivo'}`}
+      accessibilityRole="button"
+    >
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{initials}</Text>
       </View>
@@ -46,6 +55,9 @@ function EquipoContent() {
   const { data: dashboard, isLoading: loadingDash, refetch: refetchDash } = useSupervisorDashboard();
   const { data: vendedores, isLoading: loadingVend, refetch: refetchVend } = useMisVendedores();
   const [refreshing, setRefreshing] = useState(false);
+  const role = useAuthStore(s => s.user?.role);
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const { currency, locale } = useTenantLocale();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -53,10 +65,20 @@ function EquipoContent() {
     setRefreshing(false);
   };
 
+  // KPI format: valores pequeños se muestran completos ($17.17), grandes se
+  // abrevian ($1.5M / $250K) para no romper layout en cards estrechos.
   const formatMoney = (n: number) => {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-    return `$${n.toFixed(0)}`;
+    try {
+      // Solo notation:compact si la magnitud justifica la abreviatura.
+      const useCompact = Math.abs(n) >= 1000;
+      return new Intl.NumberFormat(locale, {
+        ...(useCompact ? { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 } : {}),
+        style: 'currency',
+        currency: currency || 'MXN',
+      }).format(n);
+    } catch {
+      return `$${n.toFixed(0)}`;
+    }
   };
 
   if (loadingDash && loadingVend) {
@@ -78,10 +100,22 @@ function EquipoContent() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.title}>Mi Equipo</Text>
         <View style={styles.headerButtons}>
-          <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/equipo/actividad')} testID="ver-actividad">
+          <Pressable
+            style={styles.headerBtn}
+            onPress={() => router.push('/(tabs)/equipo/actividad')}
+            testID="ver-actividad"
+            accessibilityLabel="Ver actividad del equipo"
+            accessibilityRole="button"
+          >
             <Text style={styles.headerBtnText}>Actividad</Text>
           </Pressable>
-          <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/equipo/mapa')} testID="ver-mapa">
+          <Pressable
+            style={styles.headerBtn}
+            onPress={() => router.push('/(tabs)/equipo/mapa')}
+            testID="ver-mapa"
+            accessibilityLabel="Ver mapa del equipo"
+            accessibilityRole="button"
+          >
             <Text style={styles.headerBtnText}>Ver mapa</Text>
           </Pressable>
         </View>
@@ -113,8 +147,14 @@ function EquipoContent() {
         ) : (
           <View style={styles.emptyState}>
             <SbTeam size={32} />
-            <Text style={styles.emptyText}>No tienes vendedores asignados</Text>
-            <Text style={styles.emptySubtext}>Pide al administrador que te asigne vendedores</Text>
+            <Text style={styles.emptyText}>
+              {isAdmin ? 'Sin vendedores registrados' : 'No tienes vendedores asignados'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {isAdmin
+                ? 'Da de alta vendedores desde el portal web para verlos aquí'
+                : 'Pide al administrador que te asigne vendedores'}
+            </Text>
           </View>
         )}
       </Animated.View>

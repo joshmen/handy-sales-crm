@@ -1,5 +1,6 @@
 using FluentValidation;
 using HandySuites.Application.Clientes.DTOs;
+using HandySuites.Shared.Validation;
 
 namespace HandySuites.Application.Clientes.Validators
 {
@@ -11,7 +12,8 @@ namespace HandySuites.Application.Clientes.Validators
                 .NotEmpty().WithMessage("El nombre es obligatorio.");
 
             RuleFor(x => x.RFC)
-                .Length(12, 13).WithMessage("El RFC debe tener entre 12 y 13 caracteres.")
+                .Must(rfc => FiscalIdValidator.Validate(rfc, "RFC") == null)
+                .WithMessage(x => FiscalIdValidator.Validate(x.RFC, "RFC") ?? "")
                 .When(x => !string.IsNullOrEmpty(x.RFC));
 
             RuleFor(x => x.Correo)

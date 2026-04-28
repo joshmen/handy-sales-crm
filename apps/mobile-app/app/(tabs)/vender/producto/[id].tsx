@@ -6,7 +6,7 @@ import { useOrderDraftStore } from '@/stores';
 import { Button, LoadingSpinner } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { ChevronLeft, ImageIcon, ShoppingBag } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -14,6 +14,7 @@ export default function ProductoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency } = useTenantLocale();
 
   const { data: product, isLoading } = useOfflineProductById(id || '');
   const { items, addItem, updateQuantity, removeItem } = useOrderDraftStore();

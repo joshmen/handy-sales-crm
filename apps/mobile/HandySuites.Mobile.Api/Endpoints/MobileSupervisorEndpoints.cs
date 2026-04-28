@@ -1,4 +1,5 @@
 using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Domain.Common;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.EntityFrameworkCore;
@@ -24,17 +25,32 @@ public static class MobileSupervisorEndpoints
 
             var supervisorId = int.Parse(tenant.UserId);
 
-            var vendedores = await db.Usuarios
+            // ADMIN/SUPER_ADMIN ven a TODOS los vendedores y supervisores del tenant;
+            // SUPERVISOR ve solo a sus subordinados directos.
+            var baseQuery = db.Usuarios
                 .AsNoTracking()
-                .Where(u => u.SupervisorId == supervisorId
-                         && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
+                .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null);
+
+            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            {
+                // Excluir a uno mismo y a otros admins; mostrar supervisores y vendedores
+                baseQuery = baseQuery.Where(u =>
+                    u.Id != supervisorId
+                    && u.RolExplicito != RoleNames.Admin
+                    && u.RolExplicito != RoleNames.SuperAdmin);
+            }
+            else
+            {
+                baseQuery = baseQuery.Where(u => u.SupervisorId == supervisorId);
+            }
+
+            var vendedores = await baseQuery
                 .Select(u => new
                 {
                     u.Id,
                     u.Nombre,
                     u.Email,
-                    Rol = u.RolExplicito ?? (u.EsSuperAdmin ? "SUPER_ADMIN" : u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+                    Rol = u.RolExplicito ?? RoleNames.Vendedor,
                     u.Activo,
                     u.AvatarUrl
                 })
@@ -328,13 +344,16 @@ public static class MobileSupervisorEndpoints
             var supervisorId = int.Parse(tenant.UserId);
             var hoy = DateTime.UtcNow.Date;
 
-            // Verify this vendedor belongs to this supervisor
-            var vendedor = await db.Usuarios
+            // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
+            var vendedorQuery = db.Usuarios
                 .AsNoTracking()
                 .Where(u => u.Id == id
-                         && u.SupervisorId == supervisorId
                          && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
+                         && u.EliminadoEn == null);
+            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+                vendedorQuery = vendedorQuery.Where(u => u.SupervisorId == supervisorId);
+
+            var vendedor = await vendedorQuery
                 .Select(u => new { u.Id, u.Nombre, u.Email, u.AvatarUrl, u.Activo })
                 .FirstOrDefaultAsync();
 

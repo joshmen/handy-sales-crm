@@ -34,4 +34,15 @@ export default class Attachment extends Model {
       record.retryCount = (record.retryCount || 0) + 1;
     });
   }
+
+  /**
+   * Reset to pending sin incrementar retry count. Usar cuando el fallo NO es
+   * culpa del attachment (ej. 401 token expirado) y queremos que el próximo
+   * flushPending lo recoja sin agotar retries.
+   */
+  @writer async markPending() {
+    await this.update((record: any) => {
+      record.uploadStatus = 'pending';
+    });
+  }
 }

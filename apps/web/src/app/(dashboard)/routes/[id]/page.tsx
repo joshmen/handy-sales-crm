@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado, RouteUpdateRequest, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { zoneService } from '@/services/api/zones';
 import { api } from '@/lib/api';
@@ -76,25 +77,43 @@ export default function RouteDetailPage() {
   const router = useRouter();
   const routeId = Number(params.id);
 
+  const showApiError = useApiErrorToast();
   const [route, setRoute] = useState<RouteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Add stop modal
+  // Add stop modal — multi-select
   const [isAddStopOpen, setIsAddStopOpen] = useState(false);
   const [clients, setClients] = useState<{ value: string; label: string }[]>([]);
-  const [stopForm, setStopForm] = useState({ clienteId: 0, duracion: 30, notas: '' });
+  const [stopForm, setStopForm] = useState({ duracion: 30 });
+  const [selectedStopClienteIds, setSelectedStopClienteIds] = useState<Set<number>>(new Set());
+  const [stopSearch, setStopSearch] = useState('');
+  const [batchAddingStops, setBatchAddingStops] = useState(false);
+
+  // Stops table — paginacion + multi-select para eliminar
+  const STOPS_PER_PAGE = 10;
+  const [stopsPage, setStopsPage] = useState(1);
+  const [selectedStopIds, setSelectedStopIds] = useState<Set<number>>(new Set());
+  const [batchRemovingStops, setBatchRemovingStops] = useState(false);
 
   // Cancel modal
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState('');
 
-  // Pedidos
+  // Pedidos — modal multi-select
   const [pedidos, setPedidos] = useState<PedidoAsignado[]>([]);
   const [isPedidoModalOpen, setIsPedidoModalOpen] = useState(false);
   const [availablePedidos, setAvailablePedidos] = useState<PedidoOption[]>([]);
   const [loadingPedidos, setLoadingPedidos] = useState(false);
   const [pedidoSearch, setPedidoSearch] = useState('');
+  const [selectedPedidoIds, setSelectedPedidoIds] = useState<Set<number>>(new Set());
+  const [batchAssigning, setBatchAssigning] = useState(false);
+
+  // Pedidos asignados — paginacion + multi-select para remover
+  const ASSIGNED_PER_PAGE = 10;
+  const [assignedPage, setAssignedPage] = useState(1);
+  const [selectedAssignedIds, setSelectedAssignedIds] = useState<Set<number>>(new Set());
+  const [batchRemoving, setBatchRemoving] = useState(false);
 
   // Edit drawer
   const editDrawerRef = useRef<DrawerHandle>(null);
@@ -123,14 +142,34 @@ export default function RouteDetailPage() {
     }
   }, [routeId]);
 
-  const fetchClients = async (search?: string) => {
+  // Lista plana de clientes con metadata de zona — usada para agrupar el dropdown
+  // de "Add stop" en sugeridos (zonas de la ruta) vs otros. Antes el filtro era
+  // estricto por zona única (commit fde28ee) y mostraba 1 cliente cuando la zona
+  // tenía pocos. Reportado 2026-04-27 — ahora alineado con SFA/CPG industria
+  // (Handy.la, Salesforce, SAP) donde el admin ve todos los clientes y la zona
+  // es solo sugerencia visual.
+  const [clientsRaw, setClientsRaw] = useState<{ value: string; label: string; zoneId?: number; zoneName?: string }[]>([]);
+
+  const fetchClients = useCallback(async (search?: string) => {
     try {
-      const response = await clientService.getClients({ search, limit: 50, isActive: true });
-      setClients(response.clients.map(c => ({ value: c.id, label: c.name })));
+      const response = await clientService.getClients({
+        search,
+        limit: 500,
+        isActive: true,
+        // SIN zoneId filter — traemos todos. El agrupamiento es del lado UI.
+      });
+      const items = response.clients.map(c => ({
+        value: c.id,
+        label: c.zoneName ? `${c.name} · ${c.zoneName}` : c.name,
+        zoneId: c.zoneId,
+        zoneName: c.zoneName,
+      }));
+      setClientsRaw(items);
+      setClients(items.map(({ value, label }) => ({ value, label })));
     } catch {
       console.error('Error al cargar clientes');
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRoute();
@@ -138,7 +177,7 @@ export default function RouteDetailPage() {
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [fetchClients]);
 
   // Edit drawer: fetch dropdown data
   const fetchEditDropdowns = async () => {
@@ -202,18 +241,30 @@ export default function RouteDetailPage() {
   const isPlanificada = route?.estado === 0;
   const isEnProgreso = route?.estado === 1;
   const isPendienteAceptar = route?.estado === 4;
-  const isEditable = isPlanificada || isPendienteAceptar;
+  // Solo Planificada permite editar: una vez enviada a carga, la ruta se vuelve
+  // inmutable para no invalidar el resumen ya enviado al vendedor por push.
+  // Reportado 2026-04-28: el admin podia agregar paradas/pedidos despues del
+  // Send to Load.
+  const isEditable = isPlanificada;
 
-  // Actions
-  const handleIniciar = async () => {
+  // Actions — uso showApiError para mostrar el message real del backend
+  // (p.ej. "No se puede enviar la ruta a carga: faltan paradas, pedidos asignados.")
+  // en vez del fallback genérico. Reportado 2026-04-27.
+  //
+  // El admin desde web NO inicia la ruta — solo la envía a carga (PendienteAceptar).
+  // Después el vendedor recibe push, abre mobile, presiona "Aceptar" y eso dispara
+  // aceptar+iniciar consecutivos del lado del vendedor (flujo natural). Antes este
+  // botón llamaba IniciarRutaAsync directo y saltaba el paso de aceptación, dejando
+  // AceptadaEn null y rompiendo el banner "Aceptar ruta" del mobile.
+  const handleSendToLoad = async () => {
     if (!route) return;
     try {
       setActionLoading(true);
-      await routeService.iniciarRuta(route.id);
-      toast.success(t('detail.routeStarted'));
+      await routeService.enviarACarga(route.id);
+      toast.success(t('detail.routeSentToLoad'));
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorStarting'));
+    } catch (err) {
+      showApiError(err, t('detail.errorSendingToLoad'));
     } finally {
       setActionLoading(false);
     }
@@ -226,8 +277,8 @@ export default function RouteDetailPage() {
       await routeService.completarRuta(route.id);
       toast.success(t('detail.routeCompleted'));
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorCompleting'));
+    } catch (err) {
+      showApiError(err, t('detail.errorCompleting'));
     } finally {
       setActionLoading(false);
     }
@@ -242,39 +293,55 @@ export default function RouteDetailPage() {
       setIsCancelOpen(false);
       setCancelMotivo('');
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorCancelling'));
+    } catch (err) {
+      showApiError(err, t('detail.errorCancelling'));
     } finally {
       setActionLoading(false);
     }
   };
 
   // Stops
-  const handleAddStop = async () => {
-    if (!route || !stopForm.clienteId) {
+  const closeAddStopModal = () => {
+    setIsAddStopOpen(false);
+    setSelectedStopClienteIds(new Set());
+    setStopSearch('');
+  };
+
+  const toggleStopClienteSelected = (clienteId: number) => {
+    setSelectedStopClienteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(clienteId)) next.delete(clienteId);
+      else next.add(clienteId);
+      return next;
+    });
+  };
+
+  const handleAddStopsBatch = async () => {
+    if (!route) return;
+    const ids = Array.from(selectedStopClienteIds);
+    if (ids.length === 0) {
       toast.error(t('detail.selectClient'));
       return;
     }
+    setBatchAddingStops(true);
     try {
-      setActionLoading(true);
-      const nextOrder = route.detalles.length > 0
-        ? Math.max(...route.detalles.map(d => d.ordenVisita)) + 1
-        : 1;
-      const data: AddStopRequest = {
-        clienteId: stopForm.clienteId,
-        ordenVisita: nextOrder,
-        duracionEstimadaMinutos: stopForm.duracion || 30,
-        notas: stopForm.notas || undefined,
-      };
-      await routeService.addParada(route.id, data);
-      toast.success(t('detail.stopAdded'));
-      setIsAddStopOpen(false);
-      setStopForm({ clienteId: 0, duracion: 30, notas: '' });
+      const result = await routeService.addParadasBatch(route.id, ids, stopForm.duracion || 30);
+      if (result.totalAgregadas > 0 && result.totalFallidas === 0) {
+        toast.success(t('detail.stopsBatchAdded', { count: result.totalAgregadas }));
+      } else if (result.totalAgregadas > 0 && result.totalFallidas > 0) {
+        toast.success(t('detail.stopsBatchPartial', {
+          ok: result.totalAgregadas,
+          failed: result.totalFallidas,
+        }));
+      } else {
+        toast.error(t('detail.errorAddingStop'));
+      }
+      closeAddStopModal();
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorAddingStop'));
+    } catch (err) {
+      showApiError(err, t('detail.errorAddingStop'));
     } finally {
-      setActionLoading(false);
+      setBatchAddingStops(false);
     }
   };
 
@@ -283,9 +350,49 @@ export default function RouteDetailPage() {
     try {
       await routeService.deleteParada(route.id, detalleId);
       toast.success(t('detail.stopDeleted'));
+      setSelectedStopIds(prev => {
+        const next = new Set(prev);
+        next.delete(detalleId);
+        return next;
+      });
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorDeletingStop'));
+    } catch (err) {
+      showApiError(err, t('detail.errorDeletingStop'));
+    }
+  };
+
+  const toggleStopSelected = (detalleId: number) => {
+    setSelectedStopIds(prev => {
+      const next = new Set(prev);
+      if (next.has(detalleId)) next.delete(detalleId);
+      else next.add(detalleId);
+      return next;
+    });
+  };
+
+  const handleRemoveSelectedStops = async () => {
+    if (!route) return;
+    const ids = Array.from(selectedStopIds);
+    if (ids.length === 0) return;
+    setBatchRemovingStops(true);
+    try {
+      const result = await routeService.removeParadasBatch(route.id, ids);
+      setSelectedStopIds(new Set());
+      if (result.totalRemovidas > 0 && result.totalFallidas === 0) {
+        toast.success(t('detail.stopsBatchRemoved', { count: result.totalRemovidas }));
+      } else if (result.totalRemovidas > 0 && result.totalFallidas > 0) {
+        toast.success(t('detail.stopsBatchRemovedPartial', {
+          ok: result.totalRemovidas,
+          failed: result.totalFallidas,
+        }));
+      } else {
+        toast.error(t('detail.errorDeletingStop'));
+      }
+      fetchRoute();
+    } catch (err) {
+      showApiError(err, t('detail.errorDeletingStop'));
+    } finally {
+      setBatchRemovingStops(false);
     }
   };
 
@@ -302,8 +409,8 @@ export default function RouteDetailPage() {
     try {
       await routeService.reorderParadas(route.id, newOrder);
       fetchRoute();
-    } catch {
-      toast.error(t('detail.errorReordering'));
+    } catch (err) {
+      showApiError(err, t('detail.errorReordering'));
     }
   };
 
@@ -313,9 +420,12 @@ export default function RouteDetailPage() {
     setPedidoSearch('');
     setLoadingPedidos(true);
     try {
+      // excluirAsignadosARutas: backend excluye pedidos ya en otra ruta activa
+      // (Planificada/PendienteAceptar/CargaAceptada/EnProgreso). Sin esto, el modal
+      // mostraba pedidos que en realidad ya estaban tomados por otra ruta.
       const [confirmedRes, enProcesoRes] = await Promise.all([
-        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=Confirmado'),
-        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=EnProceso'),
+        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=Confirmado&excluirAsignadosARutas=true'),
+        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=EnProceso&excluirAsignadosARutas=true'),
       ]);
       const confirmed = Array.isArray(confirmedRes.data) ? confirmedRes.data : confirmedRes.data.items || [];
       const enProceso = Array.isArray(enProcesoRes.data) ? enProcesoRes.data : enProcesoRes.data.items || [];
@@ -330,16 +440,47 @@ export default function RouteDetailPage() {
     }
   };
 
-  const handleAddPedido = async (pedidoId: number) => {
+  const togglePedidoSelected = (pedidoId: number) => {
+    setSelectedPedidoIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pedidoId)) next.delete(pedidoId);
+      else next.add(pedidoId);
+      return next;
+    });
+  };
+
+  const closePedidoModal = () => {
+    setIsPedidoModalOpen(false);
+    setSelectedPedidoIds(new Set());
+    setPedidoSearch('');
+  };
+
+  const handleAssignSelectedPedidos = async () => {
     if (!route) return;
+    const ids = Array.from(selectedPedidoIds);
+    if (ids.length === 0) return;
+    setBatchAssigning(true);
     try {
-      await routeService.addPedido(route.id, pedidoId);
-      toast.success(t('detail.orderAssigned'));
-      setIsPedidoModalOpen(false);
+      const result = await routeService.addPedidosBatch(route.id, ids);
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
-    } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || t('detail.errorAssigningOrder'));
+
+      if (result.totalAsignados > 0 && result.totalFallidos === 0) {
+        toast.success(t('detail.ordersBatchAssigned', { count: result.totalAsignados }));
+      } else if (result.totalAsignados > 0 && result.totalFallidos > 0) {
+        toast.success(t('detail.ordersBatchPartial', {
+          ok: result.totalAsignados,
+          failed: result.totalFallidos,
+        }));
+      } else {
+        toast.error(t('detail.errorAssigningOrder'));
+      }
+
+      closePedidoModal();
+    } catch (err) {
+      showApiError(err, t('detail.errorAssigningOrder'));
+    } finally {
+      setBatchAssigning(false);
     }
   };
 
@@ -350,8 +491,51 @@ export default function RouteDetailPage() {
       toast.success(t('detail.orderRemoved'));
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
-    } catch {
-      toast.error(t('detail.errorRemovingOrder'));
+      // Asegura que la pagina actual no quede vacia tras remover el ultimo de la pagina.
+      setSelectedAssignedIds(prev => {
+        const next = new Set(prev);
+        next.delete(pedidoId);
+        return next;
+      });
+    } catch (err) {
+      showApiError(err, t('detail.errorRemovingOrder'));
+    }
+  };
+
+  const toggleAssignedSelected = (pedidoId: number) => {
+    setSelectedAssignedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pedidoId)) next.delete(pedidoId);
+      else next.add(pedidoId);
+      return next;
+    });
+  };
+
+  const handleRemoveSelectedPedidos = async () => {
+    if (!route) return;
+    const ids = Array.from(selectedAssignedIds);
+    if (ids.length === 0) return;
+    setBatchRemoving(true);
+    try {
+      const result = await routeService.removePedidosBatch(route.id, ids);
+      const pedidosData = await routeService.getPedidosAsignados(route.id);
+      setPedidos(pedidosData);
+      setSelectedAssignedIds(new Set());
+
+      if (result.totalRemovidos > 0 && result.totalFallidos === 0) {
+        toast.success(t('detail.ordersBatchRemoved', { count: result.totalRemovidos }));
+      } else if (result.totalRemovidos > 0 && result.totalFallidos > 0) {
+        toast.success(t('detail.ordersBatchRemovedPartial', {
+          ok: result.totalRemovidos,
+          failed: result.totalFallidos,
+        }));
+      } else {
+        toast.error(t('detail.errorRemovingOrder'));
+      }
+    } catch (err) {
+      showApiError(err, t('detail.errorRemovingOrder'));
+    } finally {
+      setBatchRemoving(false);
     }
   };
 
@@ -391,6 +575,57 @@ export default function RouteDetailPage() {
   const badge = getEstadoBadge(route.estado);
   const sortedStops = [...route.detalles].sort((a, b) => a.ordenVisita - b.ordenVisita);
 
+  // Excluir del dropdown del modal "Add Stop" los clientes que YA tienen una parada
+  // activa en esta ruta. Cuando se elimina una parada (sortedStops cambia), el cliente
+  // vuelve a aparecer automáticamente. Reportado 2026-04-27.
+  const assignedClientIds = new Set(sortedStops.map(s => String(s.clienteId)));
+
+  // IDs de las zonas que cubre la ruta (multi-zona). Si solo hay zonaId legacy y
+  // el backend aún no migró Zonas, fallback al field viejo.
+  const routeZonaIds = new Set<number>(
+    (route.zonas?.length ? route.zonas.map(z => z.id) : route.zonaId ? [route.zonaId] : [])
+  );
+  const routeZonaNombres = (route.zonas?.length
+    ? route.zonas.map(z => z.nombre)
+    : route.zonaNombre ? [route.zonaNombre] : []
+  ).join(', ');
+
+  // Agrupar clientes en 2 secciones: sugeridos (de las zonas de la ruta) + otros.
+  // Antes el filtro estricto por zona única (commit fde28ee) mostraba solo 1 cliente
+  // cuando la zona tenía pocos. Ahora todos visibles, agrupados visualmente.
+  const availableClientsAll = clientsRaw.filter(c => !assignedClientIds.has(c.value));
+  const suggestedClients = routeZonaIds.size > 0
+    ? availableClientsAll.filter(c => c.zoneId != null && routeZonaIds.has(c.zoneId))
+    : [];
+  const otherClients = routeZonaIds.size > 0
+    ? availableClientsAll.filter(c => c.zoneId == null || !routeZonaIds.has(c.zoneId))
+    : availableClientsAll;
+  // Lista final con separadores virtuales (compatibles con SearchableSelect que
+  // solo acepta { value, label }). Los separadores son entradas con value="" deshabilitables.
+  const groupedClientOptions: { value: string; label: string; isDivider?: boolean }[] = [];
+  if (suggestedClients.length > 0) {
+    groupedClientOptions.push({
+      value: '__divider_suggested',
+      label: `── ${t('detail.suggestedFromZones', { defaultValue: 'Sugeridos de las zonas de la ruta' })} ──`,
+      isDivider: true,
+    });
+    groupedClientOptions.push(...suggestedClients.map(({ value, label }) => ({ value, label })));
+  }
+  if (otherClients.length > 0) {
+    if (suggestedClients.length > 0) {
+      groupedClientOptions.push({
+        value: '__divider_other',
+        label: `── ${t('detail.otherZones', { defaultValue: 'Otras zonas' })} ──`,
+        isDivider: true,
+      });
+    }
+    groupedClientOptions.push(...otherClients.map(({ value, label }) => ({ value, label })));
+  }
+  // Fallback: si el SearchableSelect no soporta dividers (selecciona "" como valor),
+  // mantenemos la versión sin separadores como opción simple. Aquí preferimos UX
+  // con dividers — el handler onChange ignora valores que empiecen con "__divider".
+  const availableClients = groupedClientOptions;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -417,12 +652,12 @@ export default function RouteDetailPage() {
             {isPlanificada && (
               <>
                 <button
-                  onClick={handleIniciar}
+                  onClick={handleSendToLoad}
                   disabled={actionLoading}
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
                 >
                   <Play className="w-4 h-4" />
-                  {t('detail.startRoute')}
+                  {t('detail.sendToLoad')}
                 </button>
                 <button
                   onClick={() => setIsCancelOpen(true)}
@@ -591,84 +826,183 @@ export default function RouteDetailPage() {
                 {pedidos.length}
               </span>
             </div>
-            {isEditable && pedidos.length > 0 && (
-              <button
-                onClick={handleOpenAddPedido}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t('detail.assignOrder')}
-              </button>
-            )}
-          </div>
-
-          <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
-            {/* Table Header */}
-            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
-              <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('detail.orderNumber')}</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
-              <div className="w-[120px] text-xs font-semibold text-foreground/70 text-right">{t('detail.amount')}</div>
-              <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.products')}</div>
-              <div className="w-[110px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
-              {isEditable && (
-                <div className="w-[70px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
+            <div className="flex items-center gap-2">
+              {isEditable && selectedAssignedIds.size > 0 && (
+                <button
+                  onClick={handleRemoveSelectedPedidos}
+                  disabled={batchRemoving}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  {batchRemoving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {t('detail.removeSelectedCount', { count: selectedAssignedIds.size })}
+                </button>
+              )}
+              {isEditable && pedidos.length > 0 && (
+                <button
+                  onClick={handleOpenAddPedido}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {t('detail.assignOrder')}
+                </button>
               )}
             </div>
+          </div>
 
-            {/* Table Body */}
-            {pedidos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Package className="w-12 h-12 text-muted-foreground/60 mb-3" />
-                <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noOrders')}</p>
-                <p className="text-xs text-muted-foreground mb-3">{t('detail.assignConfirmedOrders')}</p>
-                {isEditable && (
-                  <button
-                    onClick={handleOpenAddPedido}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    {t('detail.assignOrder')}
-                  </button>
-                )}
-              </div>
-            ) : (
-              pedidos.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
-                >
-                  <div className="w-[100px]">
-                    <span className="text-[13px] font-medium text-foreground">#{p.pedidoId}</span>
-                  </div>
-                  <div className="flex-1 min-w-[160px]">
-                    <p className="text-[13px] font-medium text-foreground truncate">{p.clienteNombre}</p>
-                  </div>
-                  <div className="w-[120px] text-right">
-                    <span className="text-[13px] text-foreground/70">{formatCurrency(p.montoTotal)}</span>
-                  </div>
-                  <div className="w-[60px] text-center">
-                    <span className="text-[13px] text-foreground/70">{p.totalProductos}</span>
-                  </div>
-                  <div className="w-[110px] text-center">
-                    <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
-                      {p.estadoNombre}
-                    </span>
-                  </div>
-                  {isEditable && (
-                    <div className="w-[70px] flex items-center justify-center">
-                      <button
-                        onClick={() => handleRemovePedido(p.pedidoId)}
-                        className="p-1 text-muted-foreground hover:text-red-600 rounded"
-                        title={t('detail.removeOrder')}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+          {(() => {
+            // Paginacion client-side
+            const totalPages = Math.max(1, Math.ceil(pedidos.length / ASSIGNED_PER_PAGE));
+            const safePage = Math.min(assignedPage, totalPages);
+            if (safePage !== assignedPage) {
+              // No mutamos en render: la siguiente interaccion lo corrige.
+            }
+            const startIdx = (safePage - 1) * ASSIGNED_PER_PAGE;
+            const pagePedidos = pedidos.slice(startIdx, startIdx + ASSIGNED_PER_PAGE);
+            const allOnPageSelected = pagePedidos.length > 0
+              && pagePedidos.every(p => selectedAssignedIds.has(p.pedidoId));
+
+            const toggleSelectAllOnPage = () => {
+              setSelectedAssignedIds(prev => {
+                const next = new Set(prev);
+                if (allOnPageSelected) {
+                  pagePedidos.forEach(p => next.delete(p.pedidoId));
+                } else {
+                  pagePedidos.forEach(p => next.add(p.pedidoId));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
+                  {isEditable && pedidos.length > 0 && (
+                    <div className="w-[28px] flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={toggleSelectAllOnPage}
+                        aria-label={t('detail.selectAll')}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
                     </div>
                   )}
+                  <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('detail.orderNumber')}</div>
+                  <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
+                  <div className="w-[120px] text-xs font-semibold text-foreground/70 text-right">{t('detail.amount')}</div>
+                  <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.products')}</div>
+                  <div className="w-[110px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
+                  {isEditable && (
+                    <div className="w-[70px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
+                  )}
                 </div>
-              ))
-            )}
-          </div>
+
+                {/* Table Body */}
+                {pedidos.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Package className="w-12 h-12 text-muted-foreground/60 mb-3" />
+                    <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noOrders')}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{t('detail.assignConfirmedOrders')}</p>
+                    {isEditable && (
+                      <button
+                        onClick={handleOpenAddPedido}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {t('detail.assignOrder')}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {pagePedidos.map((p) => {
+                      const isSelected = selectedAssignedIds.has(p.pedidoId);
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center gap-3 px-4 py-3 border-b border-border-subtle transition-colors ${
+                            isSelected ? 'bg-green-50 dark:bg-green-950/30' : 'hover:bg-surface-1'
+                          }`}
+                        >
+                          {isEditable && (
+                            <div className="w-[28px] flex items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleAssignedSelected(p.pedidoId)}
+                                aria-label={`Seleccionar pedido ${p.pedidoId}`}
+                                className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                              />
+                            </div>
+                          )}
+                          <div className="w-[100px]">
+                            <span className="text-[13px] font-medium text-foreground">#{p.pedidoId}</span>
+                          </div>
+                          <div className="flex-1 min-w-[160px]">
+                            <p className="text-[13px] font-medium text-foreground truncate">{p.clienteNombre}</p>
+                          </div>
+                          <div className="w-[120px] text-right">
+                            <span className="text-[13px] text-foreground/70">{formatCurrency(p.montoTotal)}</span>
+                          </div>
+                          <div className="w-[60px] text-center">
+                            <span className="text-[13px] text-foreground/70">{p.totalProductos}</span>
+                          </div>
+                          <div className="w-[110px] text-center">
+                            <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
+                              {p.estadoNombre}
+                            </span>
+                          </div>
+                          {isEditable && (
+                            <div className="w-[70px] flex items-center justify-center">
+                              <button
+                                onClick={() => handleRemovePedido(p.pedidoId)}
+                                className="p-1 text-muted-foreground hover:text-red-600 rounded"
+                                title={t('detail.removeOrder')}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-2 bg-surface-1 border-t border-border-subtle">
+                        <span className="text-xs text-muted-foreground">
+                          {t('detail.paginationRange', {
+                            from: startIdx + 1,
+                            to: Math.min(startIdx + ASSIGNED_PER_PAGE, pedidos.length),
+                            total: pedidos.length,
+                          })}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setAssignedPage(p => Math.max(1, p - 1))}
+                            disabled={safePage <= 1}
+                            className="px-2 py-1 text-xs font-medium border border-border-subtle rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-2"
+                          >
+                            {t('detail.previous')}
+                          </button>
+                          <span className="text-xs text-foreground/70 px-2">
+                            {safePage} / {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setAssignedPage(p => Math.min(totalPages, p + 1))}
+                            disabled={safePage >= totalPages}
+                            className="px-2 py-1 text-xs font-medium border border-border-subtle rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-2"
+                          >
+                            {t('detail.next')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Stops Section */}
@@ -677,165 +1011,341 @@ export default function RouteDetailPage() {
             <h2 className="text-lg font-semibold text-foreground">
               {t('columns.stops')} ({route.totalParadas})
             </h2>
-            {isEditable && sortedStops.length > 0 && (
-              <button
-                onClick={() => setIsAddStopOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t('detail.addStop')}
-              </button>
-            )}
-          </div>
-
-          <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
-            {/* Table Header */}
-            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
-              <div className="w-[50px] text-xs font-semibold text-foreground/70 text-center">#</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
-              <div className="w-[200px] text-xs font-semibold text-foreground/70">{tc('address')}</div>
-              <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.minutes')}</div>
-              <div className="w-[90px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
-              {isEditable && (
-                <div className="w-[90px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
+            <div className="flex items-center gap-2">
+              {isEditable && selectedStopIds.size > 0 && (
+                <button
+                  onClick={handleRemoveSelectedStops}
+                  disabled={batchRemovingStops}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  {batchRemovingStops ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {t('detail.removeSelectedCount', { count: selectedStopIds.size })}
+                </button>
+              )}
+              {isEditable && sortedStops.length > 0 && (
+                <button
+                  onClick={() => setIsAddStopOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {t('detail.addStop')}
+                </button>
               )}
             </div>
+          </div>
 
-            {/* Table Body */}
-            {sortedStops.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <MapPin className="w-12 h-12 text-muted-foreground/60 mb-3" />
-                <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noStops')}</p>
-                <p className="text-xs text-muted-foreground mb-3">{t('detail.addClientsHint')}</p>
-                {isEditable && (
-                  <button
-                    onClick={() => setIsAddStopOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    {t('detail.addStop')}
-                  </button>
-                )}
-              </div>
-            ) : (
-              sortedStops.map((stop, idx) => {
-                const paradaBadge = getParadaBadge(stop.estado);
-                return (
-                  <div
-                    key={stop.id}
-                    className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
-                  >
-                    <div className="w-[50px] text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-3 text-[11px] font-medium text-foreground/70">
-                        {stop.ordenVisita}
-                      </span>
+          {(() => {
+            // Paginacion client-side de paradas
+            const totalPagesStops = Math.max(1, Math.ceil(sortedStops.length / STOPS_PER_PAGE));
+            const safeStopsPage = Math.min(stopsPage, totalPagesStops);
+            const startIdxStops = (safeStopsPage - 1) * STOPS_PER_PAGE;
+            const pageStops = sortedStops.slice(startIdxStops, startIdxStops + STOPS_PER_PAGE);
+            const allStopsOnPageSelected = pageStops.length > 0
+              && pageStops.every(s => selectedStopIds.has(s.id));
+
+            const toggleSelectAllStopsOnPage = () => {
+              setSelectedStopIds(prev => {
+                const next = new Set(prev);
+                if (allStopsOnPageSelected) {
+                  pageStops.forEach(s => next.delete(s.id));
+                } else {
+                  pageStops.forEach(s => next.add(s.id));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
+                  {isEditable && sortedStops.length > 0 && (
+                    <div className="w-[28px] flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={allStopsOnPageSelected}
+                        onChange={toggleSelectAllStopsOnPage}
+                        aria-label={t('detail.selectAll')}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
                     </div>
-                    <div className="flex-1 min-w-[160px]">
-                      <p className="text-[13px] font-medium text-foreground truncate">{stop.clienteNombre}</p>
-                      {stop.notas && <p className="text-[11px] text-muted-foreground truncate">{stop.notas}</p>}
-                    </div>
-                    <div className="w-[200px]">
-                      <p className="text-[13px] text-foreground/70 truncate">{stop.clienteDireccion || '-'}</p>
-                    </div>
-                    <div className="w-[60px] text-center">
-                      <span className="text-[13px] text-foreground/70">
-                        {stop.duracionEstimadaMinutos || 30}
-                      </span>
-                    </div>
-                    <div className="w-[90px] text-center">
-                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${paradaBadge.cls}`}>
-                        {paradaBadge.label}
-                      </span>
-                    </div>
+                  )}
+                  <div className="w-[50px] text-xs font-semibold text-foreground/70 text-center">#</div>
+                  <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
+                  <div className="w-[200px] text-xs font-semibold text-foreground/70">{tc('address')}</div>
+                  <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.minutes')}</div>
+                  <div className="w-[90px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
+                  {isEditable && (
+                    <div className="w-[90px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
+                  )}
+                </div>
+
+                {/* Table Body */}
+                {sortedStops.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <MapPin className="w-12 h-12 text-muted-foreground/60 mb-3" />
+                    <p className="text-sm font-medium text-foreground/80 mb-1">{t('detail.noStops')}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{t('detail.addClientsHint')}</p>
                     {isEditable && (
-                      <div className="w-[90px] flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleMoveStop(stop, 'up')}
-                          disabled={idx === 0}
-                          className="p-1 text-muted-foreground hover:text-foreground/70 disabled:opacity-30 rounded"
-                          title={t('detail.moveUp')}
-                        >
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleMoveStop(stop, 'down')}
-                          disabled={idx === sortedStops.length - 1}
-                          className="p-1 text-muted-foreground hover:text-foreground/70 disabled:opacity-30 rounded"
-                          title={t('detail.moveDown')}
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStop(stop.id)}
-                          className="p-1 text-muted-foreground hover:text-red-600 rounded"
-                          title={tc('delete')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setIsAddStopOpen(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {t('detail.addStop')}
+                      </button>
                     )}
                   </div>
-                );
-              })
-            )}
-          </div>
+                ) : (
+                  <>
+                    {pageStops.map((stop) => {
+                      const idxAbs = sortedStops.findIndex(s => s.id === stop.id);
+                      const paradaBadge = getParadaBadge(stop.estado);
+                      const isSelected = selectedStopIds.has(stop.id);
+                      return (
+                        <div
+                          key={stop.id}
+                          className={`flex items-center gap-3 px-4 py-3 border-b border-border-subtle transition-colors ${
+                            isSelected ? 'bg-green-50 dark:bg-green-950/30' : 'hover:bg-surface-1'
+                          }`}
+                        >
+                          {isEditable && (
+                            <div className="w-[28px] flex items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleStopSelected(stop.id)}
+                                aria-label={`Seleccionar parada ${stop.id}`}
+                                className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                              />
+                            </div>
+                          )}
+                          <div className="w-[50px] text-center">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-3 text-[11px] font-medium text-foreground/70">
+                              {stop.ordenVisita}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-[160px]">
+                            <p className="text-[13px] font-medium text-foreground truncate">{stop.clienteNombre}</p>
+                            {stop.notas && <p className="text-[11px] text-muted-foreground truncate">{stop.notas}</p>}
+                          </div>
+                          <div className="w-[200px]">
+                            <p className="text-[13px] text-foreground/70 truncate">{stop.clienteDireccion || '-'}</p>
+                          </div>
+                          <div className="w-[60px] text-center">
+                            <span className="text-[13px] text-foreground/70">
+                              {stop.duracionEstimadaMinutos || 30}
+                            </span>
+                          </div>
+                          <div className="w-[90px] text-center">
+                            <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${paradaBadge.cls}`}>
+                              {paradaBadge.label}
+                            </span>
+                          </div>
+                          {isEditable && (
+                            <div className="w-[90px] flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleMoveStop(stop, 'up')}
+                                disabled={idxAbs === 0}
+                                className="p-1 text-muted-foreground hover:text-foreground/70 disabled:opacity-30 rounded"
+                                title={t('detail.moveUp')}
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveStop(stop, 'down')}
+                                disabled={idxAbs === sortedStops.length - 1}
+                                className="p-1 text-muted-foreground hover:text-foreground/70 disabled:opacity-30 rounded"
+                                title={t('detail.moveDown')}
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStop(stop.id)}
+                                className="p-1 text-muted-foreground hover:text-red-600 rounded"
+                                title={tc('delete')}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {totalPagesStops > 1 && (
+                      <div className="flex items-center justify-between px-4 py-2 bg-surface-1 border-t border-border-subtle">
+                        <span className="text-xs text-muted-foreground">
+                          {t('detail.paginationRange', {
+                            from: startIdxStops + 1,
+                            to: Math.min(startIdxStops + STOPS_PER_PAGE, sortedStops.length),
+                            total: sortedStops.length,
+                          })}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setStopsPage(p => Math.max(1, p - 1))}
+                            disabled={safeStopsPage <= 1}
+                            className="px-2 py-1 text-xs font-medium border border-border-subtle rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-2"
+                          >
+                            {t('detail.previous')}
+                          </button>
+                          <span className="text-xs text-foreground/70 px-2">
+                            {safeStopsPage} / {totalPagesStops}
+                          </span>
+                          <button
+                            onClick={() => setStopsPage(p => Math.min(totalPagesStops, p + 1))}
+                            disabled={safeStopsPage >= totalPagesStops}
+                            className="px-2 py-1 text-xs font-medium border border-border-subtle rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-2"
+                          >
+                            {t('detail.next')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
-      {/* Add Stop Modal */}
+      {/* Add Stop Modal — multi-select */}
       <Modal
         isOpen={isAddStopOpen}
-        onClose={() => !actionLoading && setIsAddStopOpen(false)}
-        title={t('detail.addStop')}
+        onClose={() => !batchAddingStops && closeAddStopModal()}
+        title={t('detail.addStops', { defaultValue: 'Agregar paradas' })}
+        size="lg"
       >
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
-              {t('detail.client')} <span className="text-red-500">*</span>
-            </label>
-            <SearchableSelect
-              options={clients}
-              value={stopForm.clienteId ? stopForm.clienteId.toString() : ''}
-              onChange={(val) => setStopForm({ ...stopForm, clienteId: val ? parseInt(String(val)) : 0 })}
+          {/* Nota informativa: explica que los clientes están agrupados por zona */}
+          {routeZonaIds.size > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200">
+              <span className="mr-1">📍</span>
+              {t('detail.zoneInfoNote', {
+                zones: routeZonaNombres,
+                defaultValue: `Esta ruta cubre las zonas: ${routeZonaNombres}. Te sugerimos clientes de esas zonas arriba, pero puedes agregar clientes de cualquier zona.`,
+              })}
+            </div>
+          )}
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={stopSearch}
+              onChange={(e) => setStopSearch(e.target.value)}
               placeholder={t('detail.searchClient')}
+              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
+            <label className="block text-xs font-medium text-foreground/80 mb-1">
               {t('detail.estimatedDuration')}
             </label>
             <input
               type="number"
               value={stopForm.duracion}
-              onChange={(e) => setStopForm({ ...stopForm, duracion: parseInt(e.target.value) || 30 })}
+              onChange={(e) => setStopForm({ duracion: parseInt(e.target.value) || 30 })}
               className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">{tc('notes')}</label>
-            <textarea
-              value={stopForm.notas}
-              onChange={(e) => setStopForm({ ...stopForm, notas: e.target.value })}
-              rows={2}
-              placeholder={t('detail.stopNotesPlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-            />
-          </div>
+
+          {(() => {
+            // Filtrar dividers virtuales y aplicar busqueda. Excluimos clientes ya en la ruta.
+            const filtered = availableClients
+              .filter(c => !c.value.startsWith('__divider'))
+              .filter(c => !assignedClientIds.has(c.value))
+              .filter(c => {
+                if (!stopSearch) return true;
+                return c.label.toLowerCase().includes(stopSearch.toLowerCase());
+              });
+            const allSelected = filtered.length > 0 && filtered.every(c => selectedStopClienteIds.has(parseInt(c.value)));
+            const toggleSelectAll = () => {
+              setSelectedStopClienteIds(prev => {
+                const next = new Set(prev);
+                if (allSelected) {
+                  filtered.forEach(c => next.delete(parseInt(c.value)));
+                } else {
+                  filtered.forEach(c => next.add(parseInt(c.value)));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <>
+                {filtered.length > 0 && (
+                  <div className="flex items-center justify-between px-1">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
+                      {allSelected ? t('detail.deselectAll') : t('detail.selectAll')}
+                    </label>
+                    {selectedStopClienteIds.size > 0 && (
+                      <span className="text-xs font-medium text-foreground">
+                        {t('detail.selectedCount', { count: selectedStopClienteIds.size })}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {filtered.map(c => {
+                    const id = parseInt(c.value);
+                    const isSelected = selectedStopClienteIds.has(id);
+                    return (
+                      <label
+                        key={c.value}
+                        className={`flex items-center gap-3 px-3 py-2 border rounded-lg transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                            : 'border-border-subtle hover:bg-surface-1'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleStopClienteSelected(id)}
+                          className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-[13px] text-foreground flex-1">{c.label}</span>
+                      </label>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      {t('detail.noClientsAvailable', { defaultValue: 'No hay clientes disponibles' })}
+                    </p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
-              onClick={() => setIsAddStopOpen(false)}
-              disabled={actionLoading}
+              onClick={closeAddStopModal}
+              disabled={batchAddingStops}
               className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
-              Cancelar
+              {t('detail.cancel')}
             </button>
             <button
-              onClick={handleAddStop}
-              disabled={actionLoading || !stopForm.clienteId}
-              className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              onClick={handleAddStopsBatch}
+              disabled={batchAddingStops || selectedStopClienteIds.size === 0}
+              className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('detail.add')}
+              {batchAddingStops && <Loader2 className="w-4 h-4 animate-spin" />}
+              {selectedStopClienteIds.size > 0
+                ? t('detail.addStopsCount', { count: selectedStopClienteIds.size, defaultValue: `Agregar ${selectedStopClienteIds.size} parada${selectedStopClienteIds.size === 1 ? '' : 's'}` })
+                : t('detail.add')}
             </button>
           </div>
         </div>
@@ -982,10 +1492,10 @@ export default function RouteDetailPage() {
         </form>
       </Drawer>
 
-      {/* Add Pedido Modal */}
+      {/* Add Pedido Modal — multi-select */}
       <Modal
         isOpen={isPedidoModalOpen}
-        onClose={() => setIsPedidoModalOpen(false)}
+        onClose={closePedidoModal}
         title={t('detail.assignOrderToRoute')}
         size="lg"
       >
@@ -1005,49 +1515,115 @@ export default function RouteDetailPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-green-600" />
             </div>
-          ) : (
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {availablePedidos
-                .filter((p) => {
-                  if (!pedidoSearch) return true;
-                  const search = pedidoSearch.toLowerCase();
-                  return (
-                    p.numeroPedido?.toLowerCase().includes(search) ||
-                    p.clienteNombre?.toLowerCase().includes(search) ||
-                    p.id.toString().includes(search)
-                  );
-                })
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between px-3 py-2 border border-border-subtle rounded-lg hover:bg-surface-1"
-                  >
-                    <div>
-                      <span className="text-[13px] font-medium text-foreground">
-                        #{p.numeroPedido || p.id}
+          ) : (() => {
+            const filteredPedidos = availablePedidos.filter((p) => {
+              if (!pedidoSearch) return true;
+              const search = pedidoSearch.toLowerCase();
+              return (
+                p.numeroPedido?.toLowerCase().includes(search) ||
+                p.clienteNombre?.toLowerCase().includes(search) ||
+                p.id.toString().includes(search)
+              );
+            });
+            const allSelected = filteredPedidos.length > 0
+              && filteredPedidos.every((p) => selectedPedidoIds.has(p.id));
+
+            const toggleSelectAll = () => {
+              setSelectedPedidoIds(prev => {
+                const next = new Set(prev);
+                if (allSelected) {
+                  filteredPedidos.forEach(p => next.delete(p.id));
+                } else {
+                  filteredPedidos.forEach(p => next.add(p.id));
+                }
+                return next;
+              });
+            };
+
+            return (
+              <>
+                {filteredPedidos.length > 0 && (
+                  <div className="flex items-center justify-between px-1">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                      />
+                      {allSelected ? t('detail.deselectAll') : t('detail.selectAll')}
+                    </label>
+                    {selectedPedidoIds.size > 0 && (
+                      <span className="text-xs font-medium text-foreground">
+                        {t('detail.selectedCount', { count: selectedPedidoIds.size })}
                       </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {p.clienteNombre || t('detail.noClient')}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {formatCurrency(p.total || 0)}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleAddPedido(p.id)}
-                      className="px-3 py-1 text-xs font-medium rounded bg-success text-success-foreground hover:bg-success/90 transition-colors"
-                    >
-                      {t('detail.assign')}
-                    </button>
+                    )}
                   </div>
-                ))}
-              {availablePedidos.length === 0 && !loadingPedidos && (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  {t('detail.noConfirmedOrders')}
-                </p>
-              )}
-            </div>
-          )}
+                )}
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {filteredPedidos.map((p) => {
+                    const isSelected = selectedPedidoIds.has(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        className={`flex items-center gap-3 px-3 py-2 border rounded-lg transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                            : 'border-border-subtle hover:bg-surface-1'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => togglePedidoSelected(p.id)}
+                          className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <span className="text-[13px] font-medium text-foreground">
+                            #{p.numeroPedido || p.id}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {p.clienteNombre || t('detail.noClient')}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {formatCurrency(p.total || 0)}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {filteredPedidos.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      {t('detail.noConfirmedOrders')}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+                  <button
+                    type="button"
+                    onClick={closePedidoModal}
+                    disabled={batchAssigning}
+                    className="px-3 py-1.5 text-xs font-medium rounded border border-border-subtle bg-surface-1 text-foreground hover:bg-surface-2 disabled:opacity-50"
+                  >
+                    {t('detail.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignSelectedPedidos}
+                    disabled={selectedPedidoIds.size === 0 || batchAssigning}
+                    className="px-4 py-1.5 text-xs font-medium rounded bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {batchAssigning && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {selectedPedidoIds.size > 0
+                      ? t('detail.assignSelectedCount', { count: selectedPedidoIds.size })
+                      : t('detail.assignSelected')}
+                  </button>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </Modal>
     </div>

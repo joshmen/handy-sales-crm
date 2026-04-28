@@ -1,5 +1,6 @@
 using HandySuites.Application.Usuarios.Services;
 using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +9,8 @@ using HandySuites.Application.Common.DTOs;
 using FluentValidation;
 
 namespace HandySuites.Api.Endpoints;
+
+internal record TxUsuarioResult(IResult Response, int CreatedId);
 
 public static class UsuarioEndpoints
 {
@@ -139,7 +142,8 @@ public static class UsuarioEndpoints
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IValidator<CrearUsuarioDto> validator,
         [FromServices] AuthService authService,
-        [FromServices] IConfiguration config)
+        [FromServices] IConfiguration config,
+        [FromServices] ITransactionManager transactions)
     {
         try
         {
@@ -147,19 +151,30 @@ public static class UsuarioEndpoints
             if (!validation.IsValid)
                 return Results.BadRequest(new { errors = validation.Errors.Select(e => e.ErrorMessage).ToList() });
 
-            var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
-            if (!check.Allowed)
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+            // BR-020: enforcement check + INSERT in same transaction so the per-tenant
+            // advisory lock covers both.
+            var txResult = await transactions.ExecuteInTransactionAsync<TxUsuarioResult>(async () =>
+            {
+                var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
+                if (!check.Allowed)
+                {
+                    return new TxUsuarioResult(Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402), 0);
+                }
 
-            var usuarioId = await service.CrearUsuarioAsync(dto);
+                var usuarioId = await service.CrearUsuarioAsync(dto);
+                return new TxUsuarioResult(Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId }), usuarioId);
+            });
 
-            // Send invitation email so the new user can set their password
-            // App:FrontendUrl is validated at startup in Program.cs
-            var baseUrl = config["App:FrontendUrl"]!;
-            try { await authService.SendInvitationEmailAsync(usuarioId, baseUrl); }
-            catch { /* logged inside SendInvitationEmailAsync */ }
+            if (txResult.CreatedId > 0)
+            {
+                // Send invitation email so the new user can set their password
+                // App:FrontendUrl is validated at startup in Program.cs
+                var baseUrl = config["App:FrontendUrl"]!;
+                try { await authService.SendInvitationEmailAsync(txResult.CreatedId, baseUrl); }
+                catch { /* logged inside SendInvitationEmailAsync */ }
+            }
 
-            return Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId });
+            return txResult.Response;
         }
         catch (UnauthorizedAccessException)
         {
@@ -195,17 +210,21 @@ public static class UsuarioEndpoints
         }
     }
 
-    private static async Task<IResult> DeleteUsuario(int id, UsuarioService service)
+    private static async Task<IResult> DeleteUsuario(int id, bool? forzar, UsuarioService service)
     {
         try
         {
-            var success = await service.EliminarUsuarioAsync(id);
-            if (!success)
-                return Results.NotFound($"Usuario con ID {id} no encontrado");
-
-            return Results.Ok();
+            var result = await service.EliminarUsuarioAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PedidosActivos > 0)
+                return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
+            return Results.NotFound(new { error = result.Error ?? $"Usuario con ID {id} no encontrado" });
         }
-        catch (Exception ex)
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception)
         {
             return Results.Problem("Error al eliminar usuario");
         }

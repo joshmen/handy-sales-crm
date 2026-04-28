@@ -51,8 +51,8 @@ public class MovimientoInventarioFiltroDto
     public DateTime? FechaDesde { get; set; }
     public DateTime? FechaHasta { get; set; }
     public string? Busqueda { get; set; }
-    public int Pagina { get; set; } = 1;
-    public int TamanoPagina { get; set; } = 20;
+    public int? Pagina { get; set; }
+    public int? TamanoPagina { get; set; }
 }
 
 public class MovimientoInventarioPaginadoDto

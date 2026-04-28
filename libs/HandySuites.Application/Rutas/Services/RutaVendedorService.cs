@@ -1,5 +1,6 @@
 using HandySuites.Application.Ai.DTOs;
 using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Interfaces;
 using HandySuites.Domain.Entities;
@@ -12,28 +13,67 @@ public class RutaVendedorService
 {
     private readonly IRutaVendedorRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITransactionManager _transactions;
     private readonly IAiGatewayService? _aiGateway;
     private readonly ILogger<RutaVendedorService>? _logger;
 
     public RutaVendedorService(
         IRutaVendedorRepository repo,
         ICurrentTenant tenant,
+        ITransactionManager transactions,
         IAiGatewayService? aiGateway = null,
         ILogger<RutaVendedorService>? logger = null)
     {
         _repo = repo;
         _tenant = tenant;
+        _transactions = transactions;
         _aiGateway = aiGateway;
         _logger = logger;
     }
 
+    // Vendedor/Viewer solo pueden operar paradas/estado de sus propias rutas.
+    // Admin, SuperAdmin y Supervisor pueden operar cualquier ruta del tenant.
+    private void EnsureRutaOperable(RutaVendedor ruta)
+    {
+        if (_tenant.IsAdmin || _tenant.IsSuperAdmin || _tenant.IsSupervisor) return;
+        if (int.TryParse(_tenant.UserId, out var currentUserId) && ruta.UsuarioId == currentUserId) return;
+        throw new UnauthorizedAccessException("No tienes permisos para operar esta ruta.");
+    }
+
     public async Task<int> CrearAsync(RutaVendedorCreateDto dto)
     {
+        // RBAC: vendedor/viewer solo puede crear rutas para sí mismo.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && !dto.EsTemplate
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && dto.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("No tienes permisos para asignar rutas a otros vendedores.");
+        }
+
+        // Resolver zonas finales (multi-zona): preferir ZonaIds del dto. Si no viene,
+        // hacer fallback a [ZonaId] legacy. Si tampoco hay zonaId, ruta sin zonas.
+        var zonaIds = ResolveZonaIds(dto.ZonaIds, dto.ZonaId);
+
+        // Existence checks (antes caían en 500 por FK violation).
+        if (!dto.EsTemplate && !await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
+            throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
+        foreach (var zId in zonaIds)
+        {
+            if (!await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
+                throw new InvalidOperationException($"La zona con ID {zId} no existe o no pertenece a tu empresa.");
+        }
+
+        // Para mantener compat con queries que aún filtran por r.ZonaId, persistimos
+        // la primera zona como la legacy ZonaId. La junction RutasZonas tiene la lista
+        // completa.
+        var legacyZonaId = zonaIds.FirstOrDefault();
+
         var ruta = new RutaVendedor
         {
             TenantId = _tenant.TenantId,
             UsuarioId = dto.EsTemplate ? null : dto.UsuarioId,
-            ZonaId = dto.ZonaId,
+            ZonaId = legacyZonaId == 0 ? null : legacyZonaId,
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
             Fecha = dto.EsTemplate ? DateTime.UtcNow.Date : dto.Fecha.Date,
@@ -46,30 +86,56 @@ public class RutaVendedorService
             CreadoPor = _tenant.UserId
         };
 
-        var rutaId = await _repo.CrearAsync(ruta);
-
-        // Agregar detalles si se proporcionan
-        if (dto.Detalles?.Any() == true)
+        // BR-040 (Audit HIGH-5, Abril 2026): header + detalles atómico. Si falla
+        // cualquier detalle, la ruta entera rollback — no dejamos paradas parciales.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            foreach (var detalleDto in dto.Detalles.OrderBy(d => d.OrdenVisita))
-            {
-                var detalle = new RutaDetalle
-                {
-                    RutaId = rutaId,
-                    ClienteId = detalleDto.ClienteId,
-                    OrdenVisita = detalleDto.OrdenVisita,
-                    HoraEstimadaLlegada = detalleDto.HoraEstimadaLlegada,
-                    DuracionEstimadaMinutos = detalleDto.DuracionEstimadaMinutos,
-                    Notas = detalleDto.Notas,
-                    Estado = EstadoParada.Pendiente,
-                    CreadoEn = DateTime.UtcNow,
-                    CreadoPor = _tenant.UserId
-                };
-                await _repo.AgregarDetalleAsync(detalle);
-            }
-        }
+            var rutaId = await _repo.CrearAsync(ruta);
 
-        return rutaId;
+            // Persist multi-zona junction
+            if (zonaIds.Count > 0)
+            {
+                await _repo.ReemplazarZonasAsync(rutaId, zonaIds, _tenant.TenantId);
+            }
+
+            if (dto.Detalles?.Any() == true)
+            {
+                foreach (var detalleDto in dto.Detalles.OrderBy(d => d.OrdenVisita))
+                {
+                    var detalle = new RutaDetalle
+                    {
+                        RutaId = rutaId,
+                        ClienteId = detalleDto.ClienteId,
+                        OrdenVisita = detalleDto.OrdenVisita,
+                        HoraEstimadaLlegada = detalleDto.HoraEstimadaLlegada,
+                        DuracionEstimadaMinutos = detalleDto.DuracionEstimadaMinutos,
+                        Notas = detalleDto.Notas,
+                        Estado = EstadoParada.Pendiente,
+                        CreadoEn = DateTime.UtcNow,
+                        CreadoPor = _tenant.UserId
+                    };
+                    await _repo.AgregarDetalleAsync(detalle);
+                }
+            }
+
+            return rutaId;
+        });
+    }
+
+    /// <summary>
+    /// Combina ZonaIds (multi-zona, preferred) y ZonaId legacy (single) en una lista
+    /// final de IDs de zonas. Reglas:
+    /// - Si ZonaIds está poblada → usar esa (deduplicada).
+    /// - Si ZonaIds null/empty pero ZonaId tiene valor → [ZonaId].
+    /// - Si ambos null → lista vacía (ruta sin zonas).
+    /// </summary>
+    private static List<int> ResolveZonaIds(List<int>? zonaIds, int? zonaIdLegacy)
+    {
+        if (zonaIds is { Count: > 0 })
+            return zonaIds.Where(z => z > 0).Distinct().ToList();
+        if (zonaIdLegacy is int z && z > 0)
+            return new List<int> { z };
+        return new List<int>();
     }
 
     public async Task<RutaVendedorDto?> ObtenerPorIdAsync(int id)
@@ -81,6 +147,14 @@ public class RutaVendedorService
         var entidad = await _repo.ObtenerEntidadAsync(id);
         if (entidad?.TenantId != _tenant.TenantId && !_tenant.IsSuperAdmin)
             throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta");
+
+        // RBAC: vendedor/viewer solo ve sus propias rutas (consistente con ObtenerPorFiltroAsync).
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && entidad?.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta");
+        }
 
         return ruta;
     }
@@ -119,12 +193,52 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
-        // No permitir editar rutas en progreso o completadas
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("No se puede editar una ruta que ya está en progreso o completada");
+        // RBAC: vendedor/viewer solo puede editar sus propias rutas y no puede reasignarlas.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId))
+        {
+            if (ruta.UsuarioId != currentUserId)
+                throw new UnauthorizedAccessException("No tienes permisos para editar rutas de otros vendedores.");
+            if (dto.UsuarioId.HasValue && dto.UsuarioId.Value != currentUserId)
+                throw new UnauthorizedAccessException("No tienes permisos para reasignar rutas a otros vendedores.");
+        }
+
+        // Una vez enviada a carga la ruta es inmutable: si admin necesita cambiar
+        // datos, debe cancelar y crear nueva (sino el resumen del vendedor queda
+        // obsoleto). Reportado 2026-04-28.
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden editar rutas planificadas. Si la ruta ya fue enviada a carga, cancelala y crea una nueva.");
 
         if (dto.UsuarioId.HasValue) ruta.UsuarioId = dto.UsuarioId.Value;
-        if (dto.ZonaId.HasValue) ruta.ZonaId = dto.ZonaId;
+
+        // Multi-zona: si se envía ZonaIds (puede ser lista vacía explícita = quitar todas
+        // las zonas), reemplaza junction. Si solo se envía ZonaId legacy, sincroniza
+        // junction con [ZonaId]. Si ninguno se envía, no toca zonas.
+        var zonasUpdated = false;
+        List<int>? newZonaIds = null;
+        if (dto.ZonaIds != null)
+        {
+            newZonaIds = ResolveZonaIds(dto.ZonaIds, null);
+            zonasUpdated = true;
+        }
+        else if (dto.ZonaId.HasValue)
+        {
+            newZonaIds = ResolveZonaIds(null, dto.ZonaId);
+            zonasUpdated = true;
+        }
+
+        if (zonasUpdated && newZonaIds != null)
+        {
+            // Validate cada zona
+            foreach (var zId in newZonaIds)
+            {
+                if (!await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
+                    throw new InvalidOperationException($"La zona con ID {zId} no existe o no pertenece a tu empresa.");
+            }
+            // Sync legacy field con primera zona
+            ruta.ZonaId = newZonaIds.FirstOrDefault() == 0 ? null : newZonaIds.First();
+        }
+
         if (!string.IsNullOrEmpty(dto.Nombre)) ruta.Nombre = dto.Nombre;
         if (dto.Descripcion != null) ruta.Descripcion = dto.Descripcion;
         if (dto.Fecha.HasValue) ruta.Fecha = dto.Fecha.Value.Date;
@@ -135,13 +249,30 @@ public class RutaVendedorService
         ruta.ActualizadoEn = DateTime.UtcNow;
         ruta.ActualizadoPor = _tenant.UserId;
 
-        return await _repo.ActualizarAsync(ruta);
+        // Atomic: ruta header + zonas reemplazadas en una sola tx implícita.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
+        {
+            var ok = await _repo.ActualizarAsync(ruta);
+            if (ok && zonasUpdated && newZonaIds != null)
+            {
+                await _repo.ReemplazarZonasAsync(id, newZonaIds, _tenant.TenantId);
+            }
+            return ok;
+        });
     }
 
     public async Task<bool> EliminarAsync(int id)
     {
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        // RBAC: vendedor/viewer solo puede eliminar sus propias rutas.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && ruta.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("No tienes permisos para eliminar rutas de otros vendedores.");
+        }
 
         // No permitir eliminar rutas en progreso
         if (ruta.Estado == EstadoRuta.EnProgreso)
@@ -161,7 +292,34 @@ public class RutaVendedorService
         if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
             throw new UnauthorizedAccessException("Solo el vendedor asignado puede iniciar esta ruta");
 
+        // BR-RUTA-Iniciar (defensa en profundidad): la validación principal está en
+        // EnviarACargaAsync, pero si por algún flujo (template, importación, bug en
+        // otro endpoint) una ruta llega a CargaAceptada sin items, bloqueamos también
+        // aquí. Reportado 2026-04-27: usuario logró iniciar una ruta sin paradas
+        // saltándose la validación de EnviarACargaAsync.
+        var faltantes = new List<string>();
+        if (ruta.Detalles == null || !ruta.Detalles.Any(d => d.Activo))
+            faltantes.Add("paradas");
+        var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(id, _tenant.TenantId);
+        if (pedidosAsignados.Count == 0)
+            faltantes.Add("pedidos asignados");
+        if (faltantes.Count > 0)
+            throw new InvalidOperationException(
+                $"No se puede iniciar la ruta: faltan {string.Join(", ", faltantes)}.");
+
         return await _repo.IniciarRutaAsync(id, DateTime.UtcNow);
+    }
+
+    public async Task<bool> AceptarRutaAsync(int id)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(id);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        var usuarioId = int.Parse(_tenant.UserId);
+        if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede aceptar esta ruta");
+
+        return await _repo.AceptarRutaAsync(id, DateTime.UtcNow);
     }
 
     public async Task<bool> CompletarRutaAsync(int id, double? kilometrosReales = null)
@@ -169,15 +327,45 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(id);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        // Solo el vendedor asignado, admin/super_admin o supervisor pueden completar.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && ruta.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede completar esta ruta");
+        }
+
         return await _repo.CompletarRutaAsync(id, DateTime.UtcNow, kilometrosReales);
     }
 
     public async Task<bool> CancelarRutaAsync(int id, string? motivo)
     {
-        var ruta = await _repo.ObtenerEntidadAsync(id);
-        if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+        var (ok, _, _) = await CancelarRutaDetalladoAsync(id, motivo);
+        return ok;
+    }
 
-        return await _repo.CancelarRutaAsync(id, motivo);
+    /// <summary>
+    /// Cancela la ruta y retorna info necesaria para que el endpoint web emita
+    /// push notification al vendedor cuando la ruta estaba activa (CargaAceptada o
+    /// EnProgreso). Antes el admin podía cancelar una ruta corriendo y el vendedor
+    /// no se enteraba hasta el siguiente sync manual.
+    /// </summary>
+    public async Task<(bool Ok, EstadoRuta? EstadoPrevio, int? VendedorId)> CancelarRutaDetalladoAsync(int id, string? motivo)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(id);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return (false, null, null);
+
+        // Solo el vendedor asignado, admin/super_admin o supervisor pueden cancelar.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+            && int.TryParse(_tenant.UserId, out var currentUserId)
+            && ruta.UsuarioId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede cancelar esta ruta");
+        }
+
+        var estadoPrevio = ruta.Estado;
+        var ok = await _repo.CancelarRutaAsync(id, motivo);
+        return (ok, estadoPrevio, ruta.UsuarioId);
     }
 
     // Gestión de paradas
@@ -187,8 +375,13 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar");
+        EnsureRutaOperable(ruta);
+
+        // Una vez enviada a carga (PendienteAceptar/CargaAceptada/etc) la ruta
+        // queda inmutable. Si el admin necesita cambiar, debe cancelar y recrear.
+        // Sin esto, el resumen del vendedor queda obsoleto. Reportado 2026-04-28.
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas");
 
         var detalle = new RutaDetalle
         {
@@ -211,16 +404,120 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("No se pueden eliminar paradas de una ruta en progreso");
 
         return await _repo.EliminarDetalleAsync(detalleId);
     }
 
+    /// <summary>
+    /// Agrega multiples paradas (clientes) a la ruta en una sola operacion.
+    /// Tolerante a fallos parciales: si un cliente falla (ej. ya esta en la ruta),
+    /// se reporta en Fallidas[] pero el resto se procesa. Asigna ordenVisita
+    /// incremental empezando desde el max actual + 1.
+    /// </summary>
+    public async Task<AgregarParadasBatchResultDto> AgregarParadasBatchAsync(int rutaId, AgregarParadasBatchRequest dto)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas");
+
+        var resultado = new AgregarParadasBatchResultDto();
+        var idsUnicos = dto.ClienteIds?.Distinct().ToList() ?? new List<int>();
+        if (idsUnicos.Count == 0) return resultado;
+
+        var ordenInicial = (ruta.Detalles?.Where(d => d.Activo).Max(d => (int?)d.OrdenVisita) ?? 0) + 1;
+        var duracionDefault = dto.DuracionEstimadaMinutos ?? 30;
+
+        var ordenActual = ordenInicial;
+        foreach (var clienteId in idsUnicos)
+        {
+            try
+            {
+                var detalle = new RutaDetalle
+                {
+                    RutaId = rutaId,
+                    ClienteId = clienteId,
+                    OrdenVisita = ordenActual,
+                    DuracionEstimadaMinutos = duracionDefault,
+                    Estado = EstadoParada.Pendiente,
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = _tenant.UserId,
+                };
+                var detalleId = await _repo.AgregarDetalleAsync(detalle);
+                resultado.Agregadas.Add(detalleId);
+                ordenActual++;
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidas.Add(new AgregarParadaFalloDto
+                {
+                    ClienteId = clienteId,
+                    Motivo = ex.Message,
+                });
+            }
+        }
+
+        return resultado;
+    }
+
+    /// <summary>
+    /// Remueve multiples paradas en una sola operacion, tolerante a fallos.
+    /// </summary>
+    public async Task<RemoverParadasBatchResultDto> RemoverParadasBatchAsync(int rutaId, List<int> detalleIds)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("No se pueden eliminar paradas de una ruta en progreso");
+
+        var resultado = new RemoverParadasBatchResultDto();
+        var idsUnicos = detalleIds?.Distinct().ToList() ?? new List<int>();
+
+        foreach (var detalleId in idsUnicos)
+        {
+            try
+            {
+                var ok = await _repo.EliminarDetalleAsync(detalleId);
+                if (ok)
+                    resultado.Removidas.Add(detalleId);
+                else
+                    resultado.Fallidas.Add(new RemoverParadaFalloDto
+                    {
+                        DetalleId = detalleId,
+                        Motivo = "No encontrada"
+                    });
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidas.Add(new RemoverParadaFalloDto
+                {
+                    DetalleId = detalleId,
+                    Motivo = ex.Message,
+                });
+            }
+        }
+
+        return resultado;
+    }
+
     public async Task<bool> ReordenarParadasAsync(int rutaId, ReordenarParadasDto dto)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+
+        EnsureRutaOperable(ruta);
 
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("No se pueden reordenar paradas de una ruta en progreso");
@@ -236,6 +533,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(detalle.RutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.EnProgreso)
             throw new InvalidOperationException("La ruta no está en progreso");
 
@@ -250,6 +549,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(detalle.RutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         return await _repo.SalirDeParadaAsync(detalleId, DateTime.UtcNow, dto.VisitaId, dto.PedidoId, dto.Notas);
     }
 
@@ -261,6 +562,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(detalle.RutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
+        EnsureRutaOperable(ruta);
+
         return await _repo.OmitirParadaAsync(detalleId, dto.RazonOmision);
     }
 
@@ -269,6 +572,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return null;
 
+        EnsureRutaOperable(ruta);
+
         return await _repo.ObtenerParadaActualAsync(rutaId);
     }
 
@@ -276,6 +581,8 @@ public class RutaVendedorService
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return null;
+
+        EnsureRutaOperable(ruta);
 
         return await _repo.ObtenerSiguienteParadaAsync(rutaId);
     }
@@ -289,9 +596,15 @@ public class RutaVendedorService
 
     public async Task<int> InstanciarTemplateAsync(int templateId, InstanciarTemplateDto dto)
     {
+        if (dto.UsuarioId <= 0)
+            throw new InvalidOperationException("Debe seleccionar un vendedor para asignar la ruta.");
+
         var template = await _repo.ObtenerTemplateConDetallesAsync(templateId, _tenant.TenantId);
         if (template == null)
             throw new InvalidOperationException("Template no encontrado");
+
+        if (!await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
+            throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
 
         var ruta = new RutaVendedor
         {
@@ -311,27 +624,31 @@ public class RutaVendedorService
             CreadoPor = _tenant.UserId
         };
 
-        var rutaId = await _repo.CrearAsync(ruta);
-
-        // Copy paradas from template
-        foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+        // BR-040: instanciación atómica — header + copia de paradas en una transacción.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            var nuevoDetalle = new RutaDetalle
-            {
-                RutaId = rutaId,
-                ClienteId = detalle.ClienteId,
-                OrdenVisita = detalle.OrdenVisita,
-                HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
-                DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
-                Notas = detalle.Notas,
-                Estado = EstadoParada.Pendiente,
-                CreadoEn = DateTime.UtcNow,
-                CreadoPor = _tenant.UserId
-            };
-            await _repo.AgregarDetalleAsync(nuevoDetalle);
-        }
+            var rutaId = await _repo.CrearAsync(ruta);
 
-        return rutaId;
+            // Copy paradas from template
+            foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+            {
+                var nuevoDetalle = new RutaDetalle
+                {
+                    RutaId = rutaId,
+                    ClienteId = detalle.ClienteId,
+                    OrdenVisita = detalle.OrdenVisita,
+                    HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
+                    DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
+                    Notas = detalle.Notas,
+                    Estado = EstadoParada.Pendiente,
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = _tenant.UserId
+                };
+                await _repo.AgregarDetalleAsync(nuevoDetalle);
+            }
+
+            return rutaId;
+        });
     }
 
     public async Task<int> DuplicarTemplateAsync(int templateId)
@@ -356,27 +673,31 @@ public class RutaVendedorService
             CreadoPor = _tenant.UserId
         };
 
-        var copiaId = await _repo.CrearAsync(copia);
-
-        // Copy paradas from original template
-        foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+        // BR-040: duplicación atómica.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            var nuevoDetalle = new RutaDetalle
-            {
-                RutaId = copiaId,
-                ClienteId = detalle.ClienteId,
-                OrdenVisita = detalle.OrdenVisita,
-                HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
-                DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
-                Notas = detalle.Notas,
-                Estado = EstadoParada.Pendiente,
-                CreadoEn = DateTime.UtcNow,
-                CreadoPor = _tenant.UserId
-            };
-            await _repo.AgregarDetalleAsync(nuevoDetalle);
-        }
+            var copiaId = await _repo.CrearAsync(copia);
 
-        return copiaId;
+            // Copy paradas from original template
+            foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+            {
+                var nuevoDetalle = new RutaDetalle
+                {
+                    RutaId = copiaId,
+                    ClienteId = detalle.ClienteId,
+                    OrdenVisita = detalle.OrdenVisita,
+                    HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
+                    DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
+                    Notas = detalle.Notas,
+                    Estado = EstadoParada.Pendiente,
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = _tenant.UserId
+                };
+                await _repo.AgregarDetalleAsync(nuevoDetalle);
+            }
+
+            return copiaId;
+        });
     }
 
     // Toggle activo
@@ -388,8 +709,13 @@ public class RutaVendedorService
 
     // === Carga de inventario ===
 
-    public Task<List<RutaCargaDto>> ObtenerCargaAsync(int rutaId)
-        => _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
+    public async Task<List<RutaCargaDto>> ObtenerCargaAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return new List<RutaCargaDto>();
+        EnsureRutaOperable(ruta);
+        return await _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
+    }
 
     public async Task AsignarProductoVentaAsync(int rutaId, AsignarProductoVentaRequest dto)
     {
@@ -397,8 +723,10 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
-        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
-            throw new InvalidOperationException("No se pueden agregar productos a una ruta en este estado");
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden agregar productos a rutas planificadas");
 
         await _repo.AsignarProductoVentaAsync(rutaId, dto.ProductoId, dto.Cantidad, dto.PrecioUnitario ?? 0, _tenant.TenantId);
     }
@@ -409,19 +737,84 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden remover productos de rutas planificadas. Si la ruta ya fue enviada a carga, cancelala.");
+
         await _repo.RemoverProductoCargaAsync(rutaId, productoId, _tenant.TenantId);
     }
 
-    public Task<List<RutaPedidoAsignadoDto>> ObtenerPedidosAsignadosAsync(int rutaId)
-        => _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
+    public async Task<List<RutaPedidoAsignadoDto>> ObtenerPedidosAsignadosAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId) return new List<RutaPedidoAsignadoDto>();
+        EnsureRutaOperable(ruta);
+        return await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
+    }
 
-    public async Task AsignarPedidoAsync(int rutaId, int pedidoId)
+    /// <summary>
+    /// Asigna un pedido a la ruta. Retorna info necesaria para que el endpoint
+    /// emita push notification al vendedor cuando la ruta ya está activa
+    /// (CargaAceptada o EnProgreso) — antes el admin asignaba pedidos a una
+    /// ruta corriendo y el vendedor no se enteraba hasta el siguiente sync manual.
+    /// </summary>
+    public async Task<(EstadoRuta Estado, int? VendedorId)> AsignarPedidoAsync(int rutaId, int pedidoId)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden asignar pedidos a rutas planificadas. Si la ruta ya fue enviada a carga, cancelala y crea una nueva.");
+
         await _repo.AsignarPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+
+        return (ruta.Estado, ruta.UsuarioId);
+    }
+
+    /// <summary>
+    /// Asigna múltiples pedidos a la ruta de forma tolerante a fallos parciales:
+    /// si un pedido individual falla (ya asignado a otra ruta, cancelado, etc.),
+    /// se reporta en `Fallidos` pero el resto se procesa. Retorna también
+    /// `EstadoRuta` y `VendedorId` para que el endpoint emita push notification
+    /// si la ruta ya está activa.
+    /// </summary>
+    public async Task<(AsignarPedidosBatchResultDto Resultado, EstadoRuta Estado, int? VendedorId)>
+        AsignarPedidosBatchAsync(int rutaId, List<int> pedidoIds)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden asignar pedidos a rutas planificadas. Si la ruta ya fue enviada a carga, cancelala y crea una nueva.");
+
+        var resultado = new AsignarPedidosBatchResultDto();
+        var idsUnicos = pedidoIds?.Distinct().ToList() ?? new List<int>();
+
+        foreach (var pedidoId in idsUnicos)
+        {
+            try
+            {
+                await _repo.AsignarPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+                resultado.Asignados.Add(pedidoId);
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidos.Add(new AsignarPedidoFalloDto
+                {
+                    PedidoId = pedidoId,
+                    Motivo = ex.Message
+                });
+            }
+        }
+
+        return (resultado, ruta.Estado, ruta.UsuarioId);
     }
 
     public async Task RemoverPedidoAsync(int rutaId, int pedidoId)
@@ -430,7 +823,51 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden remover pedidos de rutas planificadas. Si la ruta ya fue enviada a carga, cancelala.");
+
         await _repo.RemoverPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+    }
+
+    /// <summary>
+    /// Remueve multiples pedidos de la ruta. Tolerante a fallos parciales:
+    /// si un pedido individual falla (ej. ya no existe), se reporta en Fallidos
+    /// pero el resto se procesa.
+    /// </summary>
+    public async Task<RemoverPedidosBatchResultDto> RemoverPedidosBatchAsync(int rutaId, List<int> pedidoIds)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
+
+        if (ruta.Estado != EstadoRuta.Planificada)
+            throw new InvalidOperationException("Solo se pueden remover pedidos de rutas planificadas. Si la ruta ya fue enviada a carga, cancelala.");
+
+        var resultado = new RemoverPedidosBatchResultDto();
+        var idsUnicos = pedidoIds?.Distinct().ToList() ?? new List<int>();
+
+        foreach (var pedidoId in idsUnicos)
+        {
+            try
+            {
+                await _repo.RemoverPedidoAsync(rutaId, pedidoId, _tenant.TenantId);
+                resultado.Removidos.Add(pedidoId);
+            }
+            catch (Exception ex)
+            {
+                resultado.Fallidos.Add(new AsignarPedidoFalloDto
+                {
+                    PedidoId = pedidoId,
+                    Motivo = ex.Message
+                });
+            }
+        }
+
+        return resultado;
     }
 
     public async Task ActualizarEfectivoInicialAsync(int rutaId, ActualizarEfectivoRequest dto)
@@ -439,34 +876,97 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
         await _repo.ActualizarEfectivoInicialAsync(rutaId, dto.Monto, dto.Comentarios, _tenant.TenantId);
     }
 
-    public async Task EnviarACargaAsync(int rutaId)
+    /// <summary>
+    /// Resumen de envio a carga — el endpoint usa estos datos para emitir push
+    /// notification al vendedor con info concreta (no solo "tienes una ruta nueva").
+    /// </summary>
+    public class EnviarACargaResumen
+    {
+        public int RutaId { get; set; }
+        public string RutaNombre { get; set; } = string.Empty;
+        public int? VendedorId { get; set; }
+        public int TotalParadas { get; set; }
+        public int TotalPedidos { get; set; }
+        public int TotalProductosCarga { get; set; }
+        public double MontoTotalEntrega { get; set; }
+    }
+
+    public async Task<EnviarACargaResumen> EnviarACargaAsync(int rutaId)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
+        EnsureRutaOperable(ruta);
+
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("Solo se pueden enviar a carga rutas planificadas");
 
-        await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId);
+        // BR-RUTA-Carga: validar que la ruta tiene los 3 elementos mínimos antes de enviarla
+        // al vendedor: paradas (clientes a visitar), pedidos asignados (carga del camión) y
+        // productos para venta directa en ruta. Reportado 2026-04-27: el admin podía enviar
+        // una ruta vacía y el vendedor recibía push de "ruta asignada" sin nada que entregar.
+        var faltantes = new List<string>();
+        var totalParadas = ruta.Detalles?.Count(d => d.Activo) ?? 0;
+        if (totalParadas == 0)
+            faltantes.Add("paradas (clientes a visitar)");
+        var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
+        if (pedidosAsignados.Count == 0)
+            faltantes.Add("pedidos asignados");
+        var carga = await _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
+        if (carga.Count == 0)
+            faltantes.Add("productos de carga");
+
+        if (faltantes.Count > 0)
+            throw new InvalidOperationException(
+                $"No se puede enviar la ruta a carga: faltan {string.Join(", ", faltantes)}.");
+
+        // Atomico: cambiar estado ruta + cambiar estado batch de los pedidos asignados.
+        // Reportado 2026-04-27: el admin tenia que cambiar el estado de cada pedido
+        // uno por uno desde /pedidos. Ahora "Send to Load" lo hace automatico.
+        var pedidoIds = pedidosAsignados.Select(p => p.PedidoId).ToList();
+        await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId, pedidoIds);
+
+        return new EnviarACargaResumen
+        {
+            RutaId = rutaId,
+            RutaNombre = ruta.Nombre,
+            VendedorId = ruta.UsuarioId,
+            TotalParadas = totalParadas,
+            TotalPedidos = pedidosAsignados.Count,
+            TotalProductosCarga = carga.Count,
+            MontoTotalEntrega = pedidosAsignados.Sum(p => p.MontoTotal),
+        };
     }
 
     // === Cierre de ruta ===
 
-    public Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId)
-        => _repo.ObtenerResumenCierreAsync(rutaId, _tenant.TenantId);
+    public async Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta != null && ruta.TenantId == _tenant.TenantId) EnsureRutaOperable(ruta);
+        return await _repo.ObtenerResumenCierreAsync(rutaId, _tenant.TenantId);
+    }
 
-    public Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId)
-        => _repo.ObtenerRetornoInventarioAsync(rutaId, _tenant.TenantId);
+    public async Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId)
+    {
+        var ruta = await _repo.ObtenerEntidadAsync(rutaId);
+        if (ruta != null && ruta.TenantId == _tenant.TenantId) EnsureRutaOperable(ruta);
+        return await _repo.ObtenerRetornoInventarioAsync(rutaId, _tenant.TenantId);
+    }
 
     public async Task ActualizarRetornoAsync(int rutaId, int productoId, ActualizarRetornoRequest dto)
     {
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         await _repo.ActualizarRetornoAsync(rutaId, productoId, dto.Mermas, dto.RecAlmacen, dto.CargaVehiculo, _tenant.TenantId);
     }
@@ -476,6 +976,8 @@ public class RutaVendedorService
         var ruta = await _repo.ObtenerEntidadAsync(rutaId);
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
+
+        EnsureRutaOperable(ruta);
 
         if (ruta.Estado != EstadoRuta.Completada)
             throw new InvalidOperationException("Solo se pueden cerrar rutas completadas/terminadas");

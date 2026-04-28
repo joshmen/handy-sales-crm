@@ -66,6 +66,90 @@ public class DetalleFacturaDto
     public decimal Descuento { get; set; }
 }
 
+/// <summary>
+/// DTO exclusivo para la representación impresa del CFDI (ticket térmico 80mm).
+/// Expone los campos del timbrado (sellos completos, cadena original, certificados,
+/// RFC del PAC) que el FacturaDto público omite por tamaño. Requiere que el
+/// comprobante esté en estado TIMBRADA (caller debe validar).
+/// </summary>
+public class FacturaTicketDataDto
+{
+    // Emisor
+    public string EmisorRfc { get; set; } = default!;
+    public string EmisorNombre { get; set; } = default!;
+    public string? EmisorRegimenFiscal { get; set; }
+    public string? EmisorDireccion { get; set; }
+    public string LugarExpedicion { get; set; } = default!; // C.P. emisor
+
+    // Receptor
+    public string ReceptorRfc { get; set; } = default!;
+    public string ReceptorNombre { get; set; } = default!;
+    public string? ReceptorRegimenFiscal { get; set; }
+    public string? ReceptorUsoCfdi { get; set; }
+    public string? ReceptorDomicilioFiscal { get; set; } // C.P. receptor
+
+    // Comprobante
+    public string? Serie { get; set; }
+    public int Folio { get; set; }
+    public DateTime FechaEmision { get; set; }
+    public string TipoComprobante { get; set; } = "I"; // I/E/T/N/P
+    public string? MetodoPago { get; set; }
+    public string? FormaPago { get; set; }
+    public string TipoExportacion { get; set; } = "01"; // Default "No aplica"
+
+    // Conceptos
+    public List<FacturaTicketItemDto> Items { get; set; } = new();
+
+    // Totales
+    public decimal Subtotal { get; set; }
+    public decimal Descuento { get; set; }
+    public decimal TotalImpuestosTrasladados { get; set; }
+    public decimal TotalImpuestosRetenidos { get; set; }
+    public decimal Total { get; set; }
+    public string Moneda { get; set; } = "MXN";
+    public decimal TipoCambio { get; set; } = 1m;
+
+    // Timbrado (requeridos por Anexo 20 4.0 en representación impresa)
+    public string Uuid { get; set; } = default!;
+    public DateTime FechaTimbrado { get; set; }
+    public DateTime? FechaCertificacion { get; set; }
+    public string NoCertificadoEmisor { get; set; } = default!;
+    public string NoCertificadoSat { get; set; } = default!;
+    public string RfcPac { get; set; } = default!;
+    public string SelloCfdi { get; set; } = default!;
+    public string SelloSat { get; set; } = default!;
+    public string CadenaOriginalSat { get; set; } = default!;
+
+    // Estado (si alguien intenta imprimir una CANCELADA el cliente debe avisar)
+    public string Estado { get; set; } = default!;
+}
+
+public class FacturaTicketItemDto
+{
+    public int NumeroLinea { get; set; }
+    public string ClaveProdServ { get; set; } = default!;
+    public string? ClaveUnidad { get; set; }
+    public string? Unidad { get; set; }
+    public string Descripcion { get; set; } = default!;
+    public decimal Cantidad { get; set; }
+    public decimal ValorUnitario { get; set; }
+    public decimal Importe { get; set; }
+    public decimal Descuento { get; set; }
+    public string ObjetoImp { get; set; } = "02";
+    // Impuestos por concepto (Anexo 20 4.0 — desglose obligatorio si ObjetoImp=="02")
+    public List<FacturaTicketImpuestoDto> Impuestos { get; set; } = new();
+}
+
+public class FacturaTicketImpuestoDto
+{
+    public string Tipo { get; set; } = default!;          // TRASLADO | RETENCION
+    public string Impuesto { get; set; } = default!;      // 001=ISR, 002=IVA, 003=IEPS
+    public string TipoFactor { get; set; } = default!;    // Tasa | Cuota | Exento
+    public decimal? TasaOCuota { get; set; }              // Ej. 0.16 para IVA 16%
+    public decimal Base { get; set; }
+    public decimal? Importe { get; set; }
+}
+
 public class CreateFacturaRequest
 {
     [Required]

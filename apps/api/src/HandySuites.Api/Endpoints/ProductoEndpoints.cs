@@ -9,8 +9,11 @@ using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using ITransactionManager = HandySuites.Application.Common.Interfaces.ITransactionManager;
 
 namespace HandySuites.Api.Endpoints;
+
+internal record TxProductoResult(IResult Response, int CreatedId);
 
 public static class ProductoEndpoints
 {
@@ -34,23 +37,35 @@ public static class ProductoEndpoints
             [FromServices] ProductoService servicio,
             [FromServices] ISubscriptionEnforcementService enforcement,
             [FromServices] ICurrentTenant currentTenant,
-            [FromServices] IAiEmbeddingService embeddingService) =>
+            [FromServices] IAiEmbeddingService embeddingService,
+            [FromServices] ITransactionManager transactions) =>
         {
-            var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
-            if (!check.Allowed)
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
-
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
-            var id = await servicio.CrearProductoAsync(dto);
+            // BR-020: limit check + INSERT under single transaction so the per-tenant
+            // advisory lock covers both operations.
+            var txResult = await transactions.ExecuteInTransactionAsync<TxProductoResult>(async () =>
+            {
+                var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
+                if (!check.Allowed)
+                {
+                    return new TxProductoResult(Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402), 0);
+                }
 
-            var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
-            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
+                var id = await servicio.CrearProductoAsync(dto);
+                return new TxProductoResult(Results.Created($"/productos/{id}", new { id }), id);
+            });
 
-            return Results.Created($"/productos/{id}", new { id });
-        }).RequireAuthorization();
+            if (txResult.CreatedId > 0)
+            {
+                var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
+                _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", txResult.CreatedId, embeddingText);
+            }
+
+            return txResult.Response;
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/productos/{id:int}", async (
             int id,
@@ -75,13 +90,16 @@ public static class ProductoEndpoints
                 _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
             }
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/productos/{id:int}", async (int id, [FromServices] ProductoService servicio) =>
+        app.MapDelete("/productos/{id:int}", async (int id, bool? forzar, [FromServices] ProductoService servicio) =>
         {
-            var eliminado = await servicio.EliminarProductoAsync(id);
-            return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+            var result = await servicio.EliminarProductoAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PedidosActivos > 0)
+                return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
+            return Results.NotFound();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/productos/{id:int}/activo", async (int id, [FromBody] CambiarActivoDto dto, [FromServices] ProductoService servicio, ILogger<ProductoService> logger) =>
         {
@@ -89,7 +107,7 @@ public static class ProductoEndpoints
             var actualizado = await servicio.CambiarActivoAsync(id, dto.Activo);
             logger.LogInformation("[PATCH /productos/{Id}/activo] Resultado: actualizado={Actualizado}", id, actualizado);
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/productos/batch-toggle", async (ProductoBatchToggleRequest request, [FromServices] ProductoService servicio) =>
         {
@@ -98,7 +116,7 @@ public static class ProductoEndpoints
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPost("/productos/{id:int}/imagen", async (
             int id,
@@ -145,7 +163,7 @@ public static class ProductoEndpoints
             }
         })
         .DisableAntiforgery()
-        .RequireAuthorization();
+        .RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/productos/{id:int}/imagen", async (
             int id,
@@ -165,7 +183,7 @@ public static class ProductoEndpoints
 
             await servicio.ActualizarImagenAsync(id, null);
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 
     private static string? ExtractPublicIdFromUrl(string url)

@@ -7,8 +7,12 @@ public class RutaVendedorCreateDtoValidator : AbstractValidator<RutaVendedorCrea
 {
     public RutaVendedorCreateDtoValidator()
     {
-        RuleFor(x => x.UsuarioId)
-            .GreaterThan(0).WithMessage("Debe seleccionar un vendedor válido.");
+        // Templates no tienen vendedor asignado (se asigna al instanciar la plantilla).
+        When(x => !x.EsTemplate, () =>
+        {
+            RuleFor(x => x.UsuarioId)
+                .GreaterThan(0).WithMessage("Debe seleccionar un vendedor válido.");
+        });
 
         RuleFor(x => x.Nombre)
             .NotEmpty().WithMessage("El nombre de la ruta es obligatorio.")

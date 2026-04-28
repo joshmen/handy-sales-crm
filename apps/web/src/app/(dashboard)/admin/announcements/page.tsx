@@ -40,6 +40,7 @@ import { tenantService } from '@/services/api/tenants';
 import type { Tenant } from '@/types/tenant';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 const tipoIcons: Record<string, { icon: React.ReactNode; color: string }> = {
@@ -64,6 +65,7 @@ const displayModeIcons: Record<string, { icon: React.ReactNode; color: string }>
 export default function AnnouncementsPage() {
   const t = useTranslations('admin.announcements');
   const ta = useTranslations('admin');
+  const showApiError = useApiErrorToast();
   const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
@@ -135,7 +137,9 @@ export default function AnnouncementsPage() {
   useEffect(() => {
     if (userRole === 'SUPER_ADMIN') {
       fetchData();
-      tenantService.getAll().then(setTenants).catch(() => {});
+      tenantService.getAll()
+        .then(setTenants)
+        .catch((err) => console.error('[Announcements] failed to load tenants for filter:', err));
     }
   }, [userRole, fetchData]);
 
@@ -167,8 +171,8 @@ export default function AnnouncementsPage() {
       setSelectedTenantIds([]);
       setSelectedRoles([]);
       fetchData();
-    } catch {
-      toast.error(t('errorCreating'));
+    } catch (err) {
+      showApiError(err, t('errorCreating'));
     } finally {
       setCreating(false);
     }
@@ -570,10 +574,10 @@ export default function AnnouncementsPage() {
               </div>
             )}
 
-            {/* Role multi-select */}
+            {/* Role multi-select — valores canónicos uppercase que coinciden con roles.nombre en BD */}
             {targetMode === 'roles' && (
               <div className="mt-2 space-y-1 border border-border-subtle rounded-lg p-2">
-                {['Admin', 'Vendedor'].map(role => (
+                {(['ADMIN', 'SUPERVISOR', 'VENDEDOR', 'VIEWER'] as const).map(role => (
                   <label key={role} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-surface-1 cursor-pointer">
                     <input
                       type="checkbox"
@@ -583,7 +587,12 @@ export default function AnnouncementsPage() {
                       )}
                       className="w-4 h-4 rounded border-border-default text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm text-foreground/80">{role === 'Admin' ? t('roleAdmins') : t('roleSellers')}</span>
+                    <span className="text-sm text-foreground/80">
+                      {role === 'ADMIN' ? t('roleAdmins')
+                        : role === 'VENDEDOR' ? t('roleSellers')
+                        : role === 'SUPERVISOR' ? t('roleSupervisors')
+                        : t('roleViewers')}
+                    </span>
                   </label>
                 ))}
                 {selectedRoles.length > 0 && (

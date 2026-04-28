@@ -1,18 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOrderDraftStore, useOrderSubtotal, useOrderImpuestos, useOrderTotal } from '@/stores';
+import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
-import { database } from '@/db/database';
-import RutaDetalle from '@/db/models/RutaDetalle';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
+import { round2 } from '@/utils/money';
 import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { usePricingMap } from '@/hooks/usePricing';
@@ -28,9 +28,10 @@ const METODO_PAGO_OPTIONS = [
   { value: 5, label: 'Otro', icon: MoreHorizontal },
 ];
 
-export default function CrearPedidoStep3() {
+function CrearPedidoStep3() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const [sending, setSending] = useState(false);
   const [showConfirmPedido, setShowConfirmPedido] = useState(false);
@@ -50,14 +51,29 @@ export default function CrearPedidoStep3() {
     reset,
   } = useOrderDraftStore();
 
-  const subtotal = useOrderSubtotal;
-  const impuestos = useOrderImpuestos();
-  const total = useOrderTotal();
+  const subtotalRaw = useOrderSubtotal();
 
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
   const { getPricing } = usePricingMap(clienteListaPreciosId);
   const hasSpecialPricing = !!clienteListaPreciosId;
+
+  // Aplicar descuentos por cantidad + promociones por línea, con totales corregidos.
+  const pricedItems = useMemo(() =>
+    items.map((item) => {
+      const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+      const lineTotal = pricing.precioConDescuento * item.cantidad;
+      return { item, pricing, lineTotal };
+    }),
+    [items, getPricing],
+  );
+  // Redondear a centavos en cada agregación monetaria — sin esto, sumar muchos
+  // items con precios fraccionarios produce drift visible (e.g. $1716.99 vs $1717.00).
+  const subtotal = round2(pricedItems.reduce((s, p) => s + p.lineTotal, 0));
+  const descuentoTotal = round2(subtotalRaw - subtotal);
+  const IVA_RATE = 0.16;
+  const impuestos = round2(subtotal * IVA_RATE);
+  const total = round2(subtotal + impuestos);
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
@@ -68,18 +84,29 @@ export default function CrearPedidoStep3() {
     setShowConfirmPedido(false);
     setSending(true);
     try {
-      const mappedItems = items.map((item) => ({
-        productoId: item.productoId,
-        productoServerId: item.productoServerId,
-        productoNombre: item.nombre,
-        cantidad: item.cantidad,
-        precioUnitario: item.precioUnitario,
-      }));
+      // Backend re-valida precio_unitario contra Producto.PrecioBase por seguridad,
+      // así que enviamos el precio base + descuento por separado (no precio descontado).
+      const mappedItems = pricedItems.map(({ item, pricing }) => {
+        // round2 antes de mandar al backend: el server compara con su propio
+        // cálculo y rechaza con error "monto no coincide" si hay drift.
+        const descuentoLinea = round2((item.precioUnitario - pricing.precioConDescuento) * item.cantidad);
+        return {
+          productoId: item.productoId,
+          productoServerId: item.productoServerId,
+          productoNombre: item.nombre,
+          cantidad: item.cantidad,
+          precioUnitario: item.precioUnitario,
+          descuento: descuentoLinea > 0 ? descuentoLinea : 0,
+        };
+      });
 
       if (isDirecta) {
         const montoTotal = total;
         const metodo = metodoPago ?? 0;
         const nombre = clienteNombre || 'Cliente';
+        const paradaId = useOrderDraftStore.getState().fromParadaId;
+        // Pedido + Cobro + parada.Completada en una sola transacción WDB:
+        // si cualquier paso falla, nada se persiste (evita parada colgada).
         const { pedido } = await createVentaDirectaOffline(
           clienteId || '',
           clienteServerId,
@@ -88,17 +115,9 @@ export default function CrearPedidoStep3() {
           metodo,
           montoTotal,
           undefined,
-          notas || undefined
+          notas || undefined,
+          paradaId
         );
-        // Mark parada as completed if this came from a route stop (WDB sync pushes to server)
-        const paradaId = useOrderDraftStore.getState().fromParadaId;
-        if (paradaId) {
-          try {
-            // database imported at top
-            const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
-            if (stopRecord) await stopRecord.depart();
-          } catch { /* ignore */ }
-        }
 
         // Navigate to cobro receipt for printing (VD = sale + immediate payment)
         router.replace({
@@ -118,6 +137,8 @@ export default function CrearPedidoStep3() {
         reset();
         // WDB sync will push pedido to server automatically via withChangesForTables
       } else {
+        const paradaId = useOrderDraftStore.getState().fromParadaId;
+        // Pedido + parada.Completada atómicos en una sola transacción WDB.
         const pedido = await createPedidoOffline(
           clienteId || '',
           clienteServerId,
@@ -125,17 +146,9 @@ export default function CrearPedidoStep3() {
           mappedItems,
           notas || undefined,
           0, // tipoVenta = Preventa
-          2  // estado = Confirmado (simplified flow: skip Enviado)
+          0, // estado = Borrador → admin/supervisor confirma desde web antes de meter a ruta
+          paradaId
         );
-        // Mark parada as completed if this came from a route stop
-        const paradaId = useOrderDraftStore.getState().fromParadaId;
-        if (paradaId) {
-          try {
-            // database imported at top
-            const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
-            if (stopRecord) await stopRecord.depart();
-          } catch { /* ignore */ }
-        }
         router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}${paradaId ? '&fromRuta=1' : ''}` as any);
         reset();
         // WDB sync will push pedido + ruta_detalle to server automatically
@@ -186,24 +199,29 @@ export default function CrearPedidoStep3() {
           <Text style={styles.sectionTitle}>Productos ({items.length})</Text>
         </View>
 
-        {items.map((item) => {
-          const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+        {pricedItems.map(({ item, pricing, lineTotal }) => {
+          const tieneDescuento = pricing.mejorDescuento > 0;
           return (
             <View key={item.productoId} style={styles.lineItem}>
               <View style={styles.lineContent}>
                 <Text style={styles.lineName} numberOfLines={1}>{item.nombre}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.linePrice, pricing.tieneListaPrecios && { color: '#16a34a' }]}>
-                    {formatCurrency(item.precioUnitario)} c/u
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Text style={[styles.linePrice, (tieneDescuento || pricing.tieneListaPrecios) && { color: '#16a34a' }]}>
+                    {formatCurrency(pricing.precioConDescuento)} c/u
                   </Text>
-                  {pricing.tieneListaPrecios && pricing.precioBase !== item.precioUnitario && (
+                  {tieneDescuento && (
                     <Text style={{ fontSize: 11, color: '#94a3b8', textDecorationLine: 'line-through' }}>
-                      {formatCurrency(pricing.precioBase)}
+                      {formatCurrency(item.precioUnitario)}
                     </Text>
                   )}
                   {pricing.promo && (
                     <Text style={{ fontSize: 9, color: '#d97706', fontWeight: '600', backgroundColor: '#fef3c7', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
-                      -{pricing.promo.porcentaje}%
+                      Promo -{pricing.promo.porcentaje}%
+                    </Text>
+                  )}
+                  {pricing.descuentoVolumen && (
+                    <Text style={{ fontSize: 9, color: '#7c3aed', fontWeight: '600', backgroundColor: '#ede9fe', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
+                      Vol -{pricing.descuentoVolumen.porcentaje}%
                     </Text>
                   )}
                 </View>
@@ -216,7 +234,7 @@ export default function CrearPedidoStep3() {
                 }}
               />
               <Text style={styles.lineTotal}>
-                {formatCurrency(item.precioUnitario * item.cantidad)}
+                {formatCurrency(lineTotal)}
               </Text>
             </View>
           );
@@ -224,6 +242,18 @@ export default function CrearPedidoStep3() {
 
         {/* Totals */}
         <Card className="mx-4 mt-3 mb-3">
+          {descuentoTotal > 0.005 && (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal sin descuento</Text>
+                <Text style={[styles.totalValue, { color: '#94a3b8', textDecorationLine: 'line-through' }]}>{formatCurrency(subtotalRaw)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={[styles.totalLabel, { color: '#16a34a' }]}>Descuentos</Text>
+                <Text style={[styles.totalValue, { color: '#16a34a' }]}>−{formatCurrency(descuentoTotal)}</Text>
+              </View>
+            </>
+          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
@@ -299,7 +329,7 @@ export default function CrearPedidoStep3() {
       {/* Send Button */}
       <View style={styles.footer}>
         <Button
-          title={sending ? 'Procesando...' : isDirecta ? 'Cobrar y Entregar' : 'Levantar Pedido'}
+          title={sending ? 'Procesando...' : isDirecta ? 'Cobrar y Entregar' : 'Registrar Pedido'}
           onPress={handleEnviar}
           loading={sending}
           disabled={items.length === 0 || sending}
@@ -310,7 +340,7 @@ export default function CrearPedidoStep3() {
 
       <ConfirmModal
         visible={showConfirmPedido}
-        title={isDirecta ? 'Venta Directa' : 'Levantar Pedido'}
+        title={isDirecta ? 'Venta Directa' : 'Registrar Pedido'}
         message={isDirecta
           ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total)}`
           : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total)}`}
@@ -431,3 +461,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
 });
+
+export default withErrorBoundary(CrearPedidoStep3, 'CrearPedidoStep3');

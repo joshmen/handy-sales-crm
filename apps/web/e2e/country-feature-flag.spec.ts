@@ -139,13 +139,15 @@ test('Change language to English — labels translate correctly', async () => {
   await sharedPage.goto('/settings?tab=appearance');
   await sharedPage.waitForTimeout(1500);
 
-  // Click language combobox (1st one)
+  // Click language combobox (1st one) — esperar a que esté hidratado
   const langCombobox = sharedPage.locator('button[role="combobox"]').nth(0);
+  await langCombobox.waitFor({ state: 'visible', timeout: 10000 });
   await langCombobox.click();
-  await sharedPage.waitForTimeout(500);
 
-  // Select English
+  // Select English — esperar opción visible antes de click (race condition común
+  // con Radix Select porque el portal renderea con delay)
   const enOption = sharedPage.locator('[role="option"]').filter({ hasText: 'English' });
+  await enOption.waitFor({ state: 'visible', timeout: 5000 });
   await enOption.click();
   await sharedPage.waitForTimeout(300);
 

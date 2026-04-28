@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -555,8 +556,9 @@ public class AiDataContextBuilder : IAiDataContextBuilder
     private async Task AppendVendedoresContextAsync(StringBuilder sb, DateTime since, int tenantId)
     {
         var vendedores = await _db.Usuarios
-            .Where(u => u.TenantId == tenantId && u.Activo && !u.EsSuperAdmin
-                        && u.RolExplicito != "VIEWER"
+            .Where(u => u.TenantId == tenantId && u.Activo
+                        && u.RolExplicito != RoleNames.SuperAdmin
+                        && u.RolExplicito != RoleNames.Viewer
                         && !u.Email.Contains("e2e"))
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync();

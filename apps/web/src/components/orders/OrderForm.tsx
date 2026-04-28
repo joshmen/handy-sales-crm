@@ -42,6 +42,10 @@ interface OrderFormProps {
   onSave: (orderData: Partial<Order>) => void;
   onCancel: () => void;
   onDirtyChange?: (dirty: boolean) => void;
+  // Modo solo-lectura: para pedidos que ya pasaron de Borrador y no pueden editarse
+  // (Confirmado/EnRuta/Entregado/Cancelado). Bloquea todos los inputs y oculta
+  // la sección de "Agregar Producto" + acciones de modificar items.
+  readOnly?: boolean;
 }
 
 export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
@@ -52,6 +56,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCancel,
   onDirtyChange,
+  readOnly = false,
 }, ref) => {
   const t = useTranslations('orders.form');
   const orderFormSchema = createOrderFormSchema(t);
@@ -219,6 +224,9 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
   return (
     <form ref={formRef} onSubmit={handleSubmit(onFormSubmit, scrollToFirstError)} className="flex flex-col gap-5 p-6" data-tour="order-form">
+      {/* En modo solo-lectura envolvemos en <fieldset disabled> para bloquear
+          todos los inputs/selects/botones sin tocar la lógica de cada uno. */}
+      <fieldset disabled={readOnly} className="contents">
       {/* Tipo de Venta */}
       {!order && (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-1 dark:bg-surface-3/50 dark:border-border-strong">
@@ -338,32 +346,35 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       {/* Divider */}
       <div className="h-px bg-surface-3" />
 
-      {/* Agregar productos */}
-      <div className="space-y-3" data-tour="order-add-product">
-        <h3 className="text-sm font-semibold text-foreground">{t('addProduct')}</h3>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <SearchableSelect
-              options={productOptions}
-              value={selectedProduct || null}
-              onChange={(val) => setSelectedProduct(val ? String(val) : '')}
-              placeholder={t('searchProduct')}
-              searchPlaceholder={t('searchProduct')}
+      {/* Agregar productos — oculto en modo solo-lectura (no se pueden modificar
+          items de un pedido que ya salió de Borrador). */}
+      {!readOnly && (
+        <div className="space-y-3" data-tour="order-add-product">
+          <h3 className="text-sm font-semibold text-foreground">{t('addProduct')}</h3>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <SearchableSelect
+                options={productOptions}
+                value={selectedProduct || null}
+                onChange={(val) => setSelectedProduct(val ? String(val) : '')}
+                placeholder={t('searchProduct')}
+                searchPlaceholder={t('searchProduct')}
+              />
+            </div>
+            <Input
+              type="number"
+              value={quantity}
+              onChange={e => setQuantity(parseInt(e.target.value) || 1)}
+              min="1"
+              className="w-[70px] text-center"
+              placeholder={t('qty')}
             />
+            <Button type="button" onClick={handleAddProduct} className="bg-success hover:bg-success/90 text-white px-4">
+              {t('add')}
+            </Button>
           </div>
-          <Input
-            type="number"
-            value={quantity}
-            onChange={e => setQuantity(parseInt(e.target.value) || 1)}
-            min="1"
-            className="w-[70px] text-center"
-            placeholder={t('qty')}
-          />
-          <Button type="button" onClick={handleAddProduct} className="bg-success hover:bg-success/90 text-white px-4">
-            {t('add')}
-          </Button>
         </div>
-      </div>
+      )}
 
       {/* Products table */}
       {orderItems.length > 0 ? (
@@ -410,13 +421,15 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
                   ${item.total.toFixed(2)}
                 </div>
                 <div className="w-[36px] flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -465,6 +478,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           <p className="mt-1 text-[13px] text-red-500">{errors.notes.message}</p>
         )}
       </div>
+      </fieldset>
     </form>
   );
 });

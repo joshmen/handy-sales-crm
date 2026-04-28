@@ -5,6 +5,7 @@ import { secureStorage } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/utils/constants';
 import { setAccessToken, authEventEmitter } from '@/api/client';
 import { queryClient } from '@/providers/QueryProvider';
+import { syncCursors } from '@/sync/cursors';
 
 interface AuthState {
   user: AuthUser | null;
@@ -41,7 +42,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     setAccessToken(null);
+    // Cancelar mutations en flight ANTES de limpiar el cache. Si una mutation
+    // termina post-logout, su onSuccess intenta setear state en componente
+    // unmounted o accede a queryClient ya limpio → warning + posible crash.
+    await queryClient.cancelQueries();
     queryClient.clear();
+    // CRÍTICO: limpiar sync cursors. Sin esto, si user A logea, sincroniza, hace
+    // logout, y luego user B (mismo device, distinto tenant) logea, los cursores
+    // de A persisten → próximo pull pasaría lastPulledAt de A al backend, que
+    // depende del filter por tenant del server. Defense-in-depth: borrar cursors.
+    syncCursors.clear();
     await secureStorage.clear([
       STORAGE_KEYS.ACCESS_TOKEN,
       STORAGE_KEYS.REFRESH_TOKEN,

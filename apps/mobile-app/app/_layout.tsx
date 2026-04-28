@@ -36,10 +36,17 @@ import { database } from '@/db/database';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
+import { useRealtime } from '@/hooks';
 
 function GlobalPermissionDialog() {
   const { visible, title, message, confirmText, cancelText, handleConfirm, handleCancel } = usePermissionDialogStore();
   return <ConfirmModal visible={visible} title={title} message={message} confirmText={confirmText} cancelText={cancelText} onConfirm={handleConfirm} onCancel={handleCancel} />;
+}
+
+// Mantiene la conexión SignalR mientras hay sesión + cablea eventos a invalidaciones React Query.
+function RealtimeBridge() {
+  useRealtime();
+  return null;
 }
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)
 
@@ -68,7 +75,7 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   // Back handler — confirm exit on home screen
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const isHome = segments[0] === '(tabs)' && !segments[1];
+    const isHome = segments[0] === '(tabs)' && !(segments as string[])[1];
     if (!isHome) return;
 
     const handler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -116,6 +123,24 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
     });
   }, [isAuthenticated]);
 
+  // Prefetch catálogos silencioso al startup post-auth (cubre caso de user
+  // ya logueado que reabre la app: el prefetch de useLogin solo corre en
+  // login fresh). Crítico para offline-first: zonas/categorías deben estar
+  // en cache TanStack (persist AsyncStorage) para que crear cliente sin red
+  // muestre los pickers con datos.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Import dinámico para evitar ciclo de módulos en startup
+    import('@/providers/QueryProvider').then(({ queryClient }) => {
+      import('@/api').then(({ catalogosApi }) => {
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'zonas'], queryFn: () => catalogosApi.getZonas() });
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-cliente'], queryFn: () => catalogosApi.getCategoriasCliente() });
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-producto'], queryFn: () => catalogosApi.getCategoriasProducto() });
+        queryClient.prefetchQuery({ queryKey: ['catalogos', 'familias-producto'], queryFn: () => catalogosApi.getFamiliasProducto() });
+      });
+    });
+  }, [isAuthenticated]);
+
   if (isLoading || onboardingDone === null) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
@@ -156,6 +181,7 @@ export default function RootLayout() {
           <QueryProvider>
             <StatusBar style={showSplash ? 'light' : 'dark'} />
             <AuthGate onReady={handleAppReady} />
+            <RealtimeBridge />
             {showSplash && appReady && (
               <AnimatedSplash
                 onFinish={handleSplashFinish}

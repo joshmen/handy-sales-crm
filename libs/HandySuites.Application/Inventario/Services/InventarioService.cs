@@ -24,14 +24,23 @@ public class InventarioService
     public Task<InventarioDto?> ObtenerPorProductoIdAsync(int productoId)
         => _repo.ObtenerPorProductoIdAsync(productoId, _tenant.TenantId);
 
-    public record CrearInventarioResult(bool Success, int Id = 0, string? Error = null);
+    public enum CrearInventarioErrorKind { None, ProductoNoExiste, Duplicado }
+    public record CrearInventarioResult(bool Success, int Id = 0, string? Error = null, CrearInventarioErrorKind ErrorKind = CrearInventarioErrorKind.None);
 
     public async Task<CrearInventarioResult> CrearInventarioAsync(InventarioCreateDto dto)
     {
+        // Producto debe existir en el tenant (antes caía en 500 por FK violation).
+        if (!await _repo.ExisteProductoEnTenantAsync(dto.ProductoId, _tenant.TenantId))
+            return new CrearInventarioResult(false,
+                Error: "El producto seleccionado no existe o no pertenece a tu empresa.",
+                ErrorKind: CrearInventarioErrorKind.ProductoNoExiste);
+
         // Validar que no exista inventario para este producto
         var existente = await _repo.ObtenerPorProductoIdAsync(dto.ProductoId, _tenant.TenantId);
         if (existente != null)
-            return new CrearInventarioResult(false, Error: "Este producto ya tiene un registro de inventario. Edítalo en lugar de crear uno nuevo.");
+            return new CrearInventarioResult(false,
+                Error: "Este producto ya tiene un registro de inventario. Edítalo en lugar de crear uno nuevo.",
+                ErrorKind: CrearInventarioErrorKind.Duplicado);
 
         var id = await _repo.CrearAsync(dto, _tenant.TenantId);
         return new CrearInventarioResult(true, id);

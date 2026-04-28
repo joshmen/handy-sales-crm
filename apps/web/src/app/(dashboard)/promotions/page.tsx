@@ -39,6 +39,7 @@ import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
 import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
@@ -67,6 +68,7 @@ export default function PromotionsPage() {
   const t = useTranslations('promotions');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const { formatDate: _fmtDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
   const [promotions, setPromotions] = useState<PromocionDto[]>([]);
@@ -335,8 +337,8 @@ export default function PromotionsPage() {
       await promotionService.delete(id);
       toast.success(t('deleted'));
       await fetchPromotions();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

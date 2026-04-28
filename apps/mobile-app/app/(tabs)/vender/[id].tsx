@@ -1,11 +1,11 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { performSync } from '@/sync/syncEngine';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from '@/hooks';
+import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido, useTenantLocale } from '@/hooks';
 import { LoadingSpinner, ConfirmModal } from '@/components/ui';
-import { formatCurrency, formatDateTime } from '@/utils/format';
 import { XCircle, Package, CheckCircle, Truck, ArrowRight, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
@@ -21,10 +21,15 @@ const normalizeEstado = (e: number): number => (e === 1 || e === 3) ? 2 : e;
 export default function OrderDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: order, isLoading } = useOfflineOrderById(id!);
-  const { data: detalles } = useOfflineOrderDetalles(id!);
-  const clientNames = useClientNameMap();
+  // detalles siempre se buscan por el id local del pedido resuelto. Si el `id`
+  // de la URL es un server_id (push notification), `order.id` ya viene como
+  // UUID local de WatermelonDB.
+  const { data: detalles } = useOfflineOrderDetalles(order?.id ?? '');
+  const clienteIds = useMemo(() => (order ? [order.clienteId] : []), [order]);
+  const clientNames = useClientNameMap(clienteIds);
   const confirmarMutation = useConfirmarPedido();
   const enRutaMutation = useEnRutaPedido();
   const entregarMutation = useEntregarPedido();
@@ -33,6 +38,18 @@ export default function OrderDetailScreen() {
   const [notasEntrega, setNotasEntrega] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void; destructive?: boolean; confirmText?: string; icon?: React.ReactNode }>({ visible: false, title: '', message: '', onConfirm: () => {} });
 
+  // Cuando llegamos desde un push (id numérico = server_id) y el pedido aún
+  // no se sincronizó (app en background/killed cuando llegó el push), forzar
+  // un pull para que aparezca en lugar de "Pedido no encontrado".
+  useEffect(() => {
+    if (!id) return;
+    const isServerId = /^\d+$/.test(id);
+    if (isServerId && !order && !isLoading) {
+      performSync().catch((e) => {
+        if (__DEV__) console.warn('[OrderDetail] performSync failed:', e);
+      });
+    }
+  }, [id, order, isLoading]);
 
   if (isLoading) {
     return <View style={styles.container}><LoadingSpinner message="Cargando pedido..." /></View>;
@@ -116,21 +133,12 @@ export default function OrderDetailScreen() {
             <Text style={styles.actionBtnText}>Confirmar Pedido</Text>
           </TouchableOpacity>
         );
-      case 2: // Confirmado → En Ruta
-        return (
-          <TouchableOpacity
-            testID="btn-en-ruta"
-            style={[styles.actionBtn, { backgroundColor: '#ea580c' }]}
-            onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(4), onError: (e: any) => { if (!e?.response || e.code === 'ERR_NETWORK') { updateLocalStatus(4); Toast.show({ type: 'success', text1: 'Guardado offline', text2: 'Se sincronizará automáticamente' }); } } }))}
-            disabled={anyLoading}
-            activeOpacity={0.8}
-            accessibilityLabel="Poner en Ruta"
-            accessibilityRole="button"
-          >
-            <Truck size={18} color="#fff" />
-            <Text style={styles.actionBtnText}>Poner en Ruta</Text>
-          </TouchableOpacity>
-        );
+      case 2: // Confirmado — el vendedor NO debe poner pedidos en ruta.
+        // Esa acción es responsabilidad del admin/supervisor desde el dashboard
+        // web (que valida que el pedido esté asignado a una RutaVendedor activa).
+        // Reportado 2026-04-27: si dejábamos el botón aquí, el vendedor recibía
+        // un 400 confuso al tocarlo porque el pedido no estaba en ninguna ruta.
+        return null;
       case 4: // EnRuta → Entregar
         return (
           <View>

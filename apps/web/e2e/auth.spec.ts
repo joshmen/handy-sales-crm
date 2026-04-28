@@ -58,15 +58,11 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/login/, { timeout: 10000 });
   });
 
-  test.skip('should logout successfully', async ({ page }) => {
-    // TODO: Implement once logout button is identified in the UI
-    await loginAsAdmin(page);
-
-    // Click logout - look for logout button in the sidebar or header
-    const logoutButton = page.getByRole('button', { name: /logout|salir|cerrar/i });
-    await logoutButton.or(page.locator('[data-testid="logout-button"]')).click({ force: true });
-
-    // Should redirect to login
-    await expect(page).toHaveURL(/login/, { timeout: 10000 });
+  test.skip('should logout successfully', () => {
+    // Logout invalida la sesión server-side (DeviceSession revoke + RefreshToken
+    // delete). Eso rompe storageState de tests posteriores en otros archivos
+    // (.auth/admin-desktop.json apunta a cookies cuyo backend ya no reconoce).
+    // Cubrimos logout via secureStorage + UI manual; testear el redirect aquí
+    // requeriría aislamiento de worker. Out of scope.
   });
 });

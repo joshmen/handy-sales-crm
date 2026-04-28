@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import {
   Plus,
   Edit2,
@@ -43,6 +44,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ClientCategoriesPage() {
   const t = useTranslations('clientCategories');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   // State
   const [categories, setCategories] = useState<ClientCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,8 +173,8 @@ export default function ClientCategoriesPage() {
       await clientCategoryService.delete(id);
       toast.success(t('categoryDeleted'));
       await loadCategories();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

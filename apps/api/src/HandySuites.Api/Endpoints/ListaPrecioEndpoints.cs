@@ -36,7 +36,7 @@ public static class ListaPrecioEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/listas-precios/{id:int}", async (int id, ListaPrecioCreateDto dto, IValidator<ListaPrecioCreateDto> validator, [FromServices] ListaPrecioService servicio) =>
         {
@@ -57,19 +57,22 @@ public static class ListaPrecioEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/listas-precios/{id:int}", async (int id, [FromServices] ListaPrecioService servicio) =>
+        app.MapDelete("/listas-precios/{id:int}", async (int id, bool? forzar, [FromServices] ListaPrecioService servicio) =>
         {
-            var eliminado = await servicio.EliminarListaPrecioAsync(id);
-            return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+            var result = await servicio.EliminarListaPrecioAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PreciosActivos > 0)
+                return Results.Conflict(new { error = result.Error, preciosActivos = result.PreciosActivos });
+            return Results.NotFound();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/listas-precios/{id:int}/activo", async (int id, [FromBody] ListaPrecioCambiarActivoDto dto, [FromServices] ListaPrecioService servicio) =>
         {
             var updated = await servicio.CambiarActivoAsync(id, dto.Activo);
             return updated ? Results.Ok(new { actualizado = true }) : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/listas-precios/batch-toggle", async (ListaPrecioBatchToggleRequest request, [FromServices] ListaPrecioService servicio) =>
         {
@@ -78,6 +81,6 @@ public static class ListaPrecioEndpoints
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados = count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }

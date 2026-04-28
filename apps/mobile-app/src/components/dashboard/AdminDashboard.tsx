@@ -7,12 +7,15 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { performSync } from '@/sync/syncEngine';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
+import { getGreetingForTz } from '@/utils/greeting';
 import { COLORS } from '@/theme/colors';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function AdminDashboard() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency, locale, tz } = useTenantLocale();
+  const greeting = getGreetingForTz(tz);
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -25,15 +28,9 @@ export function AdminDashboard() {
     setRefreshing(false);
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos dias';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
-  };
-
   const initials = (user?.name ?? 'A')
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
@@ -50,14 +47,18 @@ export function AdminDashboard() {
         <View style={styles.headerRow}>
           <View style={styles.headerTextContainer}>
             <Text style={styles.greeting}>
-              {getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'}
+              {greeting}, {user?.name?.split(' ')[0] || 'Admin'}
             </Text>
             <Text style={styles.dateText}>
-              {new Date().toLocaleDateString('es-MX', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
+              {(() => {
+                const s = new Intl.DateTimeFormat(locale, {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  timeZone: tz,
+                }).format(new Date());
+                return s.charAt(0).toUpperCase() + s.slice(1);
+              })()}
             </Text>
           </View>
           <View style={styles.headerAvatar}>
@@ -145,7 +146,7 @@ export function AdminDashboard() {
 
       {/* Quick Actions */}
       <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-        <Text style={styles.sectionLabel}>ACCIONES RAPIDAS</Text>
+        <Text style={styles.sectionLabel}>ACCIONES RÁPIDAS</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
@@ -163,8 +164,10 @@ export function AdminDashboard() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo')}
+            onPress={() => router.push('/(tabs)/equipo/actividad' as any)}
             activeOpacity={0.85}
+            accessibilityLabel="Ver reportes de actividad del equipo"
+            accessibilityRole="button"
           >
             <Text style={styles.quickActionText}>Reportes</Text>
           </TouchableOpacity>
@@ -178,6 +181,7 @@ export function AdminDashboard() {
 function PersonCard({ person, onPress }: { person: VendedorEquipo; onPress: () => void }) {
   const initials = person.nombre
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
@@ -222,7 +226,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
-    textTransform: 'capitalize',
   },
   kpiRow: { flexDirection: 'row', gap: 10, marginBottom: 24, paddingHorizontal: 16 },
   kpiCard: {

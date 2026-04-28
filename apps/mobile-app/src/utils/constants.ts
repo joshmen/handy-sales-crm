@@ -39,8 +39,23 @@ const getApiUrl = (): string => {
   return url;
 };
 
+// Main API (puerto 1050) hospeda el hub SignalR en /hubs/notifications.
+// En dev/local usa el mismo host del Mobile API cambiando puerto. En builds EAS
+// (preview/production) hay que pasar EXPO_PUBLIC_MAIN_API_URL explícito porque
+// las URLs de Railway no tienen puerto y el `.replace(:1052,:1050)` queda no-op
+// (terminaba apuntando al Mobile API por error → SignalR notifications rotas).
+const getMainApiUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_MAIN_API_URL) {
+    return process.env.EXPO_PUBLIC_MAIN_API_URL;
+  }
+  const mobile = getApiUrl();
+  // Local dev: sustituye el puerto 1052 → 1050. Sin efecto en URLs Railway.
+  return mobile.replace(/:1052(\b|$)/, ':1050');
+};
+
 export const API_CONFIG = {
   BASE_URL: getApiUrl(),
+  MAIN_BASE_URL: getMainApiUrl(),
   TIMEOUT: 15000,
 } as const;
 
@@ -88,13 +103,19 @@ export const ROUTE_STATUS: Record<number, string> = {
   1: 'En Curso',
   2: 'Completada',
   3: 'Cancelada',
+  4: 'Pend. aceptar',
+  5: 'Carga aceptada',
+  6: 'Cerrada',
 };
 
 export const ROUTE_STATUS_COLORS: Record<number, string> = {
-  0: '#3b82f6',
-  1: '#f59e0b',
-  2: '#22c55e',
-  3: '#ef4444',
+  0: '#3b82f6', // blue — Planificada
+  1: '#f59e0b', // amber — En Curso
+  2: '#22c55e', // green — Completada
+  3: '#ef4444', // red — Cancelada
+  4: '#d97706', // orange — Pend. aceptar
+  5: '#2563eb', // blue — Carga aceptada
+  6: '#16a34a', // green — Cerrada
 };
 
 /**

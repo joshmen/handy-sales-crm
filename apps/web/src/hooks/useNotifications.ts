@@ -9,11 +9,14 @@ import {
   type NotificationFilters,
 } from '@/services/api/notificationService';
 
-// Polling intervals (ms) — with SignalR connected, poll is just a safety net
-const POLL_FOREGROUND = 15_000;
-const POLL_BACKGROUND = 30_000;
-const POLL_FOREGROUND_WS = 30_000;
-const POLL_BACKGROUND_WS = 60_000;
+// Polling intervals (ms). Philosophy: SignalR push is the source of truth for
+// real-time updates. Polling is a pure safety net for when WS silently drops.
+// With a reconnect-driven refetch (see onReconnected effect below), the worst
+// case is a user seeing stale state until the next poll tick or reconnect —
+// whichever happens first.
+const POLL_FOREGROUND_NO_WS = 60_000;     // WS down, tab visible — recover reasonably fast
+const POLL_FOREGROUND_WS = 5 * 60_000;    // WS up — heavy safety net only
+const BACKGROUND_POLLING_DISABLED = 0;     // Tab hidden: don't poll at all
 
 interface UseNotificationsOptions {
   pollingInterval?: number;
@@ -24,9 +27,10 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   const { data: session } = useSession();
   const { isConnected, on, off } = useSignalR();
 
-  // Compute effective intervals based on WebSocket state
-  const pollingInterval = options.pollingInterval ?? (isConnected ? POLL_FOREGROUND_WS : POLL_FOREGROUND);
-  const backgroundInterval = options.backgroundInterval ?? (isConnected ? POLL_BACKGROUND_WS : POLL_BACKGROUND);
+  // Compute effective intervals based on WebSocket state.
+  // Background (tab hidden) doesn't poll at all — reconnect/visibility triggers handle catch-up.
+  const pollingInterval = options.pollingInterval ?? (isConnected ? POLL_FOREGROUND_WS : POLL_FOREGROUND_NO_WS);
+  const backgroundInterval = options.backgroundInterval ?? BACKGROUND_POLLING_DISABLED;
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
@@ -123,32 +127,53 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     return () => off('ReceiveNotification', handleReceive);
   }, [isConnected, on, off]);
 
-  // --- Polling with visibilitychange (reduced when WS connected) ---
+  // --- Polling with visibilitychange (heavy safety net only) ---
   useEffect(() => {
     if (!session?.user) return;
 
     fetchUnreadCount();
 
+    const stopInterval = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
     const startInterval = (delay: number) => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(fetchUnreadCount, delay);
+      stopInterval();
+      if (delay > 0) intervalRef.current = setInterval(fetchUnreadCount, delay);
     };
 
     startInterval(pollingInterval);
 
     const onVisibility = () => {
-      const delay = document.hidden ? backgroundInterval : pollingInterval;
-      startInterval(delay);
-      if (!document.hidden) fetchUnreadCount();
+      if (document.hidden) {
+        // Tab oculto: dejar de gastar requests. Al volver al tab hacemos catch-up.
+        startInterval(backgroundInterval);
+      } else {
+        // Tab visible: catch-up inmediato + reanudar polling
+        fetchUnreadCount();
+        startInterval(pollingInterval);
+      }
     };
 
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      stopInterval();
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [session, pollingInterval, backgroundInterval, fetchUnreadCount]);
+
+  // --- Catch-up on SignalR reconnect ---
+  // If WS silently dropped and reconnected, we may have missed push events.
+  // Do a one-shot refetch to resync state. Cheaper than aggressive polling.
+  useEffect(() => {
+    if (isConnected && session?.user) {
+      fetchUnreadCount();
+    }
+  }, [isConnected, session, fetchUnreadCount]);
 
   return {
     unreadCount,

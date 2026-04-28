@@ -1,5 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════
 -- PostgreSQL RLS for handy_billing database
+-- NOTE: tenant_id in billing is varchar/text (not int like handy_erp).
+-- Policy + interceptor set app.tenant_id as string.
+-- SA bypass works the same way via app.is_super_admin='true'.
 -- ═══════════════════════════════════════════════════════════════
 
 DO $$
@@ -18,8 +21,14 @@ BEGIN
     LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
+        -- NULLIF guard against empty string (see rls_enable.sql for rationale).
+        -- Billing tenant_id is text/varchar so no cast needed, but NULLIF keeps the
+        -- semantic of "empty = no context = no match" consistent with handy_erp scope.
         EXECUTE format(
-            'CREATE POLICY tenant_isolation ON %I FOR ALL USING (tenant_id = current_setting(''app.tenant_id'', true)::text)',
+            'CREATE POLICY tenant_isolation ON %I FOR ALL USING (
+                current_setting(''app.is_super_admin'', true) = ''true''
+                OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')
+            )',
             t
         );
         RAISE NOTICE 'RLS enabled on %', t;

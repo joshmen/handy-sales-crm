@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEstadoCuenta } from '@/hooks';
 import { Button, LoadingSpinner } from '@/components/ui';
-import { formatCurrency, formatDate } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { ArrowDown, ArrowUp, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { EstadoCuentaMovimiento } from '@/types';
@@ -13,6 +13,7 @@ export default function EstadoCuentaScreen() {
   const insets = useSafeAreaInsets();
   const { clienteId } = useLocalSearchParams<{ clienteId: string }>();
   const router = useRouter();
+  const { money: formatCurrency, date: formatDate } = useTenantLocale();
   const { data, isLoading } = useEstadoCuenta(Number(clienteId));
 
   if (isLoading || !data) {
@@ -64,7 +65,7 @@ export default function EstadoCuentaScreen() {
           <View>
             {/* Blue Header */}
             <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
                 <ChevronLeft size={22} color={COLORS.headerText} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Estado de Cuenta</Text>

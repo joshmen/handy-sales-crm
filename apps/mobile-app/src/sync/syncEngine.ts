@@ -40,7 +40,19 @@ interface SyncOptions {
   onError?: (error: Error) => void;
 }
 
+// WatermelonDB no permite synchronize() concurrentes. Deduplicamos llamadas paralelas
+// (típico cuando llegan varios eventos SignalR juntos) reusando la misma promesa.
+let inflightSync: Promise<void> | null = null;
+
 export async function performSync(options?: SyncOptions): Promise<void> {
+  if (inflightSync) return inflightSync;
+  inflightSync = doPerformSync(options).finally(() => {
+    inflightSync = null;
+  });
+  return inflightSync;
+}
+
+async function doPerformSync(options?: SyncOptions): Promise<void> {
   options?.onStart?.();
 
   let pullCount = 0;
@@ -53,7 +65,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
     try {
       await crashReporter.flushPendingReports();
     } catch (flushError) {
-      console.warn('[Sync] Crash report flush failed (non-fatal):', flushError);
+      if (__DEV__) console.warn('[Sync] Crash report flush failed (non-fatal):', flushError);
     }
 
     await synchronize({
@@ -70,8 +82,12 @@ export async function performSync(options?: SyncOptions): Promise<void> {
           entityTypes: null,
         });
 
-        const body = response.data as any;
-        const rawServerChanges = body.data ?? body;
+        // Defensive parse: pull endpoint puede devolver `{data: {...}}` o
+        // directamente `{...}` legado. Si body es null/undefined (network falla
+        // o backend devuelve vacío), tratamos como pull sin cambios para evitar
+        // crash en el resto del pipeline.
+        const body = (response.data ?? {}) as Record<string, any>;
+        const rawServerChanges = (body.data ?? body) as Record<string, any>;
         const serverTimestamp = body.serverTimestamp ?? rawServerChanges.serverTimestamp;
 
         // Security: discard any records that belong to a different tenant.
@@ -158,7 +174,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         await cleanUploadedFiles();
       }
     } catch (attachmentError) {
-      console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
+      if (__DEV__) console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
     }
 
     // Phase 4: Flush pending crash reports (deferred from offline)
@@ -169,12 +185,19 @@ export async function performSync(options?: SyncOptions): Promise<void> {
     }
 
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
-    syncCursors.setLastSyncAt(Date.now());
-    syncCursors.setLastSyncSummary(summary);
+    // Atomic batch write — await garantiza persistencia antes de resolver el
+    // sync. Sin esto, un logout justo después podía dejar storage stale.
+    await syncCursors.commitSyncResult(summary);
     options?.onFinish?.(summary);
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    console.error('[Sync] Failed:', err.message);
+    // Sync failures por red caída son normales en una app offline-first;
+    // solo logueamos a warn para no disparar el RedBox/Toast de RN.
+    const isNetworkError = /network|timeout|fetch|abort|ECONN/i.test(err.message);
+    if (__DEV__) {
+      if (isNetworkError) console.warn('[Sync] Network unavailable:', err.message);
+      else console.warn('[Sync] Failed:', err.message);
+    }
     options?.onError?.(err);
     throw err;
   } finally {

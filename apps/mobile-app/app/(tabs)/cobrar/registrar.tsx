@@ -10,9 +10,12 @@ import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
 import { Button, ConfirmModal } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
+import { useTenantLocale } from '@/hooks';
+import { round2 } from '@/utils/money';
 import { METODO_PAGO } from '@/types/cobro';
 import type Cliente from '@/db/models/Cliente';
+import type RutaDetalleModel from '@/db/models/RutaDetalle';
 import {
   Banknote,
   ArrowRightLeft,
@@ -39,9 +42,10 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
   5: <MoreHorizontal size={20} color="#6b7280" />,
 };
 
-export default function RegistrarCobroScreen() {
+function RegistrarCobroScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, number: formatNumber } = useTenantLocale();
   const user = useAuthStore(s => s.user);
   const params = useLocalSearchParams<{
     clienteId: string;
@@ -108,14 +112,17 @@ export default function RegistrarCobroScreen() {
     setSearchText('');
   };
 
-  const montoNum = parseFloat(monto) || 0;
+  // Redondear monto a 2 decimales antes de comparar con saldo: float drift
+  // (e.g. 999.9999999 vs 1000.0) podría rechazar pagos válidos al usuario.
+  const montoNum = round2(parseFloat(monto) || 0);
+  const saldoRounded = round2(effectiveSaldo);
   const MAX_MONTO = 999999.99;
   const isValid = montoNum > 0 && montoNum <= MAX_MONTO && !!effectiveClienteId;
-  const isOverSaldo = effectiveSaldo > 0 && montoNum > effectiveSaldo;
+  const isOverSaldo = saldoRounded > 0 && montoNum > saldoRounded;
 
   const handleConfirmar = () => {
     if (!isValid) {
-      if (montoNum > MAX_MONTO) setMontoError(`Máximo ${MAX_MONTO.toLocaleString('es-MX')}`);
+      if (montoNum > MAX_MONTO) setMontoError(`Máximo ${formatNumber(MAX_MONTO)}`);
       return;
     }
     setShowConfirmCobro(true);
@@ -149,7 +156,7 @@ export default function RegistrarCobroScreen() {
       // Mark parada as completed if cobro came from a route stop
       if (params.paradaId) {
         try {
-          const stopRecord = await database.get('ruta_detalles').find(params.paradaId);
+          const stopRecord = await database.get<RutaDetalleModel>('ruta_detalles').find(params.paradaId);
           if (stopRecord) await stopRecord.depart();
         } catch (e) { /* ignore */ if (__DEV__) console.warn('[Registrar]', e); }
       }
@@ -321,7 +328,7 @@ export default function RegistrarCobroScreen() {
           {montoError ? (
             <Text style={styles.montoError}>{montoError}</Text>
           ) : isOverSaldo ? (
-            <Text style={[styles.montoError, { color: '#ea580c' }]}>Monto excede el saldo pendiente (${effectiveSaldo.toFixed(2)})</Text>
+            <Text style={[styles.montoError, { color: '#ea580c' }]}>Monto excede el saldo pendiente ({formatCurrency(effectiveSaldo)})</Text>
           ) : null}
         </View>
 
@@ -426,7 +433,7 @@ export default function RegistrarCobroScreen() {
       <ConfirmModal
         visible={showConfirmCobro}
         title="Confirmar Cobro"
-        message={`Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`}
+        message={`¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`}
         confirmText="Confirmar"
         onConfirm={executeConfirmarCobro}
         onCancel={() => setShowConfirmCobro(false)}
@@ -709,3 +716,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
 });
+
+export default withErrorBoundary(RegistrarCobroScreen, 'RegistrarCobroScreen');

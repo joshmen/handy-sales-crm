@@ -6,9 +6,11 @@ interface CardProps {
   onPress?: () => void;
   className?: string;
   variant?: 'default' | 'elevated' | 'outlined';
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
-export function Card({ children, onPress, className = '', variant = 'default' }: CardProps) {
+export function Card({ children, onPress, className = '', variant = 'default', accessibilityLabel, testID }: CardProps) {
   const variantStyle = variant === 'elevated'
     ? styles.elevated
     : variant === 'outlined'
@@ -23,6 +25,8 @@ export function Card({ children, onPress, className = '', variant = 'default' }:
         onPress={onPress}
         activeOpacity={0.7}
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        testID={testID}
       >
         {children}
       </TouchableOpacity>

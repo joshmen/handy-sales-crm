@@ -14,4 +14,5 @@ public interface IDescuentoPorCantidadRepository
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId, string? usuarioActual = null);
     Task<bool> ExisteCantidadMinimaAsync(int? productoId, decimal cantidadMinima, int tenantId, int? excludeId = null);
     Task<List<DescuentoPorCantidadDto>> ObtenerEscalaDescuentosAsync(int? productoId, int tenantId, int? excludeId = null);
+    Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId);
 }

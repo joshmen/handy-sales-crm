@@ -226,6 +226,24 @@ export default function IntegrationsPage() {
       subtitle={activeCount !== 1 ? t("subtitlePlural", { active: activeCount, total: integrations.length }) : t("subtitle", { active: activeCount, total: integrations.length })}
     >
       <div className="space-y-4">
+        {/* Estado actual: módulo deshabilitado en Sidebar (Sidebar.tsx:319) porque
+            las integraciones no son funcionales aún. El UI catalog se mantiene
+            como preview pero los handlers de activate/deactivate no van a producir
+            un side-effect real. Se accede solo vía URL directa. */}
+        <div className="rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30 p-4">
+          <div className="flex gap-3">
+            <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-900 dark:text-amber-200">
+              <p className="font-semibold">Próximamente</p>
+              <p className="mt-1">
+                El módulo de integraciones aún está en desarrollo. Las opciones que
+                veas a continuación son una vista previa del catálogo planeado;
+                activarlas no producirá ningún efecto real todavía.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Filter tabs */}
         <div className="flex gap-2">
           {(["all", "active", "available"] as const).map((f) => (

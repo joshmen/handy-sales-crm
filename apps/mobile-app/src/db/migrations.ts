@@ -1,4 +1,4 @@
-import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns, createTable, unsafeExecuteSql } from '@nozbe/watermelondb/Schema/migrations';
 
 export const migrations = schemaMigrations({
   migrations: [
@@ -131,6 +131,128 @@ export const migrations = schemaMigrations({
             { name: 'uso_cfdi', type: 'string', isOptional: true },
             { name: 'cp_fiscal', type: 'string', isOptional: true },
             { name: 'requiere_factura', type: 'boolean' },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 9,
+      steps: [
+        addColumns({
+          table: 'clientes',
+          columns: [
+            // Dirección desglosada
+            { name: 'numero_exterior', type: 'string', isOptional: true },
+            { name: 'colonia', type: 'string', isOptional: true },
+            // Contacto
+            { name: 'encargado', type: 'string', isOptional: true },
+            // Comerciales
+            { name: 'descuento', type: 'number' },
+            { name: 'saldo', type: 'number' },
+            { name: 'venta_minima_efectiva', type: 'number' },
+            // Reglas de pago
+            { name: 'tipos_pago_permitidos', type: 'string' },
+            { name: 'tipo_pago_predeterminado', type: 'string' },
+          ],
+        }),
+      ],
+    },
+    {
+      // v10: índices en columnas hot path identificadas en sweep de performance.
+      // Sin estos, queries con .where() y .sortBy() sobre estas columnas hacen
+      // full table scan — perceptible con 1000+ filas.
+      toVersion: 10,
+      steps: [
+        // clientes: búsqueda por nombre (Q.like en useOfflineClients) + filtro activo
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON clientes(nombre);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_clientes_activo ON clientes(activo);'),
+        // pedidos: filtros estado + sort created_at + activo
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON pedidos(estado);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_pedidos_activo ON pedidos(activo);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON pedidos(created_at);'),
+        // cobros: filtro Q.gte(today) + activo + sort
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_cobros_activo ON cobros(activo);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_cobros_created_at ON cobros(created_at);'),
+        // visitas: filtro Q.gte(check_in_at) + activo
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_visitas_activo ON visitas(activo);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_visitas_check_in_at ON visitas(check_in_at);'),
+        // attachments: filtro upload_status oneOf
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_attachments_upload_status ON attachments(upload_status);'),
+        // rutas: filtro fecha window + usuario_id
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_rutas_fecha ON rutas(fecha);'),
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_rutas_usuario_id ON rutas(usuario_id);'),
+        // ruta_detalles: filtro estado
+        unsafeExecuteSql('CREATE INDEX IF NOT EXISTS idx_ruta_detalles_estado ON ruta_detalles(estado);'),
+      ],
+    },
+    {
+      // v11: fotos_json en visitas. El backend (ClienteVisita.Fotos) emite un JSON
+      // array de URLs de fotos ya subidas. Antes el mapper lo ignoraba y el
+      // supervisor no veia evidencia de visitas creadas en otras apps. Esta
+      // columna NO reemplaza la tabla attachments (visitas creadas localmente
+      // siguen usando attachments con upload retry); solo es para mostrar
+      // evidencia ya hecha cuando se hace pull del server.
+      toVersion: 11,
+      steps: [
+        addColumns({
+          table: 'visitas',
+          columns: [
+            { name: 'fotos_json', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    {
+      // v12: tablas ruta_pedidos y ruta_carga. Antes el sync solo traía paradas
+      // (ruta_detalles); el vendedor en mobile no veía qué pedidos llevaba en el
+      // camión ni qué productos sueltos tenía para venta directa. Reportado
+      // 2026-04-27. Backend ya envía estos campos (commit 670e1b5) — esta
+      // migration crea las tablas locales para consumirlos.
+      toVersion: 12,
+      steps: [
+        createTable({
+          name: 'ruta_pedidos',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'ruta_id', type: 'string', isIndexed: true },
+            { name: 'pedido_id', type: 'string', isIndexed: true },
+            { name: 'pedido_server_id', type: 'number' },
+            { name: 'estado', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'ruta_carga',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'ruta_id', type: 'string', isIndexed: true },
+            { name: 'producto_id', type: 'string', isIndexed: true },
+            { name: 'producto_server_id', type: 'number' },
+            { name: 'cantidad_entrega', type: 'number' },
+            { name: 'cantidad_venta', type: 'number' },
+            { name: 'cantidad_total', type: 'number' },
+            { name: 'precio_unitario', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    {
+      // v13: multi-zona en rutas. Backend ahora envía SyncRutaDto.ZonaIds[]
+      // (commit 26dab2a) — agregar columna JSON local para almacenar la lista.
+      // Más simple que junction local porque mobile no puede modificar zonas
+      // (read-only). Reportado 2026-04-27 — alineado con SFA/CPG industria
+      // (Handy.la, Salesforce Field Service, SAP Sales Cloud, Onfleet).
+      toVersion: 13,
+      steps: [
+        addColumns({
+          table: 'rutas',
+          columns: [
+            { name: 'zonas_json', type: 'string', isOptional: true },
           ],
         }),
       ],

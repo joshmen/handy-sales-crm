@@ -36,7 +36,7 @@ public static class PromocionesEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/promociones/{id:int}", async (int id, PromocionCreateDto dto, IValidator<PromocionCreateDto> validator, [FromServices] PromocionService servicio) =>
         {
@@ -57,19 +57,19 @@ public static class PromocionesEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/promociones/{id:int}", async (int id, [FromServices] PromocionService servicio) =>
         {
             var eliminado = await servicio.EliminarPromocionAsync(id);
             return eliminado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/promociones/{id:int}/activo", async (int id, [FromBody] PromocionCambiarActivoDto dto, [FromServices] PromocionService servicio) =>
         {
             var updated = await servicio.CambiarActivoAsync(id, dto.Activo);
             return updated ? Results.Ok(new { actualizado = true }) : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/promociones/batch-toggle", async ([FromBody] PromocionBatchToggleRequest request, [FromServices] PromocionService servicio) =>
         {
@@ -78,7 +78,7 @@ public static class PromocionesEndpoints
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados = count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }
 

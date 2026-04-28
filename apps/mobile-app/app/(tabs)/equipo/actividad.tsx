@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Clock } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Clock, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SbOrders, SbMap, SbPayments } from '@/components/icons/DashboardIcons';
 import { EmptyState } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { useActividadEquipo } from '@/hooks/useSupervisor';
 import { COLORS } from '@/theme/colors';
 import type { ActividadItem } from '@/api/schemas/supervisor';
@@ -42,6 +43,8 @@ function formatRelativeTime(isoDate: string): string {
 
 export default function ActividadEquipoScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { money: formatCurrency } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const { data: actividad, isLoading, refetch } = useActividadEquipo();
 
@@ -105,9 +108,18 @@ export default function ActividadEquipoScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Blue Header */}
+      {/* Blue Header con back */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Volver"
+          accessibilityRole="button"
+        >
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Actividad</Text>
+        <View style={{ width: 32 }} />
       </View>
 
       <FlatList
@@ -131,7 +143,7 @@ export default function ActividadEquipoScreen() {
           <EmptyState
             icon={<Clock size={48} color={COLORS.textTertiary} />}
             title="Sin actividad reciente"
-            message="Aqui veras la actividad del equipo en tiempo real"
+            message="Aquí verás la actividad del equipo en tiempo real"
           />
         }
       />
@@ -141,8 +153,9 @@ export default function ActividadEquipoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' as const },
-  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
+  backBtn: { width: 32, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const, flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8 },
   loadingText: { fontSize: 14, color: COLORS.textSecondary },
   listContent: { paddingTop: 8, paddingBottom: 24 },

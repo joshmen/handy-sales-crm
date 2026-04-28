@@ -33,7 +33,8 @@ import {
   SbTrendingUp,
 } from '@/components/layout/DashboardIcons';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from '@/hooks/useToast';
 import {
   dashboardService,
   VendedorPerformance,
@@ -89,6 +90,26 @@ export default function DashboardPage() {
   const tc = useTranslations('common');
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const authErrorShown = useRef(false);
+
+  // Mostrar toast si el middleware redirigió aquí por falta de permisos.
+  // Guard con useRef porque React Strict Mode monta useEffect dos veces en dev.
+  useEffect(() => {
+    if (authErrorShown.current) return;
+    const err = searchParams.get('error');
+    if (!err) return;
+    authErrorShown.current = true;
+    if (err === 'unauthorized') {
+      toast.error('No tienes permisos para acceder a esa sección.');
+    } else if (err === 'no_permission') {
+      toast.error('No tienes el permiso requerido para esa acción.');
+    }
+    // Limpia el query param para que el toast no se muestre de nuevo al recargar.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('error');
+    window.history.replaceState({}, '', url.toString());
+  }, [searchParams]);
   const { isImpersonating } = useImpersonationStore();
   const [isLoading, setIsLoading] = useState(true);
   const [vendedorPerf, setVendedorPerf] = useState<VendedorPerformance | null>(null);

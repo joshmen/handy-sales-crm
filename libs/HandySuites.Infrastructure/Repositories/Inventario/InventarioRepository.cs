@@ -136,11 +136,13 @@ public class InventarioRepository : IInventarioRepository
         }
 
         var totalItems = await query.CountAsync();
+        var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
+        var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
         var items = await query
             .OrderBy(i => i.Producto.Nombre)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
             .Select(i => new InventarioListaDto
             {
                 Id = i.Id,
@@ -161,8 +163,23 @@ public class InventarioRepository : IInventarioRepository
         {
             Items = items,
             TotalItems = totalItems,
-            Pagina = filtro.Pagina,
-            TamanoPagina = filtro.TamanoPagina
+            Pagina = pagina,
+            TamanoPagina = tamano
         };
+    }
+
+    public Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId)
+        => _db.Productos.AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);
+
+    // Advisory lock (PostgreSQL) para serializar movimientos de inventario sobre el
+    // mismo producto dentro de un tenant. Previene oversell por SALIDA paralelas.
+    // SQLite/otros providers: no-op silencioso (mismos tests unitarios funcionan).
+    public async Task AcquireProductoLockAsync(int tenantId, int productoId)
+    {
+        if (!_db.Database.IsNpgsql()) return;
+        await _db.Database.ExecuteSqlRawAsync(
+            "SELECT pg_advisory_xact_lock({0}, {1})",
+            tenantId, productoId);
     }
 }

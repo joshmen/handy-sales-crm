@@ -5,6 +5,7 @@ import { MapPin, Clock, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
+import { useTenantLocale } from '@/hooks';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 
@@ -24,7 +25,7 @@ function formatTimeAgo(dateStr: string): string {
   if (mins < 60) return `hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `hace ${hrs}h`;
-  return `hace ${Math.floor(hrs / 24)} dias`;
+  return `hace ${Math.floor(hrs / 24)} días`;
 }
 
 function VendedorDetalleContent() {
@@ -34,6 +35,7 @@ function VendedorDetalleContent() {
   const router = useRouter();
   const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId);
   const [refreshing, setRefreshing] = useState(false);
+  const { money: formatMoney } = useTenantLocale();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -41,32 +43,47 @@ function VendedorDetalleContent() {
     setRefreshing(false);
   };
 
-  const formatMoney = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`;
+  const Header = (
+    <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+      <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+        <ChevronLeft size={22} color={COLORS.headerText} />
+      </TouchableOpacity>
+      <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>
+      <View style={{ width: 32 }} />
+    </View>
+  );
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={styles.container}>
+        {Header}
+        <View style={[styles.center, { flex: 1 }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
       </View>
     );
   }
 
   if (!resumen) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <Text style={styles.errorText}>Vendedor no encontrado</Text>
+      <View style={styles.container}>
+        {Header}
+        <View style={[styles.center, { flex: 1, paddingHorizontal: 24 }]}>
+          <Text style={styles.errorText}>Vendedor no encontrado</Text>
+          <Text style={styles.errorHint}>Es posible que ya no pertenezca a tu equipo o haya sido desactivado.</Text>
+        </View>
       </View>
     );
   }
 
   const { vendedor, hoy, totalClientes, ultimaUbicacion } = resumen;
-  const initials = vendedor.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = vendedor.nombre.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <View style={styles.container}>
       {/* Blue Header — fixed outside scroll */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>
@@ -97,7 +114,7 @@ function VendedorDetalleContent() {
       {/* Today's stats — white cards, no colored top borders */}
       <Animated.View entering={FadeInDown.duration(400).delay(200)}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>RESUMEN DEL DIA</Text>
+          <Text style={styles.sectionLabel}>RESUMEN DEL DÍA</Text>
           <View style={styles.statGrid} testID="vendedor-stats">
             <StatCard label="Pedidos" value={hoy.pedidos} />
             <StatCard label="Ventas" value={formatMoney(hoy.ventas)} isMoney />
@@ -116,7 +133,7 @@ function VendedorDetalleContent() {
             <View style={styles.locationCard}>
               <View style={styles.locationRow}>
                 <MapPin size={18} color={COLORS.headerBg} />
-                <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicacion desconocida'}</Text>
+                <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicación desconocida'}</Text>
               </View>
               <View style={styles.locationRow}>
                 <Clock size={14} color={COLORS.textTertiary} />
@@ -145,7 +162,8 @@ const styles = StyleSheet.create({
   blueHeader: { backgroundColor: COLORS.headerBg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 14 },
   blueHeaderTitle: { fontSize: 17, fontWeight: '700', color: COLORS.headerText, textAlign: 'center', flex: 1 },
   scrollContent: { paddingTop: 8 },
-  errorText: { marginTop: 12, fontSize: 15, color: COLORS.textSecondary },
+  errorText: { fontSize: 16, fontWeight: '600', color: COLORS.foreground, textAlign: 'center' },
+  errorHint: { marginTop: 8, fontSize: 13, color: COLORS.textSecondary, textAlign: 'center' },
   profileHeader: { alignItems: 'center', paddingVertical: 24 },
   avatarLarge: {
     width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.background,

@@ -20,7 +20,7 @@ public static class ZonasEndpoints
             if (!result.Success)
                 return Results.BadRequest(new { error = result.Error });
             return Results.Created($"/zonas/{result.Id}", new { id = result.Id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/zonas", async ([FromServices] ZonaService servicio) =>
         {
@@ -40,6 +40,9 @@ public static class ZonasEndpoints
             if (exists == null)
                 return Results.NotFound();
 
+            // El Id viene de la URL; asignarlo al DTO antes del validator (que requiere Id > 0).
+            dto.Id = id;
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
@@ -49,7 +52,7 @@ public static class ZonasEndpoints
             if (!result.Success)
                 return Results.BadRequest(new { error = result.Error });
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/zonas/{id:int}", async (int id, [FromServices] ZonaService servicio) =>
         {
@@ -72,7 +75,7 @@ public static class ZonasEndpoints
             }
 
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/zonas/{id:int}/activo", async (int id, [FromBody] ZonaCambiarActivoDto dto, [FromServices] ZonaService servicio) =>
         {
@@ -86,7 +89,7 @@ public static class ZonasEndpoints
             }
 
             return Results.Ok(new { actualizado = true });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/zonas/batch-toggle", async (ZonaBatchToggleRequest request, [FromServices] ZonaService servicio) =>
         {
@@ -99,7 +102,7 @@ public static class ZonasEndpoints
                 return Results.Conflict(new { message = result.Error, clientesCount = result.ClientesCount });
 
             return Results.Ok(new { actualizados = request.Ids.Count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }
 

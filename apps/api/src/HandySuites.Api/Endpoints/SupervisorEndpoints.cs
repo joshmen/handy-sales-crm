@@ -1,6 +1,7 @@
 using HandySuites.Application.DeviceSessions.Interfaces;
 using HandySuites.Application.Usuarios.DTOs;
 using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +39,7 @@ public static class SupervisorEndpoints
                     u.Id,
                     u.Nombre,
                     u.Email,
-                    Rol = u.RolExplicito ?? (u.EsSuperAdmin ? "SUPER_ADMIN" : u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+                    Rol = u.RolExplicito ?? RoleNames.Vendedor,
                     u.Activo,
                     u.AvatarUrl
                 })
@@ -82,7 +83,7 @@ public static class SupervisorEndpoints
                     u.Id,
                     u.Nombre,
                     u.Email,
-                    Rol = u.RolExplicito ?? (u.EsSuperAdmin ? "SUPER_ADMIN" : u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+                    Rol = u.RolExplicito ?? RoleNames.Vendedor,
                     u.Activo,
                     u.AvatarUrl
                 })
@@ -238,14 +239,14 @@ public static class SupervisorEndpoints
                 .Where(u => u.SupervisorId == null
                          && u.TenantId == tenant.TenantId
                          && u.EliminadoEn == null
-                         && !u.EsSuperAdmin
+                         && u.RolExplicito != RoleNames.SuperAdmin
                          && u.Activo)
                 .Select(u => new
                 {
                     u.Id,
                     u.Nombre,
                     u.Email,
-                    Rol = u.RolExplicito ?? (u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+                    Rol = u.RolExplicito ?? RoleNames.Vendedor,
                     u.AvatarUrl
                 })
                 .ToListAsync();

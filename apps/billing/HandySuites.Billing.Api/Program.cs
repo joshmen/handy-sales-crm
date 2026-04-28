@@ -205,6 +205,9 @@ app.UseExceptionHandler(errorApp =>
 
 // Middleware pipeline
 app.UseHttpsRedirection();
+// Security headers — OWASP defense-in-depth. Billing maneja PII fiscal CFDI,
+// importante prevenir framing/sniffing.
+app.UseMiddleware<HandySuites.Billing.Api.Middleware.SecurityHeadersMiddleware>();
 app.UseCors("BillingApiPolicy");
 app.UseRateLimiter();
 app.UseAuthentication();

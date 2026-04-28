@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Application.Sync.Interfaces;
 using HandySuites.Shared.Multitenancy;
@@ -8,11 +9,13 @@ public class SyncService
 {
     private readonly ISyncRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITransactionManager _transactions;
 
-    public SyncService(ISyncRepository repo, ICurrentTenant tenant)
+    public SyncService(ISyncRepository repo, ICurrentTenant tenant, ITransactionManager transactions)
     {
         _repo = repo;
         _tenant = tenant;
+        _transactions = transactions;
     }
 
     public async Task<SyncResponseDto> SyncAsync(SyncRequestDto request)
@@ -28,19 +31,28 @@ public class SyncService
         var entityTypes = request.EntityTypes ?? new List<string>();
         var syncAll = entityTypes.Count == 0;
 
+        // BR-060 (Audit HIGH-6, Abril 2026): wrap the whole batch in a transaction.
+        // Previous behavior: the outer catch swallowed SaveChangesAsync failures, but
+        // entities staged in the EF change tracker by per-entity upserts could still
+        // commit partial/corrupt state if SaveChangesAsync happened to succeed.
+        // With a transaction, either everything commits cleanly or everything rolls
+        // back — no divergence between mobile and server.
         try
         {
-            // 1. Push client changes to server
-            if (request.ClientChanges != null)
+            await _transactions.ExecuteInTransactionAsync(async () =>
             {
-                await PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId);
-            }
+                // 1. Push client changes to server
+                if (request.ClientChanges != null)
+                {
+                    await PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId);
+                }
 
-            // 2. Pull server changes to client
-            await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
+                // 2. Pull server changes to client
+                await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
 
-            // 3. Save all changes
-            await _repo.SaveChangesAsync();
+                // 3. Save all changes atomically
+                await _repo.SaveChangesAsync();
+            });
         }
         catch (Exception ex)
         {
@@ -317,16 +329,32 @@ public class SyncService
             response.ServerChanges.Clientes = clientes.Select(c => new SyncClienteDto
             {
                 Id = c.Id,
+                LocalId = c.MobileRecordId,
                 Nombre = c.Nombre,
                 RFC = c.RFC,
                 Correo = c.Correo,
                 Telefono = c.Telefono,
                 Direccion = c.Direccion,
+                NumeroExterior = c.NumeroExterior,
+                Colonia = c.Colonia,
+                Ciudad = c.Ciudad,
+                CodigoPostal = c.CodigoPostal,
+                Encargado = c.Encargado,
                 IdZona = c.IdZona,
                 CategoriaClienteId = c.CategoriaClienteId,
+                VendedorId = c.VendedorId,
                 ListaPreciosId = c.ListaPreciosId,
                 Latitud = c.Latitud,
                 Longitud = c.Longitud,
+                LimiteCredito = c.LimiteCredito,
+                DiasCredito = c.DiasCredito,
+                Descuento = c.Descuento,
+                Saldo = c.Saldo,
+                VentaMinimaEfectiva = c.VentaMinimaEfectiva,
+                TiposPagoPermitidos = c.TiposPagoPermitidos,
+                TipoPagoPredeterminado = c.TipoPagoPredeterminado,
+                EsProspecto = c.EsProspecto,
+                Comentarios = c.Comentarios,
                 RfcFiscal = c.RfcFiscal,
                 RazonSocial = c.RazonSocial,
                 RegimenFiscal = c.RegimenFiscal,
@@ -354,11 +382,13 @@ public class SyncService
                     Id = p.Id,
                     Nombre = p.Nombre,
                     Descripcion = p.Descripcion,
-                    SKU = p.CodigoBarra,
+                    SKU = p.CodigoBarra, // legacy alias
+                    CodigoBarra = p.CodigoBarra,
                     Precio = p.PrecioBase,
                     CategoriaProductoId = p.CategoraId,
                     FamiliaProductoId = p.FamiliaId,
                     UnidadMedidaId = p.UnidadMedidaId,
+                    UnidadMedidaNombre = p.UnidadMedida?.Nombre,
                     ImagenUrl = p.ImagenUrl,
                     StockDisponible = stock.cantidad,
                     StockMinimo = stock.minimo,
@@ -400,6 +430,7 @@ public class SyncService
                 Detalles = p.Detalles?.Select(d => new SyncDetallePedidoDto
                 {
                     Id = d.Id,
+                    LocalId = d.MobileRecordId,
                     ProductoId = d.ProductoId,
                     Nombre = d.Producto?.Nombre,
                     Cantidad = d.Cantidad,
@@ -453,6 +484,19 @@ public class SyncService
                 Id = r.Id,
                 UsuarioId = r.UsuarioId,
                 ZonaId = r.ZonaId,
+                // Multi-zona: lista de IDs desde junction. Si no hay junction (ruta vieja),
+                // sintetizar [ZonaId] para que el mobile reciba al menos la zona legacy.
+                ZonaIds = r.Zonas != null && r.Zonas.Count > 0
+                    ? r.Zonas.Select(rz => rz.ZonaId).Distinct().ToList()
+                    : (r.ZonaId.HasValue ? new List<int> { r.ZonaId.Value } : new List<int>()),
+                // Multi-zona con nombres (UI mobile muestra chips legibles).
+                Zonas = r.Zonas != null && r.Zonas.Count > 0
+                    ? r.Zonas.Where(rz => rz.Zona != null)
+                        .Select(rz => new SyncZonaResumenDto { Id = rz.ZonaId, Nombre = rz.Zona!.Nombre })
+                        .ToList()
+                    : (r.Zona != null
+                        ? new List<SyncZonaResumenDto> { new() { Id = r.Zona.Id, Nombre = r.Zona.Nombre } }
+                        : new List<SyncZonaResumenDto>()),
                 Nombre = r.Nombre,
                 Descripcion = r.Descripcion,
                 Fecha = r.Fecha,
@@ -485,8 +529,46 @@ public class SyncService
                     PedidoId = d.PedidoId,
                     Notas = d.Notas,
                     Version = d.Version
-                }).ToList()
+                }).ToList(),
+                Pedidos = r.PedidosAsignados?
+                    .Where(rp => rp.Activo)
+                    .Select(rp => new SyncRutaPedidoDto
+                    {
+                        Id = rp.Id,
+                        RutaId = rp.RutaId,
+                        PedidoId = rp.PedidoId,
+                        Estado = (int)rp.Estado,
+                        Activo = rp.Activo,
+                        CreadoEn = rp.CreadoEn,
+                    }).ToList(),
             }).ToList();
+
+            // RutasCarga no está en navigation property — cargar bulk para todas las
+            // rutas pulled y mapear por rutaId.
+            var rutaIds = rutas.Select(r => r.Id).ToList();
+            if (rutaIds.Count > 0)
+            {
+                var cargaPorRuta = await _repo.GetRutasCargaForRutasAsync(tenantId, rutaIds);
+                foreach (var dto in response.ServerChanges.Rutas)
+                {
+                    if (cargaPorRuta.TryGetValue(dto.Id, out var items))
+                    {
+                        dto.Carga = items.Select(rc => new SyncRutaCargaDto
+                        {
+                            Id = rc.Id,
+                            RutaId = rc.RutaId,
+                            ProductoId = rc.ProductoId,
+                            CantidadEntrega = rc.CantidadEntrega,
+                            CantidadVenta = rc.CantidadVenta,
+                            CantidadTotal = rc.CantidadTotal,
+                            PrecioUnitario = rc.PrecioUnitario,
+                            Activo = rc.Activo,
+                            CreadoEn = rc.CreadoEn,
+                        }).ToList();
+                    }
+                }
+            }
+
             response.Summary.RutasPulled = rutas.Count;
         }
 
@@ -497,6 +579,7 @@ public class SyncService
             response.ServerChanges.Cobros = cobros.Select(c => new SyncCobroDto
             {
                 Id = c.Id,
+                LocalId = c.MobileRecordId,
                 ClienteId = c.ClienteId,
                 PedidoId = c.PedidoId,
                 Monto = c.Monto,

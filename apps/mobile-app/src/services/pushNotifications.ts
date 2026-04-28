@@ -26,12 +26,12 @@ if (!isExpoGo) {
 export async function registerForPushNotifications(): Promise<string | null> {
   // Push notifications require a dev build — skip entirely in Expo Go
   if (isExpoGo) {
-    console.log('[Push] Skipping — push notifications not supported in Expo Go (SDK 53+)');
+    if (__DEV__) console.log('[Push] Skipping — push notifications not supported in Expo Go (SDK 53+)');
     return null;
   }
 
   if (!Device.isDevice) {
-    console.log('[Push] Must use physical device for push notifications');
+    if (__DEV__) console.log('[Push] Must use physical device for push notifications');
     return null;
   }
 
@@ -47,7 +47,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   if (finalStatus !== 'granted') {
-    console.log('[Push] Permission not granted');
+    if (__DEV__) console.log('[Push] Permission not granted');
     return null;
   }
 
@@ -82,7 +82,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   const projectId =
     Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
   if (!projectId) {
-    console.log('[Push] No projectId found — configure EAS project first');
+    if (__DEV__) console.log('[Push] No projectId found — configure EAS project first');
     return null;
   }
 
@@ -92,7 +92,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       projectId,
     });
   } catch (e) {
-    console.error('[Push] Failed to get push token:', e);
+    if (__DEV__) console.error('[Push] Failed to get push token:', e);
     return null;
   }
 
@@ -106,26 +106,35 @@ export async function registerTokenWithServer(pushToken: string): Promise<void> 
       platform: Platform.OS,
       deviceName: Device.deviceName ?? 'Unknown',
     });
-    console.log('[Push] Token registered with server');
+    if (__DEV__) console.log('[Push] Token registered with server');
   } catch (error) {
-    console.error('[Push] Failed to register token:', error);
+    if (__DEV__) console.error('[Push] Failed to register token:', error);
   }
 }
 
 export function addNotificationReceivedListener(
   callback: (notification: any) => void
 ) {
-  if (isExpoGo) return { remove: () => {} };
-  const Notifications = getNotificationsModule();
-  return Notifications.addNotificationReceivedListener(callback);
+  // Los listeners LOCALES funcionan incluso en Expo Go (solo el PUSH REMOTO está
+  // deshabilitado desde SDK 53+). Permitir que se registren para que notifs
+  // locales (scheduleNotificationAsync) disparen handlers.
+  try {
+    const Notifications = getNotificationsModule();
+    return Notifications.addNotificationReceivedListener(callback);
+  } catch {
+    return { remove: () => {} };
+  }
 }
 
 export function addNotificationResponseListener(
   callback: (response: any) => void
 ) {
-  if (isExpoGo) return { remove: () => {} };
-  const Notifications = getNotificationsModule();
-  return Notifications.addNotificationResponseReceivedListener(callback);
+  try {
+    const Notifications = getNotificationsModule();
+    return Notifications.addNotificationResponseReceivedListener(callback);
+  } catch {
+    return { remove: () => {} };
+  }
 }
 
 export async function getBadgeCount(): Promise<number> {

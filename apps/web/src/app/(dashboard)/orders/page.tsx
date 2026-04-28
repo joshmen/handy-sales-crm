@@ -5,16 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Modal } from '@/components/ui/Modal';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
-import { Order } from '@/types/orders';
+import { Order, OrderItem } from '@/types/orders';
 import { Client, ClientType, Product, UserRole } from '@/types';
 import { orderService, OrderListItem } from '@/services/api/orders';
 import { clientService } from '@/services/api/clients';
 import { productService } from '@/services/api/products';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import {
   Plus,
   RefreshCw,
@@ -179,6 +181,7 @@ interface UsuarioOption {
 export default function OrdersPage() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
@@ -190,6 +193,12 @@ export default function OrdersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -289,7 +298,7 @@ export default function OrdersPage() {
         const items = Array.isArray(data) ? data : data.items || [];
         setUsuarios(items);
       })
-      .catch(() => {});
+      .catch((err) => console.error('[Orders] failed to load usuarios for filter:', err));
   }, [isAdmin]);
 
   const handleCreateOrder = async () => {
@@ -301,36 +310,111 @@ export default function OrdersPage() {
     setShowOrderForm(true);
   };
 
-  const handleEditOrder = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-      if (!formDataLoaded.current) {
-        await fetchFormData();
-        formDataLoaded.current = true;
-      }
-      setEditingOrder(order);
-      setShowOrderForm(true);
-    }
-  };
+  // Abre el drawer cargando el pedido completo (cliente, items reales, notas, totales).
+  // Reglas de negocio (confirmar con backend PedidoService):
+  //   - Solo estado 'Borrador' permite editar (PUT /pedidos: fechaEntrega, notas, notasInternas).
+  //   - Los items solo se modifican vía endpoints /pedidos/{id}/detalles y solo en Borrador.
+  //   - Para Confirmado/EnRuta/Entregado/Cancelado el drawer abre en modo solo-lectura.
+  const openOrderDrawer = async (orderId: string, allowEdit: boolean) => {
+    const listOrder = orders.find(o => o.id === orderId);
+    if (!listOrder) return;
 
-  const handleViewDetails = async (orderId: string) => {
+    if (!formDataLoaded.current) {
+      await fetchFormData();
+      formDataLoaded.current = true;
+    }
+
     try {
-      const orderDetail = await orderService.getOrderById(parseInt(orderId));
-      toast.info(`Pedido ${orderDetail.numeroPedido} - Total: $${orderDetail.total.toFixed(2)}`);
-    } catch (_err) {
-      toast.error(t('errorLoading'));
+      const detail = await orderService.getOrderById(parseInt(orderId));
+
+      // Construye un Order con items reales provenientes del backend.
+      // Usamos productos del catálogo cuando existen (para imágenes/unidades),
+      // pero los datos primarios (nombre/precio/cantidad) siempre salen del detalle
+      // del pedido — reflejan el "snapshot" del momento en que se creó.
+      const detalleItems: OrderItem[] = detail.detalles.map(d => {
+        const productoCatalogo = products.find(p => p.id === d.productoId.toString());
+        const product: Product = productoCatalogo ?? {
+          id: d.productoId.toString(),
+          name: d.productoNombre,
+          code: d.productoCodigo || '',
+          description: '',
+          price: d.precioUnitario,
+          stock: 0,
+          category: '',
+          isActive: true,
+          images: [],
+          minStock: 0,
+          unit: '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        return {
+          id: d.id.toString(),
+          orderId: detail.id.toString(),
+          productId: d.productoId.toString(),
+          product,
+          quantity: d.cantidad,
+          unitPrice: d.precioUnitario,
+          discount: d.descuento,
+          total: d.subtotal,
+        };
+      });
+
+      const clientFromCatalog = clients.find(c => c.id === detail.clienteId.toString());
+      const fullOrder: Order = {
+        ...listOrder,
+        client: clientFromCatalog ?? {
+          ...listOrder.client,
+          id: detail.clienteId.toString(),
+          name: detail.clienteNombre,
+          address: detail.clienteDireccion ?? '',
+        },
+        clientId: detail.clienteId.toString(),
+        items: detalleItems,
+        subtotal: detail.subtotal,
+        tax: detail.impuestos,
+        discount: detail.descuento,
+        total: detail.total,
+        notes: detail.notas ?? '',
+        address: detail.clienteDireccion ?? '',
+        deliveryDate: detail.fechaEntregaEstimada ? new Date(detail.fechaEntregaEstimada) : listOrder.deliveryDate,
+      };
+
+      // Si el caller pidió editar pero el estado no lo permite, degradamos a solo-lectura.
+      const canEdit = allowEdit && listOrder.apiEstado === 'Borrador';
+      if (allowEdit && !canEdit) {
+        toast.info(t('orderReadOnlyBecauseNotDraft'));
+      }
+
+      setEditingOrder(fullOrder);
+      setIsViewOnlyMode(!canEdit);
+      setShowOrderForm(true);
+    } catch (err) {
+      showApiError(err, t('errorLoading'));
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (confirm(t('confirmDelete'))) {
-      try {
-        await orderService.deleteOrder(parseInt(orderId));
-        setOrders(orders.filter(o => o.id !== orderId));
-        toast.success(t('orderDeleted'));
-      } catch (_err) {
-        toast.error(t('errorDeleting'));
-      }
+  const handleEditOrder = (orderId: string) => openOrderDrawer(orderId, true);
+  const handleViewDetails = (orderId: string) => openOrderDrawer(orderId, false);
+
+  const handleDeleteOrder = (orderId: string) => {
+    // Reemplaza window.confirm() nativo por Modal (consistencia con cancelar y
+    // rechazar-prospecto; feedback del user anterior).
+    setDeleteOrderId(orderId);
+  };
+
+  const submitDeleteOrder = async () => {
+    if (!deleteOrderId) return;
+    setDeleteLoading(true);
+    try {
+      await orderService.deleteOrder(parseInt(deleteOrderId));
+      setOrders(orders.filter(o => o.id !== deleteOrderId));
+      toast.success(t('orderDeleted'));
+      setDeleteOrderId(null);
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -349,22 +433,35 @@ export default function OrdersPage() {
       toast.success(t('statusUpdated'));
       fetchOrders();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : tc('errorChangingStatus');
-      toast.error(message);
+      // ApiError es interface (objeto plano), no clase Error. El check `instanceof Error`
+      // siempre fallaba y caía al fallback genérico, ocultando el mensaje específico
+      // del backend (p.ej. "primero debe estar asignado a una ruta de vendedor activa").
+      // useApiErrorToast lee directamente .message del objeto thrown sin instanceof.
+      showApiError(err, tc('errorChangingStatus'));
     }
   };
 
-  const handleCancelOrderStatus = async (orderId: string) => {
-    const reason = window.prompt(t('cancelReason'));
-    if (reason === null) return; // User clicked Cancel on the prompt
-    const id = parseInt(orderId);
+  const handleCancelOrderStatus = (orderId: string) => {
+    // Abre modal custom en lugar de window.prompt() nativo.
+    setCancelOrderId(orderId);
+    setCancelReasonText('');
+  };
+
+  const submitCancelOrder = async () => {
+    if (!cancelOrderId) return;
+    const id = parseInt(cancelOrderId);
+    setCancelLoading(true);
     try {
-      await orderService.cancelOrder(id, reason || undefined);
+      await orderService.cancelOrder(id, cancelReasonText.trim() || undefined);
       toast.success(t('orderCancelled'));
+      setCancelOrderId(null);
+      setCancelReasonText('');
       fetchOrders();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('errorCancelling');
-      toast.error(message);
+      // Mismo bug que en handleAdvanceStatus: ApiError no es Error instance.
+      showApiError(err, t('errorCancelling'));
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -396,8 +493,8 @@ export default function OrdersPage() {
       await fetchOrders();
       setShowOrderForm(false);
       setEditingOrder(null);
-    } catch (_err) {
-      toast.error(t('errorSaving'));
+    } catch (err) {
+      showApiError(err, t('errorSaving'));
     }
   };
 
@@ -691,7 +788,7 @@ export default function OrdersPage() {
                 emptyIcon={<FileText className="w-16 h-16" />}
                 emptyTitle={t('emptyTitle')}
                 emptyMessage={t('emptyMessage')}
-                onRowClick={(order) => handleEditOrder(order.id)}
+                onRowClick={(order) => order.apiEstado === 'Borrador' ? handleEditOrder(order.id) : handleViewDetails(order.id)}
                 sort={{
                   key: sortKey,
                   direction: sortDir,
@@ -738,12 +835,17 @@ export default function OrdersPage() {
                         <button onClick={() => handleViewDetails(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded">
                           <Eye className="w-3.5 h-3.5 text-blue-400" /> {t('view')}
                         </button>
-                        <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
-                          <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
-                        </button>
-                        <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" /> {tc('delete')}
-                        </button>
+                        {/* Regla de negocio: editar y borrar solo en Borrador — backend rechaza cualquier otro estado con 400/409. */}
+                        {order.apiEstado === 'Borrador' && (
+                          <>
+                            <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
+                              <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
+                            </button>
+                            <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" /> {tc('delete')}
+                            </button>
+                          </>
+                        )}
                         {order.status === 'delivered' && (() => {
                           const inv = invoicedOrders[parseInt(order.id)];
                           return inv ? (
@@ -785,27 +887,37 @@ export default function OrdersPage() {
         onClose={() => {
           setShowOrderForm(false);
           setEditingOrder(null);
+          setIsViewOnlyMode(false);
           setFormIsDirty(false);
         }}
-        title={editingOrder ? t('drawerTitleEdit') : t('drawerTitleNew')}
+        title={
+          !editingOrder
+            ? t('drawerTitleNew')
+            : isViewOnlyMode
+              ? t('drawerTitleView')
+              : t('drawerTitleEdit')
+        }
         icon={<ShoppingCart className="w-5 h-5 text-green-600" />}
         width="lg"
-        isDirty={formIsDirty}
-        onSave={() => orderFormRef.current?.submit()}
+        isDirty={isViewOnlyMode ? false : formIsDirty}
+        onSave={isViewOnlyMode ? undefined : () => orderFormRef.current?.submit()}
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()}>
-              {tc('cancel')}
+              {isViewOnlyMode ? tc('close') : tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
-              {editingOrder ? t('saveChanges') : t('createOrder')}
-            </Button>
+            {!isViewOnlyMode && (
+              <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
+                {editingOrder ? t('saveChanges') : t('createOrder')}
+              </Button>
+            )}
           </div>
         }
       >
         <OrderForm
           ref={orderFormRef}
           order={editingOrder}
+          readOnly={isViewOnlyMode}
           clients={clients}
           products={products}
           onSave={handleSaveOrder}
@@ -816,6 +928,72 @@ export default function OrdersPage() {
           onDirtyChange={setFormIsDirty}
         />
       </Drawer>
+
+      {/* Modal: cancelar pedido con motivo (reemplaza window.prompt() nativo) */}
+      <Modal
+        isOpen={cancelOrderId !== null}
+        onClose={() => {
+          if (!cancelLoading) {
+            setCancelOrderId(null);
+            setCancelReasonText('');
+          }
+        }}
+        title={t('cancelReason')}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <textarea
+            autoFocus
+            rows={3}
+            className="w-full rounded-md border border-border-default bg-surface-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+            placeholder={t('cancelReasonPlaceholder') || 'Motivo de la cancelación...'}
+            value={cancelReasonText}
+            onChange={(e) => setCancelReasonText(e.target.value)}
+            disabled={cancelLoading}
+          />
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCancelOrderId(null);
+                setCancelReasonText('');
+              }}
+              disabled={cancelLoading}
+            >
+              {tc('cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={submitCancelOrder}
+              disabled={cancelLoading}
+            >
+              {cancelLoading ? tc('loading') : t('confirmCancelOrder') || 'Cancelar pedido'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: confirmar eliminación de pedido Borrador (reemplaza window.confirm()). */}
+      <Modal
+        isOpen={deleteOrderId !== null}
+        onClose={() => { if (!deleteLoading) setDeleteOrderId(null); }}
+        title={tc('delete')}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/80">{t('confirmDelete')}</p>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setDeleteOrderId(null)} disabled={deleteLoading}>
+              {tc('cancel')}
+            </Button>
+            <Button type="button" variant="destructive" onClick={submitDeleteOrder} disabled={deleteLoading}>
+              {deleteLoading ? tc('loading') : tc('delete')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

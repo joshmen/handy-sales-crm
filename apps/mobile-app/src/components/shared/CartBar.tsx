@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ShoppingBag, ChevronRight } from 'lucide-react-native';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { COLORS } from '@/theme/colors';
 
 interface CartBarProps {
@@ -11,6 +11,7 @@ interface CartBarProps {
 }
 
 export function CartBar({ itemCount, total, onPress, label = 'Revisar pedido' }: CartBarProps) {
+  const { money: formatCurrency } = useTenantLocale();
   if (itemCount === 0) return null;
 
   return (

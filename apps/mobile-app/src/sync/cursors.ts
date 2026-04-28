@@ -70,6 +70,22 @@ export const syncCursors = {
     AsyncStorage.setItem(`${PREFIX}lastSyncSummary`, json).catch(() => {});
   },
 
+  /**
+   * Persiste atómicamente lastSyncAt + summary al final del sync. Usar al final
+   * de performSync — `await` lo asegura que los writes terminen antes de que
+   * cualquier logout/clear posterior los pueda interrumpir (race window).
+   */
+  async commitSyncResult(summary: { pulled: number; pushed: number; conflicts: number }): Promise<void> {
+    const now = Date.now();
+    const json = JSON.stringify(summary);
+    _cache[`${PREFIX}lastSyncAt`] = String(now);
+    _cache[`${PREFIX}lastSyncSummary`] = json;
+    await AsyncStorage.multiSet([
+      [`${PREFIX}lastSyncAt`, String(now)],
+      [`${PREFIX}lastSyncSummary`, json],
+    ]);
+  },
+
   clear(): void {
     const keys = [
       `${PREFIX}lastPulledAt`,

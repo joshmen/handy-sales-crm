@@ -213,6 +213,23 @@ public class PedidoRepository : IPedidoRepository
                 p.Cliente.Nombre.ToLower().Contains(busqueda));
         }
 
+        // Excluir pedidos ya asignados a cualquier ruta activa (Planificada,
+        // PendienteAceptar, CargaAceptada, EnProgreso). Sin esto, el modal
+        // de "Asignar pedidos a ruta" mostraba pedidos que ya estaban tomados
+        // por otra ruta (reportado 2026-04-27).
+        if (filtro.ExcluirAsignadosARutas == true)
+        {
+            query = query.Where(p => !_db.Set<RutaPedido>()
+                .Any(rp => rp.PedidoId == p.Id
+                        && rp.Activo
+                        && rp.TenantId == tenantId
+                        && rp.Ruta != null
+                        && (rp.Ruta.Estado == EstadoRuta.Planificada
+                         || rp.Ruta.Estado == EstadoRuta.PendienteAceptar
+                         || rp.Ruta.Estado == EstadoRuta.CargaAceptada
+                         || rp.Ruta.Estado == EstadoRuta.EnProgreso)));
+        }
+
         var totalItems = await query.CountAsync();
 
         var items = await query
@@ -367,14 +384,41 @@ public class PedidoRepository : IPedidoRepository
 
     public async Task<bool> CambiarEstadoAsync(int id, EstadoPedido nuevoEstado, string? notas, int tenantId)
     {
+        var result = await CambiarEstadoDetalladoAsync(id, nuevoEstado, notas, tenantId);
+        return result.Status == CambiarEstadoStatus.Ok;
+    }
+
+    public async Task<CambiarEstadoOutcome> CambiarEstadoDetalladoAsync(int id, EstadoPedido nuevoEstado, string? notas, int tenantId)
+    {
         var pedido = await _db.Pedidos
             .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId && p.Activo);
 
-        if (pedido == null) return false;
+        if (pedido == null) return new CambiarEstadoOutcome(CambiarEstadoStatus.NotFound, null);
 
-        // Validar transiciones de estado válidas
         if (!EsTransicionValida(pedido.Estado, nuevoEstado))
-            return false;
+            return new CambiarEstadoOutcome(CambiarEstadoStatus.TransicionInvalida, pedido.Estado);
+
+        // BR-RUTA-EnRuta: para que un pedido pase a EnRuta debe estar asignado a una RutaVendedor
+        // cuyo estado sea CargaAceptada o EnProgreso. Antes web permitía pasar Confirmado→EnRuta sin
+        // RutaVendedor planificada, dejando el pedido "en ruta" fantasma sin asignación a un viaje real
+        // (reportado en staging 2026-04-27). Solo aplica al cambio explícito a EnRuta — otros cambios
+        // de estado (Entregado, Cancelado) no deben re-validar la ruta.
+        if (nuevoEstado == EstadoPedido.EnRuta)
+        {
+            var hasActiveRoute = await (from rp in _db.RutasPedidos
+                                        join rv in _db.RutasVendedor.IgnoreQueryFilters()
+                                            on rp.RutaId equals rv.Id
+                                        where rp.PedidoId == id
+                                              && rp.TenantId == tenantId
+                                              && rp.Activo
+                                              && rv.TenantId == tenantId
+                                              && rv.EliminadoEn == null
+                                              && (rv.Estado == EstadoRuta.CargaAceptada
+                                                  || rv.Estado == EstadoRuta.EnProgreso)
+                                        select rv.Id).AnyAsync();
+            if (!hasActiveRoute)
+                return new CambiarEstadoOutcome(CambiarEstadoStatus.SinRutaActiva, pedido.Estado);
+        }
 
         pedido.Estado = nuevoEstado;
         pedido.ActualizadoEn = DateTime.UtcNow;
@@ -392,7 +436,7 @@ public class PedidoRepository : IPedidoRepository
         }
 
         await _db.SaveChangesAsync();
-        return true;
+        return new CambiarEstadoOutcome(CambiarEstadoStatus.Ok, nuevoEstado);
     }
 
     public async Task<bool> EliminarAsync(int id, int tenantId)
@@ -401,6 +445,11 @@ public class PedidoRepository : IPedidoRepository
             .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId && p.Activo);
 
         if (pedido == null) return false;
+
+        // Solo se puede eliminar si está en Borrador. Un pedido confirmado/entregado
+        // ya impactó inventario o flujo operativo; soft-deletarlo deja datos inconsistentes.
+        if (pedido.Estado != EstadoPedido.Borrador)
+            return false;
 
         // Soft delete via SaveChangesAsync override
         _db.Pedidos.Remove(pedido);
@@ -515,7 +564,10 @@ public class PedidoRepository : IPedidoRepository
         var fecha = DateTime.UtcNow;
         var prefijo = $"{tipo}-{fecha:yyyyMMdd}";
 
+        // IgnoreQueryFilters: la unique-constraint de la DB incluye pedidos soft-deleted,
+        // así que debemos contarlos al calcular la siguiente secuencia para evitar colisión.
         var ultimoNumero = await _db.Pedidos
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(p => p.TenantId == tenantId && p.NumeroPedido.StartsWith(prefijo))
             .OrderByDescending(p => p.NumeroPedido)
@@ -571,6 +623,35 @@ public class PedidoRepository : IPedidoRepository
             .Select(p => p.Nombre)
             .FirstOrDefaultAsync() ?? $"Producto #{productoId}";
     }
+
+    public async Task<bool> ExisteClienteAsync(int clienteId, int tenantId)
+    {
+        return await _db.Clientes
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == clienteId && c.TenantId == tenantId);
+    }
+
+    public async Task<bool> ExisteProductoAsync(int productoId, int tenantId)
+    {
+        return await _db.Productos
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);
+    }
+
+    public async Task<bool> ExisteListaPrecioAsync(int listaPrecioId, int tenantId)
+    {
+        return await _db.ListasPrecios
+            .AsNoTracking()
+            .AnyAsync(l => l.Id == listaPrecioId && l.TenantId == tenantId);
+    }
+
+    public Task<bool> ClienteActivoAsync(int clienteId, int tenantId)
+        => _db.Clientes.AsNoTracking()
+            .AnyAsync(c => c.Id == clienteId && c.TenantId == tenantId && c.Activo);
+
+    public Task<bool> ProductoActivoAsync(int productoId, int tenantId)
+        => _db.Productos.AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId && p.Activo);
 
     private async Task RecalcularTotalesAsync(int pedidoId)
     {

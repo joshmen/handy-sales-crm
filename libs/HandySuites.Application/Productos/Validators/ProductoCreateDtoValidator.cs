@@ -16,5 +16,14 @@ public class ProductoCreateDtoValidator : AbstractValidator<ProductoCreateDto>
 
         RuleFor(x => x.PrecioBase)
             .GreaterThanOrEqualTo(0).WithMessage("El precio base no puede ser negativo.");
+
+        RuleFor(x => x.FamiliaId)
+            .GreaterThan(0).WithMessage("Debe seleccionar una familia válida.");
+
+        RuleFor(x => x.CategoraId)
+            .GreaterThan(0).WithMessage("Debe seleccionar una categoría válida.");
+
+        RuleFor(x => x.UnidadMedidaId)
+            .GreaterThan(0).WithMessage("Debe seleccionar una unidad de medida válida.");
     }
 }

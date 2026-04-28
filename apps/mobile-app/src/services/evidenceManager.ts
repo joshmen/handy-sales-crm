@@ -8,6 +8,7 @@ import {
   uploadAsync,
   FileSystemUploadType,
 } from 'expo-file-system/legacy';
+import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Attachment from '@/db/models/Attachment';
 import { API_CONFIG } from '@/utils/constants';
@@ -84,11 +85,11 @@ export async function saveAttachmentRecord(params: {
 
 export async function uploadPendingAttachments(): Promise<number> {
   const collection = database.get<Attachment>('attachments');
-  const pending = await collection.query().fetch();
-
-  const toUpload = pending.filter(
-    (a) => a.uploadStatus === 'pending' || a.uploadStatus === 'failed'
-  );
+  // Filtrar en SQL en vez de cargar todos los attachments y filtrar en JS.
+  // Antes con 500+ uploaded files cada flush iteraba sobre todos.
+  const toUpload = await collection
+    .query(Q.where('upload_status', Q.oneOf(['pending', 'failed'])))
+    .fetch();
 
   let uploaded = 0;
 
@@ -120,6 +121,14 @@ export async function uploadPendingAttachments(): Promise<number> {
         const remoteUrl = body.url || body.data?.url || '';
         await attachment.markUploaded(remoteUrl);
         uploaded++;
+      } else if (response.status === 401) {
+        // Token expirado/inválido: NO contar como retry porque el problema no es
+        // el attachment, es el access token. uploadAsync usa fetch directo y bypassa
+        // el axios interceptor que refrescaría — la próxima axios request normal
+        // gatillará el refresh, y el siguiente flushPending leerá el token nuevo
+        // desde getAccessToken(). Marcar pending de nuevo (sin incrementar retryCount).
+        await attachment.markPending();
+        if (__DEV__) console.warn('[Evidence] upload 401 — esperando refresh axios');
       } else {
         await attachment.markFailed();
       }
@@ -133,16 +142,18 @@ export async function uploadPendingAttachments(): Promise<number> {
 
 export async function getPendingCount(): Promise<number> {
   const collection = database.get<Attachment>('attachments');
-  const pending = await collection.query().fetch();
-  return pending.filter(
-    (a) => a.uploadStatus === 'pending' || a.uploadStatus === 'failed'
-  ).length;
+  // Usar Q.fetchCount para evitar materializar records solo para contar.
+  return await collection
+    .query(Q.where('upload_status', Q.oneOf(['pending', 'failed'])))
+    .fetchCount();
 }
 
 export async function cleanUploadedFiles(): Promise<void> {
   const collection = database.get<Attachment>('attachments');
-  const uploaded = await collection.query().fetch();
-  const toClean = uploaded.filter((a) => a.uploadStatus === 'uploaded');
+  // Filtrar en SQL — antes traía todos y filtraba en JS.
+  const toClean = await collection
+    .query(Q.where('upload_status', 'uploaded'))
+    .fetch();
 
   for (const attachment of toClean) {
     try {

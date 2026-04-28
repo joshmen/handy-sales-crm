@@ -43,6 +43,7 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Package as PackageIcon, CaretRight } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { ListPagination } from '@/components/ui/ListPagination';
+import { useBusinessEvents } from '@/hooks/useBusinessEvents';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
@@ -210,6 +211,15 @@ export default function InventoryPage() {
       fetchInventory();
     }
   }, [fetchInventory, activeTab]);
+
+  // Refresh stock automáticamente cuando un mobile sincroniza ventas/pedidos.
+  // Antes el admin tenía que apretar F5 manualmente para ver el stock actualizado
+  // tras una venta directa del vendedor (reportado 2026-04-27, simétrico al fix
+  // de /products en commit 421dbc4 — esta página también necesitaba el listener).
+  useBusinessEvents({
+    onSyncCompleted: () => { if (activeTab === 'almacen') fetchInventory(); },
+    onPedidoCreated: () => { if (activeTab === 'almacen') fetchInventory(); },
+  });
 
   const fetchProducts = async () => {
     try {

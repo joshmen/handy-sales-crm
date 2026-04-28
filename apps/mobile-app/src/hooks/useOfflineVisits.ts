@@ -3,6 +3,8 @@ import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Visita from '@/db/models/Visita';
 import { useObservable } from './useObservable';
+import { useEmpresa } from './useEmpresa';
+import { startOfDayInTz } from '@/utils/dateTz';
 
 export function useOfflineVisits(clienteId?: string) {
   const observable = useMemo(() => {
@@ -30,21 +32,26 @@ export function useOfflineVisitById(id: string | undefined) {
 }
 
 export function useOfflineTodayVisits() {
-  // Recompute date key so the query refreshes if mount spans midnight
-  const [dateKey, setDateKey] = useState(() => new Date().toDateString());
+  const { data: empresa } = useEmpresa();
+  const tz = empresa?.timezone || 'America/Mexico_City';
+
+  // Recompute date key so the query refreshes if mount spans midnight (en TZ tenant)
+  const [dateKey, setDateKey] = useState(() => startOfDayInTz(tz).toISOString());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().toDateString();
-      if (now !== dateKey) setDateKey(now);
-    }, 60_000); // check every minute
-    return () => clearInterval(interval);
-  }, [dateKey]);
+    // Próxima medianoche en TZ del tenant: agregamos 24h al inicio del día actual.
+    const nextMidnightMs = startOfDayInTz(tz).getTime() + 24 * 60 * 60 * 1000;
+    const msUntilMidnight = nextMidnightMs - Date.now();
+    if (msUntilMidnight <= 0) return; // ya pasó (DST raro), reintentar próximo render
+    const timeout = setTimeout(
+      () => setDateKey(startOfDayInTz(tz).toISOString()),
+      msUntilMidnight
+    );
+    return () => clearTimeout(timeout);
+  }, [dateKey, tz]);
 
   const observable = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
+    const todayMs = startOfDayInTz(tz).getTime();
 
     return database
       .get<Visita>('visitas')
@@ -54,7 +61,7 @@ export function useOfflineTodayVisits() {
         Q.sortBy('check_in_at', Q.desc)
       )
       .observe();
-  }, [dateKey]);
+  }, [dateKey, tz]);
 
   return useObservable(observable);
 }

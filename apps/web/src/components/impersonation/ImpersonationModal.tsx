@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
   Dialog,
@@ -20,13 +21,13 @@ import { CurrentImpersonationState } from '@/types/impersonation';
 import {
   Eye,
   Edit,
-  Loader2,
   FileText,
   Clock,
   XCircle,
   Search,
   ChevronRight,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
 import { SbAlert, SbSecurity, SbBuildings } from '@/components/layout/DashboardIcons';
 import { useTranslations } from 'next-intl';
 
@@ -67,6 +68,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
   const { startImpersonation } = useImpersonationStore();
   const { update: updateSession } = useSession();
+  const router = useRouter();
 
   // Fetch tenants when modal opens without a pre-selected tenant
   useEffect(() => {
@@ -128,8 +130,11 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
     onClose();
 
-    // Recargar para aplicar el nuevo contexto
-    window.location.href = '/dashboard';
+    // Usar router.push + router.refresh en vez de window.location.href.
+    // Hard reload perdía la sesión updateSession() recién propagada a las cookies,
+    // lo que hacía que el middleware bloqueara /dashboard con ?error=unauthorized.
+    router.push('/dashboard');
+    router.refresh();
   };
 
   const handleStart = async () => {
@@ -263,7 +268,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
             <div className="max-h-72 overflow-y-auto space-y-1 border rounded-lg p-1">
               {tenantsLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Spinner size="lg" className="text-muted-foreground" />
                 </div>
               ) : filteredTenants.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground text-sm">
@@ -369,7 +374,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               className="bg-amber-500 hover:bg-amber-600 text-white"
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Spinner size="sm" className="mr-2" />
               ) : (
                 <XCircle className="h-4 w-4 mr-2" />
               )}
@@ -540,7 +545,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
             disabled={isLoading || !agreedToPolicy || (accessLevel === 'READ_WRITE' && reason.trim().length < 20)}
             className="bg-amber-500 hover:bg-amber-600 text-white"
           >
-            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isLoading && <Spinner size="sm" className="mr-2" />}
             {t('startSupportSession')}
           </Button>
         </DialogFooter>

@@ -30,8 +30,9 @@ public class InventarioFiltroDto
     public int? ProductoId { get; set; }
     public bool? BajoStock { get; set; }
     public string? Busqueda { get; set; }
-    public int Pagina { get; set; } = 1;
-    public int TamanoPagina { get; set; } = 20;
+    // Nullables para que [AsParameters] no los marque como requeridos.
+    public int? Pagina { get; set; }
+    public int? TamanoPagina { get; set; }
 }
 
 public class InventarioPaginatedResult

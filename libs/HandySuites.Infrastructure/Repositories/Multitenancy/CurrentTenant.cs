@@ -55,16 +55,11 @@ public class CurrentTenant : ICurrentTenant
             if (_role == null)
             {
                 var user = _accessor.HttpContext?.User;
-                // Primary: read from ClaimTypes.Role (set by JwtTokenGenerator)
-                _role = user?.FindFirst(ClaimTypes.Role)?.Value;
-
-                // Fallback: derive from legacy boolean claims
-                if (string.IsNullOrEmpty(_role))
-                {
-                    var isSuperAdmin = user?.FindFirst("es_super_admin")?.Value == "True";
-                    var isAdmin = user?.FindFirst("es_admin")?.Value == "True";
-                    _role = isSuperAdmin ? "SUPER_ADMIN" : isAdmin ? "ADMIN" : "VENDEDOR";
-                }
+                // Single source of truth: claim "role" emitido por JwtTokenGenerator.
+                // El cliente JWT puede mapear `role` a ClaimTypes.Role o no — probamos ambos.
+                _role = user?.FindFirst("role")?.Value
+                        ?? user?.FindFirst(ClaimTypes.Role)?.Value
+                        ?? "VENDEDOR";
             }
             return _role;
         }

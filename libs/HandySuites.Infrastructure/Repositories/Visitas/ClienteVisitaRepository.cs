@@ -106,11 +106,13 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
             query = query.Where(v => v.Resultado == ResultadoVisita.Pendiente);
 
         var totalItems = await query.CountAsync();
+        var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
+        var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
         var visitas = await query
             .OrderByDescending(v => v.FechaProgramada ?? v.FechaHoraInicio ?? v.CreadoEn)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
             .Select(v => new ClienteVisitaListaDto
             {
                 Id = v.Id,
@@ -131,8 +133,8 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         {
             Items = visitas,
             TotalItems = totalItems,
-            Pagina = filtro.Pagina,
-            TamanoPagina = filtro.TamanoPagina
+            Pagina = pagina,
+            TamanoPagina = tamano
         };
     }
 
@@ -142,6 +144,11 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
             .FirstOrDefaultAsync(v => v.Id == id && v.TenantId == tenantId && v.Activo);
 
         if (visita == null) return false;
+
+        // Una visita completada (con fecha fin) ya tiene efectos (GPS, pedidos, embeddings);
+        // eliminar destruye audit trail. Permitir sólo borrar las Pendientes/InProgress.
+        if (visita.FechaHoraFin.HasValue)
+            return false;
 
         visita.Activo = false;
         visita.ActualizadoEn = DateTime.UtcNow;
@@ -372,4 +379,7 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         return resumenes;
     }
 
+    public Task<bool> ExisteClienteEnTenantAsync(int clienteId, int tenantId)
+        => _db.Clientes.AsNoTracking()
+            .AnyAsync(c => c.Id == clienteId && c.TenantId == tenantId);
 }

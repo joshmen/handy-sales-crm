@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { CurrencyDollar } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -57,6 +58,7 @@ export default function PriceListsPage() {
   const tv = useTranslations('formValidation');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const { formatDate: _fmtDate } = useFormatters();
   // State
   const [priceLists, setPriceLists] = useState<ListaPrecio[]>([]);
@@ -197,8 +199,8 @@ export default function PriceListsPage() {
       await api.delete(`/listas-precios/${id}`);
       toast.success(t('deleted'));
       await loadPriceLists();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

@@ -4,12 +4,27 @@
 -- ═══════════════════════════════════════════════════════════════
 --
 -- How it works:
--- 1. App sets: SET app.tenant_id = '{tenantId}' before each query
--- 2. RLS policy: only rows where tenant_id = current_setting('app.tenant_id') are visible
+-- 1. App sets TWO session vars per request:
+--      SET app.tenant_id = '{tenantId}'
+--      SET app.is_super_admin = 'true' | 'false'
+-- 2. RLS policy: rows visible when
+--      tenant_id = current_setting('app.tenant_id')::int
+--      OR current_setting('app.is_super_admin', true) = 'true'
 -- 3. Even if app forgets the WHERE clause, PostgreSQL blocks cross-tenant access
+--    for non-SA users.
 --
--- The app user (handy_user) is NOT a superuser, so RLS applies to them.
--- Superuser (postgres) bypasses RLS for admin/migration tasks.
+-- Role model (required for RLS to enforce at all):
+--   - postgres (superuser): used ONLY for migrations and admin tasks. Bypasses RLS.
+--   - handy_app (non-superuser): used by Main API + Billing API runtime. RLS enforced.
+-- On Railway, create handy_app with: see create_handy_app_role.sql
+--
+-- SA bypass: SUPER_ADMIN users receive app.is_super_admin='true' from the interceptor
+-- (read from es_super_admin JWT claim). This lets SA endpoints query all tenants
+-- without IgnoreQueryFilters gymnastics at the PG layer.
+--
+-- Worker context: background workers (SubscriptionMonitor, etc.) have no HttpContext.
+-- The interceptor falls back to app.is_super_admin='true' so workers can iterate all
+-- tenants. Workers are trusted code — this is equivalent to running as SA.
 
 -- ═══════════════════════════════════════════════════════════════
 -- handy_erp tables with tenant_id (33 tables)
@@ -69,9 +84,20 @@ BEGIN
         -- Drop existing policy if any
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
 
-        -- Create policy: rows visible only when tenant_id matches session variable
+        -- Create policy: rows visible only when tenant matches session variable
+        -- OR caller is SUPER_ADMIN (set via app.is_super_admin from es_super_admin JWT claim)
+        -- OR caller is a trusted worker (no HttpContext → interceptor sets is_super_admin='true').
+        --
+        -- The NULLIF guard is critical: PostgreSQL does NOT guarantee short-circuit on OR,
+        -- so if app.tenant_id is '' (unset or empty) the raw cast ''::int would throw
+        -- SQLSTATE 22P02 even when is_super_admin='true' alone would satisfy the policy.
+        -- NULLIF('') returns NULL, and `tenant_id = NULL` yields NULL (not true) — safely
+        -- excluding the row instead of erroring the whole query.
         EXECUTE format(
-            'CREATE POLICY tenant_isolation ON %I FOR ALL USING (tenant_id = current_setting(''app.tenant_id'', true)::int)',
+            'CREATE POLICY tenant_isolation ON %I FOR ALL USING (
+                current_setting(''app.is_super_admin'', true) = ''true''
+                OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::int
+            )',
             t
         );
 

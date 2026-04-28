@@ -38,13 +38,14 @@ test.describe('Audit Fix: Detail Page Badge', () => {
     await page.goto('/routes');
     await waitForPageLoad(page);
 
-    // Navigate to first route detail
-    const routeLink = page.locator('.text-blue-600').first();
-    if (!await routeLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+    // El DataTable tiene onRowClick → /routes/{id}. Click en primera fila tbody (no header).
+    const firstRow = page.locator('table tbody tr').first();
+    if (!await firstRow.isVisible({ timeout: 5000 }).catch(() => false)) {
       test.skip();
       return;
     }
-    await routeLink.click();
+    // Click en celda no-button para evitar que dispare botones "Cargar"/"Cerrar"
+    await firstRow.locator('td').first().click();
     await expect(page).toHaveURL(/\/routes\/\d+/, { timeout: 10000 });
     await waitForPageLoad(page);
 

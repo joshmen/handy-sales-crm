@@ -225,7 +225,9 @@ public static class AuthEndpoints
 
             var result = await auth.VerifyEmailAsync(dto.Email.Trim().ToLowerInvariant(), dto.Code.Trim());
             if (result == null)
-                return Results.BadRequest(new { error = "Email no encontrado" });
+                // No reveles si el email existe o no (previene enumeración). Mismo mensaje
+                // que un código incorrecto en un email real.
+                return Results.BadRequest(new { error = "INVALID", message = "Código incorrecto." });
 
             var resultType = result.GetType();
             var errorProp = resultType.GetProperty("error");

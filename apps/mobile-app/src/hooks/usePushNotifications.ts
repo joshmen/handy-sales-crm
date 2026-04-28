@@ -64,12 +64,15 @@ export function usePushNotifications() {
   const responseListener = useRef<EventSubscription | undefined>(undefined);
 
   useEffect(() => {
-    if (!isAuthenticated || isExpoGo) return;
+    if (!isAuthenticated) return;
 
-    // Lazy import to avoid side-effect crash in Expo Go
+    // Push notifications (remote y locales) están deshabilitados en Expo Go
+    // desde SDK 53+. Importar el módulo dispara un warning permanente, así que
+    // saltamos toda la inicialización aquí — solo corre en dev/release builds.
+    if (isExpoGo) return;
+
     const Notifications = require('expo-notifications');
 
-    // Register for push and send token to server
     registerForPushNotifications().then((token: string | null) => {
       if (token) {
         registerTokenWithServer(token);

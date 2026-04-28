@@ -18,9 +18,12 @@ export default class Cliente extends Model {
   @text('telefono') telefono!: string | null;
   @text('email') email!: string | null;
   @text('direccion') direccion!: string | null;
+  @text('numero_exterior') numeroExterior!: string | null;
+  @text('colonia') colonia!: string | null;
   @text('ciudad') ciudad!: string | null;
   @text('estado') estado!: string | null;
   @text('codigo_postal') codigoPostal!: string | null;
+  @text('encargado') encargado!: string | null;
   @field('latitud') latitud!: number | null;
   @field('longitud') longitud!: number | null;
   @field('zona_id') zonaId!: number | null;
@@ -28,6 +31,11 @@ export default class Cliente extends Model {
   @field('vendedor_id') vendedorId!: number | null;
   @field('limite_credito') limiteCredito!: number;
   @field('dias_credito') diasCredito!: number;
+  @field('descuento') descuento!: number;
+  @field('saldo') saldo!: number;
+  @field('venta_minima_efectiva') ventaMinimaEfectiva!: number;
+  @text('tipos_pago_permitidos') tiposPagoPermitidos!: string;
+  @text('tipo_pago_predeterminado') tipoPagoPredeterminado!: string;
   @text('notas') notas!: string | null;
   @field('lista_precios_id') listaPreciosId!: number | null;
   @field('es_prospecto') esProspecto!: boolean;

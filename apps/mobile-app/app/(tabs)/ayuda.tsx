@@ -39,6 +39,9 @@ function FaqAccordion({ item, index }: { item: FaqItem; index: number }) {
         style={[styles.faqItem, expanded && styles.faqItemExpanded]}
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
+        accessibilityLabel={`FAQ: ${item.question}`}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
       >
         <View style={styles.faqHeader}>
           <Text style={styles.faqQuestion}>{item.question}</Text>
@@ -74,7 +77,7 @@ function AyudaContent() {
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} activeOpacity={0.7} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Ayuda</Text>
@@ -94,7 +97,7 @@ function AyudaContent() {
         <Text style={styles.sectionTitle}>Contacto</Text>
 
         <Animated.View entering={FadeInDown.delay(250).duration(300)}>
-          <TouchableOpacity style={styles.contactItem} onPress={handleEmail} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.contactItem} onPress={handleEmail} activeOpacity={0.7} accessibilityLabel="Enviar correo a soporte" accessibilityRole="button">
             <View style={[styles.contactIcon, { backgroundColor: COLORS.background }]}>
               <Mail size={18} color="#6b7280" />
             </View>
@@ -106,7 +109,7 @@ function AyudaContent() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(330).duration(300)}>
-          <TouchableOpacity style={styles.contactItem} onPress={handlePhone} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.contactItem} onPress={handlePhone} activeOpacity={0.7} accessibilityLabel="Llamar a soporte" accessibilityRole="button">
             <View style={[styles.contactIcon, { backgroundColor: '#dcfce7' }]}>
               <Phone size={18} color="#16a34a" />
             </View>

@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.MovimientosInventario.DTOs;
 using HandySuites.Application.MovimientosInventario.Services;
 using HandySuites.Application.Pedidos.DTOs;
@@ -14,28 +15,74 @@ public class PedidoService
     private readonly ICurrentTenant _tenant;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly MovimientoInventarioService _movimientoService;
+    private readonly ITransactionManager _transactions;
 
     public PedidoService(
         IPedidoRepository repository,
         ICurrentTenant tenant,
         IUsuarioRepository usuarioRepository,
-        MovimientoInventarioService movimientoService)
+        MovimientoInventarioService movimientoService,
+        ITransactionManager transactions)
     {
         _repository = repository;
         _tenant = tenant;
         _usuarioRepository = usuarioRepository;
         _movimientoService = movimientoService;
+        _transactions = transactions;
     }
 
     public async Task<int> CrearAsync(PedidoCreateDto dto)
     {
         var usuarioId = int.Parse(_tenant.UserId);
-        var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
 
-        // Venta Directa: validar stock y crear movimientos de inventario SALIDA
+        // Cliente debe estar activo: uno desactivado no debe generar pedidos nuevos.
+        if (!await _repository.ClienteActivoAsync(dto.ClienteId, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("El cliente seleccionado está desactivado. Reactívalo antes de crear pedidos.");
+        }
+
+        // Existence check: lista de precios (opcional) debe pertenecer al tenant.
+        if (dto.ListaPrecioId is int listaId && listaId > 0
+            && !await _repository.ExisteListaPrecioAsync(listaId, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("La lista de precios especificada no existe o no pertenece a tu empresa.");
+        }
+
+        // Detalles duplicados (mismo productoId > 1 vez): rechazar para evitar que
+        // venta directa haga múltiples SALIDAs y que la UI muestre el mismo item 2×.
+        var duplicados = dto.Detalles.GroupBy(d => d.ProductoId)
+            .Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicados.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"El pedido contiene productos duplicados (IDs: {string.Join(", ", duplicados)}). Consolida la cantidad en una sola línea.");
+        }
+
+        // Validaciones por producto: activo + descuento <= subtotal.
+        foreach (var detalle in dto.Detalles)
+        {
+            // Producto debe estar activo: uno desactivado (descontinuado) no debe venderse.
+            if (!await _repository.ProductoActivoAsync(detalle.ProductoId, _tenant.TenantId))
+            {
+                throw new InvalidOperationException($"El producto con ID {detalle.ProductoId} está desactivado y no puede venderse.");
+            }
+            // Validar que descuento no cree total negativo.
+            if (detalle.PrecioUnitario.HasValue && detalle.Descuento.HasValue)
+            {
+                var subtotal = detalle.Cantidad * detalle.PrecioUnitario.Value;
+                if (detalle.Descuento.Value > subtotal)
+                {
+                    throw new InvalidOperationException(
+                        $"El descuento ({detalle.Descuento.Value:N2}) del producto {detalle.ProductoId} excede el subtotal ({subtotal:N2}).");
+                }
+            }
+        }
+
+        // BR-001: Para Venta Directa, validar stock ANTES de crear el pedido.
+        // Antes se creaba el pedido primero y la validación fallaba después, dejando
+        // pedidos huérfanos en la DB (Audit CRITICAL-1, Abril 2026).
         if (dto.TipoVenta == TipoVenta.VentaDirecta)
         {
-            // Validate stock availability before creating inventory movements
             var stockErrors = new List<string>();
             foreach (var detalle in dto.Detalles)
             {
@@ -50,21 +97,37 @@ public class PedidoService
             {
                 throw new InvalidOperationException($"Stock insuficiente: {string.Join("; ", stockErrors)}");
             }
-
-            foreach (var detalle in dto.Detalles)
-            {
-                await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
-                {
-                    ProductoId = detalle.ProductoId,
-                    TipoMovimiento = "SALIDA",
-                    Cantidad = detalle.Cantidad,
-                    Motivo = "VENTA",
-                    Comentario = $"Venta directa - Pedido #{pedidoId}"
-                });
-            }
         }
 
-        return pedidoId;
+        // BR-002: Pedido + movimientos de inventario en la misma transacción —
+        // si el movimiento falla, el pedido debe rollback. ExecutionStrategy
+        // wrapping required because DbContext has EnableRetryOnFailure.
+        return await _transactions.ExecuteInTransactionAsync(async () =>
+        {
+            var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
+
+            if (dto.TipoVenta == TipoVenta.VentaDirecta)
+            {
+                foreach (var detalle in dto.Detalles)
+                {
+                    var (_, success, error) = await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
+                    {
+                        ProductoId = detalle.ProductoId,
+                        TipoMovimiento = "SALIDA",
+                        Cantidad = detalle.Cantidad,
+                        Motivo = "VENTA",
+                        Comentario = $"Venta directa - Pedido #{pedidoId}"
+                    });
+
+                    if (!success)
+                    {
+                        throw new InvalidOperationException($"No se pudo registrar el movimiento de inventario: {error ?? "error desconocido"}");
+                    }
+                }
+            }
+
+            return pedidoId;
+        });
     }
 
     public async Task<PedidoDto?> ObtenerPorIdAsync(int id)
@@ -79,6 +142,10 @@ public class PedidoService
 
     public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro)
     {
+        // Sanitizar paginación (evita 500 por offset negativo y overflow en totalPaginas).
+        if ((filtro.Pagina ?? 1) < 1) filtro.Pagina = 1;
+        if ((filtro.TamanoPagina ?? 20) < 1) filtro.TamanoPagina = 20;
+        if ((filtro.TamanoPagina ?? 20) > 200) filtro.TamanoPagina = 200;
         // RBAC: Supervisor ve su equipo, Vendedor solo sus pedidos
         List<int>? filterByUsuarioIds = null;
         if (_tenant.IsSupervisor)
@@ -115,6 +182,23 @@ public class PedidoService
 
     public async Task<bool> ActualizarAsync(int id, PedidoUpdateDto dto)
     {
+        if (dto.ListaPrecioId is int listaId && listaId > 0
+            && !await _repository.ExisteListaPrecioAsync(listaId, _tenant.TenantId))
+        {
+            throw new InvalidOperationException("La lista de precios especificada no existe o no pertenece a tu empresa.");
+        }
+        if (dto.Detalles is not null && dto.Detalles.Count > 0)
+        {
+            var dups = dto.Detalles.GroupBy(d => d.ProductoId).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (dups.Count > 0)
+                throw new InvalidOperationException(
+                    $"El pedido contiene productos duplicados (IDs: {string.Join(", ", dups)}). Consolida la cantidad en una sola línea.");
+            foreach (var det in dto.Detalles)
+            {
+                if (!await _repository.ExisteProductoAsync(det.ProductoId, _tenant.TenantId))
+                    throw new InvalidOperationException($"El producto con ID {det.ProductoId} no existe o no pertenece a tu empresa.");
+            }
+        }
         return await _repository.ActualizarAsync(id, dto, _tenant.TenantId);
     }
 
@@ -129,6 +213,18 @@ public class PedidoService
     {
         return await _repository.CambiarEstadoAsync(id, EstadoPedido.Confirmado, "Pedido confirmado", _tenant.TenantId);
     }
+
+    public Task<CambiarEstadoOutcome> ConfirmarDetalladoAsync(int id)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.Confirmado, "Pedido confirmado", _tenant.TenantId);
+
+    public Task<CambiarEstadoOutcome> EnviarARutaDetalladoAsync(int id)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.EnRuta, "Pedido en ruta de entrega", _tenant.TenantId);
+
+    public Task<CambiarEstadoOutcome> EntregarDetalladoAsync(int id, string? notas)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.Entregado, notas ?? "Pedido entregado", _tenant.TenantId);
+
+    public Task<CambiarEstadoOutcome> CancelarDetalladoAsync(int id, string? motivo)
+        => _repository.CambiarEstadoDetalladoAsync(id, EstadoPedido.Cancelado, motivo ?? "Pedido cancelado", _tenant.TenantId);
 
     [Obsolete("Use EnviarARutaAsync instead. EnProceso state removed from simplified workflow.")]
     public async Task<bool> IniciarProcesoAsync(int id)

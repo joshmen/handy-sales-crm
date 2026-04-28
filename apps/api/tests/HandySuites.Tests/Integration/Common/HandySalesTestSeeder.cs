@@ -46,22 +46,22 @@ public static class HandySuitesTestSeeder
 
         // Usuarios para tenant 1 - IDs 1, 123, 124
         // EmailVerificado=true so login works in tests
-        db.Usuarios.Add(new Usuario { Id = 1, Email = "test@user.com", Nombre = "Pedro Picapiedra", EsAdmin = true, RoleId = 1, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
-        db.Usuarios.Add(new Usuario { Id = 123, Email = "user123@test.com", Nombre = "Usuario 123", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
-        db.Usuarios.Add(new Usuario { Id = 124, Email = "user124@test.com", Nombre = "Usuario 124", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
-        db.Usuarios.Add(new Usuario { Id = 125, Email = "user125@test.com", Nombre = "Usuario 125", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 2, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 1, Email = "test@user.com", Nombre = "Pedro Picapiedra", RolExplicito = "ADMIN", RoleId = 1, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 123, Email = "user123@test.com", Nombre = "Usuario 123", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 124, Email = "user124@test.com", Nombre = "Usuario 124", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 125, Email = "user125@test.com", Nombre = "Usuario 125", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 2, EmailVerificado = true });
 
         // Users for ActivityTracking isolated tenants
-        db.Usuarios.Add(new Usuario { Id = 9001, Email = "user9001@test.com", Nombre = "Usuario 9001", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9001, EmailVerificado = true });
-        db.Usuarios.Add(new Usuario { Id = 9002, Email = "user9002@test.com", Nombre = "Usuario 9002", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9001, EmailVerificado = true });
-        db.Usuarios.Add(new Usuario { Id = 9010, Email = "user9010@test.com", Nombre = "Usuario 9010", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9010, EmailVerificado = true });
-        db.Usuarios.Add(new Usuario { Id = 9020, Email = "user9020@test.com", Nombre = "Usuario 9020", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9020, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 9001, Email = "user9001@test.com", Nombre = "Usuario 9001", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9001, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 9002, Email = "user9002@test.com", Nombre = "Usuario 9002", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9001, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 9010, Email = "user9010@test.com", Nombre = "Usuario 9010", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9010, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 9020, Email = "user9020@test.com", Nombre = "Usuario 9020", RolExplicito = "VENDEDOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 9020, EmailVerificado = true });
 
         // Supervisor user for Sprint 7 tests (tenant 1)
-        db.Usuarios.Add(new Usuario { Id = 200, Email = "supervisor@test.com", Nombre = "Supervisor Test", EsAdmin = false, RolExplicito = "SUPERVISOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 200, Email = "supervisor@test.com", Nombre = "Supervisor Test", RolExplicito = "SUPERVISOR", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
 
         // Viewer user for Sprint 6 tests (tenant 1)
-        db.Usuarios.Add(new Usuario { Id = 201, Email = "viewer@test.com", Nombre = "Viewer Test", EsAdmin = false, RolExplicito = "VIEWER", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
+        db.Usuarios.Add(new Usuario { Id = 201, Email = "viewer@test.com", Nombre = "Viewer Test", RolExplicito = "VIEWER", RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1, EmailVerificado = true });
 
         // Pedido for cobro/ruta tests
         db.Pedidos.Add(new Pedido

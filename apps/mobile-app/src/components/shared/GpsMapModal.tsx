@@ -62,6 +62,18 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
   const mapRef = useRef<MapView | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Cleanup pending debounce timer on unmount — sin esto, si el usuario cierra
+  // el modal mientras hay un setTimeout pendiente, el callback dispara setState
+  // sobre componente unmounted (warning + posible memory leak con búsquedas rápidas).
+  useEffect(() => {
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+    };
+  }, []);
+
   // Reset when modal opens with new initialCoord
   const [lastInit, setLastInit] = useState(initialCoord);
   if (visible && (lastInit.latitude !== initialCoord.latitude || lastInit.longitude !== initialCoord.longitude)) {

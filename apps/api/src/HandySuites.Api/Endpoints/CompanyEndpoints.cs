@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.CompanySettings.Services;
 using HandySuites.Application.Companies.DTOs;
 using HandySuites.Application.Companies.Services;
@@ -9,6 +10,7 @@ using HandySuites.Application.DatosFacturacion.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints
 {
@@ -49,7 +51,8 @@ namespace HandySuites.Api.Endpoints
                 UpdateCompanySettingsRequest request,
                 HttpContext context,
                 [FromServices] ICompanySettingsService companyService,
-                [FromServices] ICurrentTenant currentTenant) =>
+                [FromServices] ICurrentTenant currentTenant,
+                [FromServices] IHubContext<NotificationHub> hubContext) =>
             {
                 try
                 {
@@ -71,9 +74,13 @@ namespace HandySuites.Api.Endpoints
 
                     var result = await companyService.UpdateSettingsAsync(tenantId, userId, request);
 
-                    return result != null
-                        ? Results.Ok(result)
-                        : Results.BadRequest("No se pudo actualizar la configuración");
+                    if (result != null)
+                    {
+                        // Notificar a clients del tenant para que mobile invalide useEmpresa.
+                        await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("EmpresaUpdated");
+                        return Results.Ok(result);
+                    }
+                    return Results.BadRequest("No se pudo actualizar la configuración");
                 }
                 catch (Exception ex)
                 {
@@ -89,7 +96,8 @@ namespace HandySuites.Api.Endpoints
             group.MapPost("/upload-logo", async (
                 HttpContext context,
                 [FromServices] ICompanySettingsService companyService,
-                [FromServices] ICurrentTenant currentTenant) =>
+                [FromServices] ICurrentTenant currentTenant,
+                [FromServices] IHubContext<NotificationHub> hubContext) =>
             {
                 try
                 {
@@ -125,9 +133,13 @@ namespace HandySuites.Api.Endpoints
 
                     var result = await companyService.UploadLogoAsync(tenantId, userId, file);
 
-                    return result != null
-                        ? Results.Ok(result)
-                        : Results.BadRequest("No se pudo subir el logo");
+                    if (result != null)
+                    {
+                        // Mobile invalida useEmpresa cache para mostrar nuevo logo sin esperar 1h.
+                        await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("EmpresaUpdated");
+                        return Results.Ok(result);
+                    }
+                    return Results.BadRequest("No se pudo subir el logo");
                 }
                 catch (Exception ex)
                 {

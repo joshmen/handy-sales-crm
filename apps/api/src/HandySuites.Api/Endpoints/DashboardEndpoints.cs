@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using HandySuites.Application.Tenants.DTOs;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using System.Text.Json;
 
@@ -508,12 +509,7 @@ public static class DashboardEndpoints
 
         if (!string.IsNullOrEmpty(rol))
         {
-            if (rol == "SUPER_ADMIN")
-                query = query.Where(u => u.EsSuperAdmin);
-            else if (rol == "ADMIN")
-                query = query.Where(u => u.EsAdmin && !u.EsSuperAdmin);
-            else
-                query = query.Where(u => u.RolExplicito == rol);
+            query = query.Where(u => u.RolExplicito == rol);
         }
 
         if (activo.HasValue)
@@ -537,8 +533,6 @@ public static class DashboardEndpoints
                 u.Nombre,
                 u.Email,
                 u.RolExplicito,
-                u.EsSuperAdmin,
-                u.EsAdmin,
                 u.Activo,
                 u.TenantId,
                 TenantNombre = u.Tenant.NombreEmpresa,
@@ -550,7 +544,7 @@ public static class DashboardEndpoints
             u.Id,
             u.Nombre,
             u.Email,
-            u.RolExplicito ?? (u.EsSuperAdmin ? "SUPER_ADMIN" : u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+            u.RolExplicito ?? RoleNames.Vendedor,
             u.Activo,
             u.TenantId,
             u.TenantNombre,

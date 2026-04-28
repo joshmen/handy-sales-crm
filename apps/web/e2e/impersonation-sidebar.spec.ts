@@ -39,12 +39,13 @@ test.describe('Impersonation Sidebar: Before', () => {
 
     const sidebar = page.locator('aside');
     await expect(sidebar).toBeVisible({ timeout: 10000 });
-    await expect(sidebar.getByText('Dashboard')).toBeVisible({ timeout: 15000 });
+    // Post-Pencil redesign: SA sidebar tiene "Empresas" como link top-level
+    // (con sub-items "Dashboard Sistema", etc. colapsados por default).
+    await expect(sidebar.getByRole('link', { name: /Empresas/i }).first()).toBeVisible({ timeout: 15000 });
     const sidebarContent = (await sidebar.textContent()) || '';
 
-    // SuperAdmin should see simplified menu
+    // SuperAdmin should see simplified menu (Empresas + system items)
     expect(sidebarContent).toContain('Empresas');
-    expect(sidebarContent).toContain('Dashboard');
 
     // SuperAdmin should NOT see tenant-level items
     expect(sidebarContent).not.toContain('Clientes');
@@ -157,10 +158,11 @@ test.describe('Impersonation Sidebar: During', () => {
     const sidebarContent = (await sidebar.textContent()) || '';
 
     // ── Should show ADMIN items ──
+    // Post-Pencil redesign: "Dispositivos" se renombró a estar bajo "Equipo".
     expect(sidebarContent).toContain('Clientes');
     expect(sidebarContent).toContain('Productos');
     expect(sidebarContent).toContain('Pedidos');
-    expect(sidebarContent).toContain('Dispositivos');
+    expect(sidebarContent).toContain('Equipo');
 
     // ── Should NOT show SuperAdmin-only items ──
     expect(sidebarContent).not.toContain('Gestión de Empresas');

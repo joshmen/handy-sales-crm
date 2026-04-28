@@ -19,7 +19,11 @@ export default function AccessDeniedPage() {
         <p className="text-muted-foreground mb-2">
           {t('description')}
         </p>
-        <p className="text-sm text-muted-foreground mb-8" dangerouslySetInnerHTML={{ __html: t('impersonateHint') }} />
+        <p className="text-sm text-muted-foreground mb-8">
+          {t.rich('impersonateHint', {
+            strong: (chunks) => <strong>{chunks}</strong>,
+          })}
+        </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/admin/system-dashboard"

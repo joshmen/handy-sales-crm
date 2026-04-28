@@ -54,6 +54,7 @@ public class HandySuitesDbContext : DbContext
     public DbSet<RutaDetalle> RutasDetalle => Set<RutaDetalle>();
     public DbSet<RutaCarga> RutasCarga => Set<RutaCarga>();
     public DbSet<RutaPedido> RutasPedidos => Set<RutaPedido>();
+    public DbSet<RutaZona> RutasZonas => Set<RutaZona>();
     public DbSet<RutaRetornoInventario> RutasRetornoInventario => Set<RutaRetornoInventario>();
     public DbSet<NotificationHistory> NotificationHistory => Set<NotificationHistory>();
     public DbSet<Cobro> Cobros => Set<Cobro>();
@@ -505,6 +506,32 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(rp => rp.RutaId);
             entity.HasIndex(rp => new { rp.TenantId, rp.RutaId });
             entity.HasIndex(rp => new { rp.RutaId, rp.PedidoId }).IsUnique();
+        });
+
+        // Configure RutaZona junction (multi-zona, alineado con SFA/CPG industria)
+        modelBuilder.Entity<RutaZona>(entity =>
+        {
+            entity.ToTable("RutasZonas");
+            entity.HasKey(rz => rz.Id);
+
+            entity.HasOne(rz => rz.Ruta)
+                  .WithMany(rv => rv.Zonas)
+                  .HasForeignKey(rz => rz.RutaId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rz => rz.Zona)
+                  .WithMany()
+                  .HasForeignKey(rz => rz.ZonaId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(rz => rz.Tenant)
+                  .WithMany()
+                  .HasForeignKey(rz => rz.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(rz => rz.RutaId);
+            entity.HasIndex(rz => new { rz.TenantId, rz.RutaId });
+            entity.HasIndex(rz => new { rz.RutaId, rz.ZonaId }).IsUnique();
         });
 
         // Configure RutaRetornoInventario entity

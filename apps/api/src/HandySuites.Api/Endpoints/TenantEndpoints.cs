@@ -112,12 +112,13 @@ public static class TenantEndpoints
         if (tenant == null)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
-        var usuariosTask = context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.TenantId == id && u.Activo);
-        var clientesTask = context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync(c => c.TenantId == id);
-        var productosTask = context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
-        var pedidosTask = context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
-        await Task.WhenAll(usuariosTask, clientesTask, productosTask, pedidosTask);
-        var stats = new TenantStatsDto(await usuariosTask, await clientesTask, await productosTask, await pedidosTask);
+        // EF DbContext NO es thread-safe: hacer los counts en secuencia.
+        // Task.WhenAll paralelo disparaba "A second operation was started on this context instance".
+        var usuariosCount = await context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.TenantId == id && u.Activo);
+        var clientesCount = await context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync(c => c.TenantId == id);
+        var productosCount = await context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
+        var pedidosCount = await context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
+        var stats = new TenantStatsDto(usuariosCount, clientesCount, productosCount, pedidosCount);
 
         // Cargar DatosEmpresa
         var datosEmpresa = await context.DatosEmpresa
@@ -314,7 +315,7 @@ public static class TenantEndpoints
             // Send deactivation email to admin users
             var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
             var tenantName = tenant?.NombreEmpresa ?? "Empresa";
-            var adminEmails = tenantUsers.Where(u => u.EsAdmin).Select(u => u.Email).ToList();
+            var adminEmails = tenantUsers.Where(u => u.IsAdminOrAbove).Select(u => u.Email).ToList();
             if (adminEmails.Count > 0)
             {
                 var html = EmailTemplates.TenantDeactivated(tenantName);
@@ -409,8 +410,9 @@ public static class TenantEndpoints
                 u.Id,
                 u.Nombre,
                 u.Email,
-                u.EsSuperAdmin ? "SUPER_ADMIN" :
-                u.EsAdmin ? "ADMIN" :
+                // Post-backfill: RolExplicito siempre tiene valor. Role entity
+                // se mantiene como fallback para tablas migradas con NULL.
+                !string.IsNullOrWhiteSpace(u.RolExplicito) ? u.RolExplicito :
                 u.Role != null ? u.Role.Nombre : "Sin rol",
                 u.Activo
             ))
@@ -480,8 +482,6 @@ public static class TenantEndpoints
             Nombre = dto.Nombre,
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            EsAdmin = isAdmin,
-            EsSuperAdmin = false,
             EmailVerificado = false,
             RoleId = roleId,
             RolExplicito = isAdmin ? "ADMIN" : rolNormalized,

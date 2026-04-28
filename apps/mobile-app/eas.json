@@ -11,20 +11,44 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:1052"
+        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:1052",
+        "EXPO_PUBLIC_MAIN_API_URL": "http://10.0.2.2:1050",
+        "EXPO_PUBLIC_ENV": "development"
       }
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyAWdukOqiCChoHstYwtWkb5M4p_Uh-I9NU"
+        "_comment": "preview apunta a STAGING mobile API + PRODUCTION main API. Main API NO tiene servicio staging deployado en Railway (solo Mobile API). Si se agrega un servicio Main API staging, actualizar EXPO_PUBLIC_MAIN_API_URL aquí.",
+        "_maps_comment": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY se inyecta vía EAS Secret (nunca commiteada). Setear con: npx eas secret:create --scope project --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value AIzaSy... — ver docs/deployment/GOOGLE_MAPS_SETUP.md",
+        "EXPO_PUBLIC_API_URL": "https://mobile-api-staging.up.railway.app",
+        "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
+        "EXPO_PUBLIC_ENV": "staging"
       }
     },
     "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyAWdukOqiCChoHstYwtWkb5M4p_Uh-I9NU"
+        "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
+        "EXPO_PUBLIC_ENV": "production"
+      }
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "_comment": "production-apk apunta a PROD APIs pero genera APK para distribucion directa al cliente (sin pasar por Play Store). Mismas URLs que production.",
+        "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
+        "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
+        "EXPO_PUBLIC_ENV": "production"
       }
     }
   },

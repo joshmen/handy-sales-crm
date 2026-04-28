@@ -25,4 +25,7 @@ public interface IClienteVisitaRepository
     // Reportes
     Task<VisitaResumenDiarioDto> ObtenerResumenDiarioAsync(int usuarioId, DateTime fecha, int tenantId);
     Task<IEnumerable<VisitaResumenDiarioDto>> ObtenerResumenSemanalAsync(int usuarioId, DateTime fechaInicio, int tenantId);
+
+    // Existence check
+    Task<bool> ExisteClienteEnTenantAsync(int clienteId, int tenantId);
 }

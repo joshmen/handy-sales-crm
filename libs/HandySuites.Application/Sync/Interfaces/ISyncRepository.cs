@@ -11,6 +11,7 @@ public interface ISyncRepository
     Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<List<ClienteVisita>> GetVisitasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<List<RutaVendedor>> GetRutasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
+    Task<Dictionary<int, List<RutaCarga>>> GetRutasCargaForRutasAsync(int tenantId, List<int> rutaIds);
 
     // Push changes from client - Clientes
     Task<(Cliente entity, bool wasConflict)> UpsertClienteAsync(int tenantId, SyncClienteDto dto, string userId);

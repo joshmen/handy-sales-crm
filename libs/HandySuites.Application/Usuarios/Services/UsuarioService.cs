@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Shared.Multitenancy;
 using HandySuites.Shared.Security;
@@ -96,18 +97,16 @@ public class UsuarioService
         if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
             throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
 
-        // Role resolution
-        var rolUpper = dto.Rol?.ToUpperInvariant() ?? "VENDEDOR";
-        bool esAdmin = false;
+        // Role resolution — RolExplicito es la fuente de verdad ahora.
+        var rolUpper = dto.Rol?.ToUpperInvariant() ?? RoleNames.Vendedor;
         int? roleId = null;
 
-        if (rolUpper == "ADMIN")
+        if (rolUpper == RoleNames.Admin)
         {
             if (!_tenant.IsSuperAdmin)
                 throw new UnauthorizedAccessException("Solo el SuperAdmin puede crear administradores");
-            esAdmin = true;
         }
-        else
+        else if (rolUpper != RoleNames.Vendedor)
         {
             var role = await _repo.ObtenerRolPorNombreAsync(rolUpper);
             if (role != null) roleId = role.Id;
@@ -119,8 +118,7 @@ public class UsuarioService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Nombre = dto.Nombre,
             TenantId = _tenant.TenantId,
-            EsAdmin = esAdmin,
-            EsSuperAdmin = false,
+            RolExplicito = rolUpper,
             RoleId = roleId,
             Activo = true,
             CreadoPor = _tenant.UserId
@@ -148,7 +146,7 @@ public class UsuarioService
         else if (_tenant.IsAdmin)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
-            usuarios = todosUsuarios.Where(u => !u.EsAdmin && !u.EsSuperAdmin).ToList();
+            usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
         }
         // Usuarios normales no pueden ver otros usuarios
         else
@@ -162,8 +160,6 @@ public class UsuarioService
             Email = u.Email,
             TenantId = u.TenantId,
             Nombre = u.Nombre,
-            EsAdmin = u.EsAdmin,
-            EsSuperAdmin = u.EsSuperAdmin,
             Rol = u.Rol,
             AvatarUrl = u.AvatarUrl,
             Activo = u.Activo
@@ -196,7 +192,7 @@ public class UsuarioService
         else if (_tenant.IsAdmin)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
-            usuarios = todosUsuarios.Where(u => !u.EsAdmin && !u.EsSuperAdmin).ToList();
+            usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
         }
         // Usuarios normales no pueden ver otros usuarios
         else
@@ -216,8 +212,6 @@ public class UsuarioService
                 Email = u.Email,
                 TenantId = u.TenantId,
                 Nombre = u.Nombre,
-                EsAdmin = u.EsAdmin,
-                EsSuperAdmin = u.EsSuperAdmin,
                 Rol = u.Rol,
                 AvatarUrl = u.AvatarUrl,
                 Activo = u.Activo
@@ -254,8 +248,6 @@ public class UsuarioService
             Email = usuario.Email,
             Nombre = usuario.Nombre,
             TenantId = usuario.TenantId,
-            EsAdmin = usuario.EsAdmin,
-            EsSuperAdmin = usuario.EsSuperAdmin,
             Rol = usuario.Rol,
             AvatarUrl = usuario.AvatarUrl,
             Activo = usuario.Activo
@@ -274,9 +266,19 @@ public class UsuarioService
             throw new UnauthorizedAccessException("No tienes permisos para actualizar este usuario");
         }
 
+        // BR-030 (Audit HIGH-7, Abril 2026): un ADMIN no puede modificar a otro ADMIN
+        // del mismo tenant — solo el propio usuario o un SUPER_ADMIN puede hacerlo.
+        // Previene que un admin bloquee a otro cambiando email/password.
+        var currentUserId = int.TryParse(_tenant.UserId, out var cuid) ? cuid : 0;
+        var isSelf = usuario.Id == currentUserId;
+        if (!_tenant.IsSuperAdmin && !isSelf && usuario.IsAdminOrAbove)
+        {
+            throw new UnauthorizedAccessException("Solo el propio usuario o un SUPER_ADMIN puede modificar cuentas de administrador.");
+        }
+
         usuario.Email = dto.Email;
         usuario.Nombre = dto.Nombre;
-        
+
         if (!string.IsNullOrEmpty(dto.Password))
         {
             // Check password against known breaches
@@ -290,28 +292,33 @@ public class UsuarioService
         return true;
     }
 
-    public async Task<bool> EliminarUsuarioAsync(int id)
+    public record EliminarUsuarioResult(bool Success, string? Error = null, int PedidosActivos = 0);
+
+    public async Task<EliminarUsuarioResult> EliminarUsuarioAsync(int id, bool forzar = false)
     {
         // Obtener el usuario a eliminar para validar permisos
         var usuario = await _repo.ObtenerPorIdAsync(id);
         if (usuario == null)
-            return false;
+            return new EliminarUsuarioResult(false, Error: "Usuario no encontrado");
 
-        // Super Admin puede eliminar cualquier usuario
-        if (_tenant.IsSuperAdmin)
-        {
-            return await _repo.EliminarAsync(id);
-        }
-        // Admin normal solo puede eliminar usuarios de su tenant
-        else if (_tenant.IsAdmin && usuario.TenantId == _tenant.TenantId)
-        {
-            return await _repo.EliminarAsync(id);
-        }
-        // No tiene permisos
-        else
-        {
+        // Validar permisos
+        if (!_tenant.IsSuperAdmin && !(_tenant.IsAdmin && usuario.TenantId == _tenant.TenantId))
             throw new UnauthorizedAccessException("No tienes permisos para eliminar este usuario");
+
+        // Regla: no permitir borrar usuario con pedidos activos creados por él
+        // (perderíamos contexto del creador en reportes via global query filter).
+        // forzar=true bypasa la validación para casos de cleanup explícito.
+        if (!forzar)
+        {
+            var pedidosActivos = await _repo.ContarPedidosActivosPorUsuarioAsync(id, usuario.TenantId);
+            if (pedidosActivos > 0)
+                return new EliminarUsuarioResult(false,
+                    Error: $"El usuario tiene {pedidosActivos} pedido(s) activo(s) a su nombre. Reasigna o cierra esos pedidos primero, o pasa `?forzar=true`.",
+                    PedidosActivos: pedidosActivos);
         }
+
+        var ok = await _repo.EliminarAsync(id);
+        return new EliminarUsuarioResult(ok);
     }
 
     public async Task<string?> UploadAvatarAsync(int usuarioId, IFormFile file)
@@ -464,8 +471,7 @@ public class UsuarioService
             Email = usuario.Email,
             Nombre = usuario.Nombre,
             TenantId = usuario.TenantId,
-            EsAdmin = usuario.EsAdmin,
-            EsSuperAdmin = usuario.EsSuperAdmin,
+            Rol = usuario.Rol,
             AvatarUrl = usuario.AvatarUrl,
             RoleId = usuario.RoleId,
             RoleName = usuario.Role?.Nombre,
@@ -537,8 +543,6 @@ public class UsuarioService
             Email = u.Email,
             TenantId = u.TenantId,
             Nombre = u.Nombre,
-            EsAdmin = u.EsAdmin,
-            EsSuperAdmin = u.EsSuperAdmin,
             Rol = u.Rol,
             AvatarUrl = u.AvatarUrl,
             Activo = u.Activo

@@ -949,6 +949,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("longitud");
 
+                    b.Property<string>("MobileRecordId")
+                        .HasColumnType("text")
+                        .HasColumnName("mobile_record_id");
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("text")
@@ -2198,6 +2202,10 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<decimal>("Impuesto")
                         .HasColumnType("numeric")
                         .HasColumnName("impuesto");
+
+                    b.Property<string>("MobileRecordId")
+                        .HasColumnType("text")
+                        .HasColumnName("mobile_record_id");
 
                     b.Property<string>("Notas")
                         .HasColumnType("text")
@@ -4146,6 +4154,10 @@ namespace HandySuites.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("AceptadaEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("aceptada_en");
+
                     b.Property<bool>("Activo")
                         .HasColumnType("boolean")
                         .HasColumnName("activo");
@@ -4275,6 +4287,45 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("TenantId", "ZonaId");
 
                     b.ToTable("RutasVendedor", (string)null);
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.RutaZona", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<int>("RutaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ruta_id");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("ZonaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("zona_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RutaId");
+
+                    b.HasIndex("ZonaId");
+
+                    b.HasIndex("RutaId", "ZonaId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "RutaId");
+
+                    b.ToTable("RutasZonas", (string)null);
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.ScheduledAction", b =>
@@ -4930,14 +4981,6 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<bool>("EmailVerificado")
                         .HasColumnType("boolean")
                         .HasColumnName("email_verificado");
-
-                    b.Property<bool>("EsAdmin")
-                        .HasColumnType("boolean")
-                        .HasColumnName("es_admin");
-
-                    b.Property<bool>("EsSuperAdmin")
-                        .HasColumnType("boolean")
-                        .HasColumnName("es_super_admin");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -5955,6 +5998,33 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Navigation("Zona");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.RutaZona", b =>
+                {
+                    b.HasOne("HandySuites.Domain.Entities.RutaVendedor", "Ruta")
+                        .WithMany("Zonas")
+                        .HasForeignKey("RutaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HandySuites.Domain.Entities.Zona", "Zona")
+                        .WithMany()
+                        .HasForeignKey("ZonaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ruta");
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("Zona");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.Tenant", b =>
                 {
                     b.HasOne("HandySuites.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
@@ -6154,6 +6224,8 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Navigation("PedidosAsignados");
 
                     b.Navigation("RetornoInventario");
+
+                    b.Navigation("Zonas");
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.SubscriptionPlan", b =>

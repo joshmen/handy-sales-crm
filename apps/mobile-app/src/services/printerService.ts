@@ -37,7 +37,7 @@ function loadNativeModules() {
 
   const isExpoGo = Constants.appOwnership === 'expo';
   if (isExpoGo) {
-    console.log('[Printer] Running in Expo Go — native modules not available');
+    if (__DEV__) console.log('[Printer] Running in Expo Go — native modules not available');
     return;
   }
 
@@ -47,7 +47,7 @@ function loadNativeModules() {
     BluetoothEscposPrinter = mod.BluetoothEscposPrinter;
     NetPrinter = mod.NetPrinter ?? null;
     nativeAvailable = true;
-    console.log('[Printer] Native modules loaded (BT + Net)');
+    if (__DEV__) console.log('[Printer] Native modules loaded (BT + Net)');
   } catch (e) {
     if (__DEV__) console.warn('[Printer] Native modules not available:', e);
   }
@@ -263,6 +263,11 @@ export interface ReceiptData {
   facturaUuid?: string;
   facturaUrl?: string;
   paperWidth?: 58 | 80;
+  // Locale/TZ del tenant para formatear fecha y moneda en el ticket.
+  // Si no se provee, cae a 'es-MX' / 'America/Mexico_City' / 'MXN' (legacy default).
+  locale?: string;
+  timezone?: string;
+  currency?: string;
 }
 
 export async function printReceipt(data: ReceiptData): Promise<boolean> {
@@ -304,14 +309,18 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(`Cliente: ${data.clienteNombre}\n`, {});
 
-    // Date
-    const fechaStr = new Date(data.fecha).toLocaleString('es-MX');
+    // Date — usa TZ/locale del tenant si se proveyó (printerService no es React,
+    // el caller debe pasar locale/timezone obtenidos de useTenantLocale)
+    const printLocale = data.locale ?? 'es-MX';
+    const printTz = data.timezone ?? 'America/Mexico_City';
+    const printCurrency = data.currency ?? 'MXN';
+    const fechaStr = new Intl.DateTimeFormat(printLocale, { timeZone: printTz, dateStyle: 'short', timeStyle: 'short' }).format(new Date(data.fecha));
     await P.printText(`Fecha: ${fechaStr}\n`, {});
 
     // Items (if present — Venta Directa)
     if (data.items && data.items.length > 0) {
       await P.printText('--------------------------------\n', {});
-      const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      const fmt = (n: number) => new Intl.NumberFormat(printLocale, { style: 'currency', currency: printCurrency }).format(n);
       const W = 32; // thermal printer char width
       for (const item of data.items) {
         await P.printerAlign(ALIGN.LEFT);
@@ -338,11 +347,11 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
       await P.printText('--------------------------------\n', {});
     }
 
-    // Amount (big)
+    // Amount (big) — locale/currency del tenant (legacy default es-MX/MXN)
     await P.printerAlign(ALIGN.CENTER);
-    const montoStr = new Intl.NumberFormat('es-MX', {
+    const montoStr = new Intl.NumberFormat(data.locale ?? 'es-MX', {
       style: 'currency',
-      currency: 'MXN',
+      currency: data.currency ?? 'MXN',
     }).format(data.monto);
     await P.printText(`TOTAL\n`, {});
     await P.printText(`${montoStr}\n`, { widthtimes: 2, heigthtimes: 2 });
@@ -380,7 +389,7 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
 
     return true;
   } catch (e) {
-    console.error('[Printer] Print failed:', e);
+    if (__DEV__) console.error('[Printer] Print failed:', e);
     return false;
   }
 }
@@ -412,6 +421,11 @@ export interface OrderTicketData {
   logoUri?: string;
   facturaUrl?: string;
   paperWidth?: 58 | 80;
+  // Locale/TZ del tenant (caller los provee de useTenantLocale).
+  // Default fallback: 'es-MX' / 'America/Mexico_City' / 'MXN'.
+  locale?: string;
+  timezone?: string;
+  currency?: string;
 }
 
 export async function printOrderTicket(data: OrderTicketData): Promise<boolean> {
@@ -421,8 +435,11 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
   try {
     const P = BluetoothEscposPrinter;
     const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
+    const printLocale = data.locale ?? 'es-MX';
+    const printTz = data.timezone ?? 'America/Mexico_City';
+    const printCurrency = data.currency ?? 'MXN';
     const fmt = (n: number) =>
-      new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      new Intl.NumberFormat(printLocale, { style: 'currency', currency: printCurrency }).format(n);
 
     // Logo
     if (data.logoUri) {
@@ -450,7 +467,7 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(`Pedido: ${data.numeroPedido}\n`, {});
     await P.printText(`Cliente: ${data.clienteNombre}\n`, {});
-    await P.printText(`Fecha: ${new Date(data.fecha).toLocaleString('es-MX')}\n`, {});
+    await P.printText(`Fecha: ${new Intl.DateTimeFormat(printLocale, { timeZone: printTz, dateStyle: 'short', timeStyle: 'short' }).format(new Date(data.fecha))}\n`, {});
     await P.printText(`Tipo: ${data.tipoVenta}\n`, {});
     await P.printText('--------------------------------\n', {});
 
@@ -501,12 +518,21 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
 
     return true;
   } catch (e) {
-    console.error('[Printer] Order ticket print failed:', e);
+    if (__DEV__) console.error('[Printer] Order ticket print failed:', e);
     return false;
   }
 }
 
 // ---------- CFDI Ticket Printing (80mm) ----------
+
+export interface CfdiImpuestoConcepto {
+  tipo: string;          // TRASLADO | RETENCION
+  impuesto: string;      // 001=ISR, 002=IVA, 003=IEPS
+  tipoFactor: string;    // Tasa | Cuota | Exento
+  tasaOCuota?: number | null;
+  base: number;
+  importe?: number | null;
+}
 
 export interface CfdiTicketData {
   // Emisor
@@ -515,6 +541,7 @@ export interface CfdiTicketData {
   emisorRegimenFiscal: string;
   emisorDireccion?: string;
   emisorCp: string;
+  lugarExpedicion: string;          // Anexo 20: C.P. del domicilio fiscal emisor
   // Receptor
   receptorRfc: string;
   receptorNombre: string;
@@ -526,12 +553,29 @@ export interface CfdiTicketData {
   serie?: string;
   folio?: string;
   fecha: string;
+  tipoComprobante: string;          // Anexo 20 4.0: I/E/T/N/P (Ingreso, Egreso, Traslado, Nómina, Pago)
   formaPago: string;
   metodoPago: string;
-  // Items
-  items: Array<{ descripcion: string; cantidad: number; precioUnitario: number; importe: number }>;
+  tipoExportacion: string;          // Anexo 20 4.0 obligatorio. Default "01 - No aplica"
+  moneda: string;                   // ISO 4217: MXN, USD, EUR
+  tipoCambio: number;               // 1 si MXN, otro valor si moneda extranjera
+  // Items (con claves SAT obligatorias en CFDI 4.0)
+  items: Array<{
+    descripcion: string;
+    cantidad: number;
+    precioUnitario: number;
+    importe: number;
+    descuento: number;
+    claveProductoServ: string;      // ClaveProdServ SAT (8 dígitos)
+    claveUnidad: string;            // ClaveUnidad SAT (ej: "H87", "E48")
+    unidad?: string | null;         // Texto descriptivo (ej: "Pieza", "Litro")
+    objetoImpuesto: string;         // "01"|"02"|"03"|"04"
+    impuestos: CfdiImpuestoConcepto[];
+  }>;
   subtotal: number;
-  iva: number;
+  descuento: number;                // Descuento global (suma de descuentos de líneas)
+  iva: number;                      // Total impuestos trasladados
+  totalRetenciones: number;         // Total impuestos retenidos
   total: number;
   totalLetra: string;
   // Timbrado
@@ -540,10 +584,38 @@ export interface CfdiTicketData {
   cadenaOriginal: string;
   noCertificadoEmisor: string;
   noCertificadoSat: string;
-  fechaTimbrado: string;
+  fechaTimbrado: string;            // ISO string desde server; el template formatea con TZ
+  fechaCertificacion?: string | null;
+  rfcPac: string;                   // RfcProvCertif del TimbreFiscalDigital
   // Extras
   vendedorName: string;
   logoUri?: string;
+}
+
+/**
+ * Mapea TipoComprobante (1 letra) a su nombre Anexo 20 4.0 para representación impresa.
+ */
+export function tipoComprobanteLabel(t: string): string {
+  switch ((t || '').toUpperCase()) {
+    case 'I': return 'Ingreso';
+    case 'E': return 'Egreso';
+    case 'T': return 'Traslado';
+    case 'N': return 'Nómina';
+    case 'P': return 'Pago';
+    default:  return t || '-';
+  }
+}
+
+/**
+ * Mapea Impuesto (clave SAT 3 dígitos) a nombre legible.
+ */
+export function impuestoLabel(codigo: string): string {
+  switch (codigo) {
+    case '001': return 'ISR';
+    case '002': return 'IVA';
+    case '003': return 'IEPS';
+    default:    return codigo;
+  }
 }
 
 export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
@@ -554,8 +626,10 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     const P = BluetoothEscposPrinter;
     const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
     const W = 48; // 80mm thermal printer char width
+    // CFDI usa data.moneda (Anexo 20: campo obligatorio en el comprobante).
+    // El locale tenant define separadores. Default 'es-MX' es coherente con SAT.
     const fmt = (n: number) =>
-      new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      new Intl.NumberFormat('es-MX', { style: 'currency', currency: data.moneda || 'MXN' }).format(n);
     const pad = (l: string, r: string, w = W) =>
       l + ' '.repeat(Math.max(1, w - l.length - r.length)) + r;
     const sep = '================================================\n';
@@ -566,52 +640,89 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
       try { await printLogo(data.logoUri); } catch { /* skip */ }
     }
 
+    // Helper: wrap texto largo en líneas de W chars. Se usa para sellos y cadena
+    // (Anexo 20 exige imprimirlos completos, sin truncar).
+    const wrap = async (s: string) => {
+      for (let i = 0; i < s.length; i += W) {
+        await P.printText(`${s.slice(i, i + W)}\n`, {});
+      }
+    };
+
     // ── Emisor header ──
     await P.printerAlign(ALIGN.CENTER);
     await P.printText(`${data.emisorNombre}\n`, { widthtimes: 1, heigthtimes: 1 });
     await P.printText(`RFC: ${data.emisorRfc}\n`, {});
-    await P.printText(`Regimen: ${data.emisorRegimenFiscal}\n`, {});
+    await P.printText(`Regimen Fiscal: ${data.emisorRegimenFiscal}\n`, {});
     if (data.emisorDireccion) {
       await P.printText(`${data.emisorDireccion}\n`, {});
     }
     await P.printText(`C.P. ${data.emisorCp}\n`, {});
+    await P.printText(`Lugar de Expedicion: ${data.lugarExpedicion}\n`, {});
     await P.printText('\n', {});
 
     // ── Title ──
     await P.printText('FACTURA ELECTRONICA\n', { widthtimes: 1, heigthtimes: 1 });
     await P.printText(sep, {});
 
-    // ── Serie / Folio / Fecha ──
+    // ── Serie / Folio / Fecha / Tipo Comprobante / Pago / Moneda / Tipo Exportación ──
     await P.printerAlign(ALIGN.LEFT);
     if (data.serie || data.folio) {
       await P.printText(`Serie: ${data.serie ?? '-'}  Folio: ${data.folio ?? '-'}\n`, {});
     }
     await P.printText(`Fecha: ${data.fecha}\n`, {});
+    await P.printText(`Tipo Comprobante: ${data.tipoComprobante} - ${tipoComprobanteLabel(data.tipoComprobante)}\n`, {});
     await P.printText(`Forma Pago: ${data.formaPago}\n`, {});
     await P.printText(`Metodo Pago: ${data.metodoPago}\n`, {});
+    await P.printText(`Moneda: ${data.moneda}`, {});
+    if (data.moneda && data.moneda !== 'MXN' && data.tipoCambio && data.tipoCambio !== 1) {
+      await P.printText(`  Tipo Cambio: ${data.tipoCambio.toFixed(4)}\n`, {});
+    } else {
+      await P.printText('\n', {});
+    }
+    await P.printText(`Tipo Exportacion: ${data.tipoExportacion}\n`, {});
     await P.printText(sepThin, {});
 
     // ── Receptor ──
     await P.printText('RECEPTOR\n', { widthtimes: 0, heigthtimes: 0 });
     await P.printText(`RFC: ${data.receptorRfc}\n`, {});
     await P.printText(`Nombre: ${data.receptorNombre}\n`, {});
-    await P.printText(`Regimen: ${data.receptorRegimenFiscal}\n`, {});
+    await P.printText(`Regimen Fiscal: ${data.receptorRegimenFiscal}\n`, {});
     await P.printText(`Uso CFDI: ${data.receptorUsoCfdi}\n`, {});
     await P.printText(`C.P. ${data.receptorCp}\n`, {});
     await P.printText(sepThin, {});
 
-    // ── Items ──
+    // ── Items con claves SAT ──
     await P.printText('CONCEPTOS\n', {});
     for (const item of data.items) {
       await P.printerAlign(ALIGN.LEFT);
       const left = `${item.descripcion} x${item.cantidad}`;
       const right = fmt(item.importe);
-      // If line is too long, wrap description on first line, total on second
       if (left.length + right.length + 1 > W) {
         await P.printText(`${item.descripcion}\n`, {});
         await P.printText(pad(`  x${item.cantidad} @${fmt(item.precioUnitario)}`, right) + '\n', {});
       } else {
         await P.printText(pad(left, right) + '\n', {});
+      }
+      // Sub-línea con claves SAT requeridas por CFDI 4.0
+      const unidadTxt = item.unidad ? ` (${item.unidad})` : '';
+      await P.printText(
+        `  Clave SAT: ${item.claveProductoServ} | Unidad: ${item.claveUnidad}${unidadTxt} | ObjImp: ${item.objetoImpuesto}\n`,
+        {}
+      );
+      // Descuento por concepto (si > 0)
+      if (item.descuento && item.descuento > 0) {
+        await P.printText(pad('  Descuento:', `-${fmt(item.descuento)}`) + '\n', {});
+      }
+      // Impuestos por concepto (Anexo 20 4.0: desglose obligatorio si ObjetoImp=02)
+      for (const imp of item.impuestos ?? []) {
+        const tasa = imp.tasaOCuota != null
+          ? (imp.tipoFactor === 'Tasa' ? `${(imp.tasaOCuota * 100).toFixed(2)}%` : imp.tasaOCuota.toFixed(6))
+          : 'Exento';
+        const importeImp = imp.importe != null ? fmt(imp.importe) : '-';
+        await P.printText(
+          `  ${imp.tipo === 'RETENCION' ? 'Ret.' : 'Tras.'} ${impuestoLabel(imp.impuesto)} ${tasa}: ${importeImp}\n`,
+          {}
+        );
       }
     }
     await P.printText(sepThin, {});
@@ -619,7 +730,13 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     // ── Totals ──
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(pad('SUBTOTAL:', fmt(data.subtotal)) + '\n', {});
-    await P.printText(pad('IVA 16%:', fmt(data.iva)) + '\n', {});
+    if (data.descuento && data.descuento > 0) {
+      await P.printText(pad('DESCUENTO:', `-${fmt(data.descuento)}`) + '\n', {});
+    }
+    await P.printText(pad('IVA Trasladado:', fmt(data.iva)) + '\n', {});
+    if (data.totalRetenciones && data.totalRetenciones > 0) {
+      await P.printText(pad('Retenciones:', `-${fmt(data.totalRetenciones)}`) + '\n', {});
+    }
     await P.printText(sep, {});
     await P.printerAlign(ALIGN.CENTER);
     await P.printText(`TOTAL: ${fmt(data.total)}\n`, { widthtimes: 2, heigthtimes: 2 });
@@ -636,26 +753,36 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
     await P.printText(`${data.uuid}\n`, {});
     await P.printText('\n', {});
 
-    // ── Certificados ──
+    // ── Certificados + fecha timbrado con TZ CDMX ──
     await P.printerAlign(ALIGN.LEFT);
     await P.printText(`No. Cert. Emisor: ${data.noCertificadoEmisor}\n`, {});
     await P.printText(`No. Cert. SAT: ${data.noCertificadoSat}\n`, {});
-    await P.printText(`Fecha Timbrado: ${data.fechaTimbrado}\n`, {});
-    await P.printText(sepThin, {});
-
-    // ── Sellos (truncated for thermal) ──
-    await P.printText('Sello CFDI:\n', {});
-    await P.printText(`${data.selloCfdi.slice(0, 40)}...\n`, {});
-    await P.printText('Sello SAT:\n', {});
-    await P.printText(`${data.selloSat.slice(0, 40)}...\n`, {});
-    await P.printText(sepThin, {});
-
-    // ── Cadena original (wrap at W chars) ──
-    await P.printText('Cadena Original:\n', {});
-    const cadena = data.cadenaOriginal;
-    for (let i = 0; i < cadena.length; i += W) {
-      await P.printText(`${cadena.slice(i, i + W)}\n`, {});
+    await P.printText(`RFC PAC: ${data.rfcPac}\n`, {});
+    {
+      let fechaFmt = data.fechaTimbrado;
+      try {
+        fechaFmt = new Date(data.fechaTimbrado).toLocaleString('es-MX', {
+          timeZone: 'America/Mexico_City',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+        }) + ' (CDMX)';
+      } catch { /* usar el raw si no parsea */ }
+      await P.printText(`Fecha Timbrado: ${fechaFmt}\n`, {});
     }
+    await P.printText(sepThin, {});
+
+    // ── Sellos COMPLETOS (Anexo 20 4.0: no truncar) ──
+    await P.printText('Sello Digital del CFDI:\n', {});
+    await wrap(data.selloCfdi);
+    await P.printText('\n', {});
+    await P.printText('Sello Digital del SAT:\n', {});
+    await wrap(data.selloSat);
+    await P.printText(sepThin, {});
+
+    // ── Cadena original del complemento de certificación ──
+    await P.printText('Cadena Original del Complemento de\n', {});
+    await P.printText('Certificacion Digital del SAT:\n', {});
+    await wrap(data.cadenaOriginal);
     await P.printText(sepThin, {});
 
     // ── Leyenda ──
@@ -677,7 +804,7 @@ export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
 
     return true;
   } catch (e) {
-    console.error('[Printer] CFDI ticket print failed:', e);
+    if (__DEV__) console.error('[Printer] CFDI ticket print failed:', e);
     return false;
   }
 }

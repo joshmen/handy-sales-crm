@@ -93,6 +93,29 @@ public class ProductoRepository : IProductoRepository
         return true;
     }
 
+    public async Task<int> ContarPedidosActivosAsync(int productoId, int tenantId)
+    {
+        // DetallePedidos referencian pedidos; filtramos por pedidos no-terminales
+        // del tenant correspondiente.
+        return await _db.DetallePedidos
+            .Where(dp => dp.ProductoId == productoId
+                && dp.Pedido.TenantId == tenantId
+                && dp.Pedido.Estado != Domain.Entities.EstadoPedido.Entregado
+                && dp.Pedido.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .CountAsync();
+    }
+
+    public async Task<bool> ExisteCodigoBarraAsync(string codigoBarra, int tenantId, int? excludeId)
+    {
+        if (string.IsNullOrWhiteSpace(codigoBarra)) return false;
+        var query = _db.Productos
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId && p.CodigoBarra == codigoBarra);
+        if (excludeId.HasValue)
+            query = query.Where(p => p.Id != excludeId.Value);
+        return await query.AnyAsync();
+    }
+
     public async Task<bool> EliminarAsync(int id, int tenantId)
     {
         var entity = await _db.Productos
@@ -206,4 +229,17 @@ public class ProductoRepository : IProductoRepository
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExisteFamiliaAsync(int familiaId, int tenantId)
+        => await _db.FamiliasProductos.AsNoTracking()
+            .AnyAsync(f => f.Id == familiaId && f.TenantId == tenantId);
+
+    public async Task<bool> ExisteCategoriaAsync(int categoriaId, int tenantId)
+        => await _db.CategoriasProductos.AsNoTracking()
+            .AnyAsync(c => c.Id == categoriaId && c.TenantId == tenantId);
+
+    public async Task<bool> ExisteUnidadMedidaAsync(int unidadId)
+        => await _db.UnidadesMedida.AsNoTracking()
+            .AnyAsync(u => u.Id == unidadId);
+    // Nota: UnidadesMedida aplica global filter por tenant; la query filter se encarga de RLS.
 }

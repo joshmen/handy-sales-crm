@@ -9,7 +9,8 @@ import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import { Card, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
+import { getGreetingForTz } from '@/utils/greeting';
 import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
@@ -19,6 +20,8 @@ import { Target } from 'lucide-react-native';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency, tz } = useTenantLocale();
+  const greeting = getGreetingForTz(tz);
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -103,6 +106,7 @@ export function VendedorDashboard() {
 
   const initials = (user?.name ?? 'V')
     .split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .join('')
     .slice(0, 2)
@@ -114,12 +118,6 @@ export function VendedorDashboard() {
     setRefreshing(false);
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos dias';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
-  };
 
   return (
     <ScrollView
@@ -140,7 +138,7 @@ export function VendedorDashboard() {
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>
-              {getGreeting()}, {user?.name?.split(' ')[0] || 'Vendedor'}
+              {greeting}, {user?.name?.split(' ')[0] || 'Vendedor'}
             </Text>
           </View>
           <View style={styles.headerAvatar}>
@@ -151,7 +149,7 @@ export function VendedorDashboard() {
 
       {/* KPI Cards — white bg, no pastel, no icon circles */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-        <Text style={styles.sectionLabel}>RESUMEN DEL DIA</Text>
+        <Text style={styles.sectionLabel}>RESUMEN DEL DÍA</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.kpiRow}>
         <View style={styles.kpiCard}>
@@ -232,7 +230,7 @@ export function VendedorDashboard() {
 
       {/* Route Progress */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)}>
-        <Text style={styles.sectionLabel}>RUTA DEL DIA</Text>
+        <Text style={styles.sectionLabel}>RUTA DEL DÍA</Text>
         {loadingRuta ? (
           <LoadingSpinner size="small" />
         ) : route ? (
@@ -275,7 +273,7 @@ export function VendedorDashboard() {
 
       {/* Quick Actions — white cards with gray icons */}
       <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-        <Text style={styles.sectionLabel}>ACCIONES RAPIDAS</Text>
+        <Text style={styles.sectionLabel}>ACCIONES RÁPIDAS</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
@@ -306,7 +304,7 @@ export function VendedorDashboard() {
       <Card className="mb-4">
         <View style={styles.activityEmpty}>
           <Text style={styles.activityEmptyText}>
-            Aqui veras los ultimos eventos del dia
+            Aquí verás los últimos eventos del día
           </Text>
         </View>
       </Card>

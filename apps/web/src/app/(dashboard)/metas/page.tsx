@@ -33,6 +33,7 @@ import {
 import { Target } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { useFormatters } from '@/hooks/useFormatters';
 
 // ─── Types ─────────────────────────────────────────────
@@ -79,6 +80,7 @@ const nextMonthStr = () => {
 export default function MetasPage() {
   const t = useTranslations('goals');
   const tc = useTranslations('common');
+  const showApiError = useApiErrorToast();
   const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
 
@@ -331,8 +333,8 @@ export default function MetasPage() {
       await metaVendedorService.delete(confirmDeleteId);
       setMetas(prev => prev.filter(m => m.id !== confirmDeleteId));
       toast.success(t('goalDeleted'));
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     } finally {
       setDeleteLoading(false);
       setConfirmDeleteId(null);

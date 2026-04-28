@@ -1,4 +1,5 @@
 export { useLogin, useLogout } from './useAuth';
+export { useRealtime } from './useRealtime';
 export { useClientsList, useClientDetail } from './useClients';
 export { useOrdersList, useOrderDetail, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from './useOrders';
 export { useVisitsToday, useVisitsSummary, useVisitsSummaryWeekly, useActiveVisit } from './useVisits';
@@ -15,7 +16,7 @@ export { useObservable } from './useObservable';
 export { useOfflineClients, useOfflineClientById } from './useOfflineClients';
 export { useOfflineProducts, useOfflineProductById } from './useOfflineProducts';
 export { useOfflineOrders, useOfflineOrderById, useOfflineOrderDetalles } from './useOfflineOrders';
-export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles } from './useOfflineRoutes';
+export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga } from './useOfflineRoutes';
 export { useOfflineVisits, useOfflineVisitById, useOfflineTodayVisits } from './useOfflineVisits';
 export { useOfflineCobros, useOfflineCobroById, useOfflineTodayCobros } from './useOfflineCobros';
 export { usePendingCount } from './usePendingCount';
@@ -30,3 +31,10 @@ export { useUnreadNotificationCount } from './useNotificationCount';
 // Map hooks
 export { useMapData } from './useMapData';
 export { useLocationTracking } from './useLocationTracking';
+
+// Facturación (gating por país — multi-país-ready)
+export { useFacturacionEnabled } from './useFacturacionEnabled';
+export { useFacturasList, useFacturaById, useEnviarFactura, useFacturaTicketData } from './useFacturas';
+
+// Localización (TZ + currency + language del tenant)
+export { useTenantLocale } from './useTenantLocale';

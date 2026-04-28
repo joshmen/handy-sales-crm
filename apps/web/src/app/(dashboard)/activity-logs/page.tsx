@@ -119,7 +119,9 @@ export default function ActivityLogsPage() {
   // Load tenants for SuperAdmin filter
   useEffect(() => {
     if (isSuperAdmin) {
-      tenantService.getAll().then(setTenants).catch(() => {});
+      tenantService.getAll()
+        .then(setTenants)
+        .catch((err) => console.error('[ActivityLogs] failed to load tenants for filter:', err));
     }
   }, [isSuperAdmin]);
 

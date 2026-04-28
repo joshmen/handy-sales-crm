@@ -19,8 +19,12 @@ public interface IRutaVendedorRepository
 
     // Gestión de estado
     Task<bool> IniciarRutaAsync(int id, DateTime horaInicio);
+    Task<bool> AceptarRutaAsync(int id, DateTime aceptadaEn);
     Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales);
     Task<bool> CancelarRutaAsync(int id, string? motivo);
+
+    /// <summary>Reemplaza las zonas de una ruta por la lista dada (delete-then-insert idempotente).</summary>
+    Task ReemplazarZonasAsync(int rutaId, List<int> zonaIds, int tenantId);
 
     // Gestión de detalles
     Task<int> AgregarDetalleAsync(RutaDetalle detalle);
@@ -55,11 +59,15 @@ public interface IRutaVendedorRepository
     Task AsignarPedidoAsync(int rutaId, int pedidoId, int tenantId);
     Task RemoverPedidoAsync(int rutaId, int pedidoId, int tenantId);
     Task ActualizarEfectivoInicialAsync(int rutaId, double monto, string? comentarios, int tenantId);
-    Task EnviarACargaAsync(int rutaId, int tenantId);
+    Task EnviarACargaAsync(int rutaId, int tenantId, List<int>? pedidoIdsToTransition = null);
 
     // === Cierre de ruta ===
     Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId, int tenantId);
     Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId, int tenantId);
     Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int tenantId);
     Task CerrarRutaAsync(int rutaId, double montoRecibido, string cerradoPor, int tenantId);
+
+    // === Existence checks ===
+    Task<bool> ExisteUsuarioEnTenantAsync(int usuarioId, int tenantId);
+    Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId);
 }

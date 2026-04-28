@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineCobros, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
-import { formatCurrency, formatTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
 import { Receipt, Banknote, ArrowRightLeft, FileText, CreditCard, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
@@ -24,9 +24,14 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 export default function HistorialCobrosScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, time: formatTime } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const { data: cobros, isLoading } = useOfflineCobros();
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(
+    () => Array.from(new Set((cobros ?? []).map(c => c.clienteId))),
+    [cobros]
+  );
+  const clientNames = useClientNameMap(clienteIds);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -41,6 +46,8 @@ export default function HistorialCobrosScreen() {
         style={styles.cobroItem}
         activeOpacity={0.7}
         onPress={() => router.push(`/(tabs)/cobrar/detalle-cobro/${item.id}` as any)}
+        accessibilityLabel={`Cobro ${formatCurrency(item.monto)} ${clientNames.get(item.clienteId) || ''}`}
+        accessibilityRole="button"
       >
         <View style={styles.cobroIconWrap}>
           {METODO_ICONS[item.metodoPago] || <Receipt size={16} color="#6b7280" />}
@@ -81,7 +88,7 @@ export default function HistorialCobrosScreen() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Historial de Cobros</Text>

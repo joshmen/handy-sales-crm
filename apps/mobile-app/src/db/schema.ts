@@ -1,22 +1,25 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 8,
+  version: 13,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
       name: 'clientes',
       columns: [
         { name: 'server_id', type: 'number', isOptional: true },
-        { name: 'nombre', type: 'string' },
+        { name: 'nombre', type: 'string', isIndexed: true },
         { name: 'nombre_comercial', type: 'string', isOptional: true },
         { name: 'rfc', type: 'string', isOptional: true },
         { name: 'telefono', type: 'string', isOptional: true },
         { name: 'email', type: 'string', isOptional: true },
         { name: 'direccion', type: 'string', isOptional: true },
+        { name: 'numero_exterior', type: 'string', isOptional: true },
+        { name: 'colonia', type: 'string', isOptional: true },
         { name: 'ciudad', type: 'string', isOptional: true },
         { name: 'estado', type: 'string', isOptional: true },
         { name: 'codigo_postal', type: 'string', isOptional: true },
+        { name: 'encargado', type: 'string', isOptional: true },
         { name: 'latitud', type: 'number', isOptional: true },
         { name: 'longitud', type: 'number', isOptional: true },
         { name: 'zona_id', type: 'number', isOptional: true },
@@ -24,6 +27,11 @@ export const schema = appSchema({
         { name: 'vendedor_id', type: 'number', isOptional: true },
         { name: 'limite_credito', type: 'number' },
         { name: 'dias_credito', type: 'number' },
+        { name: 'descuento', type: 'number' },
+        { name: 'saldo', type: 'number' },
+        { name: 'venta_minima_efectiva', type: 'number' },
+        { name: 'tipos_pago_permitidos', type: 'string' },
+        { name: 'tipo_pago_predeterminado', type: 'string' },
         { name: 'notas', type: 'string', isOptional: true },
         { name: 'lista_precios_id', type: 'number', isOptional: true },
         { name: 'es_prospecto', type: 'boolean' },
@@ -33,7 +41,7 @@ export const schema = appSchema({
         { name: 'uso_cfdi', type: 'string', isOptional: true },
         { name: 'cp_fiscal', type: 'string', isOptional: true },
         { name: 'requiere_factura', type: 'boolean' },
-        { name: 'activo', type: 'boolean' },
+        { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
@@ -74,16 +82,16 @@ export const schema = appSchema({
         { name: 'usuario_id', type: 'number' },
         { name: 'numero_pedido', type: 'string', isOptional: true },
         { name: 'fecha_pedido', type: 'number', isOptional: true },
-        { name: 'estado', type: 'number' }, // 0=Borrador..6=Cancelado
+        { name: 'estado', type: 'number', isIndexed: true }, // 0=Borrador..6=Cancelado
         { name: 'tipo_venta', type: 'number' }, // 0=Preventa, 1=VentaDirecta
         { name: 'subtotal', type: 'number' },
         { name: 'descuento', type: 'number' },
         { name: 'impuesto', type: 'number' },
         { name: 'total', type: 'number' },
         { name: 'notas', type: 'string', isOptional: true },
-        { name: 'activo', type: 'boolean' },
+        { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
-        { name: 'created_at', type: 'number' },
+        { name: 'created_at', type: 'number', isIndexed: true },
         { name: 'updated_at', type: 'number' },
       ],
     }),
@@ -113,8 +121,8 @@ export const schema = appSchema({
       columns: [
         { name: 'server_id', type: 'number', isOptional: true },
         { name: 'nombre', type: 'string' },
-        { name: 'fecha', type: 'number' },
-        { name: 'usuario_id', type: 'number' },
+        { name: 'fecha', type: 'number', isIndexed: true },
+        { name: 'usuario_id', type: 'number', isIndexed: true },
         { name: 'estado', type: 'number' }, // 0=Planificada..3=Cancelada
         { name: 'km_recorridos', type: 'number', isOptional: true },
         { name: 'hora_inicio', type: 'number', isOptional: true },
@@ -124,6 +132,47 @@ export const schema = appSchema({
         { name: 'notas', type: 'string', isOptional: true },
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        // v13 (2026-04-27): multi-zona. JSON array de ids de zonas que cubre la
+        // ruta. Más simple que junction local porque mobile es read-only de este
+        // dato (admin decide desde web). El parsing está en el modelo Ruta.
+        { name: 'zonas_json', type: 'string', isOptional: true },
+      ],
+    }),
+
+    // ─── Ruta Pedidos (pedidos cargados en el camión, junction RutasPedidos) ───
+    // Carga del camión: pedidos que el vendedor lleva físicamente para entregar
+    // en su ruta. Se sincroniza desde server (read-only en mobile).
+    tableSchema({
+      name: 'ruta_pedidos',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'ruta_id', type: 'string', isIndexed: true },
+        { name: 'pedido_id', type: 'string', isIndexed: true },
+        { name: 'pedido_server_id', type: 'number' },
+        { name: 'estado', type: 'number' }, // 0=Asignado, 1=Entregado, 2=Devuelto
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Ruta Carga (productos sueltos en el camión, junction RutasCarga) ──
+    // Productos para venta directa que el vendedor lleva al camión, NO ligados
+    // a un pedido específico. Se sincroniza desde server (read-only en mobile).
+    tableSchema({
+      name: 'ruta_carga',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'ruta_id', type: 'string', isIndexed: true },
+        { name: 'producto_id', type: 'string', isIndexed: true },
+        { name: 'producto_server_id', type: 'number' },
+        { name: 'cantidad_entrega', type: 'number' },
+        { name: 'cantidad_venta', type: 'number' },
+        { name: 'cantidad_total', type: 'number' },
+        { name: 'precio_unitario', type: 'number' },
+        { name: 'activo', type: 'boolean' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
@@ -139,7 +188,7 @@ export const schema = appSchema({
         { name: 'cliente_server_id', type: 'number', isOptional: true },
         { name: 'orden', type: 'number' },
         { name: 'pedido_id', type: 'string', isOptional: true },
-        { name: 'estado', type: 'number' }, // 0=Pendiente, 1=EnCamino, 2=Visitado, 3=Omitido
+        { name: 'estado', type: 'number', isIndexed: true }, // 0=Pendiente, 1=EnCamino, 2=Visitado, 3=Omitido
         { name: 'hora_llegada', type: 'number', isOptional: true },
         { name: 'hora_salida', type: 'number', isOptional: true },
         { name: 'latitud_llegada', type: 'number', isOptional: true },
@@ -162,13 +211,18 @@ export const schema = appSchema({
         { name: 'ruta_id', type: 'string', isOptional: true },
         { name: 'tipo', type: 'number' }, // 0=Programada..2=Espontanea
         { name: 'resultado', type: 'number' }, // 0=Pendiente..4=Reagendada
-        { name: 'check_in_at', type: 'number', isOptional: true },
+        { name: 'check_in_at', type: 'number', isOptional: true, isIndexed: true },
         { name: 'check_out_at', type: 'number', isOptional: true },
         { name: 'latitud_check_in', type: 'number', isOptional: true },
         { name: 'longitud_check_in', type: 'number', isOptional: true },
         { name: 'distancia_check_in', type: 'number', isOptional: true },
         { name: 'notas', type: 'string', isOptional: true },
-        { name: 'activo', type: 'boolean' },
+        // Fotos del server (JSON array de URLs). Las visitas creadas localmente
+        // usan la tabla `attachments` con upload_status — esta col es solo para
+        // mostrar evidencia ya subida cuando el supervisor revisa una visita
+        // pulled desde el backend.
+        { name: 'fotos_json', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
@@ -188,9 +242,9 @@ export const schema = appSchema({
         { name: 'metodo_pago', type: 'number' }, // 0=Efectivo..5=Otro
         { name: 'referencia', type: 'string', isOptional: true },
         { name: 'notas', type: 'string', isOptional: true },
-        { name: 'activo', type: 'boolean' },
+        { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
-        { name: 'created_at', type: 'number' },
+        { name: 'created_at', type: 'number', isIndexed: true },
         { name: 'updated_at', type: 'number' },
       ],
     }),
@@ -205,7 +259,7 @@ export const schema = appSchema({
         { name: 'tipo', type: 'string' }, // 'photo', 'signature', 'receipt'
         { name: 'local_uri', type: 'string' },
         { name: 'remote_url', type: 'string', isOptional: true },
-        { name: 'upload_status', type: 'string' }, // 'pending', 'uploading', 'uploaded', 'failed'
+        { name: 'upload_status', type: 'string', isIndexed: true }, // 'pending', 'uploading', 'uploaded', 'failed'
         { name: 'retry_count', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

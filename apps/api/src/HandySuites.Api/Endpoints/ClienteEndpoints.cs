@@ -2,11 +2,14 @@ using FluentValidation;
 using HandySuites.Application.Ai.Interfaces;
 using HandySuites.Application.Clientes.DTOs;
 using HandySuites.Application.Clientes.Services;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySuites.Api.Endpoints;
+
+internal record TxClienteResult(IResult Response, int CreatedId);
 
 public static class ClienteEndpoints
 {
@@ -18,25 +21,42 @@ public static class ClienteEndpoints
             [FromServices] ClienteService servicio,
             [FromServices] ISubscriptionEnforcementService enforcement,
             [FromServices] ICurrentTenant currentTenant,
-            [FromServices] IAiEmbeddingService embeddingService) =>
+            [FromServices] IAiEmbeddingService embeddingService,
+            [FromServices] ITransactionManager transactions) =>
         {
-            var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
-            if (!check.Allowed)
-                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
-
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
-            var result = await servicio.CrearClienteAsync(dto);
-            if (!result.Success)
-                return Results.Conflict(new { message = result.Error });
+            // BR-020: plan-limit check + INSERT must happen inside the same transaction
+            // so the per-tenant advisory lock held by CanCreateClienteAsync covers both.
+            // Using ExecuteInTransactionAsync is required by the DbContext's retrying
+            // execution strategy (see ITransactionManager docs).
+            var txResult = await transactions.ExecuteInTransactionAsync<TxClienteResult>(async () =>
+            {
+                var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
+                if (!check.Allowed)
+                {
+                    return new TxClienteResult(Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402), 0);
+                }
 
-            var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
-                ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
-            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Cliente", result.Id, embeddingText);
+                var result = await servicio.CrearClienteAsync(dto);
+                if (!result.Success)
+                {
+                    return new TxClienteResult(Results.Conflict(new { message = result.Error }), 0);
+                }
 
-            return Results.Created($"/clientes/{result.Id}", new { id = result.Id });
+                return new TxClienteResult(Results.Created($"/clientes/{result.Id}", new { id = result.Id }), result.Id);
+            });
+
+            if (txResult.CreatedId > 0)
+            {
+                var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
+                    ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
+                _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Cliente", txResult.CreatedId, embeddingText);
+            }
+
+            return txResult.Response;
         }).RequireAuthorization();
 
         app.MapGet("/clientes", async (
@@ -85,10 +105,13 @@ public static class ClienteEndpoints
         }).RequireAuthorization();
 
 
-        app.MapDelete("/clientes/{id:int}", async (int id, [FromServices] ClienteService servicio) =>
+        app.MapDelete("/clientes/{id:int}", async (int id, bool? forzar, [FromServices] ClienteService servicio) =>
         {
-            var deleted = await servicio.EliminarClienteAsync(id);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            var result = await servicio.EliminarClienteAsync(id, forzar ?? false);
+            if (result.Success) return Results.NoContent();
+            if (result.PedidosActivos > 0)
+                return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
+            return Results.NotFound();
         }).RequireAuthorization();
 
         app.MapPatch("/clientes/{id:int}/activo", async (int id, [FromBody] ClienteCambiarActivoDto dto, [FromServices] ClienteService servicio) =>

@@ -9,10 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
 import { useAuthStore, useOrderDraftStore } from '@/stores';
 import { Card, LoadingSpinner, EmptyState, BottomSheet } from '@/components/ui';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency, formatDate } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { ShoppingCart, ChevronRight, Calendar, Plus, ClipboardList, Truck } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -27,8 +28,9 @@ const STATUS_FILTERS = [
   { label: 'Cancelado', value: 6 },
 ];
 
-export default function VenderListScreen() {
+function VenderListScreenContent() {
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency, date: formatDate } = useTenantLocale();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
   const [showOrderTypeSheet, setShowOrderTypeSheet] = useState(false);
   const router = useRouter();
@@ -38,7 +40,11 @@ export default function VenderListScreen() {
   const _role = role; // kept for future role-based filtering
 
   const { data: allOrders, isLoading } = useOfflineOrders();
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(
+    () => Array.from(new Set((allOrders ?? []).map(p => p.clienteId))),
+    [allOrders]
+  );
+  const clientNames = useClientNameMap(clienteIds);
 
   const orders = useMemo(() => {
     if (!allOrders) return [];
@@ -189,7 +195,7 @@ export default function VenderListScreen() {
       {/* BottomSheet for order type (Supervisor/Admin) */}
       <BottomSheet
         visible={showOrderTypeSheet}
-        title="Que tipo de pedido?"
+        title="¿Qué tipo de pedido?"
         subtitle="Selecciona el tipo de venta"
         onClose={() => setShowOrderTypeSheet(false)}
       >
@@ -204,7 +210,7 @@ export default function VenderListScreen() {
             <ClipboardList size={24} color="#6b7280" />
             <View style={styles.orderTypeInfo}>
               <Text style={styles.orderTypeTitle}>Preventa</Text>
-              <Text style={styles.orderTypeDesc}>Levantar pedido para entrega posterior</Text>
+              <Text style={styles.orderTypeDesc}>Registrar pedido para entrega posterior</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textTertiary} />
           </TouchableOpacity>
@@ -273,3 +279,11 @@ const styles = StyleSheet.create({
   orderTypeTitle: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
   orderTypeDesc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
 });
+
+export default function VenderListScreen() {
+  return (
+    <ErrorBoundary componentName="TabVender">
+      <VenderListScreenContent />
+    </ErrorBoundary>
+  );
+}

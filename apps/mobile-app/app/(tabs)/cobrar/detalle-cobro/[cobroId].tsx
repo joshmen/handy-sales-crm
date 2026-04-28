@@ -3,24 +3,27 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
 import { useOfflineCobroById, useClientNameMap } from '@/hooks';
-import { formatCurrency, formatDateTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
 import { ChevronLeft, Printer, Share2 } from 'lucide-react-native';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import Toast from 'react-native-toast-message';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 
-export default function DetalleCobroScreen() {
+function DetalleCobroScreen() {
   const insets = useSafeAreaInsets();
   const { cobroId } = useLocalSearchParams<{ cobroId: string }>();
   const router = useRouter();
+  const { money: formatCurrency, dateTime: formatDateTime } = useTenantLocale();
   const { user } = useAuthStore();
   const { data: cobro } = useOfflineCobroById(cobroId);
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(() => (cobro ? [cobro.clienteId] : []), [cobro]);
+  const clientNames = useClientNameMap(clienteIds);
   const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();
   const [printing, setPrinting] = useState(false);
@@ -29,7 +32,7 @@ export default function DetalleCobroScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Detalle de Cobro</Text>
@@ -172,6 +175,9 @@ export default function DetalleCobroScreen() {
               onPress={handlePrint}
               disabled={printing}
               activeOpacity={0.8}
+              accessibilityLabel="Reimprimir recibo"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: printing }}
             >
               <Printer size={18} color="#ffffff" />
               <Text style={styles.btnPrintText}>
@@ -181,8 +187,9 @@ export default function DetalleCobroScreen() {
             <TouchableOpacity
               style={styles.btnShare}
               onPress={handleShare}
-              disabled={false}
               activeOpacity={0.8}
+              accessibilityLabel="Compartir recibo"
+              accessibilityRole="button"
             >
               <Share2 size={18} color="#64748b" />
               <Text style={styles.btnShareText}>
@@ -304,3 +311,5 @@ const styles = StyleSheet.create({
   },
   btnShareText: { color: '#64748b', fontWeight: '700', fontSize: 14 },
 });
+
+export default withErrorBoundary(DetalleCobroScreen, 'DetalleCobroScreen');

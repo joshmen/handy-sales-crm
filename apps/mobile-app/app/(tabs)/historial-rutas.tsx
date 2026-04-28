@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores';
 import { EmptyState } from '@/components/ui';
 import { performSync } from '@/sync/syncEngine';
 import { COLORS } from '@/theme/colors';
+import { useTenantLocale } from '@/hooks';
 import type Ruta from '@/db/models/Ruta';
 
 const ESTADO_LABELS: Record<number, string> = {
@@ -20,14 +21,11 @@ const ESTADO_COLORS: Record<number, string> = {
   4: '#d97706', 5: '#2563eb', 6: '#16a34a',
 };
 
-function formatDate(date: Date | null): string {
-  if (!date) return '--';
-  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
 export default function HistorialRutasScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { date: fmt } = useTenantLocale();
+  const formatDate = (date: Date | null) => (date ? fmt(date) : '--');
   const userId = Number(useAuthStore(s => s.user?.id) ?? 0);
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [loading, setLoading] = useState(true);

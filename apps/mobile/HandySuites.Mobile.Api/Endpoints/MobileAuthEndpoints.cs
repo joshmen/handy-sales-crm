@@ -1,5 +1,4 @@
 using HandySuites.Application.Usuarios.DTOs;
-using HandySuites.Application.Auth.DTOs;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Mobile.Api.Services;
@@ -65,6 +64,7 @@ public static class MobileAuthEndpoints
                 deviceRegistered = !string.IsNullOrEmpty(deviceId)
             });
         })
+        .RequireRateLimiting("mobile-auth")
         .WithSummary("Login de vendedor móvil")
         .WithDescription("Autentica un vendedor y devuelve tokens JWT. Incluir headers X-Device-Id y X-Device-Fingerprint para device binding.")
         .Produces<object>(StatusCodes.Status200OK)
@@ -81,6 +81,7 @@ public static class MobileAuthEndpoints
 
             return Results.Ok(new { success = true, data = result });
         })
+        .RequireRateLimiting("mobile-auth")
         .WithSummary("Refrescar token")
         .WithDescription("Obtiene un nuevo access token usando el refresh token.")
         .Produces<object>(StatusCodes.Status200OK)

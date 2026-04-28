@@ -5,7 +5,6 @@ export function useSupervisorDashboard() {
   return useQuery({
     queryKey: ['supervisor', 'dashboard'],
     queryFn: () => supervisorApi.getDashboard(),
-    refetchInterval: 30_000, // refresh every 30s
   });
 }
 
@@ -17,10 +16,13 @@ export function useMisVendedores() {
 }
 
 export function useUbicacionesEquipo() {
+  // staleTime corto + refetchInterval — el mapa muestra ubicaciones "en vivo".
+  // Sin esto, el supervisor podría ver pins de hace horas sin saberlo.
   return useQuery({
     queryKey: ['supervisor', 'ubicaciones'],
     queryFn: () => supervisorApi.getUbicaciones(),
-    refetchInterval: 30_000,
+    staleTime: 60_000,        // 1 min — datos GPS no envejecen instantáneamente
+    refetchInterval: 60_000,  // refresca cada 1 min mientras la pantalla esté visible
   });
 }
 
@@ -28,7 +30,6 @@ export function useActividadEquipo() {
   return useQuery({
     queryKey: ['supervisor', 'actividad'],
     queryFn: () => supervisorApi.getActividad(),
-    refetchInterval: 15_000, // refresh every 15s
   });
 }
 
@@ -37,6 +38,5 @@ export function useVendedorResumen(vendedorId: number) {
     queryKey: ['supervisor', 'vendedor', vendedorId],
     queryFn: () => supervisorApi.getVendedorResumen(vendedorId),
     enabled: vendedorId > 0,
-    refetchInterval: 30_000,
   });
 }

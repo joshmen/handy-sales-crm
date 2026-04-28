@@ -128,11 +128,29 @@ public class SyncClienteDto
     public string Correo { get; set; } = string.Empty;
     public string Telefono { get; set; } = string.Empty;
     public string Direccion { get; set; } = string.Empty;
+    // Dirección desglosada
+    public string? NumeroExterior { get; set; }
+    public string? Colonia { get; set; }
+    public string? Ciudad { get; set; }
+    public string? CodigoPostal { get; set; }
+    public string? Encargado { get; set; }
     public int IdZona { get; set; }
     public int CategoriaClienteId { get; set; }
+    public int? VendedorId { get; set; }
     public int? ListaPreciosId { get; set; }
     public double? Latitud { get; set; }
     public double? Longitud { get; set; }
+    // Crédito / comerciales
+    public decimal LimiteCredito { get; set; }
+    public int DiasCredito { get; set; }
+    public decimal Descuento { get; set; }
+    public decimal Saldo { get; set; }
+    public decimal VentaMinimaEfectiva { get; set; }
+    // Reglas de pago
+    public string TiposPagoPermitidos { get; set; } = "efectivo";
+    public string TipoPagoPredeterminado { get; set; } = "efectivo";
+    public bool EsProspecto { get; set; }
+    public string? Comentarios { get; set; }
     // Datos fiscales (CFDI)
     public string? RfcFiscal { get; set; }
     public string? RazonSocial { get; set; }
@@ -216,12 +234,23 @@ public class SyncVisitaDto
     public bool IsDeleted { get; set; }
 }
 
+public class SyncZonaResumenDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+}
+
 public class SyncRutaDto
 {
     public int Id { get; set; }
     public string? LocalId { get; set; }
     public int? UsuarioId { get; set; }
+    /// <summary>Legacy: primera zona (compat con apps mobile pre-multi-zona).</summary>
     public int? ZonaId { get; set; }
+    /// <summary>Multi-zona: lista de IDs (compat). Apps nuevas usan <see cref="Zonas"/>.</summary>
+    public List<int>? ZonaIds { get; set; }
+    /// <summary>Multi-zona: lista completa de zonas con id+nombre para que mobile UI muestre chips legibles. 2026-04-27.</summary>
+    public List<SyncZonaResumenDto>? Zonas { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
@@ -234,11 +263,48 @@ public class SyncRutaDto
     public double? KilometrosReales { get; set; }
     public string? Notas { get; set; }
     public List<SyncRutaDetalleDto>? Detalles { get; set; }
+
+    /// <summary>
+    /// Pedidos asignados a la ruta (la "carga" del camión, junction RutasPedidos).
+    /// Antes el sync no incluía este campo y el vendedor en mobile no veía qué pedidos
+    /// llevaba para entregar. Reportado 2026-04-27.
+    /// </summary>
+    public List<SyncRutaPedidoDto>? Pedidos { get; set; }
+
+    /// <summary>
+    /// Productos sueltos cargados en el camión (junction RutasCarga) para venta directa
+    /// en ruta — independientes de pedidos asignados.
+    /// </summary>
+    public List<SyncRutaCargaDto>? Carga { get; set; }
+
     public bool Activo { get; set; } = true;
     public long Version { get; set; }
     public DateTime? ActualizadoEn { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Update;
     public bool IsDeleted { get; set; }
+}
+
+public class SyncRutaPedidoDto
+{
+    public int Id { get; set; }
+    public int RutaId { get; set; }
+    public int PedidoId { get; set; }
+    public int Estado { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime? CreadoEn { get; set; }
+}
+
+public class SyncRutaCargaDto
+{
+    public int Id { get; set; }
+    public int RutaId { get; set; }
+    public int ProductoId { get; set; }
+    public int CantidadEntrega { get; set; }
+    public int CantidadVenta { get; set; }
+    public int CantidadTotal { get; set; }
+    public double PrecioUnitario { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime? CreadoEn { get; set; }
 }
 
 public class SyncRutaDetalleDto
@@ -267,11 +333,15 @@ public class SyncProductoDto
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
+    /// <summary>Backward-compat alias de CodigoBarra. Usar CodigoBarra para nuevos consumers.</summary>
     public string SKU { get; set; } = string.Empty;
+    public string? CodigoBarra { get; set; }
     public decimal Precio { get; set; }
     public int CategoriaProductoId { get; set; }
     public int? FamiliaProductoId { get; set; }
     public int? UnidadMedidaId { get; set; }
+    /// <summary>Nombre de la unidad (ej: "Pieza", "Kg"). Permite a mobile mostrar la unidad sin catálogo separado.</summary>
+    public string? UnidadMedidaNombre { get; set; }
     public string? ImagenUrl { get; set; }
     public decimal StockDisponible { get; set; }
     public decimal StockMinimo { get; set; }
@@ -287,6 +357,8 @@ public class SyncCobroDto
     public string? LocalId { get; set; }
     public int ClienteId { get; set; }
     public int? PedidoId { get; set; }
+    /// <summary>Mobile WDB id del pedido padre cuando aún no tiene ServerId (offline create).</summary>
+    public string? PedidoLocalId { get; set; }
     public decimal Monto { get; set; }
     public int MetodoPago { get; set; }
     public DateTime FechaCobro { get; set; }

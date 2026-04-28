@@ -92,9 +92,9 @@ public static class NotificationEndpoints
             HttpContext context,
             [FromServices] INotificationService service) =>
         {
-            var isAdmin = context.User.FindFirst("es_admin")?.Value == "True"
-                || context.User.FindFirst("es_super_admin")?.Value == "True";
-            if (!isAdmin) return Results.Forbid();
+            var role = context.User.FindFirst("role")?.Value
+                       ?? context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            if (role != "ADMIN" && role != "SUPER_ADMIN") return Results.Forbid();
 
             var result = await service.EnviarNotificacionAsync(dto);
             return result.Success ? Results.Ok(result) : Results.BadRequest(result);
@@ -111,9 +111,9 @@ public static class NotificationEndpoints
             HttpContext context,
             [FromServices] INotificationService service) =>
         {
-            var isAdmin = context.User.FindFirst("es_admin")?.Value == "True"
-                || context.User.FindFirst("es_super_admin")?.Value == "True";
-            if (!isAdmin) return Results.Forbid();
+            var role = context.User.FindFirst("role")?.Value
+                       ?? context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            if (role != "ADMIN" && role != "SUPER_ADMIN") return Results.Forbid();
 
             var result = await service.EnviarBroadcastAsync(dto);
             return Results.Ok(result);

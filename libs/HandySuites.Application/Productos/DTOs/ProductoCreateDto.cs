@@ -2,9 +2,11 @@ namespace HandySuites.Application.Productos.DTOs;
 
 public class ProductoCreateDto
 {
-    public required string Nombre { get; set; }
-    public required string CodigoBarra { get; set; }
-    public required string Descripcion { get; set; }
+    // NOTA: sin `required` para que el deserializador no falle con cuerpo incompleto.
+    // FluentValidation (ProductoCreateDtoValidator) se encarga de NotEmpty.
+    public string Nombre { get; set; } = string.Empty;
+    public string CodigoBarra { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
     public int FamiliaId { get; set; }
     public int CategoraId { get; set; }
     public int UnidadMedidaId { get; set; }

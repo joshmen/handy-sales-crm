@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Billing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,6 +59,20 @@ public static class MobileFacturaEndpoints
             var (tenantId, userId) = GetContext(context);
             if (tenantId <= 0 || userId <= 0)
                 return Results.Unauthorized();
+
+            // 0. Country gate — facturación electrónica solo para países con integración fiscal.
+            //    Hoy: solo MX (SAT CFDI). Mañana se agregan más extendiendo BillingCountrySupport.
+            var tenantCountry = await db.Set<HandySuites.Domain.Entities.CompanySetting>()
+                .AsNoTracking()
+                .Where(s => s.TenantId == tenantId)
+                .Select(s => s.Country)
+                .FirstOrDefaultAsync() ?? "MX";
+
+            if (!BillingCountrySupport.IsSupported(tenantCountry))
+                return Results.Problem(
+                    detail: $"Facturación electrónica no disponible para país '{tenantCountry}'.",
+                    statusCode: StatusCodes.Status403Forbidden,
+                    title: "Facturación no disponible");
 
             // 1. Validate pedido exists and is ENTREGADO (estado=5)
             var pedido = await db.Pedidos
@@ -151,8 +166,8 @@ public static class MobileFacturaEndpoints
         // GET /api/mobile/facturas
         // List invoices for the current user's tenant
         group.MapGet("/", async (
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
             [FromQuery] string? estado,
             HttpContext context,
             [FromServices] IHttpClientFactory httpClientFactory) =>
@@ -163,7 +178,9 @@ public static class MobileFacturaEndpoints
 
             var billingClient = CreateBillingClient(httpClientFactory, context);
 
-            var queryParams = $"?page={(page > 0 ? page : 1)}&pageSize={(pageSize > 0 ? Math.Min(pageSize, 100) : 20)}";
+            var p = page.HasValue && page.Value > 0 ? page.Value : 1;
+            var ps = pageSize.HasValue && pageSize.Value > 0 ? Math.Min(pageSize.Value, 100) : 20;
+            var queryParams = $"?page={p}&pageSize={ps}";
             if (!string.IsNullOrEmpty(estado))
                 queryParams += $"&estado={Uri.EscapeDataString(estado)}";
 
@@ -211,6 +228,39 @@ public static class MobileFacturaEndpoints
         })
         .WithSummary("Detalle de factura")
         .WithDescription("Obtiene el detalle completo de una factura incluyendo datos de timbrado.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // GET /api/mobile/facturas/{id}/ticket-data
+        // Proxy: devuelve el payload completo para la representación impresa 80mm
+        // (sellos, cadena original, certificados, RFC PAC) requerido por Anexo 20 4.0.
+        group.MapGet("/{id:long}/ticket-data", async (
+            long id,
+            HttpContext context,
+            [FromServices] IHttpClientFactory httpClientFactory) =>
+        {
+            var (tenantId, _) = GetContext(context);
+            if (tenantId <= 0)
+                return Results.Unauthorized();
+
+            var billingClient = CreateBillingClient(httpClientFactory, context);
+
+            var response = await billingClient.GetAsync($"/api/facturas/{id}/ticket-data");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    return Results.NotFound(new { success = false, message = "Factura no encontrada" });
+
+                var errorBody = await response.Content.ReadAsStringAsync();
+                return Results.BadRequest(new { success = false, message = "Error al obtener datos del ticket", detail = errorBody });
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+            return Results.Ok(new { success = true, data = result });
+        })
+        .WithSummary("Datos para representación impresa del CFDI (80mm)")
+        .WithDescription("Payload completo con sellos, cadena original y certificados para imprimir el ticket térmico.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 

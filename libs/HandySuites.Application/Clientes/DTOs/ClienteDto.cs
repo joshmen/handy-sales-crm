@@ -52,6 +52,8 @@ public class ClienteListaDto
     public required string RFC { get; set; }
     public required string Correo { get; set; }
     public required string Telefono { get; set; }
+    /// <summary>ID de la zona asignada (multi-zona en rutas requiere este field para agrupar clientes en UI). 2026-04-27.</summary>
+    public int? IdZona { get; set; }
     public string? ZonaNombre { get; set; }
     public string? CategoriaNombre { get; set; }
     public int? VendedorId { get; set; }
@@ -68,8 +70,10 @@ public class ClienteFiltroDto
     public string? Busqueda { get; set; }
     public bool? Activo { get; set; }
     public bool? EsProspecto { get; set; }
-    public int Pagina { get; set; } = 1;
-    public int TamanoPagina { get; set; } = 20;
+    // Nullables para que [AsParameters] no los marque como requeridos
+    // cuando el cliente no los envía explícitamente.
+    public int? Pagina { get; set; }
+    public int? TamanoPagina { get; set; }
 }
 
 public class ClientePaginatedResult

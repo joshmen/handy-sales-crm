@@ -25,6 +25,36 @@ const PATTERNS: Array<{ es: RegExp; en: RegExp; toEs: string; toEn: string }> = 
   { es: /^(\d+) meta(?:s)? renovada(?:s)?$/, en: /^(\d+) goal\(?s?\)? renewed$/, toEs: '$1 meta(s) renovada(s)', toEn: '$1 goal(s) renewed' },
   { es: /^Todos los vendedores están al ≥(\d+)% de su meta$/, en: /^All vendors are at ≥(\d+)% of their goal$/, toEs: 'Todos los vendedores están al ≥$1% de su meta', toEn: 'All vendors are at ≥$1% of their goal' },
   { es: /^Cobro registrado: (.+) — (.+)$/, en: /^Payment registered: (.+) — (.+)$/, toEs: 'Cobro registrado: $1 — $2', toEn: 'Payment registered: $1 — $2' },
+
+  // Business rules from April 2026 audit — dynamic messages with variable placeholders.
+  // Plan-limit rejections (BR-020)
+  { es: /^Tu plan (.+) permite máximo (\d+) usuarios\. Actualmente tienes (\d+)\.$/, en: /^Your (.+) plan allows a maximum of (\d+) users\. You currently have (\d+)\.$/, toEs: 'Tu plan $1 permite máximo $2 usuarios. Actualmente tienes $3.', toEn: 'Your $1 plan allows a maximum of $2 users. You currently have $3.' },
+  { es: /^Tu plan (.+) permite máximo (\d+) productos\. Actualmente tienes (\d+)\.$/, en: /^Your (.+) plan allows a maximum of (\d+) products\. You currently have (\d+)\.$/, toEs: 'Tu plan $1 permite máximo $2 productos. Actualmente tienes $3.', toEn: 'Your $1 plan allows a maximum of $2 products. You currently have $3.' },
+  { es: /^Tu plan (.+) permite máximo (\d+) clientes\. Actualmente tienes (\d+)\.$/, en: /^Your (.+) plan allows a maximum of (\d+) clients\. You currently have (\d+)\.$/, toEs: 'Tu plan $1 permite máximo $2 clientes. Actualmente tienes $3.', toEn: 'Your $1 plan allows a maximum of $2 clients. You currently have $3.' },
+
+  // Inventory movement failure (BR-002)
+  { es: /^No se pudo registrar el movimiento de inventario: (.+)$/, en: /^Could not register inventory movement: (.+)$/, toEs: 'No se pudo registrar el movimiento de inventario: $1', toEn: 'Could not register inventory movement: $1' },
+
+  // Impersonation duration (BR-031)
+  { es: /^La duración solicitada excede el máximo permitido de (\d+) minutos\.$/, en: /^Requested duration exceeds the maximum allowed of (\d+) minutes\.$/, toEs: 'La duración solicitada excede el máximo permitido de $1 minutos.', toEn: 'Requested duration exceeds the maximum allowed of $1 minutes.' },
+
+  // Sweep Abril 2026 — Pedidos existence checks
+  { es: /^El producto con ID (\d+) no existe o no pertenece a tu empresa\.$/, en: /^Product with ID (\d+) does not exist or does not belong to your company\.$/, toEs: 'El producto con ID $1 no existe o no pertenece a tu empresa.', toEn: 'Product with ID $1 does not exist or does not belong to your company.' },
+
+  // Sweep Abril 2026 — Promociones (list of missing product IDs)
+  { es: /^Los productos con IDs (.+) no existen o no pertenecen a tu empresa\.$/, en: /^Products with IDs (.+) do not exist or do not belong to your company\.$/, toEs: 'Los productos con IDs $1 no existen o no pertenecen a tu empresa.', toEn: 'Products with IDs $1 do not exist or do not belong to your company.' },
+
+  // Sweep Abril 2026 — Pedidos detalles duplicados
+  { es: /^El pedido contiene productos duplicados \(IDs: (.+)\)\. Consolida la cantidad en una sola línea\.$/, en: /^The order contains duplicate products \(IDs: (.+)\)\. Merge the quantity into a single line\.$/, toEs: 'El pedido contiene productos duplicados (IDs: $1). Consolida la cantidad en una sola línea.', toEn: 'The order contains duplicate products (IDs: $1). Merge the quantity into a single line.' },
+
+  // Sweep Abril 2026 — Stock insuficiente (mensaje más completo que el patrón previo)
+  { es: /^Stock insuficiente: (.+): solo (.+) disponibles, solicitado (.+)$/, en: /^Insufficient stock: (.+): only (.+) available, requested (.+)$/, toEs: 'Stock insuficiente: $1: solo $2 disponibles, solicitado $3', toEn: 'Insufficient stock: $1: only $2 available, requested $3' },
+
+  // Sweep 5 — Producto desactivado
+  { es: /^El producto con ID (\d+) está desactivado y no puede venderse\.$/, en: /^Product with ID (\d+) is inactive and cannot be sold\.$/, toEs: 'El producto con ID $1 está desactivado y no puede venderse.', toEn: 'Product with ID $1 is inactive and cannot be sold.' },
+
+  // Sweep 5 — Descuento excesivo
+  { es: /^El descuento \((.+)\) del producto (\d+) excede el subtotal \((.+)\)\.$/, en: /^The discount \((.+)\) of product (\d+) exceeds the subtotal \((.+)\)\.$/, toEs: 'El descuento ($1) del producto $2 excede el subtotal ($3).', toEn: 'The discount ($1) of product $2 exceeds the subtotal ($3).' },
 ];
 
 /**
@@ -41,13 +71,20 @@ export function useBackendTranslation() {
     (message: string | undefined | null): string => {
       if (!message) return '';
 
-      // 1. Exact match in backendMessages dictionary
-      try {
-        const translated = t(message);
-        if (!translated.startsWith('backendMessages.')) {
-          return translated;
-        }
-      } catch { /* not found */ }
+      // 1. Exact match in backendMessages dictionary.
+      // Skip when the message contains characters that ICU MessageFormat / next-intl
+      // path parsing cannot handle as a key: apostrophe, braces, #, dots inside a phrase.
+      // These appear in dynamic messages like "Ya existe un cliente con el nombre 'X'."
+      // and cause next-intl to throw SYNCRONICALLY past the try/catch.
+      const looksLikeProse = /['{}#]|\. /.test(message) || message.length > 80;
+      if (!looksLikeProse) {
+        try {
+          const translated = t(message);
+          if (!translated.startsWith('backendMessages.')) {
+            return translated;
+          }
+        } catch { /* not found */ }
+      }
 
       // 2. Bidirectional dynamic patterns
       for (const p of PATTERNS) {

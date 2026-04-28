@@ -13,4 +13,9 @@ public interface IPromocionRepository
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<bool> ExisteNombreAsync(string nombre, int tenantId, int? excludeId = null);
     Task<List<PromocionDto>> ObtenerPromocionesConProductoAsync(int productoId, int tenantId, int? excludeId = null);
+    /// <summary>
+    /// Devuelve los productIds del input que NO existen (o no pertenecen al tenant).
+    /// Vacío → todos son válidos.
+    /// </summary>
+    Task<List<int>> ObtenerProductosFaltantesAsync(List<int> productoIds, int tenantId);
 }

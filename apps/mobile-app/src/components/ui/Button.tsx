@@ -12,6 +12,8 @@ interface ButtonProps {
   fullWidth?: boolean;
   icon?: React.ReactNode;
   testID?: string;
+  /** Override del accessibilityLabel. Default: usa el `title` como label. */
+  accessibilityLabel?: string;
 }
 
 const VARIANT_STYLES = {
@@ -38,6 +40,7 @@ export function Button({
   fullWidth = false,
   icon,
   testID,
+  accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const v = VARIANT_STYLES[variant];
@@ -49,6 +52,9 @@ export function Button({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={[
         styles.base,
         {

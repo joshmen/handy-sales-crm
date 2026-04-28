@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Ticket, Loader2, CheckCircle2 } from 'lucide-react';
+import { Ticket, CheckCircle2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
@@ -106,7 +107,7 @@ export function CuponRedeemCard({ onRedeemed }: CuponRedeemCardProps) {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Spinner size="sm" className="mr-2" />
                   {t('submitting')}
                 </>
               ) : (

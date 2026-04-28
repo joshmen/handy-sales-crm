@@ -32,6 +32,7 @@ public class PromocionService
         if (dto.ProductoIds.Count == 0)
             throw new InvalidOperationException("Debe seleccionar al menos un producto.");
 
+        await ValidarProductosExistenAsync(dto.ProductoIds, _tenant.TenantId);
         await ValidarTraslapeAsync(dto.ProductoIds, dto.FechaInicio, dto.FechaFin, _tenant.TenantId);
 
         return await _repo.CrearAsync(dto, _tenant.TenantId);
@@ -48,9 +49,18 @@ public class PromocionService
         if (dto.ProductoIds.Count == 0)
             throw new InvalidOperationException("Debe seleccionar al menos un producto.");
 
+        await ValidarProductosExistenAsync(dto.ProductoIds, _tenant.TenantId);
         await ValidarTraslapeAsync(dto.ProductoIds, dto.FechaInicio, dto.FechaFin, _tenant.TenantId, id);
 
         return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
+    }
+
+    private async Task ValidarProductosExistenAsync(List<int> productoIds, int tenantId)
+    {
+        var missing = await _repo.ObtenerProductosFaltantesAsync(productoIds, tenantId);
+        if (missing.Count > 0)
+            throw new InvalidOperationException(
+                $"Los productos con IDs {string.Join(", ", missing)} no existen o no pertenecen a tu empresa.");
     }
 
     private async Task ValidarTraslapeAsync(List<int> productoIds, DateTime fechaInicio, DateTime fechaFin, int tenantId, int? excludeId = null)

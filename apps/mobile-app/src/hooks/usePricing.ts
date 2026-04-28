@@ -172,7 +172,10 @@ export function usePromocionActiva(productoServerId: number) {
  */
 export function usePricingMap(listaPreciosId: number | null | undefined) {
   const [priceMap, setPriceMap] = useState<Map<number, number>>(new Map());
-  const [discountMap, setDiscountMap] = useState<Descuento[]>([]);
+  // Discounts pre-agrupados para evitar O(N) filter() en cada getPricing call.
+  // Antes con 200+ descuentos, cada producto del pedido iteraba todos.
+  const [discountsByProduct, setDiscountsByProduct] = useState<Map<number, Descuento[]>>(new Map());
+  const [globalDiscounts, setGlobalDiscounts] = useState<Descuento[]>([]);
   const [promoMap, setPromoMap] = useState<Map<number, { nombre: string; porcentaje: number }>>(new Map());
   const [loading, setLoading] = useState(true);
 
@@ -198,12 +201,24 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
         }
         setPriceMap(prices);
 
-        // 2. All active discounts
+        // 2. Active discounts: split por tipo para lookup O(1)
         const descuentos = await database
           .get<Descuento>('descuentos')
           .query(Q.where('activo', true))
           .fetch();
-        setDiscountMap(descuentos);
+        const byProduct = new Map<number, Descuento[]>();
+        const globals: Descuento[] = [];
+        for (const d of descuentos) {
+          if (d.tipoAplicacion === 'Global') {
+            globals.push(d);
+          } else if (d.productoServerId != null) {
+            const list = byProduct.get(d.productoServerId);
+            if (list) list.push(d);
+            else byProduct.set(d.productoServerId, [d]);
+          }
+        }
+        setDiscountsByProduct(byProduct);
+        setGlobalDiscounts(globals);
 
         // 3. Active promotions
         const now = Date.now();
@@ -245,17 +260,19 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
     const precioFinal = precioLista ?? precioBase;
     const tieneListaPrecios = precioLista !== undefined;
 
-    // Best discount for this quantity
-    const applicableDiscounts = discountMap.filter(
-      d => d.activo &&
-           d.cantidadMinima <= cantidad &&
-           (d.productoServerId === productoServerId || d.tipoAplicacion === 'Global'),
-    );
-    const bestDiscount = applicableDiscounts.length > 0
-      ? applicableDiscounts.reduce((prev, curr) =>
-          curr.descuentoPorcentaje > prev.descuentoPorcentaje ? curr : prev,
-        )
-      : null;
+    // Lookup O(1) sobre descuentos del producto + globales (vs filter de toda la tabla)
+    const productDiscounts = discountsByProduct.get(productoServerId) ?? [];
+    let bestDiscount: Descuento | null = null;
+    for (const d of productDiscounts) {
+      if (d.cantidadMinima <= cantidad && (!bestDiscount || d.descuentoPorcentaje > bestDiscount.descuentoPorcentaje)) {
+        bestDiscount = d;
+      }
+    }
+    for (const d of globalDiscounts) {
+      if (d.cantidadMinima <= cantidad && (!bestDiscount || d.descuentoPorcentaje > bestDiscount.descuentoPorcentaje)) {
+        bestDiscount = d;
+      }
+    }
 
     // Active promotion
     const promo = promoMap.get(productoServerId) ?? null;

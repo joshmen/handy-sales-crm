@@ -1,4 +1,5 @@
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Billing;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,12 +32,17 @@ public static class MobileEmpresaEndpoints
             if (datos == null)
                 return Results.NotFound(new { success = false, message = "Datos de empresa no configurados" });
 
+            var country = settings?.Country ?? "MX";
+
             return Results.Ok(new
             {
                 success = true,
                 data = new
                 {
                     razonSocial = datos.RazonSocial,
+                    // identificadorFiscal: nombre canónico genérico (RFC en MX, NIT en CO, etc.).
+                    // rfc se mantiene como alias para versiones viejas del cliente mobile que aún lo leen.
+                    identificadorFiscal = datos.IdentificadorFiscal,
                     rfc = datos.IdentificadorFiscal,
                     telefono = datos.Telefono,
                     email = datos.Email,
@@ -47,6 +53,11 @@ public static class MobileEmpresaEndpoints
                     codigoPostal = datos.CodigoPostal,
                     sitioWeb = datos.SitioWeb,
                     logoUrl = settings?.LogoUrl,
+                    country,
+                    billingEnabled = BillingCountrySupport.IsSupported(country),
+                    timezone = settings?.Timezone ?? "America/Mexico_City",
+                    currency = settings?.Currency ?? "MXN",
+                    language = settings?.Language ?? "es",
                 }
             });
         })

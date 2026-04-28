@@ -34,6 +34,17 @@ export function useIniciarRuta() {
   });
 }
 
+export function useAceptarRuta() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => rutasApi.aceptar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['route'] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+    },
+  });
+}
+
 export function useCompletarRuta() {
   const queryClient = useQueryClient();
   return useMutation({

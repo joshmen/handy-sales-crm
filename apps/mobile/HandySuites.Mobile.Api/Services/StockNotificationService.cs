@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -66,7 +67,7 @@ public class StockNotificationService
                 .Where(u => u.TenantId == tenantId &&
                             u.Activo &&
                             u.EliminadoEn == null &&
-                            (u.RolExplicito == "SUPERVISOR" || u.RolExplicito == "ADMIN" || u.EsAdmin))
+                            (u.RolExplicito == RoleNames.Supervisor || u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin))
                 .Select(u => u.Id)
                 .ToListAsync();
 

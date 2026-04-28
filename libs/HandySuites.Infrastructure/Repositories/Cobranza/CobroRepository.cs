@@ -109,6 +109,15 @@ public class CobroRepository : ICobroRepository
                 var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
                 if (isPostgres)
                 {
+                    // Advisory lock explícito por pedidoId: serializa POST /cobros paralelos
+                    // para el mismo pedido. FOR UPDATE + subquery de Cobros NO era suficiente
+                    // porque la sub-SELECT de SUM(Cobros) no respeta el lock del Pedidos row
+                    // bajo READ COMMITTED; dos transacciones paralelas veían cobrado=0 y ambas
+                    // insertaban, resultando en saldo negativo (sweep 4, abril 2026).
+                    await _db.Database.ExecuteSqlRawAsync(
+                        "SELECT pg_advisory_xact_lock({0}, {1})",
+                        tenantId, dto.PedidoId.Value);
+
                     // Single query: locks pedido row + sums existing cobros atomically
                     var balance = await _db.Database.SqlQueryRaw<PedidoBalanceRow>(
                         @"SELECT p.total AS ""Total"",
@@ -187,6 +196,9 @@ public class CobroRepository : ICobroRepository
             var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
             if (entity == null) return false;
 
+            // Un cobro anulado (soft-deleted) no debe poder editarse: conserva audit trail.
+            if (!entity.Activo || entity.EliminadoEn != null) return false;
+
             // Over-payment guard: lock row + sum cobros atomically (excludes current cobro)
             if (entity.PedidoId.HasValue)
             {
@@ -254,6 +266,10 @@ public class CobroRepository : ICobroRepository
         var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
         if (entity == null) return false;
 
+        // Idempotencia: anular un cobro ya anulado debe devolver 404, no otro 204,
+        // para que la UI no reporte dos "éxitos" seguidos.
+        if (!entity.Activo) return false;
+
         entity.Activo = false;
         entity.ActualizadoEn = DateTime.UtcNow;
         await _db.SaveChangesAsync();
@@ -294,11 +310,18 @@ public class CobroRepository : ICobroRepository
 
         if (pedidosPorCliente.Count == 0) return new List<SaldoClienteDto>();
 
-        // Get all active cobros for these clients
+        // Get all active cobros for these clients.
+        // Incluye cobros LIGADOS a un pedido en ventana AND cobros "a cuenta" (PedidoId=null)
+        // del cliente — el sum del cobrado por cliente debe reflejar TODO lo pagado,
+        // no solo lo asociado a un pedido específico (cobros a cuenta son un caso válido
+        // cuando se cobra anticipado o se concilia saldo global).
         var allPedidoIds = pedidosPorCliente.SelectMany(p => p.PedidoIds).ToList();
+        var clienteIds = pedidosPorCliente.Select(p => p.ClienteId).ToList();
         var cobrosRaw = await _db.Cobros
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && allPedidoIds.Contains(c.PedidoId.Value))
+            .Where(c => c.TenantId == tenantId && c.Activo &&
+                        clienteIds.Contains(c.ClienteId) &&
+                        ((c.PedidoId.HasValue && allPedidoIds.Contains(c.PedidoId.Value)) || !c.PedidoId.HasValue))
             .Select(c => new { c.ClienteId, c.Monto })
             .ToListAsync();
 
@@ -365,14 +388,51 @@ public class CobroRepository : ICobroRepository
             .ToListAsync();
 
         var pedidoIds = pedidos.Select(p => p.Id).ToList();
+        // Incluye cobros ligados a estos pedidos AND cobros "a cuenta" (PedidoId=null) del cliente.
+        // Consistente con ObtenerSaldosAsync.
         var cobros = await _db.Cobros
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && pedidoIds.Contains(c.PedidoId.Value))
+            .Where(c => c.TenantId == tenantId && c.Activo && c.ClienteId == clienteId &&
+                        ((c.PedidoId.HasValue && pedidoIds.Contains(c.PedidoId.Value)) || !c.PedidoId.HasValue))
             .Select(c => new { c.Id, c.PedidoId, c.Monto, c.MetodoPago, c.FechaCobro, c.Referencia })
             .ToListAsync();
 
         var totalFacturado = pedidos.Sum(p => p.Total);
         var totalCobrado = cobros.Sum(c => c.Monto);
+
+        // Lista plana de movimientos (facturas + cobros) en orden cronológico ascendente
+        // con saldo running. Mobile consume este campo. Web consume Pedidos.
+        // Id sintético: pedidoId para factura, 1_000_000 + cobroId para cobro (evita
+        // colisión en FlatList.keyExtractor del mobile).
+        var movimientosRaw = new List<(DateTime fecha, int id, string tipo, string concepto, decimal monto)>(pedidos.Count + cobros.Count);
+        foreach (var p in pedidos)
+            movimientosRaw.Add((p.FechaPedido, p.Id, "factura", $"Pedido {p.NumeroPedido}", p.Total));
+        foreach (var c in cobros)
+        {
+            var nombrePago = GetMetodoPagoNombre(c.MetodoPago);
+            var concepto = string.IsNullOrEmpty(c.Referencia) ? $"Cobro ({nombrePago})" : $"Cobro ({nombrePago}) — {c.Referencia}";
+            movimientosRaw.Add((c.FechaCobro, 1_000_000 + c.Id, "cobro", concepto, c.Monto));
+        }
+
+        decimal saldoRunning = 0m;
+        var movimientos = movimientosRaw
+            .OrderBy(m => m.fecha)
+            .ThenBy(m => m.tipo == "factura" ? 0 : 1) // si misma fecha: factura antes que cobro
+            .Select(m =>
+            {
+                if (m.tipo == "factura") saldoRunning += m.monto;
+                else saldoRunning -= m.monto;
+                return new EstadoCuentaMovimientoDto
+                {
+                    Id = m.id,
+                    Tipo = m.tipo,
+                    Fecha = m.fecha,
+                    Concepto = m.concepto,
+                    Monto = m.monto,
+                    Saldo = saldoRunning,
+                };
+            })
+            .ToList();
 
         return new EstadoCuentaDto
         {
@@ -404,6 +464,7 @@ public class CobroRepository : ICobroRepository
                     }).ToList(),
                 };
             }).ToList(),
+            Movimientos = movimientos,
         };
     }
 }

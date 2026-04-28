@@ -217,4 +217,8 @@ public class DescuentoPorCantidadRepository : IDescuentoPorCantidadRepository
             })
             .ToListAsync();
     }
+
+    public Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId)
+        => _db.Productos.AsNoTracking()
+            .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);
 }

@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +18,8 @@ public class RutaSemanalAutoHandler : IAutomationHandler
         var maxParadas = context.GetParam("max_paradas", 15);
 
         var vendedores = await context.Db.Usuarios
-            .Where(u => u.TenantId == context.TenantId && u.Activo && !u.EsSuperAdmin && !u.EsAdmin)
+            .Where(u => u.TenantId == context.TenantId && u.Activo
+                && u.RolExplicito != RoleNames.SuperAdmin && u.RolExplicito != RoleNames.Admin)
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync(ct);
 

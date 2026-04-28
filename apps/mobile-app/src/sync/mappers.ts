@@ -26,20 +26,24 @@ interface ServerChanges {
 // This handles both cases:
 //   A) Record created locally, pushed, got server_id mapping → map by server_id
 //   B) Record pulled from server (WDB id = String(server_id)) → map by parsing WDB id
-// TODO: Memory concern — this fetches ALL records per table. For large datasets (10k+),
-// consider using WDB's unsafeFetchRaw() or pagination to reduce memory pressure.
+//
+// Optimización (2026-04-26): usa `unsafeFetchRaw()` en vez de `fetch()`. Las raw
+// rows pesan ~10x menos que los Model objects (sin observables ni proxy de WDB),
+// reduciendo memoria de ~5MB a ~500KB para tenants con 10k clientes/productos.
+// Solo necesitamos `id` y `server_id` aquí, así que el overhead de Models era puro
+// desperdicio. fetchIds() solo retorna ids string sin server_id, no sirve aquí.
 async function buildServerIdMap(table: string): Promise<Map<number, string>> {
-  const records = await database.get(table).query().fetch();
+  const rows = await database.get(table).query().unsafeFetchRaw();
   const map = new Map<number, string>();
-  for (const r of records as any[]) {
-    const sid = r._raw?.server_id ?? r.serverId;
-    if (sid) {
-      map.set(Number(sid), r.id);
+  for (const row of rows as { id: string; server_id?: number | string | null }[]) {
+    const sid = row.server_id;
+    if (sid != null && sid !== '') {
+      map.set(Number(sid), row.id);
     } else {
       // For records without server_id, check if WDB id is a numeric string
       // (meaning it was already pulled from server in a previous sync)
-      const numId = Number(r.id);
-      if (!isNaN(numId) && numId > 0) map.set(numId, r.id);
+      const numId = Number(row.id);
+      if (!isNaN(numId) && numId > 0) map.set(numId, row.id);
     }
   }
   return map;
@@ -51,14 +55,32 @@ export async function mapPullToWatermelon(
 ): Promise<SyncDatabaseChangeSet> {
   const isFirstSync = !lastPulledAt;
 
-  // Pre-load lookup maps for entities created locally (prevents duplicates on pull)
-  const pedidoMap = await buildServerIdMap('pedidos');
-  const detalleMap = await buildServerIdMap('detalle_pedidos');
-  const cobroMap = await buildServerIdMap('cobros');
-  const visitaMap = await buildServerIdMap('visitas');
-  const clienteMap = await buildServerIdMap('clientes');
-  const rutaMap = await buildServerIdMap('rutas');
-  const rutaDetalleMap = await buildServerIdMap('ruta_detalles');
+  // Pre-load lookup maps for entities created locally (prevents duplicates on pull).
+  // Paralelizar las fetches — cada una es bloqueante pero independiente.
+  // Antes corrían secuencialmente sumando 2-5s; ahora corren simultáneas.
+  const [
+    pedidoMap,
+    detalleMap,
+    cobroMap,
+    visitaMap,
+    clienteMap,
+    productoMap,
+    rutaMap,
+    rutaDetalleMap,
+    rutaPedidoMap,
+    rutaCargaMap,
+  ] = await Promise.all([
+    buildServerIdMap('pedidos'),
+    buildServerIdMap('detalle_pedidos'),
+    buildServerIdMap('cobros'),
+    buildServerIdMap('visitas'),
+    buildServerIdMap('clientes'),
+    buildServerIdMap('productos'),
+    buildServerIdMap('rutas'),
+    buildServerIdMap('ruta_detalles'),
+    buildServerIdMap('ruta_pedidos'),
+    buildServerIdMap('ruta_carga'),
+  ]);
 
   return {
     clientes: splitByOperation(server.clientes, isFirstSync, (c) => mapClienteToRaw(c, clienteMap), clienteMap),
@@ -67,6 +89,8 @@ export async function mapPullToWatermelon(
     detalle_pedidos: extractDetallesPedido(server.pedidos, isFirstSync, detalleMap, pedidoMap),
     rutas: splitByOperation(server.rutas, isFirstSync, (r) => mapRutaToRaw(r, rutaMap), rutaMap),
     ruta_detalles: extractDetallesRuta(server.rutas, isFirstSync, rutaDetalleMap, rutaMap, clienteMap, pedidoMap),
+    ruta_pedidos: extractRutaPedidos(server.rutas, rutaPedidoMap, rutaMap, pedidoMap),
+    ruta_carga: extractRutaCarga(server.rutas, rutaCargaMap, rutaMap, productoMap),
     visitas: splitByOperation(server.visitas, isFirstSync, (v) => mapVisitaToRaw(v, visitaMap, clienteMap), visitaMap),
     cobros: splitByOperation(server.cobros, isFirstSync, (c) => mapCobroToRaw(c, cobroMap, clienteMap, pedidoMap), cobroMap),
     precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
@@ -105,7 +129,9 @@ function splitByOperation(
 
 function mapClienteToRaw(c: any, clienteMap: Map<number, string>): DirtyRaw {
   return {
-    id: clienteMap.get(c.id) || String(c.id),
+    // Prefer mapping by server_id; fall back to localId echoed by server (for offline-created
+    // records that just got their backend id) before treating as a brand new record.
+    id: clienteMap.get(c.id) || (c.localId ? String(c.localId) : String(c.id)),
     server_id: c.id,
     nombre: c.nombre || '',
     nombre_comercial: c.nombreComercial ?? null,
@@ -113,24 +139,32 @@ function mapClienteToRaw(c: any, clienteMap: Map<number, string>): DirtyRaw {
     telefono: c.telefono ?? null,
     email: c.correo ?? null,
     direccion: c.direccion ?? null,
-    ciudad: null,
+    numero_exterior: c.numeroExterior ?? null,
+    colonia: c.colonia ?? null,
+    ciudad: c.ciudad ?? null,
     estado: null,
-    codigo_postal: null,
+    codigo_postal: c.codigoPostal ?? null,
+    encargado: c.encargado ?? null,
     latitud: c.latitud ?? null,
     longitud: c.longitud ?? null,
     zona_id: c.idZona ?? null,
     categoria_id: c.categoriaClienteId ?? null,
-    vendedor_id: null,
+    vendedor_id: c.vendedorId ?? null,
     limite_credito: c.limiteCredito ?? 0,
     dias_credito: c.diasCredito ?? 0,
-    notas: null,
+    descuento: c.descuento ?? 0,
+    saldo: c.saldo ?? 0,
+    venta_minima_efectiva: c.ventaMinimaEfectiva ?? 0,
+    tipos_pago_permitidos: c.tiposPagoPermitidos ?? 'efectivo',
+    tipo_pago_predeterminado: c.tipoPagoPredeterminado ?? 'efectivo',
+    notas: c.comentarios ?? null,
     lista_precios_id: c.listaPreciosId ?? null,
     es_prospecto: c.esProspecto ?? false,
     rfc_fiscal: c.rfcFiscal ?? null,
     razon_social: c.razonSocial ?? null,
     regimen_fiscal: c.regimenFiscal ?? null,
-    uso_cfdi: c.usoCfdi ?? null,
-    cp_fiscal: c.cpFiscal ?? null,
+    uso_cfdi: c.usoCfdiPredeterminado ?? c.usoCfdi ?? null,
+    cp_fiscal: c.codigoPostalFiscal ?? c.cpFiscal ?? null,
     requiere_factura: c.requiereFactura ?? false,
     activo: c.activo ?? true,
     version: c.version ?? 1,
@@ -145,13 +179,16 @@ function mapProductoToRaw(p: any): DirtyRaw {
     server_id: p.id,
     nombre: p.nombre || '',
     descripcion: p.descripcion ?? null,
-    sku: p.sku ?? null,
-    codigo_barras: null,
+    // SKU es alias legacy de CodigoBarra en el DTO backend. Preferimos
+    // codigoBarra que es el campo canónico; fallback a sku si el server
+    // emite versión vieja.
+    sku: p.codigoBarra ?? p.sku ?? null,
+    codigo_barras: p.codigoBarra ?? null,
     precio: p.precio ?? 0,
     categoria_id: p.categoriaProductoId ?? null,
     familia_id: p.familiaProductoId ?? null,
     unidad_medida_id: p.unidadMedidaId ?? null,
-    unidad_medida_nombre: null,
+    unidad_medida_nombre: p.unidadMedidaNombre ?? null,
     stock_disponible: p.stockDisponible ?? 0,
     stock_minimo: p.stockMinimo ?? 0,
     imagen_url: p.imagenUrl ?? null,
@@ -181,7 +218,11 @@ function mapPedidoToRaw(p: any, pedidoMap: Map<number, string>, clienteMap: Map<
     notas: p.notas ?? null,
     activo: p.activo ?? true,
     version: p.version ?? 1,
-    created_at: toTimestamp(p.actualizadoEn),
+    // created_at = fechaPedido (when the order was created), NOT actualizadoEn
+    // (which is updated on every state change). El filter "Pedidos hoy" cuenta
+    // pedidos creados hoy y se rompía cuando un pedido viejo se actualizaba —
+    // todos los pedidos actualizados hoy aparecían como "creados hoy".
+    created_at: toTimestamp(p.fechaPedido),
     updated_at: toTimestamp(p.actualizadoEn),
   };
 }
@@ -203,9 +244,11 @@ function extractDetallesPedido(
 
     for (const d of pedido.detalles) {
       const raw: DirtyRaw = {
-        id: detalleMap.get(d.id) || String(d.id),
+        // Prefer mobile_record_id (server echoes LocalId) to dedupe against
+        // locally-created offline record that was already pushed in a prior sync.
+        id: d.localId || detalleMap.get(d.id) || String(d.id),
         server_id: d.id,
-        pedido_id: pedidoMap.get(pedido.id) || String(pedido.id),
+        pedido_id: pedido.localId || pedidoMap.get(pedido.id) || String(pedido.id),
         producto_id: String(d.productoId),
         producto_server_id: d.productoId,
         producto_nombre: d.nombre ?? '',
@@ -227,6 +270,21 @@ function extractDetallesPedido(
 }
 
 function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
+  // Multi-zona: backend envía `zonas: [{id, nombre}, ...]` (commit nuevo). Si solo
+  // viene `zonaIds: number[]` (apps mobile-api intermedias), sintetizamos objetos
+  // sin nombre. Si tampoco hay nada, fallback a `[zonaId]` legacy.
+  // Storage en `zonas_json` siempre como objects para que el getter del modelo
+  // pueda retornar nombre + id sin lookups adicionales.
+  let zonasJson: string | null = null;
+  if (Array.isArray(r.zonas) && r.zonas.length > 0) {
+    zonasJson = JSON.stringify(
+      r.zonas.map((z: any) => ({ id: z.id, nombre: z.nombre || '' }))
+    );
+  } else if (Array.isArray(r.zonaIds) && r.zonaIds.length > 0) {
+    zonasJson = JSON.stringify(r.zonaIds.map((id: number) => ({ id, nombre: '' })));
+  } else if (r.zonaId != null) {
+    zonasJson = JSON.stringify([{ id: r.zonaId, nombre: '' }]);
+  }
   return {
     id: rutaMap.get(r.id) || String(r.id),
     server_id: r.id,
@@ -235,8 +293,8 @@ function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
     usuario_id: r.usuarioId ?? 0,
     estado: r.estado ?? 0,
     km_recorridos: r.kilometrosReales ?? null,
-    hora_inicio: toTimestamp(r.horaInicioReal),
-    hora_fin: toTimestamp(r.horaFinReal),
+    hora_inicio: toNullableTimestamp(r.horaInicioReal),
+    hora_fin: toNullableTimestamp(r.horaFinReal),
     hora_inicio_estimada: r.horaInicioEstimada ?? null,
     hora_fin_estimada: r.horaFinEstimada ?? null,
     notas: r.notas ?? null,
@@ -244,7 +302,82 @@ function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
     version: r.version ?? 1,
     created_at: toTimestamp(r.actualizadoEn),
     updated_at: toTimestamp(r.actualizadoEn),
+    zonas_json: zonasJson,
   };
+}
+
+/**
+ * Extrae los pedidos asignados (carga) de cada ruta y los aplana para WDB.
+ * El backend manda `ruta.pedidos: [{ id, rutaId, pedidoId, estado, activo, creadoEn }]`
+ * por cada ruta sincronizada. Si una ruta llega sin `pedidos[]` (sync delta antes
+ * de v12 backend o ruta sin asignaciones) tratamos como vacío sin error.
+ */
+function extractRutaPedidos(
+  rutas: any[] | undefined,
+  rutaPedidoMap: Map<number, string>,
+  rutaMap: Map<number, string>,
+  pedidoMap: Map<number, string>
+): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
+  if (!rutas?.length) return { created: [], updated: [], deleted: [] };
+
+  const updated: DirtyRaw[] = [];
+  for (const ruta of rutas) {
+    if (ruta.isDeleted || ruta.operation === 2) continue;
+    if (!ruta.pedidos?.length) continue;
+
+    for (const rp of ruta.pedidos) {
+      updated.push({
+        id: rutaPedidoMap.get(rp.id) || String(rp.id),
+        server_id: rp.id,
+        ruta_id: rutaMap.get(ruta.id) || String(ruta.id),
+        pedido_id: pedidoMap.get(rp.pedidoId) || String(rp.pedidoId),
+        pedido_server_id: rp.pedidoId,
+        estado: rp.estado ?? 0,
+        activo: rp.activo ?? true,
+        created_at: toTimestamp(rp.creadoEn ?? ruta.actualizadoEn),
+        updated_at: toTimestamp(rp.creadoEn ?? ruta.actualizadoEn),
+      });
+    }
+  }
+  return { created: [], updated, deleted: [] };
+}
+
+/**
+ * Extrae los productos sueltos de carga (RutasCarga) de cada ruta.
+ * Backend manda `ruta.carga: [{ id, productoId, cantidadEntrega, cantidadVenta,
+ * cantidadTotal, precioUnitario, activo, creadoEn }]`.
+ */
+function extractRutaCarga(
+  rutas: any[] | undefined,
+  rutaCargaMap: Map<number, string>,
+  rutaMap: Map<number, string>,
+  productoMap: Map<number, string>
+): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
+  if (!rutas?.length) return { created: [], updated: [], deleted: [] };
+
+  const updated: DirtyRaw[] = [];
+  for (const ruta of rutas) {
+    if (ruta.isDeleted || ruta.operation === 2) continue;
+    if (!ruta.carga?.length) continue;
+
+    for (const rc of ruta.carga) {
+      updated.push({
+        id: rutaCargaMap.get(rc.id) || String(rc.id),
+        server_id: rc.id,
+        ruta_id: rutaMap.get(ruta.id) || String(ruta.id),
+        producto_id: productoMap.get(rc.productoId) || String(rc.productoId),
+        producto_server_id: rc.productoId,
+        cantidad_entrega: rc.cantidadEntrega ?? 0,
+        cantidad_venta: rc.cantidadVenta ?? 0,
+        cantidad_total: rc.cantidadTotal ?? 0,
+        precio_unitario: rc.precioUnitario ?? 0,
+        activo: rc.activo ?? true,
+        created_at: toTimestamp(rc.creadoEn ?? ruta.actualizadoEn),
+        updated_at: toTimestamp(rc.creadoEn ?? ruta.actualizadoEn),
+      });
+    }
+  }
+  return { created: [], updated, deleted: [] };
 }
 
 function extractDetallesRuta(
@@ -274,8 +407,8 @@ function extractDetallesRuta(
         orden: d.ordenVisita ?? 0,
         pedido_id: d.pedidoId ? (pedidoMap.get(d.pedidoId) || String(d.pedidoId)) : null,
         estado: d.estado ?? 0,
-        hora_llegada: toTimestamp(d.horaLlegadaReal),
-        hora_salida: toTimestamp(d.horaSalidaReal),
+        hora_llegada: toNullableTimestamp(d.horaLlegadaReal),
+        hora_salida: toNullableTimestamp(d.horaSalidaReal),
         latitud_llegada: d.latitudLlegada ?? null,
         longitud_llegada: d.longitudLlegada ?? null,
         notas: d.notas ?? null,
@@ -293,6 +426,17 @@ function extractDetallesRuta(
 }
 
 function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<number, string>): DirtyRaw {
+  // Backend emite `fotos` como string JSON array o ya-array. Normalizamos a string
+  // para storage WDB consistente. Si no hay fotos, dejamos null para que la UI
+  // sepa que no hay nada que mostrar (vs '[]' que sería "array vacío").
+  let fotosJson: string | null = null;
+  if (v.fotos != null) {
+    if (typeof v.fotos === 'string' && v.fotos.trim() !== '' && v.fotos.trim() !== '[]') {
+      fotosJson = v.fotos;
+    } else if (Array.isArray(v.fotos) && v.fotos.length > 0) {
+      fotosJson = JSON.stringify(v.fotos);
+    }
+  }
   return {
     id: visitaMap.get(v.id) || String(v.id),
     server_id: v.id,
@@ -302,12 +446,13 @@ function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<
     ruta_id: null,
     tipo: 0,
     resultado: v.estado ?? 0,
-    check_in_at: toTimestamp(v.fechaHoraInicio),
-    check_out_at: toTimestamp(v.fechaHoraFin),
+    check_in_at: toNullableTimestamp(v.fechaHoraInicio),
+    check_out_at: toNullableTimestamp(v.fechaHoraFin),
     latitud_check_in: v.latitudInicio ?? null,
     longitud_check_in: v.longitudInicio ?? null,
     distancia_check_in: null,
     notas: v.notas ?? null,
+    fotos_json: fotosJson,
     activo: v.activo ?? true,
     version: v.version ?? 1,
     created_at: toTimestamp(v.actualizadoEn),
@@ -317,7 +462,9 @@ function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<
 
 function mapCobroToRaw(c: any, cobroMap: Map<number, string>, clienteMap: Map<number, string>, pedidoMap: Map<number, string>): DirtyRaw {
   return {
-    id: cobroMap.get(c.id) || String(c.id),
+    // Prefer mobile_record_id (server echoes LocalId) to dedupe against
+    // locally-created offline record that was already pushed in a prior sync.
+    id: c.localId || cobroMap.get(c.id) || String(c.id),
     server_id: c.id,
     cliente_id: clienteMap.get(c.clienteId) || String(c.clienteId),
     cliente_server_id: c.clienteId,
@@ -414,14 +561,22 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
       (ped: any) => ped.localId === detalle.pedido_id || String(ped.id) === detalle.pedido_id
     );
     if (pedido && !pedido.isDeleted) {
+      const cantidad = detalle.cantidad ?? 0;
+      const precioUnitario = detalle.precio_unitario ?? 0;
+      const descuento = detalle.descuento ?? 0;
+      const baseLinea = precioUnitario * cantidad;
+      // Derive porcentaje from monto: descuento / (precio × cantidad) × 100, two decimals
+      const porcentajeDescuento = baseLinea > 0 && descuento > 0
+        ? Math.round((descuento / baseLinea) * 10000) / 100
+        : 0;
       pedido.detalles.push({
         id: detalle.server_id ?? 0,
         localId: detalle.id,
         productoId: detalle.producto_server_id ?? (parseInt(String(detalle.producto_id), 10) || 0),
-        cantidad: detalle.cantidad ?? 0,
-        precioUnitario: detalle.precio_unitario ?? 0,
-        descuento: detalle.descuento ?? 0,
-        porcentajeDescuento: 0,
+        cantidad,
+        precioUnitario,
+        descuento,
+        porcentajeDescuento,
         subtotal: detalle.subtotal ?? 0,
         impuesto: (detalle.subtotal ?? 0) * 0.16,
         total: (detalle.subtotal ?? 0) * 1.16,
@@ -483,10 +638,29 @@ function rawToClienteDto(raw: DirtyRaw, operation: number): any {
     correo: raw.email ?? '',
     telefono: raw.telefono ?? '',
     direccion: raw.direccion ?? '',
+    // Dirección desglosada (Cliente field gap fix — antes se perdían en push)
+    numeroExterior: raw.numero_exterior ?? null,
+    colonia: raw.colonia ?? null,
+    ciudad: raw.ciudad ?? null,
+    codigoPostal: raw.codigo_postal ?? null,
+    encargado: raw.encargado ?? null,
     idZona: raw.zona_id ?? 0,
     categoriaClienteId: raw.categoria_id ?? 0,
+    listaPreciosId: raw.lista_precios_id ?? null,
     latitud: raw.latitud,
     longitud: raw.longitud,
+    // Comerciales
+    limiteCredito: raw.limite_credito ?? 0,
+    diasCredito: raw.dias_credito ?? 0,
+    descuento: raw.descuento ?? 0,
+    saldo: raw.saldo ?? 0,
+    ventaMinimaEfectiva: raw.venta_minima_efectiva ?? 0,
+    // Reglas de pago
+    tiposPagoPermitidos: raw.tipos_pago_permitidos ?? 'efectivo',
+    tipoPagoPredeterminado: raw.tipo_pago_predeterminado ?? 'efectivo',
+    esProspecto: raw.es_prospecto ?? false,
+    comentarios: raw.notas ?? null,
+    // Datos fiscales
     rfcFiscal: raw.rfc_fiscal ?? '',
     razonSocial: raw.razon_social ?? '',
     regimenFiscal: raw.regimen_fiscal ?? '',
@@ -577,7 +751,17 @@ function rawToCobroDto(raw: DirtyRaw, operation: number): any {
     id: raw.server_id ?? 0,
     localId: raw.id,
     clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
-    pedidoId: raw.pedido_id ? (parseInt(String(raw.pedido_id), 10) || null) : null,
+    // pedidoId: preferir pedido_server_id (si ya sincronizado) sobre parseInt del WDB id.
+    // Si el pedido fue creado offline y NO tiene server_id aún, mandar pedidoLocalId
+    // para que el server lo resuelva via MobileRecordId (evita cobros huérfanos en VD).
+    pedidoId: raw.pedido_server_id
+      ? Number(raw.pedido_server_id)
+      : (raw.pedido_id && /^\d+$/.test(String(raw.pedido_id))
+          ? parseInt(String(raw.pedido_id), 10)
+          : null),
+    pedidoLocalId: raw.pedido_id && !/^\d+$/.test(String(raw.pedido_id))
+      ? String(raw.pedido_id)
+      : null,
     monto: raw.monto ?? 0,
     metodoPago: raw.metodo_pago ?? 0,
     fechaCobro: new Date(raw.created_at).toISOString(),
@@ -591,8 +775,23 @@ function rawToCobroDto(raw: DirtyRaw, operation: number): any {
 
 // ── Helpers ──
 
+/**
+ * Usado para campos que SIEMPRE deben tener valor (created_at, updated_at).
+ * Si el backend no envía, cae a Date.now() como último recurso.
+ */
 function toTimestamp(dateStr: string | null | undefined): number {
   if (!dateStr) return Date.now();
   const ms = new Date(dateStr).getTime();
   return isNaN(ms) ? Date.now() : ms;
+}
+
+/**
+ * Usado para campos timestamp opcionales (hora_llegada, hora_salida,
+ * aceptada_en, etc). Preserva null — crítico para que `displayEstado` no
+ * infiera "Completada" cuando el backend dijo que aún no hay hora_salida.
+ */
+function toNullableTimestamp(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const ms = new Date(dateStr).getTime();
+  return isNaN(ms) ? null : ms;
 }

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Security;
@@ -55,7 +56,7 @@ public class MobileAuthService
                     (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
 
             // Device binding check — only for non-admin users
-            if (!usuario.EsAdmin && !usuario.EsSuperAdmin && usuario.Rol != "SUPERVISOR")
+            if (!usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
             {
                 // Check if there's ANY session with a different fingerprint
                 var boundSession = await _db.DeviceSessions
@@ -155,6 +156,24 @@ public class MobileAuthService
 
         // Block deactivated users from refreshing tokens
         if (!tokenEntity.Usuario.Activo)
+        {
+            tokenEntity.IsRevoked = true;
+            tokenEntity.RevokedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return null;
+        }
+
+        // 2FA enforcement on refresh: si el user habilitó 2FA POSTERIOR a la
+        // creación del refresh token, invalidamos el token. El user tendrá que
+        // hacer re-login. Esto cierra la ventana donde un token capturado antes
+        // del 2FA-enable seguiría funcionando indefinidamente.
+        // BACKLOG: implementar flujo TOTP completo en mobile login (UI screen
+        // para ingresar código). Hoy mobile NO valida TOTP en login — un user
+        // con 2FA habilitado puede loguearse normal en mobile (gap conocido).
+        // Issue Notion: tracking 2FA Mobile UI.
+        if (tokenEntity.Usuario.TotpEnabled &&
+            tokenEntity.Usuario.TotpEnabledAt.HasValue &&
+            tokenEntity.Usuario.TotpEnabledAt.Value > tokenEntity.CreatedAt)
         {
             tokenEntity.IsRevoked = true;
             tokenEntity.RevokedAt = DateTime.UtcNow;

@@ -16,24 +16,25 @@ public class Usuario : AuditableEntity
     public string PasswordHash { get; set; } = string.Empty;
     [Column("nombre")]
     public string Nombre { get; set; } = string.Empty;
-    [Column("es_admin")]
-    public bool EsAdmin { get; set; } = false;
-    [Column("es_super_admin")]
-    public bool EsSuperAdmin { get; set; } = false;
 
     /// <summary>
-    /// Explicit role override. When set, takes precedence over boolean-derived role.
-    /// Values: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.
-    /// NULL = derive from EsAdmin/EsSuperAdmin (backward compatible).
+    /// Rol explícito del usuario. Valores: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.
+    /// Ver <see cref="RoleNames"/> para constantes.
     /// </summary>
     [Column("rol")]
     public string? RolExplicito { get; set; }
 
-    /// <summary>
-    /// Computed role: uses RolExplicito if set, otherwise derives from boolean flags.
-    /// </summary>
+    /// <summary>Alias de <see cref="RolExplicito"/> con default. Nunca null en lectura.</summary>
     [NotMapped]
-    public string Rol => RolExplicito ?? (EsSuperAdmin ? "SUPER_ADMIN" : EsAdmin ? "ADMIN" : "VENDEDOR");
+    public string Rol => RolExplicito ?? RoleNames.Vendedor;
+
+    /// <summary>True si <see cref="Rol"/> == SUPER_ADMIN.</summary>
+    [NotMapped]
+    public bool IsSuperAdmin => Rol == RoleNames.SuperAdmin;
+
+    /// <summary>True si <see cref="Rol"/> es ADMIN o SUPER_ADMIN.</summary>
+    [NotMapped]
+    public bool IsAdminOrAbove => Rol == RoleNames.Admin || Rol == RoleNames.SuperAdmin;
 
     [Column("role_id")]
     public int? RoleId { get; set; }

@@ -227,7 +227,7 @@ export default function CobranzaPage() {
   useEffect(() => {
     clientService.getClients({ limit: 500 }).then((res) => {
       setClientOptions(res.clients.map((c) => ({ value: Number(c.id), label: c.name })));
-    }).catch(() => {});
+    }).catch((err) => console.error('[Cobranza] failed to load clients for dropdown:', err));
   }, []);
 
   // When client changes in form, load their pending pedidos
@@ -280,6 +280,17 @@ export default function CobranzaPage() {
   // ─── Create cobro ──────────────────────────────────
 
   const handleCreateCobro = async (data: CobroFormData) => {
+    // Validación client-side de saldo disponible — el backend también la hace
+    // (CobroRepository línea 136-138) pero así evitamos el round-trip y damos
+    // feedback instantáneo con el saldo exacto del pedido seleccionado.
+    if (data.pedidoId && data.pedidoId > 0) {
+      const pedidoSeleccionado = formPedidos.find(p => p.pedidoId === data.pedidoId);
+      if (pedidoSeleccionado && data.monto > pedidoSeleccionado.saldo + 0.001) {
+        toast.error(t('validation.amountExceedsBalance', { balance: formatCurrency(pedidoSeleccionado.saldo) }));
+        return;
+      }
+    }
+
     try {
       setCreating(true);
       await createCobro({
@@ -1380,6 +1391,22 @@ export default function CobranzaPage() {
                 placeholder="0.00"
               />
               {errors.monto && <p className="text-xs text-red-500 mt-1">{t('validation.amountGreaterThanZero')}</p>}
+              {/* Saldo máximo del pedido seleccionado (si aplica) — regla backend:
+                  monto no puede exceder saldo pendiente (CobroRepository antioverpayment). */}
+              {(() => {
+                const selectedPedidoId = watch('pedidoId');
+                const pedido = selectedPedidoId ? formPedidos.find(p => p.pedidoId === selectedPedidoId) : null;
+                const currentMonto = watch('monto') || 0;
+                if (!pedido) return null;
+                const exceeds = currentMonto > pedido.saldo + 0.001;
+                return (
+                  <p className={`text-xs mt-1 ${exceeds ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                    {exceeds
+                      ? t('validation.amountExceedsBalance', { balance: formatCurrency(pedido.saldo) })
+                      : `${t('drawer.maxBalance', { defaultValue: 'Saldo máximo' })}: ${formatCurrency(pedido.saldo)}`}
+                  </p>
+                );
+              })()}
             </div>
             <div>
               <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.paymentMethod')}</label>

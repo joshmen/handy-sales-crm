@@ -6,6 +6,11 @@ namespace HandySuites.Billing.Api.Services;
 /// <summary>
 /// Calls Main API /api/subscription/timbres to check stamp availability.
 /// Forwards the user's JWT token for tenant identification.
+///
+/// BR-011: fail-closed. If Main API is unreachable or returns error, we DO NOT
+/// allow stamping. Previous behavior (Audit CRITICAL-4, Abril 2026) was fail-open,
+/// which meant a Main API outage let tenants stamp unlimited CFDIs without quota
+/// decrement — creating an unauditable SAT quota overage.
 /// </summary>
 public class TimbreEnforcementService : ITimbreEnforcementService
 {
@@ -29,9 +34,14 @@ public class TimbreEnforcementService : ITimbreEnforcementService
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Main API timbres check returned {Status}", response.StatusCode);
-                // If Main API is down or returns error, allow stamping (fail-open for availability)
-                return new TimbreCheckResult(true, null, 0, 0);
+                _logger.LogError(
+                    "Main API timbres check returned {Status}. Fail-closed: blocking stamp.",
+                    response.StatusCode);
+                return new TimbreCheckResult(
+                    Allowed: false,
+                    Message: "No se puede verificar disponibilidad de timbres. Intenta de nuevo en unos momentos.",
+                    Usados: 0,
+                    Maximo: 0);
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -47,9 +57,12 @@ public class TimbreEnforcementService : ITimbreEnforcementService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking timbre availability with Main API");
-            // Fail-open: if we can't reach Main API, allow stamping
-            return new TimbreCheckResult(true, null, 0, 0);
+            _logger.LogError(ex, "Error checking timbre availability with Main API. Fail-closed: blocking stamp.");
+            return new TimbreCheckResult(
+                Allowed: false,
+                Message: "No se puede verificar disponibilidad de timbres. Intenta de nuevo en unos momentos.",
+                Usados: 0,
+                Maximo: 0);
         }
     }
 
@@ -63,11 +76,14 @@ public class TimbreEnforcementService : ITimbreEnforcementService
             var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
-                _logger.LogWarning("Failed to register timbre usage: {Status}", response.StatusCode);
+                _logger.LogError(
+                    "Failed to register timbre usage: {Status}. Tenant may have stamped without decrementing quota \u2014 manual reconciliation required.",
+                    response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error notifying timbre usage to Main API");
+            _logger.LogError(ex,
+                "Error notifying timbre usage to Main API. Tenant may have stamped without decrementing quota \u2014 manual reconciliation required.");
         }
     }
 }

@@ -40,7 +40,7 @@ const SLIDES: SlideData[] = [
     id: '1',
     title: 'Vende en ruta',
     subtitle:
-      'Levanta pedidos desde tu teléfono, consulta productos, precios y stock en tiempo real.',
+      'Registra pedidos desde tu teléfono, consulta productos, precios y stock en tiempo real.',
     variant: 'light',
     image: SLIDE1_IMAGE,
   },

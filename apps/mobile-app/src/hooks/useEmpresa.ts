@@ -4,6 +4,9 @@ import { Image } from 'react-native';
 
 export interface DatosEmpresa {
   razonSocial: string | null;
+  /** Nombre canónico (RFC en MX, NIT en CO, etc.). Preferir sobre `rfc` para nuevos consumers. */
+  identificadorFiscal: string | null;
+  /** @deprecated Alias legacy de `identificadorFiscal`. Se mantiene mientras alguna pantalla lo lea. */
   rfc: string | null;
   telefono: string | null;
   email: string | null;
@@ -14,6 +17,11 @@ export interface DatosEmpresa {
   codigoPostal: string | null;
   sitioWeb: string | null;
   logoUrl: string | null;
+  country: string | null;
+  billingEnabled: boolean;
+  timezone: string;           // IANA tz, ej "America/Mexico_City"
+  currency: string;           // ej "MXN"
+  language: string;           // ej "es"
 }
 
 export function useEmpresa() {
@@ -21,7 +29,10 @@ export function useEmpresa() {
     queryKey: ['empresa'],
     queryFn: async (): Promise<DatosEmpresa> => {
       const response = await api.get('/api/mobile/empresa');
-      const data = (response.data as any).data;
+      // Defensive parse: backend siempre devuelve `{success, data}`, pero si
+      // retorna unwrapped por bug o test, fall through a response.data directo.
+      const body = (response.data ?? {}) as { data?: DatosEmpresa };
+      const data = body.data ?? (response.data as unknown as DatosEmpresa);
 
       // Prefetch logo into RN image cache so it renders instantly
       if (data?.logoUrl) {

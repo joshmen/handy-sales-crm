@@ -8,17 +8,17 @@ import {
   AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ImageIcon, ChevronLeft,
 } from 'lucide-react-native';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { usePendingCount, usePendingAttachmentCount } from '@/hooks';
+import { usePendingCount, usePendingAttachmentCount, useTenantLocale } from '@/hooks';
 import { useSyncStore } from '@/stores';
 import { COLORS } from '@/theme/colors';
 
-function formatLastSync(timestamp: number | null): string {
+function formatLastSync(timestamp: number | null, dateTimeFmt: (d: Date) => string): string {
   if (!timestamp) return 'Nunca';
   const diff = Date.now() - timestamp;
   if (diff < 60_000) return 'Hace unos segundos';
   if (diff < 3600_000) return `Hace ${Math.floor(diff / 60_000)} min`;
   if (diff < 86400_000) return `Hace ${Math.floor(diff / 3600_000)} horas`;
-  return new Date(timestamp).toLocaleString('es-MX');
+  return dateTimeFmt(new Date(timestamp));
 }
 
 export default function SyncScreen() {
@@ -28,6 +28,7 @@ export default function SyncScreen() {
   const { status, lastSyncAt, lastSummary, error, sync } = useSyncStore();
   const { data: pendingCount = 0 } = usePendingCount();
   const { data: pendingAttachments = 0 } = usePendingAttachmentCount();
+  const { dateTime: dateTimeFmt } = useTenantLocale();
 
   const isSyncing = status === 'syncing';
 
@@ -39,7 +40,7 @@ export default function SyncScreen() {
     >
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sincronización</Text>
@@ -89,7 +90,7 @@ export default function SyncScreen() {
             <CheckCircle size={18} color={lastSyncAt ? '#16a34a' : '#94a3b8'} style={{ marginRight: 12 }} />
             <View style={styles.syncContent}>
               <Text style={styles.syncLabel}>Última sincronización</Text>
-              <Text style={styles.syncValue}>{formatLastSync(lastSyncAt)}</Text>
+              <Text style={styles.syncValue}>{formatLastSync(lastSyncAt, dateTimeFmt)}</Text>
             </View>
           </View>
         </Card>
@@ -159,6 +160,9 @@ export default function SyncScreen() {
         onPress={sync}
         disabled={!isOnline || isSyncing}
         activeOpacity={0.8}
+        accessibilityLabel="Sincronizar ahora"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !isOnline || isSyncing, busy: isSyncing }}
       >
         <RefreshCcw size={18} color={COLORS.headerText} />
         <Text style={styles.syncButtonText}>

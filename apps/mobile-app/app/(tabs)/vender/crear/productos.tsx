@@ -1,24 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
-import { useOrderDraftStore, useOrderItemCount, useOrderTotal } from '@/stores';
+import { useOrderDraftStore, useOrderItemCount } from '@/stores';
 import { usePricingMap } from '@/hooks/usePricing';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { CartBar } from '@/components/shared/CartBar';
 import { EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
-import { formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { Package, Search, Plus, ChevronLeft } from 'lucide-react-native';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import type Producto from '@/db/models/Producto';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
-export default function CrearPedidoStep2() {
+function CrearPedidoStep2() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { money: formatCurrency } = useTenantLocale();
   const { fromParada } = useLocalSearchParams<{ fromParada?: string }>();
 
   const handleBack = useCallback(() => {
@@ -47,11 +49,19 @@ export default function CrearPedidoStep2() {
   const removeItem = useOrderDraftStore(s => s.removeItem);
   const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
   const itemCount = useOrderItemCount();
-  const total = useOrderTotal();
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
   const { getPricing, loading: pricingLoading } = usePricingMap(clienteListaPreciosId);
   const categorias = useCategoriasProducto();
+
+  // Total con descuentos por línea aplicados (alineado con la pantalla Revisar)
+  const total = useMemo(() => {
+    const sub = items.reduce((acc, item) => {
+      const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+      return acc + pricing.precioConDescuento * item.cantidad;
+    }, 0);
+    return sub * 1.16; // IVA 16%
+  }, [items, getPricing]);
 
   const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
 
@@ -66,8 +76,14 @@ export default function CrearPedidoStep2() {
       const stock = item.stockDisponible ?? 0;
       const noStock = stock <= 0;
       const lowStock = stock > 0 && stock <= (item.stockMinimo || 0);
-      const blocked = isDirecta && noStock;
-      const maxQty = isDirecta ? stock : undefined;
+      // Bloqueo y tope de cantidad por stock se aplican tanto en Venta Directa
+      // como en Preventa. Antes solo aplicaba a Venta Directa, lo que permitía
+      // crear preventas con cantidades superiores al stock real (reportado
+      // 2026-04-27: vendedor pidió 100 unidades teniendo stock=2 en preventa).
+      // El admin sigue siendo quien aprueba la preventa desde web; este es el
+      // primer filtro UX para que el vendedor no genere pedidos imposibles.
+      const blocked = noStock;
+      const maxQty = stock;
 
       // Dynamic pricing
       const pricing = getPricing(item.serverId ?? 0, item.precio, qty || 1);
@@ -297,3 +313,5 @@ const styles = StyleSheet.create({
   addButtonText: { fontSize: 13, fontWeight: '600', color: '#ffffff' },
   footer: { paddingVertical: 16, alignItems: 'center' },
 });
+
+export default withErrorBoundary(CrearPedidoStep2, 'CrearPedidoStep2');

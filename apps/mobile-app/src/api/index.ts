@@ -5,3 +5,4 @@ export { productosApi } from './products';
 export { pedidosApi } from './orders';
 export { visitasApi } from './visits';
 export { rutasApi } from './routes';
+export { catalogosApi } from './catalogos';

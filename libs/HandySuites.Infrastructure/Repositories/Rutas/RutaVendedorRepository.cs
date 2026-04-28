@@ -28,6 +28,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .AsNoTracking()
             .Include(r => r.Usuario)
             .Include(r => r.Zona)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
             .Include(r => r.Detalles)
                 .ThenInclude(d => d.Cliente)
             .FirstOrDefaultAsync(r => r.Id == id);
@@ -41,6 +43,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     {
         return await _db.RutasVendedor
             .Include(r => r.Detalles)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 
@@ -59,12 +63,45 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return await _db.SaveChangesAsync() > 0;
     }
 
+    /// <summary>
+    /// Reemplaza completamente las zonas asignadas a la ruta. Patrón delete-then-insert
+    /// — más simple que merge, idempotente, OK porque RutasZonas no tiene data que
+    /// preservar (es solo M:N junction).
+    /// </summary>
+    public async Task ReemplazarZonasAsync(int rutaId, List<int> zonaIds, int tenantId)
+    {
+        // Delete existing
+        var existing = await _db.RutasZonas
+            .Where(rz => rz.RutaId == rutaId && rz.TenantId == tenantId)
+            .ToListAsync();
+        if (existing.Count > 0)
+            _db.RutasZonas.RemoveRange(existing);
+
+        // Insert new (deduplicated)
+        var seen = new HashSet<int>();
+        foreach (var zonaId in zonaIds)
+        {
+            if (zonaId <= 0 || !seen.Add(zonaId)) continue;
+            _db.RutasZonas.Add(new RutaZona
+            {
+                RutaId = rutaId,
+                ZonaId = zonaId,
+                TenantId = tenantId,
+                CreadoEn = DateTime.UtcNow
+            });
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<(List<RutaListaDto> Items, int TotalCount)> ObtenerPorFiltroAsync(int tenantId, RutaFiltroDto filtro)
     {
         var query = _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Usuario)
             .Include(r => r.Zona)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
             .Include(r => r.Detalles)
             .Where(r => r.TenantId == tenantId && !r.EsTemplate)
             .AsQueryable();
@@ -76,7 +113,14 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             query = query.Where(r => r.UsuarioId == filtro.UsuarioId);
 
         if (filtro.ZonaId.HasValue)
-            query = query.Where(r => r.ZonaId == filtro.ZonaId);
+        {
+            // Filtra rutas que tengan la zona en cualquier slot:
+            // - en el legacy ZonaId (rutas viejas no migradas)
+            // - O en la junction RutasZonas (rutas multi-zona)
+            // Después del backfill ambos coinciden, pero mantenemos el OR para defensiva.
+            query = query.Where(r => r.ZonaId == filtro.ZonaId
+                                    || r.Zonas.Any(rz => rz.ZonaId == filtro.ZonaId));
+        }
 
         if (filtro.Estado.HasValue)
             query = query.Where(r => r.Estado == filtro.Estado);
@@ -96,12 +140,14 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         }
 
         var totalCount = await query.CountAsync();
+        var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
+        var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
         var items = await query
             .OrderByDescending(r => r.Fecha)
             .ThenBy(r => r.HoraInicioEstimada)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
             .Select(r => new RutaListaDto
             {
                 Id = r.Id,
@@ -109,6 +155,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Nombre = r.Nombre,
                 UsuarioNombre = r.Usuario != null ? r.Usuario.Nombre : "",
                 ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,
+                Zonas = r.Zonas.Where(rz => rz.Zona != null)
+                               .Select(rz => new ZonaResumenDto { Id = rz.ZonaId, Nombre = rz.Zona!.Nombre })
+                               .ToList(),
                 Fecha = r.Fecha,
                 Estado = r.Estado,
                 TotalParadas = r.Detalles.Count,
@@ -192,6 +241,22 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return await _db.SaveChangesAsync() > 0;
     }
 
+    public async Task<bool> AceptarRutaAsync(int id, DateTime aceptadaEn)
+    {
+        var ruta = await _db.RutasVendedor.FindAsync(id);
+        if (ruta == null) return false;
+        // Solo transicionar desde PendienteAceptar o Planificada. Idempotente:
+        // si ya fue aceptada/iniciada/cerrada, el endpoint lo reporta via bool.
+        if (ruta.Estado != EstadoRuta.PendienteAceptar && ruta.Estado != EstadoRuta.Planificada)
+            return false;
+
+        ruta.Estado = EstadoRuta.CargaAceptada;
+        ruta.AceptadaEn = aceptadaEn;
+        ruta.ActualizadoEn = DateTime.UtcNow;
+
+        return await _db.SaveChangesAsync() > 0;
+    }
+
     public async Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales)
     {
         var ruta = await _db.RutasVendedor.FindAsync(id);
@@ -210,16 +275,88 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         var ruta = await _db.RutasVendedor.FindAsync(id);
         if (ruta == null) return false;
 
-        // Only allow cancellation from states that haven't started or completed
-        if (ruta.Estado is EstadoRuta.EnProgreso or EstadoRuta.Completada or EstadoRuta.Cerrada)
+        // Rutas Completadas o Cerradas NO se pueden cancelar — son terminales con
+        // cobros/inventarios ya consolidados; cancelarlas dejaría datos contables
+        // inconsistentes. Para el resto (Planificada, PendienteAceptar, CargaAceptada,
+        // EnProgreso) hacemos cleanup atómico de items asociados.
+        if (ruta.Estado is EstadoRuta.Completada or EstadoRuta.Cerrada or EstadoRuta.Cancelada)
             return false;
 
+        var ahora = DateTime.UtcNow;
+        var motivoFmt = string.IsNullOrWhiteSpace(motivo) ? "Ruta cancelada" : $"Ruta cancelada: {motivo}";
+
+        // BR-RUTA-Cancelar (cleanup atómico): al cancelar una ruta hay que dejar
+        // los items en estado coherente — antes solo cambiaba ruta.Estado y dejaba
+        // pedidos/paradas/carga huérfanos referenciando una ruta cancelada.
+        // Reportado 2026-04-27.
+
+        // 1) Pedidos asignados (RutasPedidos): los NO entregados regresan a Confirmado
+        //    y se desvinculan (Activo=false) para que puedan asignarse a otra ruta.
+        //    Los que ya están Entregado/Cancelado se mantienen como están.
+        var asignaciones = await _db.RutasPedidos
+            .Where(rp => rp.RutaId == id && rp.Activo)
+            .ToListAsync();
+        if (asignaciones.Count > 0)
+        {
+            var pedidoIds = asignaciones.Select(rp => rp.PedidoId).Distinct().ToList();
+            var pedidos = await _db.Pedidos.Where(p => pedidoIds.Contains(p.Id)).ToListAsync();
+            foreach (var p in pedidos)
+            {
+                if (p.Estado == EstadoPedido.EnRuta)
+                {
+                    // Pedido salió a ruta pero no se entregó → revertir a Confirmado.
+                    p.Estado = EstadoPedido.Confirmado;
+                    p.ActualizadoEn = ahora;
+                    p.Notas = string.IsNullOrEmpty(p.Notas)
+                        ? $"[{motivoFmt}] regresado a Confirmado"
+                        : $"{p.Notas}\n[{motivoFmt}] regresado a Confirmado";
+                }
+            }
+            foreach (var rp in asignaciones)
+            {
+                rp.Activo = false;
+                rp.ActualizadoEn = ahora;
+            }
+        }
+
+        // 2) Paradas (RutasDetalle): las que estaban Pendiente o EnVisita se marcan
+        //    Omitidas con razón. Las Visitadas u Omitidas se mantienen.
+        var paradas = await _db.RutasDetalle
+            .Where(d => d.RutaId == id)
+            .ToListAsync();
+        foreach (var d in paradas)
+        {
+            if (d.Estado == EstadoParada.Pendiente || d.Estado == EstadoParada.EnCamino)
+            {
+                d.Estado = EstadoParada.Omitido;
+                d.RazonOmision = string.IsNullOrEmpty(d.RazonOmision)
+                    ? motivoFmt
+                    : $"{d.RazonOmision} | {motivoFmt}";
+                d.ActualizadoEn = ahora;
+            }
+        }
+
+        // 3) Productos de carga (RutasCarga): se desactivan. No se revierte inventario
+        //    porque RutasCarga NO descuenta stock al asignar — el descuento ocurre
+        //    cuando se entrega un pedido (vía MovimientoInventarioService).
+        var carga = await _db.RutasCarga
+            .Where(rc => rc.RutaId == id && rc.Activo)
+            .ToListAsync();
+        foreach (var rc in carga)
+        {
+            rc.Activo = false;
+            rc.ActualizadoEn = ahora;
+        }
+
+        // 4) Finalmente la ruta misma
         ruta.Estado = EstadoRuta.Cancelada;
         ruta.Notas = string.IsNullOrEmpty(ruta.Notas)
             ? $"[Cancelada] {motivo}"
             : $"{ruta.Notas}\n[Cancelada] {motivo}";
-        ruta.ActualizadoEn = DateTime.UtcNow;
+        ruta.ActualizadoEn = ahora;
 
+        // Todos los cambios en una sola SaveChangesAsync — EF agrupa en una tx
+        // implícita. Si cualquier cosa falla, nada se persiste.
         return await _db.SaveChangesAsync() > 0;
     }
 
@@ -274,7 +411,10 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     public async Task<bool> LlegarAParadaAsync(int detalleId, DateTime horaLlegada, double latitud, double longitud)
     {
         var detalle = await _db.RutasDetalle.FindAsync(detalleId);
-        if (detalle == null || detalle.Estado != EstadoParada.Pendiente && detalle.Estado != EstadoParada.EnCamino)
+        if (detalle == null) return false;
+        // Bloquea re-arribo si la parada ya fue cerrada (salida) u omitida.
+        if (detalle.HoraSalidaReal.HasValue) return false;
+        if (detalle.Estado != EstadoParada.Pendiente && detalle.Estado != EstadoParada.EnCamino)
             return false;
 
         detalle.Estado = EstadoParada.Visitado;
@@ -362,7 +502,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     public async Task<List<RutaCargaDto>> ObtenerCargaAsync(int rutaId, int tenantId)
     {
-        return await _db.RutasCarga
+        var carga = await _db.RutasCarga
             .AsNoTracking()
             .Where(c => c.RutaId == rutaId && c.TenantId == tenantId && c.Activo)
             .Select(c => new RutaCargaDto
@@ -378,10 +518,79 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Disponible = c.Producto.Inventario != null ? (int?)c.Producto.Inventario.CantidadActual : null
             })
             .ToListAsync();
+
+        if (carga.Count == 0) return carga;
+
+        // Stock comprometido en OTRAS rutas activas: cargar batch (1 query) y descontar
+        // de Disponible. Sin esto, el admin puede cargar 30 unidades en R1 + 40 en R2
+        // aunque el stock real sea 50 (reportado 2026-04-27, mismo bug que pedidos).
+        var productIds = carga.Select(c => c.ProductoId).Distinct().ToList();
+        var comprometidoOtrasRutas = await _db.RutasCarga
+            .AsNoTracking()
+            .Where(rc => productIds.Contains(rc.ProductoId)
+                      && rc.Activo
+                      && rc.RutaId != rutaId
+                      && rc.TenantId == tenantId
+                      && rc.Ruta != null
+                      && EstadosRutaActiva.Contains(rc.Ruta.Estado))
+            .GroupBy(rc => rc.ProductoId)
+            .Select(g => new { ProductoId = g.Key, Total = g.Sum(rc => rc.CantidadTotal) })
+            .ToDictionaryAsync(x => x.ProductoId, x => x.Total);
+
+        foreach (var item in carga)
+        {
+            if (item.Disponible.HasValue && comprometidoOtrasRutas.TryGetValue(item.ProductoId, out var comprometido))
+            {
+                item.Disponible = Math.Max(0, item.Disponible.Value - comprometido);
+            }
+        }
+
+        return carga;
     }
 
     public async Task AsignarProductoVentaAsync(int rutaId, int productoId, int cantidad, double precio, int tenantId)
     {
+        // Validar stock real disponible: stock fisico - lo comprometido en OTRAS rutas activas.
+        // Sin esta validacion, el admin puede sobre-comprometer producto entre rutas
+        // (reportado 2026-04-27).
+        var stockFisico = await _db.Inventarios
+            .AsNoTracking()
+            .Where(pi => pi.ProductoId == productoId && pi.TenantId == tenantId)
+            .Select(pi => (decimal?)pi.CantidadActual)
+            .FirstOrDefaultAsync();
+
+        if (stockFisico.HasValue)
+        {
+            var comprometidoOtrasRutas = await _db.RutasCarga
+                .AsNoTracking()
+                .Where(rc => rc.ProductoId == productoId
+                          && rc.Activo
+                          && rc.RutaId != rutaId
+                          && rc.TenantId == tenantId
+                          && rc.Ruta != null
+                          && EstadosRutaActiva.Contains(rc.Ruta.Estado))
+                .SumAsync(rc => (int?)rc.CantidadTotal) ?? 0;
+
+            // Cantidad ya cargada en ESTA ruta como entrega (no contar la venta vieja
+            // porque la estamos sobreescribiendo en este metodo).
+            var cantidadEntregaEstaRuta = await _db.RutasCarga
+                .AsNoTracking()
+                .Where(rc => rc.RutaId == rutaId
+                          && rc.ProductoId == productoId
+                          && rc.TenantId == tenantId
+                          && rc.Activo)
+                .Select(rc => (int?)rc.CantidadEntrega)
+                .FirstOrDefaultAsync() ?? 0;
+
+            var disponibleReal = (int)stockFisico.Value - comprometidoOtrasRutas - cantidadEntregaEstaRuta;
+            if (cantidad > disponibleReal)
+            {
+                throw new InvalidOperationException(
+                    $"No hay stock suficiente. Disponible: {Math.Max(0, disponibleReal)} (stock {(int)stockFisico.Value}, " +
+                    $"comprometido en otras rutas: {comprometidoOtrasRutas}, ya cargado aqui como entrega: {cantidadEntregaEstaRuta}).");
+            }
+        }
+
         var existente = await _db.RutasCarga
             .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == productoId && c.TenantId == tenantId && c.Activo);
 
@@ -444,37 +653,100 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Estados de ruta que mantienen un pedido/producto comprometido y bloquean
+    /// reasignacion a otra ruta. Completada/Cancelada/Cerrada liberan los recursos.
+    /// </summary>
+    private static readonly EstadoRuta[] EstadosRutaActiva = new[]
+    {
+        EstadoRuta.Planificada,
+        EstadoRuta.PendienteAceptar,
+        EstadoRuta.CargaAceptada,
+        EstadoRuta.EnProgreso,
+    };
+
     public async Task AsignarPedidoAsync(int rutaId, int pedidoId, int tenantId)
     {
-        var existe = await _db.RutasPedidos
-            .AnyAsync(rp => rp.RutaId == rutaId && rp.PedidoId == pedidoId && rp.TenantId == tenantId && rp.Activo);
+        // Bloqueo cross-ruta: si el pedido ya esta asignado a OTRA ruta activa
+        // (Planificada/PendienteAceptar/CargaAceptada/EnProgreso), rechazar.
+        // El indice unico (ruta_id, pedido_id) solo previene duplicados en LA MISMA ruta;
+        // sin este check, el mismo pedido podria estar en N rutas distintas.
+        // Reportado 2026-04-27 — admin asignaba mismo pedido a 2 rutas el mismo dia.
+        var conflicto = await _db.RutasPedidos
+            .IgnoreQueryFilters()
+            .Include(rp => rp.Ruta)
+            .Where(rp => rp.PedidoId == pedidoId
+                      && rp.Activo
+                      && rp.RutaId != rutaId
+                      && rp.TenantId == tenantId
+                      && rp.Ruta != null
+                      && EstadosRutaActiva.Contains(rp.Ruta.Estado))
+            .Select(rp => new { rp.RutaId, RutaNombre = rp.Ruta!.Nombre })
+            .FirstOrDefaultAsync();
 
-        if (existe) return;
-
-        _db.RutasPedidos.Add(new RutaPedido
+        if (conflicto != null)
         {
-            RutaId = rutaId,
-            PedidoId = pedidoId,
-            TenantId = tenantId,
-            Estado = EstadoPedidoRuta.Asignado,
-            CreadoEn = DateTime.UtcNow
-        });
+            throw new InvalidOperationException(
+                $"El pedido ya esta asignado a la ruta '{conflicto.RutaNombre}' (#{conflicto.RutaId}). " +
+                $"Removelo de esa ruta antes de asignarlo aqui.");
+        }
+
+        // IgnoreQueryFilters: el indice unico (ruta_id, pedido_id) en RutasPedidos
+        // tambien considera registros con Activo=false (que es como RemoverPedidoAsync
+        // los soft-deletea). Sin esto, EF no encuentra el registro inactivo y el
+        // INSERT siguiente viola el indice (23505 en staging 2026-04-27).
+        var existente = await _db.RutasPedidos
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(rp => rp.RutaId == rutaId && rp.PedidoId == pedidoId && rp.TenantId == tenantId);
+
+        if (existente != null)
+        {
+            if (existente.Activo)
+                return; // Ya asignado y activo, idempotente
+
+            // Reactivar la asignación previa (estaba removida)
+            existente.Activo = true;
+            existente.Estado = EstadoPedidoRuta.Asignado;
+            existente.ActualizadoEn = DateTime.UtcNow;
+        }
+        else
+        {
+            _db.RutasPedidos.Add(new RutaPedido
+            {
+                RutaId = rutaId,
+                PedidoId = pedidoId,
+                TenantId = tenantId,
+                Estado = EstadoPedidoRuta.Asignado,
+                CreadoEn = DateTime.UtcNow
+            });
+        }
 
         // Agregar productos del pedido a la carga (como entrega)
         var detallesPedido = await _db.DetallePedidos
             .Where(d => d.PedidoId == pedidoId)
             .ToListAsync();
 
-        // Batch-load all existing carga for this ruta to avoid N+1 queries
+        // IgnoreQueryFilters: el indice unico (ruta_id, producto_id) en RutasCarga
+        // tambien considera registros soft-deleted (EliminadoEn != null) y desactivados
+        // (Activo = false). Sin IgnoreQueryFilters, EF no los devolveria, ibamos al
+        // else y el INSERT fallaba con 23505 (reportado en staging 2026-04-27).
+        // Reactivamos el registro existente en vez de insertar uno nuevo.
         var productIds = detallesPedido.Select(d => d.ProductoId).Distinct().ToList();
         var cargasExistentes = await _db.RutasCarga
-            .Where(c => c.RutaId == rutaId && productIds.Contains(c.ProductoId) && c.TenantId == tenantId && c.Activo)
+            .IgnoreQueryFilters()
+            .Where(c => c.RutaId == rutaId && productIds.Contains(c.ProductoId) && c.TenantId == tenantId)
             .ToDictionaryAsync(c => c.ProductoId);
 
         foreach (var det in detallesPedido)
         {
             if (cargasExistentes.TryGetValue(det.ProductoId, out var cargaExistente))
             {
+                if (!cargaExistente.Activo) cargaExistente.Activo = true;
+                if (cargaExistente.EliminadoEn != null)
+                {
+                    cargaExistente.EliminadoEn = null;
+                    cargaExistente.EliminadoPor = null;
+                }
                 cargaExistente.CantidadEntrega += (int)det.Cantidad;
                 cargaExistente.CantidadTotal = cargaExistente.CantidadEntrega + cargaExistente.CantidadVenta;
                 if (cargaExistente.PrecioUnitario == 0)
@@ -554,17 +826,34 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         }
     }
 
-    public async Task EnviarACargaAsync(int rutaId, int tenantId)
+    public async Task EnviarACargaAsync(int rutaId, int tenantId, List<int>? pedidoIdsToTransition = null)
     {
         var ruta = await _db.RutasVendedor
             .FirstOrDefaultAsync(r => r.Id == rutaId && r.TenantId == tenantId);
 
-        if (ruta != null)
+        if (ruta == null) return;
+
+        ruta.Estado = EstadoRuta.PendienteAceptar;
+        ruta.ActualizadoEn = DateTime.UtcNow;
+
+        // Cambio batch atomico de pedidos asignados a EnRuta. Antes el admin tenia
+        // que cambiar el estado de cada pedido uno por uno desde /pedidos
+        // (reportado 2026-04-27).
+        if (pedidoIdsToTransition is { Count: > 0 })
         {
-            ruta.Estado = EstadoRuta.PendienteAceptar;
-            ruta.ActualizadoEn = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
+            var pedidos = await _db.Pedidos
+                .Where(p => pedidoIdsToTransition.Contains(p.Id)
+                         && p.TenantId == tenantId
+                         && p.Estado == EstadoPedido.Confirmado)
+                .ToListAsync();
+            foreach (var p in pedidos)
+            {
+                p.Estado = EstadoPedido.EnRuta;
+                p.ActualizadoEn = DateTime.UtcNow;
+            }
         }
+
+        await _db.SaveChangesAsync();
     }
 
     // === Cierre de ruta ===
@@ -718,6 +1007,17 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     private RutaVendedorDto MapToDto(RutaVendedor ruta)
     {
+        // Multi-zona: si hay entradas en RutasZonas, usar esa lista. Si la ruta es vieja
+        // (creada antes del feature multi-zona) y solo tiene Zona legacy, sintetizamos
+        // una lista de 1 elemento para que el frontend nuevo funcione consistente.
+        var zonasResumen = ruta.Zonas?.Where(rz => rz.Zona != null)
+            .Select(rz => new ZonaResumenDto { Id = rz.ZonaId, Nombre = rz.Zona!.Nombre })
+            .ToList() ?? new List<ZonaResumenDto>();
+        if (zonasResumen.Count == 0 && ruta.Zona != null)
+        {
+            zonasResumen.Add(new ZonaResumenDto { Id = ruta.Zona.Id, Nombre = ruta.Zona.Nombre });
+        }
+
         return new RutaVendedorDto
         {
             Id = ruta.Id,
@@ -725,6 +1025,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             UsuarioNombre = ruta.Usuario?.Nombre ?? "",
             ZonaId = ruta.ZonaId,
             ZonaNombre = ruta.Zona?.Nombre,
+            Zonas = zonasResumen,
             Nombre = ruta.Nombre,
             Descripcion = ruta.Descripcion,
             Fecha = ruta.Fecha,
@@ -771,4 +1072,12 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             DistanciaDesdeAnterior = detalle.DistanciaDesdeAnterior
         };
     }
+
+    public Task<bool> ExisteUsuarioEnTenantAsync(int usuarioId, int tenantId)
+        => _db.Usuarios.AsNoTracking()
+            .AnyAsync(u => u.Id == usuarioId && u.TenantId == tenantId);
+
+    public Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId)
+        => _db.Zonas.AsNoTracking()
+            .AnyAsync(z => z.Id == zonaId && z.TenantId == tenantId);
 }

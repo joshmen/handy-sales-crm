@@ -74,7 +74,7 @@ export default function ModoVentaScreen() {
               </View>
               <Text style={styles.cardTitle}>Preventa</Text>
               <Text style={styles.cardSubtitle}>
-                Levantar pedido para entrega posterior
+                Registrar pedido para entrega posterior
               </Text>
             </TouchableOpacity>
           </Animated.View>

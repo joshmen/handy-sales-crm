@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -99,15 +100,10 @@ public class UsuarioRepository : IUsuarioRepository
                                    u.Email.ToLower().Contains(search));
         }
 
-        // Filter by admin status
-        if (searchDto.EsAdmin.HasValue)
+        // Filter by exact rol (SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR)
+        if (!string.IsNullOrEmpty(searchDto.Rol))
         {
-            query = query.Where(u => u.EsAdmin == searchDto.EsAdmin.Value);
-        }
-
-        if (searchDto.EsSuperAdmin.HasValue)
-        {
-            query = query.Where(u => u.EsSuperAdmin == searchDto.EsSuperAdmin.Value);
+            query = query.Where(u => u.RolExplicito == searchDto.Rol);
         }
 
         // Filter by active status
@@ -249,4 +245,12 @@ public class UsuarioRepository : IUsuarioRepository
         };
     }
 
+    public async Task<int> ContarPedidosActivosPorUsuarioAsync(int usuarioId, int tenantId)
+    {
+        return await _db.Pedidos
+            .Where(p => p.UsuarioId == usuarioId && p.TenantId == tenantId
+                && p.Estado != Domain.Entities.EstadoPedido.Entregado
+                && p.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .CountAsync();
+    }
 }

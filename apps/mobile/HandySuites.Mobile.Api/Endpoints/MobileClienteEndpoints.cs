@@ -111,6 +111,13 @@ public static class MobileClienteEndpoints
             [FromQuery] double radioKm,
             [FromServices] ClienteService servicio) =>
         {
+            // Validación de input: previene DoS (radioKm = MaxValue cargaría toda la tabla
+            // calculando haversine), y rangos imposibles (lat/lng fuera de la Tierra).
+            if (latitud < -90 || latitud > 90 || longitud < -180 || longitud > 180)
+                return Results.BadRequest(new { error = "Coordenadas fuera de rango (lat ±90, lng ±180)" });
+            if (radioKm <= 0 || radioKm > 1000)
+                return Results.BadRequest(new { error = "radioKm debe estar entre 0 y 1000" });
+
             var clientes = await servicio.ObtenerClientesAsync();
 
             // Filtrar clientes con coordenadas y calcular distancia

@@ -23,6 +23,7 @@ import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
@@ -49,6 +50,7 @@ export default function ProductCategoriesPage() {
   const t = useTranslations('productCategories');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   // State
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -213,8 +215,8 @@ export default function ProductCategoriesPage() {
       await productCategoryService.delete(id);
       toast.success(t('categoryDeleted'));
       await loadCategories();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

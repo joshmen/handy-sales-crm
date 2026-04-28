@@ -24,6 +24,13 @@ public record StartImpersonationRequest
     /// Nivel de acceso solicitado (default: READ_ONLY)
     /// </summary>
     public string AccessLevel { get; init; } = "READ_ONLY";
+
+    /// <summary>
+    /// Duración solicitada en minutos. Si se omite, se usa el default del sistema
+    /// (60 min). El valor máximo permitido es 120 min — cualquier valor mayor
+    /// se rechaza por el servicio (BR-031).
+    /// </summary>
+    public int? DurationMinutes { get; init; }
 }
 
 /// <summary>

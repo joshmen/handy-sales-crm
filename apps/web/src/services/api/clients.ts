@@ -8,6 +8,8 @@ interface ClienteListaDto {
   rfc: string;
   correo: string;
   telefono: string;
+  /** ID de zona del cliente — agregado para que UI agrupe paradas por zona en routes/[id]. 2026-04-27 */
+  idZona?: number;
   zonaNombre?: string;
   categoriaNombre?: string;
   activo: boolean;
@@ -130,6 +132,7 @@ function mapClienteToClient(dto: ClienteListaDto): Client {
     email: dto.correo,
     phone: dto.telefono,
     address: '',
+    zoneId: dto.idZona,
     zoneName: dto.zonaNombre,
     categoryName: dto.categoriaNombre,
     type: ClientType.MINORISTA,
@@ -242,9 +245,12 @@ class ClientService {
     }
   }
 
-  async deleteClient(id: string | number): Promise<void> {
+  async deleteClient(id: string | number, forzar = false): Promise<void> {
     try {
-      await api.delete(`${this.basePath}/${id}`);
+      const url = forzar
+        ? `${this.basePath}/${id}?forzar=true`
+        : `${this.basePath}/${id}`;
+      await api.delete(url);
     } catch (error) {
       throw handleApiError(error);
     }

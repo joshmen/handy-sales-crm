@@ -12,7 +12,7 @@ import { clientService } from '@/services/api/clients';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
 import { ClientLocationMap } from '@/components/maps/ClientLocationMap';
 import type { ZoneGeo } from '@/components/maps/ClientLocationMap';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -212,7 +212,7 @@ export default function NewClientPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
         <Breadcrumb items={[
@@ -250,7 +250,7 @@ export default function NewClientPage() {
               title={isOutOfZone ? t('outOfZoneTitle') : undefined}
               className="flex items-center gap-2 bg-success hover:bg-success/90 text-success-foreground text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {saving ? <Spinner size="sm" /> : null}
               {saving ? tc('saving') : t('saveButton')}
             </button>
           </div>

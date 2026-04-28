@@ -25,8 +25,19 @@ public static class CobroEndpoints
             [FromQuery] int? usuarioId,
             [FromServices] CobroService servicio) =>
         {
-            DateTime? desdeDate = string.IsNullOrEmpty(desde) ? null : DateTime.Parse(desde);
-            DateTime? hastaDate = string.IsNullOrEmpty(hasta) ? null : DateTime.Parse(hasta);
+            DateTime? desdeDate = null, hastaDate = null;
+            if (!string.IsNullOrEmpty(desde))
+            {
+                if (!DateTime.TryParse(desde, out var d))
+                    return Results.BadRequest(new { error = "El parámetro 'desde' no es una fecha válida." });
+                desdeDate = d;
+            }
+            if (!string.IsNullOrEmpty(hasta))
+            {
+                if (!DateTime.TryParse(hasta, out var h))
+                    return Results.BadRequest(new { error = "El parámetro 'hasta' no es una fecha válida." });
+                hastaDate = h;
+            }
             var cobros = await servicio.ObtenerCobrosAsync(clienteId, desdeDate, hastaDate, usuarioId);
             return Results.Ok(cobros);
         })

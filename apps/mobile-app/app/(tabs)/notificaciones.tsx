@@ -36,10 +36,13 @@ function formatRelativeTime(isoDate: string): string {
   if (weeks === 1) return 'Hace 1 semana';
   if (weeks < 5) return `Hace ${weeks} semanas`;
 
-  return new Date(isoDate).toLocaleDateString('es-MX', {
+  // Para notificaciones de >5 semanas usamos Intl con locale del runtime
+  // (la función es global, no hook — no podemos leer tenant TZ aquí; el
+  // formato corto día+mes no es crítico para audit)
+  return new Intl.DateTimeFormat(undefined, {
     day: 'numeric',
     month: 'short',
-  });
+  }).format(new Date(isoDate));
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +131,8 @@ function NotificacionesContent() {
         style={[styles.notifItem, !item.read && styles.notifUnread]}
         onPress={() => handlePress(item)}
         activeOpacity={0.7}
+        accessibilityLabel={`Notificación: ${item.title}${!item.read ? ' (sin leer)' : ''}`}
+        accessibilityRole="button"
       >
         <View style={styles.notifRow}>
           {!item.read && <View style={styles.unreadDot} />}
@@ -156,12 +161,12 @@ function NotificacionesContent() {
     <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} activeOpacity={0.7} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Notificaciones</Text>
         {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.markAllBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.markAllBtn} activeOpacity={0.7} accessibilityLabel="Marcar todas como leídas" accessibilityRole="button">
             <CheckCheck size={16} color={COLORS.headerText} />
             <Text style={styles.markAllText}>Leer todo</Text>
           </TouchableOpacity>

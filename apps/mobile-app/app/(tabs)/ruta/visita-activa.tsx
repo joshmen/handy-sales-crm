@@ -19,6 +19,7 @@ import { updateVisitaCheckout } from '@/db/actions';
 import { saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { COLORS } from '@/theme/colors';
 import { PhotoEvidence } from '@/components/evidence/PhotoEvidence';
 import { SignatureCapture } from '@/components/evidence/SignatureCapture';
@@ -37,17 +38,19 @@ const RESULTADO_OPTIONS = [
   { value: 4, label: 'Reagendada', icon: Clock, color: '#8b5cf6' },
 ];
 
-export default function VisitaActivaScreen() {
+function VisitaActivaScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: todayVisits, isLoading } = useOfflineTodayVisits();
-  const clientNames = useClientNameMap();
 
   // Active visit = today's visit with no checkout
   const visita = useMemo(
     () => todayVisits?.find((v) => v.checkInAt && !v.checkOutAt) ?? null,
     [todayVisits]
   );
+
+  const clienteIds = useMemo(() => (visita ? [visita.clienteId] : []), [visita]);
+  const clientNames = useClientNameMap(clienteIds);
 
   const [resultado, setResultado] = useState(1);
   const [notas, setNotas] = useState('');
@@ -412,3 +415,5 @@ const styles = StyleSheet.create({
   },
   endSection: { paddingHorizontal: 16 },
 });
+
+export default withErrorBoundary(VisitaActivaScreen, 'VisitaActivaScreen');

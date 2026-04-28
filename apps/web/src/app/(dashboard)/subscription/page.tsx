@@ -55,8 +55,10 @@ export default function SubscriptionPage() {
       setPlans(plansData);
       setSubscription(subData);
 
-      // Fetch timbres balance (may fail if plan doesn't include it)
-      subscriptionService.getTimbres().then(setTimbres).catch(() => {});
+      // Fetch timbres balance (may fail if plan doesn't include it — non-critical).
+      subscriptionService.getTimbres()
+        .then(setTimbres)
+        .catch((err) => console.warn('[Subscription] timbres unavailable for this plan:', err));
 
       // Fetch billing data in background if has Stripe
       if (subData.hasStripe) {

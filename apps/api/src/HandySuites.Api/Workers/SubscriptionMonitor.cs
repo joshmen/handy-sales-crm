@@ -1,4 +1,5 @@
 using HandySuites.Api.Hubs;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
@@ -110,7 +111,7 @@ public class SubscriptionMonitor : BackgroundService
                 var adminEmails = await db.Usuarios
                     .IgnoreQueryFilters()
                     .AsNoTracking()
-                    .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+                    .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
                     .Select(u => u.Email)
                     .ToListAsync(ct);
 
@@ -192,7 +193,7 @@ public class SubscriptionMonitor : BackgroundService
                 var adminEmails = await db.Usuarios
                     .IgnoreQueryFilters()
                     .AsNoTracking()
-                    .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+                    .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
                     .Select(u => u.Email)
                     .ToListAsync(ct);
 
@@ -261,7 +262,7 @@ public class SubscriptionMonitor : BackgroundService
             var adminEmails = await db.Usuarios
                 .IgnoreQueryFilters()
                 .AsNoTracking()
-                .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+                .Where(u => u.TenantId == tenant.Id && (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && u.Activo)
                 .Select(u => u.Email)
                 .ToListAsync(ct);
 
@@ -338,7 +339,7 @@ public class SubscriptionMonitor : BackgroundService
 
             // Send deactivation email
             var adminEmails = tenantUsers
-                .Where(u => u.EsAdmin && !string.IsNullOrEmpty(u.Email))
+                .Where(u => (u.RolExplicito == RoleNames.Admin || u.RolExplicito == RoleNames.SuperAdmin) && !string.IsNullOrEmpty(u.Email))
                 .Select(u => u.Email)
                 .ToList();
 

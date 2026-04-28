@@ -115,7 +115,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="mas"
         options={{
-          title: 'Mas',
+          title: 'Más',
           tabBarIcon: ({ color, size }) => <MoreHorizontal size={size} color={color} />,
           tabBarBadge: masBadgeCount > 0 ? masBadgeCount : undefined,
           tabBarBadgeStyle: masBadgeCount > 0 ? { backgroundColor: COLORS.warning, fontSize: 10 } : undefined,
@@ -134,6 +134,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="anuncios" options={{ href: null }} />
       <Tabs.Screen name="inventario" options={{ href: null }} />
       <Tabs.Screen name="historial-rutas" options={{ href: null }} />
+      <Tabs.Screen name="facturas" options={{ href: null }} />
     </Tabs>
     <OfflineBanner />
     </View>

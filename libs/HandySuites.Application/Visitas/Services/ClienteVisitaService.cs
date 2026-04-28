@@ -19,6 +19,11 @@ public class ClienteVisitaService
     // CRUD
     public async Task<int> CrearAsync(ClienteVisitaCreateDto dto)
     {
+        // Cliente debe existir en el tenant (antes: cliente inexistente → 500 FK,
+        // cliente de OTRO tenant → 201 con cross-tenant leak).
+        if (!await _repository.ExisteClienteEnTenantAsync(dto.ClienteId, _tenant.TenantId))
+            throw new InvalidOperationException("El cliente especificado no existe o no pertenece a tu empresa.");
+
         var usuarioId = int.Parse(_tenant.UserId);
         return await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
     }
@@ -48,12 +53,26 @@ public class ClienteVisitaService
     // Check-in / Check-out
     public async Task<bool> CheckInAsync(int visitaId, CheckInDto dto)
     {
+        await EnsureVisitaOwnedOrAdminAsync(visitaId);
         return await _repository.CheckInAsync(visitaId, dto, _tenant.TenantId);
     }
 
     public async Task<bool> CheckOutAsync(int visitaId, CheckOutDto dto)
     {
+        await EnsureVisitaOwnedOrAdminAsync(visitaId);
         return await _repository.CheckOutAsync(visitaId, dto, _tenant.TenantId);
+    }
+
+    // RBAC: vendedor/viewer sólo puede hacer check-in/check-out de sus propias visitas.
+    private async Task EnsureVisitaOwnedOrAdminAsync(int visitaId)
+    {
+        if (_tenant.IsAdmin || _tenant.IsSuperAdmin || _tenant.IsSupervisor) return;
+        if (!int.TryParse(_tenant.UserId, out var currentUserId)) return;
+
+        var visita = await _repository.ObtenerPorIdAsync(visitaId, _tenant.TenantId);
+        if (visita == null) return; // Repo regresará false y el endpoint traducirá a 400/404.
+        if (visita.UsuarioId != currentUserId)
+            throw new UnauthorizedAccessException("Solo el vendedor asignado puede operar esta visita.");
     }
 
     // Consultas del vendedor

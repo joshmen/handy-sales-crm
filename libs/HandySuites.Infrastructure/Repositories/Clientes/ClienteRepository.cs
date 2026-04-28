@@ -134,11 +134,12 @@ public class ClienteRepository : IClienteRepository
         if (cliente == null) return false;
 
         cliente.Nombre = dto.Nombre;
-        cliente.RFC = dto.RFC;
-        cliente.Correo = dto.Correo;
-        cliente.Telefono = dto.Telefono;
-        cliente.Direccion = dto.Direccion;
-        cliente.NumeroExterior = dto.NumeroExterior;
+        // DB columnas NOT NULL → coalesce a string vacío cuando el DTO envía null.
+        cliente.RFC = dto.RFC ?? string.Empty;
+        cliente.Correo = dto.Correo ?? string.Empty;
+        cliente.Telefono = dto.Telefono ?? string.Empty;
+        cliente.Direccion = dto.Direccion ?? string.Empty;
+        cliente.NumeroExterior = dto.NumeroExterior ?? string.Empty;
         cliente.IdZona = dto.IdZona;
         cliente.CategoriaClienteId = dto.CategoriaClienteId;
         // Campos adicionales
@@ -222,11 +223,13 @@ public class ClienteRepository : IClienteRepository
         }
 
         var totalItems = await query.CountAsync();
+        var pagina = filtro.Pagina ?? 1;
+        var tamanoPagina = filtro.TamanoPagina ?? 20;
 
         var items = await query
             .OrderBy(c => c.Nombre)
-            .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
-            .Take(filtro.TamanoPagina)
+            .Skip((pagina - 1) * tamanoPagina)
+            .Take(tamanoPagina)
             .Select(c => new ClienteListaDto
             {
                 Id = c.Id,
@@ -234,6 +237,7 @@ public class ClienteRepository : IClienteRepository
                 RFC = c.RFC,
                 Correo = c.Correo,
                 Telefono = c.Telefono,
+                IdZona = c.IdZona,
                 ZonaNombre = c.Zona != null ? c.Zona.Nombre : null,
                 CategoriaNombre = c.Categoria != null ? c.Categoria.Nombre : null,
                 VendedorId = c.VendedorId,
@@ -247,8 +251,8 @@ public class ClienteRepository : IClienteRepository
         {
             Items = items,
             TotalItems = totalItems,
-            Pagina = filtro.Pagina,
-            TamanoPagina = filtro.TamanoPagina
+            Pagina = pagina,
+            TamanoPagina = tamanoPagina
         };
     }
 
@@ -291,6 +295,15 @@ public class ClienteRepository : IClienteRepository
             (excludeId == null || c.Id != excludeId));
     }
 
+    public Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId)
+        => _db.Zonas.AsNoTracking().AnyAsync(z => z.Id == zonaId && z.TenantId == tenantId);
+
+    public Task<bool> ExisteCategoriaEnTenantAsync(int categoriaId, int tenantId)
+        => _db.CategoriasClientes.AsNoTracking().AnyAsync(c => c.Id == categoriaId && c.TenantId == tenantId);
+
+    public Task<bool> ExisteListaPreciosEnTenantAsync(int listaId, int tenantId)
+        => _db.ListasPrecios.AsNoTracking().AnyAsync(l => l.Id == listaId && l.TenantId == tenantId);
+
     public async Task<bool> AprobarProspectoAsync(int id, int tenantId)
     {
         var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
@@ -312,5 +325,34 @@ public class ClienteRepository : IClienteRepository
         _db.Clientes.Remove(cliente);
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<int> ContarPedidosActivosAsync(int clienteId, int tenantId)
+    {
+        // Estados no-terminales canónicos (post SimplificarEstadosPedido, mar 2026):
+        //   Borrador=0, Confirmado=2, EnRuta=4. Terminales: Entregado=5, Cancelado=6.
+        // Usamos los valores del enum; nota que el enum también incluye los legacy
+        // Enviado=1/EnProceso=3 [Obsolete] — si en BD queda algún pedido viejo con
+        // esos valores, lo tratamos como activo (conservador).
+        return await _db.Pedidos
+            .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId)
+            .Where(p => p.Estado != Domain.Entities.EstadoPedido.Entregado
+                     && p.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .CountAsync();
+    }
+
+    public async Task<decimal> SaldoPendienteTotalAsync(int clienteId, int tenantId)
+    {
+        // Total facturado (no cancelado) - total cobrado activo.
+        var totalFacturado = await _db.Pedidos
+            .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId
+                && p.Estado != Domain.Entities.EstadoPedido.Cancelado)
+            .SumAsync(p => (decimal?)p.Total) ?? 0m;
+
+        var totalCobrado = await _db.Cobros
+            .Where(c => c.ClienteId == clienteId && c.TenantId == tenantId && c.Activo)
+            .SumAsync(c => (decimal?)c.Monto) ?? 0m;
+
+        return totalFacturado - totalCobrado;
     }
 }

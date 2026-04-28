@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -131,6 +131,28 @@ export default function ImpresoraScreen() {
     setConnectedDevice(null);
   }, []);
 
+  // --- Change paper width (con guard si hay impresora conectada) ---
+  const handleWidthChange = useCallback(
+    (newWidth: 58 | 80) => {
+      if (newWidth === paperWidth) return;
+      // Si hay impresora conectada/guardada, pedir confirmación — cambiar el
+      // ancho sin ajustar la impresora física genera tickets truncados o con espacios.
+      if (connectedDevice || savedDevice) {
+        Alert.alert(
+          'Confirmar cambio de ancho',
+          `¿Tu impresora física "${(connectedDevice || savedDevice)?.name}" realmente es de ${newWidth}mm?\n\nSi el ancho no coincide con la impresora, los tickets saldrán mal.`,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Sí, es ' + newWidth + 'mm', onPress: () => setPaperWidth(newWidth) },
+          ],
+        );
+        return;
+      }
+      setPaperWidth(newWidth);
+    },
+    [paperWidth, connectedDevice, savedDevice, setPaperWidth],
+  );
+
   // --- Test print ---
   const handleTestPrint = useCallback(async () => {
     setPrinting(true);
@@ -255,11 +277,14 @@ export default function ImpresoraScreen() {
       {/* Paper width toggle */}
       <Animated.View entering={FadeInDown.duration(400).delay(150)}>
         <View style={styles.statusCard}>
-          <Text style={[styles.statusTitle, { marginBottom: 8 }]}>Ancho de papel</Text>
+          <Text style={[styles.statusTitle, { marginBottom: 4 }]}>Ancho de papel</Text>
+          <Text style={{ fontSize: 12, color: COLORS.textTertiary, marginBottom: 10, lineHeight: 18 }}>
+            Indica el ancho físico de tu impresora. Configúralo correctamente — si no coincide, los tickets saldrán cortados o con espacios.
+          </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
               style={[styles.widthChip, paperWidth === 58 && styles.widthChipActive]}
-              onPress={() => setPaperWidth(58)}
+              onPress={() => handleWidthChange(58)}
               accessibilityLabel="Papel 58 milímetros"
               accessibilityState={{ selected: paperWidth === 58 }}
             >
@@ -267,15 +292,17 @@ export default function ImpresoraScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.widthChip, paperWidth === 80 && styles.widthChipActive]}
-              onPress={() => setPaperWidth(80)}
+              onPress={() => handleWidthChange(80)}
               accessibilityLabel="Papel 80 milímetros"
               accessibilityState={{ selected: paperWidth === 80 }}
             >
               <Text style={[styles.widthChipText, paperWidth === 80 && styles.widthChipTextActive]}>80mm</Text>
             </TouchableOpacity>
           </View>
-          <Text style={{ fontSize: 11, color: COLORS.textTertiary, marginTop: 6 }}>
-            {paperWidth === 80 ? 'Soporta ticket CFDI completo' : 'Solo nota de venta + QR'}
+          <Text style={{ fontSize: 11, color: COLORS.textTertiary, marginTop: 8 }}>
+            {paperWidth === 80
+              ? '✓ Soporta notas de venta, recibos y CFDI (factura electrónica)'
+              : 'Solo soporta notas de venta y recibos. Las facturas CFDI requieren 80mm.'}
           </Text>
         </View>
       </Animated.View>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, Animated as RNAnimated, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
@@ -21,11 +21,12 @@ import Ruta from '@/db/models/Ruta';
 import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { PhotoEvidence } from '@/components/evidence/PhotoEvidence';
 import { saveAttachmentRecord } from '@/services/evidenceManager';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { performSync } from '@/sync/syncEngine';
-import { formatTime, formatCurrency } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import {
   MapPin,
   Clock,
@@ -45,11 +46,12 @@ const STOP_STATUS_NAMES: Record<number, string> = {
   0: 'Pendiente', 1: 'En Progreso', 2: 'Completada', 3: 'Omitida',
 };
 
-export default function ParadaDetailScreen() {
+function ParadaDetailScreen() {
   const insets = useSafeAreaInsets();
   const { detalleId } = useLocalSearchParams<{ detalleId: string }>();
   const router = useRouter();
   const { location } = useUserLocation();
+  const { time: formatTime, money: formatCurrency } = useTenantLocale();
 
   const [showError, setShowError] = useState<string | null>(null);
   const [showConfirmEntrega, setShowConfirmEntrega] = useState(false);
@@ -62,17 +64,13 @@ export default function ParadaDetailScreen() {
   const [noEntregaPhotos, setNoEntregaPhotos] = useState<string[]>([]);
   const [showGpsModal, setShowGpsModal] = useState(false);
 
-  // Keyboard offset for modals — moves card up when keyboard appears
-  const keyboardOffset = useRef(new RNAnimated.Value(0)).current;
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      RNAnimated.timing(keyboardOffset, { toValue: -(e.endCoordinates.height / 2.5), duration: 200, useNativeDriver: true }).start();
-    });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      RNAnimated.timing(keyboardOffset, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-    });
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
+  // NOTE histórica: hubo aquí un keyboardOffset RNAnimated.Value animado vía
+  // Keyboard listeners con useNativeDriver:true sobre transform translateY del
+  // modal. Causaba crash silencioso al teclear en el TextInput multiline del
+  // modal 'No se visitó' en Android. Se removió completamente: ahora los
+  // modales usan View regular y windowSoftInputMode=adjustResize maneja el
+  // espacio. Si se necesita animación al keyboard, usar Reanimated worklet o
+  // LayoutAnimation, NUNCA RNAnimated.timing dentro de keyboardDidShow listener.
 
   // Get route + stop from WDB
   const { data: rutas, isLoading: rutaLoading } = useOfflineRutaHoy();
@@ -145,6 +143,10 @@ export default function ParadaDetailScreen() {
   }, [route?.id, route?.estado]);
 
   const executeNoVisito = useCallback(async () => {
+    // Dismiss keyboard FIRST, then close modal — avoids Android SIGSEGV when
+    // Modal teardown races with keyboard animation.
+    Keyboard.dismiss();
+    await new Promise((r) => setTimeout(r, 80));
     setShowNoVisito(false);
     const reason = noVisitoReason || 'No se visitó';
     try {
@@ -162,7 +164,12 @@ export default function ParadaDetailScreen() {
       await checkAutoCompleteRoute();
       setNoVisitoReason('');
       setNoVisitoPhotos([]);
-      router.back();
+      // Defer navigation until modal fully gone, and fall back to replace if
+      // the stack has no previous screen (edge case when deep-linked).
+      setTimeout(() => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/(tabs)/ruta' as any);
+      }, 120);
     } catch {
       setShowError('No se pudo marcar la parada.');
     }
@@ -199,6 +206,8 @@ export default function ParadaDetailScreen() {
   }, [pedido, stop, router, checkAutoCompleteRoute]);
 
   const executeNoEntrega = useCallback(async () => {
+    Keyboard.dismiss();
+    await new Promise((r) => setTimeout(r, 80));
     setShowNoEntrega(false);
     const reason = noEntregaReason || 'No se entregó';
     setDelivering(true);
@@ -217,7 +226,10 @@ export default function ParadaDetailScreen() {
       await checkAutoCompleteRoute();
       setNoEntregaReason('');
       setNoEntregaPhotos([]);
-      router.back();
+      setTimeout(() => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/(tabs)/ruta' as any);
+      }, 120);
     } catch {
       setShowError('No se pudo omitir la parada.');
     } finally {
@@ -245,9 +257,10 @@ export default function ParadaDetailScreen() {
     );
   }
 
-  const isPendiente = stop.estado === 0;
-  const isEnProgreso = stop.estado === 1;
-  const statusColor = STOP_STATUS_COLORS[stop.estado] || '#6b7280';
+  const effectiveEstado = stop.displayEstado;
+  const isPendiente = effectiveEstado === 0;
+  const isEnProgreso = effectiveEstado === 1;
+  const statusColor = STOP_STATUS_COLORS[effectiveEstado] || '#6b7280';
 
   return (
     <View style={styles.container}>
@@ -258,7 +271,7 @@ export default function ParadaDetailScreen() {
       </TouchableOpacity>
       <Text style={styles.blueHeaderTitle}>Parada #{stop.orden}</Text>
       <Badge
-        label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
+        label={STOP_STATUS_NAMES[effectiveEstado] || 'Desconocido'}
         color={statusColor}
         bgColor={`${statusColor}25`}
         size="md"
@@ -279,7 +292,7 @@ export default function ParadaDetailScreen() {
           accessibilityRole="button"
         >
           <MapPin size={16} color="#ef4444" />
-          <Text style={styles.gpsBannerText}>Este cliente no tiene ubicacion GPS</Text>
+          <Text style={styles.gpsBannerText}>Este cliente no tiene ubicación GPS</Text>
           <Text style={styles.gpsBannerAction}>Agregar</Text>
         </TouchableOpacity>
         </Animated.View>
@@ -326,7 +339,7 @@ export default function ParadaDetailScreen() {
       <Animated.View entering={FadeInDown.duration(400).delay(100)}>
         <View style={[styles.statusBanner, { backgroundColor: `${statusColor}15`, borderColor: `${statusColor}30` }]}>
           <Badge
-            label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
+            label={STOP_STATUS_NAMES[effectiveEstado] || 'Desconocido'}
             color={statusColor}
             bgColor={`${statusColor}25`}
             size="md"
@@ -513,13 +526,13 @@ export default function ParadaDetailScreen() {
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
-          <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
+          <View style={styles.modalCard}>
             <SbWarning size={48} />
             <Text style={styles.modalTitle}>No se visitó</Text>
-            <Text style={styles.modalMessage}>Indica el motivo (minimo 10 caracteres):</Text>
+            <Text style={styles.modalMessage}>Indica el motivo (mínimo 10 caracteres):</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: Cliente cerrado, no habia quien recibiera..."
+              placeholder="Ej: Cliente cerrado, no había quien recibiera..."
               placeholderTextColor="#94a3b8"
               value={noVisitoReason}
               onChangeText={setNoVisitoReason}
@@ -530,7 +543,7 @@ export default function ParadaDetailScreen() {
             />
             {noVisitoReason.length > 0 && noVisitoReason.length < 10 && (
               <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: -14, marginBottom: 10, alignSelf: 'flex-end' }}>
-                {10 - noVisitoReason.length} caracteres mas
+                {10 - noVisitoReason.length} caracteres más
               </Text>
             )}
             <View style={{ alignSelf: 'stretch' }}>
@@ -545,6 +558,8 @@ export default function ParadaDetailScreen() {
               <TouchableOpacity
                 style={styles.modalCancelBtn}
                 onPress={() => { setShowNoVisito(false); setNoVisitoReason(''); setNoVisitoPhotos([]); }}
+                accessibilityLabel="Cancelar No se visitó"
+                accessibilityRole="button"
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
@@ -552,11 +567,14 @@ export default function ParadaDetailScreen() {
                 style={[styles.modalConfirmBtn, noVisitoReason.length < 10 && { opacity: 0.4 }]}
                 onPress={executeNoVisito}
                 disabled={noVisitoReason.length < 10}
+                accessibilityLabel="Confirmar No se visitó"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: noVisitoReason.length < 10 }}
               >
                 <Text style={styles.modalConfirmText}>Confirmar</Text>
               </TouchableOpacity>
             </View>
-          </RNAnimated.View>
+          </View>
         </View>
       </Modal>
 
@@ -579,13 +597,13 @@ export default function ParadaDetailScreen() {
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
-          <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
+          <View style={styles.modalCard}>
             <SbWarning size={48} />
             <Text style={styles.modalTitle}>No se entregó</Text>
-            <Text style={styles.modalMessage}>Indica el motivo (minimo 10 caracteres):</Text>
+            <Text style={styles.modalMessage}>Indica el motivo (mínimo 10 caracteres):</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: Cliente cerrado, no habia quien recibiera..."
+              placeholder="Ej: Cliente cerrado, no había quien recibiera..."
               placeholderTextColor="#94a3b8"
               value={noEntregaReason}
               onChangeText={setNoEntregaReason}
@@ -611,6 +629,8 @@ export default function ParadaDetailScreen() {
               <TouchableOpacity
                 style={styles.modalCancelBtn}
                 onPress={() => { setShowNoEntrega(false); setNoEntregaReason(''); setNoEntregaPhotos([]); }}
+                accessibilityLabel="Cancelar No se entregó"
+                accessibilityRole="button"
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
@@ -618,11 +638,14 @@ export default function ParadaDetailScreen() {
                 style={[styles.modalConfirmBtn, noEntregaReason.length < 10 && { opacity: 0.4 }]}
                 onPress={executeNoEntrega}
                 disabled={noEntregaReason.length < 10}
+                accessibilityLabel="Confirmar No se entregó"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: noEntregaReason.length < 10 }}
               >
                 <Text style={styles.modalConfirmText}>Confirmar</Text>
               </TouchableOpacity>
             </View>
-          </RNAnimated.View>
+          </View>
         </View>
       </Modal>
 
@@ -637,9 +660,9 @@ export default function ParadaDetailScreen() {
             try {
               await client.updateFields({ latitud: coord.latitude, longitud: coord.longitude });
               setShowGpsModal(false);
-              setShowError('Ubicacion de ' + (client.nombre ?? 'cliente') + ' guardada correctamente');
+              setShowError('Ubicación de ' + (client.nombre ?? 'cliente') + ' guardada correctamente');
             } catch {
-              setShowError('No se pudo guardar la ubicacion');
+              setShowError('No se pudo guardar la ubicación');
             }
           }}
           onCancel={() => setShowGpsModal(false)}
@@ -923,3 +946,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 });
+
+export default withErrorBoundary(ParadaDetailScreen, 'ParadaDetailScreen');

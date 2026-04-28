@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Megaphone, AlertTriangle, Info, Bell, X } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { api } from '@/api/client';
+import { useAuthStore } from '@/stores';
+import { getAccessToken } from '@/api/client';
 import { COLORS } from '@/theme/colors';
 import { EmptyState } from '@/components/ui';
 
@@ -49,16 +52,27 @@ export default function AnunciosScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
-  const fetchAnnouncements = async () => {
+  const fetchAnnouncements = useCallback(async () => {
+    // Guard: si JWT aún no se hidrató, no disparar request anónimo (el backend
+    // respondería 401 que silenciaríamos). El useEffect re-corre cuando isAuthenticated llega.
+    if (!isAuthenticated || !getAccessToken()) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await api.get<any>('/api/mobile/announcements');
       setAnnouncements(res.data?.data || []);
-    } catch (e) { /* silent */ if (__DEV__) console.warn('[Anuncios]', e); }
-    finally { setLoading(false); }
-  };
+    } catch (e) {
+      if (__DEV__) console.warn('[Anuncios]', e);
+      Toast.show({ type: 'error', text1: 'Anuncios', text2: 'No se pudieron cargar. Tira para refrescar.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
-  useEffect(() => { fetchAnnouncements(); }, []);
+  useEffect(() => { fetchAnnouncements(); }, [fetchAnnouncements]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -67,10 +81,18 @@ export default function AnunciosScreen() {
   };
 
   const handleDismiss = async (id: number) => {
+    // Optimistic dismiss: quitar localmente PRIMERO para UX inmediata, y revertir
+    // si la API falla. Sin rollback el item desaparece visualmente pero persiste
+    // server-side → al refrescar reaparece confundiendo al usuario.
+    const snapshot = announcements;
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
     try {
       await api.post(`/api/mobile/announcements/${id}/dismiss`);
-      setAnnouncements(prev => prev.filter(a => a.id !== id));
-    } catch (e) { /* silent */ if (__DEV__) console.warn('[Anuncios]', e); }
+    } catch (e) {
+      if (__DEV__) console.warn('[Anuncios]', e);
+      setAnnouncements(snapshot); // rollback
+      Toast.show({ type: 'error', text1: 'Anuncios', text2: 'No se pudo descartar. Intenta de nuevo.' });
+    }
   };
 
   const renderItem = ({ item }: { item: Announcement }) => {

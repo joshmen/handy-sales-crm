@@ -45,23 +45,12 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
             new("session_version", "1"),
         };
 
-        if (customRole != null)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, customRole));
-            if (customRole == "SUPER_ADMIN") claims.Add(new Claim("es_super_admin", "True"));
-            else if (customRole == "ADMIN") claims.Add(new Claim("es_admin", "True"));
-            else if (customRole == "SUPERVISOR") claims.Add(new Claim("es_admin", "False"));
-        }
-        else if (isSuperAdmin)
-        {
-            claims.Add(new Claim("es_super_admin", "True"));
-            claims.Add(new Claim(ClaimTypes.Role, "SUPER_ADMIN"));
-        }
-        else
-        {
-            claims.Add(new Claim("es_admin", "True"));
-            claims.Add(new Claim(ClaimTypes.Role, "ADMIN"));
-        }
+        // Single source of truth: claim "role" (string).
+        // Emitir tanto "role" como ClaimTypes.Role para compatibilidad con readers
+        // que usen cualquiera de los dos.
+        var resolvedRole = customRole ?? (isSuperAdmin ? "SUPER_ADMIN" : "ADMIN");
+        claims.Add(new Claim("role", resolvedRole));
+        claims.Add(new Claim(ClaimTypes.Role, resolvedRole));
 
         var identity = new ClaimsIdentity(claims, Scheme);
         var principal = new ClaimsPrincipal(identity);

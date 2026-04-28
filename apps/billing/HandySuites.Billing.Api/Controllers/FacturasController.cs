@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using HandySuites.Billing.Api.Data;
 using HandySuites.Billing.Api.Models;
 using HandySuites.Billing.Api.DTOs;
@@ -8,6 +9,7 @@ using HandySuites.Billing.Api.Services;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 
 namespace HandySuites.Billing.Api.Controllers;
 
@@ -69,6 +71,38 @@ public class FacturasController : ControllerBase
     private string GetTenantId() => User.FindFirst("tenant_id")?.Value
         ?? throw new UnauthorizedAccessException("Token missing tenant_id claim");
     private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+    /// <summary>
+    /// Defense-in-depth guard: rechaza operaciones de facturación si el tenant
+    /// no opera en un país con integración fiscal soportada (ver
+    /// <see cref="BillingCountrySupport"/>). Mobile UI ya hace gating por país,
+    /// pero este guard cubre llamadas directas vía API y bypass de UI.
+    /// Devuelve null si está OK; ActionResult con 403 si hay que rechazar.
+    /// </summary>
+    private async Task<ActionResult?> EnsureBillingSupportedAsync(string tenantId)
+    {
+        var pais = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId)
+            .Select(c => c.Pais)
+            .FirstOrDefaultAsync();
+
+        // Si no hay ConfiguracionFiscal aún, asumimos default "México" (MX) coherente
+        // con el default del modelo. El gating real corta cuando explícitamente otro país.
+        var paisEffective = string.IsNullOrWhiteSpace(pais) ? "México" : pais;
+
+        if (!BillingCountrySupport.IsSupported(paisEffective))
+        {
+            _logger.LogWarning(
+                "Bloqueando operación de facturación: tenant {TenantId} tiene país '{Pais}' (ISO '{Iso}') no soportado",
+                tenantId, paisEffective, BillingCountrySupport.NormalizeToIso(paisEffective));
+            return StatusCode(403, new
+            {
+                error = $"Facturación electrónica no disponible para país '{paisEffective}'.",
+                pais = paisEffective,
+            });
+        }
+        return null;
+    }
 
     private async Task<byte[]?> DownloadLogoAsync(string? logoUrl)
     {
@@ -198,7 +232,7 @@ public class FacturasController : ControllerBase
     public async Task<ActionResult<FacturaDto>> GetFactura(long id)
     {
         var tenantId = GetTenantId();
-        
+
         var factura = await _context.Facturas
             .Include(f => f.Detalles)
             .Include(f => f.Impuestos)
@@ -211,11 +245,145 @@ public class FacturasController : ControllerBase
         return Ok(MapToDto(factura));
     }
 
+    /// <summary>
+    /// Datos completos para la representación impresa 80mm del CFDI.
+    /// Incluye sellos completos, cadena original, certificados y RFC del PAC
+    /// — campos que el FacturaDto público omite pero que Anexo 20 4.0 exige
+    /// en el ticket físico entregado al cliente.
+    /// </summary>
+    [HttpGet("{id}/ticket-data")]
+    public async Task<ActionResult<FacturaTicketDataDto>> GetTicketData(long id)
+    {
+        var tenantId = GetTenantId();
+
+        var factura = await _context.Facturas
+            .Include(f => f.Detalles)
+                .ThenInclude(d => d.Impuestos)
+            .Where(f => f.Id == id && f.TenantId == tenantId)
+            .FirstOrDefaultAsync();
+
+        if (factura == null) return NotFound();
+
+        if (factura.Estado != "TIMBRADA" || string.IsNullOrEmpty(factura.Uuid))
+            return BadRequest(new { error = "Solo facturas TIMBRADAS pueden imprimirse como ticket." });
+
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        // RfcPac: lo extraemos del TimbreFiscalDigital dentro del XML stored
+        // (no está como columna en Factura). Si falla el parse, devolvemos "".
+        var rfcPac = ExtractRfcPacFromXml(factura.XmlContent);
+
+        // Número de certificado del SAT se guarda en Factura.CertificadoSat (el "NoCertificado"
+        // del TFD). Lo exponemos tal cual.
+        var noCertSat = factura.CertificadoSat ?? string.Empty;
+        var noCertEmisor = factura.NoCertificadoEmisor ?? string.Empty;
+
+        var dto = new FacturaTicketDataDto
+        {
+            EmisorRfc = factura.EmisorRfc,
+            EmisorNombre = factura.EmisorNombre,
+            EmisorRegimenFiscal = factura.EmisorRegimenFiscal,
+            EmisorDireccion = config?.DireccionFiscal,
+            LugarExpedicion = config?.CodigoPostal ?? "00000",
+
+            ReceptorRfc = factura.ReceptorRfc,
+            ReceptorNombre = factura.ReceptorNombre,
+            ReceptorRegimenFiscal = factura.ReceptorRegimenFiscal,
+            ReceptorUsoCfdi = factura.ReceptorUsoCfdi,
+            ReceptorDomicilioFiscal = factura.ReceptorDomicilioFiscal,
+
+            Serie = factura.Serie,
+            Folio = factura.Folio,
+            FechaEmision = factura.FechaEmision,
+            TipoComprobante = factura.TipoComprobante,
+            MetodoPago = factura.MetodoPago,
+            FormaPago = factura.FormaPago,
+            TipoExportacion = "01", // Default Anexo 20: "No aplica" (productos/servicios internos)
+
+            Items = factura.Detalles
+                .OrderBy(d => d.NumeroLinea)
+                .Select(d => new FacturaTicketItemDto
+                {
+                    NumeroLinea = d.NumeroLinea,
+                    ClaveProdServ = d.ClaveProdServ,
+                    ClaveUnidad = d.ClaveUnidad,
+                    Unidad = d.Unidad,
+                    Descripcion = d.Descripcion,
+                    Cantidad = d.Cantidad,
+                    ValorUnitario = d.ValorUnitario,
+                    Importe = d.Importe,
+                    Descuento = d.Descuento,
+                    ObjetoImp = d.ObjetoImp,
+                    Impuestos = d.Impuestos
+                        .Select(i => new FacturaTicketImpuestoDto
+                        {
+                            Tipo = i.Tipo,
+                            Impuesto = i.Impuesto,
+                            TipoFactor = i.TipoFactor,
+                            TasaOCuota = i.TasaOCuota,
+                            Base = i.Base,
+                            Importe = i.Importe,
+                        })
+                        .ToList(),
+                })
+                .ToList(),
+
+            Subtotal = factura.Subtotal,
+            Descuento = factura.Descuento,
+            TotalImpuestosTrasladados = factura.TotalImpuestosTrasladados,
+            TotalImpuestosRetenidos = factura.TotalImpuestosRetenidos,
+            Total = factura.Total,
+            Moneda = factura.Moneda,
+            TipoCambio = factura.TipoCambio,
+
+            Uuid = factura.Uuid,
+            FechaTimbrado = factura.FechaTimbrado ?? factura.FechaCertificacion ?? factura.FechaEmision,
+            FechaCertificacion = factura.FechaCertificacion,
+            NoCertificadoEmisor = noCertEmisor,
+            NoCertificadoSat = noCertSat,
+            RfcPac = rfcPac,
+            SelloCfdi = factura.SelloCfdi ?? string.Empty,
+            SelloSat = factura.SelloSat ?? string.Empty,
+            CadenaOriginalSat = factura.CadenaOriginalSat ?? string.Empty,
+
+            Estado = factura.Estado,
+        };
+
+        return Ok(dto);
+    }
+
+    /// <summary>
+    /// Extrae el atributo RfcProvCertif del elemento TimbreFiscalDigital
+    /// (complemento del CFDI timbrado). Si el XML no está disponible o no
+    /// tiene timbre devuelve string vacío.
+    /// </summary>
+    private static string ExtractRfcPacFromXml(string? xmlContent)
+    {
+        if (string.IsNullOrWhiteSpace(xmlContent)) return string.Empty;
+        try
+        {
+            var doc = XDocument.Parse(xmlContent);
+            var tfdNs = XNamespace.Get("http://www.sat.gob.mx/TimbreFiscalDigital");
+            var tfd = doc.Descendants(tfdNs + "TimbreFiscalDigital").FirstOrDefault();
+            return tfd?.Attribute("RfcProvCertif")?.Value ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
     [HttpPost]
     public async Task<ActionResult<FacturaDto>> CreateFactura(CreateFacturaRequest request)
     {
         var tenantId = GetTenantId();
         var userId = GetUserId();
+
+        // Country gate: solo emite si el tenant opera en un país con integración fiscal.
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
 
         // Validate RFC format
         if (!IsValidRfc(request.EmisorRfc))
@@ -223,68 +391,97 @@ public class FacturasController : ControllerBase
         if (!IsValidRfc(request.ReceptorRfc))
             return BadRequest(new { error = "RFC del receptor no tiene formato válido" });
 
-        // Obtener siguiente folio
-        var folio = await GetNextFolio(tenantId, request.Serie ?? "A");
-
-        var factura = new Factura
+        // BR-012 (Audit HIGH-8, Abril 2026): pre-validar disponibilidad de timbres
+        // antes de crear el registro PENDIENTE. Evita acumular facturas que nunca
+        // podrán timbrarse si el tenant no tiene cuota.
+        var authHeader = Request.Headers["Authorization"].ToString();
+        if (!string.IsNullOrEmpty(authHeader))
         {
-            TenantId = tenantId,
-            Serie = request.Serie ?? "A",
-            Folio = folio,
-            FechaEmision = request.FechaEmision ?? DateTime.UtcNow,
-            TipoComprobante = request.TipoComprobante,
-            MetodoPago = request.MetodoPago,
-            FormaPago = request.FormaPago,
-            UsoCfdi = request.UsoCfdi,
-            EmisorRfc = request.EmisorRfc,
-            EmisorNombre = request.EmisorNombre,
-            EmisorRegimenFiscal = request.EmisorRegimenFiscal,
-            ReceptorRfc = request.ReceptorRfc,
-            ReceptorNombre = request.ReceptorNombre,
-            ReceptorUsoCfdi = request.ReceptorUsoCfdi,
-            ReceptorDomicilioFiscal = request.ReceptorDomicilioFiscal,
-            Subtotal = request.Subtotal,
-            Descuento = request.Descuento,
-            TotalImpuestosTrasladados = request.TotalImpuestosTrasladados,
-            TotalImpuestosRetenidos = request.TotalImpuestosRetenidos,
-            Total = request.Total,
-            Moneda = request.Moneda ?? "MXN",
-            TipoCambio = request.TipoCambio ?? 1,
-            ClienteId = request.ClienteId,
-            VendedorId = request.VendedorId,
-            PedidoId = request.PedidoId,
-            Observaciones = request.Observaciones,
-            CreatedBy = userId,
-            Estado = "PENDIENTE"
-        };
-
-        // Agregar detalles
-        if (request.Detalles != null)
-        {
-            foreach (var detalle in request.Detalles)
+            var timbreCheck = await _timbreService.CheckTimbreAvailableAsync(authHeader);
+            if (!timbreCheck.Allowed)
             {
-                factura.Detalles.Add(new DetalleFactura
+                return StatusCode(402, new
                 {
-                    NumeroLinea = detalle.NumeroLinea,
-                    ClaveProdServ = detalle.ClaveProdServ,
-                    NoIdentificacion = detalle.NoIdentificacion,
-                    Descripcion = detalle.Descripcion,
-                    Unidad = detalle.Unidad,
-                    ClaveUnidad = detalle.ClaveUnidad,
-                    Cantidad = detalle.Cantidad,
-                    ValorUnitario = detalle.ValorUnitario,
-                    Importe = detalle.Importe,
-                    Descuento = detalle.Descuento,
-                    ProductoId = detalle.ProductoId
+                    error = timbreCheck.Message ?? "No tienes timbres disponibles.",
+                    usados = timbreCheck.Usados,
+                    maximo = timbreCheck.Maximo
                 });
             }
         }
 
-        _context.Facturas.Add(factura);
-        await _context.SaveChangesAsync();
+        // BR-010: folio + factura atómicamente (mismo patrón que CreateFacturaFromOrder).
+        // Wrapped via DbContext.CreateExecutionStrategy() because the DbContext has
+        // EnableRetryOnFailure — manual BeginTransactionAsync would throw at runtime.
+        var strategy = _context.Database.CreateExecutionStrategy();
+        var factura = await strategy.ExecuteAsync(async () =>
+        {
+            await using var folioTx = await _context.Database.BeginTransactionAsync();
 
-        RegistrarAuditoria(tenantId, factura.Id, "CREAR", "Factura creada", userId);
-        await _context.SaveChangesAsync();
+            // Obtener siguiente folio
+            var folio = await GetNextFolio(tenantId, request.Serie ?? "A");
+
+            var f = new Factura
+            {
+                TenantId = tenantId,
+                Serie = request.Serie ?? "A",
+                Folio = folio,
+                FechaEmision = request.FechaEmision ?? DateTime.UtcNow,
+                TipoComprobante = request.TipoComprobante,
+                MetodoPago = request.MetodoPago,
+                FormaPago = request.FormaPago,
+                UsoCfdi = request.UsoCfdi,
+                EmisorRfc = request.EmisorRfc,
+                EmisorNombre = request.EmisorNombre,
+                EmisorRegimenFiscal = request.EmisorRegimenFiscal,
+                ReceptorRfc = request.ReceptorRfc,
+                ReceptorNombre = request.ReceptorNombre,
+                ReceptorUsoCfdi = request.ReceptorUsoCfdi,
+                ReceptorDomicilioFiscal = request.ReceptorDomicilioFiscal,
+                Subtotal = request.Subtotal,
+                Descuento = request.Descuento,
+                TotalImpuestosTrasladados = request.TotalImpuestosTrasladados,
+                TotalImpuestosRetenidos = request.TotalImpuestosRetenidos,
+                Total = request.Total,
+                Moneda = request.Moneda ?? "MXN",
+                TipoCambio = request.TipoCambio ?? 1,
+                ClienteId = request.ClienteId,
+                VendedorId = request.VendedorId,
+                PedidoId = request.PedidoId,
+                Observaciones = request.Observaciones,
+                CreatedBy = userId,
+                Estado = "PENDIENTE"
+            };
+
+            // Agregar detalles
+            if (request.Detalles != null)
+            {
+                foreach (var detalle in request.Detalles)
+                {
+                    f.Detalles.Add(new DetalleFactura
+                    {
+                        NumeroLinea = detalle.NumeroLinea,
+                        ClaveProdServ = detalle.ClaveProdServ,
+                        NoIdentificacion = detalle.NoIdentificacion,
+                        Descripcion = detalle.Descripcion,
+                        Unidad = detalle.Unidad,
+                        ClaveUnidad = detalle.ClaveUnidad,
+                        Cantidad = detalle.Cantidad,
+                        ValorUnitario = detalle.ValorUnitario,
+                        Importe = detalle.Importe,
+                        Descuento = detalle.Descuento,
+                        ProductoId = detalle.ProductoId
+                    });
+                }
+            }
+
+            _context.Facturas.Add(f);
+            await _context.SaveChangesAsync();
+
+            RegistrarAuditoria(tenantId, f.Id, "CREAR", "Factura creada", userId);
+            await _context.SaveChangesAsync();
+            await folioTx.CommitAsync();
+            return f;
+        });
 
         return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
     }
@@ -293,6 +490,10 @@ public class FacturasController : ControllerBase
     public async Task<ActionResult<PreFacturaDto>> PreviewFacturaFromOrder([FromBody] CreateFacturaFromOrderRequest request)
     {
         var tenantId = GetTenantId();
+
+        // Country gate (preview también — evita exponer cálculos fiscales a tenants no soportados)
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
 
         // Reuse validation logic
         var order = await _orderReaderService.GetOrderForInvoiceAsync(tenantId, request.PedidoId);
@@ -385,6 +586,10 @@ public class FacturasController : ControllerBase
         var tenantId = GetTenantId();
         var userId = GetUserId();
 
+        // Country gate
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
+
         // 1. Check if this order was already invoiced
         var existingFactura = await _context.Facturas
             .Where(f => f.TenantId == tenantId && f.PedidoId == request.PedidoId && f.Estado != "CANCELADA")
@@ -427,120 +632,143 @@ public class FacturasController : ControllerBase
             return BadRequest("No hay configuración fiscal activa. Configure sus datos fiscales en Facturación → Configuración.");
 
         // 6. Build factura from order data
+        // BR-010: folio reservation + factura INSERT must share a transaction so
+        //         that if timbrado/save fails the folio increment rolls back and
+        //         we don't leave a SAT-compliance gap in the series.
+        // Wrapped via CreateExecutionStrategy() because DbContext has EnableRetryOnFailure.
         var serie = config.SerieFactura ?? "A";
-        var folio = await GetNextFolio(tenantId, serie);
 
-        var factura = new Factura
+        var strategy = _context.Database.CreateExecutionStrategy();
+        var txResult = await strategy.ExecuteAsync<(ActionResult<FacturaDto>? ReturnResult, Factura? Factura)>(async () =>
         {
-            TenantId = tenantId,
-            Serie = serie,
-            Folio = folio,
-            FechaEmision = DateTime.UtcNow,
-            TipoComprobante = "I",
-            MetodoPago = request.MetodoPago ?? "PUE",
-            FormaPago = request.FormaPago ?? "01",
-            UsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
-            EmisorRfc = config.Rfc ?? "",
-            EmisorNombre = config.RazonSocial ?? "",
-            EmisorRegimenFiscal = config.RegimenFiscal,
-            ReceptorRfc = order.ClienteRfc,
-            ReceptorNombre = order.ClienteRazonSocial ?? order.ClienteNombre,
-            ReceptorUsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
-            ReceptorDomicilioFiscal = order.ClienteCodigoPostalFiscal,
-            ReceptorRegimenFiscal = order.ClienteRegimenFiscal,
-            Subtotal = order.Subtotal,
-            Descuento = order.Descuento,
-            TotalImpuestosTrasladados = order.Impuestos,
-            TotalImpuestosRetenidos = 0,
-            Total = order.Total,
-            Moneda = "MXN",
-            TipoCambio = 1,
-            ClienteId = order.ClienteId,
-            VendedorId = order.VendedorId,
-            PedidoId = order.PedidoId,
-            Observaciones = request.Observaciones ?? $"Factura generada desde pedido {order.NumeroPedido}",
-            CreatedBy = userId,
-            Estado = "PENDIENTE"
-        };
+            await using var folioTx = await _context.Database.BeginTransactionAsync();
 
-        // 7. Resolve fiscal codes via chain: mapping → producto → defaults → fallback
-        var resolved = await _fiscalCodeResolver.ResolveAsync(tenantId, order.Detalles);
+            var folio = await GetNextFolio(tenantId, serie);
 
-        // Apply overrides from pre-factura review (if any)
-        var overrides = request.Overrides?.ToDictionary(o => o.ProductoId) ?? new();
-
-        var lineNum = 1;
-        foreach (var line in order.Detalles)
-        {
-            var fiscal = resolved.GetValueOrDefault(line.ProductoId,
-                new FiscalCodeResolver.ResolvedFiscalCode("01010101", "H87", "fallback"));
-
-            // Pre-factura overrides take highest priority
-            var claveProdServ = overrides.TryGetValue(line.ProductoId, out var ov) && !string.IsNullOrEmpty(ov.ClaveProdServ)
-                ? ov.ClaveProdServ : fiscal.ClaveProdServ;
-            var claveUnidad = overrides.TryGetValue(line.ProductoId, out var ovU) && !string.IsNullOrEmpty(ovU.ClaveUnidad)
-                ? ovU.ClaveUnidad : fiscal.ClaveUnidad;
-
-            factura.Detalles.Add(new DetalleFactura
+            var factura = new Factura
             {
-                NumeroLinea = lineNum++,
-                ClaveProdServ = claveProdServ,
-                NoIdentificacion = line.ProductoCodigoBarra,
-                Descripcion = line.ProductoNombre,
-                Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
-                ClaveUnidad = claveUnidad,
-                Cantidad = line.Cantidad,
-                ValorUnitario = line.PrecioUnitario,
-                Importe = line.Subtotal,
-                Descuento = line.Descuento,
-                ProductoId = line.ProductoId,
-            });
-        }
+                TenantId = tenantId,
+                Serie = serie,
+                Folio = folio,
+                FechaEmision = DateTime.UtcNow,
+                TipoComprobante = "I",
+                MetodoPago = request.MetodoPago ?? "PUE",
+                FormaPago = request.FormaPago ?? "01",
+                UsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+                EmisorRfc = config.Rfc ?? "",
+                EmisorNombre = config.RazonSocial ?? "",
+                EmisorRegimenFiscal = config.RegimenFiscal,
+                ReceptorRfc = order.ClienteRfc,
+                ReceptorNombre = order.ClienteRazonSocial ?? order.ClienteNombre,
+                ReceptorUsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+                ReceptorDomicilioFiscal = order.ClienteCodigoPostalFiscal,
+                ReceptorRegimenFiscal = order.ClienteRegimenFiscal,
+                Subtotal = order.Subtotal,
+                Descuento = order.Descuento,
+                TotalImpuestosTrasladados = order.Impuestos,
+                TotalImpuestosRetenidos = 0,
+                Total = order.Total,
+                Moneda = "MXN",
+                TipoCambio = 1,
+                ClienteId = order.ClienteId,
+                VendedorId = order.VendedorId,
+                PedidoId = order.PedidoId,
+                Observaciones = request.Observaciones ?? $"Factura generada desde pedido {order.NumeroPedido}",
+                CreatedBy = userId,
+                Estado = "PENDIENTE"
+            };
 
-        // 8. If auto-timbrar: validate everything BEFORE saving to DB
-        //    Only persist the factura if timbrado succeeds (or if not auto-timbrar)
-        if (!request.TimbrarInmediatamente)
-        {
+            // 7. Resolve fiscal codes via chain: mapping → producto → defaults → fallback
+            var resolved = await _fiscalCodeResolver.ResolveAsync(tenantId, order.Detalles);
+
+            // Apply overrides from pre-factura review (if any)
+            var overrides = request.Overrides?.ToDictionary(o => o.ProductoId) ?? new();
+
+            var lineNum = 1;
+            foreach (var line in order.Detalles)
+            {
+                var fiscal = resolved.GetValueOrDefault(line.ProductoId,
+                    new FiscalCodeResolver.ResolvedFiscalCode("01010101", "H87", "fallback"));
+
+                // Pre-factura overrides take highest priority
+                var claveProdServ = overrides.TryGetValue(line.ProductoId, out var ov) && !string.IsNullOrEmpty(ov.ClaveProdServ)
+                    ? ov.ClaveProdServ : fiscal.ClaveProdServ;
+                var claveUnidad = overrides.TryGetValue(line.ProductoId, out var ovU) && !string.IsNullOrEmpty(ovU.ClaveUnidad)
+                    ? ovU.ClaveUnidad : fiscal.ClaveUnidad;
+
+                factura.Detalles.Add(new DetalleFactura
+                {
+                    NumeroLinea = lineNum++,
+                    ClaveProdServ = claveProdServ,
+                    NoIdentificacion = line.ProductoCodigoBarra,
+                    Descripcion = line.ProductoNombre,
+                    Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
+                    ClaveUnidad = claveUnidad,
+                    Cantidad = line.Cantidad,
+                    ValorUnitario = line.PrecioUnitario,
+                    Importe = line.Subtotal,
+                    Descuento = line.Descuento,
+                    ProductoId = line.ProductoId,
+                });
+            }
+
+            // 8. Persist factura + commit folio reservation atomically.
+            //    If we're not auto-timbrando, commit immediately (factura PENDIENTE).
+            if (!request.TimbrarInmediatamente)
+            {
+                _context.Facturas.Add(factura);
+                await _context.SaveChangesAsync();
+                RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
+                await _context.SaveChangesAsync();
+                await folioTx.CommitAsync();
+
+                _logger.LogInformation("Factura {Serie}-{Folio} created (pending) from order {NumeroPedido} for tenant {TenantId}",
+                    factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+
+                return (CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura)), null);
+            }
+
+            // Auto-timbrar flow: save factura inside the same folio transaction so that
+            // if timbrado fails BEFORE any PAC UUID is issued, we roll back BOTH the
+            // factura AND the folio increment — no SAT gap.
             _context.Facturas.Add(factura);
             await _context.SaveChangesAsync();
-            RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
-            await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Factura {Serie}-{Folio} created (pending) from order {NumeroPedido} for tenant {TenantId}",
-                factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+            var timbrarResult = await TimbrarFactura(factura.Id);
+            if (timbrarResult.Result is OkObjectResult okResult)
+            {
+                RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada y timbrada desde pedido {order.NumeroPedido}", userId);
+                await _context.SaveChangesAsync();
+                await folioTx.CommitAsync();
 
-            return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
-        }
+                _logger.LogInformation("Factura {Serie}-{Folio} created and timbrada from order {NumeroPedido} for tenant {TenantId}",
+                    factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
 
-        // Auto-timbrar flow: save → timbrar → if fails, rollback
-        _context.Facturas.Add(factura);
-        await _context.SaveChangesAsync();
+                return ((ActionResult<FacturaDto>)Ok(okResult.Value), null);
+            }
 
-        var timbrarResult = await TimbrarFactura(factura.Id);
-        if (timbrarResult.Result is OkObjectResult okResult)
-        {
-            RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada y timbrada desde pedido {order.NumeroPedido}", userId);
-            await _context.SaveChangesAsync();
+            // Timbrado failed.
+            // If factura has a UUID it's already timbrada at SAT — we CANNOT rollback the folio
+            // (SAT has accepted it). Commit the factura so the record reflects SAT reality and
+            // the admin can handle the cancellation flow.
+            var reloaded = await _context.Facturas.FindAsync(factura.Id);
+            if (reloaded != null && !string.IsNullOrEmpty(reloaded.Uuid))
+            {
+                await folioTx.CommitAsync();
+                _logger.LogWarning("Factura {Serie}-{Folio} timbrada at SAT but post-process failed. UUID={Uuid}. Tenant {TenantId}",
+                    factura.Serie, factura.Folio, reloaded.Uuid, tenantId);
+                return ((ActionResult<FacturaDto>)timbrarResult.Result!, null);
+            }
 
-            _logger.LogInformation("Factura {Serie}-{Folio} created and timbrada from order {NumeroPedido} for tenant {TenantId}",
-                factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
-
-            return Ok(okResult.Value);
-        }
-
-        // Timbrado failed — delete the factura so it doesn't leave garbage
-        // But ONLY if it wasn't already timbrada at SAT (has UUID)
-        var reloaded = await _context.Facturas.FindAsync(factura.Id);
-        if (reloaded != null && string.IsNullOrEmpty(reloaded.Uuid))
-        {
-            _context.Facturas.Remove(reloaded);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Factura {Serie}-{Folio} deleted after timbrado failure for tenant {TenantId}",
+            // No UUID → timbrado never succeeded at SAT → safe to rollback everything,
+            // including the folio increment. No gap in SAT series.
+            await folioTx.RollbackAsync();
+            _logger.LogInformation("Factura {Serie}-{Folio} rolled back (including folio reservation) after timbrado failure for tenant {TenantId}",
                 factura.Serie, factura.Folio, tenantId);
-        }
+            return ((ActionResult<FacturaDto>)timbrarResult.Result!, null);
+        });
 
-        // Return the timbrado error to the user
-        return timbrarResult.Result!;
+        return txResult.ReturnResult!;
     }
 
     /// <summary>
@@ -554,6 +782,10 @@ public class FacturasController : ControllerBase
     {
         var tenantId = GetTenantId();
         var userId = GetUserId();
+
+        // Country gate
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
 
         // Validate periodicidad (SAT catalog)
         var periodicidadesValidas = new[] { "01", "02", "03", "04", "05" };
@@ -674,6 +906,10 @@ public class FacturasController : ControllerBase
     {
         var tenantId = GetTenantId();
         var userId = GetUserId();
+
+        // Country gate
+        var blocked = await EnsureBillingSupportedAsync(tenantId);
+        if (blocked != null) return blocked;
 
         // Atomic state transition to prevent concurrent double-stamps
         var updated = await _context.Facturas
@@ -1245,19 +1481,33 @@ public class FacturasController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Atomic upsert: INSERT on first use, UPDATE+increment on subsequent calls.
+    ///
+    /// BR-010 (Audit CRITICAL-2 + MEDIUM-12, Abril 2026): the folio increment MUST
+    /// share the ambient EF transaction so that if the subsequent Factura save fails,
+    /// the folio reservation rolls back and no SAT-compliance gap is created.
+    /// Previously this method opened its own NpgsqlConnection, auto-committing the
+    /// increment regardless of the EF transaction outcome.
+    ///
+    /// Callers of this method should wrap GetNextFolio + Factura.Add + SaveChangesAsync
+    /// in a single transaction (via ITransactionManager.BeginTransactionAsync).
+    /// </summary>
     private async Task<int> GetNextFolio(string tenantId, string serie)
     {
-        // Atomic upsert: INSERT on first use, UPDATE+increment on subsequent calls
-        // Uses raw Npgsql to avoid EF 9 non-composable SQL restriction with SqlQueryRaw
-        var connString = _context.Database.GetConnectionString();
-        await using var conn = new Npgsql.NpgsqlConnection(connString);
-        await conn.OpenAsync();
-        var sql = @"INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual, activo, created_at, updated_at)
+        var conn = (Npgsql.NpgsqlConnection)_context.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync();
+
+        var tx = _context.Database.CurrentTransaction?.GetDbTransaction() as Npgsql.NpgsqlTransaction;
+
+        const string sql = @"INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual, activo, created_at, updated_at)
                     VALUES (@tid, 'FACTURA', @serie, 1, 1, true, NOW(), NOW())
                     ON CONFLICT (tenant_id, tipo_documento, serie)
                     DO UPDATE SET folio_actual = numeracion_documentos.folio_actual + 1, updated_at = NOW()
                     RETURNING folio_actual";
-        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
+
+        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn, tx);
         cmd.Parameters.AddWithValue("tid", tenantId);
         cmd.Parameters.AddWithValue("serie", serie);
         var folio = await cmd.ExecuteScalarAsync();

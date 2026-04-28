@@ -9,6 +9,9 @@ public class DetallePedido : AuditableEntity
     [Column("id")]
     public int Id { get; set; }
 
+    [Column("mobile_record_id")]
+    public string? MobileRecordId { get; set; }
+
     [Column("pedido_id")]
     public int PedidoId { get; set; }
 

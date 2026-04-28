@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Switch, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Switch, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
@@ -108,21 +108,33 @@ export default function ConfiguracionScreen() {
           </View>
         </View>
         <View style={styles.divider} />
-        <View style={styles.aboutItem}>
+        <TouchableOpacity
+          style={styles.aboutItem}
+          onPress={() => Linking.openURL('https://handysuites.com/privacidad').catch(() => {})}
+          activeOpacity={0.7}
+          accessibilityLabel="Abrir política de privacidad"
+          accessibilityRole="link"
+        >
           <Shield size={18} color="#6b7280" style={{ marginRight: 12 }} />
           <View style={styles.settingContent}>
             <Text style={styles.settingLabel}>Privacidad</Text>
             <Text style={styles.settingDesc}>Política de privacidad</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={styles.divider} />
-        <View style={styles.aboutItem}>
+        <TouchableOpacity
+          style={styles.aboutItem}
+          onPress={() => Linking.openURL('https://handysuites.com/terminos').catch(() => {})}
+          activeOpacity={0.7}
+          accessibilityLabel="Abrir términos y condiciones"
+          accessibilityRole="link"
+        >
           <FileText size={18} color="#6b7280" style={{ marginRight: 12 }} />
           <View style={styles.settingContent}>
             <Text style={styles.settingLabel}>Términos</Text>
             <Text style={styles.settingDesc}>Términos y condiciones</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </Card>
       </Animated.View>
       </View>

@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { orderService, type OrderDetail } from '@/services/api/orders';
 import { OrderStatus } from '@/types';
 import { toast } from '@/hooks/useToast';
@@ -70,6 +72,8 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   const loadOrder = useCallback(async () => {
     try {
@@ -105,11 +109,28 @@ export default function OrderDetailPage() {
           toast.success(t('orderDelivered'));
           break;
         case 'cancelar':
-          if (!confirm(t('confirmCancel'))) return;
-          await orderService.cancelOrder(order.id);
-          toast.success(t('orderCancelled'));
-          break;
+          // Cancelar se maneja en Modal separado (requiere motivo por regla backend).
+          setShowCancelModal(true);
+          setActionLoading(null);
+          return;
       }
+      await loadOrder();
+    } catch (error: unknown) {
+      const msg = (error as { message?: string })?.message || t('actionError');
+      toast.error(msg);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const submitCancelOrder = async () => {
+    if (!order) return;
+    try {
+      setActionLoading('cancelar');
+      await orderService.cancelOrder(order.id, cancelReason.trim() || undefined);
+      toast.success(t('orderCancelled'));
+      setShowCancelModal(false);
+      setCancelReason('');
       await loadOrder();
     } catch (error: unknown) {
       const msg = (error as { message?: string })?.message || t('actionError');
@@ -380,6 +401,34 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal: cancelar pedido con motivo (reemplaza confirm() nativo). */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => { if (actionLoading !== 'cancelar') { setShowCancelModal(false); setCancelReason(''); } }}
+        title={t('cancelReason') || 'Motivo de cancelación'}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <textarea
+            autoFocus
+            rows={3}
+            className="w-full rounded-md border border-border-default bg-surface-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+            placeholder={t('cancelReasonPlaceholder') || 'Motivo de la cancelación...'}
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            disabled={actionLoading === 'cancelar'}
+          />
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setShowCancelModal(false); setCancelReason(''); }} disabled={actionLoading === 'cancelar'}>
+              {tc('cancel')}
+            </Button>
+            <Button type="button" variant="destructive" onClick={submitCancelOrder} disabled={actionLoading === 'cancelar'}>
+              {actionLoading === 'cancelar' ? tc('loading') : (t('confirmCancelOrder') || 'Cancelar pedido')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

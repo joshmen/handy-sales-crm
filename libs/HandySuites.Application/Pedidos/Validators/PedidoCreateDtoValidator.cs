@@ -10,6 +10,9 @@ public class PedidoCreateDtoValidator : AbstractValidator<PedidoCreateDto>
         RuleFor(x => x.ClienteId)
             .GreaterThan(0).WithMessage("Debe seleccionar un cliente válido.");
 
+        RuleFor(x => x.TipoVenta)
+            .IsInEnum().WithMessage("El tipo de venta es inválido.");
+
         RuleFor(x => x.Detalles)
             .NotEmpty().WithMessage("El pedido debe contener al menos un producto.")
             .Must(d => d != null && d.Count > 0).WithMessage("El pedido debe contener al menos un producto.");
@@ -65,5 +68,9 @@ public class DetallePedidoCreateDtoValidator : AbstractValidator<DetallePedidoCr
             RuleFor(x => x.Descuento)
                 .InclusiveBetween(0, 100).WithMessage("El descuento debe estar entre 0 y 100%.");
         });
+
+        RuleFor(x => x.Notas)
+            .MaximumLength(500).WithMessage("Las notas del detalle no pueden exceder 500 caracteres.")
+            .When(x => !string.IsNullOrEmpty(x.Notas));
     }
 }

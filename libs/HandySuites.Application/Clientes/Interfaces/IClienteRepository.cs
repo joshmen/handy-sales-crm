@@ -15,4 +15,20 @@ public interface IClienteRepository
     Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null);
     Task<bool> AprobarProspectoAsync(int id, int tenantId);
     Task<bool> RechazarProspectoAsync(int id, int tenantId);
+    Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId);
+    Task<bool> ExisteCategoriaEnTenantAsync(int categoriaId, int tenantId);
+    Task<bool> ExisteListaPreciosEnTenantAsync(int listaId, int tenantId);
+    /// <summary>
+    /// Devuelve el número de pedidos no terminales (Borrador/Confirmado/EnRuta)
+    /// asociados al cliente. Si es > 0 no debería permitirse borrar el cliente
+    /// — los pedidos activos perderían contexto al ocultarse el cliente por el
+    /// global query filter (EliminadoEn == null).
+    /// </summary>
+    Task<int> ContarPedidosActivosAsync(int clienteId, int tenantId);
+    /// <summary>
+    /// Devuelve el saldo pendiente total (Pedido.Total - SUM(Cobros.Monto)) del
+    /// cliente. Si es > 0 y se borra el cliente, se "pierde" visibilidad de la
+    /// deuda en cartera. Se usa como advertencia al eliminar.
+    /// </summary>
+    Task<decimal> SaldoPendienteTotalAsync(int clienteId, int tenantId);
 }

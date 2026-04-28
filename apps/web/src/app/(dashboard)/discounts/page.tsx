@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
 import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -58,6 +59,7 @@ export default function DiscountsPage() {
   const t = useTranslations('discounts');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const { formatDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
 
@@ -178,8 +180,8 @@ export default function DiscountsPage() {
       await api.delete(`/descuentos/${id}`);
       toast.success(t('deleted'));
       await fetchDiscounts();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 
@@ -383,8 +385,8 @@ export default function DiscountsPage() {
       setDiscounts(prev => prev.map(d =>
         ids.includes(d.id) ? { ...d, activo } : d
       ));
-    } catch (_error) {
-      toast.error(t('batchError'));
+    } catch (err) {
+      showApiError(err, t('batchError'));
     } finally {
       setActionLoading(false);
     }

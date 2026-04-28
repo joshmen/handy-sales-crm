@@ -53,8 +53,7 @@ public class MobileAuthEndpointsTests : IDisposable
             Email = "vendedor@test.com",
             PasswordHash = passwordHash,
             TenantId = 1,
-            EsAdmin = false,
-            EsSuperAdmin = false,
+            RolExplicito = "VENDEDOR",
             Activo = true
         };
         _db.Usuarios.Add(usuario);
@@ -66,8 +65,7 @@ public class MobileAuthEndpointsTests : IDisposable
             Email = "admin@test.com",
             PasswordHash = passwordHash,
             TenantId = 1,
-            EsAdmin = true,
-            EsSuperAdmin = false,
+            RolExplicito = "ADMIN",
             Activo = true
         };
         _db.Usuarios.Add(admin);

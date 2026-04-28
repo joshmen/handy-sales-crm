@@ -14,6 +14,7 @@ import { COLORS } from '@/theme/colors';
 import { GpsMapModal } from '@/components/shared/GpsMapModal';
 import { REGIMEN_FISCAL, USO_CFDI } from '@/constants/sat';
 import type { ClienteCreateRequest } from '@/types/client';
+import { ClienteCreateRequestSchema } from '@/api/schemas/client';
 
 // ── Inline SearchableDropdown ────────────────────────────────
 function SearchableDropdown({
@@ -161,6 +162,18 @@ function SatDropdown({
 // ── Validation helpers ───────────────────────────────────────
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhone = (phone: string) => /^\d{10}$/.test(phone);
+// RFC SAT México:
+//   Persona Física: 4 letras + 6 dígitos (YYMMDD) + 3 alfanuméricos (homoclave) → 13 chars
+//   Persona Moral: 3 letras + 6 dígitos + 3 alfanuméricos → 12 chars
+//   El RFC genérico extranjero "XEXX010101000" (13) o nacional "XAXX010101000" (13) son válidos.
+//   Validación estructural — backend revalida contra catálogo SAT al timbrar.
+const RFC_PERSONA_FISICA = /^[A-ZÑ&]{4}\d{6}[A-Z\d]{3}$/i;
+const RFC_PERSONA_MORAL = /^[A-ZÑ&]{3}\d{6}[A-Z\d]{3}$/i;
+const isValidRfc = (rfc: string) => {
+  if (!rfc) return true; // opcional
+  const upper = rfc.toUpperCase().trim();
+  return RFC_PERSONA_FISICA.test(upper) || RFC_PERSONA_MORAL.test(upper);
+};
 
 // ── Error label ──────────────────────────────────────────────
 function FieldError({ message }: { message?: string }) {
@@ -185,8 +198,16 @@ export default function CrearClienteScreen() {
   const [rfc, setRfc] = useState('');
   const [direccion, setDireccion] = useState('');
   const [numeroExterior, setNumeroExterior] = useState('');
+  const [colonia, setColonia] = useState('');
+  const [ciudad, setCiudad] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [encargado, setEncargado] = useState('');
   const [zonaId, setZonaId] = useState<number | undefined>(undefined);
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+  // Comerciales
+  const [descuentoPct, setDescuentoPct] = useState(''); // string para input, parse a number
+  const [ventaMinima, setVentaMinima] = useState('');
+  const [notas, setNotas] = useState('');
   const [touched, setTouched] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -203,16 +224,35 @@ export default function CrearClienteScreen() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [gpsUnavailable, setGpsUnavailable] = useState<'denied' | 'error' | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const Location = require('expo-location') as typeof import('expo-location');
-        const { status } = await Location.getForegroundPermissionsAsync();
-        if (status !== 'granted') return;
+        let { status } = await Location.getForegroundPermissionsAsync();
+        // Si está undetermined, pedir explícitamente — sin esto el usuario no sabe que necesitamos GPS
+        if (status === 'undetermined') {
+          const req = await Location.requestForegroundPermissionsAsync();
+          status = req.status;
+        }
+        if (status !== 'granted') {
+          setGpsUnavailable('denied');
+          Toast.show({
+            type: 'info',
+            text1: 'GPS desactivado',
+            text2: 'Podrás seleccionar la ubicación manualmente en el mapa.',
+            visibilityTime: 4000,
+          });
+          return;
+        }
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      } catch { /* permission denied or unavailable */ }
+      } catch (err) {
+        if (__DEV__) console.warn('[ClientesCrear] GPS unavailable:', err);
+        setGpsUnavailable('error');
+        // No spamear toast por error técnico; el usuario puede usar el mapa manualmente
+      }
     })();
   }, []);
 
@@ -227,8 +267,17 @@ export default function CrearClienteScreen() {
         setCorreo(client.correo || '');
         setRfc(client.rfc || '');
         setDireccion(client.direccion || '');
+        setNumeroExterior(client.numeroExterior || '');
+        setColonia(client.colonia || '');
+        setCiudad(client.ciudad || '');
+        setCodigoPostal(client.codigoPostal || '');
+        setEncargado(client.encargado || '');
         setZonaId(client.idZona || undefined);
         setCategoriaId(client.categoriaClienteId || undefined);
+        // Comerciales
+        if (client.descuento != null) setDescuentoPct(String(client.descuento));
+        if (client.ventaMinimaEfectiva != null) setVentaMinima(String(client.ventaMinimaEfectiva));
+        if (client.comentarios) setNotas(client.comentarios);
         if (client.latitud && client.longitud) {
           setLocation({ lat: client.latitud, lng: client.longitud });
         }
@@ -242,7 +291,16 @@ export default function CrearClienteScreen() {
           setRequiereFactura(true);
           setShowFiscal(true);
         }
-      } catch { /* ignore load errors */ }
+      } catch (e) {
+        // Si falla la carga (offline o error), avisar al usuario en vez de mostrar form vacío.
+        // El form vacío sería confuso — usuario podría sobreescribir datos sin querer.
+        if (__DEV__) console.warn('[ClienteCrear] load existing client failed:', e);
+        Toast.show({
+          type: 'error',
+          text1: 'No se pudo cargar el cliente',
+          text2: 'Verifica tu conexión y regresa atrás para reintentar',
+        });
+      }
       setLoaded(true);
     })();
   }, [editId, loaded]);
@@ -285,10 +343,17 @@ export default function CrearClienteScreen() {
             rfc: data.rfc,
             direccion: data.direccion || '',
             numeroExterior: data.numeroExterior,
+            colonia: data.colonia,
+            ciudad: data.ciudad,
+            codigoPostal: data.codigoPostal,
+            encargado: data.encargado,
             zonaId: data.idZona || 0,
             categoriaId: data.categoriaClienteId || 0,
             latitud: data.latitud,
             longitud: data.longitud,
+            descuento: data.descuento,
+            ventaMinimaEfectiva: data.ventaMinimaEfectiva,
+            notas: data.comentarios,
             rfcFiscal: data.rfcFiscal,
             razonSocial: data.razonSocial,
             regimenFiscal: data.regimenFiscal,
@@ -319,26 +384,55 @@ export default function CrearClienteScreen() {
     },
   });
 
-  // Validation — correo and telefono are optional, fiscal fields required when requiereFactura
+  // Validation — usa el schema Zod centralizado en `@/api/schemas/client.ts`.
+  // Antes había regex inline (isValidRfc, isValidEmail, etc.) duplicado entre
+  // varias pantallas. El schema unifica las reglas + permite reusarlo en mobile,
+  // y la inferencia de tipos garantiza que el data submitted matchea el contrato.
   const errors = useMemo(() => {
+    const candidate = {
+      nombre: nombre.trim(),
+      telefono: telefono || undefined,
+      correo: correo ? correo.trim().toLowerCase() : undefined,
+      rfc: rfc || undefined,
+      direccion: direccion.trim(),
+      numeroExterior: numeroExterior.trim(),
+      colonia: colonia.trim() || undefined,
+      ciudad: ciudad.trim() || undefined,
+      codigoPostal: codigoPostal.trim() || undefined,
+      encargado: encargado.trim() || undefined,
+      idZona: zonaId ?? 0,
+      categoriaClienteId: categoriaId ?? 0,
+      latitud: location?.lat,
+      longitud: location?.lng,
+      descuento: descuentoPct ? parseFloat(descuentoPct) : undefined,
+      ventaMinimaEfectiva: ventaMinima ? parseFloat(ventaMinima) : undefined,
+      comentarios: notas.trim() || undefined,
+      rfcFiscal: rfcFiscal || undefined,
+      razonSocial: razonSocial || undefined,
+      regimenFiscal: regimenFiscal || undefined,
+      usoCFDIPredeterminado: usoCfdi || undefined,
+      codigoPostalFiscal: cpFiscal || undefined,
+      facturable: requiereFactura,
+    };
+    const result = ClienteCreateRequestSchema.safeParse(candidate);
+    if (result.success) return {};
+    // Mapea el path[0] del Zod issue al key que usa la UI inline.
+    // Aliases: idZona → zona, categoriaClienteId → categoria, codigoPostalFiscal → cpFiscal
+    // (preservar nombres legacy del JSX para no reescribir los inputs).
+    const aliasMap: Record<string, string> = {
+      idZona: 'zona',
+      categoriaClienteId: 'categoria',
+      codigoPostalFiscal: 'cpFiscal',
+      ventaMinimaEfectiva: 'ventaMinima',
+    };
     const e: Record<string, string> = {};
-    if (!nombre.trim() || nombre.trim().length < 2) e.nombre = 'Mínimo 2 caracteres';
-    if (telefono && !isValidPhone(telefono)) e.telefono = 'Debe ser 10 dígitos';
-    if (correo && !isValidEmail(correo)) e.correo = 'Formato inválido';
-    if (rfc && (rfc.length < 12 || rfc.length > 13)) e.rfc = 'Debe ser 12-13 caracteres';
-    if (!direccion.trim()) e.direccion = 'Obligatorio';
-    if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
-    if (!zonaId) e.zona = 'Selecciona una zona';
-    if (!categoriaId) e.categoria = 'Selecciona una categoría';
-    // Fiscal fields — obligatorios cuando requiere factura
-    if (requiereFactura) {
-      if (!rfcFiscal.trim() || rfcFiscal.length < 12) e.rfcFiscal = 'RFC fiscal obligatorio (12-13 caracteres)';
-      if (!razonSocial.trim()) e.razonSocial = 'Razón social obligatoria';
-      if (!regimenFiscal) e.regimenFiscal = 'Régimen fiscal obligatorio';
-      if (!cpFiscal.trim() || cpFiscal.length !== 5) e.cpFiscal = 'C.P. fiscal obligatorio (5 dígitos)';
+    for (const issue of result.error.issues) {
+      const k = String(issue.path[0] ?? '');
+      const uiKey = aliasMap[k] ?? k;
+      if (!e[uiKey]) e[uiKey] = issue.message;
     }
     return e;
-  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, cpFiscal]);
+  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, colonia, ciudad, codigoPostal, encargado, zonaId, categoriaId, location, descuentoPct, ventaMinima, notas, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, usoCfdi, cpFiscal]);
 
   const isValid = Object.keys(errors).length === 0;
 
@@ -357,10 +451,18 @@ export default function CrearClienteScreen() {
       rfc: rfc || undefined,
       direccion: direccion.trim(),
       numeroExterior: numeroExterior.trim(),
+      colonia: colonia.trim() || undefined,
+      ciudad: ciudad.trim() || undefined,
+      codigoPostal: codigoPostal.trim() || undefined,
+      encargado: encargado.trim() || undefined,
       idZona: zonaId as number,
       categoriaClienteId: categoriaId as number,
       latitud: location?.lat,
       longitud: location?.lng,
+      // Comerciales
+      descuento: descuentoPct ? parseFloat(descuentoPct) : undefined,
+      ventaMinimaEfectiva: ventaMinima ? parseFloat(ventaMinima) : undefined,
+      comentarios: notas.trim() || undefined,
       // Fiscal
       rfcFiscal: rfcFiscal || undefined,
       razonSocial: razonSocial || undefined,
@@ -421,6 +523,21 @@ export default function CrearClienteScreen() {
           {touched && <FieldError message={errors.numeroExterior} />}
         </View>
 
+        <View style={styles.field}>
+          <Text style={styles.label}>Colonia</Text>
+          <TextInput style={styles.input} placeholder="Colonia (opcional)" placeholderTextColor={COLORS.textTertiary} value={colonia} onChangeText={setColonia} accessibilityLabel="Colonia" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Ciudad</Text>
+          <TextInput style={styles.input} placeholder="Ciudad (opcional)" placeholderTextColor={COLORS.textTertiary} value={ciudad} onChangeText={setCiudad} accessibilityLabel="Ciudad" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Código postal</Text>
+          <TextInput style={[styles.input, { width: 140 }]} placeholder="5 dígitos (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="number-pad" maxLength={5} value={codigoPostal} onChangeText={setCodigoPostal} accessibilityLabel="Código postal" />
+        </View>
+
         {/* ═══ INFORMACIÓN GENERAL ═══ */}
         <Text style={styles.sectionLabel}>INFORMACIÓN GENERAL</Text>
 
@@ -448,6 +565,11 @@ export default function CrearClienteScreen() {
           {touched && <FieldError message={errors.rfc} />}
         </View>
 
+        <View style={styles.field}>
+          <Text style={styles.label}>Encargado / Contacto</Text>
+          <TextInput style={styles.input} placeholder="Nombre del encargado (opcional)" placeholderTextColor={COLORS.textTertiary} value={encargado} onChangeText={setEncargado} accessibilityLabel="Encargado" />
+        </View>
+
         {/* ═══ CLASIFICACIÓN ═══ */}
         <Text style={styles.sectionLabel}>CLASIFICACIÓN</Text>
 
@@ -463,6 +585,24 @@ export default function CrearClienteScreen() {
           {touched && <FieldError message={errors.categoria} />}
         </View>
 
+        {/* ═══ COMERCIAL ═══ */}
+        <Text style={styles.sectionLabel}>COMERCIAL</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Descuento %</Text>
+          <TextInput style={[styles.input, { width: 140 }]} placeholder="0" placeholderTextColor={COLORS.textTertiary} keyboardType="decimal-pad" maxLength={5} value={descuentoPct} onChangeText={setDescuentoPct} accessibilityLabel="Descuento porcentual" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Venta mínima efectiva</Text>
+          <TextInput style={[styles.input, { width: 180 }]} placeholder="0" placeholderTextColor={COLORS.textTertiary} keyboardType="decimal-pad" value={ventaMinima} onChangeText={setVentaMinima} accessibilityLabel="Venta mínima efectiva" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Notas / Comentarios</Text>
+          <TextInput style={[styles.input, { minHeight: 70 }]} placeholder="Notas internas sobre el cliente (opcional)" placeholderTextColor={COLORS.textTertiary} value={notas} onChangeText={setNotas} multiline accessibilityLabel="Notas del cliente" />
+        </View>
+
         {/* ═══ DATOS FISCALES (colapsable) ═══ */}
         <TouchableOpacity
           style={styles.sectionToggle}
@@ -476,72 +616,9 @@ export default function CrearClienteScreen() {
 
         {showFiscal && (
           <View>
-            <View style={styles.field}>
-              <Text style={styles.label}>RFC Fiscal {requiereFactura ? '*' : ''}</Text>
-              <TextInput
-                style={[styles.input, touched && errors.rfcFiscal ? styles.inputError : null]}
-                value={rfcFiscal}
-                onChangeText={setRfcFiscal}
-                placeholder="XAXX010101000"
-                placeholderTextColor={COLORS.textTertiary}
-                autoCapitalize="characters"
-                maxLength={13}
-                accessibilityLabel="RFC fiscal"
-              />
-              {touched && <FieldError message={errors.rfcFiscal} />}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Razón Social {requiereFactura ? '*' : ''}</Text>
-              <TextInput
-                style={[styles.input, touched && errors.razonSocial ? styles.inputError : null]}
-                value={razonSocial}
-                onChangeText={setRazonSocial}
-                placeholder="Nombre o razón social"
-                placeholderTextColor={COLORS.textTertiary}
-                accessibilityLabel="Razón social"
-              />
-              {touched && <FieldError message={errors.razonSocial} />}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Régimen Fiscal {requiereFactura ? '*' : ''}</Text>
-              <SatDropdown
-                label="Régimen Fiscal"
-                items={REGIMEN_FISCAL}
-                selectedValue={regimenFiscal}
-                onSelect={setRegimenFiscal}
-                placeholder="Seleccionar régimen..."
-              />
-              {touched && <FieldError message={errors.regimenFiscal} />}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Uso CFDI</Text>
-              <SatDropdown
-                label="Uso CFDI"
-                items={USO_CFDI}
-                selectedValue={usoCfdi}
-                onSelect={setUsoCfdi}
-                placeholder="Seleccionar uso CFDI..."
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Código Postal Fiscal {requiereFactura ? '*' : ''}</Text>
-              <TextInput
-                style={[styles.input, touched && errors.cpFiscal ? styles.inputError : null]}
-                value={cpFiscal}
-                onChangeText={setCpFiscal}
-                placeholder="44100"
-                placeholderTextColor={COLORS.textTertiary}
-                keyboardType="number-pad"
-                maxLength={5}
-                accessibilityLabel="Código postal fiscal"
-              />
-              {touched && <FieldError message={errors.cpFiscal} />}
-            </View>
-
+            {/* Toggle arriba: controla si los campos son obligatorios.
+                Cuando está apagado, solo muestra el switch y oculta los campos
+                para no abrumar al vendedor con inputs que no va a llenar. */}
             <View style={styles.toggleRow}>
               <Text style={styles.label}>Requiere factura</Text>
               <Switch
@@ -550,6 +627,76 @@ export default function CrearClienteScreen() {
                 trackColor={{ false: COLORS.borderMedium, true: COLORS.headerBg }}
               />
             </View>
+
+            {requiereFactura && (
+              <>
+                <View style={styles.field}>
+                  <Text style={styles.label}>RFC Fiscal *</Text>
+                  <TextInput
+                    style={[styles.input, touched && errors.rfcFiscal ? styles.inputError : null]}
+                    value={rfcFiscal}
+                    onChangeText={setRfcFiscal}
+                    placeholder="XAXX010101000"
+                    placeholderTextColor={COLORS.textTertiary}
+                    autoCapitalize="characters"
+                    maxLength={13}
+                    accessibilityLabel="RFC fiscal"
+                  />
+                  {touched && <FieldError message={errors.rfcFiscal} />}
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Razón Social *</Text>
+                  <TextInput
+                    style={[styles.input, touched && errors.razonSocial ? styles.inputError : null]}
+                    value={razonSocial}
+                    onChangeText={setRazonSocial}
+                    placeholder="Nombre o razón social"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Razón social"
+                  />
+                  {touched && <FieldError message={errors.razonSocial} />}
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Régimen Fiscal *</Text>
+                  <SatDropdown
+                    label="Régimen Fiscal"
+                    items={REGIMEN_FISCAL}
+                    selectedValue={regimenFiscal}
+                    onSelect={setRegimenFiscal}
+                    placeholder="Seleccionar régimen..."
+                  />
+                  {touched && <FieldError message={errors.regimenFiscal} />}
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Uso CFDI</Text>
+                  <SatDropdown
+                    label="Uso CFDI"
+                    items={USO_CFDI}
+                    selectedValue={usoCfdi}
+                    onSelect={setUsoCfdi}
+                    placeholder="Seleccionar uso CFDI..."
+                  />
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Código Postal Fiscal *</Text>
+                  <TextInput
+                    style={[styles.input, touched && errors.cpFiscal ? styles.inputError : null]}
+                    value={cpFiscal}
+                    onChangeText={setCpFiscal}
+                    placeholder="44100"
+                    placeholderTextColor={COLORS.textTertiary}
+                    keyboardType="number-pad"
+                    maxLength={5}
+                    accessibilityLabel="Código postal fiscal"
+                  />
+                  {touched && <FieldError message={errors.cpFiscal} />}
+                </View>
+              </>
+            )}
           </View>
         )}
       </ScrollView>

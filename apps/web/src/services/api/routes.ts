@@ -1,12 +1,20 @@
 import { api, handleApiError } from '@/lib/api';
 
 // Backend DTOs (matching the API)
+export interface ZonaResumenDto {
+  id: number;
+  nombre: string;
+}
+
 export interface RutaListaDto {
   id: number;
   usuarioId: number;
   nombre: string;
   usuarioNombre: string;
+  /** Legacy: nombre de la primera zona. Listas que muestran todas usan `zonas`. */
   zonaNombre?: string;
+  /** Multi-zona: lista de zonas para mostrar como chips. */
+  zonas?: ZonaResumenDto[];
   fecha: string;
   estado: number;
   estadoNombre: string;
@@ -172,6 +180,37 @@ class RouteService {
     }
   }
 
+  async addParadasBatch(
+    rutaId: number,
+    clienteIds: number[],
+    duracionEstimadaMinutos?: number,
+  ): Promise<AgregarParadasBatchResult> {
+    try {
+      const response = await api.post<AgregarParadasBatchResult>(
+        `${this.basePath}/${rutaId}/paradas/batch`,
+        { clienteIds, duracionEstimadaMinutos },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async removeParadasBatch(
+    rutaId: number,
+    detalleIds: number[],
+  ): Promise<RemoverParadasBatchResult> {
+    try {
+      const response = await api.post<RemoverParadasBatchResult>(
+        `${this.basePath}/${rutaId}/paradas/batch-remove`,
+        { detalleIds },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async reorderParadas(rutaId: number, ordenDetalleIds: number[]): Promise<void> {
     try {
       await api.post(`${this.basePath}/${rutaId}/paradas/reordenar`, { ordenDetalleIds });
@@ -243,6 +282,30 @@ class RouteService {
   async addPedido(rutaId: number, pedidoId: number): Promise<void> {
     try {
       await api.post(`${this.basePath}/${rutaId}/carga/pedidos`, { pedidoId });
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async addPedidosBatch(rutaId: number, pedidoIds: number[]): Promise<AsignarPedidosBatchResult> {
+    try {
+      const response = await api.post<AsignarPedidosBatchResult>(
+        `${this.basePath}/${rutaId}/carga/pedidos/batch`,
+        { pedidoIds },
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async removePedidosBatch(rutaId: number, pedidoIds: number[]): Promise<RemoverPedidosBatchResult> {
+    try {
+      const response = await api.post<RemoverPedidosBatchResult>(
+        `${this.basePath}/${rutaId}/carga/pedidos/batch-remove`,
+        { pedidoIds },
+      );
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -368,8 +431,12 @@ export interface RouteDetail {
   id: number;
   usuarioId: number;
   usuarioNombre: string;
+  /** Legacy: primera zona. Frontend nuevo usa `zonas`. */
   zonaId?: number;
+  /** Legacy: nombre de la primera zona. */
   zonaNombre?: string;
+  /** Multi-zona: lista completa de zonas que cubre la ruta. */
+  zonas?: ZonaResumenDto[];
   nombre: string;
   descripcion?: string;
   fecha: string;
@@ -421,7 +488,10 @@ export interface AddStopRequest {
 
 export interface RouteCreateRequest {
   usuarioId: number;
+  /** Legacy single-zone. Frontend nuevo prefiere zonaIds. */
   zonaId?: number | null;
+  /** Multi-zona: lista de IDs de zonas. Si se manda gana sobre zonaId. */
+  zonaIds?: number[] | null;
   nombre: string;
   descripcion?: string;
   fecha: string;
@@ -432,13 +502,61 @@ export interface RouteCreateRequest {
 
 export interface RouteUpdateRequest {
   usuarioId?: number;
+  /** Legacy. */
   zonaId?: number | null;
+  /** Multi-zona: si se manda (incluso lista vacía), reemplaza el set de zonas. */
+  zonaIds?: number[] | null;
   nombre?: string;
   descripcion?: string;
   fecha?: string;
   horaInicioEstimada?: string | null;
   horaFinEstimada?: string | null;
   notas?: string;
+}
+
+// Resultado de asignación batch de pedidos a una ruta. Tolerante a fallos
+// parciales: cada pedido reporta success o motivo de fallo.
+export interface AsignarPedidoFallo {
+  pedidoId: number;
+  motivo: string;
+}
+
+export interface AsignarPedidosBatchResult {
+  asignados: number[];
+  fallidos: AsignarPedidoFallo[];
+  totalAsignados: number;
+  totalFallidos: number;
+}
+
+export interface RemoverPedidosBatchResult {
+  removidos: number[];
+  fallidos: AsignarPedidoFallo[];
+  totalRemovidos: number;
+  totalFallidos: number;
+}
+
+export interface AgregarParadaFallo {
+  clienteId: number;
+  motivo: string;
+}
+
+export interface AgregarParadasBatchResult {
+  agregadas: number[]; // RutaDetalle ids creados
+  fallidas: AgregarParadaFallo[];
+  totalAgregadas: number;
+  totalFallidas: number;
+}
+
+export interface RemoverParadaFallo {
+  detalleId: number;
+  motivo: string;
+}
+
+export interface RemoverParadasBatchResult {
+  removidas: number[];
+  fallidas: RemoverParadaFallo[];
+  totalRemovidas: number;
+  totalFallidas: number;
 }
 
 // Carga de inventario interfaces
@@ -573,7 +691,7 @@ export const ESTADO_RUTA_KEYS: Record<number, string> = {
   1: 'inProgress',
   2: 'completed',
   3: 'cancelled',
-  4: 'pendingAcceptance',
+  4: 'pendingAccept', // i18n key existente — antes decia 'pendingAcceptance' y mostraba la key literal
   5: 'loadAccepted',
   6: 'closed',
 };

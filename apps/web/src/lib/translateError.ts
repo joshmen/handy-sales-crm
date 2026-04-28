@@ -67,6 +67,10 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Ya existe una familia de productos con ese nombre.': { es: 'Ya existe una familia de productos con ese nombre.', en: 'A product family with that name already exists.' },
 
   // Route errors
+  'No se puede poner el pedido En Ruta: primero debe estar asignado a una ruta de vendedor activa (con carga aceptada o en progreso).': {
+    es: 'No se puede poner el pedido En Ruta: primero debe estar asignado a una ruta de vendedor activa (con carga aceptada o en progreso).',
+    en: 'Cannot move order to In Route: it must first be assigned to an active vendor route (with load accepted or in progress).',
+  },
   'La ruta no está en progreso': { es: 'La ruta no está en progreso', en: 'Route is not in progress' },
   'No se puede editar una ruta que ya está en progreso o completada': { es: 'No se puede editar una ruta que ya está en progreso o completada', en: 'Cannot edit a route that is already in progress or completed' },
   'No se puede eliminar una ruta en progreso': { es: 'No se puede eliminar una ruta en progreso', en: 'Cannot delete a route in progress' },
@@ -183,6 +187,72 @@ export function translateError(message: string): string {
     {
       pattern: /^Ya existe un rol con el nombre '.+'$/,
       replacement: { en: message.replace("Ya existe un rol con el nombre", "A role with the name").replace("already exists", "") + " already exists" },
+    },
+    {
+      pattern: /^Stock insuficiente:.*solo .+ disponibles?, solicitado .+$/,
+      replacement: { en: message.replace(
+        /^Stock insuficiente: (.+): solo (.+) disponibles?, solicitado (.+)$/,
+        'Insufficient stock: $1: only $2 available, requested $3'
+      ) },
+    },
+    {
+      // RutaVendedorService.IniciarRutaAsync / EnviarACargaAsync — mensajes
+      // dinámicos con lista de items faltantes. Reportado 2026-04-27: el toast
+      // mostraba "Error starting route" en vez del mensaje real.
+      pattern: /^No se puede (iniciar la ruta|enviar la ruta a carga): faltan .+\.$/,
+      replacement: { en: message.replace(
+        /^No se puede (iniciar la ruta|enviar la ruta a carga): faltan (.+)\.$/,
+        (_full, accion: string, faltantes: string) => {
+          const accionMap: Record<string, string> = {
+            'iniciar la ruta': 'start the route',
+            'enviar la ruta a carga': 'send the route to loading',
+          };
+          // Traducir items individuales de la lista
+          const itemsMap: Record<string, string> = {
+            'paradas (clientes a visitar)': 'stops (clients to visit)',
+            'paradas': 'stops',
+            'pedidos asignados': 'assigned orders',
+            'productos de carga': 'loading products',
+          };
+          const translatedItems = faltantes
+            .split(',')
+            .map(s => s.trim())
+            .map(s => itemsMap[s] || s)
+            .join(', ');
+          return `Cannot ${accionMap[accion] || accion}: missing ${translatedItems}.`;
+        }
+      ) },
+    },
+    {
+      // CancelarRutaAsync nuevo error — defensa en profundidad si el frontend
+      // no captura el shape ApiError.
+      pattern: /^No se pudo cancelar la ruta\. Verifica que no esté completada o ya cancelada\.$/,
+      replacement: { en: 'Could not cancel the route. Make sure it is not completed or already cancelled.' },
+    },
+    {
+      // OutcomeToResult.TransicionInvalida — `No se puede {accionVerbo} un pedido en estado {EstadoLabel}.`
+      // EstadoLabel y accionVerbo son sets cerrados (PedidoEndpoints.cs). Mapeamos ambos.
+      pattern: /^No se puede (?:confirmar|enviar a ruta|marcar como entregado|cancelar) un pedido en estado .+\.$/,
+      replacement: { en: message.replace(
+        /^No se puede (.+) un pedido en estado (.+)\.$/,
+        (_full, verbo: string, estado: string) => {
+          const verboMap: Record<string, string> = {
+            'confirmar': 'confirm',
+            'enviar a ruta': 'send to route',
+            'marcar como entregado': 'mark as delivered',
+            'cancelar': 'cancel',
+          };
+          const estadoMap: Record<string, string> = {
+            'Borrador': 'Draft',
+            'Confirmado': 'Confirmed',
+            'En ruta': 'In route',
+            'Entregado': 'Delivered',
+            'Cancelado': 'Cancelled',
+            'desconocido': 'unknown',
+          };
+          return `Cannot ${verboMap[verbo] || verbo} an order in ${estadoMap[estado] || estado} status.`;
+        }
+      ) },
     },
     {
       pattern: /^Stock insuficiente:/,

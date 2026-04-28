@@ -29,11 +29,29 @@ public class SyncRepository : ISyncRepository
 
     public async Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since)
     {
-        var query = _db.Productos.AsNoTracking().Where(p => p.TenantId == tenantId);
+        // Include UnidadMedida para que el sync mande Nombre al mobile sin catálogo separado.
+        var query = _db.Productos.AsNoTracking()
+            .Include(p => p.UnidadMedida)
+            .Where(p => p.TenantId == tenantId);
 
         if (since.HasValue)
         {
-            query = query.Where(p => p.ActualizadoEn > since || p.CreadoEn > since);
+            // Un producto se incluye si: el producto cambió, O el inventario del producto
+            // cambió desde el último sync. Antes solo se filtraba por Producto.ActualizadoEn,
+            // así una SALIDA (venta) que solo toca Inventario.CantidadActual no propagaba el
+            // nuevo stock al mobile — la app seguía mostrando el cache anterior. Reportado
+            // 2026-04-27: vendedor hizo venta directa, web reflejó stock OK pero mobile
+            // seguía mostrando cantidad pre-venta tras re-login.
+            var productosConInventarioModificado = _db.Set<HandySuites.Domain.Entities.Inventario>()
+                .AsNoTracking()
+                .Where(i => i.TenantId == tenantId
+                            && (i.ActualizadoEn > since || i.CreadoEn > since))
+                .Select(i => i.ProductoId);
+
+            query = query.Where(p =>
+                p.ActualizadoEn > since
+                || p.CreadoEn > since
+                || productosConInventarioModificado.Contains(p.Id));
         }
 
         return await query.OrderBy(p => p.Id).ToListAsync();
@@ -84,16 +102,57 @@ public class SyncRepository : ISyncRepository
         var query = _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Detalles)
+            .Include(r => r.PedidosAsignados)
+            .Include(r => r.Zonas).ThenInclude(rz => rz.Zona)
             .Where(r => r.TenantId == tenantId
                      && r.UsuarioId.HasValue && r.UsuarioId.Value == usuarioId
                      && !r.EsTemplate);
 
         if (since.HasValue)
         {
-            query = query.Where(r => r.ActualizadoEn > since || r.CreadoEn > since);
+            // Una ruta se incluye si: cambió la ruta, O cambió alguna de sus paradas,
+            // O se le asignó/removió un pedido (RutasPedidos), O se modificó la carga
+            // (RutasCarga). Antes la ruta solo se sincronizaba cuando r.ActualizadoEn
+            // cambiaba, así que asignar un pedido a una ruta en progreso no se propagaba
+            // al mobile (reportado 2026-04-27).
+            // RutaDetalle no tiene tenant_id propio; nos apoyamos en navegación.
+            var detallesModificados = _db.Set<RutaDetalle>()
+                .AsNoTracking()
+                .Where(d => d.Ruta.TenantId == tenantId
+                            && (d.ActualizadoEn > since || d.CreadoEn > since))
+                .Select(d => d.RutaId);
+            var pedidosAsignadosMod = _db.Set<RutaPedido>()
+                .AsNoTracking()
+                .Where(rp => rp.TenantId == tenantId
+                             && (rp.ActualizadoEn > since || rp.CreadoEn > since))
+                .Select(rp => rp.RutaId);
+            var cargaMod = _db.Set<RutaCarga>()
+                .AsNoTracking()
+                .Where(rc => rc.TenantId == tenantId
+                             && (rc.ActualizadoEn > since || rc.CreadoEn > since))
+                .Select(rc => rc.RutaId);
+
+            query = query.Where(r =>
+                r.ActualizadoEn > since
+                || r.CreadoEn > since
+                || detallesModificados.Contains(r.Id)
+                || pedidosAsignadosMod.Contains(r.Id)
+                || cargaMod.Contains(r.Id));
         }
 
         return await query.OrderBy(r => r.Id).ToListAsync();
+    }
+
+    public async Task<Dictionary<int, List<RutaCarga>>> GetRutasCargaForRutasAsync(int tenantId, List<int> rutaIds)
+    {
+        if (rutaIds.Count == 0) return new Dictionary<int, List<RutaCarga>>();
+
+        var carga = await _db.RutasCarga
+            .AsNoTracking()
+            .Where(rc => rc.TenantId == tenantId && rutaIds.Contains(rc.RutaId) && rc.Activo)
+            .ToListAsync();
+
+        return carga.GroupBy(rc => rc.RutaId).ToDictionary(g => g.Key, g => g.ToList());
     }
 
     public async Task<(Cliente entity, bool wasConflict)> UpsertClienteAsync(int tenantId, SyncClienteDto dto, string userId)
@@ -133,10 +192,28 @@ public class SyncRepository : ISyncRepository
                 existing.Correo = dto.Correo;
                 existing.Telefono = dto.Telefono;
                 existing.Direccion = dto.Direccion;
+                // Dirección desglosada (Cliente field gap fix — antes se perdían en update)
+                existing.NumeroExterior = dto.NumeroExterior;
+                existing.Colonia = dto.Colonia;
+                existing.Ciudad = dto.Ciudad;
+                existing.CodigoPostal = dto.CodigoPostal;
+                existing.Encargado = dto.Encargado;
                 existing.IdZona = dto.IdZona;
                 existing.CategoriaClienteId = dto.CategoriaClienteId;
+                existing.ListaPreciosId = dto.ListaPreciosId;
                 existing.Latitud = dto.Latitud;
                 existing.Longitud = dto.Longitud;
+                // Comerciales
+                existing.LimiteCredito = dto.LimiteCredito;
+                existing.DiasCredito = dto.DiasCredito;
+                existing.Descuento = dto.Descuento;
+                existing.Saldo = dto.Saldo;
+                existing.VentaMinimaEfectiva = dto.VentaMinimaEfectiva;
+                // Reglas de pago
+                existing.TiposPagoPermitidos = dto.TiposPagoPermitidos;
+                existing.TipoPagoPredeterminado = dto.TipoPagoPredeterminado;
+                existing.Comentarios = dto.Comentarios;
+                // Datos fiscales
                 existing.RfcFiscal = dto.RfcFiscal;
                 existing.RazonSocial = dto.RazonSocial;
                 existing.RegimenFiscal = dto.RegimenFiscal;
@@ -152,6 +229,19 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Dedupe offline-created records by MobileRecordId so retries don't duplicate
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var byMobile = await _db.Clientes
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.MobileRecordId == dto.LocalId);
+            if (byMobile != null)
+            {
+                return (byMobile, wasConflict);
+            }
+        }
+
+        int? vendedorId = int.TryParse(userId, out var uid) ? uid : (int?)null;
+
         // Create new
         var cliente = new Cliente
         {
@@ -161,10 +251,29 @@ public class SyncRepository : ISyncRepository
             Correo = dto.Correo,
             Telefono = dto.Telefono,
             Direccion = dto.Direccion,
+            // Dirección desglosada (Cliente field gap fix — antes se perdían en create)
+            NumeroExterior = dto.NumeroExterior,
+            Colonia = dto.Colonia,
+            Ciudad = dto.Ciudad,
+            CodigoPostal = dto.CodigoPostal,
+            Encargado = dto.Encargado,
             IdZona = dto.IdZona,
             CategoriaClienteId = dto.CategoriaClienteId,
+            VendedorId = vendedorId,
+            ListaPreciosId = dto.ListaPreciosId,
             Latitud = dto.Latitud,
             Longitud = dto.Longitud,
+            // Comerciales
+            LimiteCredito = dto.LimiteCredito,
+            DiasCredito = dto.DiasCredito,
+            Descuento = dto.Descuento,
+            Saldo = dto.Saldo,
+            VentaMinimaEfectiva = dto.VentaMinimaEfectiva,
+            // Reglas de pago
+            TiposPagoPermitidos = dto.TiposPagoPermitidos,
+            TipoPagoPredeterminado = dto.TipoPagoPredeterminado,
+            Comentarios = dto.Comentarios,
+            // Datos fiscales
             RfcFiscal = dto.RfcFiscal,
             RazonSocial = dto.RazonSocial,
             RegimenFiscal = dto.RegimenFiscal,
@@ -172,6 +281,7 @@ public class SyncRepository : ISyncRepository
             CodigoPostalFiscal = dto.CpFiscal,
             Facturable = dto.RequiereFactura,
             Activo = dto.Activo,
+            MobileRecordId = dto.LocalId,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = userId,
             Version = 1
@@ -251,6 +361,7 @@ public class SyncRepository : ISyncRepository
                         var detalle = new DetallePedido
                         {
                             PedidoId = existing.Id,
+                            MobileRecordId = detalleDto.LocalId,
                             ProductoId = detalleDto.ProductoId,
                             Cantidad = detalleDto.Cantidad,
                             PrecioUnitario = serverPrice,
@@ -315,6 +426,7 @@ public class SyncRepository : ISyncRepository
 
                 newDetalles.Add(new DetallePedido
                 {
+                    MobileRecordId = detalleDto.LocalId,
                     ProductoId = detalleDto.ProductoId,
                     Cantidad = detalleDto.Cantidad,
                     PrecioUnitario = serverPrice,
@@ -371,6 +483,42 @@ public class SyncRepository : ISyncRepository
                 {
                     detalle.PedidoId = pedido.Id;
                     _db.DetallePedidos.Add(detalle);
+                }
+
+                // BR-VD-INV: Para VentaDirecta Entregada, decrementar inventario en la misma
+                // transacción — análogo a lo que hace PedidoService.CrearAsync con
+                // MovimientoInventarioService.CrearMovimientoAsync. Evita stock fantasma
+                // cuando un vendedor cierra ventas directas offline.
+                if (pedido.TipoVenta == TipoVenta.VentaDirecta && pedido.Estado == EstadoPedido.Entregado)
+                {
+                    foreach (var detalle in newDetalles)
+                    {
+                        var inv = await _db.Inventarios
+                            .FirstOrDefaultAsync(i => i.TenantId == tenantId && i.ProductoId == detalle.ProductoId);
+                        if (inv == null) continue; // producto sin inventario — no bloquear la venta
+                        var anterior = inv.CantidadActual;
+                        var nueva = anterior - detalle.Cantidad;
+                        inv.CantidadActual = nueva;
+                        inv.ActualizadoEn = DateTime.UtcNow;
+                        inv.ActualizadoPor = userId;
+                        _db.MovimientosInventario.Add(new MovimientoInventario
+                        {
+                            TenantId = tenantId,
+                            ProductoId = detalle.ProductoId,
+                            TipoMovimiento = "SALIDA",
+                            Cantidad = detalle.Cantidad,
+                            CantidadAnterior = anterior,
+                            CantidadNueva = nueva,
+                            Motivo = "VENTA",
+                            Comentario = $"Venta directa mobile - Pedido #{pedido.Id}",
+                            UsuarioId = usuarioId,
+                            ReferenciaId = pedido.Id,
+                            ReferenciaTipo = "PEDIDO",
+                            CreadoEn = DateTime.UtcNow,
+                            CreadoPor = userId,
+                            Version = 1
+                        });
+                    }
                 }
 
                 return (pedido, wasConflict);
@@ -441,6 +589,7 @@ public class SyncRepository : ISyncRepository
         var visita = new ClienteVisita
         {
             TenantId = tenantId,
+            MobileRecordId = dto.LocalId,
             UsuarioId = usuarioId,
             ClienteId = dto.ClienteId,
             FechaProgramada = dto.FechaProgramada,
@@ -539,7 +688,18 @@ public class SyncRepository : ISyncRepository
 
         if (existing == null) return false;
 
-        existing.Estado = (EstadoParada)dto.Estado;
+        // Normalizar estado desde timestamps: mobile y backend tienen enums
+        // divergentes en el valor 1 (mobile=EnVisita, backend=EnCamino). Si hay
+        // HoraSalidaReal el estado efectivo es Visitado (a menos que sea
+        // Omitido). Previene paradas con horaSalida set pero estado inconsistente.
+        var clientEstado = (EstadoParada)dto.Estado;
+        if (clientEstado == EstadoParada.Omitido)
+            existing.Estado = EstadoParada.Omitido;
+        else if (dto.HoraSalidaReal.HasValue)
+            existing.Estado = EstadoParada.Visitado;
+        else
+            existing.Estado = clientEstado;
+
         existing.RazonOmision = dto.RazonOmision;
         existing.HoraLlegadaReal = dto.HoraLlegadaReal;
         existing.HoraSalidaReal = dto.HoraSalidaReal;
@@ -684,21 +844,33 @@ public class SyncRepository : ISyncRepository
         if (dto.Monto <= 0)
             throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
 
-        if (dto.PedidoId.HasValue && dto.PedidoId.Value > 0)
+        // Resolver PedidoLocalId (WDB id) → PedidoId cuando el pedido padre fue creado
+        // en el mismo sync y aún no tiene ServerId en el cliente. Evita cobros huérfanos
+        // con pedido_id NULL en flujo VentaDirecta offline.
+        int? resolvedPedidoId = dto.PedidoId;
+        if ((!resolvedPedidoId.HasValue || resolvedPedidoId.Value <= 0) && !string.IsNullOrEmpty(dto.PedidoLocalId))
+        {
+            var parent = await _db.Pedidos.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.PedidoLocalId);
+            if (parent != null) resolvedPedidoId = parent.Id;
+        }
+
+        if (resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
         {
             var pedido = await _db.Pedidos
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId);
-            if (pedido != null && dto.Monto > pedido.Total)
+                .FirstOrDefaultAsync(p => p.Id == resolvedPedidoId.Value && p.TenantId == tenantId);
+            if (pedido != null && dto.Monto > pedido.Total && pedido.Total > 0)
                 throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
         }
 
         var cobro = new Cobro
         {
             TenantId = tenantId,
+            MobileRecordId = dto.LocalId,
             UsuarioId = usuarioId,
             ClienteId = dto.ClienteId,
-            PedidoId = dto.PedidoId,
+            PedidoId = resolvedPedidoId,
             Monto = dto.Monto,
             MetodoPago = (MetodoPago)dto.MetodoPago,
             FechaCobro = dto.FechaCobro != default ? dto.FechaCobro : DateTime.UtcNow,

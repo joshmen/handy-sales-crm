@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Linking, Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import { MapModeToggle, type MapMode } from '@/components/map/MapModeToggle';
 import { StopMarker } from '@/components/map/StopMarker';
 import { ClusterMarker } from '@/components/map/ClusterMarker';
 import { ClientDetailPanel } from '@/components/map/ClientDetailPanel';
+import { isGoogleMapsConfigured } from '@/utils/maps';
 import { NextStopPanel } from '@/components/map/NextStopPanel';
 import { CheckInPanel } from '@/components/map/CheckInPanel';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
@@ -77,8 +78,25 @@ function MapaScreenContent() {
   } = useMapData();
 
   // Location
-  const { location, loading: locLoading } = useUserLocation();
+  const { location, loading: locLoading, error: locError } = useUserLocation();
   const { position: trackingPosition } = useLocationTracking(isRouteActive);
+
+  // Si falla la ubicación inicial, mostrar Alert con shortcut a Settings (en vez de
+  // dejar el mapa centrado en CDMX default sin contexto). Solo dispara una vez por mount.
+  const [locErrorShown, setLocErrorShown] = useState(false);
+  useEffect(() => {
+    if (locError && !locLoading && !locErrorShown) {
+      setLocErrorShown(true);
+      Alert.alert(
+        'Ubicación no disponible',
+        'No pudimos acceder al GPS. Activa los permisos en Ajustes para ver tu ubicación y registrar visitas.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir Ajustes', onPress: () => Linking.openSettings().catch(() => {}) },
+        ]
+      );
+    }
+  }, [locError, locLoading, locErrorShown]);
   const currentPos = trackingPosition || (location ? { latitude: location.latitude, longitude: location.longitude } : null);
 
   const initialRegion: Region = useMemo(() => {
@@ -225,6 +243,20 @@ function MapaScreenContent() {
   const handleMapPress = useCallback(() => {
     setSelectedClient(null);
   }, []);
+
+  // Sin Google Maps API key configurada → MapView crashea al renderizar.
+  // Mostramos placeholder con instrucción en vez de cerrar la app.
+  if (!isGoogleMapsConfigured()) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <MapPin size={48} color={COLORS.primary} />
+          <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 12 }]}>Mapas no disponibles en esta versión</Text>
+          <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 8, textAlign: 'center', paddingHorizontal: 24 }}>El administrador debe configurar la API key de Google Maps en el build.</Text>
+        </View>
+      </View>
+    );
+  }
 
   // --- Loading ---
   if (isLoading || locLoading) {

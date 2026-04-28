@@ -3,8 +3,8 @@ namespace HandySuites.Application.Usuarios.DTOs;
 public class UsuarioSearchDto
 {
     public string? Search { get; set; }
-    public bool? EsAdmin { get; set; }
-    public bool? EsSuperAdmin { get; set; }
+    /// <summary>Filtra por rol exacto: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.</summary>
+    public string? Rol { get; set; }
     public bool? Activo { get; set; }
     public int? RoleId { get; set; }
     public int? TenantId { get; set; }

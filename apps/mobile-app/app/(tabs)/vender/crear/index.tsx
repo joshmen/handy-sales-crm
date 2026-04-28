@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
+import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { LoadingSpinner, EmptyState, Button } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
 import { User, Search, Check, ChevronLeft } from 'lucide-react-native';
@@ -12,7 +13,7 @@ import type Cliente from '@/db/models/Cliente';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
-export default function CrearPedidoStep1() {
+function CrearPedidoStep1() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
@@ -54,6 +55,9 @@ export default function CrearPedidoStep1() {
           style={[styles.clientItem, isSelected && styles.clientItemSelected]}
           onPress={() => handleSelect(item)}
           activeOpacity={0.7}
+          accessibilityLabel={`Cliente ${item.nombre}`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isSelected }}
         >
           <View style={[styles.clientAvatar, isSelected && styles.clientAvatarSelected]}>
             {isSelected ? (
@@ -92,7 +96,7 @@ export default function CrearPedidoStep1() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Seleccionar Cliente</Text>
@@ -213,3 +217,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
 });
+
+export default withErrorBoundary(CrearPedidoStep1, 'CrearPedidoStep1');

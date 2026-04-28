@@ -2,16 +2,21 @@ import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap, useOfflineClients } from '@/hooks';
+import { useOfflineRutaHoy, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga, useClientNameMap, useOfflineClients, useOfflineProducts } from '@/hooks';
+import { rutasApi } from '@/api';
+import Toast from 'react-native-toast-message';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
-import { ChevronLeft, Navigation, Map, CheckCircle, Clock } from 'lucide-react-native';
+import { ChevronLeft, Navigation, Map as MapIcon, CheckCircle, Clock } from 'lucide-react-native';
 import Ruta from '@/db/models/Ruta';
-import { formatTime } from '@/utils/format';
+import { useTenantLocale } from '@/hooks';
 import { performSync } from '@/sync/syncEngine';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+// Carga lazy de react-native-maps + guard de API key. El mini-map en
+// esta pantalla solo se renderiza si AMBOS son verdaderos. Sin la key
+// MapView crashea al primer tile (reportado 2026-04-27).
 let MapView: any = null;
 let Marker: any = null;
 let Polyline: any = null;
@@ -21,8 +26,15 @@ try {
   Marker = maps.Marker;
   Polyline = maps.Polyline;
 } catch { /* maps not available */ }
+import { isGoogleMapsConfigured } from '@/utils/maps';
+const MAPS_OK = isGoogleMapsConfigured();
 import RutaDetalle from '@/db/models/RutaDetalle';
+import RutaPedido from '@/db/models/RutaPedido';
+import RutaCarga from '@/db/models/RutaCarga';
 import Cliente from '@/db/models/Cliente';
+import Producto from '@/db/models/Producto';
+import Pedido from '@/db/models/Pedido';
+import { Package } from 'lucide-react-native';
 
 const STOP_DOT_COLORS: Record<number, string> = {
   0: '#e2e8f0', // Pendiente — gray
@@ -48,13 +60,44 @@ export default function RutaScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const { time: formatTime } = useTenantLocale();
 
   const { data: rutas, isLoading } = useOfflineRutaHoy();
   const route = rutas?.[0] ?? null;
 
   const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
-  const clientNames = useClientNameMap();
+  const { data: pedidosCargados } = useOfflineRutaPedidos(route?.id ?? '');
+  const { data: cargaProductos } = useOfflineRutaCarga(route?.id ?? '');
+  const clienteIds = useMemo(
+    () => Array.from(new Set((detalles ?? []).map(s => s.clienteId))),
+    [detalles]
+  );
+  const clientNames = useClientNameMap(clienteIds);
   const { data: allClients } = useOfflineClients();
+  const { data: allProducts } = useOfflineProducts();
+
+  // Lookups por id local de WDB (evita hacer N queries por cada item).
+  const productNames = useMemo(() => {
+    const map = new Map<string, string>();
+    (allProducts as Producto[] | undefined)?.forEach((p) => map.set(p.id, p.nombre));
+    return map;
+  }, [allProducts]);
+
+  // Para los pedidos cargados, mostrar número y total. Hago lookup batch.
+  const [pedidosLookup, setPedidosLookup] = useState<Map<string, { numero: string | null; total: number }>>(new Map());
+  useFocusEffect(useCallback(() => {
+    const ids = (pedidosCargados as RutaPedido[] | undefined)?.map((rp) => rp.pedidoId) ?? [];
+    if (ids.length === 0) { setPedidosLookup(new Map()); return; }
+    database.get<Pedido>('pedidos')
+      .query(Q.where('id', Q.oneOf(ids)))
+      .fetch()
+      .then((peds) => {
+        const map = new Map<string, { numero: string | null; total: number }>();
+        for (const p of peds) map.set(p.id, { numero: p.numeroPedido, total: p.total });
+        setPedidosLookup(map);
+      })
+      .catch(() => setPedidosLookup(new Map()));
+  }, [pedidosCargados]));
 
   // Build coordinate lookup from clients and compute polyline coordinates
   const routeCoordinates = useMemo(() => {
@@ -82,8 +125,8 @@ export default function RutaScreen() {
       .fetch()
       .then((stops) => {
         const total = stops.length;
-        const visitadas = stops.filter((d) => d.estado === 2).length;
-        const omitidas = stops.filter((d) => d.estado === 3).length;
+        const visitadas = stops.filter((d) => d.displayEstado === 2).length;
+        const omitidas = stops.filter((d) => d.displayEstado === 3).length;
         setStats({ total, atendidas: visitadas + omitidas, pendientes: total - visitadas - omitidas, omitidas });
       })
       .catch(() => {});
@@ -137,7 +180,7 @@ export default function RutaScreen() {
           accessibilityLabel="Ver mapa de ruta"
           accessibilityRole="button"
         >
-          <Map size={22} color={COLORS.headerText} />
+          <MapIcon size={22} color={COLORS.headerText} />
         </TouchableOpacity>
       </View>
 
@@ -146,8 +189,8 @@ export default function RutaScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.button} colors={[COLORS.button]} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Accept Route Banner — shown when route is Planificada */}
-        {route.estado === 0 && (
+        {/* Accept Route Banner — shown when route is Planificada o PendienteAceptar */}
+        {(route.estado === 0 || route.estado === 4) && (
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.acceptBanner}>
               <View style={{ flex: 1 }}>
@@ -162,10 +205,49 @@ export default function RutaScreen() {
                 accessibilityRole="button"
                 onPress={async () => {
                   setAccepting(true);
+                  const serverId = route.serverId;
+                  if (!serverId) {
+                    // Ruta aún no sincronizó — solo update local, backend sincroniza después
+                    try {
+                      const freshRoute = await database.get<Ruta>('rutas').find(route.id);
+                      await freshRoute.startRoute();
+                      Toast.show({ type: 'info', text1: 'Aceptada localmente', text2: 'Sincronizará al recuperar conexión' });
+                    } catch (e) {
+                      if (__DEV__) console.warn('[Ruta] startRoute local sin serverId failed:', e);
+                      Toast.show({ type: 'error', text1: 'No se pudo aceptar', text2: 'Intenta de nuevo' });
+                    }
+                    setAccepting(false);
+                    return;
+                  }
+                  // Backend: /aceptar (captura timestamp + transiciona 0|4 → 5) — best-effort.
+                  let backendOk = false;
+                  try {
+                    await rutasApi.aceptar(serverId);
+                    backendOk = true;
+                  } catch (e) {
+                    if (__DEV__) console.warn('[Ruta] aceptar backend failed (continuando):', e);
+                  }
+                  // Local + backend /iniciar (5|0 → 1) — la fuente de verdad de la UI.
+                  try {
+                    await rutasApi.iniciar(serverId);
+                    backendOk = true;
+                  } catch (e) {
+                    if (__DEV__) console.warn('[Ruta] iniciar backend failed (offline retry vía sync push):', e);
+                  }
+                  let localOk = false;
                   try {
                     const freshRoute = await database.get<Ruta>('rutas').find(route.id);
                     await freshRoute.startRoute();
-                  } catch { /* ignore */ }
+                    localOk = true;
+                  } catch (e) {
+                    if (__DEV__) console.warn('[Ruta] startRoute local failed:', e);
+                  }
+                  // Toast: si AL MENOS local OK → success. Si todo falla → error explícito.
+                  if (localOk) {
+                    Toast.show({ type: 'success', text1: 'Ruta aceptada' });
+                  } else if (!backendOk) {
+                    Toast.show({ type: 'error', text1: 'No se pudo aceptar la ruta', text2: 'Verifica tu conexión' });
+                  }
                   setAccepting(false);
                 }}
               >
@@ -180,6 +262,20 @@ export default function RutaScreen() {
         <Animated.View entering={FadeInDown.duration(400).delay(100)}>
           <View style={styles.progressSection}>
             <Text style={styles.routeName}>{route.nombre}</Text>
+
+            {/* Zonas que cubre la ruta — chips. Multi-zona alineado con SFA/CPG
+                industria (Handy.la, SAP, Salesforce). Reportado 2026-04-27. */}
+            {route.zonas && route.zonas.length > 0 && (
+              <View style={styles.zonasRow}>
+                {route.zonas.map((z: { id: number; nombre: string }) => (
+                  <View key={z.id} style={styles.zonaChip}>
+                    <Text style={styles.zonaChipText}>
+                      {z.nombre || `Zona ${z.id}`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* Horario estimado */}
             {(route.horaInicioEstimada || route.horaFinEstimada) && (
@@ -216,7 +312,7 @@ export default function RutaScreen() {
         </Animated.View>
 
         {/* Mini Route Map with Polyline */}
-        {MapView && routeCoordinates.length > 1 && (
+        {MAPS_OK && MapView && routeCoordinates.length > 1 && (
           <Animated.View entering={FadeInDown.duration(400).delay(200)}>
             <View style={styles.miniMapContainer}>
               <MapView
@@ -253,16 +349,62 @@ export default function RutaScreen() {
           </Animated.View>
         )}
 
+        {/* Pedidos cargados en el camión — solo si admin asignó al menos uno */}
+        {(pedidosCargados as RutaPedido[] | undefined)?.length ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(250)}>
+            <View style={styles.cargaSection}>
+              <View style={styles.cargaHeader}>
+                <Package size={16} color={COLORS.headerBg} />
+                <Text style={styles.cargaTitle}>Pedidos cargados ({(pedidosCargados as RutaPedido[]).length})</Text>
+              </View>
+              {(pedidosCargados as RutaPedido[]).map((rp) => {
+                const info = pedidosLookup.get(rp.pedidoId);
+                const label = info?.numero ?? `Pedido #${rp.pedidoServerId}`;
+                return (
+                  <View key={rp.id} style={styles.cargaItem}>
+                    <Text style={styles.cargaItemName}>{label}</Text>
+                    {info?.total != null && (
+                      <Text style={styles.cargaItemMeta}>${info.total.toFixed(2)}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        ) : null}
+
+        {/* Productos sueltos para venta directa */}
+        {(cargaProductos as RutaCarga[] | undefined)?.length ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(275)}>
+            <View style={styles.cargaSection}>
+              <View style={styles.cargaHeader}>
+                <Package size={16} color="#16a34a" />
+                <Text style={styles.cargaTitle}>Productos para venta directa ({(cargaProductos as RutaCarga[]).length})</Text>
+              </View>
+              {(cargaProductos as RutaCarga[]).map((rc) => {
+                const nombre = productNames.get(rc.productoId) ?? `Producto #${rc.productoServerId}`;
+                return (
+                  <View key={rc.id} style={styles.cargaItem}>
+                    <Text style={styles.cargaItemName} numberOfLines={1}>{nombre}</Text>
+                    <Text style={styles.cargaItemMeta}>{rc.cantidadTotal} u.</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        ) : null}
+
         {/* Stops — simple list with numbered dots */}
         <Animated.View entering={FadeInDown.duration(400).delay(300)}>
           <View style={styles.stopsSection}>
             {detalles?.map((stop: RutaDetalle) => {
-              const dotBg = STOP_DOT_COLORS[stop.estado] ?? '#e2e8f0';
-              const dotTextColor = STOP_DOT_TEXT[stop.estado] ?? '#94a3b8';
-              const statusColor = STOP_STATUS_TEXT_COLORS[stop.estado] ?? '#94a3b8';
-              const statusName = STOP_STATUS_NAMES[stop.estado] ?? 'Pendiente';
-              const isPending = stop.estado === 0;
-              const isInProgress = stop.estado === 1;
+              const eff = stop.displayEstado;
+              const dotBg = STOP_DOT_COLORS[eff] ?? '#e2e8f0';
+              const dotTextColor = STOP_DOT_TEXT[eff] ?? '#94a3b8';
+              const statusColor = STOP_STATUS_TEXT_COLORS[eff] ?? '#94a3b8';
+              const statusName = STOP_STATUS_NAMES[eff] ?? 'Pendiente';
+              const isPending = eff === 0;
+              const isInProgress = eff === 1;
 
               return (
                 <TouchableOpacity
@@ -349,6 +491,16 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   routeName: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  zonasRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
+  zonaChip: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#93c5fd',
+  },
+  zonaChipText: { fontSize: 11, fontWeight: '600', color: '#1e40af' },
   horarioRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, marginTop: 2 },
   horarioText: { fontSize: 12, color: '#94a3b8' },
   progressTrack: { height: 8, borderRadius: 4, backgroundColor: '#e2e8f0', overflow: 'hidden' },
@@ -361,6 +513,30 @@ const styles = StyleSheet.create({
   // Mini Map
   miniMapContainer: { marginHorizontal: 16, marginTop: 12, borderRadius: 16, overflow: 'hidden' },
   miniMap: { height: 160, borderRadius: 16 },
+
+  // Carga (pedidos asignados + productos sueltos en el camión)
+  cargaSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cargaHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  cargaTitle: { fontSize: 14, fontWeight: '700', color: COLORS.foreground },
+  cargaItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  cargaItemName: { flex: 1, fontSize: 13, color: COLORS.foreground, marginRight: 8 },
+  cargaItemMeta: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
 
   // Stops
   stopsSection: { paddingHorizontal: 20, paddingTop: 12 },

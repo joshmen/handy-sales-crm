@@ -15,6 +15,7 @@ import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useBusinessEvents } from '@/hooks/useBusinessEvents';
 import {
   Plus,
   Pencil,
@@ -42,6 +43,7 @@ import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
 
 // Tipos locales para los catálogos (coinciden con el backend)
@@ -93,6 +95,7 @@ export default function ProductsPage() {
   const t = useTranslations('products');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const { formatCurrency } = useFormatters();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,6 +206,15 @@ export default function ProductsPage() {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Refresh stock automáticamente cuando un mobile sincroniza ventas / pedidos.
+  // Antes el admin tenia que hacer refresh manual para ver el stock actualizado
+  // tras una venta directa del vendedor (reportado 2026-04-27). Backend emite
+  // estos eventos via SignalR cuando el mobile push llega via /api/internal/sync-notify.
+  useBusinessEvents({
+    onSyncCompleted: () => fetchProducts(),
+    onPedidoCreated: () => fetchProducts(),
+  });
+
   const handleCreateProduct = () => {
     setEditingProduct(null);
     resetForm({
@@ -286,7 +298,7 @@ export default function ProductsPage() {
           toast.success(tc('imageUploaded'));
         } catch (imgErr) {
           console.error('Error al subir imagen:', imgErr);
-          toast.error(t('errorSaving'));
+          showApiError(imgErr, t('errorSaving'));
         } finally {
           setUploadingImage(false);
         }
@@ -461,8 +473,8 @@ export default function ProductsPage() {
       await productService.deleteProduct(id);
       toast.success(t('productDeleted'));
       fetchProducts();
-    } catch {
-      toast.error(t('errorDeleting'));
+    } catch (err) {
+      showApiError(err, t('errorDeleting'));
     }
   };
 

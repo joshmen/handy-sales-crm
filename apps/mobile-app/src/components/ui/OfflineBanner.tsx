@@ -64,8 +64,8 @@ export function OfflineBanner() {
       )}
       <Text style={styles.text}>
         {isOffline
-          ? 'Sin conexion, cambios se guardan local'
-          : 'Conexion restaurada'}
+          ? 'Sin conexión, cambios se guardan local'
+          : 'Conexión restaurada'}
       </Text>
     </Animated.View>
   );

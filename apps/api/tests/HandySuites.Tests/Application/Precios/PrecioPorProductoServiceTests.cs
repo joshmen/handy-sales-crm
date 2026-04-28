@@ -1,9 +1,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
+using HandySuites.Application.ListasPrecios.Interfaces;
 using HandySuites.Application.Precios.DTOs;
 using HandySuites.Application.Precios.Interfaces;
 using HandySuites.Application.Precios.Services;
+using HandySuites.Application.Productos.DTOs;
+using HandySuites.Application.Productos.Interfaces;
+using HandySuites.Application.ListasPrecios.DTOs;
 using HandySuites.Shared.Multitenancy;
 using Moq;
 using Xunit;
@@ -13,13 +17,20 @@ namespace HandySuites.Tests.Application.Precios
     public class PrecioPorProductoServiceTests
     {
         private readonly Mock<IPrecioPorProductoRepository> _repoMock = new();
+        private readonly Mock<IProductoRepository> _productoRepoMock = new();
+        private readonly Mock<IListaPrecioRepository> _listaRepoMock = new();
         private readonly Mock<ICurrentTenant> _tenantMock = new();
         private readonly PrecioPorProductoService _service;
 
         public PrecioPorProductoServiceTests()
         {
             _tenantMock.Setup(t => t.TenantId).Returns(1);
-            _service = new PrecioPorProductoService(_repoMock.Object, _tenantMock.Object);
+            // Default: FKs existen para que el happy path pase sin InvalidOperationException.
+            _productoRepoMock.Setup(r => r.ObtenerPorIdAsync(It.IsAny<int>(), It.IsAny<int>()))
+                .ReturnsAsync(new ProductoDto { Id = 1, Nombre = "Test", CodigoBarra = "X", Descripcion = "Y" });
+            _listaRepoMock.Setup(r => r.ObtenerPorIdAsync(It.IsAny<int>(), It.IsAny<int>()))
+                .ReturnsAsync(new ListaPrecioDto { Id = 1, Nombre = "Test" });
+            _service = new PrecioPorProductoService(_repoMock.Object, _productoRepoMock.Object, _listaRepoMock.Object, _tenantMock.Object);
         }
 
         [Fact]

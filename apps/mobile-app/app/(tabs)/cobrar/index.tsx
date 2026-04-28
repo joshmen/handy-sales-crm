@@ -4,7 +4,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
-import { formatCurrency } from '@/utils/format';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { useTenantLocale } from '@/hooks';
+import { startOfDayInTz, startOfWeekInTz, startOfMonthInTz } from '@/utils/dateTz';
 import { Wallet, ChevronRight, User, TrendingUp } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -28,45 +30,47 @@ const PERIOD_FILTERS: { label: string; value: PeriodFilter }[] = [
   { label: 'Todo', value: 'all' },
 ];
 
-function getPeriodStart(period: PeriodFilter): Date | null {
-  const now = new Date();
+function getPeriodStart(period: PeriodFilter, tz: string): Date | null {
+  // Importante: cálculos de "Hoy/Esta semana/Este mes" deben usar la TZ del
+  // tenant, no del device. Si vendedor de tenant Mazatlán (UTC-7) tiene su
+  // device en CDMX (UTC-6) o viaja, el filtro device-TZ excluye registros
+  // legítimos del rango. Ver utils/dateTz.ts.
   switch (period) {
-    case 'today': {
-      const d = new Date(now);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    case 'week': {
-      const d = new Date(now);
-      const day = d.getDay();
-      const diff = day === 0 ? 6 : day - 1; // Monday start
-      d.setDate(d.getDate() - diff);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    case 'month': {
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
+    case 'today':
+      return startOfDayInTz(tz);
+    case 'week':
+      return startOfWeekInTz(tz);
+    case 'month':
+      return startOfMonthInTz(tz);
     case 'all':
       return null;
   }
 }
 
-export default function CobrarScreen() {
+function CobrarScreenContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { money: formatCurrency, tz } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
 
   const { data: pedidos, isLoading: loadingPedidos } = useOfflineOrders();
   const { data: cobros, isLoading: loadingCobros } = useOfflineCobros();
-  const clientNames = useClientNameMap();
+  const clienteIds = useMemo(() => {
+    const set = new Set<string>();
+    pedidos?.forEach(p => set.add(p.clienteId));
+    cobros?.forEach(c => set.add(c.clienteId));
+    return Array.from(set);
+  }, [pedidos, cobros]);
+  const clientNames = useClientNameMap(clienteIds);
 
   // Filter cobros by period
   const { filteredCobros, periodStats } = useMemo(() => {
-    const start = getPeriodStart(periodFilter);
+    // Fallback a 'America/Mexico_City' si tenant TZ no cargó aún (antes del primer
+    // /api/mobile/empresa). Es un default seguro porque la mayoría del mercado MX
+    // está en CST (UTC-6); el filtro recalcula automáticamente cuando empresa carga.
+    const effectiveTz = tz || 'America/Mexico_City';
+    const start = getPeriodStart(periodFilter, effectiveTz);
     const filtered = start
       ? (cobros ?? []).filter((c: Cobro) => c.createdAt >= start)
       : (cobros ?? []);
@@ -75,7 +79,7 @@ export default function CobrarScreen() {
       filteredCobros: filtered,
       periodStats: { totalCobrado, count: filtered.length },
     };
-  }, [cobros, periodFilter]);
+  }, [cobros, periodFilter, tz]);
 
   // Compute saldos per client from local WDB data
   const { clientes, resumen } = useMemo(() => {
@@ -254,6 +258,7 @@ export default function CobrarScreen() {
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/cobrar/estado-cuenta/${item.clienteId}` as any)}
+        accessibilityLabel={`Estado de cuenta de ${item.clienteNombre}, saldo ${formatCurrency(item.saldoPendiente)}`}
       >
         <View style={styles.clientRow}>
           <View style={styles.clientAvatar}>
@@ -463,3 +468,11 @@ const styles = StyleSheet.create({
     color: COLORS.headerText,
   },
 });
+
+export default function CobrarScreen() {
+  return (
+    <ErrorBoundary componentName="TabCobrar">
+      <CobrarScreenContent />
+    </ErrorBoundary>
+  );
+}
