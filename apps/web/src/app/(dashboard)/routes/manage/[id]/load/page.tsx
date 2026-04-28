@@ -718,7 +718,7 @@ export default function LoadInventoryPage() {
       <Modal
         isOpen={showSendModal}
         onClose={() => { if (!sending) setShowSendModal(false); }}
-        title={t('sendToLoadTitle', { defaultValue: 'Enviar a carga' })}
+        title={t('sendToLoadTitle')}
         size="sm"
       >
         <div className="space-y-4">
@@ -730,7 +730,7 @@ export default function LoadInventoryPage() {
               disabled={sending}
               className="px-4 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
             >
-              Cancelar
+              {t('cancel')}
             </button>
             <button
               type="button"
@@ -739,7 +739,7 @@ export default function LoadInventoryPage() {
               className="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
             >
               {sending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('sendAction', { defaultValue: 'Enviar a carga' })}
+              {t('sendAction')}
             </button>
           </div>
         </div>
