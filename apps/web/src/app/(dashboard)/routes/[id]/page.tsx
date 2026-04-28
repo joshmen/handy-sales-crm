@@ -351,9 +351,12 @@ export default function RouteDetailPage() {
     setPedidoSearch('');
     setLoadingPedidos(true);
     try {
+      // excluirAsignadosARutas: backend excluye pedidos ya en otra ruta activa
+      // (Planificada/PendienteAceptar/CargaAceptada/EnProgreso). Sin esto, el modal
+      // mostraba pedidos que en realidad ya estaban tomados por otra ruta.
       const [confirmedRes, enProcesoRes] = await Promise.all([
-        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=Confirmado'),
-        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=EnProceso'),
+        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=Confirmado&excluirAsignadosARutas=true'),
+        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=EnProceso&excluirAsignadosARutas=true'),
       ]);
       const confirmed = Array.isArray(confirmedRes.data) ? confirmedRes.data : confirmedRes.data.items || [];
       const enProceso = Array.isArray(enProcesoRes.data) ? enProcesoRes.data : enProcesoRes.data.items || [];

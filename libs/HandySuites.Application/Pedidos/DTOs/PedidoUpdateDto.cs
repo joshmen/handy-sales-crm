@@ -31,6 +31,14 @@ public class PedidoFiltroDto
     public int? Pagina { get; set; }
     public int? TamanoPagina { get; set; }
 
+    /// <summary>
+    /// Cuando true, excluye pedidos que ya estan asignados a una ruta activa
+    /// (Planificada/PendienteAceptar/CargaAceptada/EnProgreso). Util para el modal
+    /// de "Asignar pedidos a ruta" — sin esto, el admin puede asignar el mismo
+    /// pedido a 2 rutas distintas (reportado 2026-04-27).
+    /// </summary>
+    public bool? ExcluirAsignadosARutas { get; set; }
+
     public int PaginaEfectiva => Pagina ?? 1;
     public int TamanoPaginaEfectivo => TamanoPagina ?? 20;
 }

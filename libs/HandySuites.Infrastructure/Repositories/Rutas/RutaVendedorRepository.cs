@@ -502,7 +502,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     public async Task<List<RutaCargaDto>> ObtenerCargaAsync(int rutaId, int tenantId)
     {
-        return await _db.RutasCarga
+        var carga = await _db.RutasCarga
             .AsNoTracking()
             .Where(c => c.RutaId == rutaId && c.TenantId == tenantId && c.Activo)
             .Select(c => new RutaCargaDto
@@ -518,10 +518,79 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Disponible = c.Producto.Inventario != null ? (int?)c.Producto.Inventario.CantidadActual : null
             })
             .ToListAsync();
+
+        if (carga.Count == 0) return carga;
+
+        // Stock comprometido en OTRAS rutas activas: cargar batch (1 query) y descontar
+        // de Disponible. Sin esto, el admin puede cargar 30 unidades en R1 + 40 en R2
+        // aunque el stock real sea 50 (reportado 2026-04-27, mismo bug que pedidos).
+        var productIds = carga.Select(c => c.ProductoId).Distinct().ToList();
+        var comprometidoOtrasRutas = await _db.RutasCarga
+            .AsNoTracking()
+            .Where(rc => productIds.Contains(rc.ProductoId)
+                      && rc.Activo
+                      && rc.RutaId != rutaId
+                      && rc.TenantId == tenantId
+                      && rc.Ruta != null
+                      && EstadosRutaActiva.Contains(rc.Ruta.Estado))
+            .GroupBy(rc => rc.ProductoId)
+            .Select(g => new { ProductoId = g.Key, Total = g.Sum(rc => rc.CantidadTotal) })
+            .ToDictionaryAsync(x => x.ProductoId, x => x.Total);
+
+        foreach (var item in carga)
+        {
+            if (item.Disponible.HasValue && comprometidoOtrasRutas.TryGetValue(item.ProductoId, out var comprometido))
+            {
+                item.Disponible = Math.Max(0, item.Disponible.Value - comprometido);
+            }
+        }
+
+        return carga;
     }
 
     public async Task AsignarProductoVentaAsync(int rutaId, int productoId, int cantidad, double precio, int tenantId)
     {
+        // Validar stock real disponible: stock fisico - lo comprometido en OTRAS rutas activas.
+        // Sin esta validacion, el admin puede sobre-comprometer producto entre rutas
+        // (reportado 2026-04-27).
+        var stockFisico = await _db.Inventarios
+            .AsNoTracking()
+            .Where(pi => pi.ProductoId == productoId && pi.TenantId == tenantId)
+            .Select(pi => (decimal?)pi.CantidadActual)
+            .FirstOrDefaultAsync();
+
+        if (stockFisico.HasValue)
+        {
+            var comprometidoOtrasRutas = await _db.RutasCarga
+                .AsNoTracking()
+                .Where(rc => rc.ProductoId == productoId
+                          && rc.Activo
+                          && rc.RutaId != rutaId
+                          && rc.TenantId == tenantId
+                          && rc.Ruta != null
+                          && EstadosRutaActiva.Contains(rc.Ruta.Estado))
+                .SumAsync(rc => (int?)rc.CantidadTotal) ?? 0;
+
+            // Cantidad ya cargada en ESTA ruta como entrega (no contar la venta vieja
+            // porque la estamos sobreescribiendo en este metodo).
+            var cantidadEntregaEstaRuta = await _db.RutasCarga
+                .AsNoTracking()
+                .Where(rc => rc.RutaId == rutaId
+                          && rc.ProductoId == productoId
+                          && rc.TenantId == tenantId
+                          && rc.Activo)
+                .Select(rc => (int?)rc.CantidadEntrega)
+                .FirstOrDefaultAsync() ?? 0;
+
+            var disponibleReal = (int)stockFisico.Value - comprometidoOtrasRutas - cantidadEntregaEstaRuta;
+            if (cantidad > disponibleReal)
+            {
+                throw new InvalidOperationException(
+                    $"No hay stock suficiente. Disponible: {Math.Max(0, disponibleReal)} (stock {(int)stockFisico.Value}, " +
+                    $"comprometido en otras rutas: {comprometidoOtrasRutas}, ya cargado aqui como entrega: {cantidadEntregaEstaRuta}).");
+            }
+        }
+
         var existente = await _db.RutasCarga
             .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == productoId && c.TenantId == tenantId && c.Activo);
 
@@ -584,8 +653,44 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Estados de ruta que mantienen un pedido/producto comprometido y bloquean
+    /// reasignacion a otra ruta. Completada/Cancelada/Cerrada liberan los recursos.
+    /// </summary>
+    private static readonly EstadoRuta[] EstadosRutaActiva = new[]
+    {
+        EstadoRuta.Planificada,
+        EstadoRuta.PendienteAceptar,
+        EstadoRuta.CargaAceptada,
+        EstadoRuta.EnProgreso,
+    };
+
     public async Task AsignarPedidoAsync(int rutaId, int pedidoId, int tenantId)
     {
+        // Bloqueo cross-ruta: si el pedido ya esta asignado a OTRA ruta activa
+        // (Planificada/PendienteAceptar/CargaAceptada/EnProgreso), rechazar.
+        // El indice unico (ruta_id, pedido_id) solo previene duplicados en LA MISMA ruta;
+        // sin este check, el mismo pedido podria estar en N rutas distintas.
+        // Reportado 2026-04-27 — admin asignaba mismo pedido a 2 rutas el mismo dia.
+        var conflicto = await _db.RutasPedidos
+            .IgnoreQueryFilters()
+            .Include(rp => rp.Ruta)
+            .Where(rp => rp.PedidoId == pedidoId
+                      && rp.Activo
+                      && rp.RutaId != rutaId
+                      && rp.TenantId == tenantId
+                      && rp.Ruta != null
+                      && EstadosRutaActiva.Contains(rp.Ruta.Estado))
+            .Select(rp => new { rp.RutaId, RutaNombre = rp.Ruta!.Nombre })
+            .FirstOrDefaultAsync();
+
+        if (conflicto != null)
+        {
+            throw new InvalidOperationException(
+                $"El pedido ya esta asignado a la ruta '{conflicto.RutaNombre}' (#{conflicto.RutaId}). " +
+                $"Removelo de esa ruta antes de asignarlo aqui.");
+        }
+
         // IgnoreQueryFilters: el indice unico (ruta_id, pedido_id) en RutasPedidos
         // tambien considera registros con Activo=false (que es como RemoverPedidoAsync
         // los soft-deletea). Sin esto, EF no encuentra el registro inactivo y el

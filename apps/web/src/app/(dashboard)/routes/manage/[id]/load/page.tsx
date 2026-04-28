@@ -160,7 +160,9 @@ export default function LoadInventoryPage() {
     setIsPedidoModalOpen(true);
     setLoadingPedidos(true);
     try {
-      const response = await api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=2');
+      // excluirAsignadosARutas: backend excluye pedidos ya en otra ruta activa
+      // (Planificada/PendienteAceptar/CargaAceptada/EnProgreso).
+      const response = await api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=2&excluirAsignadosARutas=true');
       setAvailablePedidos(Array.isArray(response.data) ? response.data : response.data.items || []);
     } catch (err) {
       console.error('Error:', err);

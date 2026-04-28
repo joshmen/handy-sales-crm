@@ -213,6 +213,23 @@ public class PedidoRepository : IPedidoRepository
                 p.Cliente.Nombre.ToLower().Contains(busqueda));
         }
 
+        // Excluir pedidos ya asignados a cualquier ruta activa (Planificada,
+        // PendienteAceptar, CargaAceptada, EnProgreso). Sin esto, el modal
+        // de "Asignar pedidos a ruta" mostraba pedidos que ya estaban tomados
+        // por otra ruta (reportado 2026-04-27).
+        if (filtro.ExcluirAsignadosARutas == true)
+        {
+            query = query.Where(p => !_db.Set<RutaPedido>()
+                .Any(rp => rp.PedidoId == p.Id
+                        && rp.Activo
+                        && rp.TenantId == tenantId
+                        && rp.Ruta != null
+                        && (rp.Ruta.Estado == EstadoRuta.Planificada
+                         || rp.Ruta.Estado == EstadoRuta.PendienteAceptar
+                         || rp.Ruta.Estado == EstadoRuta.CargaAceptada
+                         || rp.Ruta.Estado == EstadoRuta.EnProgreso)));
+        }
+
         var totalItems = await query.CountAsync();
 
         var items = await query
