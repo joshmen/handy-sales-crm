@@ -605,16 +605,27 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Where(d => d.PedidoId == pedidoId)
             .ToListAsync();
 
-        // Batch-load all existing carga for this ruta to avoid N+1 queries
+        // IgnoreQueryFilters: el indice unico (ruta_id, producto_id) en RutasCarga
+        // tambien considera registros soft-deleted (EliminadoEn != null) y desactivados
+        // (Activo = false). Sin IgnoreQueryFilters, EF no los devolveria, ibamos al
+        // else y el INSERT fallaba con 23505 (reportado en staging 2026-04-27).
+        // Reactivamos el registro existente en vez de insertar uno nuevo.
         var productIds = detallesPedido.Select(d => d.ProductoId).Distinct().ToList();
         var cargasExistentes = await _db.RutasCarga
-            .Where(c => c.RutaId == rutaId && productIds.Contains(c.ProductoId) && c.TenantId == tenantId && c.Activo)
+            .IgnoreQueryFilters()
+            .Where(c => c.RutaId == rutaId && productIds.Contains(c.ProductoId) && c.TenantId == tenantId)
             .ToDictionaryAsync(c => c.ProductoId);
 
         foreach (var det in detallesPedido)
         {
             if (cargasExistentes.TryGetValue(det.ProductoId, out var cargaExistente))
             {
+                if (!cargaExistente.Activo) cargaExistente.Activo = true;
+                if (cargaExistente.EliminadoEn != null)
+                {
+                    cargaExistente.EliminadoEn = null;
+                    cargaExistente.EliminadoPor = null;
+                }
                 cargaExistente.CantidadEntrega += (int)det.Cantidad;
                 cargaExistente.CantidadTotal = cargaExistente.CantidadEntrega + cargaExistente.CantidadVenta;
                 if (cargaExistente.PrecioUnitario == 0)
