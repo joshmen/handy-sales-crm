@@ -586,19 +586,35 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     public async Task AsignarPedidoAsync(int rutaId, int pedidoId, int tenantId)
     {
-        var existe = await _db.RutasPedidos
-            .AnyAsync(rp => rp.RutaId == rutaId && rp.PedidoId == pedidoId && rp.TenantId == tenantId && rp.Activo);
+        // IgnoreQueryFilters: el indice unico (ruta_id, pedido_id) en RutasPedidos
+        // tambien considera registros con Activo=false (que es como RemoverPedidoAsync
+        // los soft-deletea). Sin esto, EF no encuentra el registro inactivo y el
+        // INSERT siguiente viola el indice (23505 en staging 2026-04-27).
+        var existente = await _db.RutasPedidos
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(rp => rp.RutaId == rutaId && rp.PedidoId == pedidoId && rp.TenantId == tenantId);
 
-        if (existe) return;
-
-        _db.RutasPedidos.Add(new RutaPedido
+        if (existente != null)
         {
-            RutaId = rutaId,
-            PedidoId = pedidoId,
-            TenantId = tenantId,
-            Estado = EstadoPedidoRuta.Asignado,
-            CreadoEn = DateTime.UtcNow
-        });
+            if (existente.Activo)
+                return; // Ya asignado y activo, idempotente
+
+            // Reactivar la asignación previa (estaba removida)
+            existente.Activo = true;
+            existente.Estado = EstadoPedidoRuta.Asignado;
+            existente.ActualizadoEn = DateTime.UtcNow;
+        }
+        else
+        {
+            _db.RutasPedidos.Add(new RutaPedido
+            {
+                RutaId = rutaId,
+                PedidoId = pedidoId,
+                TenantId = tenantId,
+                Estado = EstadoPedidoRuta.Asignado,
+                CreadoEn = DateTime.UtcNow
+            });
+        }
 
         // Agregar productos del pedido a la carga (como entrega)
         var detallesPedido = await _db.DetallePedidos
