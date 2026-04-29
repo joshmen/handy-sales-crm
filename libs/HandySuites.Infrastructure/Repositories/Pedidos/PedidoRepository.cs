@@ -1,3 +1,4 @@
+using HandySuites.Application.Common;
 using HandySuites.Application.Pedidos.DTOs;
 using HandySuites.Application.Pedidos.Interfaces;
 using HandySuites.Domain.Entities;
@@ -74,6 +75,9 @@ public class PedidoRepository : IPedidoRepository
             .Where(p => productoIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
+        // Resolver tasas: las referenciadas por productos + la default del tenant.
+        var (tasas, defaultTasa) = await LoadTasasAsync(productos.Values, tenantId);
+
         // Agregar detalles
         foreach (var detalleDto in dto.Detalles)
         {
@@ -81,9 +85,9 @@ public class PedidoRepository : IPedidoRepository
 
             var precioUnitario = detalleDto.PrecioUnitario ?? producto.PrecioBase;
             var descuento = detalleDto.Descuento ?? 0;
-            var subtotal = detalleDto.Cantidad * precioUnitario - descuento;
-            var impuesto = subtotal * 0.16m; // IVA 16%
-            var total = subtotal + impuesto;
+            var tasa = ResolveTasa(producto, tasas, defaultTasa);
+            var amounts = LineAmountCalculator.Calculate(
+                precioUnitario, detalleDto.Cantidad, descuento, tasa, producto.PrecioIncluyeIva);
 
             var detalle = new DetallePedido
             {
@@ -93,9 +97,9 @@ public class PedidoRepository : IPedidoRepository
                 PrecioUnitario = precioUnitario,
                 Descuento = descuento,
                 PorcentajeDescuento = detalleDto.PorcentajeDescuento ?? 0,
-                Subtotal = subtotal,
-                Impuesto = impuesto,
-                Total = total,
+                Subtotal = amounts.Subtotal,
+                Impuesto = amounts.Impuesto,
+                Total = amounts.Total,
                 Notas = detalleDto.Notas,
                 Activo = true,
                 CreadoEn = DateTime.UtcNow
@@ -345,6 +349,8 @@ public class PedidoRepository : IPedidoRepository
                 .Where(p => productoIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id);
 
+            var (tasas, defaultTasa) = await LoadTasasAsync(productos.Values, tenantId);
+
             // Agregar nuevos detalles
             foreach (var detalleDto in dto.Detalles)
             {
@@ -352,9 +358,9 @@ public class PedidoRepository : IPedidoRepository
 
                 var precioUnitario = detalleDto.PrecioUnitario ?? producto.PrecioBase;
                 var descuento = detalleDto.Descuento ?? 0;
-                var subtotal = detalleDto.Cantidad * precioUnitario - descuento;
-                var impuesto = subtotal * 0.16m;
-                var total = subtotal + impuesto;
+                var tasa = ResolveTasa(producto, tasas, defaultTasa);
+                var amounts = LineAmountCalculator.Calculate(
+                    precioUnitario, detalleDto.Cantidad, descuento, tasa, producto.PrecioIncluyeIva);
 
                 var detalle = new DetallePedido
                 {
@@ -364,9 +370,9 @@ public class PedidoRepository : IPedidoRepository
                     PrecioUnitario = precioUnitario,
                     Descuento = descuento,
                     PorcentajeDescuento = detalleDto.PorcentajeDescuento ?? 0,
-                    Subtotal = subtotal,
-                    Impuesto = impuesto,
-                    Total = total,
+                    Subtotal = amounts.Subtotal,
+                    Impuesto = amounts.Impuesto,
+                    Total = amounts.Total,
                     Notas = detalleDto.Notas,
                     Activo = true,
                     CreadoEn = DateTime.UtcNow
@@ -471,9 +477,10 @@ public class PedidoRepository : IPedidoRepository
 
         var precioUnitario = dto.PrecioUnitario ?? producto.PrecioBase;
         var descuento = dto.Descuento ?? 0;
-        var subtotal = dto.Cantidad * precioUnitario - descuento;
-        var impuesto = subtotal * 0.16m;
-        var total = subtotal + impuesto;
+        var (tasas, defaultTasa) = await LoadTasasAsync(new[] { producto }, tenantId);
+        var tasa = ResolveTasa(producto, tasas, defaultTasa);
+        var amounts = LineAmountCalculator.Calculate(
+            precioUnitario, dto.Cantidad, descuento, tasa, producto.PrecioIncluyeIva);
 
         var detalle = new DetallePedido
         {
@@ -483,9 +490,9 @@ public class PedidoRepository : IPedidoRepository
             PrecioUnitario = precioUnitario,
             Descuento = descuento,
             PorcentajeDescuento = dto.PorcentajeDescuento ?? 0,
-            Subtotal = subtotal,
-            Impuesto = impuesto,
-            Total = total,
+            Subtotal = amounts.Subtotal,
+            Impuesto = amounts.Impuesto,
+            Total = amounts.Total,
             Notas = dto.Notas,
             Activo = true,
             CreadoEn = DateTime.UtcNow
@@ -516,18 +523,19 @@ public class PedidoRepository : IPedidoRepository
 
         var precioUnitario = dto.PrecioUnitario ?? producto.PrecioBase;
         var descuento = dto.Descuento ?? 0;
-        var subtotal = dto.Cantidad * precioUnitario - descuento;
-        var impuesto = subtotal * 0.16m;
-        var total = subtotal + impuesto;
+        var (tasas, defaultTasa) = await LoadTasasAsync(new[] { producto }, tenantId);
+        var tasa = ResolveTasa(producto, tasas, defaultTasa);
+        var amounts = LineAmountCalculator.Calculate(
+            precioUnitario, dto.Cantidad, descuento, tasa, producto.PrecioIncluyeIva);
 
         detalle.ProductoId = dto.ProductoId;
         detalle.Cantidad = dto.Cantidad;
         detalle.PrecioUnitario = precioUnitario;
         detalle.Descuento = descuento;
         detalle.PorcentajeDescuento = dto.PorcentajeDescuento ?? 0;
-        detalle.Subtotal = subtotal;
-        detalle.Impuesto = impuesto;
-        detalle.Total = total;
+        detalle.Subtotal = amounts.Subtotal;
+        detalle.Impuesto = amounts.Impuesto;
+        detalle.Total = amounts.Total;
         detalle.Notas = dto.Notas;
         detalle.ActualizadoEn = DateTime.UtcNow;
 
@@ -688,5 +696,39 @@ public class PedidoRepository : IPedidoRepository
 #pragma warning restore CS0618
             _ => false
         };
+    }
+
+    // ── Tasas de impuesto helpers ─────────────────────────────────────
+    // Resuelve la tasa aplicable a un producto con fallback al default tenant.
+    // Si el tenant no tiene tasa default configurada (no debería ocurrir post-migration
+    // que sembró IVA 16% per tenant), usa 0.16 como último fallback.
+
+    private async Task<(Dictionary<int, decimal> Tasas, decimal DefaultTasa)> LoadTasasAsync(
+        IEnumerable<Producto> productos, int tenantId)
+    {
+        var tasaIds = productos.Where(p => p.TasaImpuestoId.HasValue)
+                               .Select(p => p.TasaImpuestoId!.Value)
+                               .Distinct()
+                               .ToList();
+
+        var tasas = tasaIds.Count == 0
+            ? new Dictionary<int, decimal>()
+            : await _db.TasasImpuesto
+                .Where(t => tasaIds.Contains(t.Id) && t.Activo)
+                .ToDictionaryAsync(t => t.Id, t => t.Tasa);
+
+        var defaultTasa = await _db.TasasImpuesto
+            .Where(t => t.TenantId == tenantId && t.EsDefault && t.Activo)
+            .Select(t => (decimal?)t.Tasa)
+            .FirstOrDefaultAsync() ?? 0.16m;
+
+        return (tasas, defaultTasa);
+    }
+
+    private static decimal ResolveTasa(Producto producto, Dictionary<int, decimal> tasas, decimal defaultTasa)
+    {
+        if (producto.TasaImpuestoId.HasValue && tasas.TryGetValue(producto.TasaImpuestoId.Value, out var t))
+            return t;
+        return defaultTasa;
     }
 }

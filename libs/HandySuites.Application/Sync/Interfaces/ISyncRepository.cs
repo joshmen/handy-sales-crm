@@ -45,6 +45,7 @@ public interface ISyncRepository
     Task<List<CategoriaCliente>> GetCategoriasClienteModifiedSinceAsync(int tenantId, DateTime? since);
     Task<List<CategoriaProducto>> GetCategoriasProductoModifiedSinceAsync(int tenantId, DateTime? since);
     Task<List<FamiliaProducto>> GetFamiliasProductoModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<TasaImpuesto>> GetTasasImpuestoModifiedSinceAsync(int tenantId, DateTime? since);
     Task<List<ListaPrecio>> GetListasPrecioModifiedSinceAsync(int tenantId, DateTime? since);
     Task<List<Usuario>> GetUsuariosModifiedSinceAsync(int tenantId, DateTime? since);
     Task<List<MetaVendedor>> GetMetasVendedorModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);

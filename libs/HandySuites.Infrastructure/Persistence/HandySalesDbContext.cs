@@ -37,6 +37,7 @@ public class HandySuitesDbContext : DbContext
     public DbSet<CategoriaCliente> CategoriasClientes => Set<CategoriaCliente>();
     public DbSet<CategoriaProducto> CategoriasProductos => Set<CategoriaProducto>();
     public DbSet<UnidadMedida> UnidadesMedida => Set<UnidadMedida>();
+    public DbSet<TasaImpuesto> TasasImpuesto => Set<TasaImpuesto>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Role> Roles => Set<Role>();
@@ -823,6 +824,21 @@ public class HandySuitesDbContext : DbContext
 
         modelBuilder.Entity<UnidadMedida>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        modelBuilder.Entity<TasaImpuesto>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            entity.Property(e => e.Tasa).HasPrecision(7, 6); // 0.160000 — 6 decimales para SAT compat
+            entity.HasIndex(e => new { e.TenantId, e.EsDefault }); // optimiza lookup de tasa default per-tenant
+        });
+
+        // Producto.TasaImpuesto FK: SetNull al borrar — productos con tasa borrada
+        // caen al tasa default del tenant en runtime (helper CalculateLineAmounts).
+        modelBuilder.Entity<Producto>()
+            .HasOne(p => p.TasaImpuesto)
+            .WithMany(t => t.Productos)
+            .HasForeignKey(p => p.TasaImpuestoId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Entidades de auditoría y configuración
         // ActivityLog: no hereda AuditableEntity — solo filtro de tenant

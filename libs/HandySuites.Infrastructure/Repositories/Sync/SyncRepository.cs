@@ -980,6 +980,21 @@ public class SyncRepository : ISyncRepository
         return await query.OrderBy(f => f.Id).ToListAsync();
     }
 
+    public async Task<List<TasaImpuesto>> GetTasasImpuestoModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.TasasImpuesto.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(t => t.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(t =>
+                t.ActualizadoEn > since
+                || t.CreadoEn > since
+                || (t.EliminadoEn != null && t.EliminadoEn > since));
+        }
+        return await query.OrderBy(t => t.Id).ToListAsync();
+    }
+
     public async Task<List<ListaPrecio>> GetListasPrecioModifiedSinceAsync(int tenantId, DateTime? since)
     {
         var query = _db.ListasPrecios.AsNoTracking()

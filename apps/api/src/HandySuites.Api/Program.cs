@@ -210,6 +210,7 @@ app.MapFamiliasProductosEndpoints();
 app.MapCategoriaClienteEndpoints();
 app.MapCategoriaProductoEndpoints();
 app.MapUnidadMedidaEndpoints();
+app.MapTasaImpuestoEndpoints();
 app.MapRoleEndpoints();
 app.MapCompanyEndpoints(app.Services.GetRequiredService<ILogger<Program>>());
 app.MapDatosEmpresaEndpoints();

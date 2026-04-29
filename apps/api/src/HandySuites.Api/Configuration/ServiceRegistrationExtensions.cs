@@ -233,6 +233,10 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<UnidadMedidaService>();
         services.AddValidatorsFromAssemblyContaining<UnidadMedidaCreateDtoValidator>();
 
+        // Catálogo de tasas de impuesto (IVA, IEPS, retenciones)
+        services.AddScoped<HandySuites.Application.Impuestos.Interfaces.ITasaImpuestoRepository, HandySuites.Infrastructure.Repositories.Impuestos.TasaImpuestoRepository>();
+        services.AddScoped<HandySuites.Application.Impuestos.Services.TasaImpuestoService>();
+
         // Activity Tracking
         services.AddScoped<IActivityTrackingRepository, ActivityTrackingRepository>();
         services.AddScoped<IActivityTrackingService, ActivityTrackingService>();

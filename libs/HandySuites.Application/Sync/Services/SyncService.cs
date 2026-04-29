@@ -373,10 +373,20 @@ public class SyncService
         if (syncAll || entityTypes.Contains("productos", StringComparer.OrdinalIgnoreCase))
         {
             var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since);
-            // Get stock levels for all products
             var stockMap = await _repo.GetStockMapAsync(tenantId);
+
+            // Resolver tasas por producto: lookup de TasaImpuesto FK + default tenant.
+            // Se denormaliza la `tasa` en SyncProductoDto para que mobile no necesite
+            // hacer joins offline al calcular ticket. Reportado 2026-04-28.
+            var allTasas = await _repo.GetTasasImpuestoModifiedSinceAsync(tenantId, null);
+            var tasaMap = allTasas.Where(t => t.Activo).ToDictionary(t => t.Id, t => t.Tasa);
+            var defaultTasa = allTasas.FirstOrDefault(t => t.EsDefault && t.Activo)?.Tasa ?? 0.16m;
+
             response.ServerChanges.Productos = productos.Select(p => {
                 stockMap.TryGetValue(p.Id, out var stock);
+                var tasa = (p.TasaImpuestoId.HasValue && tasaMap.TryGetValue(p.TasaImpuestoId.Value, out var t))
+                    ? t
+                    : defaultTasa;
                 return new SyncProductoDto
                 {
                     Id = p.Id,
@@ -394,7 +404,10 @@ public class SyncService
                     StockMinimo = stock.minimo,
                     Activo = p.Activo,
                     Version = p.Version,
-                    ActualizadoEn = p.ActualizadoEn
+                    ActualizadoEn = p.ActualizadoEn,
+                    PrecioIncluyeIva = p.PrecioIncluyeIva,
+                    TasaImpuestoId = p.TasaImpuestoId,
+                    Tasa = tasa
                 };
             }).ToList();
             response.Summary.ProductosPulled = productos.Count;
@@ -672,6 +685,26 @@ public class SyncService
                 IsDeleted = !f.Activo || f.EliminadoEn != null,
             }).ToList();
             response.Summary.FamiliasProductoPulled = familias.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("tasasImpuesto", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("tasas-impuesto", StringComparer.OrdinalIgnoreCase))
+        {
+            var tasas = await _repo.GetTasasImpuestoModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.TasasImpuesto = tasas.Select(t => new SyncTasaImpuestoDto
+            {
+                Id = t.Id,
+                TenantId = t.TenantId,
+                Nombre = t.Nombre,
+                Tasa = t.Tasa,
+                ClaveSat = t.ClaveSat,
+                TipoImpuesto = t.TipoImpuesto,
+                EsDefault = t.EsDefault,
+                Activo = t.Activo,
+                ActualizadoEn = t.ActualizadoEn ?? t.CreadoEn,
+                IsDeleted = !t.Activo || t.EliminadoEn != null,
+            }).ToList();
+            response.Summary.TasasImpuestoPulled = tasas.Count;
         }
 
         if (syncAll || entityTypes.Contains("listasPrecio", StringComparer.OrdinalIgnoreCase)

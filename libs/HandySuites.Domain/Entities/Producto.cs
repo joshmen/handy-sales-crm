@@ -30,6 +30,23 @@ public class Producto : AuditableEntity
     [Column("clave_sat")]
     public string? ClaveSat { get; set; }
 
+    /// <summary>
+    /// Si true (default), `PrecioBase` es lo que el cliente paga al final (IVA
+    /// incluido). El sistema desglosa la base sin impuesto al calcular pedidos.
+    /// Si false, `PrecioBase` es base sin IVA y el sistema agrega el impuesto al
+    /// cobrar. Reportado 2026-04-28: tickets cobraban de más sumando IVA cuando
+    /// el admin registraba precios finales.
+    /// </summary>
+    [Column("precio_incluye_iva")]
+    public bool PrecioIncluyeIva { get; set; } = true;
+
+    /// <summary>
+    /// FK al catálogo TasasImpuesto. Si null, el cálculo cae a la tasa marcada
+    /// EsDefault del tenant. Permite cambiar la tasa central sin tocar productos.
+    /// </summary>
+    [Column("tasa_impuesto_id")]
+    public int? TasaImpuestoId { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
 
@@ -41,6 +58,9 @@ public class Producto : AuditableEntity
 
     [ForeignKey(nameof(UnidadMedidaId))]
     public UnidadMedida UnidadMedida { get; set; } = null!;
+
+    [ForeignKey(nameof(TasaImpuestoId))]
+    public TasaImpuesto? TasaImpuesto { get; set; }
 
     // Inventario (one-to-one per tenant)
     public Inventario? Inventario { get; set; }

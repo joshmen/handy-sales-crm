@@ -11,4 +11,11 @@ public class ProductoCreateDto
     public int CategoraId { get; set; }
     public int UnidadMedidaId { get; set; }
     public decimal PrecioBase { get; set; }
+    /// <summary>
+    /// Si true (default), PrecioBase es el precio final con IVA incluido. Si false,
+    /// PrecioBase es base sin impuesto y el sistema agrega la tasa al cobrar.
+    /// </summary>
+    public bool? PrecioIncluyeIva { get; set; }
+    /// <summary>FK al catálogo TasasImpuesto. Si null, usa la tasa default del tenant.</summary>
+    public int? TasaImpuestoId { get; set; }
 }
