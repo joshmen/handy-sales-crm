@@ -7,6 +7,7 @@ import Cliente from './models/Cliente';
 import Producto from './models/Producto';
 import RutaDetalle from './models/RutaDetalle';
 import { round2 } from '@/utils/money';
+import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
 
 /**
  * Create a cliente offline in WatermelonDB.
@@ -90,9 +91,45 @@ export interface OfflineOrderItem {
   precioUnitario: number;
   descuento?: number;
   porcentajeDescuento?: number;
+  /** v16 (2026-04-29): catálogo de impuestos. Si null, default true. */
+  precioIncluyeIva?: boolean;
+  /** Tasa decimal (0.16 default). Resuelta desde el producto en WDB. */
+  tasa?: number;
 }
 
-const IVA_RATE = 0.16;
+/**
+ * Calcula subtotal/impuesto/total agregados de una lista de items respetando
+ * `precioIncluyeIva` y `tasa` per-item. Reemplaza el cálculo legacy con IVA
+ * 16% hardcoded sumando encima — bug 2026-04-29 que cobraba doble.
+ */
+function calculateOrderTotals(items: OfflineOrderItem[]): { subtotal: number; descuentoTotal: number; impuesto: number; total: number } {
+  let subtotalAcc = 0;
+  let impuestoAcc = 0;
+  let totalAcc = 0;
+  let descuentoAcc = 0;
+  for (const item of items) {
+    const tasa = item.tasa ?? 0.16;
+    const precioIncluyeIva = item.precioIncluyeIva ?? true;
+    const descuentoLinea = item.descuento ?? 0;
+    const amounts = calculateLineAmounts(
+      item.precioUnitario,
+      item.cantidad,
+      descuentoLinea,
+      tasa,
+      precioIncluyeIva,
+    );
+    subtotalAcc += amounts.subtotal;
+    impuestoAcc += amounts.impuesto;
+    totalAcc += amounts.total;
+    descuentoAcc += descuentoLinea;
+  }
+  return {
+    subtotal: round2(subtotalAcc),
+    descuentoTotal: round2(descuentoAcc),
+    impuesto: round2(impuestoAcc),
+    total: round2(totalAcc),
+  };
+}
 
 /**
  * Create a pedido + detalles offline in WatermelonDB.
@@ -111,12 +148,12 @@ export async function createPedidoOffline(
   estado: number = 0,
   paradaId?: string | null
 ): Promise<Pedido> {
-  // Redondear cada cantidad monetaria a 2 decimales para evitar drift de float
-  // que el backend rechazaría con error "monto no coincide" en el sync push.
-  const subtotal = round2(items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0));
-  const descuentoTotal = round2(items.reduce((sum, i) => sum + (i.descuento ?? 0), 0));
-  const impuesto = round2((subtotal - descuentoTotal) * IVA_RATE);
-  const total = round2(subtotal - descuentoTotal + impuesto);
+  // v16 (2026-04-29): cálculo branched per-item respetando `precioIncluyeIva` y
+  // `tasa` del producto. Antes era IVA 16% hardcoded sumando encima — bug
+  // reportado: producto a $16×2 incluyendo IVA mostraba $37.12 en vez de $32.
+  // Si los items no traen tax info, default a precioIncluyeIva=true / tasa=0.16
+  // (compat backward con código viejo que aún no actualizó callers).
+  const { subtotal, descuentoTotal, impuesto, total } = calculateOrderTotals(items);
 
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
@@ -187,11 +224,8 @@ export async function createVentaDirectaOffline(
   notas?: string,
   paradaId?: string | null
 ): Promise<{ pedido: Pedido; cobro: Cobro }> {
-  // Redondear cada cantidad monetaria a 2 decimales — ver comentario en createPedidoOffline.
-  const subtotal = round2(items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0));
-  const descuentoTotal = round2(items.reduce((sum, i) => sum + (i.descuento ?? 0), 0));
-  const impuesto = round2((subtotal - descuentoTotal) * IVA_RATE);
-  const total = round2(subtotal - descuentoTotal + impuesto);
+  // v16: cálculo branched per-item (ver comentario en createPedidoOffline).
+  const { subtotal, descuentoTotal, impuesto, total } = calculateOrderTotals(items);
 
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {

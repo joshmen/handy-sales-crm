@@ -13,6 +13,8 @@ import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
 import { Package, Search, Plus, ChevronLeft } from 'lucide-react-native';
 import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
+import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
+import { round2 } from '@/utils/money';
 import type Producto from '@/db/models/Producto';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
@@ -54,16 +56,47 @@ function CrearPedidoStep2() {
   const { getPricing, loading: pricingLoading } = usePricingMap(clienteListaPreciosId);
   const categorias = useCategoriasProducto();
 
-  // Total con descuentos por línea aplicados (alineado con la pantalla Revisar)
-  const total = useMemo(() => {
-    const sub = items.reduce((acc, item) => {
-      const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
-      return acc + pricing.precioConDescuento * item.cantidad;
-    }, 0);
-    return sub * 1.16; // IVA 16%
-  }, [items, getPricing]);
-
   const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
+
+  // Lookup de productos para resolver `precioIncluyeIva` + `tasa` per item
+  // (mismo patrón que revision.tsx). Sin esto, productos con IVA-incluido se
+  // duplican al sumar 1.16 hardcoded — bug reportado 2026-04-29: $32 mostraba
+  // $37.12 en bottom bar.
+  const productByServerId = useMemo(() => {
+    const map = new Map<number, { precioIncluyeIva: boolean; tasa: number }>();
+    for (const p of productos ?? []) {
+      if (p.serverId != null) {
+        map.set(p.serverId, {
+          precioIncluyeIva: p.precioIncluyeIva ?? true,
+          tasa: p.tasa ?? 0.16,
+        });
+      }
+    }
+    return map;
+  }, [productos]);
+
+  // Total con descuentos por línea + cálculo IVA branched per-item alineado
+  // con revision.tsx. Bug 2026-04-29: este bottom bar mostraba $37.12 cuando
+  // el total real era $32 (sumaba 16% sobre precios que ya incluían IVA).
+  const total = useMemo(() => {
+    return round2(
+      items.reduce((acc, item) => {
+        const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+        const prodTax = productByServerId.get(item.productoServerId ?? 0) ?? {
+          precioIncluyeIva: true,
+          tasa: 0.16,
+        };
+        const amounts = calculateLineAmounts(
+          pricing.precioConDescuento,
+          item.cantidad,
+          0,
+          prodTax.tasa,
+          prodTax.precioIncluyeIva,
+        );
+        return acc + amounts.total;
+      }, 0),
+    );
+  }, [items, getPricing, productByServerId]);
 
   const getItemQuantity = (productoId: string) => {
     const item = items.find((i) => i.productoId === productoId);

@@ -120,6 +120,10 @@ function CrearPedidoStep3() {
         // round2 antes de mandar al backend: el server compara con su propio
         // cálculo y rechaza con error "monto no coincide" si hay drift.
         const descuentoLinea = round2((item.precioUnitario - pricing.precioConDescuento) * item.cantidad);
+        const prodTax = productByServerId.get(item.productoServerId ?? 0) ?? {
+          precioIncluyeIva: true,
+          tasa: 0.16,
+        };
         return {
           productoId: item.productoId,
           productoServerId: item.productoServerId,
@@ -127,6 +131,10 @@ function CrearPedidoStep3() {
           cantidad: item.cantidad,
           precioUnitario: item.precioUnitario,
           descuento: descuentoLinea > 0 ? descuentoLinea : 0,
+          // v16: pasar tax info per-item para que el cálculo offline en
+          // createPedidoOffline / createVentaDirectaOffline use el branched.
+          precioIncluyeIva: prodTax.precioIncluyeIva,
+          tasa: prodTax.tasa,
         };
       });
 
