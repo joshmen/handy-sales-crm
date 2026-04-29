@@ -7,14 +7,9 @@ namespace HandySuites.Domain.Entities;
 /// Catálogo de tasas de impuesto por tenant. Cada tenant tiene N tasas (IVA 16%,
 /// Frontera 8%, Tasa Cero, etc.) y cada producto referencia una. Permite cambiar
 /// la tasa central sin tocar productos individuales (ej. SAT eleva IVA a 18%).
-///
-/// ClaveSAT corresponde al catálogo c_TipoImpuesto del Anexo 20 4.0 de SAT:
-///   "001" = ISR
-///   "002" = IVA
-///   "003" = IEPS
-///
-/// TipoImpuesto es "Traslado" (vendedor cobra al cliente) o "Retencion" (cliente
-/// retiene al vendedor — facturación a personas morales en algunos casos).
+/// El sistema es multi-país (LatAm); para timbrado CFDI los metadatos SAT
+/// (TipoImpuesto Traslado/Retención, ClaveSAT 002/003) se derivan en el builder
+/// XML cuando companySettings.country='MX', no se guardan en el catálogo.
 /// </summary>
 [Table("TasasImpuesto")]
 public class TasaImpuesto : AuditableEntity
@@ -33,14 +28,6 @@ public class TasaImpuesto : AuditableEntity
     /// </summary>
     [Column("tasa")]
     public decimal Tasa { get; set; }
-
-    /// <summary>SAT Anexo 20 c_TipoImpuesto: 001 ISR, 002 IVA, 003 IEPS.</summary>
-    [Column("clave_sat")]
-    public string ClaveSat { get; set; } = "002";
-
-    /// <summary>"Traslado" o "Retencion".</summary>
-    [Column("tipo_impuesto")]
-    public string TipoImpuesto { get; set; } = "Traslado";
 
     /// <summary>
     /// Solo una tasa por tenant puede tener EsDefault=true. Se aplica a productos

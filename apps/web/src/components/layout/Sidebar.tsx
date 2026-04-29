@@ -152,6 +152,13 @@ const sidebarItems: SidebarItem[] = [
         href: '/products/units',
         permission: 'manage_catalogs',
       },
+      {
+        id: 'products-taxes',
+        label: 'Tasas de impuesto',
+        icon: SbBilling,
+        href: '/products/taxes',
+        permission: 'manage_catalogs',
+      },
     ],
   },
   {
@@ -415,7 +422,7 @@ const LABEL_KEYS: Record<string, string> = {
   'Tablero': 'nav.dashboard', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections',
   'Clientes': 'nav.clients', 'Lista de clientes': 'nav.clientsList', 'Categorías de clientes': 'nav.clientCategories',
   'Productos': 'nav.products', 'Lista de productos': 'nav.productsList', 'Familias de productos': 'nav.productFamilies',
-  'Categorías de productos': 'nav.productCategories', 'Unidades de medida': 'nav.units',
+  'Categorías de productos': 'nav.productCategories', 'Unidades de medida': 'nav.units', 'Tasas de impuesto': 'nav.taxRates',
   'Precios': 'nav.pricing', 'Listas de precios': 'nav.priceLists', 'Descuentos': 'nav.discounts', 'Promociones': 'nav.promotions',
   'Rutas': 'nav.routes', 'Lista de rutas': 'nav.routesList', 'Plantillas': 'nav.routeTemplates',
   'Inventario': 'nav.inventory', 'Zonas': 'nav.zones', 'Visitas': 'nav.visits',

@@ -12,6 +12,11 @@ namespace HandySuites.Application.Impuestos.Services;
 /// - Tasa debe estar entre 0.00 y 1.00 (porcentaje decimal).
 /// - Borrar una tasa pone Productos.TasaImpuestoId = NULL (FK SetNull) — los
 ///   productos caen al default tenant en runtime.
+///
+/// Cascade denormalization: Producto.Tasa está denormalizada para evitar lookup
+/// offline en mobile. Cualquier cambio en TasaImpuesto.Tasa o cambio de default
+/// debe propagarse a los productos afectados, tocando ActualizadoEn para que
+/// el siguiente sync los baje al device.
 /// </summary>
 public class TasaImpuestoService
 {
@@ -41,8 +46,6 @@ public class TasaImpuestoService
             TenantId = _tenant.TenantId,
             Nombre = dto.Nombre.Trim(),
             Tasa = dto.Tasa,
-            ClaveSat = string.IsNullOrWhiteSpace(dto.ClaveSat) ? "002" : dto.ClaveSat,
-            TipoImpuesto = string.IsNullOrWhiteSpace(dto.TipoImpuesto) ? "Traslado" : dto.TipoImpuesto,
             EsDefault = dto.EsDefault,
             Activo = true,
             CreadoEn = DateTime.UtcNow,
@@ -51,9 +54,12 @@ public class TasaImpuestoService
 
         var id = await _repo.CrearAsync(entity);
 
-        // Si esta tasa es default, desmarcar las demás del tenant.
         if (dto.EsDefault)
+        {
             await _repo.UnsetDefaultExceptAsync(_tenant.TenantId, id);
+            // Productos sin FK heredan el nuevo default → propagar denormalización.
+            await _repo.PropagarTasaADefaultProductosAsync(_tenant.TenantId, dto.Tasa);
+        }
 
         return id;
     }
@@ -63,18 +69,20 @@ public class TasaImpuestoService
         var entity = await _repo.ObtenerEntidadAsync(id, _tenant.TenantId);
         if (entity is null) return false;
 
+        var tasaCambio = false;
+        var nuevaTasa = entity.Tasa;
         if (!string.IsNullOrWhiteSpace(dto.Nombre)) entity.Nombre = dto.Nombre.Trim();
-        if (dto.Tasa.HasValue)
+        if (dto.Tasa.HasValue && dto.Tasa.Value != entity.Tasa)
         {
             ValidarTasa(dto.Tasa.Value);
             entity.Tasa = dto.Tasa.Value;
+            nuevaTasa = dto.Tasa.Value;
+            tasaCambio = true;
         }
-        if (!string.IsNullOrWhiteSpace(dto.ClaveSat)) entity.ClaveSat = dto.ClaveSat;
-        if (!string.IsNullOrWhiteSpace(dto.TipoImpuesto)) entity.TipoImpuesto = dto.TipoImpuesto;
         if (dto.Activo.HasValue) entity.Activo = dto.Activo.Value;
 
         var setDefault = false;
-        if (dto.EsDefault.HasValue)
+        if (dto.EsDefault.HasValue && dto.EsDefault.Value != entity.EsDefault)
         {
             entity.EsDefault = dto.EsDefault.Value;
             setDefault = dto.EsDefault.Value;
@@ -84,13 +92,49 @@ public class TasaImpuestoService
         entity.ActualizadoPor = _tenant.UserId;
 
         var ok = await _repo.ActualizarAsync(entity);
-        if (ok && setDefault)
-            await _repo.UnsetDefaultExceptAsync(_tenant.TenantId, id);
+        if (!ok) return false;
 
-        return ok;
+        // Cascade denormalización: si cambió la tasa, propagar a productos con esta FK.
+        if (tasaCambio)
+            await _repo.PropagarTasaAProductosAsync(_tenant.TenantId, id, nuevaTasa);
+
+        if (setDefault)
+        {
+            await _repo.UnsetDefaultExceptAsync(_tenant.TenantId, id);
+            // Productos sin FK heredan la nueva tasa default → refrescar denormalización.
+            await _repo.PropagarTasaADefaultProductosAsync(_tenant.TenantId, nuevaTasa);
+        }
+
+        return true;
     }
 
-    public Task<bool> EliminarAsync(int id) => _repo.EliminarAsync(id, _tenant.TenantId);
+    public async Task<bool> EliminarAsync(int id)
+    {
+        var entity = await _repo.ObtenerEntidadAsync(id, _tenant.TenantId);
+        if (entity is null) return false;
+
+        var eraDefault = entity.EsDefault;
+        var ok = await _repo.EliminarAsync(id, _tenant.TenantId);
+        if (!ok) return false;
+
+        // Tras el soft-delete: productos con esa FK quedan con FK NULL (ON DELETE SetNull).
+        // Refrescar Producto.Tasa al default actual del tenant.
+        if (eraDefault)
+        {
+            // Era default: ahora no hay default explícito hasta que admin marque otra.
+            // Caída a 0 sería incorrecta — mantener el último valor conocido en producto.
+            // Cuando admin elija otra tasa default, el cascade en Actualizar la propagará.
+        }
+        else
+        {
+            var defaultTasa = await _repo.ObtenerDefaultAsync(_tenant.TenantId);
+            var tasaFallback = defaultTasa?.Tasa ?? 0.16m;
+            // Productos que apuntaban a la tasa eliminada quedan TasaImpuestoId=NULL → propagar.
+            await _repo.PropagarTasaADefaultProductosAsync(_tenant.TenantId, tasaFallback);
+        }
+
+        return true;
+    }
 
     private static void ValidarTasa(decimal tasa)
     {

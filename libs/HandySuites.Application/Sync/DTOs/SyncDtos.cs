@@ -44,7 +44,6 @@ public class SyncChangesDto
     public List<SyncCategoriaClienteCatalogoDto>? CategoriasCliente { get; set; }
     public List<SyncCategoriaProductoCatalogoDto>? CategoriasProducto { get; set; }
     public List<SyncFamiliaProductoCatalogoDto>? FamiliasProducto { get; set; }
-    public List<SyncTasaImpuestoDto>? TasasImpuesto { get; set; }
     public List<SyncListaPrecioCatalogoDto>? ListasPrecio { get; set; }
     public List<SyncUsuarioCatalogoDto>? Usuarios { get; set; }
     public List<SyncMetaVendedorCatalogoDto>? MetasVendedor { get; set; }
@@ -112,7 +111,6 @@ public class SyncSummaryDto
     public int CategoriasClientePulled { get; set; }
     public int CategoriasProductoPulled { get; set; }
     public int FamiliasProductoPulled { get; set; }
-    public int TasasImpuestoPulled { get; set; }
     public int ListasPrecioPulled { get; set; }
     public int UsuariosPulled { get; set; }
     public int MetasVendedorPulled { get; set; }
@@ -485,23 +483,6 @@ public class SyncProductoDto
     /// <summary>Tasa decimal denormalizada (0.16, 0.08, 0.00). Resuelta en backend desde TasaImpuesto o default tenant.</summary>
     public decimal Tasa { get; set; } = 0.16m;
     // Products are read-only from mobile, no Operation needed
-}
-
-/// <summary>
-/// Catálogo de tasas de impuesto (read-only en mobile). Igual que zonas/categorias.
-/// </summary>
-public class SyncTasaImpuestoDto
-{
-    public int Id { get; set; }
-    public int TenantId { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-    public decimal Tasa { get; set; }
-    public string ClaveSat { get; set; } = "002";
-    public string TipoImpuesto { get; set; } = "Traslado";
-    public bool EsDefault { get; set; }
-    public bool Activo { get; set; }
-    public DateTime ActualizadoEn { get; set; }
-    public bool IsDeleted { get; set; }
 }
 
 public class SyncCobroDto

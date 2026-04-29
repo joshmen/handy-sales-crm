@@ -6,10 +6,6 @@ export interface TasaImpuesto {
   nombre: string;
   /** Decimal — 0.16 = 16%. */
   tasa: number;
-  /** SAT Anexo 20: 002 IVA, 003 IEPS. */
-  claveSat: string;
-  /** "Traslado" o "Retencion". */
-  tipoImpuesto: string;
   esDefault: boolean;
   activo: boolean;
   productosCount: number;
@@ -18,16 +14,12 @@ export interface TasaImpuesto {
 export interface TasaImpuestoCreateRequest {
   nombre: string;
   tasa: number;
-  claveSat?: string;
-  tipoImpuesto?: string;
   esDefault?: boolean;
 }
 
 export interface TasaImpuestoUpdateRequest {
   nombre?: string;
   tasa?: number;
-  claveSat?: string;
-  tipoImpuesto?: string;
   esDefault?: boolean;
   activo?: boolean;
 }

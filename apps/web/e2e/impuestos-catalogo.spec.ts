@@ -2,14 +2,17 @@ import { test, expect, Page } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
 /**
- * Issue: catálogo de impuestos + flag precioIncluyeIva en productos.
+ * Catálogo de tasas de impuesto + flag precioIncluyeIva en productos.
  *
  * Cubre:
- * 1. /settings → tab Impuestos visible y CRUD básico de TasasImpuesto
+ * 1. /products/taxes → CRUD del catálogo (vivía como tab en /settings; movido
+ *    2026-04-29 porque es catálogo operativo, no setting).
  * 2. /products → drawer de creación tiene checkbox "El precio ya incluye IVA"
- *    y dropdown de tasa con la default ya cargada
- * 3. Crear pedido con producto IVA-incluido → backend devuelve cálculo correcto
- *    (subtotal/impuesto/total cuadran con LineAmountCalculator)
+ *    y dropdown de tasa con la default ya cargada.
+ *
+ * Modelo limpio multi-país: TasaImpuesto solo tiene Nombre/Tasa/EsDefault.
+ * Los campos SAT (ClaveSat, TipoImpuesto) se derivan en el builder CFDI
+ * cuando el tenant es MX — no contaminan el catálogo.
  */
 
 test.describe.configure({ mode: 'serial' });
@@ -24,21 +27,20 @@ async function waitForPageLoad(page: Page) {
   await page.waitForTimeout(800);
 }
 
-test.describe('Settings → Impuestos tab', () => {
-  test('tab Impuestos accesible y muestra IVA 16% default seedeada', async ({ page }, testInfo) => {
+test.describe('Tasas de impuesto — /products/taxes', () => {
+  test('catálogo accesible y muestra IVA 16% default seedeada', async ({ page }, testInfo) => {
     if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
 
     await loginAsAdmin(page);
-    await page.goto('/settings?tab=impuestos');
+    await page.goto('/products/taxes');
     await waitForPageLoad(page);
 
-    // Tab Impuestos debe estar visible
-    const impuestosTab = page.getByRole('tab', { name: /impuestos/i });
-    await expect(impuestosTab).toBeVisible({ timeout: 10000 });
+    // Título de la página vía PageHeader
+    await expect(page.getByRole('heading', { name: /tasas de impuesto/i }).first()).toBeVisible({ timeout: 10000 });
 
     // El seed creó "IVA 16%" como default per tenant
     await expect(page.getByText('IVA 16%').first()).toBeVisible({ timeout: 10000 });
-    // Debe mostrar la columna de tasa con 16.00%
+    // Columna de tasa con 16.00%
     await expect(page.getByText('16.00%').first()).toBeVisible();
   });
 
@@ -46,14 +48,14 @@ test.describe('Settings → Impuestos tab', () => {
     if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
 
     await loginAsAdmin(page);
-    await page.goto('/settings?tab=impuestos');
+    await page.goto('/products/taxes');
     await waitForPageLoad(page);
 
     // Click "Nueva tasa"
     await page.getByRole('button', { name: /nueva tasa/i }).first().click();
 
-    // Modal abre — llenar datos
-    const nombreInput = page.locator('input[type="text"]').first();
+    // Drawer abre — llenar datos
+    const nombreInput = page.locator('input[placeholder*="IVA"], input[placeholder*="VAT"]').first();
     await expect(nombreInput).toBeVisible({ timeout: 5000 });
     await nombreInput.fill(`Frontera 8% E2E ${Date.now()}`);
 
@@ -91,11 +93,9 @@ test.describe('Products form → flag IVA + dropdown tasa', () => {
     await page.waitForTimeout(800);
 
     // Checkbox "El precio ya incluye IVA" visible y checked por default.
-    // Lo localizamos por su label de texto (más estable que :nth-of-type).
     const ivaLabel = page.locator('label').filter({ hasText: /El precio ya incluye IVA/i });
     await expect(ivaLabel).toBeVisible({ timeout: 5000 });
 
-    // Checkbox dentro de ese label específico
     const ivaCheckbox = ivaLabel.locator('input[type="checkbox"]');
     await expect(ivaCheckbox).toBeChecked();
 

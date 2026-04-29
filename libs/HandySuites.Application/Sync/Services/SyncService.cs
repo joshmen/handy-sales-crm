@@ -687,25 +687,13 @@ public class SyncService
             response.Summary.FamiliasProductoPulled = familias.Count;
         }
 
-        if (syncAll || entityTypes.Contains("tasasImpuesto", StringComparer.OrdinalIgnoreCase)
-                   || entityTypes.Contains("tasas-impuesto", StringComparer.OrdinalIgnoreCase))
-        {
-            var tasas = await _repo.GetTasasImpuestoModifiedSinceAsync(tenantId, since);
-            response.ServerChanges.TasasImpuesto = tasas.Select(t => new SyncTasaImpuestoDto
-            {
-                Id = t.Id,
-                TenantId = t.TenantId,
-                Nombre = t.Nombre,
-                Tasa = t.Tasa,
-                ClaveSat = t.ClaveSat,
-                TipoImpuesto = t.TipoImpuesto,
-                EsDefault = t.EsDefault,
-                Activo = t.Activo,
-                ActualizadoEn = t.ActualizadoEn ?? t.CreadoEn,
-                IsDeleted = !t.Activo || t.EliminadoEn != null,
-            }).ToList();
-            response.Summary.TasasImpuestoPulled = tasas.Count;
-        }
+        // Catálogo `tasasImpuesto` removido del payload de sync (2026-04-29).
+        // Mobile no consulta la tabla — el cálculo de IVA se resuelve con los
+        // campos denormalizados `producto.tasa` y `producto.precioIncluyeIva`
+        // que ya viajan en SyncProductoDto. El backend es la única autoridad
+        // del catálogo; cuando admin cambia una tasa central, el servicio
+        // propaga el valor a Producto.Tasa (cascade) y al próximo sync el
+        // mobile recibe los productos actualizados.
 
         if (syncAll || entityTypes.Contains("listasPrecio", StringComparer.OrdinalIgnoreCase)
                    || entityTypes.Contains("listas-precio", StringComparer.OrdinalIgnoreCase))

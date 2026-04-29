@@ -32,8 +32,6 @@ public class TasaImpuestoRepository : ITasaImpuestoRepository
                 TenantId = t.TenantId,
                 Nombre = t.Nombre,
                 Tasa = t.Tasa,
-                ClaveSat = t.ClaveSat,
-                TipoImpuesto = t.TipoImpuesto,
                 EsDefault = t.EsDefault,
                 Activo = t.Activo,
                 ProductosCount = _db.Productos.Count(p => p.TasaImpuestoId == t.Id)
@@ -52,8 +50,6 @@ public class TasaImpuestoRepository : ITasaImpuestoRepository
                 TenantId = t.TenantId,
                 Nombre = t.Nombre,
                 Tasa = t.Tasa,
-                ClaveSat = t.ClaveSat,
-                TipoImpuesto = t.TipoImpuesto,
                 EsDefault = t.EsDefault,
                 Activo = t.Activo,
                 ProductosCount = _db.Productos.Count(p => p.TasaImpuestoId == t.Id)
@@ -87,11 +83,10 @@ public class TasaImpuestoRepository : ITasaImpuestoRepository
     {
         var tasa = await _db.TasasImpuesto.FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
         if (tasa is null) return false;
-        // Soft delete via Activo=false. SaveChangesAsync override convierte a EliminadoEn
-        // cuando se llama Remove(). Aquí preferimos soft via Activo para no romper FKs:
-        // Productos.TasaImpuestoId queda apuntando a la tasa pero el queryFilter
-        // filtra inactivas en lookups normales — el helper CalculateLineAmounts resuelve
-        // a la tasa default si la tasa del producto no está activa.
+        // Soft delete via SaveChangesAsync override (Activo=false + EliminadoEn).
+        // FK Producto.TasaImpuestoId queda apuntando a la tasa pero el queryFilter
+        // filtra inactivas en lookups normales. PropagarTasaADefaultProductosAsync
+        // se llama desde el servicio para refrescar la denormalización.
         _db.TasasImpuesto.Remove(tasa);
         return await _db.SaveChangesAsync() > 0;
     }
@@ -104,5 +99,38 @@ public class TasaImpuestoRepository : ITasaImpuestoRepository
         if (others.Count == 0) return;
         foreach (var t in others) t.EsDefault = false;
         await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Backend NO persiste `Producto.Tasa` denormalizado — vive solo en
+    /// SyncProductoDto y en mobile WatermelonDB. La cascade de cambios en
+    /// TasaImpuesto se propaga tocando `Producto.ActualizadoEn` para que el
+    /// próximo pull-sync incluya los productos afectados; SyncService los
+    /// reproyecta con la tasa nueva resuelta desde el catálogo + default.
+    /// </summary>
+    public async Task<int> PropagarTasaAProductosAsync(int tenantId, int tasaId, decimal nuevaTasa)
+    {
+        var afectados = await _db.Productos
+            .Where(p => p.TenantId == tenantId && p.TasaImpuestoId == tasaId)
+            .ToListAsync();
+        if (afectados.Count == 0) return 0;
+        var ahora = DateTime.UtcNow;
+        foreach (var p in afectados)
+            p.ActualizadoEn = ahora;
+        await _db.SaveChangesAsync();
+        return afectados.Count;
+    }
+
+    public async Task<int> PropagarTasaADefaultProductosAsync(int tenantId, decimal nuevaTasa)
+    {
+        var afectados = await _db.Productos
+            .Where(p => p.TenantId == tenantId && p.TasaImpuestoId == null)
+            .ToListAsync();
+        if (afectados.Count == 0) return 0;
+        var ahora = DateTime.UtcNow;
+        foreach (var p in afectados)
+            p.ActualizadoEn = ahora;
+        await _db.SaveChangesAsync();
+        return afectados.Count;
     }
 }

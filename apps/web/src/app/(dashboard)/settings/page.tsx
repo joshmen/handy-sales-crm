@@ -7,7 +7,7 @@ import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Palette, Database, Building, Building2, Bell, Loader2, Receipt } from 'lucide-react';
+import { Palette, Database, Building, Building2, Bell, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { SrLoadingText } from '@/components/common/SrLoadingText';
 
@@ -17,7 +17,6 @@ import { PerfilEmpresaTab } from './components/PerfilEmpresaTab';
 import { AppearanceTab } from './components/AppearanceTab';
 import { SystemTab } from './components/SystemTab';
 import { NotificationsTab } from './components/NotificationsTab';
-import { ImpuestosTab } from './components/ImpuestosTab';
 
 function SettingsPageContent() {
   const t = useTranslations('settings');
@@ -101,7 +100,7 @@ function SettingsPageContent() {
         }}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">{t('tabs.companyProfile')}</span>
@@ -109,10 +108,6 @@ function SettingsPageContent() {
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building className="h-4 w-4" />
             <span className="hidden sm:inline">{t('tabs.brand')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="impuestos" className="flex items-center gap-2">
-            <Receipt className="h-4 w-4" />
-            <span className="hidden sm:inline">Impuestos</span>
           </TabsTrigger>
           <TabsTrigger value="appearance" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
@@ -148,11 +143,6 @@ function SettingsPageContent() {
             deleteLogo={deleteLogo}
             settings={settings}
           />
-        </TabsContent>
-
-        {/* Impuestos Tab — catálogo de tasas de IVA/IEPS por tenant */}
-        <TabsContent value="impuestos" className="space-y-6">
-          <ImpuestosTab />
         </TabsContent>
 
         {/* Appearance Tab */}

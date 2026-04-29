@@ -113,8 +113,7 @@ export async function mapPullToWatermelon(
     categorias_cliente: splitByOperation(server.categoriasCliente, isFirstSync, mapCategoriaClienteToRaw),
     categorias_producto: splitByOperation(server.categoriasProducto, isFirstSync, mapCategoriaProductoToRaw),
     familias_producto: splitByOperation(server.familiasProducto, isFirstSync, mapFamiliaProductoToRaw),
-    // Catálogo de impuestos (v16, 2026-04-29)
-    tasas_impuesto: splitByOperation(server.tasasImpuesto, isFirstSync, mapTasaImpuestoToRaw),
+    // tasas_impuesto eliminado en v17 (2026-04-29). Cálculo usa producto.tasa denormalizada.
     // Catalogos criticos (v15, 2026-04-28 audit)
     listas_precio: splitByOperation(server.listasPrecio, isFirstSync, mapListaPrecioToRaw),
     usuarios: splitByOperation(server.usuarios, isFirstSync, mapUsuarioToRaw),
@@ -588,22 +587,6 @@ function mapCategoriaProductoToRaw(c: any): DirtyRaw {
 
 function mapFamiliaProductoToRaw(f: any): DirtyRaw {
   return mapCatalogoBasicoToRaw(f);
-}
-
-function mapTasaImpuestoToRaw(t: any): DirtyRaw {
-  return {
-    id: String(t.id),
-    server_id: t.id,
-    tenant_id: t.tenantId ?? 0,
-    nombre: t.nombre || '',
-    tasa: t.tasa ?? 0.16,
-    clave_sat: t.claveSat ?? '002',
-    tipo_impuesto: t.tipoImpuesto ?? 'Traslado',
-    es_default: t.esDefault ?? false,
-    activo: t.activo ?? true,
-    created_at: toTimestamp(t.actualizadoEn),
-    updated_at: toTimestamp(t.actualizadoEn),
-  };
 }
 
 function mapListaPrecioToRaw(l: any): DirtyRaw {

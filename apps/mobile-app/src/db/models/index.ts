@@ -20,7 +20,6 @@ import ListaPrecio from './ListaPrecio';
 import Usuario from './Usuario';
 import MetaVendedor from './MetaVendedor';
 import DatosEmpresa from './DatosEmpresa';
-import TasaImpuesto from './TasaImpuesto';
 
 export {
   Cliente,
@@ -45,7 +44,6 @@ export {
   Usuario,
   MetaVendedor,
   DatosEmpresa,
-  TasaImpuesto,
 };
 
 export const modelClasses = [
@@ -71,5 +69,4 @@ export const modelClasses = [
   Usuario,
   MetaVendedor,
   DatosEmpresa,
-  TasaImpuesto,
 ];

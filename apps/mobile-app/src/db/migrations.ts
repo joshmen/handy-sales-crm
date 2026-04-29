@@ -421,5 +421,16 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v17 (2026-04-29): elimina la tabla `tasas_impuesto`. El catálogo de
+      // impuestos vive solo en backend; mobile resuelve cálculos con los
+      // campos denormalizados `producto.tasa` y `producto.precioIncluyeIva`.
+      // Devices que estaban en v16 dropean la tabla — ningún query la
+      // consultaba (era dead weight). El cálculo del ticket sigue intacto.
+      toVersion: 17,
+      steps: [
+        unsafeExecuteSql('DROP TABLE IF EXISTS tasas_impuesto'),
+      ],
+    },
   ],
 });

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 16,
+  version: 17,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -417,24 +417,10 @@ export const schema = appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
-    // tasas_impuesto: catálogo read-only sincronizado desde web admin (v16, 2026-04-29).
-    // Mobile lo usa para resolver la tasa correcta al calcular tickets, aunque
-    // el campo `tasa` también viaja denormalizado en `productos` para evitar lookup.
-    tableSchema({
-      name: 'tasas_impuesto',
-      columns: [
-        { name: 'server_id', type: 'number', isIndexed: true },
-        { name: 'tenant_id', type: 'number', isIndexed: true },
-        { name: 'nombre', type: 'string' },
-        { name: 'tasa', type: 'number' },
-        { name: 'clave_sat', type: 'string' },
-        { name: 'tipo_impuesto', type: 'string' },
-        { name: 'es_default', type: 'boolean' },
-        { name: 'activo', type: 'boolean' },
-        { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' },
-      ],
-    }),
+    // tasas_impuesto: tabla eliminada en v17 (2026-04-29). El cálculo de IVA
+    // mobile usa solo los campos denormalizados `producto.tasa` y
+    // `producto.precioIncluyeIva`. Backend propaga cambios de tasa central
+    // tocando Producto.ActualizadoEn → SyncProductoDto.Tasa siempre actualizada.
     // datos_empresa: 1:1 por tenant. Singleton local.
     tableSchema({
       name: 'datos_empresa',
