@@ -429,7 +429,7 @@ export const migrations = schemaMigrations({
       // consultaba (era dead weight). El cálculo del ticket sigue intacto.
       toVersion: 17,
       steps: [
-        unsafeExecuteSql('DROP TABLE IF EXISTS tasas_impuesto'),
+        unsafeExecuteSql('DROP TABLE IF EXISTS tasas_impuesto;'),
       ],
     },
   ],
