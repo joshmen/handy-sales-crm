@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Product } from '@/types';
 import { productService } from '@/services/api/products';
 import { productCategoryService, unitService } from '@/services/api';
+import { impuestosService, TasaImpuesto } from '@/services/api/impuestos';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -76,6 +77,8 @@ interface ProductoDetalle {
   unidadMedidaId: number;
   precioBase: number;
   activo: boolean;
+  precioIncluyeIva?: boolean;
+  tasaImpuestoId?: number | null;
 }
 
 // Zod schema para validación del formulario
@@ -87,6 +90,8 @@ const productSchema = z.object({
   categoraId: z.number().min(1, 'selectCategoryRequired'),
   unidadMedidaId: z.number().min(1, 'selectUnitRequired'),
   precioBase: z.number().min(0.01, 'priceGreaterThanZero'),
+  precioIncluyeIva: z.boolean(),
+  tasaImpuestoId: z.number().nullable(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -115,6 +120,7 @@ export default function ProductsPage() {
   const [familias, setFamilias] = useState<FamiliaProducto[]>([]);
   const [categorias, setCategorias] = useState<CategoriaProducto[]>([]);
   const [unidades, setUnidades] = useState<UnidadMedida[]>([]);
+  const [tasasImpuesto, setTasasImpuesto] = useState<TasaImpuesto[]>([]);
   const [loadingCatalogs, setLoadingCatalogs] = useState(false);
 
   // Filtros
@@ -133,6 +139,8 @@ export default function ProductsPage() {
       categoraId: 0,
       unidadMedidaId: 0,
       precioBase: 0,
+      precioIncluyeIva: true, // default: precio = lo que cobras al cliente
+      tasaImpuestoId: null,
     },
   });
 
@@ -156,15 +164,17 @@ export default function ProductsPage() {
   const fetchCatalogs = useCallback(async () => {
     try {
       setLoadingCatalogs(true);
-      const [familiasRes, categoriasRes, unidadesRes] = await Promise.all([
+      const [familiasRes, categoriasRes, unidadesRes, tasasRes] = await Promise.all([
         api.get<FamiliaProducto[]>('/familias-productos'),
         productCategoryService.getAll(),
         unitService.getAll(),
+        impuestosService.getTasas().catch(() => [] as TasaImpuesto[]),
       ]);
 
       setFamilias(familiasRes.data);
       setCategorias(categoriasRes.map(c => ({ id: c.id, nombre: c.nombre, descripcion: c.descripcion })));
       setUnidades(unidadesRes.map(u => ({ id: u.id, nombre: u.nombre, abreviatura: u.abreviatura })));
+      setTasasImpuesto(tasasRes);
     } catch (err) {
       console.error('Error al cargar catálogos:', err);
     } finally {
@@ -225,6 +235,8 @@ export default function ProductsPage() {
       categoraId: categorias[0]?.id || 0,
       unidadMedidaId: unidades[0]?.id || 0,
       precioBase: 0,
+      precioIncluyeIva: true,
+      tasaImpuestoId: null,
     });
     setImageFile(null);
     setImagePreview(null);
@@ -251,6 +263,8 @@ export default function ProductsPage() {
         categoraId: detalle.categoraId,
         unidadMedidaId: detalle.unidadMedidaId,
         precioBase: detalle.precioBase,
+        precioIncluyeIva: detalle.precioIncluyeIva ?? true,
+        tasaImpuestoId: detalle.tasaImpuestoId ?? null,
       });
     } catch (err) {
       console.error('Error al obtener detalles del producto:', err);
@@ -263,6 +277,8 @@ export default function ProductsPage() {
         categoraId: categorias[0]?.id || 0,
         unidadMedidaId: unidades[0]?.id || 0,
         precioBase: product.price,
+        precioIncluyeIva: true,
+        tasaImpuestoId: null,
       });
     }
 
@@ -905,6 +921,60 @@ export default function ProductsPage() {
                   />
                 </div>
                 {errors.precioBase && <FieldError message={errors.precioBase.message} />}
+              </div>
+
+              {/* Tasa de impuesto + flag IVA incluido */}
+              <div className="bg-surface-1 dark:bg-surface-2 border border-border-subtle rounded-lg p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">
+                    Tasa de impuesto
+                  </label>
+                  <select
+                    value={watch('tasaImpuestoId') ?? ''}
+                    onChange={(e) =>
+                      setValue('tasaImpuestoId', e.target.value ? parseInt(e.target.value) : null, {
+                        shouldDirty: true,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+                  >
+                    <option value="">
+                      {tasasImpuesto.find((t) => t.esDefault)
+                        ? `Default (${tasasImpuesto.find((t) => t.esDefault)?.nombre})`
+                        : 'Default del tenant'}
+                    </option>
+                    {tasasImpuesto.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nombre} — {(t.tasa * 100).toFixed(2)}%{t.esDefault ? ' ⭐' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Si dejas en default, usa la tasa marcada como default en{' '}
+                    <a href="/settings?tab=impuestos" className="text-green-600 hover:underline">
+                      Configuración → Impuestos
+                    </a>
+                    .
+                  </p>
+                </div>
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={watch('precioIncluyeIva')}
+                    onChange={(e) => setValue('precioIncluyeIva', e.target.checked, { shouldDirty: true })}
+                    className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">El precio ya incluye IVA</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      <strong>Marcado (recomendado):</strong> el precio que registras es lo que el cliente
+                      paga al final. El sistema desglosa el impuesto al generar tickets.{' '}
+                      <strong>Desmarcado:</strong> el precio es base sin impuesto y el sistema lo agrega
+                      al cobrar.
+                    </p>
+                  </div>
+                </label>
               </div>
             </form>
         </Drawer>

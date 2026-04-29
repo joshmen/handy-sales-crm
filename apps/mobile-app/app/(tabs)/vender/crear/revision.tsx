@@ -13,6 +13,8 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
 import { round2 } from '@/utils/money';
+import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
+import { useOfflineProducts } from '@/hooks';
 import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { usePricingMap } from '@/hooks/usePricing';
@@ -58,22 +60,50 @@ function CrearPedidoStep3() {
   const { getPricing } = usePricingMap(clienteListaPreciosId);
   const hasSpecialPricing = !!clienteListaPreciosId;
 
-  // Aplicar descuentos por cantidad + promociones por línea, con totales corregidos.
+  // Productos del WDB para resolver `precioIncluyeIva` y `tasa` per item.
+  // Los productos vienen del último sync — read-only en mobile.
+  const { data: allProducts } = useOfflineProducts();
+  const productByServerId = useMemo(() => {
+    const map = new Map<number, { precioIncluyeIva: boolean; tasa: number }>();
+    for (const p of allProducts ?? []) {
+      if (p.serverId != null) {
+        map.set(p.serverId, {
+          precioIncluyeIva: p.precioIncluyeIva ?? true,
+          tasa: p.tasa ?? 0.16,
+        });
+      }
+    }
+    return map;
+  }, [allProducts]);
+
+  // Aplicar descuentos por cantidad + promociones por línea, con cálculo IVA
+  // branched per item (v16 — catálogo de impuestos). Cada item resuelve su tasa
+  // y flag precioIncluyeIva desde el producto en WDB; fallback a IVA 16% incluido.
   const pricedItems = useMemo(() =>
     items.map((item) => {
       const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
-      const lineTotal = pricing.precioConDescuento * item.cantidad;
-      return { item, pricing, lineTotal };
+      const prodTax = productByServerId.get(item.productoServerId ?? 0) ?? { precioIncluyeIva: true, tasa: 0.16 };
+      const descuentoLinea = round2((item.precioUnitario - pricing.precioConDescuento) * item.cantidad);
+      // El precioConDescuento es el que se cobra al cliente. Si precioIncluyeIva,
+      // ese ya tiene IVA; descomponemos. Si no, le sumamos IVA.
+      const lineAmounts = calculateLineAmounts(
+        pricing.precioConDescuento,
+        item.cantidad,
+        0, // descuento ya aplicado en precioConDescuento
+        prodTax.tasa,
+        prodTax.precioIncluyeIva,
+      );
+      return { item, pricing, lineAmounts, descuentoLinea };
     }),
-    [items, getPricing],
+    [items, getPricing, productByServerId],
   );
-  // Redondear a centavos en cada agregación monetaria — sin esto, sumar muchos
-  // items con precios fraccionarios produce drift visible (e.g. $1716.99 vs $1717.00).
-  const subtotal = round2(pricedItems.reduce((s, p) => s + p.lineTotal, 0));
-  const descuentoTotal = round2(subtotalRaw - subtotal);
-  const IVA_RATE = 0.16;
-  const impuestos = round2(subtotal * IVA_RATE);
-  const total = round2(subtotal + impuestos);
+
+  // Sumar redondeando cada línea (consistente con backend). Sin round2 per-item,
+  // float drift produce totales off-by-cent.
+  const subtotal = round2(pricedItems.reduce((s, p) => s + p.lineAmounts.subtotal, 0));
+  const impuestos = round2(pricedItems.reduce((s, p) => s + p.lineAmounts.impuesto, 0));
+  const total = round2(pricedItems.reduce((s, p) => s + p.lineAmounts.total, 0));
+  const descuentoTotal = round2(subtotalRaw - pricedItems.reduce((s, p) => s + p.pricing.precioConDescuento * p.item.cantidad, 0));
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
@@ -199,7 +229,8 @@ function CrearPedidoStep3() {
           <Text style={styles.sectionTitle}>Productos ({items.length})</Text>
         </View>
 
-        {pricedItems.map(({ item, pricing, lineTotal }) => {
+        {pricedItems.map(({ item, pricing, lineAmounts }) => {
+          const lineTotal = lineAmounts.total;
           const tieneDescuento = pricing.mejorDescuento > 0;
           return (
             <View key={item.productoId} style={styles.lineItem}>

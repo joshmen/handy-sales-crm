@@ -15,6 +15,8 @@ interface ProductoListaDto {
   cantidadActual: number;
   stockMinimo: number;
   activo: boolean;
+  precioIncluyeIva?: boolean;
+  tasaImpuestoId?: number | null;
 }
 
 interface ProductoDto {
@@ -28,6 +30,12 @@ interface ProductoDto {
   unidadMedidaId: number;
   precioBase: number;
   activo: boolean;
+  /** Si true (default), precioBase ya incluye IVA. */
+  precioIncluyeIva?: boolean;
+  /** FK al catálogo TasasImpuesto. */
+  tasaImpuestoId?: number | null;
+  tasaImpuestoNombre?: string | null;
+  tasaImpuestoTasa?: number | null;
 }
 
 interface ProductoPaginatedResult {
@@ -64,6 +72,10 @@ export interface CreateProductRequest {
   categoraId: number;
   unidadMedidaId: number;
   precioBase: number;
+  /** Si true (default), precioBase es lo que el cliente paga al final (IVA incluido). */
+  precioIncluyeIva?: boolean;
+  /** FK al catálogo TasasImpuesto. Si null, usa la tasa default del tenant. */
+  tasaImpuestoId?: number | null;
 }
 
 export interface UpdateProductRequest extends Partial<CreateProductRequest> {

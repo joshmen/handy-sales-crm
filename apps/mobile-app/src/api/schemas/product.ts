@@ -17,6 +17,11 @@ export const MobileProductoSchema = z
     unidadNombre: z.string().optional(),
     cantidadActual: z.number().optional(),
     stockMinimo: z.number().optional(),
+    // v16 (2026-04-29): catálogo de impuestos. Si los APKs viejos no envían
+    // estos campos, los defaults a true/0.16 (compat backward).
+    precioIncluyeIva: z.boolean().optional().default(true),
+    tasaImpuestoId: z.number().nullable().optional(),
+    tasa: z.number().optional().default(0.16),
   })
   .passthrough();
 

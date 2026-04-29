@@ -388,5 +388,38 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v16 (2026-04-29): catálogo de impuestos.
+      // - productos: precio_incluye_iva (default true), tasa_impuesto_id, tasa
+      //   denormalizada (resuelta en backend desde TasaImpuesto.Tasa o default tenant).
+      // - tasas_impuesto: nueva tabla read-only del catálogo del tenant.
+      // Arregla bug 2026-04-28: tickets cobraban IVA sobre precios que ya lo incluían.
+      toVersion: 16,
+      steps: [
+        addColumns({
+          table: 'productos',
+          columns: [
+            { name: 'precio_incluye_iva', type: 'boolean' },
+            { name: 'tasa_impuesto_id', type: 'number', isOptional: true },
+            { name: 'tasa', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'tasas_impuesto',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'tasa', type: 'number' },
+            { name: 'clave_sat', type: 'string' },
+            { name: 'tipo_impuesto', type: 'string' },
+            { name: 'es_default', type: 'boolean' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

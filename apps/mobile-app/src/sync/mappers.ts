@@ -29,6 +29,8 @@ interface ServerChanges {
   usuarios?: any[];
   metasVendedor?: any[];
   datosEmpresa?: any | null;
+  // Catálogo de impuestos (v16, 2026-04-29)
+  tasasImpuesto?: any[];
 }
 
 // Build a map of server_id → local WDB id for deduplication.
@@ -111,6 +113,8 @@ export async function mapPullToWatermelon(
     categorias_cliente: splitByOperation(server.categoriasCliente, isFirstSync, mapCategoriaClienteToRaw),
     categorias_producto: splitByOperation(server.categoriasProducto, isFirstSync, mapCategoriaProductoToRaw),
     familias_producto: splitByOperation(server.familiasProducto, isFirstSync, mapFamiliaProductoToRaw),
+    // Catálogo de impuestos (v16, 2026-04-29)
+    tasas_impuesto: splitByOperation(server.tasasImpuesto, isFirstSync, mapTasaImpuestoToRaw),
     // Catalogos criticos (v15, 2026-04-28 audit)
     listas_precio: splitByOperation(server.listasPrecio, isFirstSync, mapListaPrecioToRaw),
     usuarios: splitByOperation(server.usuarios, isFirstSync, mapUsuarioToRaw),
@@ -218,6 +222,11 @@ function mapProductoToRaw(p: any): DirtyRaw {
     version: p.version ?? 1,
     created_at: toTimestamp(p.actualizadoEn),
     updated_at: toTimestamp(p.actualizadoEn),
+    // v16: catálogo de impuestos. Tasa denormalizada para evitar lookup offline
+    // al calcular ticket. Default 0.16 si el backend aún no envía el campo.
+    precio_incluye_iva: p.precioIncluyeIva ?? true,
+    tasa_impuesto_id: p.tasaImpuestoId ?? null,
+    tasa: p.tasa ?? 0.16,
   };
 }
 
@@ -579,6 +588,22 @@ function mapCategoriaProductoToRaw(c: any): DirtyRaw {
 
 function mapFamiliaProductoToRaw(f: any): DirtyRaw {
   return mapCatalogoBasicoToRaw(f);
+}
+
+function mapTasaImpuestoToRaw(t: any): DirtyRaw {
+  return {
+    id: String(t.id),
+    server_id: t.id,
+    tenant_id: t.tenantId ?? 0,
+    nombre: t.nombre || '',
+    tasa: t.tasa ?? 0.16,
+    clave_sat: t.claveSat ?? '002',
+    tipo_impuesto: t.tipoImpuesto ?? 'Traslado',
+    es_default: t.esDefault ?? false,
+    activo: t.activo ?? true,
+    created_at: toTimestamp(t.actualizadoEn),
+    updated_at: toTimestamp(t.actualizadoEn),
+  };
 }
 
 function mapListaPrecioToRaw(l: any): DirtyRaw {

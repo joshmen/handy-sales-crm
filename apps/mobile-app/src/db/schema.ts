@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 15,
+  version: 16,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -69,6 +69,14 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v16 (2026-04-29): catálogo de impuestos. precio_incluye_iva indica si
+        // el `precio` ya tiene IVA dentro (true default — lo que el cliente paga).
+        // tasa_impuesto_id es FK al catálogo TasasImpuesto. tasa es la tasa decimal
+        // denormalizada (resuelta en backend desde TasaImpuesto.Tasa o default tenant)
+        // para que mobile no necesite join offline al calcular ticket.
+        { name: 'precio_incluye_iva', type: 'boolean' },
+        { name: 'tasa_impuesto_id', type: 'number', isOptional: true },
+        { name: 'tasa', type: 'number' },
       ],
     }),
 
@@ -404,6 +412,24 @@ export const schema = appSchema({
         { name: 'monto', type: 'number' },
         { name: 'fecha_inicio', type: 'number' },
         { name: 'fecha_fin', type: 'number' },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // tasas_impuesto: catálogo read-only sincronizado desde web admin (v16, 2026-04-29).
+    // Mobile lo usa para resolver la tasa correcta al calcular tickets, aunque
+    // el campo `tasa` también viaja denormalizado en `productos` para evitar lookup.
+    tableSchema({
+      name: 'tasas_impuesto',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'tasa', type: 'number' },
+        { name: 'clave_sat', type: 'string' },
+        { name: 'tipo_impuesto', type: 'string' },
+        { name: 'es_default', type: 'boolean' },
         { name: 'activo', type: 'boolean' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
