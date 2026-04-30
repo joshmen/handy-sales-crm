@@ -29,6 +29,11 @@ public class PromocionRepository : IPromocionRepository
                 FechaInicio = p.FechaInicio,
                 FechaFin = p.FechaFin,
                 Activo = p.Activo,
+                TipoPromocion = p.TipoPromocion,
+                CantidadCompra = p.CantidadCompra,
+                CantidadBonificada = p.CantidadBonificada,
+                ProductoBonificadoId = p.ProductoBonificadoId,
+                ProductoBonificadoNombre = p.ProductoBonificado != null ? p.ProductoBonificado.Nombre : null,
                 Productos = p.PromocionProductos.Select(pp => new PromocionProductoInfo
                 {
                     ProductoId = pp.ProductoId,
@@ -53,6 +58,11 @@ public class PromocionRepository : IPromocionRepository
                 FechaInicio = p.FechaInicio,
                 FechaFin = p.FechaFin,
                 Activo = p.Activo,
+                TipoPromocion = p.TipoPromocion,
+                CantidadCompra = p.CantidadCompra,
+                CantidadBonificada = p.CantidadBonificada,
+                ProductoBonificadoId = p.ProductoBonificadoId,
+                ProductoBonificadoNombre = p.ProductoBonificado != null ? p.ProductoBonificado.Nombre : null,
                 Productos = p.PromocionProductos.Select(pp => new PromocionProductoInfo
                 {
                     ProductoId = pp.ProductoId,
@@ -73,6 +83,10 @@ public class PromocionRepository : IPromocionRepository
             DescuentoPorcentaje = dto.DescuentoPorcentaje,
             FechaInicio = dto.FechaInicio,
             FechaFin = dto.FechaFin,
+            TipoPromocion = dto.TipoPromocion,
+            CantidadCompra = dto.CantidadCompra,
+            CantidadBonificada = dto.CantidadBonificada,
+            ProductoBonificadoId = dto.ProductoBonificadoId,
             Activo = true,
             CreadoEn = DateTime.UtcNow
         };
@@ -108,6 +122,10 @@ public class PromocionRepository : IPromocionRepository
         entity.DescuentoPorcentaje = dto.DescuentoPorcentaje;
         entity.FechaInicio = dto.FechaInicio;
         entity.FechaFin = dto.FechaFin;
+        entity.TipoPromocion = dto.TipoPromocion;
+        entity.CantidadCompra = dto.CantidadCompra;
+        entity.CantidadBonificada = dto.CantidadBonificada;
+        entity.ProductoBonificadoId = dto.ProductoBonificadoId;
         entity.ActualizadoEn = DateTime.UtcNow;
 
         // Reemplazar productos: quitar los existentes y agregar los nuevos
@@ -203,6 +221,10 @@ public class PromocionRepository : IPromocionRepository
                 FechaInicio = p.FechaInicio,
                 FechaFin = p.FechaFin,
                 Activo = p.Activo,
+                TipoPromocion = p.TipoPromocion,
+                CantidadCompra = p.CantidadCompra,
+                CantidadBonificada = p.CantidadBonificada,
+                ProductoBonificadoId = p.ProductoBonificadoId,
                 Productos = p.PromocionProductos.Select(pp => new PromocionProductoInfo
                 {
                     ProductoId = pp.ProductoId,
