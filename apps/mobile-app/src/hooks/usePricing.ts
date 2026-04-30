@@ -177,6 +177,7 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
   const [discountsByProduct, setDiscountsByProduct] = useState<Map<number, Descuento[]>>(new Map());
   const [globalDiscounts, setGlobalDiscounts] = useState<Descuento[]>([]);
   const [promoMap, setPromoMap] = useState<Map<number, { nombre: string; porcentaje: number }>>(new Map());
+  const [bogoMap, setBogoMap] = useState<Map<number, { promocionId: number; nombre: string; cantidadCompra: number; cantidadBonificada: number; productoBonificadoId: number | null }>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -234,7 +235,32 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
           .fetch();
 
         const pMap = new Map<number, { nombre: string; porcentaje: number }>();
+        const bMap = new Map<number, { promocionId: number; nombre: string; cantidadCompra: number; cantidadBonificada: number; productoBonificadoId: number | null }>();
         for (const promo of promos) {
+          // Tipo Regalo (BOGO acumulativo) — vive en mapa separado para excluir
+          // mutuamente con descuento por volumen y % de descuento.
+          if (promo.tipoPromocion === 1 && promo.cantidadCompra && promo.cantidadBonificada) {
+            for (const pid of promo.productoIds) {
+              // Si el producto ya tiene un BOGO, gana el de mayor proporción
+              // bonificada/compra (ej: 5+1 mejor que 10+1 → cliente prefiere 5+1).
+              const existing = bMap.get(pid);
+              const ratio = promo.cantidadBonificada / promo.cantidadCompra;
+              const existingRatio = existing
+                ? existing.cantidadBonificada / existing.cantidadCompra
+                : -1;
+              if (!existing || ratio > existingRatio) {
+                bMap.set(pid, {
+                  promocionId: promo.serverId,
+                  nombre: promo.nombre,
+                  cantidadCompra: promo.cantidadCompra,
+                  cantidadBonificada: promo.cantidadBonificada,
+                  productoBonificadoId: promo.productoBonificadoId,
+                });
+              }
+            }
+            continue;
+          }
+          // Tipo Porcentaje legacy
           for (const pid of promo.productoIds) {
             const existing = pMap.get(pid);
             if (!existing || promo.descuentoPorcentaje > existing.porcentaje) {
@@ -243,6 +269,7 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
           }
         }
         setPromoMap(pMap);
+        setBogoMap(bMap);
       } catch {
         // Fail silently — pricing is optional, fall back to base prices
       } finally {
@@ -277,10 +304,28 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
     // Active promotion
     const promo = promoMap.get(productoServerId) ?? null;
 
-    // Best discount between volume discount and promotion
+    // BOGO: si hay promo regalo activa para este producto, gana sobre volumen + %.
+    // Mutuamente excluyente con descuento por volumen y por %.
+    const bogo = bogoMap.get(productoServerId) ?? null;
+    let cantidadBonificada = 0;
+    if (bogo) {
+      cantidadBonificada = Math.floor(cantidad / bogo.cantidadCompra) * bogo.cantidadBonificada;
+    }
+    const promoRegalo = bogo && cantidadBonificada > 0
+      ? {
+          promocionId: bogo.promocionId,
+          nombre: bogo.nombre,
+          cantidadCompra: bogo.cantidadCompra,
+          cantidadBonificada,
+          productoBonificadoId: bogo.productoBonificadoId,
+        }
+      : null;
+
+    // Best discount between volume discount and promotion (legacy %).
+    // Cuando hay BOGO activo NO se aplica descuento %, son mutuamente excluyentes.
     const descuentoVolumen = bestDiscount?.descuentoPorcentaje ?? 0;
     const descuentoPromo = promo?.porcentaje ?? 0;
-    const mejorDescuento = Math.max(descuentoVolumen, descuentoPromo);
+    const mejorDescuento = promoRegalo ? 0 : Math.max(descuentoVolumen, descuentoPromo);
 
     const precioConDescuento = mejorDescuento > 0
       ? precioFinal * (1 - mejorDescuento / 100)
@@ -292,9 +337,10 @@ export function usePricingMap(listaPreciosId: number | null | undefined) {
       precioFinal,
       tieneListaPrecios,
       descuentoVolumen: bestDiscount ? { porcentaje: bestDiscount.descuentoPorcentaje, cantidadMinima: bestDiscount.cantidadMinima } : null,
-      promo,
+      promo: promoRegalo ? null : promo,
       mejorDescuento,
       precioConDescuento,
+      promoRegalo,
     };
   }
 

@@ -135,6 +135,9 @@ function CrearPedidoStep3() {
           // createPedidoOffline / createVentaDirectaOffline use el branched.
           precioIncluyeIva: prodTax.precioIncluyeIva,
           tasa: prodTax.tasa,
+          // v18 BOGO: cantidad regalada + promo aplicada (server valida).
+          cantidadBonificada: pricing.promoRegalo?.cantidadBonificada ?? 0,
+          promocionId: pricing.promoRegalo?.promocionId ?? null,
         };
       });
 
@@ -256,6 +259,11 @@ function CrearPedidoStep3() {
                   {pricing.promo && (
                     <Text style={{ fontSize: 9, color: '#d97706', fontWeight: '600', backgroundColor: '#fef3c7', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
                       Promo -{pricing.promo.porcentaje}%
+                    </Text>
+                  )}
+                  {pricing.promoRegalo && (
+                    <Text style={{ fontSize: 9, color: '#92400e', fontWeight: '700', backgroundColor: '#fde68a', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
+                      🎁 +{pricing.promoRegalo.cantidadBonificada} regalo
                     </Text>
                   )}
                   {pricing.descuentoVolumen && (
