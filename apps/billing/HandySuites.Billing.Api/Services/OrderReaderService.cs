@@ -186,7 +186,8 @@ public class OrderReaderService : IOrderReaderService
             SELECT
                 d.producto_id, d.cantidad, d.precio_unitario, d.descuento, d.subtotal, d.impuesto, d.total,
                 pr.nombre, pr.codigo_barra, pr.clave_sat,
-                u.nombre, u.abreviatura, u.clave_sat
+                u.nombre, u.abreviatura, u.clave_sat,
+                d.cantidad_bonificada, d.notas
             FROM "DetallePedidos" d
             JOIN "Productos" pr ON pr.id = d.producto_id AND pr.tenant_id = @tenantId
             JOIN "UnidadesMedida" u ON u.id = pr.unidad_medida_id AND u.tenant_id = @tenantId
@@ -218,6 +219,8 @@ public class OrderReaderService : IOrderReaderService
                 UnidadNombre = reader.GetString(10),
                 UnidadAbreviatura = reader.IsDBNull(11) ? null : reader.GetString(11),
                 UnidadClaveSat = reader.IsDBNull(12) ? null : reader.GetString(12),
+                CantidadBonificada = reader.IsDBNull(13) ? 0m : reader.GetDecimal(13),
+                Notas = reader.IsDBNull(14) ? null : reader.GetString(14),
             });
         }
 
