@@ -432,5 +432,31 @@ export const migrations = schemaMigrations({
         unsafeExecuteSql('DROP TABLE IF EXISTS tasas_impuesto;'),
       ],
     },
+    {
+      // v18 (2026-04-29): promociones BOGO acumulativo.
+      // - promociones: tipo_promocion (0=Porcentaje, 1=Regalo), cantidad_compra,
+      //   cantidad_bonificada, producto_bonificado_id.
+      // - detalle_pedidos: cantidad_bonificada (audita unidades regaladas en
+      //   la línea), promocion_id (server valida al push).
+      toVersion: 18,
+      steps: [
+        addColumns({
+          table: 'promociones',
+          columns: [
+            { name: 'tipo_promocion', type: 'number' },
+            { name: 'cantidad_compra', type: 'number', isOptional: true },
+            { name: 'cantidad_bonificada', type: 'number', isOptional: true },
+            { name: 'producto_bonificado_id', type: 'number', isOptional: true },
+          ],
+        }),
+        addColumns({
+          table: 'detalle_pedidos',
+          columns: [
+            { name: 'cantidad_bonificada', type: 'number' },
+            { name: 'promocion_id', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

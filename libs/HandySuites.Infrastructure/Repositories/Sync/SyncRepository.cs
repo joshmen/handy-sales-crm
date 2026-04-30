@@ -371,6 +371,7 @@ public class SyncRepository : ISyncRepository
                             Impuesto = lineImpuesto,
                             Total = lineTotal,
                             Notas = detalleDto.Notas,
+                            CantidadBonificada = detalleDto.CantidadBonificada,
                             CreadoEn = DateTime.UtcNow,
                             CreadoPor = userId,
                             Version = 1
@@ -436,6 +437,7 @@ public class SyncRepository : ISyncRepository
                     Impuesto = lineImpuesto,
                     Total = lineTotal,
                     Notas = detalleDto.Notas,
+                    CantidadBonificada = detalleDto.CantidadBonificada,
                     CreadoEn = DateTime.UtcNow,
                     CreadoPor = userId,
                     Version = 1
@@ -784,6 +786,10 @@ public class SyncRepository : ISyncRepository
             ProductoIds = p.PromocionProductos.Select(pp => pp.ProductoId).ToList(),
             Activo = p.Activo,
             ActualizadoEn = p.ActualizadoEn,
+            TipoPromocion = (int)p.TipoPromocion,
+            CantidadCompra = p.CantidadCompra,
+            CantidadBonificada = p.CantidadBonificada,
+            ProductoBonificadoId = p.ProductoBonificadoId,
         }).OrderBy(p => p.Id).ToListAsync();
     }
 

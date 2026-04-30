@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 17,
+  version: 18,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -120,6 +120,10 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v18 (2026-04-29): BOGO. Cantidad regalada en esta línea (default 0).
+        // Promo aplicada — server valida y recalcula al push.
+        { name: 'cantidad_bonificada', type: 'number' },
+        { name: 'promocion_id', type: 'number', isOptional: true },
       ],
     }),
 
@@ -319,6 +323,13 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v18 (2026-04-29): BOGO acumulativo.
+        // tipo_promocion: 0=Porcentaje (legacy), 1=Regalo (compra N regala M).
+        // producto_bonificado_id null = mismo producto. !=null = producto distinto.
+        { name: 'tipo_promocion', type: 'number' },
+        { name: 'cantidad_compra', type: 'number', isOptional: true },
+        { name: 'cantidad_bonificada', type: 'number', isOptional: true },
+        { name: 'producto_bonificado_id', type: 'number', isOptional: true },
       ],
     }),
 

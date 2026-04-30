@@ -289,6 +289,9 @@ function extractDetallesPedido(
         version: d.version ?? 1,
         created_at: toTimestamp(pedido.actualizadoEn),
         updated_at: toTimestamp(pedido.actualizadoEn),
+        // v18 BOGO
+        cantidad_bonificada: d.cantidadBonificada ?? 0,
+        promocion_id: d.promocionId ?? null,
       };
 
       // All as 'updated' — sendCreatedAsUpdated: true handles creation
@@ -555,6 +558,11 @@ function mapPromocionToRaw(p: any): DirtyRaw {
     version: 1,
     created_at: toTimestamp(p.actualizadoEn),
     updated_at: toTimestamp(p.actualizadoEn),
+    // v18 BOGO
+    tipo_promocion: p.tipoPromocion ?? 0,
+    cantidad_compra: p.cantidadCompra ?? null,
+    cantidad_bonificada: p.cantidadBonificada ?? null,
+    producto_bonificado_id: p.productoBonificadoId ?? null,
   };
 }
 

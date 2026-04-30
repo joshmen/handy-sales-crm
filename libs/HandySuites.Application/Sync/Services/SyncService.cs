@@ -454,7 +454,8 @@ public class SyncService
                     Impuesto = d.Impuesto,
                     Total = d.Total,
                     Notas = d.Notas,
-                    Version = d.Version
+                    Version = d.Version,
+                    CantidadBonificada = d.CantidadBonificada,
                 }).ToList()
             }).ToList();
             response.Summary.PedidosPulled = pedidos.Count;

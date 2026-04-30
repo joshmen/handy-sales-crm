@@ -335,6 +335,10 @@ public class SyncDetallePedidoDto
     public string? Nombre { get; set; }
     public string? Notas { get; set; }
     public long Version { get; set; }
+    /// <summary>BOGO: cantidad regalada de esta línea. Default 0.</summary>
+    public decimal CantidadBonificada { get; set; }
+    /// <summary>BOGO: promo aplicada en esta línea (server valida y recalcula).</summary>
+    public int? PromocionId { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Update;
 }
 
@@ -545,6 +549,12 @@ public class SyncPromocionDto
     public List<int> ProductoIds { get; set; } = new();
     public bool Activo { get; set; } = true;
     public DateTime? ActualizadoEn { get; set; }
+    /// <summary>0=Porcentaje, 1=Regalo (BOGO).</summary>
+    public int TipoPromocion { get; set; }
+    public decimal? CantidadCompra { get; set; }
+    public decimal? CantidadBonificada { get; set; }
+    /// <summary>NULL = mismo producto. !=null = regala otro producto distinto.</summary>
+    public int? ProductoBonificadoId { get; set; }
 }
 
 public enum SyncOperation
