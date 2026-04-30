@@ -803,8 +803,16 @@ public class HandySuitesDbContext : DbContext
         modelBuilder.Entity<DescuentoPorCantidad>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
-        modelBuilder.Entity<Promocion>()
-            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+        modelBuilder.Entity<Promocion>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            // FK al producto bonificado (NULL = mismo producto). ON DELETE SET NULL para
+            // que borrar un producto no rompa la promoción — queda como mismo-producto.
+            entity.HasOne(p => p.ProductoBonificado)
+                .WithMany()
+                .HasForeignKey(p => p.ProductoBonificadoId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
         // PromocionProducto: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<PromocionProducto>()

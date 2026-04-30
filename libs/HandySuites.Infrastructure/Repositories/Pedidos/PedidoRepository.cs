@@ -1,6 +1,7 @@
 using HandySuites.Application.Common;
 using HandySuites.Application.Pedidos.DTOs;
 using HandySuites.Application.Pedidos.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -78,6 +79,44 @@ public class PedidoRepository : IPedidoRepository
         // Resolver tasas: las referenciadas por productos + la default del tenant.
         var (tasas, defaultTasa) = await LoadTasasAsync(productos.Values, tenantId);
 
+        // Resolver promociones BOGO referenciadas por las líneas (tipo Regalo activas).
+        // Solo cargamos las explícitamente referenciadas por el cliente — el server
+        // valida vigencia y elegibilidad antes de aplicar.
+        var promocionIds = dto.Detalles
+            .Where(d => d.PromocionId.HasValue)
+            .Select(d => d.PromocionId!.Value)
+            .Distinct()
+            .ToList();
+        var promociones = promocionIds.Count > 0
+            ? await _db.Promociones
+                .Include(p => p.PromocionProductos)
+                .Where(p => promocionIds.Contains(p.Id) && p.TenantId == tenantId)
+                .ToDictionaryAsync(p => p.Id)
+            : new Dictionary<int, Promocion>();
+
+        // Cargar productos bonificados (FK distinto al producto comprado) para que
+        // ResolveBogo pueda armar la línea Y sin un round-trip por cada item.
+        var bonificadoIds = promociones.Values
+            .Where(p => p.ProductoBonificadoId.HasValue)
+            .Select(p => p.ProductoBonificadoId!.Value)
+            .Distinct()
+            .Where(id => !productos.ContainsKey(id))
+            .ToList();
+        if (bonificadoIds.Count > 0)
+        {
+            var bonificados = await _db.Productos
+                .Where(p => bonificadoIds.Contains(p.Id))
+                .ToListAsync();
+            foreach (var b in bonificados) productos[b.Id] = b;
+
+            // Refrescar tasas para incluir las del producto bonificado.
+            (tasas, defaultTasa) = await LoadTasasAsync(productos.Values, tenantId);
+        }
+
+        // Productos a auto-insertar como líneas Y (regalo de producto distinto).
+        var lineasBonificacionDistinta = new List<DetallePedido>();
+        var ahora = DateTime.UtcNow;
+
         // Agregar detalles
         foreach (var detalleDto in dto.Detalles)
         {
@@ -86,6 +125,19 @@ public class PedidoRepository : IPedidoRepository
             var precioUnitario = detalleDto.PrecioUnitario ?? producto.PrecioBase;
             var descuento = detalleDto.Descuento ?? 0;
             var tasa = ResolveTasa(producto, tasas, defaultTasa);
+
+            // Resolver promoción Regalo (BOGO) — recalcular en server, no confiar en cliente.
+            var (cantidadBonificada, lineaY) = ResolveBogo(
+                detalleDto, producto, promociones, productos, tasas, defaultTasa, pedido.Id, ahora);
+
+            // Caso mismo producto: descuento equivale al valor de las unidades regaladas.
+            // Caso producto distinto: la línea X mantiene cantidadBonificada=0; el regalo
+            // se materializa en `lineaY` que se insertará al final.
+            if (cantidadBonificada > 0 && lineaY == null)
+            {
+                descuento = precioUnitario * cantidadBonificada;
+            }
+
             var amounts = LineAmountCalculator.Calculate(
                 precioUnitario, detalleDto.Cantidad, descuento, tasa, producto.PrecioIncluyeIva);
 
@@ -101,12 +153,20 @@ public class PedidoRepository : IPedidoRepository
                 Impuesto = amounts.Impuesto,
                 Total = amounts.Total,
                 Notas = detalleDto.Notas,
+                CantidadBonificada = lineaY == null ? cantidadBonificada : 0m,
                 Activo = true,
-                CreadoEn = DateTime.UtcNow
+                CreadoEn = ahora
             };
 
             _db.DetallePedidos.Add(detalle);
+
+            if (lineaY != null) lineasBonificacionDistinta.Add(lineaY);
         }
+
+        // Auto-insertar líneas Y (producto bonificado distinto). Cada una entra con
+        // descuento 100% y CantidadBonificada == Cantidad para que el CFDI sepa.
+        foreach (var lineaY in lineasBonificacionDistinta)
+            _db.DetallePedidos.Add(lineaY);
 
         await _db.SaveChangesAsync();
 
@@ -730,5 +790,57 @@ public class PedidoRepository : IPedidoRepository
         if (producto.TasaImpuestoId.HasValue && tasas.TryGetValue(producto.TasaImpuestoId.Value, out var t))
             return t;
         return defaultTasa;
+    }
+
+    /// <summary>
+    /// Resuelve la bonificación BOGO para una línea usando <see cref="BogoCalculator"/>
+    /// (pure function) y construye la línea Y si el regalo es producto distinto.
+    /// </summary>
+    private (decimal cantidadBonificada, DetallePedido? lineaY) ResolveBogo(
+        DetallePedidoCreateDto detalleDto,
+        Producto producto,
+        Dictionary<int, Promocion> promociones,
+        Dictionary<int, Producto> productos,
+        Dictionary<int, decimal> tasas,
+        decimal defaultTasa,
+        int pedidoId,
+        DateTime ahora)
+    {
+        if (!detalleDto.PromocionId.HasValue) return (0m, null);
+        if (!promociones.TryGetValue(detalleDto.PromocionId.Value, out var promo)) return (0m, null);
+
+        var bogo = BogoCalculator.Calculate(detalleDto.Cantidad, promo, producto.Id, ahora);
+        if (bogo.CantidadBonificada == 0m) return (0m, null);
+
+        // Mismo producto → descuento equivalente en la línea X.
+        if (!bogo.ProductoBonificadoId.HasValue) return (bogo.CantidadBonificada, null);
+
+        // Producto distinto → línea Y separada con descuento 100%.
+        if (!productos.TryGetValue(bogo.ProductoBonificadoId.Value, out var productoY))
+            return (0m, null); // producto bonificado no existe → silencio seguro
+
+        var precioY = productoY.PrecioBase;
+        var tasaY = ResolveTasa(productoY, tasas, defaultTasa);
+        var descuentoY = precioY * bogo.CantidadBonificada;
+        var amountsY = LineAmountCalculator.Calculate(precioY, bogo.CantidadBonificada, descuentoY, tasaY, productoY.PrecioIncluyeIva);
+
+        var lineaY = new DetallePedido
+        {
+            PedidoId = pedidoId,
+            ProductoId = productoY.Id,
+            Cantidad = bogo.CantidadBonificada,
+            PrecioUnitario = precioY,
+            Descuento = descuentoY,
+            PorcentajeDescuento = 0,
+            Subtotal = amountsY.Subtotal,
+            Impuesto = amountsY.Impuesto,
+            Total = amountsY.Total,
+            Notas = $"Regalo por promoción: {promo.Nombre}",
+            CantidadBonificada = bogo.CantidadBonificada,
+            Activo = true,
+            CreadoEn = ahora
+        };
+
+        return (0m, lineaY);
     }
 }

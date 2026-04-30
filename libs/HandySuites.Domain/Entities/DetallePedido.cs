@@ -42,6 +42,17 @@ public class DetallePedido : AuditableEntity
     [Column("notas")]
     public string? Notas { get; set; }
 
+    /// <summary>
+    /// Cantidad de unidades de esta línea que fueron regaladas por una promoción
+    /// tipo Regalo (BOGO). Cuando &gt; 0, `Descuento` ya incluye el monto equivalente
+    /// (cantidadBonificada * precioUnitario). Drives CFDI XML — cuando es mismo
+    /// producto, se emite con descuento; cuando es producto distinto, esta línea
+    /// es la auto-insertada por el servidor con descuento 100%.
+    /// Default 0 → pedidos pre-feature no se afectan.
+    /// </summary>
+    [Column("cantidad_bonificada")]
+    public decimal CantidadBonificada { get; set; } = 0m;
+
     // Navigation properties
     public Pedido Pedido { get; set; } = null!;
     public Producto Producto { get; set; } = null!;
