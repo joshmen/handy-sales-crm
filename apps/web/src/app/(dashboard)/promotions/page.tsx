@@ -350,11 +350,16 @@ export default function PromotionsPage() {
 
   const handleOpenEdit = (promo: PromocionDto) => {
     setEditingPromotion(promo);
+    // Aceptamos tanto string ("Porcentaje"/"Regalo" — JsonStringEnumConverter)
+    // como int (0/1 — fallback legacy si el converter no aplica).
+    const tp = promo.tipoPromocion as unknown;
+    const tipoStr: 'Porcentaje' | 'Regalo' =
+      tp === 1 || tp === '1' || tp === 'Regalo' ? 'Regalo' : 'Porcentaje';
     resetForm({
       nombre: promo.nombre,
       descripcion: promo.descripcion || '',
       productoIds: promo.productos?.map(p => p.productoId) || [],
-      tipoPromocion: (promo.tipoPromocion as 'Porcentaje' | 'Regalo') ?? 'Porcentaje',
+      tipoPromocion: tipoStr,
       descuentoPorcentaje: promo.descuentoPorcentaje,
       cantidadCompra: promo.cantidadCompra ?? null,
       cantidadBonificada: promo.cantidadBonificada ?? null,
