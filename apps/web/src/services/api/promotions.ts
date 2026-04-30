@@ -9,6 +9,8 @@ export interface PromocionProductoInfo {
   productoCodigo?: string;
 }
 
+export type TipoPromocion = 'Porcentaje' | 'Regalo';
+
 export interface PromocionDto {
   id: number;
   nombre: string;
@@ -18,6 +20,11 @@ export interface PromocionDto {
   fechaFin: string;
   activo: boolean;
   productos: PromocionProductoInfo[];
+  tipoPromocion?: TipoPromocion;
+  cantidadCompra?: number | null;
+  cantidadBonificada?: number | null;
+  productoBonificadoId?: number | null;
+  productoBonificadoNombre?: string | null;
 }
 
 export interface PromocionCreateRequest {
@@ -27,6 +34,10 @@ export interface PromocionCreateRequest {
   descuentoPorcentaje: number;
   fechaInicio: string;
   fechaFin: string;
+  tipoPromocion?: TipoPromocion;
+  cantidadCompra?: number;
+  cantidadBonificada?: number;
+  productoBonificadoId?: number;
 }
 
 // ============ SERVICIO ============
