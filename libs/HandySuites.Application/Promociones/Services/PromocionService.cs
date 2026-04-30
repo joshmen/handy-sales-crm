@@ -1,5 +1,6 @@
 using HandySuites.Application.Promociones.DTOs;
 using HandySuites.Application.Promociones.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Shared.Multitenancy;
 
 namespace HandySuites.Application.Promociones.Services;
@@ -23,24 +24,19 @@ public class PromocionService
 
     public async Task<int> CrearPromocionAsync(PromocionCreateDto dto)
     {
-        if (await _repo.ExisteNombreAsync(dto.Nombre, _tenant.TenantId))
-            throw new InvalidOperationException("Ya existe una promoción con ese nombre.");
-
-        if (dto.FechaFin <= dto.FechaInicio)
-            throw new InvalidOperationException("La fecha de fin debe ser posterior a la fecha de inicio.");
-
-        if (dto.ProductoIds.Count == 0)
-            throw new InvalidOperationException("Debe seleccionar al menos un producto.");
-
-        await ValidarProductosExistenAsync(dto.ProductoIds, _tenant.TenantId);
-        await ValidarTraslapeAsync(dto.ProductoIds, dto.FechaInicio, dto.FechaFin, _tenant.TenantId);
-
+        await ValidarBaseAsync(dto, excludeId: null);
         return await _repo.CrearAsync(dto, _tenant.TenantId);
     }
 
     public async Task<bool> ActualizarPromocionAsync(int id, PromocionCreateDto dto)
     {
-        if (await _repo.ExisteNombreAsync(dto.Nombre, _tenant.TenantId, id))
+        await ValidarBaseAsync(dto, excludeId: id);
+        return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
+    }
+
+    private async Task ValidarBaseAsync(PromocionCreateDto dto, int? excludeId)
+    {
+        if (await _repo.ExisteNombreAsync(dto.Nombre, _tenant.TenantId, excludeId))
             throw new InvalidOperationException("Ya existe una promoción con ese nombre.");
 
         if (dto.FechaFin <= dto.FechaInicio)
@@ -49,10 +45,45 @@ public class PromocionService
         if (dto.ProductoIds.Count == 0)
             throw new InvalidOperationException("Debe seleccionar al menos un producto.");
 
-        await ValidarProductosExistenAsync(dto.ProductoIds, _tenant.TenantId);
-        await ValidarTraslapeAsync(dto.ProductoIds, dto.FechaInicio, dto.FechaFin, _tenant.TenantId, id);
+        ValidarTipo(dto);
 
-        return await _repo.ActualizarAsync(id, dto, _tenant.TenantId);
+        await ValidarProductosExistenAsync(dto.ProductoIds, _tenant.TenantId);
+
+        // El traslape también incluye el producto bonificado (cuando el regalo es
+        // distinto al comprado). Sin esto, dos promos podrían bonificar el mismo
+        // producto Y simultáneamente y aplicar 2 regalos al mismo SKU.
+        var idsTraslape = new List<int>(dto.ProductoIds);
+        if (dto.TipoPromocion == TipoPromocion.Regalo
+            && dto.ProductoBonificadoId.HasValue
+            && !idsTraslape.Contains(dto.ProductoBonificadoId.Value))
+        {
+            idsTraslape.Add(dto.ProductoBonificadoId.Value);
+        }
+        await ValidarTraslapeAsync(idsTraslape, dto.FechaInicio, dto.FechaFin, _tenant.TenantId, excludeId);
+    }
+
+    private static void ValidarTipo(PromocionCreateDto dto)
+    {
+        if (dto.TipoPromocion == TipoPromocion.Porcentaje)
+        {
+            if (dto.DescuentoPorcentaje <= 0 || dto.DescuentoPorcentaje > 100)
+                throw new InvalidOperationException("El descuento debe ser un porcentaje entre 1 y 100.");
+            return;
+        }
+
+        // TipoPromocion.Regalo (BOGO)
+        if (!dto.CantidadCompra.HasValue || dto.CantidadCompra.Value <= 0)
+            throw new InvalidOperationException("La cantidad de compra debe ser mayor a 0.");
+        if (!dto.CantidadBonificada.HasValue || dto.CantidadBonificada.Value <= 0)
+            throw new InvalidOperationException("La cantidad bonificada debe ser mayor a 0.");
+        if (dto.ProductoBonificadoId.HasValue && dto.ProductoIds.Contains(dto.ProductoBonificadoId.Value))
+        {
+            // Si el producto bonificado es uno de los productos de la promo, debería
+            // ser "mismo producto" (ProductoBonificadoId = null). Evitamos ambigüedad.
+            throw new InvalidOperationException(
+                "El producto bonificado no puede ser uno de los productos de la promoción. " +
+                "Para regalar el mismo producto, deja 'producto bonificado' vacío.");
+        }
     }
 
     private async Task ValidarProductosExistenAsync(List<int> productoIds, int tenantId)
