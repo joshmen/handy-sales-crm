@@ -44,6 +44,7 @@ import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { usePaginatedUsers, useCreateUser, useUpdateUser } from '@/hooks/useUsers';
 import { roleService, Role } from '@/services/api/roleService';
 import { usersService, type UsuarioUbicacion, type User as ApiUser } from '@/services/api/users';
+import { teamLocationService, type UltimaUbicacionVendedor, type EventoGpsDelDia } from '@/services/api/teamLocation';
 import { zoneService } from '@/services/api/zones';
 import { UserRole, UserStatus, type User } from '@/types/users';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -530,6 +531,12 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [cleaningExpired, setCleaningExpired] = useState(false);
 
+  // GPS activity (Fase A — lee de ClienteVisitas + RutasDetalle + Pedidos existentes)
+  const [gpsByUser, setGpsByUser] = useState<Map<number, UltimaUbicacionVendedor>>(new Map());
+  const [gpsActivityUser, setGpsActivityUser] = useState<User | null>(null);
+  const [gpsEventos, setGpsEventos] = useState<EventoGpsDelDia[]>([]);
+  const [gpsEventosLoading, setGpsEventosLoading] = useState(false);
+
   // Form states
   const [formData, setFormData] = useState({
     email: '',
@@ -692,8 +699,45 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
 
   const handleRefresh = () => {
     loadUsers();
+    loadGpsActivity();
     toast.success(t('listUpdated'));
   };
+
+  // Carga la última actividad GPS de todos los vendedores. Solo lee data ya
+  // existente en ClienteVisitas + RutasDetalle + Pedidos (Fase A — sin tracking
+  // continuo todavía). Polling cada 60s para que admins vean actualizaciones.
+  const loadGpsActivity = useCallback(async () => {
+    try {
+      const data = await teamLocationService.getUltimasUbicaciones();
+      const map = new Map<number, UltimaUbicacionVendedor>();
+      for (const u of data) map.set(u.usuarioId, u);
+      setGpsByUser(map);
+    } catch {
+      // Silent fail — no es crítico para listar usuarios
+    }
+  }, []);
+
+  useEffect(() => {
+    loadGpsActivity();
+    const interval = setInterval(loadGpsActivity, 60000);
+    return () => clearInterval(interval);
+  }, [loadGpsActivity]);
+
+  // Cuando se selecciona un vendedor para ver su recorrido del día
+  const handleOpenGpsActivity = useCallback(async (user: User) => {
+    setGpsActivityUser(user);
+    setGpsEventosLoading(true);
+    setGpsEventos([]);
+    try {
+      const usuarioId = parseInt(user.id, 10);
+      const data = await teamLocationService.getActividadDelDia(usuarioId);
+      setGpsEventos(data.eventos);
+    } catch {
+      setGpsEventos([]);
+    } finally {
+      setGpsEventosLoading(false);
+    }
+  }, []);
 
   const visibleIds = displayUsers.map(u => parseInt(u.id));
 
@@ -948,6 +992,27 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     </span>
   );
 
+  const renderGpsActivity = (user: User) => {
+    const ub = gpsByUser.get(parseInt(user.id, 10));
+    if (!ub) {
+      return <span className="text-[11px] text-muted-foreground">{t('gpsActivity.noGpsToday')}</span>;
+    }
+    const fuenteIcon = ub.fuente === 'visita' ? '👥' : ub.fuente === 'parada' ? '🛣️' : '🛒';
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleOpenGpsActivity(user);
+        }}
+        className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+        title={`${ub.fuente} · ${ub.clienteNombre ?? ''}`}
+      >
+        <span>{fuenteIcon}</span>
+        <span>{formatTimeAgo(ub.ultimaActividad)}</span>
+      </button>
+    );
+  };
+
   const renderSesionCount = (user: User) => {
     const count = getSessionCount(user.id);
     return (
@@ -1001,6 +1066,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     { key: 'role', label: t('columnRole'), width: 120, sortable: true, cellRenderer: renderRolBadge },
     { key: 'status', label: t('columnStatus'), width: 100, cellRenderer: renderStatusBadge },
     { key: 'lastLogin', label: t('columnLastActivity'), width: 150, sortable: true, hiddenOnMobile: true, cellRenderer: renderLastActivity },
+    { key: 'gpsActivity', label: t('gpsActivity.lastGpsActivity'), width: 170, hiddenOnMobile: true, cellRenderer: renderGpsActivity },
     { key: 'sesiones', label: t('columnSessions'), width: 90, align: 'center', hiddenOnMobile: true, cellRenderer: renderSesionCount },
     { key: 'actions', label: '', width: 80, align: 'right', cellRenderer: renderActions },
   ];
@@ -1312,6 +1378,71 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                         </button>
                       </div>
                     )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Drawer>
+
+      {/* GPS Activity Drawer (Fase A) */}
+      <Drawer
+        isOpen={gpsActivityUser !== null}
+        onClose={() => { setGpsActivityUser(null); setGpsEventos([]); }}
+        title={gpsActivityUser ? t('gpsActivity.activityOf', { name: gpsActivityUser.name }) : t('gpsActivity.activity')}
+        icon={<MapPin className="w-5 h-5 text-emerald-600" />}
+        width="lg"
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-xs text-muted-foreground">{t('gpsActivity.faseAHint')}</p>
+          {gpsEventosLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+              <span className="ml-2 text-sm text-muted-foreground">{t('gpsActivity.loading')}</span>
+            </div>
+          ) : gpsEventos.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <MapPin className="w-12 h-12 text-muted-foreground/60 mb-3" />
+              <p className="text-sm font-medium">{t('gpsActivity.noEvents')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('gpsActivity.noEventsDesc')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {gpsEventos.map((ev, i) => {
+                const cuando = new Date(ev.cuando);
+                const hora = cuando.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                const tipoIcon = ev.tipo === 'visita' ? '👥' : ev.tipo === 'parada' ? '🛣️' : '🛒';
+                const tipoLabel = ev.tipo === 'visita' ? t('gpsActivity.visitTo') : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop') : t('gpsActivity.orderCreated');
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${ev.latitud},${ev.longitud}`;
+                return (
+                  <div key={`${ev.tipo}-${ev.referenciaId}-${i}`} className="border border-border-subtle rounded-lg p-3 bg-surface-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base" aria-hidden>{tipoIcon}</span>
+                          <span className="text-sm font-medium text-foreground">{hora}</span>
+                          <span className="text-[11px] uppercase tracking-wide text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                            {tipoLabel}
+                          </span>
+                        </div>
+                        {ev.clienteNombre && (
+                          <p className="text-sm text-foreground/80 mt-1 truncate">{ev.clienteNombre}</p>
+                        )}
+                        <p className="text-[11px] text-muted-foreground mt-1 font-mono">
+                          {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)}
+                          {ev.distanciaCliente != null && ` · ${Math.round(ev.distanciaCliente)}m del cliente`}
+                        </p>
+                      </div>
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-medium text-blue-600 hover:text-blue-800 px-2 py-1 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
+                      >
+                        {t('gpsActivity.openInMaps')} ↗
+                      </a>
+                    </div>
                   </div>
                 );
               })}

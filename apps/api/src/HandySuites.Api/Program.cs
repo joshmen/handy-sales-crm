@@ -197,6 +197,7 @@ app.MapDeviceSessionEndpoints();
 app.MapRutaVendedorEndpoints();
 app.MapSyncEndpoints();
 app.MapUsuarioEndpoints();
+app.MapTeamLocationEndpoints();
 app.MapProductoEndpoints();
 app.MapInventarioEndpoints();
 app.MapMovimientoInventarioEndpoints();
