@@ -38,6 +38,7 @@ public class HandySuitesDbContext : DbContext
     public DbSet<CategoriaProducto> CategoriasProductos => Set<CategoriaProducto>();
     public DbSet<UnidadMedida> UnidadesMedida => Set<UnidadMedida>();
     public DbSet<TasaImpuesto> TasasImpuesto => Set<TasaImpuesto>();
+    public DbSet<UbicacionVendedor> UbicacionesVendedor => Set<UbicacionVendedor>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Role> Roles => Set<Role>();
@@ -838,6 +839,19 @@ public class HandySuitesDbContext : DbContext
             entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
             entity.Property(e => e.Tasa).HasPrecision(7, 6); // 0.160000 — 6 decimales para SAT compat
             entity.HasIndex(e => new { e.TenantId, e.EsDefault }); // optimiza lookup de tasa default per-tenant
+        });
+
+        modelBuilder.Entity<UbicacionVendedor>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            entity.HasIndex(e => new { e.TenantId, e.UsuarioId, e.CapturadoEn })
+                  .HasDatabaseName("IX_UbicacionesVendedor_tenant_usuario_capturado");
+            entity.HasIndex(e => new { e.TenantId, e.DiaServicio, e.UsuarioId })
+                  .HasDatabaseName("IX_UbicacionesVendedor_tenant_dia_usuario");
+            entity.HasOne(e => e.Usuario)
+                  .WithMany()
+                  .HasForeignKey(e => e.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Producto.TasaImpuesto FK: SetNull al borrar — productos con tasa borrada

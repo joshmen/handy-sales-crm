@@ -51,6 +51,14 @@ public class SubscriptionPlan
     [Column("incluye_facturacion")]
     public bool IncluyeFacturacion { get; set; }
 
+    /// <summary>
+    /// Tracking GPS continuo de vendedores (ping cada 15min + por evento).
+    /// Mobile envía pings solo si el plan del tenant lo incluye; backend
+    /// rechaza con 403 si el plan no aplica. Por costo de DB y bandwidth.
+    /// </summary>
+    [Column("incluye_tracking_vendedor")]
+    public bool IncluyeTrackingVendedor { get; set; }
+
     [Column("max_facturas_mes")]
     public int MaxFacturasMes { get; set; }
 
