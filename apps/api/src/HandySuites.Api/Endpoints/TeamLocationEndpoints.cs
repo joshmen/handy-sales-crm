@@ -1,3 +1,4 @@
+using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
@@ -34,7 +35,9 @@ public static class TeamLocationEndpoints
 
     private static async Task<IResult> GetUltimasUbicaciones(
         [FromServices] HandySuitesDbContext db,
-        [FromServices] ICurrentTenant currentUser)
+        [FromServices] ICurrentTenant currentUser,
+        [FromServices] IUbicacionVendedorRepository ubicacionRepo,
+        [FromServices] ISubscriptionFeatureGuard featureGuard)
     {
         var role = currentUser.Role;
         if (role != RoleNames.Admin && role != RoleNames.Supervisor && role != RoleNames.SuperAdmin)
@@ -42,14 +45,14 @@ public static class TeamLocationEndpoints
 
         var tenantId = currentUser.TenantId;
 
-        // Combinamos 3 fuentes de GPS existentes y nos quedamos con el evento más
-        // reciente por usuario:
-        //   - ClienteVisitas: latitud_inicio/longitud_inicio (check-in del vendedor)
-        //   - RutasDetalle: latitud/longitud (cuando se llegó a parada)
-        //   - Pedidos: latitud/longitud (cuando se creó el pedido en sitio)
-        // No hay tracking continuo todavía (eso es Fase B). Si un vendedor no
-        // disparó ninguno de estos eventos hoy, el resultado tiene
-        // ultima_actividad = null y la UI muestra "—".
+        // Si el plan incluye tracking_vendedor, los pings de UbicacionesVendedor
+        // son la fuente PRIMARIA — más frecuentes y confiables que los 3 legacy.
+        // Aún así fusionamos con las 3 fuentes legacy por si el plan se activó
+        // recientemente y todavía no hay pings (la columna tendrá fallback).
+        var hasTracking = await featureGuard.HasFeatureAsync(tenantId, "tracking_vendedor");
+        var ubicacionesVendedor = hasTracking
+            ? await ubicacionRepo.ObtenerUltimasAsync(tenantId)
+            : new List<Application.Tracking.DTOs.UltimaUbicacionDto>();
 
         var visitas = db.ClienteVisitas.AsNoTracking()
             .Where(v => v.TenantId == tenantId
@@ -80,10 +83,34 @@ public static class TeamLocationEndpoints
 
         var union = visitas.Concat(paradas).Concat(pedidos);
 
-        var data = await union
+        var legacyData = await union
             .GroupBy(x => x.UsuarioId)
             .Select(g => g.OrderByDescending(x => x.Cuando).First())
             .ToListAsync();
+
+        // Fusión: pings de UbicacionVendedor tienen prioridad si son más recientes
+        // que el evento legacy del mismo vendedor.
+        var byUsuario = legacyData.ToDictionary(d => d.UsuarioId);
+        foreach (var ping in ubicacionesVendedor)
+        {
+            var existing = byUsuario.GetValueOrDefault(ping.UsuarioId);
+            if (existing == null || ping.CapturadoEn > existing.Cuando)
+            {
+                byUsuario[ping.UsuarioId] = new RawActivity(
+                    ping.UsuarioId,
+                    (double)ping.Latitud,
+                    (double)ping.Longitud,
+                    ping.CapturadoEn,
+                    ping.Tipo == TipoPingUbicacion.Checkpoint ? "checkpoint"
+                        : ping.Tipo == TipoPingUbicacion.Venta ? "pedido"
+                        : ping.Tipo == TipoPingUbicacion.Visita ? "visita"
+                        : ping.Tipo == TipoPingUbicacion.Cobro ? "cobro"
+                        : "tracking",
+                    null,
+                    0);
+            }
+        }
+        var data = byUsuario.Values.ToList();
 
         var usuarioIds = data.Select(d => d.UsuarioId).ToList();
         var usuarios = await db.Usuarios.AsNoTracking()
@@ -117,7 +144,9 @@ public static class TeamLocationEndpoints
         int id,
         [FromQuery] DateTime? dia,
         [FromServices] HandySuitesDbContext db,
-        [FromServices] ICurrentTenant currentUser)
+        [FromServices] ICurrentTenant currentUser,
+        [FromServices] IUbicacionVendedorRepository ubicacionRepo,
+        [FromServices] ISubscriptionFeatureGuard featureGuard)
     {
         var role = currentUser.Role;
         if (role != RoleNames.Admin && role != RoleNames.Supervisor && role != RoleNames.SuperAdmin)
@@ -186,7 +215,29 @@ public static class TeamLocationEndpoints
                 referenciaId = (int?)p.Id,
             }).ToListAsync();
 
-        var todos = visitas.Concat(paradas).Concat(pedidos)
+        // Pings de tracking continuo (Fase B). Solo si el plan tiene la feature.
+        var hasTracking = await featureGuard.HasFeatureAsync(tenantId, "tracking_vendedor");
+        var trackingPings = hasTracking
+            ? (await ubicacionRepo.ObtenerRecorridoDelDiaAsync(tenantId, id, DateOnly.FromDateTime(fecha)))
+                .Select(p => new
+                {
+                    tipo = p.Tipo == TipoPingUbicacion.Checkpoint ? "checkpoint"
+                        : p.Tipo == TipoPingUbicacion.Venta ? "pedido"
+                        : p.Tipo == TipoPingUbicacion.Visita ? "visita"
+                        : p.Tipo == TipoPingUbicacion.Cobro ? "cobro"
+                        : p.Tipo == TipoPingUbicacion.InicioRuta ? "inicio_ruta"
+                        : "fin_ruta",
+                    cuando = p.CapturadoEn,
+                    latitud = (double)p.Latitud,
+                    longitud = (double)p.Longitud,
+                    clienteId = (int?)null,
+                    clienteNombre = (string?)null,
+                    distanciaCliente = (double?)null,
+                    referenciaId = p.ReferenciaId,
+                }).ToList()
+            : new List<dynamic>().Select(_ => new { tipo = "", cuando = DateTime.MinValue, latitud = 0d, longitud = 0d, clienteId = (int?)null, clienteNombre = (string?)null, distanciaCliente = (double?)null, referenciaId = (int?)null }).ToList();
+
+        var todos = visitas.Concat(paradas).Concat(pedidos).Concat(trackingPings)
             .OrderBy(x => x.cuando)
             .ToList();
 
