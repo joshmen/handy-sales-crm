@@ -29,9 +29,14 @@ interface Props {
   hideForActiveRoute?: boolean;
 }
 
+// Banner "Reanudar" solo aparece si el cierre por horario fue reciente.
+// Después de N horas, ya no es relevante (el vendedor se desconectó hace mucho).
+const AUTO_STOP_BANNER_TTL_MS = 4 * 60 * 60 * 1000; // 4 horas
+
 export function JornadaCard({ hideForActiveRoute }: Props) {
   const activa = useJornadaStore(s => s.activa);
   const iniciadaEn = useJornadaStore(s => s.iniciadaEn);
+  const terminadaEn = useJornadaStore(s => s.terminadaEn);
   const motivoStop = useJornadaStore(s => s.motivoStop);
   const iniciarJornada = useJornadaStore(s => s.iniciarJornada);
   const finalizarJornada = useJornadaStore(s => s.finalizarJornada);
@@ -44,8 +49,10 @@ export function JornadaCard({ hideForActiveRoute }: Props) {
   const horaFin = empresa?.horaFinJornada;
   const fueraHorario = horaInicio && horaFin && !enHorarioLaboral(horaInicio, horaFin);
 
-  // Variante: jornada cerrada automáticamente por horario laboral.
-  if (!activa && motivoStop === 'horario') {
+  // Variante: jornada cerrada automáticamente por horario laboral hace poco.
+  // Pasadas N horas, volvemos al card normal "Iniciar jornada".
+  const cierreReciente = terminadaEn != null && Date.now() - terminadaEn < AUTO_STOP_BANNER_TTL_MS;
+  if (!activa && motivoStop === 'horario' && cierreReciente) {
     return (
       <View style={styles.wrapper}>
         <View style={styles.autoStopBanner}>

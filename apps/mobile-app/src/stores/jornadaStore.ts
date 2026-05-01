@@ -29,6 +29,7 @@ export type JornadaMotivoFin = 'manual' | 'ruta' | 'horario';
 interface JornadaState {
   activa: boolean;
   iniciadaEn: number | null;        // ms epoch del inicio actual
+  terminadaEn: number | null;       // ms epoch del último fin (para banner reanudar)
   motivoStop: JornadaMotivoFin | null;
   hidratada: boolean;               // true tras leer AsyncStorage en mount
 
@@ -39,11 +40,12 @@ interface JornadaState {
   _reset: () => void;
 }
 
-const STORAGE_KEY = 'jornada_state_v1';
+const STORAGE_KEY = 'jornada_state_v2';
 
 interface PersistedState {
   activa: boolean;
   iniciadaEn: number | null;
+  terminadaEn: number | null;
   motivoStop: JornadaMotivoFin | null;
 }
 
@@ -58,6 +60,7 @@ async function persist(state: PersistedState): Promise<void> {
 export const useJornadaStore = create<JornadaState>((set, get) => ({
   activa: false,
   iniciadaEn: null,
+  terminadaEn: null,
   motivoStop: null,
   hidratada: false,
 
@@ -69,6 +72,7 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
         set({
           activa: !!parsed.activa,
           iniciadaEn: parsed.iniciadaEn ?? null,
+          terminadaEn: parsed.terminadaEn ?? null,
           motivoStop: parsed.motivoStop ?? null,
           hidratada: true,
         });
@@ -81,8 +85,8 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
   iniciarJornada: async (motivo) => {
     if (get().activa) return; // idempotente
     const ahora = Date.now();
-    set({ activa: true, iniciadaEn: ahora, motivoStop: null });
-    await persist({ activa: true, iniciadaEn: ahora, motivoStop: null });
+    set({ activa: true, iniciadaEn: ahora, terminadaEn: null, motivoStop: null });
+    await persist({ activa: true, iniciadaEn: ahora, terminadaEn: null, motivoStop: null });
 
     // Disparar el ping correspondiente. Importamos lazy para evitar ciclos.
     // Importante: arrancamos el timer ANTES del ping. El bridge useEffect
@@ -104,8 +108,9 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
 
   finalizarJornada: async (motivo) => {
     if (!get().activa) return; // idempotente
-    set({ activa: false, iniciadaEn: null, motivoStop: motivo });
-    await persist({ activa: false, iniciadaEn: null, motivoStop: motivo });
+    const ahora = Date.now();
+    set({ activa: false, iniciadaEn: null, terminadaEn: ahora, motivoStop: motivo });
+    await persist({ activa: false, iniciadaEn: null, terminadaEn: ahora, motivoStop: motivo });
 
     try {
       const mod = await import('@/services/locationCheckpoint');
@@ -123,7 +128,7 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
   },
 
   _reset: () => {
-    set({ activa: false, iniciadaEn: null, motivoStop: null, hidratada: true });
+    set({ activa: false, iniciadaEn: null, terminadaEn: null, motivoStop: null, hidratada: true });
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
   },
 }));
