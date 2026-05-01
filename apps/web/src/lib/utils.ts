@@ -72,10 +72,17 @@ export function formatTimeAgo(dateStr: string): string {
   try { const s = JSON.parse(localStorage.getItem('company_settings') || '{}'); lang = s.language || 'es'; } catch { /* */ }
   const en = lang === 'en'
 
+  // Defensa: si el backend manda DateTime con Kind=Unspecified queda sin sufijo
+  // 'Z' y `new Date(str)` lo interpreta como hora LOCAL → diff negativo →
+  // chip atascado en "hace unos segundos". Forzamos UTC si no hay marker de TZ.
+  const normalized = dateStr && !/[Zz]$|[+-]\d{2}:?\d{2}$/.test(dateStr)
+    ? dateStr + 'Z'
+    : dateStr;
+
   const now = new Date()
-  const date = new Date(dateStr)
+  const date = new Date(normalized)
   const diffMs = now.getTime() - date.getTime()
-  const diffSec = Math.floor(diffMs / 1000)
+  const diffSec = Math.max(0, Math.floor(diffMs / 1000))
   const diffMin = Math.floor(diffSec / 60)
   const diffHr = Math.floor(diffMin / 60)
   const diffDays = Math.floor(diffHr / 24)
