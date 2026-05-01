@@ -26,7 +26,7 @@ if (_ErrorUtils?.getGlobalHandler) {
 }
 
 import { QueryProvider } from '@/providers/QueryProvider';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useJornadaStore } from '@/stores';
 import { AnimatedSplash } from '@/components/shared/AnimatedSplash';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
@@ -62,15 +62,37 @@ function SessionRefreshBridge() {
 }
 
 /**
- * Inicia el timer de checkpoint GPS (cada 15min) cuando hay sesión activa.
- * El servicio se autoinhibe si el plan del tenant no incluye tracking.
- * Limpia el timer al logout para evitar pings post-sesión.
+ * Inicia/para el timer de checkpoint GPS según el estado de jornada del
+ * vendedor (no según `isAuthenticated`). Esto evita trackear al vendedor
+ * fuera de su jornada laboral cuando ya volvió a casa.
+ *
+ * El estado vive en `useJornadaStore`. Otros componentes lo cambian:
+ *  - Botón "Iniciar/Finalizar jornada" en home
+ *  - `useRutaJornadaWatcher` cuando la ruta arranca/completa
+ *  - `useHorarioLaboralWatcher` cuando se sale del rango configurado
+ *  - `recordPing(Venta|Cobro|Visita)` auto-inicia si está inactiva
  */
 function LocationTrackingBridge() {
   const { isAuthenticated, user } = useAuthStore();
+  const jornadaActiva = useJornadaStore(s => s.activa);
+  const hidratada = useJornadaStore(s => s.hidratada);
+  const hidratarDesdeStorage = useJornadaStore(s => s.hidratarDesdeStorage);
+
+  // Hidratar el estado persistido al primer mount tras login
+  useEffect(() => {
+    if (isAuthenticated && !hidratada) {
+      hidratarDesdeStorage();
+    }
+  }, [isAuthenticated, hidratada, hidratarDesdeStorage]);
+
+  // Arranca/para el timer cuando jornada cambia
   useEffect(() => {
     let cancelled = false;
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !user?.id || !jornadaActiva) {
+      // Cualquier transición a "no debería estar tracking" → stop
+      import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
+      return;
+    }
     const usuarioId = Number(user.id);
     if (!usuarioId) return;
     import('@/services/locationCheckpoint').then(mod => {
@@ -81,7 +103,7 @@ function LocationTrackingBridge() {
       cancelled = true;
       import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
     };
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, jornadaActiva]);
   return null;
 }
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)

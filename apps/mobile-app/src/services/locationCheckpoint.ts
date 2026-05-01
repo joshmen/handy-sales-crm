@@ -27,6 +27,9 @@ export const TipoPing = {
   InicioRuta: 3,
   FinRuta: 4,
   Checkpoint: 5,
+  InicioJornada: 6,
+  FinJornada: 7,
+  StopAutomatico: 8,
 } as const;
 export type TipoPingValue = typeof TipoPing[keyof typeof TipoPing];
 
@@ -74,7 +77,26 @@ export async function recordPing(
   tipo: TipoPingValue,
   referenciaId: number | null = null,
 ): Promise<void> {
-  if (trackingDisabled || currentUsuarioId == null) return;
+  if (trackingDisabled) return;
+
+  // Auto-start de jornada implícito: si el vendedor confirma una venta/cobro/
+  // visita SIN haber presionado "Iniciar jornada", arrancamos la jornada
+  // automáticamente. Cubre el caso "vendedor abre app y empieza a vender".
+  // No aplica para tipos que ya son de inicio/fin/checkpoint para evitar loops.
+  const esEventoNegocio = tipo === TipoPing.Venta || tipo === TipoPing.Cobro || tipo === TipoPing.Visita;
+  if (esEventoNegocio) {
+    try {
+      const { useJornadaStore } = await import('@/stores/jornadaStore');
+      const jornada = useJornadaStore.getState();
+      if (!jornada.activa) {
+        // Esto inicia jornada + dispara ping InicioJornada + arranca timer.
+        // Después continúa el ping del evento negocio normal.
+        await jornada.iniciarJornada('manual');
+      }
+    } catch { /* ignore */ }
+  }
+
+  if (currentUsuarioId == null) return;
 
   try {
     let { status } = await Location.getForegroundPermissionsAsync();
@@ -139,7 +161,7 @@ export async function flushPendingAsync(): Promise<{ pushed: number; disabled: b
     latitud: p.latitud,
     longitud: p.longitud,
     precisionMetros: p.precisionMetros,
-    tipo: ['Venta', 'Cobro', 'Visita', 'InicioRuta', 'FinRuta', 'Checkpoint'][p.tipo] ?? 'Checkpoint',
+    tipo: ['Venta', 'Cobro', 'Visita', 'InicioRuta', 'FinRuta', 'Checkpoint', 'InicioJornada', 'FinJornada', 'StopAutomatico'][p.tipo] ?? 'Checkpoint',
     capturadoEn: p.capturadoEn.toISOString(),
     referenciaId: p.referenciaId,
   }));
