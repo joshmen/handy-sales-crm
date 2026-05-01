@@ -149,6 +149,7 @@ builder.Services.AddHostedService<ScheduledActionProcessor>();
 builder.Services.AddHostedService<SubscriptionMonitor>();
 builder.Services.AddHostedService<AutomationEngine>();
 builder.Services.AddHostedService<MaterializedViewRefresher>();
+builder.Services.AddHostedService<HandySuites.Api.Jobs.AggregateLocationHistoryJob>();
 
 var app = builder.Build();
 
@@ -197,6 +198,7 @@ app.MapDeviceSessionEndpoints();
 app.MapRutaVendedorEndpoints();
 app.MapSyncEndpoints();
 app.MapUsuarioEndpoints();
+app.MapTeamLocationEndpoints();
 app.MapProductoEndpoints();
 app.MapInventarioEndpoints();
 app.MapMovimientoInventarioEndpoints();
@@ -210,6 +212,7 @@ app.MapFamiliasProductosEndpoints();
 app.MapCategoriaClienteEndpoints();
 app.MapCategoriaProductoEndpoints();
 app.MapUnidadMedidaEndpoints();
+app.MapTasaImpuestoEndpoints();
 app.MapRoleEndpoints();
 app.MapCompanyEndpoints(app.Services.GetRequiredService<ILogger<Program>>());
 app.MapDatosEmpresaEndpoints();

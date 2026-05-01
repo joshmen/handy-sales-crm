@@ -60,4 +60,12 @@ public class OrderLineForInvoice
     public decimal Subtotal { get; set; }
     public decimal Impuesto { get; set; }
     public decimal Total { get; set; }
+    /// <summary>
+    /// BOGO: cantidad regalada de esta línea. Cuando &gt; 0, `Descuento` ya
+    /// incluye el monto equivalente (cantidadBonificada * precioUnitario)
+    /// para que el CFDI invariant `Importe - Descuento >= 0` se cumpla.
+    /// El builder XML usa este campo para anotar la línea con "(incluye N regalo)".
+    /// </summary>
+    public decimal CantidadBonificada { get; set; }
+    public string? Notas { get; set; }
 }

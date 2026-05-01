@@ -21,4 +21,11 @@ export default class Producto extends Model {
   @field('version') version!: number;
   @readonly @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
+  /// v16 (2026-04-29): catálogo de impuestos
+  /// Si true (default), `precio` ya incluye IVA — es lo que el cliente paga.
+  @field('precio_incluye_iva') precioIncluyeIva!: boolean;
+  /// FK al server_id de TasaImpuesto. Null = usa default tenant.
+  @field('tasa_impuesto_id') tasaImpuestoId!: number | null;
+  /// Tasa decimal denormalizada (0.16 = 16%). Resuelta en backend.
+  @field('tasa') tasa!: number;
 }

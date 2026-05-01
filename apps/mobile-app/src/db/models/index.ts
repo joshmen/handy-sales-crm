@@ -12,6 +12,15 @@ import Attachment from './Attachment';
 import PrecioPorProducto from './PrecioPorProducto';
 import Descuento from './Descuento';
 import Promocion from './Promocion';
+import Zona from './Zona';
+import CategoriaCliente from './CategoriaCliente';
+import CategoriaProducto from './CategoriaProducto';
+import FamiliaProducto from './FamiliaProducto';
+import ListaPrecio from './ListaPrecio';
+import Usuario from './Usuario';
+import MetaVendedor from './MetaVendedor';
+import DatosEmpresa from './DatosEmpresa';
+import UbicacionVendedor from './UbicacionVendedor';
 
 export {
   Cliente,
@@ -28,6 +37,15 @@ export {
   PrecioPorProducto,
   Descuento,
   Promocion,
+  Zona,
+  CategoriaCliente,
+  CategoriaProducto,
+  FamiliaProducto,
+  ListaPrecio,
+  Usuario,
+  MetaVendedor,
+  DatosEmpresa,
+  UbicacionVendedor,
 };
 
 export const modelClasses = [
@@ -45,4 +63,13 @@ export const modelClasses = [
   PrecioPorProducto,
   Descuento,
   Promocion,
+  Zona,
+  CategoriaCliente,
+  CategoriaProducto,
+  FamiliaProducto,
+  ListaPrecio,
+  Usuario,
+  MetaVendedor,
+  DatosEmpresa,
+  UbicacionVendedor,
 ];

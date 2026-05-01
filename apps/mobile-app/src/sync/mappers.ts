@@ -19,6 +19,18 @@ interface ServerChanges {
   preciosPorProducto?: any[];
   descuentos?: any[];
   promociones?: any[];
+  // Catalogos basicos read-only (v14, 2026-04-28)
+  zonas?: any[];
+  categoriasCliente?: any[];
+  categoriasProducto?: any[];
+  familiasProducto?: any[];
+  // Catalogos criticos faltantes (v15, 2026-04-28 audit)
+  listasPrecio?: any[];
+  usuarios?: any[];
+  metasVendedor?: any[];
+  datosEmpresa?: any | null;
+  // Catálogo de impuestos (v16, 2026-04-29)
+  tasasImpuesto?: any[];
 }
 
 // Build a map of server_id → local WDB id for deduplication.
@@ -96,6 +108,19 @@ export async function mapPullToWatermelon(
     precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
     descuentos: splitByOperation(server.descuentos, isFirstSync, mapDescuentoToRaw),
     promociones: splitByOperation(server.promociones, isFirstSync, mapPromocionToRaw),
+    // Catalogos basicos (read-only en mobile, persisten en WDB para offline real)
+    zonas: splitByOperation(server.zonas, isFirstSync, mapZonaCatalogoToRaw),
+    categorias_cliente: splitByOperation(server.categoriasCliente, isFirstSync, mapCategoriaClienteToRaw),
+    categorias_producto: splitByOperation(server.categoriasProducto, isFirstSync, mapCategoriaProductoToRaw),
+    familias_producto: splitByOperation(server.familiasProducto, isFirstSync, mapFamiliaProductoToRaw),
+    // tasas_impuesto eliminado en v17 (2026-04-29). Cálculo usa producto.tasa denormalizada.
+    // Catalogos criticos (v15, 2026-04-28 audit)
+    listas_precio: splitByOperation(server.listasPrecio, isFirstSync, mapListaPrecioToRaw),
+    usuarios: splitByOperation(server.usuarios, isFirstSync, mapUsuarioToRaw),
+    metas_vendedor: splitByOperation(server.metasVendedor, isFirstSync, mapMetaVendedorToRaw),
+    datos_empresa: server.datosEmpresa
+      ? { created: [], updated: [mapDatosEmpresaToRaw(server.datosEmpresa)], deleted: [] }
+      : { created: [], updated: [], deleted: [] },
     attachments: { created: [], updated: [], deleted: [] },
   };
 }
@@ -196,6 +221,11 @@ function mapProductoToRaw(p: any): DirtyRaw {
     version: p.version ?? 1,
     created_at: toTimestamp(p.actualizadoEn),
     updated_at: toTimestamp(p.actualizadoEn),
+    // v16: catálogo de impuestos. Tasa denormalizada para evitar lookup offline
+    // al calcular ticket. Default 0.16 si el backend aún no envía el campo.
+    precio_incluye_iva: p.precioIncluyeIva ?? true,
+    tasa_impuesto_id: p.tasaImpuestoId ?? null,
+    tasa: p.tasa ?? 0.16,
   };
 }
 
@@ -259,6 +289,9 @@ function extractDetallesPedido(
         version: d.version ?? 1,
         created_at: toTimestamp(pedido.actualizadoEn),
         updated_at: toTimestamp(pedido.actualizadoEn),
+        // v18 BOGO
+        cantidad_bonificada: d.cantidadBonificada ?? 0,
+        promocion_id: d.promocionId ?? null,
       };
 
       // All as 'updated' — sendCreatedAsUpdated: true handles creation
@@ -525,6 +558,100 @@ function mapPromocionToRaw(p: any): DirtyRaw {
     version: 1,
     created_at: toTimestamp(p.actualizadoEn),
     updated_at: toTimestamp(p.actualizadoEn),
+    // v18 BOGO
+    tipo_promocion: p.tipoPromocion ?? 0,
+    cantidad_compra: p.cantidadCompra ?? null,
+    cantidad_bonificada: p.cantidadBonificada ?? null,
+    producto_bonificado_id: p.productoBonificadoId ?? null,
+  };
+}
+
+// ── Catalogos basicos (read-only). Mismo shape para los 4 ──
+
+function mapCatalogoBasicoToRaw(c: any): DirtyRaw {
+  return {
+    id: String(c.id),
+    server_id: c.id,
+    tenant_id: c.tenantId ?? 0,
+    nombre: c.nombre || '',
+    descripcion: c.descripcion ?? null,
+    activo: c.activo ?? true,
+    created_at: toTimestamp(c.actualizadoEn),
+    updated_at: toTimestamp(c.actualizadoEn),
+  };
+}
+
+function mapZonaCatalogoToRaw(z: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(z);
+}
+
+function mapCategoriaClienteToRaw(c: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(c);
+}
+
+function mapCategoriaProductoToRaw(c: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(c);
+}
+
+function mapFamiliaProductoToRaw(f: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(f);
+}
+
+function mapListaPrecioToRaw(l: any): DirtyRaw {
+  return mapCatalogoBasicoToRaw(l);
+}
+
+function mapUsuarioToRaw(u: any): DirtyRaw {
+  return {
+    id: String(u.id),
+    server_id: u.id,
+    tenant_id: u.tenantId ?? 0,
+    nombre: u.nombre || '',
+    email: u.email || '',
+    rol: u.rol ?? null,
+    avatar_url: u.avatarUrl ?? null,
+    activo: u.activo ?? true,
+    created_at: toTimestamp(u.actualizadoEn),
+    updated_at: toTimestamp(u.actualizadoEn),
+  };
+}
+
+function mapMetaVendedorToRaw(m: any): DirtyRaw {
+  return {
+    id: String(m.id),
+    server_id: m.id,
+    tenant_id: m.tenantId ?? 0,
+    usuario_id: m.usuarioId ?? 0,
+    tipo: m.tipo || 'ventas',
+    periodo: m.periodo || 'mensual',
+    monto: m.monto ?? 0,
+    fecha_inicio: toTimestamp(m.fechaInicio),
+    fecha_fin: toTimestamp(m.fechaFin),
+    activo: m.activo ?? true,
+    created_at: toTimestamp(m.actualizadoEn),
+    updated_at: toTimestamp(m.actualizadoEn),
+  };
+}
+
+function mapDatosEmpresaToRaw(d: any): DirtyRaw {
+  return {
+    id: String(d.id),
+    server_id: d.id,
+    tenant_id: d.tenantId ?? 0,
+    razon_social: d.razonSocial ?? null,
+    identificador_fiscal: d.identificadorFiscal ?? null,
+    tipo_identificador_fiscal: d.tipoIdentificadorFiscal ?? 'RFC',
+    telefono: d.telefono ?? null,
+    email: d.email ?? null,
+    contacto: d.contacto ?? null,
+    direccion: d.direccion ?? null,
+    ciudad: d.ciudad ?? null,
+    estado: d.estado ?? null,
+    codigo_postal: d.codigoPostal ?? null,
+    sitio_web: d.sitioWeb ?? null,
+    descripcion: d.descripcion ?? null,
+    created_at: toTimestamp(d.actualizadoEn),
+    updated_at: toTimestamp(d.actualizadoEn),
   };
 }
 

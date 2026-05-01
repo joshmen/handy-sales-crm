@@ -40,6 +40,17 @@ public interface ISyncRepository
     Task<List<SyncDescuentoDto>> GetDescuentosAsync(int tenantId, DateTime? since);
     Task<List<SyncPromocionDto>> GetPromocionesAsync(int tenantId, DateTime? since);
 
+    // Pull - Catalogos basicos (read-only on mobile, sync incluye soft-deleted via IsDeleted)
+    Task<List<Zona>> GetZonasModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<CategoriaCliente>> GetCategoriasClienteModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<CategoriaProducto>> GetCategoriasProductoModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<FamiliaProducto>> GetFamiliasProductoModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<TasaImpuesto>> GetTasasImpuestoModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<ListaPrecio>> GetListasPrecioModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<Usuario>> GetUsuariosModifiedSinceAsync(int tenantId, DateTime? since);
+    Task<List<MetaVendedor>> GetMetasVendedorModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
+    Task<HandySuites.Domain.Entities.DatosEmpresa?> GetDatosEmpresaIfModifiedAsync(int tenantId, DateTime? since);
+
     // Batch operations
     Task<int> SaveChangesAsync();
 }

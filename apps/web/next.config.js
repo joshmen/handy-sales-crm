@@ -72,6 +72,18 @@ const nextConfig = {
     ];
   },
 
+  // Redirects: el flujo viejo /routes/manage/[id]/load se unificó en
+  // /routes/[id]?tab=carga (tabs internas, ver refactor route-detail-tabs).
+  async redirects() {
+    return [
+      {
+        source: "/routes/manage/:id/load",
+        destination: "/routes/:id?tab=carga",
+        permanent: true,
+      },
+    ];
+  },
+
   // Headers de seguridad
   async headers() {
     return [

@@ -23,4 +23,15 @@ public class DetallePedidoCreateDto
     public decimal? Descuento { get; set; }
     public decimal? PorcentajeDescuento { get; set; }
     public string? Notas { get; set; }
+    /// <summary>
+    /// Sugerencia del cliente sobre cuántas unidades son regaladas (BOGO). El servidor
+    /// valida y recalcula contra la promoción real para evitar manipulación —
+    /// nunca confía ciegamente en este valor. Default 0.
+    /// </summary>
+    public decimal? CantidadBonificada { get; set; }
+    /// <summary>
+    /// FK opcional a la promoción aplicada. Si presente, el servidor verifica
+    /// vigencia y elegibilidad del producto antes de bonificar.
+    /// </summary>
+    public int? PromocionId { get; set; }
 }

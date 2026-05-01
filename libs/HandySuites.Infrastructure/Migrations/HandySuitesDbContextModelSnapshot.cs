@@ -2179,6 +2179,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("cantidad");
 
+                    b.Property<decimal>("CantidadBonificada")
+                        .HasColumnType("numeric")
+                        .HasColumnName("cantidad_bonificada");
+
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
@@ -3554,6 +3558,14 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("precio_base");
 
+                    b.Property<bool>("PrecioIncluyeIva")
+                        .HasColumnType("boolean")
+                        .HasColumnName("precio_incluye_iva");
+
+                    b.Property<int?>("TasaImpuestoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tasa_impuesto_id");
+
                     b.Property<int>("TenantId")
                         .HasColumnType("integer")
                         .HasColumnName("tenant_id");
@@ -3572,6 +3584,8 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("CategoraId");
 
                     b.HasIndex("FamiliaId");
+
+                    b.HasIndex("TasaImpuestoId");
 
                     b.HasIndex("TenantId");
 
@@ -3600,6 +3614,14 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<string>("ActualizadoPor")
                         .HasColumnType("text")
                         .HasColumnName("actualizado_por");
+
+                    b.Property<decimal?>("CantidadBonificada")
+                        .HasColumnType("numeric")
+                        .HasColumnName("cantidad_bonificada");
+
+                    b.Property<decimal?>("CantidadCompra")
+                        .HasColumnType("numeric")
+                        .HasColumnName("cantidad_compra");
 
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp without time zone")
@@ -3639,9 +3661,17 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("nombre");
 
+                    b.Property<int?>("ProductoBonificadoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("producto_bonificado_id");
+
                     b.Property<int>("TenantId")
                         .HasColumnType("integer")
                         .HasColumnName("tenant_id");
+
+                    b.Property<int>("TipoPromocion")
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo_promocion");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -3649,6 +3679,8 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductoBonificadoId");
 
                     b.HasIndex("TenantId");
 
@@ -4427,6 +4459,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("incluye_soporte_prioritario");
 
+                    b.Property<bool>("IncluyeTrackingVendedor")
+                        .HasColumnType("boolean")
+                        .HasColumnName("incluye_tracking_vendedor");
+
                     b.Property<int>("MaxClientesPorMes")
                         .HasColumnType("integer")
                         .HasColumnName("max_clientes_por_mes");
@@ -4479,6 +4515,73 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("subscription_plans");
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.TasaImpuesto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("creado_por");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<bool>("EsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("es_default");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre");
+
+                    b.Property<decimal>("Tasa")
+                        .HasPrecision(7, 6)
+                        .HasColumnType("numeric(7,6)")
+                        .HasColumnName("tasa");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EsDefault");
+
+                    b.ToTable("TasasImpuesto");
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.Tenant", b =>
@@ -4918,6 +5021,97 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("TwoFactorRecoveryCodes", (string)null);
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.UbicacionVendedor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<DateTime>("CapturadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("capturado_en");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("creado_por");
+
+                    b.Property<DateOnly>("DiaServicio")
+                        .HasColumnType("date")
+                        .HasColumnName("dia_servicio");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<decimal>("Latitud")
+                        .HasColumnType("numeric(9,6)")
+                        .HasColumnName("latitud");
+
+                    b.Property<decimal>("Longitud")
+                        .HasColumnType("numeric(9,6)")
+                        .HasColumnName("longitud");
+
+                    b.Property<decimal?>("PrecisionMetros")
+                        .HasColumnType("numeric")
+                        .HasColumnName("precision_metros");
+
+                    b.Property<int?>("ReferenciaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("referencia_id");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.HasIndex("TenantId", "DiaServicio", "UsuarioId")
+                        .HasDatabaseName("IX_UbicacionesVendedor_tenant_dia_usuario");
+
+                    b.HasIndex("TenantId", "UsuarioId", "CapturadoEn")
+                        .HasDatabaseName("IX_UbicacionesVendedor_tenant_usuario_capturado");
+
+                    b.ToTable("UbicacionesVendedor");
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.Usuario", b =>
@@ -5797,6 +5991,11 @@ namespace HandySuites.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("HandySuites.Domain.Entities.TasaImpuesto", "TasaImpuesto")
+                        .WithMany("Productos")
+                        .HasForeignKey("TasaImpuestoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
                         .WithMany("Productos")
                         .HasForeignKey("TenantId")
@@ -5813,6 +6012,8 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.Navigation("Familia");
 
+                    b.Navigation("TasaImpuesto");
+
                     b.Navigation("Tenant");
 
                     b.Navigation("UnidadMedida");
@@ -5820,11 +6021,18 @@ namespace HandySuites.Infrastructure.Migrations
 
             modelBuilder.Entity("HandySuites.Domain.Entities.Promocion", b =>
                 {
+                    b.HasOne("HandySuites.Domain.Entities.Producto", "ProductoBonificado")
+                        .WithMany()
+                        .HasForeignKey("ProductoBonificadoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
                         .WithMany("Promociones")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ProductoBonificado");
 
                     b.Navigation("Tenant");
                 });
@@ -6025,6 +6233,17 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Navigation("Zona");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.TasaImpuesto", b =>
+                {
+                    b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.Tenant", b =>
                 {
                     b.HasOne("HandySuites.Domain.Entities.SubscriptionPlan", "SubscriptionPlan")
@@ -6103,6 +6322,25 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.UbicacionVendedor", b =>
+                {
+                    b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HandySuites.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
 
                     b.Navigation("Usuario");
                 });
@@ -6231,6 +6469,11 @@ namespace HandySuites.Infrastructure.Migrations
             modelBuilder.Entity("HandySuites.Domain.Entities.SubscriptionPlan", b =>
                 {
                     b.Navigation("Tenants");
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.TasaImpuesto", b =>
+                {
+                    b.Navigation("Productos");
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.Tenant", b =>

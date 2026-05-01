@@ -36,6 +36,18 @@ public class SyncChangesDto
     public List<SyncPrecioPorProductoDto>? PreciosPorProducto { get; set; }
     public List<SyncDescuentoDto>? Descuentos { get; set; }
     public List<SyncPromocionDto>? Promociones { get; set; }
+
+    // Catalogos read-only (mobile no los push, solo pull). Antes vivian en React Query
+    // memory y se perdian al cerrar sesion — el vendedor tenia que re-loguear para
+    // tenerlos. Ahora se persisten en WatermelonDB para offline real (2026-04-28).
+    public List<SyncZonaCatalogoDto>? Zonas { get; set; }
+    public List<SyncCategoriaClienteCatalogoDto>? CategoriasCliente { get; set; }
+    public List<SyncCategoriaProductoCatalogoDto>? CategoriasProducto { get; set; }
+    public List<SyncFamiliaProductoCatalogoDto>? FamiliasProducto { get; set; }
+    public List<SyncListaPrecioCatalogoDto>? ListasPrecio { get; set; }
+    public List<SyncUsuarioCatalogoDto>? Usuarios { get; set; }
+    public List<SyncMetaVendedorCatalogoDto>? MetasVendedor { get; set; }
+    public SyncDatosEmpresaCatalogoDto? DatosEmpresa { get; set; }
 }
 
 /// <summary>
@@ -95,6 +107,122 @@ public class SyncSummaryDto
     public int RutaDetallesPushed { get; set; }
     public int ConflictsFound { get; set; }
     public int ErrorsFound { get; set; }
+    public int ZonasPulled { get; set; }
+    public int CategoriasClientePulled { get; set; }
+    public int CategoriasProductoPulled { get; set; }
+    public int FamiliasProductoPulled { get; set; }
+    public int ListasPrecioPulled { get; set; }
+    public int UsuariosPulled { get; set; }
+    public int MetasVendedorPulled { get; set; }
+    public bool DatosEmpresaPulled { get; set; }
+}
+
+/// <summary>
+/// Catalogo read-only sincronizado al WatermelonDB local. Mobile NO push estos.
+/// </summary>
+public class SyncZonaCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncCategoriaClienteCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncCategoriaProductoCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncFamiliaProductoCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncListaPrecioCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncUsuarioCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Rol { get; set; }
+    public string? AvatarUrl { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+public class SyncMetaVendedorCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public int UsuarioId { get; set; }
+    public string Tipo { get; set; } = string.Empty;
+    public string Periodo { get; set; } = string.Empty;
+    public decimal Monto { get; set; }
+    public DateTime FechaInicio { get; set; }
+    public DateTime FechaFin { get; set; }
+    public bool Activo { get; set; }
+    public DateTime ActualizadoEn { get; set; }
+    public bool IsDeleted { get; set; }
+}
+
+/// <summary>
+/// DatosEmpresa es 1:1 por tenant — siempre 1 sola entrada o ninguna.
+/// </summary>
+public class SyncDatosEmpresaCatalogoDto
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string? RazonSocial { get; set; }
+    public string? IdentificadorFiscal { get; set; }
+    public string TipoIdentificadorFiscal { get; set; } = "RFC";
+    public string? Telefono { get; set; }
+    public string? Email { get; set; }
+    public string? Contacto { get; set; }
+    public string? Direccion { get; set; }
+    public string? Ciudad { get; set; }
+    public string? Estado { get; set; }
+    public string? CodigoPostal { get; set; }
+    public string? SitioWeb { get; set; }
+    public string? Descripcion { get; set; }
+    public DateTime ActualizadoEn { get; set; }
 }
 
 public class SyncConflictDto
@@ -207,6 +335,10 @@ public class SyncDetallePedidoDto
     public string? Nombre { get; set; }
     public string? Notas { get; set; }
     public long Version { get; set; }
+    /// <summary>BOGO: cantidad regalada de esta línea. Default 0.</summary>
+    public decimal CantidadBonificada { get; set; }
+    /// <summary>BOGO: promo aplicada en esta línea (server valida y recalcula).</summary>
+    public int? PromocionId { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Update;
 }
 
@@ -348,6 +480,12 @@ public class SyncProductoDto
     public bool Activo { get; set; } = true;
     public long Version { get; set; }
     public DateTime? ActualizadoEn { get; set; }
+    /// <summary>Si true, Precio ya incluye el impuesto. 2026-04-28.</summary>
+    public bool PrecioIncluyeIva { get; set; } = true;
+    /// <summary>FK a TasaImpuesto. Mobile usa Tasa denormalizada para evitar lookup.</summary>
+    public int? TasaImpuestoId { get; set; }
+    /// <summary>Tasa decimal denormalizada (0.16, 0.08, 0.00). Resuelta en backend desde TasaImpuesto o default tenant.</summary>
+    public decimal Tasa { get; set; } = 0.16m;
     // Products are read-only from mobile, no Operation needed
 }
 
@@ -411,6 +549,12 @@ public class SyncPromocionDto
     public List<int> ProductoIds { get; set; } = new();
     public bool Activo { get; set; } = true;
     public DateTime? ActualizadoEn { get; set; }
+    /// <summary>0=Porcentaje, 1=Regalo (BOGO).</summary>
+    public int TipoPromocion { get; set; }
+    public decimal? CantidadCompra { get; set; }
+    public decimal? CantidadBonificada { get; set; }
+    /// <summary>NULL = mismo producto. !=null = regala otro producto distinto.</summary>
+    public int? ProductoBonificadoId { get; set; }
 }
 
 public enum SyncOperation

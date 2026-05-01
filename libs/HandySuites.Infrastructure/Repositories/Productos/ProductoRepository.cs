@@ -36,6 +36,7 @@ public class ProductoRepository : IProductoRepository
     {
         return await _db.Productos
             .AsNoTracking()
+            .Include(p => p.TasaImpuesto)
             .Where(p => p.Id == id && p.TenantId == tenantId)
             .Select(p => new ProductoDto
             {
@@ -48,7 +49,11 @@ public class ProductoRepository : IProductoRepository
                 CategoraId = p.CategoraId,
                 UnidadMedidaId = p.UnidadMedidaId,
                 PrecioBase = p.PrecioBase,
-                Activo = p.Activo
+                Activo = p.Activo,
+                PrecioIncluyeIva = p.PrecioIncluyeIva,
+                TasaImpuestoId = p.TasaImpuestoId,
+                TasaImpuestoNombre = p.TasaImpuesto != null ? p.TasaImpuesto.Nombre : null,
+                TasaImpuestoTasa = p.TasaImpuesto != null ? p.TasaImpuesto.Tasa : (decimal?)null
             })
             .FirstOrDefaultAsync();
     }
@@ -65,6 +70,8 @@ public class ProductoRepository : IProductoRepository
             CategoraId = dto.CategoraId,
             UnidadMedidaId = dto.UnidadMedidaId,
             PrecioBase = dto.PrecioBase,
+            PrecioIncluyeIva = dto.PrecioIncluyeIva ?? true,
+            TasaImpuestoId = dto.TasaImpuestoId,
             CreadoEn = DateTime.UtcNow
         };
 
@@ -87,6 +94,8 @@ public class ProductoRepository : IProductoRepository
         entity.CategoraId = dto.CategoraId;
         entity.UnidadMedidaId = dto.UnidadMedidaId;
         entity.PrecioBase = dto.PrecioBase;
+        if (dto.PrecioIncluyeIva.HasValue) entity.PrecioIncluyeIva = dto.PrecioIncluyeIva.Value;
+        entity.TasaImpuestoId = dto.TasaImpuestoId;
         entity.ActualizadoEn = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -173,7 +182,9 @@ public class ProductoRepository : IProductoRepository
                 PrecioBase = p.PrecioBase,
                 CantidadActual = p.Inventario != null ? p.Inventario.CantidadActual : 0,
                 StockMinimo = p.Inventario != null ? p.Inventario.StockMinimo : 0,
-                Activo = p.Activo
+                Activo = p.Activo,
+                PrecioIncluyeIva = p.PrecioIncluyeIva,
+                TasaImpuestoId = p.TasaImpuestoId
             })
             .ToListAsync();
 

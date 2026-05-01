@@ -373,10 +373,20 @@ public class SyncService
         if (syncAll || entityTypes.Contains("productos", StringComparer.OrdinalIgnoreCase))
         {
             var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since);
-            // Get stock levels for all products
             var stockMap = await _repo.GetStockMapAsync(tenantId);
+
+            // Resolver tasas por producto: lookup de TasaImpuesto FK + default tenant.
+            // Se denormaliza la `tasa` en SyncProductoDto para que mobile no necesite
+            // hacer joins offline al calcular ticket. Reportado 2026-04-28.
+            var allTasas = await _repo.GetTasasImpuestoModifiedSinceAsync(tenantId, null);
+            var tasaMap = allTasas.Where(t => t.Activo).ToDictionary(t => t.Id, t => t.Tasa);
+            var defaultTasa = allTasas.FirstOrDefault(t => t.EsDefault && t.Activo)?.Tasa ?? 0.16m;
+
             response.ServerChanges.Productos = productos.Select(p => {
                 stockMap.TryGetValue(p.Id, out var stock);
+                var tasa = (p.TasaImpuestoId.HasValue && tasaMap.TryGetValue(p.TasaImpuestoId.Value, out var t))
+                    ? t
+                    : defaultTasa;
                 return new SyncProductoDto
                 {
                     Id = p.Id,
@@ -394,7 +404,10 @@ public class SyncService
                     StockMinimo = stock.minimo,
                     Activo = p.Activo,
                     Version = p.Version,
-                    ActualizadoEn = p.ActualizadoEn
+                    ActualizadoEn = p.ActualizadoEn,
+                    PrecioIncluyeIva = p.PrecioIncluyeIva,
+                    TasaImpuestoId = p.TasaImpuestoId,
+                    Tasa = tasa
                 };
             }).ToList();
             response.Summary.ProductosPulled = productos.Count;
@@ -441,7 +454,8 @@ public class SyncService
                     Impuesto = d.Impuesto,
                     Total = d.Total,
                     Notas = d.Notas,
-                    Version = d.Version
+                    Version = d.Version,
+                    CantidadBonificada = d.CantidadBonificada,
                 }).ToList()
             }).ToList();
             response.Summary.PedidosPulled = pedidos.Count;
@@ -601,6 +615,169 @@ public class SyncService
             response.ServerChanges.PreciosPorProducto = await _repo.GetPreciosPorProductoAsync(tenantId, since);
             response.ServerChanges.Descuentos = await _repo.GetDescuentosAsync(tenantId, since);
             response.ServerChanges.Promociones = await _repo.GetPromocionesAsync(tenantId, since);
+        }
+
+        // Pull catalogos basicos (zonas, categorias, familias) — read-only on mobile.
+        // Antes solo se cargaban via /api/mobile/catalogos/* en React Query memory y se
+        // perdian al cerrar sesion. Ahora persisten en WatermelonDB para offline real
+        // (reportado 2026-04-28 — el vendedor tenia que re-loguear cada vez).
+        if (syncAll || entityTypes.Contains("zonas", StringComparer.OrdinalIgnoreCase))
+        {
+            var zonas = await _repo.GetZonasModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.Zonas = zonas.Select(z => new SyncZonaCatalogoDto
+            {
+                Id = z.Id,
+                TenantId = z.TenantId,
+                Nombre = z.Nombre,
+                Descripcion = z.Descripcion,
+                Activo = z.Activo,
+                ActualizadoEn = z.ActualizadoEn ?? z.CreadoEn,
+                IsDeleted = !z.Activo || z.EliminadoEn != null,
+            }).ToList();
+            response.Summary.ZonasPulled = zonas.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("categoriasCliente", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("categorias-cliente", StringComparer.OrdinalIgnoreCase))
+        {
+            var categorias = await _repo.GetCategoriasClienteModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.CategoriasCliente = categorias.Select(c => new SyncCategoriaClienteCatalogoDto
+            {
+                Id = c.Id,
+                TenantId = c.TenantId,
+                Nombre = c.Nombre,
+                Descripcion = c.Descripcion,
+                Activo = c.Activo,
+                ActualizadoEn = c.ActualizadoEn ?? c.CreadoEn,
+                IsDeleted = !c.Activo || c.EliminadoEn != null,
+            }).ToList();
+            response.Summary.CategoriasClientePulled = categorias.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("categoriasProducto", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("categorias-producto", StringComparer.OrdinalIgnoreCase))
+        {
+            var categorias = await _repo.GetCategoriasProductoModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.CategoriasProducto = categorias.Select(c => new SyncCategoriaProductoCatalogoDto
+            {
+                Id = c.Id,
+                TenantId = c.TenantId,
+                Nombre = c.Nombre,
+                Descripcion = c.Descripcion,
+                Activo = c.Activo,
+                ActualizadoEn = c.ActualizadoEn ?? c.CreadoEn,
+                IsDeleted = !c.Activo || c.EliminadoEn != null,
+            }).ToList();
+            response.Summary.CategoriasProductoPulled = categorias.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("familiasProducto", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("familias-producto", StringComparer.OrdinalIgnoreCase))
+        {
+            var familias = await _repo.GetFamiliasProductoModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.FamiliasProducto = familias.Select(f => new SyncFamiliaProductoCatalogoDto
+            {
+                Id = f.Id,
+                TenantId = f.TenantId,
+                Nombre = f.Nombre,
+                Descripcion = f.Descripcion,
+                Activo = f.Activo,
+                ActualizadoEn = f.ActualizadoEn ?? f.CreadoEn,
+                IsDeleted = !f.Activo || f.EliminadoEn != null,
+            }).ToList();
+            response.Summary.FamiliasProductoPulled = familias.Count;
+        }
+
+        // Catálogo `tasasImpuesto` removido del payload de sync (2026-04-29).
+        // Mobile no consulta la tabla — el cálculo de IVA se resuelve con los
+        // campos denormalizados `producto.tasa` y `producto.precioIncluyeIva`
+        // que ya viajan en SyncProductoDto. El backend es la única autoridad
+        // del catálogo; cuando admin cambia una tasa central, el servicio
+        // propaga el valor a Producto.Tasa (cascade) y al próximo sync el
+        // mobile recibe los productos actualizados.
+
+        if (syncAll || entityTypes.Contains("listasPrecio", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("listas-precio", StringComparer.OrdinalIgnoreCase))
+        {
+            var listas = await _repo.GetListasPrecioModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.ListasPrecio = listas.Select(l => new SyncListaPrecioCatalogoDto
+            {
+                Id = l.Id,
+                TenantId = l.TenantId,
+                Nombre = l.Nombre,
+                Descripcion = l.Descripcion,
+                Activo = l.Activo,
+                ActualizadoEn = l.ActualizadoEn ?? l.CreadoEn,
+                IsDeleted = !l.Activo || l.EliminadoEn != null,
+            }).ToList();
+            response.Summary.ListasPrecioPulled = listas.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("usuarios", StringComparer.OrdinalIgnoreCase))
+        {
+            var usuarios = await _repo.GetUsuariosModifiedSinceAsync(tenantId, since);
+            response.ServerChanges.Usuarios = usuarios.Select(u => new SyncUsuarioCatalogoDto
+            {
+                Id = u.Id,
+                TenantId = u.TenantId,
+                Nombre = u.Nombre,
+                Email = u.Email,
+                Rol = u.RolExplicito,
+                AvatarUrl = u.AvatarUrl,
+                Activo = u.Activo,
+                ActualizadoEn = u.ActualizadoEn ?? u.CreadoEn,
+                IsDeleted = !u.Activo || u.EliminadoEn != null,
+            }).ToList();
+            response.Summary.UsuariosPulled = usuarios.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("metas", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("metasVendedor", StringComparer.OrdinalIgnoreCase))
+        {
+            var metas = await _repo.GetMetasVendedorModifiedSinceAsync(tenantId, usuarioId, since);
+            response.ServerChanges.MetasVendedor = metas.Select(m => new SyncMetaVendedorCatalogoDto
+            {
+                Id = m.Id,
+                TenantId = m.TenantId,
+                UsuarioId = m.UsuarioId,
+                Tipo = m.Tipo,
+                Periodo = m.Periodo,
+                Monto = m.Monto,
+                FechaInicio = m.FechaInicio,
+                FechaFin = m.FechaFin,
+                Activo = m.Activo,
+                ActualizadoEn = m.ActualizadoEn ?? m.CreadoEn,
+                IsDeleted = !m.Activo || m.EliminadoEn != null,
+            }).ToList();
+            response.Summary.MetasVendedorPulled = metas.Count;
+        }
+
+        if (syncAll || entityTypes.Contains("datosEmpresa", StringComparer.OrdinalIgnoreCase)
+                   || entityTypes.Contains("empresa", StringComparer.OrdinalIgnoreCase))
+        {
+            var empresa = await _repo.GetDatosEmpresaIfModifiedAsync(tenantId, since);
+            if (empresa != null)
+            {
+                response.ServerChanges.DatosEmpresa = new SyncDatosEmpresaCatalogoDto
+                {
+                    Id = empresa.Id,
+                    TenantId = empresa.TenantId,
+                    RazonSocial = empresa.RazonSocial,
+                    IdentificadorFiscal = empresa.IdentificadorFiscal,
+                    TipoIdentificadorFiscal = empresa.TipoIdentificadorFiscal,
+                    Telefono = empresa.Telefono,
+                    Email = empresa.Email,
+                    Contacto = empresa.Contacto,
+                    Direccion = empresa.Direccion,
+                    Ciudad = empresa.Ciudad,
+                    Estado = empresa.Estado,
+                    CodigoPostal = empresa.CodigoPostal,
+                    SitioWeb = empresa.SitioWeb,
+                    Descripcion = empresa.Descripcion,
+                    ActualizadoEn = empresa.ActualizadoEn ?? empresa.CreadoEn,
+                };
+                response.Summary.DatosEmpresaPulled = true;
+            }
         }
     }
 }

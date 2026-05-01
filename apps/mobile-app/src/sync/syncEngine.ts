@@ -105,6 +105,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
               preciosPorProducto: rawServerChanges.preciosPorProducto,  // Read-only catalogs — already tenant-filtered server-side
               descuentos:         rawServerChanges.descuentos,
               promociones:        rawServerChanges.promociones,
+              // Catalogos basicos (read-only, tenant-filtered server-side)
+              zonas:              rawServerChanges.zonas,
+              categoriasCliente:  rawServerChanges.categoriasCliente,
+              categoriasProducto: rawServerChanges.categoriasProducto,
+              familiasProducto:   rawServerChanges.familiasProducto,
+              // Catalogos criticos (v15)
+              listasPrecio:       rawServerChanges.listasPrecio,
+              usuarios:           rawServerChanges.usuarios,
+              metasVendedor:      rawServerChanges.metasVendedor,
+              datosEmpresa:       rawServerChanges.datosEmpresa,
             }
           : rawServerChanges;
 
@@ -182,6 +192,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       await crashReporter.flushPendingReports();
     } catch {
       // Never block sync for crash report flush
+    }
+
+    // Phase 5: Flush pending GPS pings (Fase B tracking-vendedor)
+    try {
+      const { flushPendingAsync } = await import('@/services/locationCheckpoint');
+      const result = await flushPendingAsync();
+      if (__DEV__ && result.pushed > 0) console.log(`[Sync] Pushed ${result.pushed} GPS pings`);
+      if (__DEV__ && result.disabled) console.log('[Sync] Tracking disabled (plan no aplica)');
+    } catch {
+      // Never block sync for GPS ping flush
     }
 
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };

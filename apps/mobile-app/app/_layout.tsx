@@ -37,6 +37,7 @@ import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
 import { useRealtime } from '@/hooks';
+import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 
 function GlobalPermissionDialog() {
   const { visible, title, message, confirmText, cancelText, handleConfirm, handleCancel } = usePermissionDialogStore();
@@ -46,6 +47,41 @@ function GlobalPermissionDialog() {
 // Mantiene la conexión SignalR mientras hay sesión + cablea eventos a invalidaciones React Query.
 function RealtimeBridge() {
   useRealtime();
+  return null;
+}
+
+/**
+ * Silent refresh on AppState='active' (v16+, 2026-04-29). Cuando el user
+ * vuelve a la app tras estar en background, intenta renovar el token
+ * silenciosamente para evitar el flow de 401 → force-logout transient.
+ * Trabaja junto a JWT TTL 8h en backend (cubre jornada laboral típica).
+ */
+function SessionRefreshBridge() {
+  useSessionRefresh();
+  return null;
+}
+
+/**
+ * Inicia el timer de checkpoint GPS (cada 15min) cuando hay sesión activa.
+ * El servicio se autoinhibe si el plan del tenant no incluye tracking.
+ * Limpia el timer al logout para evitar pings post-sesión.
+ */
+function LocationTrackingBridge() {
+  const { isAuthenticated, user } = useAuthStore();
+  useEffect(() => {
+    let cancelled = false;
+    if (!isAuthenticated || !user?.id) return;
+    const usuarioId = Number(user.id);
+    if (!usuarioId) return;
+    import('@/services/locationCheckpoint').then(mod => {
+      if (cancelled) return;
+      mod.startCheckpointTimer(usuarioId);
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
+    };
+  }, [isAuthenticated, user?.id]);
   return null;
 }
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)
@@ -182,6 +218,8 @@ export default function RootLayout() {
             <StatusBar style={showSplash ? 'light' : 'dark'} />
             <AuthGate onReady={handleAppReady} />
             <RealtimeBridge />
+            <SessionRefreshBridge />
+            <LocationTrackingBridge />
             {showSplash && appReady && (
               <AnimatedSplash
                 onFinish={handleSplashFinish}

@@ -12,6 +12,12 @@ public class ProductoDto
     public int UnidadMedidaId { get; set; }
     public decimal PrecioBase { get; set; }
     public bool Activo { get; set; }
+    /// <summary>Si true, PrecioBase ya incluye el impuesto (es lo que el cliente paga).</summary>
+    public bool PrecioIncluyeIva { get; set; } = true;
+    /// <summary>FK al catálogo TasasImpuesto. Si null, cae al default tenant.</summary>
+    public int? TasaImpuestoId { get; set; }
+    public string? TasaImpuestoNombre { get; set; }
+    public decimal? TasaImpuestoTasa { get; set; }
 }
 
 public class ProductoListaDto
@@ -28,6 +34,8 @@ public class ProductoListaDto
     public decimal CantidadActual { get; set; }
     public decimal StockMinimo { get; set; }
     public bool Activo { get; set; }
+    public bool PrecioIncluyeIva { get; set; } = true;
+    public int? TasaImpuestoId { get; set; }
 }
 
 public class ProductoFiltroDto

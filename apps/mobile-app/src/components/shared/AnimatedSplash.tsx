@@ -163,17 +163,10 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
       } catch { /* non-fatal */ }
       if (!mountedRef.current) return;
 
-      // Catalogos
+      // Catalogos: ya no hace falta cargar via endpoints separados — el sync
+      // delta de la fase anterior trae zonas/categorias/familias y los persiste
+      // en WatermelonDB para offline real (commit 2026-04-28).
       setSyncPhase(5);
-      try {
-        await Promise.allSettled([
-          api.get('/api/mobile/catalogos/zonas'),
-          api.get('/api/mobile/catalogos/categorias-cliente'),
-          api.get('/api/mobile/catalogos/categorias-producto'),
-          api.get('/api/mobile/catalogos/familias-producto'),
-        ]);
-      } catch { /* non-fatal */ }
-      if (!mountedRef.current) return;
 
       // Done!
       setSyncPhase(6);

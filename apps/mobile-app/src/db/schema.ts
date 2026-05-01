@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 13,
+  version: 19,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -69,6 +69,14 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v16 (2026-04-29): catálogo de impuestos. precio_incluye_iva indica si
+        // el `precio` ya tiene IVA dentro (true default — lo que el cliente paga).
+        // tasa_impuesto_id es FK al catálogo TasasImpuesto. tasa es la tasa decimal
+        // denormalizada (resuelta en backend desde TasaImpuesto.Tasa o default tenant)
+        // para que mobile no necesite join offline al calcular ticket.
+        { name: 'precio_incluye_iva', type: 'boolean' },
+        { name: 'tasa_impuesto_id', type: 'number', isOptional: true },
+        { name: 'tasa', type: 'number' },
       ],
     }),
 
@@ -112,6 +120,10 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v18 (2026-04-29): BOGO. Cantidad regalada en esta línea (default 0).
+        // Promo aplicada — server valida y recalcula al push.
+        { name: 'cantidad_bonificada', type: 'number' },
+        { name: 'promocion_id', type: 'number', isOptional: true },
       ],
     }),
 
@@ -311,6 +323,152 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        // v18 (2026-04-29): BOGO acumulativo.
+        // tipo_promocion: 0=Porcentaje (legacy), 1=Regalo (compra N regala M).
+        // producto_bonificado_id null = mismo producto. !=null = producto distinto.
+        { name: 'tipo_promocion', type: 'number' },
+        { name: 'cantidad_compra', type: 'number', isOptional: true },
+        { name: 'cantidad_bonificada', type: 'number', isOptional: true },
+        { name: 'producto_bonificado_id', type: 'number', isOptional: true },
+      ],
+    }),
+
+    // ─── Catalogos basicos read-only (v14, 2026-04-28) ────────
+    // Antes vivian en React Query memory y se perdian al cerrar sesion.
+    // Ahora persisten en WDB para offline real.
+    tableSchema({
+      name: 'zonas',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'categorias_cliente',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'categorias_producto',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'familias_producto',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── v15 (2026-04-28): catálogos críticos faltantes ────────
+    tableSchema({
+      name: 'listas_precio',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'usuarios',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'nombre', type: 'string' },
+        { name: 'email', type: 'string' },
+        { name: 'rol', type: 'string', isOptional: true },
+        { name: 'avatar_url', type: 'string', isOptional: true },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'metas_vendedor',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'usuario_id', type: 'number', isIndexed: true },
+        { name: 'tipo', type: 'string' },
+        { name: 'periodo', type: 'string' },
+        { name: 'monto', type: 'number' },
+        { name: 'fecha_inicio', type: 'number' },
+        { name: 'fecha_fin', type: 'number' },
+        { name: 'activo', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // tasas_impuesto: tabla eliminada en v17 (2026-04-29). El cálculo de IVA
+    // mobile usa solo los campos denormalizados `producto.tasa` y
+    // `producto.precioIncluyeIva`. Backend propaga cambios de tasa central
+    // tocando Producto.ActualizadoEn → SyncProductoDto.Tasa siempre actualizada.
+    // datos_empresa: 1:1 por tenant. Singleton local.
+    tableSchema({
+      name: 'datos_empresa',
+      columns: [
+        { name: 'server_id', type: 'number', isIndexed: true },
+        { name: 'tenant_id', type: 'number', isIndexed: true },
+        { name: 'razon_social', type: 'string', isOptional: true },
+        { name: 'identificador_fiscal', type: 'string', isOptional: true },
+        { name: 'tipo_identificador_fiscal', type: 'string' },
+        { name: 'telefono', type: 'string', isOptional: true },
+        { name: 'email', type: 'string', isOptional: true },
+        { name: 'contacto', type: 'string', isOptional: true },
+        { name: 'direccion', type: 'string', isOptional: true },
+        { name: 'ciudad', type: 'string', isOptional: true },
+        { name: 'estado', type: 'string', isOptional: true },
+        { name: 'codigo_postal', type: 'string', isOptional: true },
+        { name: 'sitio_web', type: 'string', isOptional: true },
+        { name: 'descripcion', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // ubicaciones_vendedor (v19, 2026-05-01) — pings GPS continuos del
+    // vendedor con cola offline. Mobile encola con sincronizado=false; sync
+    // engine pushea batch a /api/mobile/tracking/batch y marca true.
+    tableSchema({
+      name: 'ubicaciones_vendedor',
+      columns: [
+        { name: 'usuario_id', type: 'number', isIndexed: true },
+        { name: 'latitud', type: 'number' },
+        { name: 'longitud', type: 'number' },
+        { name: 'precision_metros', type: 'number', isOptional: true },
+        { name: 'tipo', type: 'number' }, // enum int
+        { name: 'capturado_en', type: 'number' }, // ms epoch del fix GPS real
+        { name: 'referencia_id', type: 'number', isOptional: true },
+        { name: 'sincronizado', type: 'boolean', isIndexed: true },
+        { name: 'created_at', type: 'number' },
       ],
     }),
   ],

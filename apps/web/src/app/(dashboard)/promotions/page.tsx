@@ -54,13 +54,30 @@ const promotionSchema = z.object({
   nombre: z.string().min(1, 'nameRequired'),
   descripcion: z.string(),
   productoIds: z.array(z.number()).min(1, 'selectProductForDiscount'),
-  descuentoPorcentaje: z.number().min(1, 'minOnePercent').max(100, 'discountMax100'),
+  tipoPromocion: z.enum(['Porcentaje', 'Regalo']),
+  descuentoPorcentaje: z.number().min(0).max(100),
+  cantidadCompra: z.number().nullable().optional(),
+  cantidadBonificada: z.number().nullable().optional(),
+  productoBonificadoId: z.number().nullable().optional(),
   fechaInicio: z.string().min(1, 'startDateRequired'),
   fechaFin: z.string().min(1, 'endDateRequired'),
-}).refine(data => !data.fechaFin || !data.fechaInicio || data.fechaFin > data.fechaInicio, {
-  message: 'endDateAfterStart',
-  path: ['fechaFin'],
-});
+})
+  .refine(data => !data.fechaFin || !data.fechaInicio || data.fechaFin > data.fechaInicio, {
+    message: 'endDateAfterStart',
+    path: ['fechaFin'],
+  })
+  .refine(data => data.tipoPromocion !== 'Porcentaje' || (data.descuentoPorcentaje >= 1 && data.descuentoPorcentaje <= 100), {
+    message: 'minOnePercent',
+    path: ['descuentoPorcentaje'],
+  })
+  .refine(data => data.tipoPromocion !== 'Regalo' || (data.cantidadCompra ?? 0) > 0, {
+    message: 'buyQtyRequired',
+    path: ['cantidadCompra'],
+  })
+  .refine(data => data.tipoPromocion !== 'Regalo' || (data.cantidadBonificada ?? 0) > 0, {
+    message: 'giftQtyRequired',
+    path: ['cantidadBonificada'],
+  });
 
 type PromotionFormData = z.infer<typeof promotionSchema>;
 
@@ -91,7 +108,7 @@ export default function PromotionsPage() {
   // Form state with react-hook-form
   const { register, handleSubmit: rhfSubmit, reset: resetForm, watch, setValue, formState: { errors, isDirty } } = useForm<PromotionFormData>({
     resolver: zodResolver(promotionSchema),
-    defaultValues: { nombre: '', descripcion: '', productoIds: [], descuentoPorcentaje: 0, fechaInicio: '', fechaFin: '' },
+    defaultValues: { nombre: '', descripcion: '', productoIds: [], tipoPromocion: 'Porcentaje', descuentoPorcentaje: 0, cantidadCompra: null, cantidadBonificada: null, productoBonificadoId: null, fechaInicio: '', fechaFin: '' },
   });
 
   const fetchPromotions = useCallback(async () => {
@@ -213,13 +230,25 @@ export default function PromotionsPage() {
     },
     {
       key: 'descuentoPorcentaje',
-      label: t('discountPercent'),
+      label: t('discountOrGift'),
       sortable: true,
-      width: 80,
+      width: 110,
       align: 'center',
-      cellRenderer: (promo) => (
-        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[13px] font-medium text-blue-700 bg-blue-50 rounded-full">{promo.descuentoPorcentaje}%</span>
-      ),
+      cellRenderer: (promo) => {
+        if (promo.tipoPromocion === 'Regalo' && promo.cantidadCompra && promo.cantidadBonificada) {
+          return (
+            <span
+              className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[13px] font-medium text-amber-800 bg-amber-50 rounded-full"
+              title={promo.productoBonificadoNombre ? t('bogoBadgeDistinto', { n: promo.cantidadCompra, m: promo.cantidadBonificada, producto: promo.productoBonificadoNombre }) : t('bogoBadgeMismo', { n: promo.cantidadCompra, m: promo.cantidadBonificada })}
+            >
+              {promo.cantidadCompra}+{promo.cantidadBonificada}
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[13px] font-medium text-blue-700 bg-blue-50 rounded-full">{promo.descuentoPorcentaje}%</span>
+        );
+      },
     },
     {
       key: 'fechaInicio',
@@ -321,11 +350,20 @@ export default function PromotionsPage() {
 
   const handleOpenEdit = (promo: PromocionDto) => {
     setEditingPromotion(promo);
+    // Aceptamos tanto string ("Porcentaje"/"Regalo" — JsonStringEnumConverter)
+    // como int (0/1 — fallback legacy si el converter no aplica).
+    const tp = promo.tipoPromocion as unknown;
+    const tipoStr: 'Porcentaje' | 'Regalo' =
+      tp === 1 || tp === '1' || tp === 'Regalo' ? 'Regalo' : 'Porcentaje';
     resetForm({
       nombre: promo.nombre,
       descripcion: promo.descripcion || '',
       productoIds: promo.productos?.map(p => p.productoId) || [],
+      tipoPromocion: tipoStr,
       descuentoPorcentaje: promo.descuentoPorcentaje,
+      cantidadCompra: promo.cantidadCompra ?? null,
+      cantidadBonificada: promo.cantidadBonificada ?? null,
+      productoBonificadoId: promo.productoBonificadoId ?? null,
       fechaInicio: promo.fechaInicio ? promo.fechaInicio.split('T')[0] : '',
       fechaFin: promo.fechaFin ? promo.fechaFin.split('T')[0] : '',
     });
@@ -346,11 +384,16 @@ export default function PromotionsPage() {
     try {
       setActionLoading(true);
 
+      const isRegalo = data.tipoPromocion === 'Regalo';
       const dto: PromocionCreateRequest = {
         nombre: data.nombre.trim(),
         descripcion: data.descripcion.trim(),
         productoIds: data.productoIds,
-        descuentoPorcentaje: data.descuentoPorcentaje,
+        tipoPromocion: data.tipoPromocion,
+        descuentoPorcentaje: isRegalo ? 0 : data.descuentoPorcentaje,
+        cantidadCompra: isRegalo ? data.cantidadCompra ?? undefined : undefined,
+        cantidadBonificada: isRegalo ? data.cantidadBonificada ?? undefined : undefined,
+        productoBonificadoId: isRegalo ? data.productoBonificadoId ?? undefined : undefined,
         fechaInicio: data.fechaInicio,
         fechaFin: data.fechaFin,
       };
@@ -667,18 +710,101 @@ export default function PromotionsPage() {
             <p className="text-xs text-muted-foreground mt-1">{t('selectedCount', { selected: watch('productoIds').length, total: productos.length, plural: watch('productoIds').length !== 1 ? 's' : '', plural2: watch('productoIds').length !== 1 ? 's' : '' })}</p>
           </div>
 
-          <div data-tour="promotions-drawer-discount">
-            <label className="block text-sm font-medium text-foreground/80 mb-1">{t('discountPercent')} <span className="text-red-500">*</span></label>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              {...register('descuentoPorcentaje', { valueAsNumber: true })}
-              placeholder={t('discountPlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
+          <div data-tour="promotions-drawer-tipo">
+            <label className="block text-sm font-medium text-foreground/80 mb-2">{t('promotionType')}</label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Porcentaje' ? 'border-green-500 bg-green-50' : 'border-border-default hover:border-border-strong'}`}>
+                <input
+                  type="radio"
+                  value="Porcentaje"
+                  checked={watch('tipoPromocion') === 'Porcentaje'}
+                  onChange={() => setValue('tipoPromocion', 'Porcentaje', { shouldDirty: true, shouldValidate: true })}
+                  className="mt-0.5"
+                />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t('tipoPorcentaje')}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('tipoPorcentajeHint')}</p>
+                </div>
+              </label>
+              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Regalo' ? 'border-green-500 bg-green-50' : 'border-border-default hover:border-border-strong'}`}>
+                <input
+                  type="radio"
+                  value="Regalo"
+                  checked={watch('tipoPromocion') === 'Regalo'}
+                  onChange={() => setValue('tipoPromocion', 'Regalo', { shouldDirty: true, shouldValidate: true })}
+                  className="mt-0.5"
+                />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t('tipoRegalo')}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('tipoRegaloHint')}</p>
+                </div>
+              </label>
+            </div>
           </div>
+
+          {watch('tipoPromocion') === 'Porcentaje' ? (
+            <div data-tour="promotions-drawer-discount">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">{t('discountPercent')} <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                {...register('descuentoPorcentaje', { valueAsNumber: true })}
+                placeholder={t('discountPlaceholder')}
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
+            </div>
+          ) : (
+            <div className="space-y-3" data-tour="promotions-drawer-bogo">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">{t('forEvery')} <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    {...register('cantidadCompra', { valueAsNumber: true })}
+                    placeholder="10"
+                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  {errors.cantidadCompra && <FieldError message={errors.cantidadCompra.message} />}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">{t('gives')} <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    {...register('cantidadBonificada', { valueAsNumber: true })}
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  {errors.cantidadBonificada && <FieldError message={errors.cantidadBonificada.message} />}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('bonusProduct')}</label>
+                <SearchableSelect
+                  options={[
+                    { value: 0, label: t('sameProduct') },
+                    ...productos
+                      .filter(p => !watch('productoIds').includes(p.id))
+                      .map(p => ({ value: p.id, label: p.nombre })),
+                  ]}
+                  value={watch('productoBonificadoId') ?? 0}
+                  onChange={(val) => {
+                    const v = Number(val);
+                    setValue('productoBonificadoId', v === 0 ? null : v, { shouldDirty: true });
+                  }}
+                  placeholder={t('sameProduct')}
+                  searchPlaceholder={t('searchProduct')}
+                  emptyMessage={t('noMoreProducts')}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">{t('bonusProductHint')}</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4" data-tour="promotions-drawer-dates">
             <div>

@@ -189,6 +189,11 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ICobroRepository, CobroRepository>();
         services.AddScoped<CobroService>();
 
+        // Tracking GPS de vendedores (Fase B)
+        services.AddScoped<HandySuites.Application.Tracking.Interfaces.IUbicacionVendedorRepository, HandySuites.Infrastructure.Repositories.Tracking.UbicacionVendedorRepository>();
+        services.AddScoped<HandySuites.Application.Tracking.Interfaces.ISubscriptionFeatureGuard, HandySuites.Infrastructure.Subscriptions.SubscriptionFeatureGuard>();
+        services.AddScoped<HandySuites.Application.Tracking.Services.UbicacionVendedorService>();
+
         // Catálogos (Zonas, Categorías, Familias)
         services.AddScoped<IZonaRepository, ZonaRepository>();
         services.AddScoped<ZonaService>();

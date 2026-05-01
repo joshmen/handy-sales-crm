@@ -37,6 +37,8 @@ public class HandySuitesDbContext : DbContext
     public DbSet<CategoriaCliente> CategoriasClientes => Set<CategoriaCliente>();
     public DbSet<CategoriaProducto> CategoriasProductos => Set<CategoriaProducto>();
     public DbSet<UnidadMedida> UnidadesMedida => Set<UnidadMedida>();
+    public DbSet<TasaImpuesto> TasasImpuesto => Set<TasaImpuesto>();
+    public DbSet<UbicacionVendedor> UbicacionesVendedor => Set<UbicacionVendedor>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Role> Roles => Set<Role>();
@@ -802,8 +804,16 @@ public class HandySuitesDbContext : DbContext
         modelBuilder.Entity<DescuentoPorCantidad>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
-        modelBuilder.Entity<Promocion>()
-            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+        modelBuilder.Entity<Promocion>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            // FK al producto bonificado (NULL = mismo producto). ON DELETE SET NULL para
+            // que borrar un producto no rompa la promoción — queda como mismo-producto.
+            entity.HasOne(p => p.ProductoBonificado)
+                .WithMany()
+                .HasForeignKey(p => p.ProductoBonificadoId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
         // PromocionProducto: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<PromocionProducto>()
@@ -823,6 +833,34 @@ public class HandySuitesDbContext : DbContext
 
         modelBuilder.Entity<UnidadMedida>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        modelBuilder.Entity<TasaImpuesto>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            entity.Property(e => e.Tasa).HasPrecision(7, 6); // 0.160000 — 6 decimales para SAT compat
+            entity.HasIndex(e => new { e.TenantId, e.EsDefault }); // optimiza lookup de tasa default per-tenant
+        });
+
+        modelBuilder.Entity<UbicacionVendedor>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            entity.HasIndex(e => new { e.TenantId, e.UsuarioId, e.CapturadoEn })
+                  .HasDatabaseName("IX_UbicacionesVendedor_tenant_usuario_capturado");
+            entity.HasIndex(e => new { e.TenantId, e.DiaServicio, e.UsuarioId })
+                  .HasDatabaseName("IX_UbicacionesVendedor_tenant_dia_usuario");
+            entity.HasOne(e => e.Usuario)
+                  .WithMany()
+                  .HasForeignKey(e => e.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Producto.TasaImpuesto FK: SetNull al borrar — productos con tasa borrada
+        // caen al tasa default del tenant en runtime (helper CalculateLineAmounts).
+        modelBuilder.Entity<Producto>()
+            .HasOne(p => p.TasaImpuesto)
+            .WithMany(t => t.Productos)
+            .HasForeignKey(p => p.TasaImpuestoId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Entidades de auditoría y configuración
         // ActivityLog: no hereda AuditableEntity — solo filtro de tenant

@@ -71,6 +71,45 @@ public static class MobileAuthEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden);
 
+        // Force-login: ignora DEVICE_BOUND y revoca otras sesiones activas.
+        // Cliente lo invoca tras confirmar en modal "¿Desconectar otro dispositivo?".
+        group.MapPost("/force-login", async (
+            UsuarioLoginDto dto,
+            IValidator<UsuarioLoginDto> validator,
+            [FromServices] MobileAuthService auth,
+            HttpContext context) =>
+        {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(new { success = false, errors = validation.ToDictionary() });
+
+            var deviceId = context.Request.Headers["X-Device-Id"].FirstOrDefault();
+            var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
+
+            var result = await auth.ForceLoginAsync(dto.email, dto.password, deviceId, deviceFingerprint);
+
+            if (!result.Success)
+            {
+                if (!string.IsNullOrEmpty(result.Message))
+                {
+                    return Results.Json(new { success = false, message = result.Message }, statusCode: 401);
+                }
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(new
+            {
+                success = true,
+                data = result.Data,
+                deviceRegistered = !string.IsNullOrEmpty(deviceId)
+            });
+        })
+        .RequireRateLimiting("mobile-auth")
+        .WithSummary("Force-login (cierra otras sesiones)")
+        .WithDescription("Login que cierra todas las sesiones activas previas. Solo se debe invocar tras confirmar con el usuario en un modal '¿Desconectar otro dispositivo?'.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/refresh", async (
             RefreshTokenDto dto,
             [FromServices] MobileAuthService auth) =>

@@ -132,6 +132,7 @@ app.MapMobileProductoEndpoints();
 app.MapMobileSyncEndpoints();
 app.MapMobileRutaEndpoints();
 app.MapMobileCobroEndpoints();
+app.MapMobileTrackingEndpoints();
 app.MapMobileCatalogosEndpoints();
 app.MapMobileNotificationEndpoints();
 app.MapMobileAttachmentEndpoints();

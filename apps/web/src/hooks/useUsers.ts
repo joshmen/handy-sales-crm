@@ -93,6 +93,12 @@ export function useUser(id: number | string) {
   };
 }
 
+// Reportado 2026-04-28: estos hooks retornaban null/false en error en vez de
+// throw. Los handlers de UI hacian try/catch esperando throw — pero como nunca
+// llega al catch, el flow continuaba al toast.success aunque el backend devolvio
+// 400. Resultado: admin "creaba" usuario sin feedback de error y el usuario
+// nunca se creaba en BD (sin email enviado, nada). Fix: throw en error.
+
 export function useCreateUser() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,13 +112,14 @@ export function useCreateUser() {
         const response = await usersService.createUser(userData);
         if (response.success) {
           return response.data;
-        } else {
-          setError(response.error || 'Error creating user');
-          return null;
         }
+        const msg = response.error || 'Error creating user';
+        setError(msg);
+        throw new Error(msg);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        return null;
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        setError(msg);
+        throw err instanceof Error ? err : new Error(msg);
       } finally {
         setLoading(false);
       }
@@ -136,13 +143,14 @@ export function useUpdateUser() {
         const response = await usersService.updateUser(id, userData);
         if (response.success) {
           return response.data;
-        } else {
-          setError(response.error || 'Error updating user');
-          return null;
         }
+        const msg = response.error || 'Error updating user';
+        setError(msg);
+        throw new Error(msg);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        return null;
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        setError(msg);
+        throw err instanceof Error ? err : new Error(msg);
       } finally {
         setLoading(false);
       }
@@ -165,13 +173,14 @@ export function useDeleteUser() {
         const response = await usersService.deleteUser(id);
         if (response.success) {
           return true;
-        } else {
-          setError(response.error || 'Error deleting user');
-          return false;
         }
+        const msg = response.error || 'Error deleting user';
+        setError(msg);
+        throw new Error(msg);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        return false;
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        setError(msg);
+        throw err instanceof Error ? err : new Error(msg);
       } finally {
         setLoading(false);
       }

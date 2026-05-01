@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLogin } from '@/hooks';
+import Toast from 'react-native-toast-message';
+import { useLogin, useForceLogin } from '@/hooks';
 import { Button, Input } from '@/components/ui';
-import { Mail, Lock, AlertCircle } from 'lucide-react-native';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { Mail, Lock } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { COLORS } from '@/theme/colors';
 
@@ -21,10 +23,43 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showDeviceBoundModal, setShowDeviceBoundModal] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const loginMutation = useLogin();
+  const forceLoginMutation = useForceLogin();
+
+  useEffect(() => {
+    if (!loginMutation.isError) return;
+    const err = loginMutation.error as any;
+    if (err?.code === 'DEVICE_BOUND') {
+      setShowDeviceBoundModal(true);
+      return;
+    }
+    Toast.show({
+      type: 'error',
+      text1: 'No se pudo iniciar sesión',
+      text2: err?.message || 'Intenta de nuevo',
+      visibilityTime: 4000,
+    });
+  }, [loginMutation.isError, loginMutation.error]);
+
+  useEffect(() => {
+    if (!forceLoginMutation.isError) return;
+    const err = forceLoginMutation.error as any;
+    Toast.show({
+      type: 'error',
+      text1: 'No se pudo iniciar sesión',
+      text2: err?.message || 'Intenta de nuevo',
+      visibilityTime: 4000,
+    });
+  }, [forceLoginMutation.isError, forceLoginMutation.error]);
+
+  const handleConfirmForceLogin = () => {
+    setShowDeviceBoundModal(false);
+    forceLoginMutation.mutate({ email: email.trim(), password });
+  };
 
   const validate = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
@@ -120,23 +155,11 @@ export default function LoginScreen() {
             <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
 
-          {/* API Error */}
-          {loginMutation.isError && (
-            <View style={styles.errorBanner}>
-              <AlertCircle size={16} color="#dc2626" />
-              <Text style={styles.errorText}>
-                {loginMutation.error instanceof Error
-                  ? loginMutation.error.message
-                  : 'Credenciales incorrectas'}
-              </Text>
-            </View>
-          )}
-
           <Button
             testID="login-button"
             title="Iniciar Sesión"
             onPress={handleLogin}
-            loading={loginMutation.isPending}
+            loading={loginMutation.isPending || forceLoginMutation.isPending}
             fullWidth
             size="lg"
           />
@@ -150,6 +173,16 @@ export default function LoginScreen() {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ConfirmModal
+        visible={showDeviceBoundModal}
+        title="Sesión activa en otro dispositivo"
+        message="Tu cuenta está activa en otro dispositivo. Por seguridad, solo se permite una sesión a la vez. ¿Desconectar el otro dispositivo y continuar aquí?"
+        confirmText="Continuar aquí"
+        cancelText="Cancelar"
+        onConfirm={handleConfirmForceLogin}
+        onCancel={() => setShowDeviceBoundModal(false)}
+      />
     </ImageBackground>
   );
 }
@@ -220,23 +253,6 @@ const styles = StyleSheet.create({
   forgotText: {
     fontSize: 13,
     color: COLORS.primary,
-    fontWeight: '500',
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    gap: 8,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#dc2626',
     fontWeight: '500',
   },
   footer: {

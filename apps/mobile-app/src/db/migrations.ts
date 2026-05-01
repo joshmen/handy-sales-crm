@@ -257,5 +257,228 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v14: persistir catalogos (zonas, categorias_cliente, categorias_producto,
+      // familias_producto) en WatermelonDB. Antes solo vivian en React Query memory
+      // y se perdian al cerrar sesion — el vendedor tenia que re-loguear cada vez
+      // para tenerlos. Backend ahora los incluye en /api/mobile/sync/pull (commit
+      // pendiente). Reportado 2026-04-28.
+      toVersion: 14,
+      steps: [
+        createTable({
+          name: 'zonas',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'categorias_cliente',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'categorias_producto',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'familias_producto',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    {
+      // v15 (2026-04-28): catalogos criticos faltantes — listas_precio (cliente
+      // tenia listaPreciosId pero mobile no sabia el nombre, vendedor offline no
+      // sabia que lista aplicar), usuarios (equipo para supervisores que asignan
+      // rutas), metas_vendedor (dashboard), datos_empresa (logo + razon social
+      // que antes solo vivian en GET /api/mobile/empresa en memory).
+      toVersion: 15,
+      steps: [
+        createTable({
+          name: 'listas_precio',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'usuarios',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'email', type: 'string' },
+            { name: 'rol', type: 'string', isOptional: true },
+            { name: 'avatar_url', type: 'string', isOptional: true },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'metas_vendedor',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'usuario_id', type: 'number', isIndexed: true },
+            { name: 'tipo', type: 'string' },
+            { name: 'periodo', type: 'string' },
+            { name: 'monto', type: 'number' },
+            { name: 'fecha_inicio', type: 'number' },
+            { name: 'fecha_fin', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'datos_empresa',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'razon_social', type: 'string', isOptional: true },
+            { name: 'identificador_fiscal', type: 'string', isOptional: true },
+            { name: 'tipo_identificador_fiscal', type: 'string' },
+            { name: 'telefono', type: 'string', isOptional: true },
+            { name: 'email', type: 'string', isOptional: true },
+            { name: 'contacto', type: 'string', isOptional: true },
+            { name: 'direccion', type: 'string', isOptional: true },
+            { name: 'ciudad', type: 'string', isOptional: true },
+            { name: 'estado', type: 'string', isOptional: true },
+            { name: 'codigo_postal', type: 'string', isOptional: true },
+            { name: 'sitio_web', type: 'string', isOptional: true },
+            { name: 'descripcion', type: 'string', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    {
+      // v16 (2026-04-29): catálogo de impuestos.
+      // - productos: precio_incluye_iva (default true), tasa_impuesto_id, tasa
+      //   denormalizada (resuelta en backend desde TasaImpuesto.Tasa o default tenant).
+      // - tasas_impuesto: nueva tabla read-only del catálogo del tenant.
+      // Arregla bug 2026-04-28: tickets cobraban IVA sobre precios que ya lo incluían.
+      toVersion: 16,
+      steps: [
+        addColumns({
+          table: 'productos',
+          columns: [
+            { name: 'precio_incluye_iva', type: 'boolean' },
+            { name: 'tasa_impuesto_id', type: 'number', isOptional: true },
+            { name: 'tasa', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'tasas_impuesto',
+          columns: [
+            { name: 'server_id', type: 'number', isIndexed: true },
+            { name: 'tenant_id', type: 'number', isIndexed: true },
+            { name: 'nombre', type: 'string' },
+            { name: 'tasa', type: 'number' },
+            { name: 'clave_sat', type: 'string' },
+            { name: 'tipo_impuesto', type: 'string' },
+            { name: 'es_default', type: 'boolean' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    {
+      // v17 (2026-04-29): elimina la tabla `tasas_impuesto`. El catálogo de
+      // impuestos vive solo en backend; mobile resuelve cálculos con los
+      // campos denormalizados `producto.tasa` y `producto.precioIncluyeIva`.
+      // Devices que estaban en v16 dropean la tabla — ningún query la
+      // consultaba (era dead weight). El cálculo del ticket sigue intacto.
+      toVersion: 17,
+      steps: [
+        unsafeExecuteSql('DROP TABLE IF EXISTS tasas_impuesto;'),
+      ],
+    },
+    {
+      // v18 (2026-04-29): promociones BOGO acumulativo.
+      // - promociones: tipo_promocion (0=Porcentaje, 1=Regalo), cantidad_compra,
+      //   cantidad_bonificada, producto_bonificado_id.
+      // - detalle_pedidos: cantidad_bonificada (audita unidades regaladas en
+      //   la línea), promocion_id (server valida al push).
+      toVersion: 18,
+      steps: [
+        addColumns({
+          table: 'promociones',
+          columns: [
+            { name: 'tipo_promocion', type: 'number' },
+            { name: 'cantidad_compra', type: 'number', isOptional: true },
+            { name: 'cantidad_bonificada', type: 'number', isOptional: true },
+            { name: 'producto_bonificado_id', type: 'number', isOptional: true },
+          ],
+        }),
+        addColumns({
+          table: 'detalle_pedidos',
+          columns: [
+            { name: 'cantidad_bonificada', type: 'number' },
+            { name: 'promocion_id', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    {
+      // v19 (2026-05-01): tracking GPS continuo de vendedores. Tabla nueva
+      // `ubicaciones_vendedor` para encolar pings offline. Devices en v18
+      // migran auto al abrir la app; ningún query existente se afecta.
+      toVersion: 19,
+      steps: [
+        createTable({
+          name: 'ubicaciones_vendedor',
+          columns: [
+            { name: 'usuario_id', type: 'number', isIndexed: true },
+            { name: 'latitud', type: 'number' },
+            { name: 'longitud', type: 'number' },
+            { name: 'precision_metros', type: 'number', isOptional: true },
+            { name: 'tipo', type: 'number' },
+            { name: 'capturado_en', type: 'number' },
+            { name: 'referencia_id', type: 'number', isOptional: true },
+            { name: 'sincronizado', type: 'boolean', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

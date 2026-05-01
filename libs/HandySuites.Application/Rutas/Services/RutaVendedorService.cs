@@ -907,24 +907,18 @@ public class RutaVendedorService
         if (ruta.Estado != EstadoRuta.Planificada)
             throw new InvalidOperationException("Solo se pueden enviar a carga rutas planificadas");
 
-        // BR-RUTA-Carga: validar que la ruta tiene los 3 elementos mínimos antes de enviarla
-        // al vendedor: paradas (clientes a visitar), pedidos asignados (carga del camión) y
-        // productos para venta directa en ruta. Reportado 2026-04-27: el admin podía enviar
-        // una ruta vacía y el vendedor recibía push de "ruta asignada" sin nada que entregar.
-        var faltantes = new List<string>();
-        var totalParadas = ruta.Detalles?.Count(d => d.Activo) ?? 0;
-        if (totalParadas == 0)
-            faltantes.Add("paradas (clientes a visitar)");
-        var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
-        if (pedidosAsignados.Count == 0)
-            faltantes.Add("pedidos asignados");
+        // BR-RUTA-Carga: Send to Load solo requiere carga (productos en el camión).
+        // Paradas y pedidos asignados son OPCIONALES — una ruta real puede mezclar
+        // preventa (pedidos pre-tomados a entregar) con venta directa (carga ad-hoc
+        // para vender en el camino), o tener solo uno de los dos. Reportado
+        // 2026-04-28: forzar paradas+pedidos rompía rutas mixtas y de venta directa.
         var carga = await _repo.ObtenerCargaAsync(rutaId, _tenant.TenantId);
         if (carga.Count == 0)
-            faltantes.Add("productos de carga");
-
-        if (faltantes.Count > 0)
             throw new InvalidOperationException(
-                $"No se puede enviar la ruta a carga: faltan {string.Join(", ", faltantes)}.");
+                "No se puede enviar la ruta a carga: faltan productos de carga.");
+
+        var totalParadas = ruta.Detalles?.Count(d => d.Activo) ?? 0;
+        var pedidosAsignados = await _repo.ObtenerPedidosAsignadosAsync(rutaId, _tenant.TenantId);
 
         // Atomico: cambiar estado ruta + cambiar estado batch de los pedidos asignados.
         // Reportado 2026-04-27: el admin tenia que cambiar el estado de cada pedido

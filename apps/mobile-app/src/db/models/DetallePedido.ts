@@ -20,6 +20,9 @@ export default class DetallePedido extends Model {
   @field('version') version!: number;
   @readonly @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
+  // v18 BOGO
+  @field('cantidad_bonificada') cantidadBonificada!: number;
+  @field('promocion_id') promocionId!: number | null;
 
   @relation('pedidos', 'pedido_id') pedido: any;
 }

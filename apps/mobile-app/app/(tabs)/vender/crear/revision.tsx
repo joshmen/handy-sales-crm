@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
+import { recordPing, TipoPing } from '@/services/locationCheckpoint';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { Card, Button, ConfirmModal } from '@/components/ui';
@@ -13,6 +14,8 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
 import { round2 } from '@/utils/money';
+import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
+import { useOfflineProducts } from '@/hooks';
 import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { usePricingMap } from '@/hooks/usePricing';
@@ -58,22 +61,50 @@ function CrearPedidoStep3() {
   const { getPricing } = usePricingMap(clienteListaPreciosId);
   const hasSpecialPricing = !!clienteListaPreciosId;
 
-  // Aplicar descuentos por cantidad + promociones por línea, con totales corregidos.
+  // Productos del WDB para resolver `precioIncluyeIva` y `tasa` per item.
+  // Los productos vienen del último sync — read-only en mobile.
+  const { data: allProducts } = useOfflineProducts();
+  const productByServerId = useMemo(() => {
+    const map = new Map<number, { precioIncluyeIva: boolean; tasa: number }>();
+    for (const p of allProducts ?? []) {
+      if (p.serverId != null) {
+        map.set(p.serverId, {
+          precioIncluyeIva: p.precioIncluyeIva ?? true,
+          tasa: p.tasa ?? 0.16,
+        });
+      }
+    }
+    return map;
+  }, [allProducts]);
+
+  // Aplicar descuentos por cantidad + promociones por línea, con cálculo IVA
+  // branched per item (v16 — catálogo de impuestos). Cada item resuelve su tasa
+  // y flag precioIncluyeIva desde el producto en WDB; fallback a IVA 16% incluido.
   const pricedItems = useMemo(() =>
     items.map((item) => {
       const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
-      const lineTotal = pricing.precioConDescuento * item.cantidad;
-      return { item, pricing, lineTotal };
+      const prodTax = productByServerId.get(item.productoServerId ?? 0) ?? { precioIncluyeIva: true, tasa: 0.16 };
+      const descuentoLinea = round2((item.precioUnitario - pricing.precioConDescuento) * item.cantidad);
+      // El precioConDescuento es el que se cobra al cliente. Si precioIncluyeIva,
+      // ese ya tiene IVA; descomponemos. Si no, le sumamos IVA.
+      const lineAmounts = calculateLineAmounts(
+        pricing.precioConDescuento,
+        item.cantidad,
+        0, // descuento ya aplicado en precioConDescuento
+        prodTax.tasa,
+        prodTax.precioIncluyeIva,
+      );
+      return { item, pricing, lineAmounts, descuentoLinea };
     }),
-    [items, getPricing],
+    [items, getPricing, productByServerId],
   );
-  // Redondear a centavos en cada agregación monetaria — sin esto, sumar muchos
-  // items con precios fraccionarios produce drift visible (e.g. $1716.99 vs $1717.00).
-  const subtotal = round2(pricedItems.reduce((s, p) => s + p.lineTotal, 0));
-  const descuentoTotal = round2(subtotalRaw - subtotal);
-  const IVA_RATE = 0.16;
-  const impuestos = round2(subtotal * IVA_RATE);
-  const total = round2(subtotal + impuestos);
+
+  // Sumar redondeando cada línea (consistente con backend). Sin round2 per-item,
+  // float drift produce totales off-by-cent.
+  const subtotal = round2(pricedItems.reduce((s, p) => s + p.lineAmounts.subtotal, 0));
+  const impuestos = round2(pricedItems.reduce((s, p) => s + p.lineAmounts.impuesto, 0));
+  const total = round2(pricedItems.reduce((s, p) => s + p.lineAmounts.total, 0));
+  const descuentoTotal = round2(subtotalRaw - pricedItems.reduce((s, p) => s + p.pricing.precioConDescuento * p.item.cantidad, 0));
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
@@ -90,6 +121,10 @@ function CrearPedidoStep3() {
         // round2 antes de mandar al backend: el server compara con su propio
         // cálculo y rechaza con error "monto no coincide" si hay drift.
         const descuentoLinea = round2((item.precioUnitario - pricing.precioConDescuento) * item.cantidad);
+        const prodTax = productByServerId.get(item.productoServerId ?? 0) ?? {
+          precioIncluyeIva: true,
+          tasa: 0.16,
+        };
         return {
           productoId: item.productoId,
           productoServerId: item.productoServerId,
@@ -97,6 +132,13 @@ function CrearPedidoStep3() {
           cantidad: item.cantidad,
           precioUnitario: item.precioUnitario,
           descuento: descuentoLinea > 0 ? descuentoLinea : 0,
+          // v16: pasar tax info per-item para que el cálculo offline en
+          // createPedidoOffline / createVentaDirectaOffline use el branched.
+          precioIncluyeIva: prodTax.precioIncluyeIva,
+          tasa: prodTax.tasa,
+          // v18 BOGO: cantidad regalada + promo aplicada (server valida).
+          cantidadBonificada: pricing.promoRegalo?.cantidadBonificada ?? 0,
+          promocionId: pricing.promoRegalo?.promocionId ?? null,
         };
       });
 
@@ -118,6 +160,9 @@ function CrearPedidoStep3() {
           notas || undefined,
           paradaId
         );
+
+        // Tracking GPS: ping al confirmar venta directa (no-op si plan no aplica).
+        recordPing(TipoPing.Venta).catch(() => {});
 
         // Navigate to cobro receipt for printing (VD = sale + immediate payment)
         router.replace({
@@ -149,6 +194,8 @@ function CrearPedidoStep3() {
           0, // estado = Borrador → admin/supervisor confirma desde web antes de meter a ruta
           paradaId
         );
+        // Tracking GPS: ping al confirmar pedido (no-op si plan no aplica).
+        recordPing(TipoPing.Venta).catch(() => {});
         router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}${paradaId ? '&fromRuta=1' : ''}` as any);
         reset();
         // WDB sync will push pedido + ruta_detalle to server automatically
@@ -199,7 +246,8 @@ function CrearPedidoStep3() {
           <Text style={styles.sectionTitle}>Productos ({items.length})</Text>
         </View>
 
-        {pricedItems.map(({ item, pricing, lineTotal }) => {
+        {pricedItems.map(({ item, pricing, lineAmounts }) => {
+          const lineTotal = lineAmounts.total;
           const tieneDescuento = pricing.mejorDescuento > 0;
           return (
             <View key={item.productoId} style={styles.lineItem}>
@@ -217,6 +265,11 @@ function CrearPedidoStep3() {
                   {pricing.promo && (
                     <Text style={{ fontSize: 9, color: '#d97706', fontWeight: '600', backgroundColor: '#fef3c7', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
                       Promo -{pricing.promo.porcentaje}%
+                    </Text>
+                  )}
+                  {pricing.promoRegalo && (
+                    <Text style={{ fontSize: 9, color: '#92400e', fontWeight: '700', backgroundColor: '#fde68a', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
+                      🎁 +{pricing.promoRegalo.cantidadBonificada} regalo
                     </Text>
                   )}
                   {pricing.descuentoVolumen && (

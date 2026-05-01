@@ -371,6 +371,7 @@ public class SyncRepository : ISyncRepository
                             Impuesto = lineImpuesto,
                             Total = lineTotal,
                             Notas = detalleDto.Notas,
+                            CantidadBonificada = detalleDto.CantidadBonificada,
                             CreadoEn = DateTime.UtcNow,
                             CreadoPor = userId,
                             Version = 1
@@ -436,6 +437,7 @@ public class SyncRepository : ISyncRepository
                     Impuesto = lineImpuesto,
                     Total = lineTotal,
                     Notas = detalleDto.Notas,
+                    CantidadBonificada = detalleDto.CantidadBonificada,
                     CreadoEn = DateTime.UtcNow,
                     CreadoPor = userId,
                     Version = 1
@@ -784,6 +786,10 @@ public class SyncRepository : ISyncRepository
             ProductoIds = p.PromocionProductos.Select(pp => pp.ProductoId).ToList(),
             Activo = p.Activo,
             ActualizadoEn = p.ActualizadoEn,
+            TipoPromocion = (int)p.TipoPromocion,
+            CantidadCompra = p.CantidadCompra,
+            CantidadBonificada = p.CantidadBonificada,
+            ProductoBonificadoId = p.ProductoBonificadoId,
         }).OrderBy(p => p.Id).ToListAsync();
     }
 
@@ -912,5 +918,149 @@ public class SyncRepository : ISyncRepository
         }
 
         return $"{prefijo}{secuencia:D4}";
+    }
+
+    // === Catalogos basicos (read-only en mobile) ===
+    // IgnoreQueryFilters incluye registros con EliminadoEn != null para que el mobile
+    // procese soft-deletes via IsDeleted=true en el DTO. Sin esto, una zona eliminada
+    // en web seguiria apareciendo en los dropdowns mobile hasta que el usuario re-loguee
+    // (que era exactamente el bug reportado 2026-04-28 antes de mover a sync delta).
+
+    public async Task<List<Zona>> GetZonasModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.Zonas.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(z => z.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(z =>
+                z.ActualizadoEn > since
+                || z.CreadoEn > since
+                || (z.EliminadoEn != null && z.EliminadoEn > since));
+        }
+        return await query.OrderBy(z => z.Id).ToListAsync();
+    }
+
+    public async Task<List<CategoriaCliente>> GetCategoriasClienteModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.CategoriasClientes.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(c => c.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(c =>
+                c.ActualizadoEn > since
+                || c.CreadoEn > since
+                || (c.EliminadoEn != null && c.EliminadoEn > since));
+        }
+        return await query.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    public async Task<List<CategoriaProducto>> GetCategoriasProductoModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.CategoriasProductos.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(c => c.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(c =>
+                c.ActualizadoEn > since
+                || c.CreadoEn > since
+                || (c.EliminadoEn != null && c.EliminadoEn > since));
+        }
+        return await query.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    public async Task<List<FamiliaProducto>> GetFamiliasProductoModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.FamiliasProductos.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(f => f.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(f =>
+                f.ActualizadoEn > since
+                || f.CreadoEn > since
+                || (f.EliminadoEn != null && f.EliminadoEn > since));
+        }
+        return await query.OrderBy(f => f.Id).ToListAsync();
+    }
+
+    public async Task<List<TasaImpuesto>> GetTasasImpuestoModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.TasasImpuesto.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(t => t.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(t =>
+                t.ActualizadoEn > since
+                || t.CreadoEn > since
+                || (t.EliminadoEn != null && t.EliminadoEn > since));
+        }
+        return await query.OrderBy(t => t.Id).ToListAsync();
+    }
+
+    public async Task<List<ListaPrecio>> GetListasPrecioModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.ListasPrecios.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(l => l.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(l =>
+                l.ActualizadoEn > since
+                || l.CreadoEn > since
+                || (l.EliminadoEn != null && l.EliminadoEn > since));
+        }
+        return await query.OrderBy(l => l.Id).ToListAsync();
+    }
+
+    public async Task<List<Usuario>> GetUsuariosModifiedSinceAsync(int tenantId, DateTime? since)
+    {
+        // Mobile recibe lista de equipo solo para supervisores que asignan rutas.
+        // Sin info sensible (PasswordHash excluido en el DTO).
+        var query = _db.Usuarios.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(u => u.TenantId == tenantId);
+        if (since.HasValue)
+        {
+            query = query.Where(u =>
+                u.ActualizadoEn > since
+                || u.CreadoEn > since
+                || (u.EliminadoEn != null && u.EliminadoEn > since));
+        }
+        return await query.OrderBy(u => u.Id).ToListAsync();
+    }
+
+    public async Task<List<MetaVendedor>> GetMetasVendedorModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
+    {
+        // Solo trae las metas asignadas al vendedor que hace sync (filtrado por user).
+        var query = _db.MetasVendedor.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(m => m.TenantId == tenantId && m.UsuarioId == usuarioId);
+        if (since.HasValue)
+        {
+            query = query.Where(m =>
+                m.ActualizadoEn > since
+                || m.CreadoEn > since
+                || (m.EliminadoEn != null && m.EliminadoEn > since));
+        }
+        return await query.OrderBy(m => m.Id).ToListAsync();
+    }
+
+    public async Task<HandySuites.Domain.Entities.DatosEmpresa?> GetDatosEmpresaIfModifiedAsync(int tenantId, DateTime? since)
+    {
+        // 1:1 por tenant. Si no hay since, devuelve siempre. Si hay since, solo si cambio.
+        var query = _db.DatosEmpresa.AsNoTracking()
+            .Where(d => d.TenantId == tenantId);
+        var entity = await query.FirstOrDefaultAsync();
+        if (entity == null) return null;
+        if (since.HasValue)
+        {
+            var modificado = entity.ActualizadoEn ?? entity.CreadoEn;
+            if (modificado <= since.Value) return null;
+        }
+        return entity;
     }
 }
