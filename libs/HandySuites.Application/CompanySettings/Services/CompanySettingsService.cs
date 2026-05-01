@@ -91,6 +91,9 @@ namespace HandySuites.Application.CompanySettings.Services
                     DaysRemaining = tenant?.TrialEndsAt.HasValue == true
                         ? Math.Max(0, (int)(tenant.TrialEndsAt!.Value - DateTime.UtcNow).TotalDays)
                         : null,
+                    HoraInicioJornada = settings.HoraInicioJornada?.ToString("HH:mm"),
+                    HoraFinJornada = settings.HoraFinJornada?.ToString("HH:mm"),
+                    DiasLaborables = settings.DiasLaborables,
                 };
             }
             catch (Exception ex)
@@ -145,6 +148,26 @@ namespace HandySuites.Application.CompanySettings.Services
                 if (!string.IsNullOrEmpty(request.Country))
                     settings.Country = request.Country;
 
+                // Horario laboral. Acepta string vacío como "limpiar".
+                if (request.HoraInicioJornada != null)
+                {
+                    settings.HoraInicioJornada = string.IsNullOrWhiteSpace(request.HoraInicioJornada)
+                        ? null
+                        : TimeOnly.Parse(request.HoraInicioJornada);
+                }
+                if (request.HoraFinJornada != null)
+                {
+                    settings.HoraFinJornada = string.IsNullOrWhiteSpace(request.HoraFinJornada)
+                        ? null
+                        : TimeOnly.Parse(request.HoraFinJornada);
+                }
+                if (request.DiasLaborables != null)
+                {
+                    settings.DiasLaborables = string.IsNullOrWhiteSpace(request.DiasLaborables)
+                        ? null
+                        : request.DiasLaborables;
+                }
+
                 settings.ActualizadoPor = userId.ToString();
 
                 var updatedSettings = await _repository.UpdateAsync(settings);
@@ -162,6 +185,9 @@ namespace HandySuites.Application.CompanySettings.Services
                     Language = updatedSettings.Language,
                     Theme = updatedSettings.Theme,
                     Country = updatedSettings.Country,
+                    HoraInicioJornada = updatedSettings.HoraInicioJornada?.ToString("HH:mm"),
+                    HoraFinJornada = updatedSettings.HoraFinJornada?.ToString("HH:mm"),
+                    DiasLaborables = updatedSettings.DiasLaborables,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };
             }

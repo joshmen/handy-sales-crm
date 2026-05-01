@@ -66,6 +66,18 @@ namespace HandySuites.Application.CompanySettings.DTOs
 
         [JsonPropertyName("daysRemaining")]
         public int? DaysRemaining { get; set; }
+
+        // Horario laboral para tracking GPS (jornada del vendedor).
+        // Formato HH:mm. Null = vendedor controla manualmente.
+        [JsonPropertyName("horaInicioJornada")]
+        public string? HoraInicioJornada { get; set; }
+
+        [JsonPropertyName("horaFinJornada")]
+        public string? HoraFinJornada { get; set; }
+
+        // CSV con días laborables (1=Lun..7=Dom). Null/vacío = todos los días.
+        [JsonPropertyName("diasLaborables")]
+        public string? DiasLaborables { get; set; }
     }
 
     public class UpdateCompanySettingsRequest
@@ -86,6 +98,13 @@ namespace HandySuites.Application.CompanySettings.DTOs
         public string? Theme { get; set; }
         [JsonPropertyName("country")]
         public string? Country { get; set; }
+
+        [JsonPropertyName("horaInicioJornada")]
+        public string? HoraInicioJornada { get; set; }
+        [JsonPropertyName("horaFinJornada")]
+        public string? HoraFinJornada { get; set; }
+        [JsonPropertyName("diasLaborables")]
+        public string? DiasLaborables { get; set; }
     }
 
     public class UploadLogoResponse
