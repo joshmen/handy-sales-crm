@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Search,
   FileText,
-  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -295,10 +294,58 @@ export default function ActivityLogsPage() {
             {/* Table */}
             <div data-tour="logs-table" className="bg-card border border-border rounded-lg overflow-hidden">
               {loading ? (
-                <div role="status" className="flex items-center justify-center h-64 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-green-600" aria-hidden="true" />
-                  <span className="text-sm text-muted-foreground">{t('loadingRecords')}</span>
-                </div>
+                // Skeleton rows alineadas a las columnas reales — mismo patrón que
+                // DataGrid (clients/products/orders) para consistencia entre catálogos.
+                <>
+                  {/* Header placeholder (mismo header que se muestra cargado) */}
+                  <div className="hidden md:flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle">
+                    <div className="w-[160px] text-xs font-semibold text-foreground/70">{t('columns.user')}</div>
+                    {isSuperAdmin && (
+                      <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.company')}</div>
+                    )}
+                    <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('columns.action')}</div>
+                    <div className="w-[110px] text-xs font-semibold text-foreground/70">{t('columns.category')}</div>
+                    <div className="w-[80px] text-xs font-semibold text-foreground/70">{t('columns.status')}</div>
+                    <div className="flex-1 text-xs font-semibold text-foreground/70">{t('columns.description')}</div>
+                    <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.dateTime')}</div>
+                    <div className="w-[120px] text-xs font-semibold text-foreground/70">{t('columns.ip')}</div>
+                  </div>
+                  <div role="status" aria-label={t('loadingRecords')}>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="hidden md:flex items-center px-4 py-3 border-b border-border-subtle animate-pulse"
+                        style={{ animationDelay: `${i * 75}ms` }}
+                      >
+                        <div className="w-[160px] flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-surface-3 shrink-0" />
+                          <div className="h-4 bg-surface-3 rounded w-3/4" />
+                        </div>
+                        {isSuperAdmin && (
+                          <div className="w-[140px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
+                        )}
+                        <div className="w-[100px]"><div className="h-4 bg-surface-3 rounded w-16" /></div>
+                        <div className="w-[110px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
+                        <div className="w-[80px]"><div className="h-4 bg-surface-3 rounded w-12" /></div>
+                        <div className="flex-1 pr-4"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
+                        <div className="w-[140px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
+                        <div className="w-[120px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
+                      </div>
+                    ))}
+                    {/* Mobile skeleton — más simple */}
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div
+                        key={`m-${i}`}
+                        className="md:hidden p-4 border-b border-border-subtle animate-pulse space-y-2"
+                        style={{ animationDelay: `${i * 75}ms` }}
+                      >
+                        <div className="h-4 bg-surface-3 rounded w-2/3" />
+                        <div className="h-3 bg-surface-3 rounded w-1/2" />
+                        <div className="h-3 bg-surface-3 rounded w-3/4" />
+                      </div>
+                    ))}
+                  </div>
+                </>
               ) : logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 py-20">
                   <FileText className="w-10 h-10 text-muted-foreground mb-4" />
