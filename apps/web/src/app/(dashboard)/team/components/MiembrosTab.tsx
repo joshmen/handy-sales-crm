@@ -45,6 +45,12 @@ import { usePaginatedUsers, useCreateUser, useUpdateUser } from '@/hooks/useUser
 import { roleService, Role } from '@/services/api/roleService';
 import { usersService, type UsuarioUbicacion, type User as ApiUser } from '@/services/api/users';
 import { teamLocationService, type UltimaUbicacionVendedor, type EventoGpsDelDia } from '@/services/api/teamLocation';
+import dynamic from 'next/dynamic';
+
+// Leaflet manipula `window` directamente — dynamic import sin SSR.
+const GpsActivityMap = dynamic(() => import('./GpsActivityMap'), { ssr: false, loading: () => (
+  <div className="flex items-center justify-center h-96 bg-surface-3 rounded-lg text-sm text-muted-foreground">Cargando mapa...</div>
+)});
 import { zoneService } from '@/services/api/zones';
 import { UserRole, UserStatus, type User } from '@/types/users';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -1408,12 +1414,15 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
               <p className="text-xs text-muted-foreground mt-1">{t('gpsActivity.noEventsDesc')}</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Fase B: mapa con polyline del recorrido + marcadores por tipo */}
+              <GpsActivityMap eventos={gpsEventos} />
+              <div className="space-y-3">
               {gpsEventos.map((ev, i) => {
                 const cuando = new Date(ev.cuando);
                 const hora = cuando.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-                const tipoIcon = ev.tipo === 'visita' ? '👥' : ev.tipo === 'parada' ? '🛣️' : '🛒';
-                const tipoLabel = ev.tipo === 'visita' ? t('gpsActivity.visitTo') : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop') : t('gpsActivity.orderCreated');
+                const tipoIcon = ev.tipo === 'visita' ? '👥' : ev.tipo === 'parada' ? '🛣️' : ev.tipo === 'cobro' ? '💰' : ev.tipo === 'checkpoint' ? '📍' : '🛒';
+                const tipoLabel = ev.tipo === 'visita' ? t('gpsActivity.visitTo') : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop') : ev.tipo === 'checkpoint' ? t('gpsActivity.checkpoint') : t('gpsActivity.orderCreated');
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${ev.latitud},${ev.longitud}`;
                 return (
                   <div key={`${ev.tipo}-${ev.referenciaId}-${i}`} className="border border-border-subtle rounded-lg p-3 bg-surface-2">
@@ -1446,6 +1455,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   </div>
                 );
               })}
+              </div>
             </div>
           )}
         </div>

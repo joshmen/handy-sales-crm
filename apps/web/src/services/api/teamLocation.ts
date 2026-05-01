@@ -1,6 +1,6 @@
 import { api, handleApiError } from '@/lib/api';
 
-export type FuenteUbicacion = 'visita' | 'parada' | 'pedido';
+export type FuenteUbicacion = 'visita' | 'parada' | 'pedido' | 'cobro' | 'checkpoint' | 'inicio_ruta' | 'fin_ruta' | 'tracking';
 
 export interface UltimaUbicacionVendedor {
   usuarioId: number;

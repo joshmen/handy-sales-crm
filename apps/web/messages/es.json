@@ -2165,6 +2165,7 @@
         "visitTo": "Visita",
         "arrivedAtStop": "Llegada a parada",
         "orderCreated": "Pedido",
+        "checkpoint": "Checkpoint",
         "openInMaps": "Ver en Maps",
         "faseAHint": "Fase 1: muestra la actividad GPS ya capturada por visitas, paradas de ruta y pedidos. El tracking continuo automático llega en una próxima actualización."
       },
