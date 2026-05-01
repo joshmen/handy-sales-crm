@@ -149,6 +149,7 @@ builder.Services.AddHostedService<ScheduledActionProcessor>();
 builder.Services.AddHostedService<SubscriptionMonitor>();
 builder.Services.AddHostedService<AutomationEngine>();
 builder.Services.AddHostedService<MaterializedViewRefresher>();
+builder.Services.AddHostedService<HandySuites.Api.Jobs.AggregateLocationHistoryJob>();
 
 var app = builder.Build();
 
