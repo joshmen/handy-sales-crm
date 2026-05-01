@@ -40,6 +40,7 @@ import { useRealtime } from '@/hooks';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { useHorarioLaboralWatcher } from '@/hooks/useHorarioLaboralWatcher';
 import { useRutaJornadaWatcher } from '@/hooks/useRutaJornadaWatcher';
+import { PrivacyConsentModal } from '@/components/shared/PrivacyConsentModal';
 
 function GlobalPermissionDialog() {
   const { visible, title, message, confirmText, cancelText, handleConfirm, handleCancel } = usePermissionDialogStore();
@@ -258,6 +259,7 @@ export default function RootLayout() {
             )}
             <Toast />
             <GlobalPermissionDialog />
+            <PrivacyConsentModal />
           </QueryProvider>
         </DatabaseProvider>
       </ErrorBoundary>
