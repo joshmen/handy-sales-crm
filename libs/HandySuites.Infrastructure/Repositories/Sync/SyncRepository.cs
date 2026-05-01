@@ -1,3 +1,4 @@
+using HandySuites.Application.Common;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Application.Sync.Interfaces;
 using HandySuites.Domain.Entities;
@@ -342,21 +343,24 @@ public class SyncRepository : ISyncRepository
                     // Remove existing detalles
                     _db.DetallePedidos.RemoveRange(existing.Detalles);
 
-                    // Look up server-side prices for all products in this order
+                    // Look up server-side product info (precio + tasa + flag IVA-incluido)
+                    // para que el cálculo respete el catálogo de impuestos por producto.
+                    // Bug histórico: este path hardcodeaba 0.16m on-top y producía
+                    // doble-IVA cuando el producto ya traía IVA en el precio.
                     var productoIds = dto.Detalles.Select(d => d.ProductoId).Distinct().ToList();
-                    var serverPrices = await _db.Productos
-                        .AsNoTracking()
-                        .Where(p => productoIds.Contains(p.Id) && p.TenantId == tenantId)
-                        .ToDictionaryAsync(p => p.Id, p => p.PrecioBase);
+                    var productosInfo = await GetProductoPricingInfoAsync(productoIds, tenantId);
 
-                    // Add new detalles with server-validated prices
+                    // Add new detalles with server-validated prices + correct IVA calc
                     foreach (var detalleDto in dto.Detalles)
                     {
-                        var serverPrice = serverPrices.GetValueOrDefault(detalleDto.ProductoId, detalleDto.PrecioUnitario);
-                        var lineSubtotal = serverPrice * detalleDto.Cantidad;
-                        var lineDescuento = detalleDto.Descuento;
-                        var lineImpuesto = (lineSubtotal - lineDescuento) * 0.16m;
-                        var lineTotal = lineSubtotal - lineDescuento + lineImpuesto;
+                        var info = productosInfo.GetValueOrDefault(detalleDto.ProductoId);
+                        var serverPrice = info.Precio ?? detalleDto.PrecioUnitario;
+                        var amounts = LineAmountCalculator.Calculate(
+                            serverPrice,
+                            detalleDto.Cantidad,
+                            detalleDto.Descuento,
+                            info.Tasa,
+                            info.PrecioIncluyeIva);
 
                         var detalle = new DetallePedido
                         {
@@ -365,11 +369,11 @@ public class SyncRepository : ISyncRepository
                             ProductoId = detalleDto.ProductoId,
                             Cantidad = detalleDto.Cantidad,
                             PrecioUnitario = serverPrice,
-                            Descuento = lineDescuento,
+                            Descuento = detalleDto.Descuento,
                             PorcentajeDescuento = detalleDto.PorcentajeDescuento,
-                            Subtotal = lineSubtotal,
-                            Impuesto = lineImpuesto,
-                            Total = lineTotal,
+                            Subtotal = amounts.Subtotal,
+                            Impuesto = amounts.Impuesto,
+                            Total = amounts.Total,
                             Notas = detalleDto.Notas,
                             CantidadBonificada = detalleDto.CantidadBonificada,
                             CreadoEn = DateTime.UtcNow,
@@ -405,13 +409,10 @@ public class SyncRepository : ISyncRepository
             }
         }
 
-        // Create new pedido — look up server-side prices first
+        // Create new pedido — look up server-side product info (precio + tasa + flag IVA)
+        // para usar LineAmountCalculator que respeta el catálogo de impuestos.
         var newProductoIds = dto.Detalles?.Select(d => d.ProductoId).Distinct().ToList() ?? new List<int>();
-        var newServerPrices = newProductoIds.Count > 0
-            ? await _db.Productos.AsNoTracking()
-                .Where(p => newProductoIds.Contains(p.Id) && p.TenantId == tenantId)
-                .ToDictionaryAsync(p => p.Id, p => p.PrecioBase)
-            : new Dictionary<int, decimal>();
+        var newProductosInfo = await GetProductoPricingInfoAsync(newProductoIds, tenantId);
 
         // Build detalles with server-validated prices to compute correct totals
         var newDetalles = new List<DetallePedido>();
@@ -419,11 +420,14 @@ public class SyncRepository : ISyncRepository
         {
             foreach (var detalleDto in dto.Detalles)
             {
-                var serverPrice = newServerPrices.GetValueOrDefault(detalleDto.ProductoId, detalleDto.PrecioUnitario);
-                var lineSubtotal = serverPrice * detalleDto.Cantidad;
-                var lineDescuento = detalleDto.Descuento;
-                var lineImpuesto = (lineSubtotal - lineDescuento) * 0.16m;
-                var lineTotal = lineSubtotal - lineDescuento + lineImpuesto;
+                var info = newProductosInfo.GetValueOrDefault(detalleDto.ProductoId);
+                var serverPrice = info.Precio ?? detalleDto.PrecioUnitario;
+                var amounts = LineAmountCalculator.Calculate(
+                    serverPrice,
+                    detalleDto.Cantidad,
+                    detalleDto.Descuento,
+                    info.Tasa,
+                    info.PrecioIncluyeIva);
 
                 newDetalles.Add(new DetallePedido
                 {
@@ -431,11 +435,11 @@ public class SyncRepository : ISyncRepository
                     ProductoId = detalleDto.ProductoId,
                     Cantidad = detalleDto.Cantidad,
                     PrecioUnitario = serverPrice,
-                    Descuento = lineDescuento,
+                    Descuento = detalleDto.Descuento,
                     PorcentajeDescuento = detalleDto.PorcentajeDescuento,
-                    Subtotal = lineSubtotal,
-                    Impuesto = lineImpuesto,
-                    Total = lineTotal,
+                    Subtotal = amounts.Subtotal,
+                    Impuesto = amounts.Impuesto,
+                    Total = amounts.Total,
                     Notas = detalleDto.Notas,
                     CantidadBonificada = detalleDto.CantidadBonificada,
                     CreadoEn = DateTime.UtcNow,
@@ -1062,5 +1066,46 @@ public class SyncRepository : ISyncRepository
             if (modificado <= since.Value) return null;
         }
         return entity;
+    }
+
+    /// <summary>
+    /// Carga precio + tasa + flag IVA-incluido por producto en una sola query.
+    /// Resuelve la tasa real desde TasasImpuesto del tenant (FK del producto, o
+    /// fallback a la default del tenant si el producto no tiene FK seteada).
+    /// Default final 0.16 si no hay tasa default configurada.
+    /// </summary>
+    private struct ProductoPricingInfo
+    {
+        public decimal? Precio;
+        public bool PrecioIncluyeIva;
+        public decimal Tasa;
+    }
+
+    private async Task<Dictionary<int, ProductoPricingInfo>> GetProductoPricingInfoAsync(
+        List<int> productoIds, int tenantId)
+    {
+        if (productoIds.Count == 0) return new Dictionary<int, ProductoPricingInfo>();
+
+        var productos = await _db.Productos.AsNoTracking()
+            .Where(p => productoIds.Contains(p.Id) && p.TenantId == tenantId)
+            .Select(p => new { p.Id, p.PrecioBase, p.PrecioIncluyeIva, p.TasaImpuestoId })
+            .ToListAsync();
+
+        var tasas = await _db.TasasImpuesto.AsNoTracking()
+            .Where(t => t.TenantId == tenantId && t.Activo)
+            .Select(t => new { t.Id, t.Tasa, t.EsDefault })
+            .ToListAsync();
+
+        var tasaMap = tasas.ToDictionary(t => t.Id, t => t.Tasa);
+        var defaultTasa = tasas.FirstOrDefault(t => t.EsDefault)?.Tasa ?? 0.16m;
+
+        return productos.ToDictionary(p => p.Id, p => new ProductoPricingInfo
+        {
+            Precio = p.PrecioBase,
+            PrecioIncluyeIva = p.PrecioIncluyeIva,
+            Tasa = (p.TasaImpuestoId.HasValue && tasaMap.TryGetValue(p.TasaImpuestoId.Value, out var t))
+                ? t
+                : defaultTasa
+        });
     }
 }
