@@ -86,9 +86,19 @@ export async function recordPing(
     }
     if (status !== 'granted') return;
 
-    const pos = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    // getCurrentPositionAsync puede tardar (espera fix fresco) o fallar en
+    // ambientes sin GPS lock (interiores, primer arranque, emulador). Fallback
+    // a la última posición conocida — mejor un ping con coords cacheadas que
+    // un silent skip que pierde el evento.
+    let pos: Location.LocationObject | null = null;
+    try {
+      pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+    } catch {
+      pos = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60_000 });
+    }
+    if (!pos) return;
 
     const usuarioId = currentUsuarioId;
     const ahora = Date.now();
