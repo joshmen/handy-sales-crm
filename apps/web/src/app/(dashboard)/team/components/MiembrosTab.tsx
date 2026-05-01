@@ -1420,8 +1420,27 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
               <div className="space-y-3">
               {gpsEventos.map((ev, i) => {
                 const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
-                const tipoIcon = ev.tipo === 'visita' ? '👥' : ev.tipo === 'parada' ? '🛣️' : ev.tipo === 'cobro' ? '💰' : ev.tipo === 'checkpoint' ? '📍' : '🛒';
-                const tipoLabel = ev.tipo === 'visita' ? t('gpsActivity.visitTo') : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop') : ev.tipo === 'checkpoint' ? t('gpsActivity.checkpoint') : t('gpsActivity.orderCreated');
+                const tipoIcon =
+                  ev.tipo === 'visita' ? '👥'
+                  : ev.tipo === 'parada' ? '🛣️'
+                  : ev.tipo === 'cobro' ? '💰'
+                  : ev.tipo === 'checkpoint' ? '📍'
+                  : ev.tipo === 'inicio_ruta' ? '▶️'
+                  : ev.tipo === 'fin_ruta' ? '⏹️'
+                  : ev.tipo === 'inicio_jornada' ? '🟢'
+                  : ev.tipo === 'fin_jornada' ? '🔴'
+                  : ev.tipo === 'stop_automatico' ? '🌙'
+                  : '🛒';
+                const tipoLabel =
+                  ev.tipo === 'visita' ? t('gpsActivity.visitTo')
+                  : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop')
+                  : ev.tipo === 'checkpoint' ? t('gpsActivity.checkpoint')
+                  : ev.tipo === 'inicio_ruta' ? t('gpsActivity.routeStart')
+                  : ev.tipo === 'fin_ruta' ? t('gpsActivity.routeEnd')
+                  : ev.tipo === 'inicio_jornada' ? t('gpsActivity.workdayStart')
+                  : ev.tipo === 'fin_jornada' ? t('gpsActivity.workdayEnd')
+                  : ev.tipo === 'stop_automatico' ? t('gpsActivity.autoStop')
+                  : t('gpsActivity.orderCreated');
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${ev.latitud},${ev.longitud}`;
                 return (
                   <div key={`${ev.tipo}-${ev.referenciaId}-${i}`} className="border border-border-subtle rounded-lg p-3 bg-surface-2">

@@ -109,6 +109,11 @@ public static class TeamLocationEndpoints
                         : ping.Tipo == TipoPingUbicacion.Venta ? "pedido"
                         : ping.Tipo == TipoPingUbicacion.Visita ? "visita"
                         : ping.Tipo == TipoPingUbicacion.Cobro ? "cobro"
+                        : ping.Tipo == TipoPingUbicacion.InicioRuta ? "inicio_ruta"
+                        : ping.Tipo == TipoPingUbicacion.FinRuta ? "fin_ruta"
+                        : ping.Tipo == TipoPingUbicacion.InicioJornada ? "inicio_jornada"
+                        : ping.Tipo == TipoPingUbicacion.FinJornada ? "fin_jornada"
+                        : ping.Tipo == TipoPingUbicacion.StopAutomatico ? "stop_automatico"
                         : "tracking",
                     null,
                     0);
@@ -230,7 +235,11 @@ public static class TeamLocationEndpoints
                         : p.Tipo == TipoPingUbicacion.Visita ? "visita"
                         : p.Tipo == TipoPingUbicacion.Cobro ? "cobro"
                         : p.Tipo == TipoPingUbicacion.InicioRuta ? "inicio_ruta"
-                        : "fin_ruta",
+                        : p.Tipo == TipoPingUbicacion.FinRuta ? "fin_ruta"
+                        : p.Tipo == TipoPingUbicacion.InicioJornada ? "inicio_jornada"
+                        : p.Tipo == TipoPingUbicacion.FinJornada ? "fin_jornada"
+                        : p.Tipo == TipoPingUbicacion.StopAutomatico ? "stop_automatico"
+                        : "checkpoint",
                     cuando = p.CapturadoEn,
                     latitud = (double)p.Latitud,
                     longitud = (double)p.Longitud,

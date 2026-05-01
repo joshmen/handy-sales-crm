@@ -13,7 +13,18 @@ function ensureUtc(value: string): string {
   return value + 'Z';
 }
 
-export type FuenteUbicacion = 'visita' | 'parada' | 'pedido' | 'cobro' | 'checkpoint' | 'inicio_ruta' | 'fin_ruta' | 'tracking';
+export type FuenteUbicacion =
+  | 'visita'
+  | 'parada'
+  | 'pedido'
+  | 'cobro'
+  | 'checkpoint'
+  | 'inicio_ruta'
+  | 'fin_ruta'
+  | 'inicio_jornada'
+  | 'fin_jornada'
+  | 'stop_automatico'
+  | 'tracking';
 
 export interface UltimaUbicacionVendedor {
   usuarioId: number;

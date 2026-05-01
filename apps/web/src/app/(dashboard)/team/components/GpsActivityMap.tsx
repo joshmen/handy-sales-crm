@@ -17,6 +17,9 @@ const COLOR_BY_TYPE: Record<string, string> = {
   checkpoint: '#94a3b8',
   inicio_ruta: '#10b981',
   fin_ruta: '#ef4444',
+  inicio_jornada: '#22c55e',
+  fin_jornada: '#dc2626',
+  stop_automatico: '#64748b',
 };
 
 const ICON_BY_TYPE: Record<string, string> = {
@@ -27,6 +30,9 @@ const ICON_BY_TYPE: Record<string, string> = {
   checkpoint: '📍',
   inicio_ruta: '▶️',
   fin_ruta: '⏹️',
+  inicio_jornada: '🟢',
+  fin_jornada: '🔴',
+  stop_automatico: '🌙',
 };
 
 /**

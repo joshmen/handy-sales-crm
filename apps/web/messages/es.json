@@ -2166,6 +2166,11 @@
         "arrivedAtStop": "Llegada a parada",
         "orderCreated": "Pedido",
         "checkpoint": "Checkpoint",
+        "routeStart": "Inicio de ruta",
+        "routeEnd": "Fin de ruta",
+        "workdayStart": "Inicio de jornada",
+        "workdayEnd": "Fin de jornada",
+        "autoStop": "Cierre automático",
         "openInMaps": "Ver en Maps",
         "faseAHint": "Fase 1: muestra la actividad GPS ya capturada por visitas, paradas de ruta y pedidos. El tracking continuo automático llega en una próxima actualización."
       },
