@@ -2151,23 +2151,23 @@
       "members": "Miembros",
       "devices": "Dispositivos"
     },
-    "gpsActivity": {
-      "lastGpsActivity": "Última ubicación",
-      "noGpsToday": "Sin actividad GPS",
-      "activity": "Actividad GPS",
-      "activityOf": "Actividad GPS de {name}",
-      "loading": "Cargando actividad...",
-      "noEvents": "Sin eventos GPS hoy",
-      "noEventsDesc": "Cuando el vendedor haga visitas, llegue a paradas o registre pedidos con ubicación, aparecerán aquí.",
-      "visitTo": "Visita",
-      "arrivedAtStop": "Llegada a parada",
-      "orderCreated": "Pedido",
-      "openInMaps": "Ver en Maps",
-      "faseAHint": "Fase 1: muestra la actividad GPS ya capturada por visitas, paradas de ruta y pedidos. El tracking continuo automático llega en una próxima actualización."
-    },
     "userCreated": "Usuario creado exitosamente",
     "userUpdated": "Usuario actualizado",
     "members": {
+      "gpsActivity": {
+        "lastGpsActivity": "Última ubicación",
+        "noGpsToday": "Sin actividad GPS",
+        "activity": "Actividad GPS",
+        "activityOf": "Actividad GPS de {name}",
+        "loading": "Cargando actividad...",
+        "noEvents": "Sin eventos GPS hoy",
+        "noEventsDesc": "Cuando el vendedor haga visitas, llegue a paradas o registre pedidos con ubicación, aparecerán aquí.",
+        "visitTo": "Visita",
+        "arrivedAtStop": "Llegada a parada",
+        "orderCreated": "Pedido",
+        "openInMaps": "Ver en Maps",
+        "faseAHint": "Fase 1: muestra la actividad GPS ya capturada por visitas, paradas de ruta y pedidos. El tracking continuo automático llega en una próxima actualización."
+      },
       "noUsers": "No hay usuarios",
       "noUsersDesc": "Crea un nuevo usuario para comenzar",
       "newUser": "Nuevo usuario",

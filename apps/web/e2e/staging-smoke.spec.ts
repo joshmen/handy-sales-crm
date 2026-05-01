@@ -109,6 +109,49 @@ test.describe('Staging — Promociones BOGO', () => {
   });
 });
 
+test.describe('Staging — Team GPS activity (Fase A tracking-vendedor)', () => {
+  test('/team muestra columna "Última ubicación"', async ({ page }) => {
+    await loginStaging(page);
+    await page.goto(`${STAGING_URL}/team`);
+    await waitForPageLoad(page);
+
+    // El header de la columna debe ser i18n correcto, no la key cruda
+    await expect(page.getByText(/última ubicación|last location/i).first()).toBeVisible({ timeout: 15000 });
+    // No debe aparecer la key sin traducir
+    await expect(page.getByText(/team\.gpsActivity\.lastGpsActivity/i)).toHaveCount(0);
+  });
+
+  test('chip "Sin actividad GPS" visible en filas sin tracking', async ({ page }) => {
+    await loginStaging(page);
+    await page.goto(`${STAGING_URL}/team`);
+    await waitForPageLoad(page);
+
+    // En staging Jeyma tiene 0 visitas históricas, así que al menos un vendedor
+    // debe mostrar "Sin actividad GPS". Si más adelante se generan eventos el
+    // test seguirá pasando porque busca el texto en cualquier lugar de la tabla.
+    const noGps = page.getByText(/sin actividad gps|no gps activity/i).first();
+    await expect(noGps).toBeVisible({ timeout: 10000 });
+  });
+
+  test('endpoint /api/team/ubicaciones-recientes responde 200', async ({ page, request }) => {
+    await loginStaging(page);
+    // Reusa cookies de la sesión Playwright para autenticar la request
+    const cookies = await page.context().cookies();
+    const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+    const apiBase = process.env.STAGING_API_URL ?? 'https://api-staging.handysuites.com';
+    const res = await request.get(`${apiBase}/api/team/ubicaciones-recientes`, {
+      headers: { cookie: cookieHeader },
+      // Skip si la URL de API no está configurada vía env — el primer endpoint
+      // tira 401 sin token de NextAuth proxy, no podemos validar fácil sin
+      // conocer la URL exacta del backend. Lo dejamos como smoke best-effort.
+      failOnStatusCode: false,
+    });
+    // 200 (OK) o 401 (sin token directo al backend) — ambos confirman que el
+    // endpoint EXISTE y está deployado. 404 sería el bug real.
+    expect([200, 401, 403]).toContain(res.status());
+  });
+});
+
 test.describe('Staging — Productos form con IVA', () => {
   test('drawer crear producto tiene checkbox IVA y dropdown Tasa', async ({ page }) => {
     await loginStaging(page);

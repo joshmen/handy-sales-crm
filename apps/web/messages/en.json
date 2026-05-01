@@ -2151,23 +2151,23 @@
       "members": "Members",
       "devices": "Devices"
     },
-    "gpsActivity": {
-      "lastGpsActivity": "Last location",
-      "noGpsToday": "No GPS activity",
-      "activity": "GPS activity",
-      "activityOf": "{name}'s GPS activity",
-      "loading": "Loading activity...",
-      "noEvents": "No GPS events today",
-      "noEventsDesc": "When the salesperson does visits, arrives at stops, or records orders with location, they will appear here.",
-      "visitTo": "Visit",
-      "arrivedAtStop": "Stop arrival",
-      "orderCreated": "Order",
-      "openInMaps": "View in Maps",
-      "faseAHint": "Phase 1: shows GPS activity already captured by visits, route stops and orders. Continuous automatic tracking comes in a next release."
-    },
     "userCreated": "User created successfully",
     "userUpdated": "User updated",
     "members": {
+      "gpsActivity": {
+        "lastGpsActivity": "Last location",
+        "noGpsToday": "No GPS activity",
+        "activity": "GPS activity",
+        "activityOf": "{name}'s GPS activity",
+        "loading": "Loading activity...",
+        "noEvents": "No GPS events today",
+        "noEventsDesc": "When the salesperson does visits, arrives at stops, or records orders with location, they will appear here.",
+        "visitTo": "Visit",
+        "arrivedAtStop": "Stop arrival",
+        "orderCreated": "Order",
+        "openInMaps": "View in Maps",
+        "faseAHint": "Phase 1: shows GPS activity already captured by visits, route stops and orders. Continuous automatic tracking comes in a next release."
+      },
       "loading": "Loading...",
       "refresh": "Refresh",
       "assignVendors": "Assign Vendors",
