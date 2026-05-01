@@ -3,6 +3,7 @@
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { EventoGpsDelDia } from '@/services/api/teamLocation';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface GpsActivityMapProps {
   eventos: EventoGpsDelDia[];
@@ -36,6 +37,8 @@ const ICON_BY_TYPE: Record<string, string> = {
  * (Leaflet manipula `window` directamente — falla en server-render).
  */
 export default function GpsActivityMap({ eventos }: GpsActivityMapProps) {
+  const { formatDate } = useFormatters();
+
   if (eventos.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 bg-surface-3 rounded-lg text-sm text-muted-foreground">
@@ -64,7 +67,7 @@ export default function GpsActivityMap({ eventos }: GpsActivityMapProps) {
         {eventos.map((ev, i) => {
           const color = COLOR_BY_TYPE[ev.tipo] ?? '#94a3b8';
           const icon = ICON_BY_TYPE[ev.tipo] ?? '📍';
-          const hora = new Date(ev.cuando).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+          const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
           return (
             <CircleMarker
               key={`${ev.tipo}-${ev.referenciaId ?? 'np'}-${i}`}

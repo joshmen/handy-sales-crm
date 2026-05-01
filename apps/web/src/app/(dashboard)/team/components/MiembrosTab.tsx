@@ -1419,8 +1419,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
               <GpsActivityMap eventos={gpsEventos} />
               <div className="space-y-3">
               {gpsEventos.map((ev, i) => {
-                const cuando = new Date(ev.cuando);
-                const hora = cuando.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
                 const tipoIcon = ev.tipo === 'visita' ? '👥' : ev.tipo === 'parada' ? '🛣️' : ev.tipo === 'cobro' ? '💰' : ev.tipo === 'checkpoint' ? '📍' : '🛒';
                 const tipoLabel = ev.tipo === 'visita' ? t('gpsActivity.visitTo') : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop') : ev.tipo === 'checkpoint' ? t('gpsActivity.checkpoint') : t('gpsActivity.orderCreated');
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${ev.latitud},${ev.longitud}`;
