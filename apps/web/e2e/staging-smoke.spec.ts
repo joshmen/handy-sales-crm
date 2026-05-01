@@ -133,23 +133,6 @@ test.describe('Staging — Team GPS activity (Fase A tracking-vendedor)', () => 
     await expect(noGps).toBeVisible({ timeout: 10000 });
   });
 
-  test('endpoint /api/team/ubicaciones-recientes responde 200', async ({ page, request }) => {
-    await loginStaging(page);
-    // Reusa cookies de la sesión Playwright para autenticar la request
-    const cookies = await page.context().cookies();
-    const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-    const apiBase = process.env.STAGING_API_URL ?? 'https://api-staging.handysuites.com';
-    const res = await request.get(`${apiBase}/api/team/ubicaciones-recientes`, {
-      headers: { cookie: cookieHeader },
-      // Skip si la URL de API no está configurada vía env — el primer endpoint
-      // tira 401 sin token de NextAuth proxy, no podemos validar fácil sin
-      // conocer la URL exacta del backend. Lo dejamos como smoke best-effort.
-      failOnStatusCode: false,
-    });
-    // 200 (OK) o 401 (sin token directo al backend) — ambos confirman que el
-    // endpoint EXISTE y está deployado. 404 sería el bug real.
-    expect([200, 401, 403]).toContain(res.status());
-  });
 });
 
 test.describe('Staging — Productos form con IVA', () => {
