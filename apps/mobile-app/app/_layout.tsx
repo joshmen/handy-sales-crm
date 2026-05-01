@@ -38,6 +38,8 @@ import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
 import { useRealtime } from '@/hooks';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
+import { useHorarioLaboralWatcher } from '@/hooks/useHorarioLaboralWatcher';
+import { useRutaJornadaWatcher } from '@/hooks/useRutaJornadaWatcher';
 
 function GlobalPermissionDialog() {
   const { visible, title, message, confirmText, cancelText, handleConfirm, handleCancel } = usePermissionDialogStore();
@@ -104,6 +106,11 @@ function LocationTrackingBridge() {
       import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
     };
   }, [isAuthenticated, user?.id, jornadaActiva]);
+
+  // Watchers que disparan transiciones de jornada
+  useHorarioLaboralWatcher();
+  useRutaJornadaWatcher();
+
   return null;
 }
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)
