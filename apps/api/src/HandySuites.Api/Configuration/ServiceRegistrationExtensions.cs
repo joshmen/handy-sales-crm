@@ -237,6 +237,11 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<HandySuites.Application.Impuestos.Interfaces.ITasaImpuestoRepository, HandySuites.Infrastructure.Repositories.Impuestos.TasaImpuestoRepository>();
         services.AddScoped<HandySuites.Application.Impuestos.Services.TasaImpuestoService>();
 
+        // Tracking GPS de vendedores (Fase B)
+        services.AddScoped<HandySuites.Application.Tracking.Interfaces.IUbicacionVendedorRepository, HandySuites.Infrastructure.Repositories.Tracking.UbicacionVendedorRepository>();
+        services.AddScoped<HandySuites.Application.Tracking.Interfaces.ISubscriptionFeatureGuard, HandySuites.Infrastructure.Subscriptions.SubscriptionFeatureGuard>();
+        services.AddScoped<HandySuites.Application.Tracking.Services.UbicacionVendedorService>();
+
         // Activity Tracking
         services.AddScoped<IActivityTrackingRepository, ActivityTrackingRepository>();
         services.AddScoped<IActivityTrackingService, ActivityTrackingService>();
