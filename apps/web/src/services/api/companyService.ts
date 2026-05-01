@@ -43,6 +43,11 @@ export interface CompanySettings {
   updatedBy?: string;
   trialEndsAt?: string | null;
   daysRemaining?: number | null;
+  // Horario laboral para tracking GPS de vendedores. Strings HH:mm (ej: "08:00").
+  // Null/undefined = sin restricción (vendedor controla manualmente).
+  horaInicioJornada?: string | null;
+  horaFinJornada?: string | null;
+  diasLaborables?: string | null; // CSV "1,2,3,4,5" (1=Lun..7=Dom)
 }
 
 export interface UpdateGlobalSettingsRequest {
@@ -69,6 +74,10 @@ export interface UpdateCompanyRequest {
   currency?: string;
   theme?: string;
   country?: string;
+  // Horario laboral. String vacío "" = limpiar campo en DB.
+  horaInicioJornada?: string;
+  horaFinJornada?: string;
+  diasLaborables?: string;
 }
 
 export interface ApiResponse<T> {

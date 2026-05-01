@@ -2418,6 +2418,28 @@
       "system": "Sistema",
       "security": "Seguridad"
     },
+    "workSchedule": {
+      "title": "Horario laboral",
+      "description": "Define cuándo se debe rastrear la ubicación de tus vendedores. Si no configuras horario, cada vendedor controla manualmente su jornada desde la app móvil.",
+      "startTime": "Hora de inicio",
+      "endTime": "Hora de fin",
+      "workDays": "Días laborables",
+      "invalidRange": "La hora de inicio debe ser menor que la de fin.",
+      "hint": "Cuando un vendedor tenga su jornada activa y se llegue la hora de fin, la app cerrará la jornada automáticamente y dejará de registrar su ubicación.",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "saved": "Guardado",
+      "clear": "Limpiar",
+      "days": {
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mié",
+        "thu": "Jue",
+        "fri": "Vie",
+        "sat": "Sáb",
+        "sun": "Dom"
+      }
+    },
     "appearance": {
       "title": "Apariencia",
       "theme": "Tema",

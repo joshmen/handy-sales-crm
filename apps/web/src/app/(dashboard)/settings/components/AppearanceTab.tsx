@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from '@/stores/useUIStore';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useTranslations } from 'next-intl';
+import { HorarioLaboralSection } from './HorarioLaboralSection';
 
 // Value keys for dropdowns — labels resolved via i18n in component
 const TIMEZONE_KEYS = [
@@ -87,6 +88,7 @@ export const AppearanceTab: React.FC = () => {
   };
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <CardTitle>{t('title')}</CardTitle>
@@ -188,5 +190,7 @@ export const AppearanceTab: React.FC = () => {
         </div>
       </CardContent>
     </Card>
+    <HorarioLaboralSection />
+    </div>
   );
 };
