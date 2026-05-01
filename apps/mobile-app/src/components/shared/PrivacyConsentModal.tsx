@@ -53,7 +53,7 @@ export function PrivacyConsentModal() {
             Tu ubicación se registra <Text style={styles.bold}>solo durante tu jornada laboral</Text>, para que tu supervisor pueda ver tu actividad del día.
           </Text>
           <Text style={styles.message}>
-            Vos controlás cuándo arranca y termina la jornada con los botones <Text style={styles.bold}>Iniciar jornada</Text> / <Text style={styles.bold}>Finalizar jornada</Text> en tu pantalla principal.
+            Tú controlas cuándo inicia y termina la jornada con los botones <Text style={styles.bold}>Iniciar jornada</Text> / <Text style={styles.bold}>Finalizar jornada</Text> en tu pantalla principal.
           </Text>
           <Text style={[styles.message, styles.note]}>
             Fuera de la jornada, no se registra absolutamente nada de tu ubicación.
