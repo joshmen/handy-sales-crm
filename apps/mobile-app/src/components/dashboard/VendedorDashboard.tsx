@@ -17,6 +17,7 @@ import { performSync } from '@/sync/syncEngine';
 import { COLORS } from '@/theme/colors';
 import { api } from '@/api/client';
 import { Target } from 'lucide-react-native';
+import { JornadaCard } from './JornadaCard';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
@@ -226,6 +227,13 @@ export function VendedorDashboard() {
             </View>
           </View>
         )}
+      </Animated.View>
+
+      {/* Jornada — control manual del tracking GPS. Ocultamos cuando hay
+          ruta EnProgreso porque el watcher de ruta ya gestiona el estado y
+          el card de ruta es el primary action en ese caso. */}
+      <Animated.View entering={FadeInDown.delay(250).duration(400)}>
+        <JornadaCard hideForActiveRoute={!!route && route.estado === 1} />
       </Animated.View>
 
       {/* Route Progress */}
