@@ -1434,6 +1434,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                 const tipoLabel =
                   ev.tipo === 'visita' ? t('gpsActivity.visitTo')
                   : ev.tipo === 'parada' ? t('gpsActivity.arrivedAtStop')
+                  : ev.tipo === 'cobro' ? t('gpsActivity.payment')
                   : ev.tipo === 'checkpoint' ? t('gpsActivity.checkpoint')
                   : ev.tipo === 'inicio_ruta' ? t('gpsActivity.routeStart')
                   : ev.tipo === 'fin_ruta' ? t('gpsActivity.routeEnd')

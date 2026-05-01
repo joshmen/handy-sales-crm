@@ -2165,6 +2165,7 @@
         "visitTo": "Visit",
         "arrivedAtStop": "Stop arrival",
         "orderCreated": "Order",
+        "payment": "Payment",
         "checkpoint": "Checkpoint",
         "routeStart": "Route start",
         "routeEnd": "Route end",
