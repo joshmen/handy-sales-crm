@@ -55,25 +55,39 @@ public class UbicacionVendedorRepository : IUbicacionVendedorRepository
     public async Task<List<UltimaUbicacionDto>> ObtenerUltimasAsync(int tenantId, List<int>? usuarioIds = null)
     {
         // Postgres DISTINCT ON: para cada usuario, traer el ping más reciente.
-        // EF no traduce DISTINCT ON nativamente — usamos GroupBy + agregado.
-        var query = _db.UbicacionesVendedor.AsNoTracking()
-            .Where(u => u.TenantId == tenantId);
-        if (usuarioIds != null && usuarioIds.Count > 0)
-            query = query.Where(u => usuarioIds.Contains(u.UsuarioId));
+        // EF no traduce GroupBy.First() nativamente — usamos SQL raw con DISTINCT ON
+        // que es la forma idiomática y eficiente en Postgres (1 index seek por grupo).
+        var sql = usuarioIds != null && usuarioIds.Count > 0
+            ? @"
+                SELECT DISTINCT ON (usuario_id)
+                    usuario_id, latitud, longitud, tipo, capturado_en
+                FROM ""UbicacionesVendedor""
+                WHERE tenant_id = {0} AND eliminado_en IS NULL AND usuario_id = ANY({1})
+                ORDER BY usuario_id, capturado_en DESC"
+            : @"
+                SELECT DISTINCT ON (usuario_id)
+                    usuario_id, latitud, longitud, tipo, capturado_en
+                FROM ""UbicacionesVendedor""
+                WHERE tenant_id = {0} AND eliminado_en IS NULL
+                ORDER BY usuario_id, capturado_en DESC";
 
-        return await query
-            .GroupBy(u => u.UsuarioId)
-            .Select(g => g.OrderByDescending(u => u.CapturadoEn).First())
-            .Select(u => new UltimaUbicacionDto
-            {
-                UsuarioId = u.UsuarioId,
-                Latitud = u.Latitud,
-                Longitud = u.Longitud,
-                Tipo = u.Tipo,
-                CapturadoEn = u.CapturadoEn,
-            })
-            .ToListAsync();
+        var rows = usuarioIds != null && usuarioIds.Count > 0
+            ? await _db.Database.SqlQueryRaw<UltimaUbicacionRaw>(sql, tenantId, usuarioIds.ToArray()).ToListAsync()
+            : await _db.Database.SqlQueryRaw<UltimaUbicacionRaw>(sql, tenantId).ToListAsync();
+
+        return rows.Select(r => new UltimaUbicacionDto
+        {
+            UsuarioId = r.usuario_id,
+            Latitud = r.latitud,
+            Longitud = r.longitud,
+            Tipo = (HandySuites.Domain.Common.TipoPingUbicacion)r.tipo,
+            CapturadoEn = r.capturado_en,
+        }).ToList();
     }
+
+    // Postgres SqlQueryRaw requiere POCO con propiedades exactamente igual al column alias.
+    // Mapeo a UltimaUbicacionDto se hace en C# después del query.
+    private record UltimaUbicacionRaw(int usuario_id, decimal latitud, decimal longitud, int tipo, DateTime capturado_en);
 
     public Task<List<UbicacionVendedorDto>> ObtenerRecorridoDelDiaAsync(int tenantId, int usuarioId, DateOnly dia)
     {

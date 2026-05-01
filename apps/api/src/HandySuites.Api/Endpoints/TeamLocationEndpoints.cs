@@ -81,12 +81,16 @@ public static class TeamLocationEndpoints
                 p.UsuarioId, p.Latitud!.Value, p.Longitud!.Value,
                 p.CreadoEn, "pedido", p.ClienteId, p.Id));
 
-        var union = visitas.Concat(paradas).Concat(pedidos);
-
-        var legacyData = await union
+        // Materializamos cada fuente por separado y agrupamos en C# — el
+        // GroupBy.First() sobre Concat() no es traducible por EF Core. Para
+        // pocos vendedores por tenant (decenas, no miles) es perfectamente OK.
+        var visitasData = await visitas.ToListAsync();
+        var paradasData = await paradas.ToListAsync();
+        var pedidosData = await pedidos.ToListAsync();
+        var legacyData = visitasData.Concat(paradasData).Concat(pedidosData)
             .GroupBy(x => x.UsuarioId)
             .Select(g => g.OrderByDescending(x => x.Cuando).First())
-            .ToListAsync();
+            .ToList();
 
         // Fusión: pings de UbicacionVendedor tienen prioridad si son más recientes
         // que el evento legacy del mismo vendedor.
