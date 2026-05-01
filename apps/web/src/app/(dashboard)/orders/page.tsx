@@ -825,7 +825,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2.5">
-                        <span className="font-medium text-foreground">${formatCurrency(order.total)}</span>
+                        <span className="font-medium text-foreground">{formatCurrency(order.total)}</span>
                         <span>•</span>
                         <span>{formatDate(order.orderDate, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                         <span>•</span>
