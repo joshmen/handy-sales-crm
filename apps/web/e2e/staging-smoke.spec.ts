@@ -1,17 +1,16 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
+import fs from 'fs';
 
 /**
  * Smoke tests contra staging real (https://staging.handysuites.com).
  *
- * Usa storageState pre-cargado desde e2e/.auth/staging.json (generado por
- * `npx tsx e2e/staging-auth-setup.ts` que abre browser headed para que el
- * usuario pase el gate de Vercel y se loguee manualmente).
+ * Workaround: `test.use({ storageState })` descarta la cookie
+ * `__Secure-next-auth.session-token` (httpOnly+Secure). Inyectamos las
+ * cookies manualmente con `context.addCookies()` en cada test via beforeEach.
  *
- * Cobertura:
- * - Tasas de impuesto en /products/taxes (movido de settings)
- * - Promociones BOGO: editar pre-existente, crear regalo, badge en tabla
- * - i18n /promotions con keys nuevas (discountOrGift, tipoPromocion)
+ * Pre-requisito: correr `npx tsx e2e/staging-auth-setup.ts` para generar
+ * e2e/.auth/staging.json. Vercel SSO sesión expira tras cada deploy → re-login.
  */
 
 const STAGING_URL = 'https://staging.handysuites.com';
@@ -21,12 +20,16 @@ test.describe.configure({ mode: 'serial' });
 test.use({
   navigationTimeout: 60000,
   actionTimeout: 20000,
-  storageState: STORAGE,
+});
+
+test.beforeEach(async ({ context }) => {
+  if (fs.existsSync(STORAGE)) {
+    const raw = JSON.parse(fs.readFileSync(STORAGE, 'utf8'));
+    await context.addCookies(raw.cookies);
+  }
 });
 
 async function loginStaging(page: Page) {
-  // No-op: storageState ya nos tiene autenticados; solo navegamos para evitar
-  // que algunos tests asuman estar en el dashboard.
   await page.goto(`${STAGING_URL}/dashboard`);
   await page.waitForLoadState('networkidle');
 }

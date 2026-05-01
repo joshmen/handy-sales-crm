@@ -31,17 +31,45 @@ async function main() {
   console.log('  3. Esperá a estar en /dashboard. Auto-guarda y cierra.');
   console.log('========================================\n');
 
+  // Espera que tanto la URL sea autenticada COMO que NextAuth haya seteado
+  // su session-token (httpOnly). Sin esa cookie los tests reabren la pantalla
+  // de login. Verificamos cookies cada loop iteration.
   while (true) {
     const url = page.url();
-    if (url.startsWith('https://staging.handysuites.com/') &&
-        (url.includes('/dashboard') || url.match(/\/(clients|orders|products|promotions|routes|settings|inventory)/))) {
-      console.log(`Detectado URL autenticado: ${url}`);
-      await page.waitForTimeout(3000);
-      await context.storageState({ path: STORAGE_FILE });
-      console.log(`✅ Storage state guardado en ${STORAGE_FILE}`);
+    const cookies = await context.cookies();
+    const hasNextAuthSession = cookies.some(c =>
+      c.name.includes('next-auth.session-token') ||
+      c.name === 'authjs.session-token'
+    );
+    const isAuthedUrl = url.startsWith('https://staging.handysuites.com/') &&
+      (url.includes('/dashboard') || url.match(/\/(clients|orders|products|promotions|routes|settings|inventory|team)/));
+
+    if (isAuthedUrl && hasNextAuthSession) {
+      console.log(`Detectado URL autenticado + session-token: ${url}`);
+      await page.waitForTimeout(2000);
+
+      // context.storageState() a veces omite cookies httpOnly+Secure de NextAuth.
+      // Componemos el archivo manualmente: cookies frescas vía context.cookies()
+      // (que SÍ las trae) y origins via storageState() para localStorage.
+      const freshCookies = await context.cookies();
+      const stateRaw = await context.storageState();
+      const merged = { cookies: freshCookies, origins: stateRaw.origins };
+      fs.writeFileSync(STORAGE_FILE, JSON.stringify(merged, null, 2));
+
+      const hasSessionInFile = freshCookies.some(c =>
+        c.name === '__Secure-next-auth.session-token' || c.name.endsWith('next-auth.session-token')
+      );
+      console.log(`✅ Storage state guardado en ${STORAGE_FILE} (session-token=${hasSessionInFile})`);
+      if (!hasSessionInFile) {
+        console.error('❌ La cookie de sesión no quedó en el archivo. Re-corré el script.');
+        process.exit(1);
+      }
       break;
     }
-    await page.waitForTimeout(1500);
+    if (isAuthedUrl && !hasNextAuthSession) {
+      console.log(`URL autenticada (${url}) pero falta session-token de NextAuth. Logueate completo en la app (email + password).`);
+    }
+    await page.waitForTimeout(2000);
   }
 
   await context.close();

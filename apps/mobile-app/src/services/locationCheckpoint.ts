@@ -77,7 +77,13 @@ export async function recordPing(
   if (trackingDisabled || currentUsuarioId == null) return;
 
   try {
-    const { status } = await Location.getForegroundPermissionsAsync();
+    let { status } = await Location.getForegroundPermissionsAsync();
+    // Si nunca se pidió, lanzamos el prompt aquí. Sin esto, un vendedor
+    // que jamás abre Mapa (donde se pide hoy) nunca dispara tracking.
+    if (status === 'undetermined') {
+      const req = await Location.requestForegroundPermissionsAsync();
+      status = req.status;
+    }
     if (status !== 'granted') return;
 
     const pos = await Location.getCurrentPositionAsync({
