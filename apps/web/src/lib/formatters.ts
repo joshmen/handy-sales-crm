@@ -29,7 +29,14 @@ export function formatDate(
   if (!date) return '';
   const tz = settings?.timezone || 'America/Mexico_City';
   const locale = getLocale(settings);
-  const d = typeof date === 'string' ? new Date(date) : date;
+  // Defensa: backend a veces serializa DateTime sin sufijo 'Z' (Npgsql legacy
+  // mode con Kind=Unspecified). new Date() los interpreta como local → la
+  // conversión a TZ del tenant queda mal. Forzamos UTC si falta marker.
+  const normalized = typeof date === 'string'
+    && !/[Zz]$|[+-]\d{2}:?\d{2}$/.test(date)
+    ? date + 'Z'
+    : date;
+  const d = typeof normalized === 'string' ? new Date(normalized) : normalized;
   if (isNaN(d.getTime())) return '';
   return d.toLocaleString(locale, { timeZone: tz, ...options });
 }
