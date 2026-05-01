@@ -361,14 +361,23 @@ export default function OrdersPage() {
       });
 
       const clientFromCatalog = clients.find(c => c.id === detail.clienteId.toString());
+      const resolvedClient = clientFromCatalog ?? {
+        ...listOrder.client,
+        id: detail.clienteId.toString(),
+        name: detail.clienteNombre,
+        address: detail.clienteDireccion ?? '',
+      };
+
+      // Sin esto, si el cliente del pedido no está en `clients` (cache de 100
+      // primeros), el SearchableSelect del drawer se ve vacío. Inyectamos el
+      // cliente del pedido al array para que el dropdown lo muestre.
+      if (!clientFromCatalog) {
+        setClients(prev => [...prev, resolvedClient as Client]);
+      }
+
       const fullOrder: Order = {
         ...listOrder,
-        client: clientFromCatalog ?? {
-          ...listOrder.client,
-          id: detail.clienteId.toString(),
-          name: detail.clienteNombre,
-          address: detail.clienteDireccion ?? '',
-        },
+        client: resolvedClient,
         clientId: detail.clienteId.toString(),
         items: detalleItems,
         subtotal: detail.subtotal,
