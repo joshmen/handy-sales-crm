@@ -194,6 +194,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       // Never block sync for crash report flush
     }
 
+    // Phase 5: Flush pending GPS pings (Fase B tracking-vendedor)
+    try {
+      const { flushPendingAsync } = await import('@/services/locationCheckpoint');
+      const result = await flushPendingAsync();
+      if (__DEV__ && result.pushed > 0) console.log(`[Sync] Pushed ${result.pushed} GPS pings`);
+      if (__DEV__ && result.disabled) console.log('[Sync] Tracking disabled (plan no aplica)');
+    } catch {
+      // Never block sync for GPS ping flush
+    }
+
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
     // Atomic batch write — await garantiza persistencia antes de resolver el
     // sync. Sin esto, un logout justo después podía dejar storage stale.

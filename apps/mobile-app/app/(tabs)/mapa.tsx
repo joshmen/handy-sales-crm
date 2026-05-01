@@ -230,6 +230,10 @@ function MapaScreenContent() {
         await stopData.stop.arrive(checkInTarget.lat, checkInTarget.lng);
       }
 
+      // Tracking GPS: ping de visita (no-op si plan no aplica).
+      const { recordPing, TipoPing } = await import('@/services/locationCheckpoint');
+      recordPing(TipoPing.Visita).catch(() => {});
+
       setCheckInTarget(null);
       performSync().catch(() => {});
       router.push('/(tabs)/ruta/visita-activa' as any);

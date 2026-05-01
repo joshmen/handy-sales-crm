@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
+import { recordPing, TipoPing } from '@/services/locationCheckpoint';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { Card, Button, ConfirmModal } from '@/components/ui';
@@ -160,6 +161,9 @@ function CrearPedidoStep3() {
           paradaId
         );
 
+        // Tracking GPS: ping al confirmar venta directa (no-op si plan no aplica).
+        recordPing(TipoPing.Venta).catch(() => {});
+
         // Navigate to cobro receipt for printing (VD = sale + immediate payment)
         router.replace({
           pathname: '/(tabs)/cobrar/recibo',
@@ -190,6 +194,8 @@ function CrearPedidoStep3() {
           0, // estado = Borrador → admin/supervisor confirma desde web antes de meter a ruta
           paradaId
         );
+        // Tracking GPS: ping al confirmar pedido (no-op si plan no aplica).
+        recordPing(TipoPing.Venta).catch(() => {});
         router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}${paradaId ? '&fromRuta=1' : ''}` as any);
         reset();
         // WDB sync will push pedido + ruta_detalle to server automatically
