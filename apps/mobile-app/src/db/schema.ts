@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 18,
+  version: 19,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -452,6 +452,23 @@ export const schema = appSchema({
         { name: 'descripcion', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // ubicaciones_vendedor (v19, 2026-05-01) — pings GPS continuos del
+    // vendedor con cola offline. Mobile encola con sincronizado=false; sync
+    // engine pushea batch a /api/mobile/tracking/batch y marca true.
+    tableSchema({
+      name: 'ubicaciones_vendedor',
+      columns: [
+        { name: 'usuario_id', type: 'number', isIndexed: true },
+        { name: 'latitud', type: 'number' },
+        { name: 'longitud', type: 'number' },
+        { name: 'precision_metros', type: 'number', isOptional: true },
+        { name: 'tipo', type: 'number' }, // enum int
+        { name: 'capturado_en', type: 'number' }, // ms epoch del fix GPS real
+        { name: 'referencia_id', type: 'number', isOptional: true },
+        { name: 'sincronizado', type: 'boolean', isIndexed: true },
+        { name: 'created_at', type: 'number' },
       ],
     }),
   ],

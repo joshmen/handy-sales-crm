@@ -458,5 +458,27 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v19 (2026-05-01): tracking GPS continuo de vendedores. Tabla nueva
+      // `ubicaciones_vendedor` para encolar pings offline. Devices en v18
+      // migran auto al abrir la app; ningún query existente se afecta.
+      toVersion: 19,
+      steps: [
+        createTable({
+          name: 'ubicaciones_vendedor',
+          columns: [
+            { name: 'usuario_id', type: 'number', isIndexed: true },
+            { name: 'latitud', type: 'number' },
+            { name: 'longitud', type: 'number' },
+            { name: 'precision_metros', type: 'number', isOptional: true },
+            { name: 'tipo', type: 'number' },
+            { name: 'capturado_en', type: 'number' },
+            { name: 'referencia_id', type: 'number', isOptional: true },
+            { name: 'sincronizado', type: 'boolean', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

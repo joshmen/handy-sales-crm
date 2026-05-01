@@ -20,6 +20,7 @@ import ListaPrecio from './ListaPrecio';
 import Usuario from './Usuario';
 import MetaVendedor from './MetaVendedor';
 import DatosEmpresa from './DatosEmpresa';
+import UbicacionVendedor from './UbicacionVendedor';
 
 export {
   Cliente,
@@ -44,6 +45,7 @@ export {
   Usuario,
   MetaVendedor,
   DatosEmpresa,
+  UbicacionVendedor,
 };
 
 export const modelClasses = [
@@ -69,4 +71,5 @@ export const modelClasses = [
   Usuario,
   MetaVendedor,
   DatosEmpresa,
+  UbicacionVendedor,
 ];
