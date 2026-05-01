@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Play, Square, Clock } from 'lucide-react-native';
+import { Play, Square, Clock, AlertCircle } from 'lucide-react-native';
 import { useJornadaStore } from '@/stores';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { COLORS } from '@/theme/colors';
@@ -8,16 +8,22 @@ import { useTenantLocale } from '@/hooks/useTenantLocale';
 /**
  * Card en home para que el vendedor inicie/finalice su jornada laboral.
  *
- * - Jornada inactiva: card verde grande "Iniciar jornada" — botón primario.
+ * - Jornada inactiva normal: card verde grande "Iniciar jornada" (primary).
  *   Si admin configuró horario y NO estamos en él, muestra chip informativo
  *   pero el botón sigue habilitado (override manual).
  *
- * - Jornada activa: card outline con "🟢 Jornada activa desde 9:23 AM" + botón
- *   secundario "Finalizar jornada".
+ * - Jornada inactiva por cierre automático de horario (motivoStop='horario'):
+ *   banner amarillo "Tu jornada cerró a las HH:mm. ¿Sigues trabajando?" con
+ *   botón "Reanudar". Útil cuando el vendedor sigue en la calle a hora extra
+ *   y queremos avisarle que su tracking se cortó. Si solo sigue vendiendo sin
+ *   presionar Reanudar, el auto-start implícito de recordPing(Venta|Cobro|
+ *   Visita) reabre la jornada igual.
  *
- * Si el vendedor tiene una ruta EnProgreso, NO mostramos esta card porque la
- * ruta ya es el primary action y la jornada se controla automáticamente desde
- * useRutaJornadaWatcher.
+ * - Jornada activa: card outline con dot verde + "Jornada activa desde HH:mm"
+ *   y botón "Finalizar".
+ *
+ * Si el vendedor tiene ruta EnProgreso, NO mostramos esta card porque la ruta
+ * es el primary action y useRutaJornadaWatcher gestiona el estado.
  */
 interface Props {
   hideForActiveRoute?: boolean;
@@ -26,6 +32,7 @@ interface Props {
 export function JornadaCard({ hideForActiveRoute }: Props) {
   const activa = useJornadaStore(s => s.activa);
   const iniciadaEn = useJornadaStore(s => s.iniciadaEn);
+  const motivoStop = useJornadaStore(s => s.motivoStop);
   const iniciarJornada = useJornadaStore(s => s.iniciarJornada);
   const finalizarJornada = useJornadaStore(s => s.finalizarJornada);
   const { time } = useTenantLocale();
@@ -36,6 +43,37 @@ export function JornadaCard({ hideForActiveRoute }: Props) {
   const horaInicio = empresa?.horaInicioJornada;
   const horaFin = empresa?.horaFinJornada;
   const fueraHorario = horaInicio && horaFin && !enHorarioLaboral(horaInicio, horaFin);
+
+  // Variante: jornada cerrada automáticamente por horario laboral.
+  if (!activa && motivoStop === 'horario') {
+    return (
+      <View style={styles.wrapper}>
+        <View style={styles.autoStopBanner}>
+          <View style={styles.autoStopIconBox}>
+            <AlertCircle size={20} color="#b45309" />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.autoStopTitle}>Jornada cerrada automáticamente</Text>
+            <Text style={styles.autoStopSubtitle}>
+              Tu jornada terminó al salir del horario laboral{horaFin ? ` (${horaFin})` : ''}. ¿Sigues trabajando?
+            </Text>
+            <View style={styles.autoStopButtonRow}>
+              <TouchableOpacity
+                style={styles.resumeButton}
+                activeOpacity={0.85}
+                onPress={() => iniciarJornada('manual')}
+                accessibilityRole="button"
+                accessibilityLabel="Reanudar jornada"
+              >
+                <Play size={14} color="#ffffff" fill="#ffffff" />
+                <Text style={styles.resumeButtonText}>Reanudar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   if (!activa) {
     return (
@@ -144,6 +182,37 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   warningChipText: { color: '#b45309', fontSize: 11, fontWeight: '600' },
+  autoStopBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#fef3c7',
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  autoStopIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fde68a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  autoStopTitle: { color: '#78350f', fontSize: 15, fontWeight: '700' },
+  autoStopSubtitle: { color: '#92400e', fontSize: 12, marginTop: 2, lineHeight: 16 },
+  autoStopButtonRow: { flexDirection: 'row', marginTop: 10 },
+  resumeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#16a34a',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  resumeButtonText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
   activeCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
