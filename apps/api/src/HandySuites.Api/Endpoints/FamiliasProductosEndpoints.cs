@@ -1,7 +1,10 @@
 using FluentValidation;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.FamiliasProductos.DTOs;
 using HandySuites.Application.FamiliasProductos.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -12,7 +15,9 @@ public static class FamiliasProductosEndpoints
         app.MapPost("/familias-productos", async (
             FamiliaProductoCreateDto dto,
             IValidator<FamiliaProductoCreateDto> validator,
-            [FromServices] FamiliaProductoService servicio) =>
+            [FromServices] FamiliaProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -21,6 +26,7 @@ public static class FamiliasProductosEndpoints
             try
             {
                 var id = await servicio.CrearFamiliaAsync(dto);
+                await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
                 return Results.Created($"/familias-productos/{id}", new { id });
             }
             catch (InvalidOperationException ex)
@@ -45,7 +51,9 @@ public static class FamiliasProductosEndpoints
             int id,
             FamiliaProductoCreateDto dto,
             IValidator<FamiliaProductoCreateDto> validator,
-            [FromServices] FamiliaProductoService servicio) =>
+            [FromServices] FamiliaProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -59,6 +67,8 @@ public static class FamiliasProductosEndpoints
             try
             {
                 var actualizado = await servicio.ActualizarFamiliaAsync(id, dto);
+                if (actualizado)
+                    await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
             catch (InvalidOperationException ex)
@@ -69,7 +79,9 @@ public static class FamiliasProductosEndpoints
 
         app.MapDelete("/familias-productos/{id:int}", async (
             int id,
-            [FromServices] FamiliaProductoService servicio) =>
+            [FromServices] FamiliaProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await servicio.EliminarFamiliaAsync(id);
 
@@ -89,10 +101,16 @@ public static class FamiliasProductosEndpoints
                 return Results.NotFound(new { message = result.Error });
             }
 
+            await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.NoContent();
         }).RequireAuthorization();
 
-        app.MapPatch("/familias-productos/{id:int}/activo", async (int id, [FromBody] FamiliaCambiarActivoDto dto, [FromServices] FamiliaProductoService servicio) =>
+        app.MapPatch("/familias-productos/{id:int}/activo", async (
+            int id,
+            [FromBody] FamiliaCambiarActivoDto dto,
+            [FromServices] FamiliaProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await servicio.CambiarActivoAsync(id, dto.Activo);
 
@@ -103,10 +121,15 @@ public static class FamiliasProductosEndpoints
                 return Results.NotFound(new { message = result.Error });
             }
 
+            await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizado = true });
         }).RequireAuthorization();
 
-        app.MapPatch("/familias-productos/batch-toggle", async (FamiliaBatchToggleRequest request, [FromServices] FamiliaProductoService servicio) =>
+        app.MapPatch("/familias-productos/batch-toggle", async (
+            FamiliaBatchToggleRequest request,
+            [FromServices] FamiliaProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
@@ -116,8 +139,21 @@ public static class FamiliasProductosEndpoints
             if (!result.Success)
                 return Results.Conflict(new { message = result.Error, productosCount = result.ProductosCount });
 
+            await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados = request.Ids.Count });
         }).RequireAuthorization();
+    }
+
+    private static async Task NotifyFamiliasProductoActualizadas(IHubContext<NotificationHub> hubContext, int tenantId)
+    {
+        try
+        {
+            await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("FamiliasProductoActualizadas");
+        }
+        catch
+        {
+            // ignore
+        }
     }
 }
 

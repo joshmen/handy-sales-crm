@@ -1,7 +1,10 @@
 using FluentValidation;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.Precios.DTOs;
 using HandySuites.Application.Precios.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -27,7 +30,12 @@ public static class PrecioPorProductoEndpoints
             return Results.Ok(lista);
         }).RequireAuthorization();
 
-        app.MapPost("/precios", async (PrecioPorProductoCreateDto dto, IValidator<PrecioPorProductoCreateDto> validator, [FromServices] PrecioPorProductoService servicio) =>
+        app.MapPost("/precios", async (
+            PrecioPorProductoCreateDto dto,
+            IValidator<PrecioPorProductoCreateDto> validator,
+            [FromServices] PrecioPorProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -36,6 +44,7 @@ public static class PrecioPorProductoEndpoints
             try
             {
                 var id = await servicio.CrearPrecioAsync(dto);
+                await ListaPrecioEndpoints.NotifyListaPreciosActualizadas(hubContext, currentTenant.TenantId);
                 return Results.Created($"/precios/{id}", new { id });
             }
             catch (InvalidOperationException ex)
@@ -44,7 +53,13 @@ public static class PrecioPorProductoEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPut("/precios/{id:int}", async (int id, PrecioPorProductoCreateDto dto, IValidator<PrecioPorProductoCreateDto> validator, [FromServices] PrecioPorProductoService servicio) =>
+        app.MapPut("/precios/{id:int}", async (
+            int id,
+            PrecioPorProductoCreateDto dto,
+            IValidator<PrecioPorProductoCreateDto> validator,
+            [FromServices] PrecioPorProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -57,6 +72,8 @@ public static class PrecioPorProductoEndpoints
             try
             {
                 var actualizado = await servicio.ActualizarPrecioAsync(id, dto);
+                if (actualizado)
+                    await ListaPrecioEndpoints.NotifyListaPreciosActualizadas(hubContext, currentTenant.TenantId);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
             catch (InvalidOperationException ex)
@@ -65,9 +82,15 @@ public static class PrecioPorProductoEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/precios/{id:int}", async (int id, [FromServices] PrecioPorProductoService servicio) =>
+        app.MapDelete("/precios/{id:int}", async (
+            int id,
+            [FromServices] PrecioPorProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var eliminado = await servicio.EliminarPrecioAsync(id);
+            if (eliminado)
+                await ListaPrecioEndpoints.NotifyListaPreciosActualizadas(hubContext, currentTenant.TenantId);
             return eliminado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }

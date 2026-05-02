@@ -68,6 +68,29 @@ public class CompanySetting : AuditableEntity
     [Column("auto_facturar_con_rfc")]
     public bool AutoFacturarConRfc { get; set; }
 
+    /// <summary>
+    /// Hora de inicio de jornada laboral (ej: 08:00). Obligatorio — al pasar esta hora
+    /// el watcher del mobile permite que jornada arranque dentro del horario; antes,
+    /// el vendedor solo arranca con override manual o por venta/ruta.
+    /// </summary>
+    [Column("hora_inicio_jornada")]
+    public TimeOnly HoraInicioJornada { get; set; } = new TimeOnly(8, 0);
+
+    /// <summary>
+    /// Hora de fin de jornada laboral (ej: 18:00). Obligatorio — si la jornada del
+    /// vendedor sigue activa al pasar esta hora, mobile dispara `StopAutomatico`.
+    /// </summary>
+    [Column("hora_fin_jornada")]
+    public TimeOnly HoraFinJornada { get; set; } = new TimeOnly(18, 0);
+
+    /// <summary>
+    /// CSV con los días laborables (1=Lun..7=Dom). Ej: "1,2,3,4,5" para L–V.
+    /// Obligatorio. Default L–V.
+    /// </summary>
+    [Column("dias_laborables")]
+    [MaxLength(20)]
+    public string DiasLaborables { get; set; } = "1,2,3,4,5";
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Company? Company { get; set; }

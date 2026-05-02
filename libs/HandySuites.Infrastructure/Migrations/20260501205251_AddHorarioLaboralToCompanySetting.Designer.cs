@@ -3,6 +3,7 @@ using System;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace HandySuites.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySuitesDbContext))]
-    partial class HandySuitesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260501205251_AddHorarioLaboralToCompanySetting")]
+    partial class AddHorarioLaboralToCompanySetting
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1433,7 +1436,6 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnName("currency");
 
                     b.Property<string>("DiasLaborables")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("dias_laborables");
@@ -1446,11 +1448,11 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
-                    b.Property<TimeOnly>("HoraFinJornada")
+                    b.Property<TimeOnly?>("HoraFinJornada")
                         .HasColumnType("time without time zone")
                         .HasColumnName("hora_fin_jornada");
 
-                    b.Property<TimeOnly>("HoraInicioJornada")
+                    b.Property<TimeOnly?>("HoraInicioJornada")
                         .HasColumnType("time without time zone")
                         .HasColumnName("hora_inicio_jornada");
 

@@ -58,6 +58,13 @@ public static class MobileEmpresaEndpoints
                     timezone = settings?.Timezone ?? "America/Mexico_City",
                     currency = settings?.Currency ?? "MXN",
                     language = settings?.Language ?? "es",
+                    // Horario laboral configurado por el admin para el tracking GPS.
+                    // Mobile usa estos valores en useHorarioLaboralWatcher para
+                    // detener jornada automáticamente al salir del rango.
+                    // Obligatorio — siempre tiene valor (default 08:00–18:00 L–V).
+                    horaInicioJornada = (settings?.HoraInicioJornada ?? new TimeOnly(8, 0)).ToString("HH:mm"),
+                    horaFinJornada = (settings?.HoraFinJornada ?? new TimeOnly(18, 0)).ToString("HH:mm"),
+                    diasLaborables = settings?.DiasLaborables ?? "1,2,3,4,5", // CSV "1,2,3,4,5"
                 }
             });
         })

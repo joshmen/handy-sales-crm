@@ -2165,7 +2165,13 @@
         "visitTo": "Visit",
         "arrivedAtStop": "Stop arrival",
         "orderCreated": "Order",
+        "payment": "Payment",
         "checkpoint": "Checkpoint",
+        "routeStart": "Route start",
+        "routeEnd": "Route end",
+        "workdayStart": "Workday start",
+        "workdayEnd": "Workday end",
+        "autoStop": "Auto stop",
         "openInMaps": "View in Maps",
         "faseAHint": "Phase 1: shows GPS activity already captured by visits, route stops and orders. Continuous automatic tracking comes in a next release."
       },
@@ -2417,6 +2423,29 @@
       "notifications": "Notifications",
       "system": "System",
       "security": "Security"
+    },
+    "workSchedule": {
+      "title": "Work schedule",
+      "description": "Define the time range when your sellers' GPS is tracked. After the end time, the app closes the workday automatically. This does NOT block sales outside the schedule; it only stops tracking location.",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "workDays": "Work days",
+      "invalidRange": "Start time must be earlier than end time.",
+      "noDaysSelected": "Select at least one work day.",
+      "hint": "Schedule is required. If a seller keeps working outside the range, their first sale or payment will automatically restart tracking with a new workday-start record.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "resetDefault": "Reset default",
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
     },
     "appearance": {
       "title": "Appearance",

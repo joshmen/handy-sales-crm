@@ -22,6 +22,11 @@ export interface DatosEmpresa {
   timezone: string;           // IANA tz, ej "America/Mexico_City"
   currency: string;           // ej "MXN"
   language: string;           // ej "es"
+  // Horario laboral configurado por el admin para tracking GPS.
+  // null/undefined = sin restricción (vendedor controla manualmente la jornada).
+  horaInicioJornada?: string | null;  // formato "HH:mm"
+  horaFinJornada?: string | null;     // formato "HH:mm"
+  diasLaborables?: string | null;     // CSV "1,2,3,4,5" (1=Lun..7=Dom)
 }
 
 export function useEmpresa() {

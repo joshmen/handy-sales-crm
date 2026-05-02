@@ -1,7 +1,10 @@
 using FluentValidation;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.Descuentos.DTOs;
 using HandySuites.Application.Descuentos.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -27,7 +30,12 @@ public static class DescuentosEndpoints
             return Results.Ok(lista);
         }).RequireAuthorization();
 
-        app.MapPost("/descuentos", async (DescuentoPorCantidadCreateDto dto, IValidator<DescuentoPorCantidadCreateDto> validator, [FromServices] DescuentoPorCantidadService servicio) =>
+        app.MapPost("/descuentos", async (
+            DescuentoPorCantidadCreateDto dto,
+            IValidator<DescuentoPorCantidadCreateDto> validator,
+            [FromServices] DescuentoPorCantidadService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -36,6 +44,7 @@ public static class DescuentosEndpoints
             try
             {
                 var id = await servicio.CrearDescuentoAsync(dto);
+                await NotifyDescuentosActualizados(hubContext, currentTenant.TenantId);
                 return Results.Created($"/descuentos/{id}", new { id });
             }
             catch (InvalidOperationException ex)
@@ -44,7 +53,13 @@ public static class DescuentosEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPut("/descuentos/{id:int}", async (int id, DescuentoPorCantidadCreateDto dto, IValidator<DescuentoPorCantidadCreateDto> validator, [FromServices] DescuentoPorCantidadService servicio) =>
+        app.MapPut("/descuentos/{id:int}", async (
+            int id,
+            DescuentoPorCantidadCreateDto dto,
+            IValidator<DescuentoPorCantidadCreateDto> validator,
+            [FromServices] DescuentoPorCantidadService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -57,6 +72,8 @@ public static class DescuentosEndpoints
             try
             {
                 var actualizado = await servicio.ActualizarDescuentoAsync(id, dto);
+                if (actualizado)
+                    await NotifyDescuentosActualizados(hubContext, currentTenant.TenantId);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
             catch (InvalidOperationException ex)
@@ -65,27 +82,57 @@ public static class DescuentosEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/descuentos/{id:int}", async (int id, [FromServices] DescuentoPorCantidadService servicio) =>
+        app.MapDelete("/descuentos/{id:int}", async (
+            int id,
+            [FromServices] DescuentoPorCantidadService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var eliminado = await servicio.EliminarDescuentoAsync(id);
+            if (eliminado)
+                await NotifyDescuentosActualizados(hubContext, currentTenant.TenantId);
             return eliminado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/descuentos/{id:int}/toggle", async (int id, [FromServices] DescuentoPorCantidadService servicio) =>
+        app.MapPatch("/descuentos/{id:int}/toggle", async (
+            int id,
+            [FromServices] DescuentoPorCantidadService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var actualizado = await servicio.ToggleActivoAsync(id);
+            if (actualizado)
+                await NotifyDescuentosActualizados(hubContext, currentTenant.TenantId);
             return actualizado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // Batch toggle - habilitar/deshabilitar múltiples descuentos
-        app.MapPatch("/descuentos/batch-toggle", async (BatchToggleRequest request, [FromServices] DescuentoPorCantidadService servicio) =>
+        app.MapPatch("/descuentos/batch-toggle", async (
+            BatchToggleRequest request,
+            [FromServices] DescuentoPorCantidadService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
+            if (actualizados > 0)
+                await NotifyDescuentosActualizados(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
+    }
+
+    private static async Task NotifyDescuentosActualizados(IHubContext<NotificationHub> hubContext, int tenantId)
+    {
+        try
+        {
+            await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DescuentosActualizados");
+        }
+        catch
+        {
+            // ignore — fallo de hub no debe romper el request
+        }
     }
 }
 

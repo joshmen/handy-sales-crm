@@ -1,7 +1,10 @@
 using FluentValidation;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.Promociones.DTOs;
 using HandySuites.Application.Promociones.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -21,7 +24,12 @@ public static class PromocionesEndpoints
             return promo is null ? Results.NotFound() : Results.Ok(promo);
         }).RequireAuthorization();
 
-        app.MapPost("/promociones", async (PromocionCreateDto dto, IValidator<PromocionCreateDto> validator, [FromServices] PromocionService servicio) =>
+        app.MapPost("/promociones", async (
+            PromocionCreateDto dto,
+            IValidator<PromocionCreateDto> validator,
+            [FromServices] PromocionService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -30,6 +38,7 @@ public static class PromocionesEndpoints
             try
             {
                 var id = await servicio.CrearPromocionAsync(dto);
+                await NotifyPromocionesActualizadas(hubContext, currentTenant.TenantId);
                 return Results.Created($"/promociones/{id}", new { id });
             }
             catch (InvalidOperationException ex)
@@ -38,7 +47,13 @@ public static class PromocionesEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPut("/promociones/{id:int}", async (int id, PromocionCreateDto dto, IValidator<PromocionCreateDto> validator, [FromServices] PromocionService servicio) =>
+        app.MapPut("/promociones/{id:int}", async (
+            int id,
+            PromocionCreateDto dto,
+            IValidator<PromocionCreateDto> validator,
+            [FromServices] PromocionService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -51,6 +66,8 @@ public static class PromocionesEndpoints
             try
             {
                 var actualizado = await servicio.ActualizarPromocionAsync(id, dto);
+                if (actualizado)
+                    await NotifyPromocionesActualizadas(hubContext, currentTenant.TenantId);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
             catch (InvalidOperationException ex)
@@ -59,26 +76,61 @@ public static class PromocionesEndpoints
             }
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/promociones/{id:int}", async (int id, [FromServices] PromocionService servicio) =>
+        app.MapDelete("/promociones/{id:int}", async (
+            int id,
+            [FromServices] PromocionService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var eliminado = await servicio.EliminarPromocionAsync(id);
+            if (eliminado)
+                await NotifyPromocionesActualizadas(hubContext, currentTenant.TenantId);
             return eliminado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/promociones/{id:int}/activo", async (int id, [FromBody] PromocionCambiarActivoDto dto, [FromServices] PromocionService servicio) =>
+        app.MapPatch("/promociones/{id:int}/activo", async (
+            int id,
+            [FromBody] PromocionCambiarActivoDto dto,
+            [FromServices] PromocionService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var updated = await servicio.CambiarActivoAsync(id, dto.Activo);
+            if (updated)
+                await NotifyPromocionesActualizadas(hubContext, currentTenant.TenantId);
             return updated ? Results.Ok(new { actualizado = true }) : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/promociones/batch-toggle", async ([FromBody] PromocionBatchToggleRequest request, [FromServices] PromocionService servicio) =>
+        app.MapPatch("/promociones/batch-toggle", async (
+            [FromBody] PromocionBatchToggleRequest request,
+            [FromServices] PromocionService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Lista de IDs inválida (máx. 1000)" });
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
+            if (count > 0)
+                await NotifyPromocionesActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados = count });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
+    }
+
+    // Emite evento al hub para que mobile invalide cache + dispare sync. Los
+    // listeners están en `apps/mobile-app/src/hooks/useRealtime.ts` (mapa
+    // CATALOG_EVENTS). Silently swallowea errores — no romper request por
+    // un fallo de SignalR.
+    private static async Task NotifyPromocionesActualizadas(IHubContext<NotificationHub> hubContext, int tenantId)
+    {
+        try
+        {
+            await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("PromocionesActualizadas");
+        }
+        catch
+        {
+            // ignore — fallo de hub no debe romper el request del admin
+        }
     }
 }
 
