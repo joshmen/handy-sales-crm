@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-import { Download, MapPin, Search } from 'lucide-react';
+import { Download, MapPin, Search, ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
@@ -13,7 +14,7 @@ import {
   EventoGpsDelDia,
   FuenteUbicacion,
 } from '@/services/api/teamLocation';
-import { cn, getInitials } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 
 // Mapa Leaflet sólo en cliente (manipula `window`)
@@ -75,8 +76,20 @@ function lastNDays(n: number): string[] {
  * Layout split: mapa a la izquierda, lista de eventos a la derecha.
  * Filtros sticky arriba: date preset (Hoy/Ayer/7d/Custom) + tipo + búsqueda.
  * KPI bar abajo.
+ *
+ * Wrapper exportado: envuelve el contenido en <Suspense> porque usa
+ * useSearchParams (Next.js 15 lo requiere para no convertir toda la ruta
+ * a client-side rendering durante hydration).
  */
 export default function TeamGpsDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Cargando…</div>}>
+      <TeamGpsDetailContent />
+    </Suspense>
+  );
+}
+
+function TeamGpsDetailContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -253,20 +266,24 @@ export default function TeamGpsDetailPage() {
       subtitle={t('detailSubtitle')}
       actions={
         <>
-          {(['hoy', 'ayer', '7d'] as const).map(p => (
-            <button
-              key={p}
-              onClick={() => handlePreset(p)}
-              className={cn(
-                'px-3 py-2 text-xs font-medium rounded transition-colors',
-                preset === p
-                  ? 'bg-success text-success-foreground'
-                  : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
-              )}
-            >
-              {p === 'hoy' ? t('preset.today') : p === 'ayer' ? t('preset.yesterday') : t('preset.last7days')}
-            </button>
-          ))}
+          {(['hoy', 'ayer', '7d'] as const).map(p => {
+            const label = p === 'hoy' ? t('preset.today') : p === 'ayer' ? t('preset.yesterday') : t('preset.last7days');
+            return (
+              <button
+                key={p}
+                onClick={() => handlePreset(p)}
+                aria-pressed={preset === p}
+                className={cn(
+                  'px-3 py-2 text-xs font-medium rounded transition-colors',
+                  preset === p
+                    ? 'bg-success text-success-foreground'
+                    : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
           <button
             onClick={handleExportCsv}
             disabled={eventosFiltrados.length === 0}
@@ -284,10 +301,13 @@ export default function TeamGpsDetailPage() {
           <div className="flex items-center gap-1.5 flex-wrap">
             {ALL_TYPES.map(tipo => {
               const active = tiposActivos.has(tipo);
+              const tipoLabel = labelTipo(tipo);
               return (
                 <button
                   key={tipo}
                   onClick={() => toggleTipo(tipo)}
+                  aria-pressed={active}
+                  aria-label={`${active ? 'Desactivar' : 'Activar'} filtro: ${tipoLabel}`}
                   className={cn(
                     'px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors',
                     active
@@ -295,16 +315,17 @@ export default function TeamGpsDetailPage() {
                       : 'bg-surface-3 text-muted-foreground/60 line-through'
                   )}
                 >
-                  {TYPE_ICON[tipo]} {labelTipo(tipo)}
+                  <span aria-hidden="true">{TYPE_ICON[tipo]}</span> {tipoLabel}
                 </button>
               );
             })}
           </div>
           <div className="relative ml-auto" style={{ width: '220px' }}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" aria-hidden="true" />
             <input
               type="text"
               placeholder={t('searchClient')}
+              aria-label={t('searchClient')}
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -368,6 +389,15 @@ export default function TeamGpsDetailPage() {
                 eventosFiltrados.map((ev, i) => {
                   const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
                   const fecha = formatDate(ev.cuando, { day: '2-digit', month: 'short' });
+                  // Indicador de eventos agrupados (mismo timestamp al minuto que el anterior).
+                  // Util para detectar el patrón Venta+InicioJornada+StopAutomatico que reportamos
+                  // en Jeyma sábado — mismo `cuando` apila 3 pings consecutivos.
+                  const esAgrupado = i > 0 &&
+                    eventosFiltrados[i - 1].cuando.slice(0, 16) === ev.cuando.slice(0, 16);
+                  // Link a la orden/cobro si el evento tiene referenciaId
+                  const tieneRef = ev.referenciaId != null && (ev.tipo === 'pedido' || ev.tipo === 'cobro');
+                  const refHref = ev.tipo === 'pedido' ? `/orders/${ev.referenciaId}` : `/cobranza/${ev.referenciaId}`;
+                  const refLabel = ev.tipo === 'pedido' ? 'pedido' : 'cobro';
                   return (
                     <div
                       key={`${ev.tipo}-${ev.referenciaId ?? 'np'}-${i}`}
@@ -379,11 +409,18 @@ export default function TeamGpsDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <Badge className={cn('text-[10px] px-1.5 py-0.5', TYPE_COLOR[ev.tipo])}>
-                            {TYPE_ICON[ev.tipo]} {labelTipo(ev.tipo)}
+                            <span aria-hidden="true">{TYPE_ICON[ev.tipo]}</span> {labelTipo(ev.tipo)}
                           </Badge>
                           <span className="text-[11px] text-muted-foreground">
                             {fecha} · {hora}
                           </span>
+                          {esAgrupado && (
+                            <span
+                              title="Evento simultáneo con el anterior"
+                              aria-label="Evento simultáneo con el anterior"
+                              className="w-2 h-2 rounded-full bg-amber-400 ring-1 ring-amber-200 flex-shrink-0"
+                            />
+                          )}
                         </div>
                         {ev.clienteNombre && (
                           <p className="text-[12px] font-medium text-foreground truncate">
@@ -394,14 +431,25 @@ export default function TeamGpsDetailPage() {
                           href={`https://maps.google.com/?q=${ev.latitud},${ev.longitud}`}
                           target="_blank"
                           rel="noreferrer"
+                          aria-label={`Abrir en Google Maps: ${ev.latitud.toFixed(5)}, ${ev.longitud.toFixed(5)}`}
                           className="text-[10px] font-mono text-muted-foreground hover:text-primary"
                         >
-                          {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)} ↗
+                          {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)} <span aria-hidden="true">↗</span>
                         </a>
                         {ev.distanciaCliente != null && (
                           <span className="ml-2 text-[10px] text-muted-foreground/70">
                             ({Math.round(ev.distanciaCliente)}m)
                           </span>
+                        )}
+                        {tieneRef && (
+                          <Link
+                            href={refHref}
+                            className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline"
+                            aria-label={`Ver ${refLabel} #${ev.referenciaId}`}
+                          >
+                            <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                            Ver {refLabel} #{ev.referenciaId}
+                          </Link>
                         )}
                       </div>
                     </div>
