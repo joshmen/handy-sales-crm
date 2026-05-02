@@ -94,6 +94,30 @@ export function useRealtime() {
       }),
     ];
 
+    // Catálogos comerciales: cuando el admin activa/desactiva/edita algo desde
+    // el web, backend emite el evento al hub y aquí invalidamos React Query +
+    // disparamos un pull de WatermelonDB para que la UI offline refleje el
+    // cambio en <2s sin necesidad de re-login. Reusa todos los mappers + sync
+    // engine ya existentes — solo es invalidación + sync.
+    const CATALOG_EVENTS: Record<string, string[]> = {
+      PromocionesActualizadas: ['promociones'],
+      DescuentosActualizados: ['descuentos'],
+      ListaPreciosActualizadas: ['listas-precio', 'precios-por-producto'],
+      ProductosActualizados: ['products'],
+      CategoriasClienteActualizadas: ['categorias-cliente'],
+      CategoriasProductoActualizadas: ['categorias-producto'],
+      FamiliasProductoActualizadas: ['familias-producto'],
+      ZonasActualizadas: ['zonas'],
+    };
+    Object.entries(CATALOG_EVENTS).forEach(([evt, queryKeys]) => {
+      unsubs.push(
+        signalR.on(evt, () => {
+          queryKeys.forEach(k => queryClient.invalidateQueries({ queryKey: [k] }));
+          performSync().catch(() => {});
+        })
+      );
+    });
+
     // Reconectar al volver a foreground si la conexión se cayó.
     const appSub = AppState.addEventListener('change', (s: AppStateStatus) => {
       if (s === 'active' && signalR.getState() !== HubConnectionState.Connected) {
