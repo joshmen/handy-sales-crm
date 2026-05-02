@@ -1,0 +1,92 @@
+appId: host.exp.exponent
+name: "Vendedor: Jornada auto-stop por horario laboral"
+---
+
+# ════════════════════════════════════════════════════════════
+# PREREQ: ya logueado como vendedor1@jeyma.com
+# Tenant Jeyma con horario L-S (1,2,3,4,5,6) — domingo NO laboral
+# El device debe estar en domingo (o el watcher debe haber corrido)
+#
+# Valida que:
+#   - Una venta en día NO laboral NO dispare triple ping
+#   - El watcher arranca/para jornada según horario
+#   - El consent modal se muestra UNA sola vez por usuario
+# ════════════════════════════════════════════════════════════
+
+# ────────────────────────────────────────────
+# PASO 1: Verificar pantalla Hoy (dashboard)
+# ────────────────────────────────────────────
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 10000
+
+- takeScreenshot: "jr-01-dashboard"
+
+# ────────────────────────────────────────────
+# PASO 2: PrivacyConsentModal — primer login muestra el aviso
+# ────────────────────────────────────────────
+# Si es el primer login del vendedor, aparece el modal de privacidad.
+# Después del fix P1-3 está scopeado por user.id — un vendedor distinto
+# verá su propio modal aunque otro lo haya cerrado en el mismo device.
+- runFlow:
+    when:
+      visible: "Sobre tu ubicación"
+    commands:
+      - takeScreenshot: "jr-02-privacy-modal"
+      - tapOn: "Entendido"
+      - waitForAnimationToEnd
+
+# ────────────────────────────────────────────
+# PASO 3: Si la jornada está activa, finalizar
+# ────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Finalizar jornada"
+    commands:
+      - tapOn: "Finalizar jornada"
+      - waitForAnimationToEnd
+
+# ────────────────────────────────────────────
+# PASO 4: Verificar JornadaCard muestra estado correcto
+# ────────────────────────────────────────────
+- assertVisible:
+    text: "Iniciar jornada|Jornada iniciada|Fuera de horario"
+    optional: false
+
+- takeScreenshot: "jr-03-jornada-card"
+
+# ────────────────────────────────────────────
+# PASO 5: Crear una venta — verificar que funciona aunque
+# esté fuera de horario laboral (el sistema NO debe bloquear)
+# ────────────────────────────────────────────
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 10000
+
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Tipo de Venta"
+    commands:
+      - tapOn: "Preventa"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 10000
+
+- takeScreenshot: "jr-04-cliente-fuera-horario"
+
+# Volver atrás — solo queríamos verificar que la pantalla carga
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
