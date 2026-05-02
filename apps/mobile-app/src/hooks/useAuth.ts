@@ -16,7 +16,7 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (creds: LoginRequest) =>
-      authApi.login(creds.email, creds.password),
+      authApi.login(creds.email, creds.password, creds.totpCode),
     onMutate: () => setLoggingIn(true),
     onSuccess: async (data) => {
       await login(data.user, data.token, data.refreshToken);
@@ -36,7 +36,7 @@ export function useForceLogin() {
 
   return useMutation({
     mutationFn: (creds: LoginRequest) =>
-      authApi.forceLogin(creds.email, creds.password),
+      authApi.forceLogin(creds.email, creds.password, creds.totpCode),
     onMutate: () => setLoggingIn(true),
     onSuccess: async (data) => {
       await login(data.user, data.token, data.refreshToken);

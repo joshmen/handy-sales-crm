@@ -29,6 +29,14 @@ class MobileAuthApi {
         (err as any).code = 'DEVICE_BOUND';
         throw err;
       }
+      // VULN-M03 fix: backend retorna 401 + code=TOTP_REQUIRED cuando el
+      // usuario tiene 2FA habilitado. La UI debe mostrar un input para
+      // ingresar el código y reintentar el mismo login con totpCode.
+      if (status === 401 && code === 'TOTP_REQUIRED') {
+        const err = new Error(backendMessage || 'Se requiere código de autenticación 2FA');
+        (err as any).code = 'TOTP_REQUIRED';
+        throw err;
+      }
       if (status === 401) throw new Error('Correo o contraseña incorrectos');
       if (status === 400 && backendMessage) throw new Error(backendMessage);
       if (status === 429) throw new Error('Demasiados intentos. Espera un momento e intenta de nuevo.');
@@ -39,11 +47,11 @@ class MobileAuthApi {
     throw new Error(`No se pudo ${contextLabel}`);
   }
 
-  async login(email: string, password: string): Promise<LoginResponse> {
+  async login(email: string, password: string, totpCode?: string): Promise<LoginResponse> {
     try {
       const response = await api.post<ApiResponse<LoginResponse>>(
         `${this.basePath}/login`,
-        { email, password }
+        { email, password, totpCode }
       );
       const validated = validateResponse(
         LoginResponseWrapperSchema,
@@ -61,13 +69,14 @@ class MobileAuthApi {
 
   /**
    * Force-login: cierra otras sesiones activas y crea nueva. El cliente lo
-   * invoca tras confirmar en modal "¿Desconectar otro dispositivo?".
+   * invoca tras confirmar en modal "¿Desconectar otro dispositivo?". También
+   * acepta totpCode si el usuario tiene 2FA habilitado.
    */
-  async forceLogin(email: string, password: string): Promise<LoginResponse> {
+  async forceLogin(email: string, password: string, totpCode?: string): Promise<LoginResponse> {
     try {
       const response = await api.post<ApiResponse<LoginResponse>>(
         `${this.basePath}/force-login`,
-        { email, password }
+        { email, password, totpCode }
       );
       const validated = validateResponse(
         LoginResponseWrapperSchema,

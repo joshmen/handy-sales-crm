@@ -27,6 +27,8 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export interface LoginRequest {
   email: string;
   password: string;
+  /** Código TOTP (6 dígitos) o recovery code (XXXX-XXXX) si el usuario tiene 2FA. */
+  totpCode?: string;
 }
 
 export interface RefreshRequest {
