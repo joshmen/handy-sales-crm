@@ -24,7 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 export type JornadaMotivoInicio = 'manual' | 'ruta';
-export type JornadaMotivoFin = 'manual' | 'ruta' | 'horario';
+export type JornadaMotivoFin = 'manual' | 'ruta' | 'horario' | 'inactividad';
 
 interface JornadaState {
   activa: boolean;
@@ -114,9 +114,12 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
 
     try {
       const mod = await import('@/services/locationCheckpoint');
+      // 'horario' e 'inactividad' ambos son auto-stops del sistema —
+      // mismo ping `StopAutomatico`. El motivoStop local distingue para el
+      // banner / toast en mobile.
       const tipo =
         motivo === 'ruta' ? mod.TipoPing.FinRuta
-        : motivo === 'horario' ? mod.TipoPing.StopAutomatico
+        : motivo === 'horario' || motivo === 'inactividad' ? mod.TipoPing.StopAutomatico
         : mod.TipoPing.FinJornada;
       await mod.recordPing(tipo);
       // Stop timer al final — el ping de cierre todavía necesita el timer

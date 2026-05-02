@@ -91,8 +91,8 @@ namespace HandySuites.Application.CompanySettings.Services
                     DaysRemaining = tenant?.TrialEndsAt.HasValue == true
                         ? Math.Max(0, (int)(tenant.TrialEndsAt!.Value - DateTime.UtcNow).TotalDays)
                         : null,
-                    HoraInicioJornada = settings.HoraInicioJornada?.ToString("HH:mm"),
-                    HoraFinJornada = settings.HoraFinJornada?.ToString("HH:mm"),
+                    HoraInicioJornada = settings.HoraInicioJornada.ToString("HH:mm"),
+                    HoraFinJornada = settings.HoraFinJornada.ToString("HH:mm"),
                     DiasLaborables = settings.DiasLaborables,
                 };
             }
@@ -148,24 +148,19 @@ namespace HandySuites.Application.CompanySettings.Services
                 if (!string.IsNullOrEmpty(request.Country))
                     settings.Country = request.Country;
 
-                // Horario laboral. Acepta string vacío como "limpiar".
-                if (request.HoraInicioJornada != null)
+                // Horario laboral — campos obligatorios. Si llegan vacíos los rechazamos
+                // antes de guardar (en update parciales se permite no enviarlos).
+                if (!string.IsNullOrWhiteSpace(request.HoraInicioJornada))
                 {
-                    settings.HoraInicioJornada = string.IsNullOrWhiteSpace(request.HoraInicioJornada)
-                        ? null
-                        : TimeOnly.Parse(request.HoraInicioJornada);
+                    settings.HoraInicioJornada = TimeOnly.Parse(request.HoraInicioJornada);
                 }
-                if (request.HoraFinJornada != null)
+                if (!string.IsNullOrWhiteSpace(request.HoraFinJornada))
                 {
-                    settings.HoraFinJornada = string.IsNullOrWhiteSpace(request.HoraFinJornada)
-                        ? null
-                        : TimeOnly.Parse(request.HoraFinJornada);
+                    settings.HoraFinJornada = TimeOnly.Parse(request.HoraFinJornada);
                 }
-                if (request.DiasLaborables != null)
+                if (!string.IsNullOrWhiteSpace(request.DiasLaborables))
                 {
-                    settings.DiasLaborables = string.IsNullOrWhiteSpace(request.DiasLaborables)
-                        ? null
-                        : request.DiasLaborables;
+                    settings.DiasLaborables = request.DiasLaborables;
                 }
 
                 settings.ActualizadoPor = userId.ToString();
@@ -185,8 +180,8 @@ namespace HandySuites.Application.CompanySettings.Services
                     Language = updatedSettings.Language,
                     Theme = updatedSettings.Theme,
                     Country = updatedSettings.Country,
-                    HoraInicioJornada = updatedSettings.HoraInicioJornada?.ToString("HH:mm"),
-                    HoraFinJornada = updatedSettings.HoraFinJornada?.ToString("HH:mm"),
+                    HoraInicioJornada = updatedSettings.HoraInicioJornada.ToString("HH:mm"),
+                    HoraFinJornada = updatedSettings.HoraFinJornada.ToString("HH:mm"),
                     DiasLaborables = updatedSettings.DiasLaborables,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };

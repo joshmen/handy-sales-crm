@@ -69,6 +69,15 @@ export function stopCheckpointTimer(): void {
 }
 
 /**
+ * Timestamp ms del último ping registrado en esta sesión. Útil para el
+ * watcher de inactividad — si pasaron >N horas sin ningún ping (lo cual
+ * implica sin venta/cobro/visita/checkpoint), cerramos jornada.
+ */
+export function getLastPingAt(): number {
+  return lastPingAt;
+}
+
+/**
  * Captura un ping GPS y lo encola en WDB. Si falla GPS (timeout,
  * permiso denegado, etc) silencia el error — no es crítico para el
  * flujo de venta.
@@ -80,8 +89,8 @@ export async function recordPing(
   if (trackingDisabled) return;
 
   // Auto-start de jornada implícito: si el vendedor confirma una venta/cobro/
-  // visita SIN haber presionado "Iniciar jornada", arrancamos la jornada
-  // automáticamente. Cubre el caso "vendedor abre app y empieza a vender".
+  // visita SIN jornada activa, arrancamos automáticamente. Es el flujo principal
+  // (no hay botón "Iniciar jornada" en home — esto reemplaza ese gesture).
   // No aplica para tipos que ya son de inicio/fin/checkpoint para evitar loops.
   const esEventoNegocio = tipo === TipoPing.Venta || tipo === TipoPing.Cobro || tipo === TipoPing.Visita;
   if (esEventoNegocio) {
@@ -89,9 +98,18 @@ export async function recordPing(
       const { useJornadaStore } = await import('@/stores/jornadaStore');
       const jornada = useJornadaStore.getState();
       if (!jornada.activa) {
-        // Esto inicia jornada + dispara ping InicioJornada + arranca timer.
-        // Después continúa el ping del evento negocio normal.
         await jornada.iniciarJornada('manual');
+        // Toast informativo — el vendedor ve por qué arrancó el indicador
+        // "Tracking activo" en home.
+        try {
+          const ToastModule = await import('react-native-toast-message');
+          ToastModule.default.show({
+            type: 'info',
+            text1: 'Jornada iniciada',
+            text2: 'Tu ubicación se registra mientras tu jornada esté activa.',
+            visibilityTime: 4000,
+          });
+        } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
   }

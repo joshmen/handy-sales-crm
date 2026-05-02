@@ -40,6 +40,7 @@ import { useRealtime } from '@/hooks';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { useHorarioLaboralWatcher } from '@/hooks/useHorarioLaboralWatcher';
 import { useRutaJornadaWatcher } from '@/hooks/useRutaJornadaWatcher';
+import { useInactividadJornadaWatcher } from '@/hooks/useInactividadJornadaWatcher';
 import { PrivacyConsentModal } from '@/components/shared/PrivacyConsentModal';
 
 function GlobalPermissionDialog() {
@@ -70,10 +71,11 @@ function SessionRefreshBridge() {
  * fuera de su jornada laboral cuando ya volvió a casa.
  *
  * El estado vive en `useJornadaStore`. Otros componentes lo cambian:
- *  - Botón "Iniciar/Finalizar jornada" en home
+ *  - `recordPing(Venta|Cobro|Visita)` auto-inicia si está inactiva (flujo principal)
  *  - `useRutaJornadaWatcher` cuando la ruta arranca/completa
- *  - `useHorarioLaboralWatcher` cuando se sale del rango configurado
- *  - `recordPing(Venta|Cobro|Visita)` auto-inicia si está inactiva
+ *  - `useHorarioLaboralWatcher` al salir del horario laboral configurado
+ *  - `useInactividadJornadaWatcher` red de seguridad si no hay pings >4h
+ *  - Botón "Finalizar" del chip discreto en home (salir temprano manual)
  */
 function LocationTrackingBridge() {
   const { isAuthenticated, user } = useAuthStore();
@@ -111,6 +113,7 @@ function LocationTrackingBridge() {
   // Watchers que disparan transiciones de jornada
   useHorarioLaboralWatcher();
   useRutaJornadaWatcher();
+  useInactividadJornadaWatcher();
 
   return null;
 }

@@ -67,17 +67,17 @@ namespace HandySuites.Application.CompanySettings.DTOs
         [JsonPropertyName("daysRemaining")]
         public int? DaysRemaining { get; set; }
 
-        // Horario laboral para tracking GPS (jornada del vendedor).
-        // Formato HH:mm. Null = vendedor controla manualmente.
+        // Horario laboral para tracking GPS (jornada del vendedor). Obligatorio.
+        // Formato HH:mm. Default 08:00–18:00 L–V.
         [JsonPropertyName("horaInicioJornada")]
-        public string? HoraInicioJornada { get; set; }
+        public string HoraInicioJornada { get; set; } = "08:00";
 
         [JsonPropertyName("horaFinJornada")]
-        public string? HoraFinJornada { get; set; }
+        public string HoraFinJornada { get; set; } = "18:00";
 
-        // CSV con días laborables (1=Lun..7=Dom). Null/vacío = todos los días.
+        // CSV con días laborables (1=Lun..7=Dom).
         [JsonPropertyName("diasLaborables")]
-        public string? DiasLaborables { get; set; }
+        public string DiasLaborables { get; set; } = "1,2,3,4,5";
     }
 
     public class UpdateCompanySettingsRequest

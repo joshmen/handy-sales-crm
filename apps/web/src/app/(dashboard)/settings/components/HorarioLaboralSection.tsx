@@ -19,26 +19,33 @@ const DAYS = [
   { value: '7', shortKey: 'sun' },
 ] as const;
 
+const DEFAULT_HORA_INICIO = '08:00';
+const DEFAULT_HORA_FIN = '18:00';
+const DEFAULT_DIAS_CSV = '1,2,3,4,5';
+
 /**
- * Horario laboral del tenant para tracking GPS de vendedores. Si admin define
- * horario, mobile detiene la jornada automáticamente al salir del rango. Si no
- * define nada, vendedor controla manualmente desde el botón "Iniciar/Finalizar
- * jornada" en home.
+ * Horario laboral del tenant para tracking GPS de vendedores. Obligatorio.
+ * Mobile usa este rango como auto-stop nocturno: al pasar la hora fin si la
+ * jornada del vendedor sigue activa, se cierra con ping `StopAutomatico`. NO
+ * bloquea ventas — el vendedor puede facturar fuera del horario, solo deja
+ * de trackear ubicación.
  */
 export const HorarioLaboralSection: React.FC = () => {
   const t = useTranslations('settings.workSchedule');
   const { settings, updateSettings, isUpdating } = useCompany();
 
-  const [horaInicio, setHoraInicio] = useState('');
-  const [horaFin, setHoraFin] = useState('');
-  const [diasSet, setDiasSet] = useState<Set<string>>(new Set());
+  const [horaInicio, setHoraInicio] = useState(DEFAULT_HORA_INICIO);
+  const [horaFin, setHoraFin] = useState(DEFAULT_HORA_FIN);
+  const [diasSet, setDiasSet] = useState<Set<string>>(
+    () => new Set(DEFAULT_DIAS_CSV.split(','))
+  );
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!settings) return;
-    setHoraInicio(settings.horaInicioJornada ?? '');
-    setHoraFin(settings.horaFinJornada ?? '');
-    const csv = settings.diasLaborables ?? '';
+    setHoraInicio(settings.horaInicioJornada || DEFAULT_HORA_INICIO);
+    setHoraFin(settings.horaFinJornada || DEFAULT_HORA_FIN);
+    const csv = settings.diasLaborables || DEFAULT_DIAS_CSV;
     setDiasSet(new Set(csv.split(',').map(s => s.trim()).filter(Boolean)));
   }, [settings]);
 
@@ -56,10 +63,12 @@ export const HorarioLaboralSection: React.FC = () => {
     return sorted.join(',');
   }, [diasSet]);
 
-  const validRange = !horaInicio || !horaFin || horaInicio < horaFin;
+  const validRange = !!horaInicio && !!horaFin && horaInicio < horaFin;
+  const validDias = diasSet.size > 0;
+  const canSave = validRange && validDias;
 
   const handleSave = async () => {
-    if (!validRange) return;
+    if (!canSave) return;
     const success = await updateSettings({
       horaInicioJornada: horaInicio,
       horaFinJornada: horaFin,
@@ -71,14 +80,14 @@ export const HorarioLaboralSection: React.FC = () => {
     }
   };
 
-  const handleClear = async () => {
-    setHoraInicio('');
-    setHoraFin('');
-    setDiasSet(new Set());
+  const handleResetDefault = async () => {
+    setHoraInicio(DEFAULT_HORA_INICIO);
+    setHoraFin(DEFAULT_HORA_FIN);
+    setDiasSet(new Set(DEFAULT_DIAS_CSV.split(',')));
     await updateSettings({
-      horaInicioJornada: '',
-      horaFinJornada: '',
-      diasLaborables: '',
+      horaInicioJornada: DEFAULT_HORA_INICIO,
+      horaFinJornada: DEFAULT_HORA_FIN,
+      diasLaborables: DEFAULT_DIAS_CSV,
     });
   };
 
@@ -124,6 +133,9 @@ export const HorarioLaboralSection: React.FC = () => {
         {!validRange && (
           <p className="text-[12px] text-red-500">{t('invalidRange')}</p>
         )}
+        {!validDias && (
+          <p className="text-[12px] text-red-500">{t('noDaysSelected')}</p>
+        )}
 
         <div>
           <Label>{t('workDays')}</Label>
@@ -159,15 +171,15 @@ export const HorarioLaboralSection: React.FC = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={handleClear}
+            onClick={handleResetDefault}
             disabled={isUpdating}
           >
-            {t('clear')}
+            {t('resetDefault')}
           </Button>
           <Button
             type="button"
             onClick={handleSave}
-            disabled={isUpdating || !validRange}
+            disabled={isUpdating || !canSave}
           >
             {isUpdating ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('saving')}</>

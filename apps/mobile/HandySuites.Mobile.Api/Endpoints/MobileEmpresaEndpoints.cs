@@ -61,10 +61,10 @@ public static class MobileEmpresaEndpoints
                     // Horario laboral configurado por el admin para el tracking GPS.
                     // Mobile usa estos valores en useHorarioLaboralWatcher para
                     // detener jornada automáticamente al salir del rango.
-                    // Null = sin restricción (vendedor controla manualmente).
-                    horaInicioJornada = settings?.HoraInicioJornada?.ToString("HH:mm"),
-                    horaFinJornada = settings?.HoraFinJornada?.ToString("HH:mm"),
-                    diasLaborables = settings?.DiasLaborables, // CSV "1,2,3,4,5" o null
+                    // Obligatorio — siempre tiene valor (default 08:00–18:00 L–V).
+                    horaInicioJornada = (settings?.HoraInicioJornada ?? new TimeOnly(8, 0)).ToString("HH:mm"),
+                    horaFinJornada = (settings?.HoraFinJornada ?? new TimeOnly(18, 0)).ToString("HH:mm"),
+                    diasLaborables = settings?.DiasLaborables ?? "1,2,3,4,5", // CSV "1,2,3,4,5"
                 }
             });
         })
