@@ -1,9 +1,11 @@
+using HandySuites.Application.TwoFactor;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Mobile.Api.Services;
 using HandySuites.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace HandySuites.Mobile.Tests.Endpoints;
 
@@ -30,7 +32,16 @@ public class MobileAuthEndpointsTests : IDisposable
         });
 
         _jwtGenerator = new JwtTokenGenerator(jwtOptions);
-        _authService = new MobileAuthService(_db, _jwtGenerator);
+
+        // Mock TOTP verifier — los tests existentes usan usuarios sin 2FA
+        // (TotpEnabled=false en seed), así que el verifier nunca se invoca.
+        // VULN-M03 fix introdujo este parameter; tests de TOTP-required serían
+        // un caso aparte (cubrir cuando se agreguen).
+        var totpVerifier = new Mock<ITotpVerifier>();
+        totpVerifier.Setup(v => v.VerifyLoginCodeAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(false);
+        totpVerifier.Setup(v => v.UseRecoveryCodeAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(false);
+
+        _authService = new MobileAuthService(_db, _jwtGenerator, totpVerifier.Object);
 
         SeedTestData();
     }
