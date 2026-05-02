@@ -4,35 +4,42 @@ import { MapPin } from 'lucide-react-native';
 import { secureStorage } from '@/utils/storage';
 import { useAuthStore } from '@/stores';
 
-const STORAGE_KEY = 'privacy_consent_seen_v1';
+const STORAGE_KEY_PREFIX = 'privacy_consent_seen_v1';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 /**
  * Aviso único al primer login post-deploy del feature de jornada/tracking.
  * Explica al vendedor cómo funciona el control de su ubicación.
  *
- * Mounted desde el root layout. Se muestra solo una vez por device — la
- * confirmación queda persistida en secureStorage.
+ * Mounted desde el root layout. Se muestra solo una vez por usuario — la
+ * confirmación queda persistida en secureStorage scopeada por user.id.
+ *
+ * SECURITY: la key se scopea por user.id para evitar que en devices
+ * compartidos un vendedor "consuma" el consentimiento de otro. Reportado
+ * en code-review P1-3.
  */
 export function PrivacyConsentModal() {
   const { isAuthenticated, user } = useAuthStore();
   const [visible, setVisible] = useState(false);
 
+  const storageKey = user?.id ? `${STORAGE_KEY_PREFIX}_${user.id}` : null;
+
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !storageKey) return;
     let cancelled = false;
     (async () => {
       try {
-        const seen = await secureStorage.get(STORAGE_KEY);
+        const seen = await secureStorage.get(storageKey);
         if (!cancelled && !seen) setVisible(true);
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, storageKey]);
 
   const handleClose = async () => {
     setVisible(false);
-    try { await secureStorage.set(STORAGE_KEY, '1'); } catch { /* ignore */ }
+    if (!storageKey) return;
+    try { await secureStorage.set(storageKey, '1'); } catch { /* ignore */ }
   };
 
   return (

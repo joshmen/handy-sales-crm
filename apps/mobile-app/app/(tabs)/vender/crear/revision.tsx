@@ -60,8 +60,14 @@ function CrearPedidoStep3() {
   // Recordar último método de pago del vendedor en AsyncStorage. Al abrir
   // revisión, pre-seleccionamos el último que usó (ahorra 1 tap del modal de
   // pago en 90% de los casos donde el vendedor cobra siempre del mismo modo).
-  const lastMetodoKey = `last_metodo_pago_${user?.id ?? 'default'}`;
+  //
+  // SECURITY: solo escribir/leer si user.id está presente. Antes el fallback
+  // era 'default' que causaba leak cross-user en devices compartidos: si dos
+  // vendedores con user.id null usaban el mismo device, el segundo veía el
+  // método del primero. Reportado en code-review P1-2.
+  const lastMetodoKey = user?.id ? `last_metodo_pago_${user.id}` : null;
   useEffect(() => {
+    if (!lastMetodoKey) return;
     let cancelled = false;
     (async () => {
       try {
@@ -167,7 +173,10 @@ function CrearPedidoStep3() {
         const montoTotal = total;
         const metodo = metodoPago ?? 0;
         // Persistir último método para próxima venta del mismo vendedor.
-        AsyncStorage.setItem(lastMetodoKey, String(metodo)).catch(() => {});
+        // Solo si tenemos user.id (lastMetodoKey != null) — evita leak cross-user.
+        if (lastMetodoKey) {
+          AsyncStorage.setItem(lastMetodoKey, String(metodo)).catch(() => {});
+        }
         const nombre = clienteNombre || 'Cliente';
         const paradaId = useOrderDraftStore.getState().fromParadaId;
         // Pedido + Cobro + parada.Completada en una sola transacción WDB:

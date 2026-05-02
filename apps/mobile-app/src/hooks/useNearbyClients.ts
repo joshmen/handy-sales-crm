@@ -4,7 +4,7 @@ import { database } from '@/db/database';
 import Cliente from '@/db/models/Cliente';
 import { useObservable } from './useObservable';
 import { useUserLocation } from './useLocation';
-import { haversineMeters } from '@/utils/haversine';
+import { haversineMeters, withinBoundingBox } from '@/utils/haversine';
 
 export interface NearbyCliente {
   cliente: Cliente;
@@ -39,8 +39,19 @@ export function useNearbyClients(radiusKm: number = DEFAULT_RADIUS_KM, limit: nu
     const center = { latitud: location.latitude, longitud: location.longitude };
     const radiusM = radiusKm * 1000;
 
+    // Pre-filtro bounding-box ANTES de Haversine: para 5000+ clientes Haversine
+    // sobre cada uno cuesta ~30ms en JS thread. La caja descarta ~95% con
+    // comparaciones triviales (~2ms), dejando Haversine solo para los <50
+    // candidatos reales. Reportado en code-review P1-4.
     return clientes
-      .filter(c => c.latitud != null && c.longitud != null)
+      .filter(c =>
+        c.latitud != null && c.longitud != null
+        && withinBoundingBox(
+          center,
+          { latitud: c.latitud as number, longitud: c.longitud as number },
+          radiusM,
+        ),
+      )
       .map(c => ({
         cliente: c,
         distanciaM: haversineMeters(center, { latitud: c.latitud as number, longitud: c.longitud as number }),
