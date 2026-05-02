@@ -333,6 +333,10 @@ public static class ServiceRegistrationExtensions
                 "TOTP encryption key is required. Set 'Totp:EncryptionKey' or 'Jwt:Secret' in configuration.");
         services.AddSingleton(new TotpEncryptionService(totpEncryptionKey));
         services.AddScoped<TotpService>();
+        // Verifier compartido — el mobile API también lo usa para enforce TOTP
+        // en login (VULN-M03 fix). El web TotpService queda para setup/disable.
+        services.AddScoped<HandySuites.Application.TwoFactor.ITotpVerifier,
+                            HandySuites.Infrastructure.TwoFactor.TotpVerifier>();
 
         // Pwned Password Check (HIBP k-anonymity)
         services.AddHttpClient<PwnedPasswordService>();
