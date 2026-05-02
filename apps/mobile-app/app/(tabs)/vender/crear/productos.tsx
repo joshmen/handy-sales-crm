@@ -7,6 +7,7 @@ import { useOrderDraftStore, useOrderItemCount } from '@/stores';
 import { usePricingMap } from '@/hooks/usePricing';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
+import { QuantityNumericSheet } from '@/components/shared/QuantityNumericSheet';
 import { CartBar } from '@/components/shared/CartBar';
 import { EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
@@ -49,6 +50,10 @@ function CrearPedidoStep2() {
   const addItem = useOrderDraftStore(s => s.addItem);
   const updateQuantity = useOrderDraftStore(s => s.updateQuantity);
   const removeItem = useOrderDraftStore(s => s.removeItem);
+
+  // Producto seleccionado para abrir el sheet de cantidad numérica.
+  // null = sheet cerrado. Setear con un Producto = abrir.
+  const [qtyProduct, setQtyProduct] = useState<Producto | null>(null);
   const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
   const itemCount = useOrderItemCount();
   const isDirecta = tipoVenta === 1;
@@ -122,7 +127,21 @@ function CrearPedidoStep2() {
       const pricing = getPricing(item.serverId ?? 0, item.precio, qty || 1);
 
       return (
-        <View style={[styles.productCard, blocked && { opacity: 0.5 }]}>
+        <TouchableOpacity
+          style={[styles.productCard, blocked && { opacity: 0.5 }]}
+          onPress={() => {
+            // Tap en el card abre el sheet con teclado numérico para
+            // capturar cantidad rápidamente (1 tap → escribir → confirmar
+            // vs N taps en stepper). El stepper visible sigue disponible
+            // para ajustes finos (+1/-1) cuando ya hay qty.
+            if (blocked) return;
+            setQtyProduct(item);
+          }}
+          activeOpacity={blocked ? 1 : 0.85}
+          disabled={blocked}
+          accessibilityLabel={`Capturar cantidad de ${item.nombre}`}
+          accessibilityRole="button"
+        >
           <View style={styles.productRow}>
             {item.imagenUrl ? (
               <Image source={{ uri: item.imagenUrl }} style={styles.productImage} resizeMode="cover" />
@@ -174,7 +193,10 @@ function CrearPedidoStep2() {
               ) : (
                 <TouchableOpacity
                   style={styles.addButton}
-                  onPress={() => addItem(item, 1, pricing.precioFinal)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setQtyProduct(item);
+                  }}
                   activeOpacity={0.7}
                   accessibilityLabel={`Agregar ${item.nombre}`}
                   accessibilityRole="button"
@@ -185,10 +207,10 @@ function CrearPedidoStep2() {
               )}
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       );
     },
-    [items, addItem, updateQuantity, removeItem, isDirecta, getPricing]
+    [items, updateQuantity, removeItem, isDirecta, getPricing]
   );
 
   return (
@@ -275,6 +297,30 @@ function CrearPedidoStep2() {
         onPress={() => router.push('/(tabs)/vender/crear/revision' as any)}
         label="Revisar pedido"
       />
+
+      {qtyProduct && (
+        <QuantityNumericSheet
+          visible={!!qtyProduct}
+          productoNombre={qtyProduct.nombre}
+          precioUnitario={getPricing(qtyProduct.serverId ?? 0, qtyProduct.precio, getItemQuantity(qtyProduct.id) || 1).precioFinal}
+          formatCurrency={formatCurrency}
+          initialQty={getItemQuantity(qtyProduct.id) || 1}
+          maxQty={qtyProduct.stockDisponible ?? 9999}
+          onClose={() => setQtyProduct(null)}
+          onConfirm={(qty) => {
+            const existingQty = getItemQuantity(qtyProduct.id);
+            const pricing = getPricing(qtyProduct.serverId ?? 0, qtyProduct.precio, qty);
+            if (qty <= 0) {
+              if (existingQty > 0) removeItem(qtyProduct.id);
+            } else if (existingQty > 0) {
+              updateQuantity(qtyProduct.id, qty);
+            } else {
+              addItem(qtyProduct, qty, pricing.precioFinal);
+            }
+            setQtyProduct(null);
+          }}
+        />
+      )}
     </View>
   );
 }

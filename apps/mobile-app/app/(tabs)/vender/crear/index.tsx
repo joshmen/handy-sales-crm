@@ -1,14 +1,16 @@
-import { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, Text, FlatList, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
+import { useNearbyClients } from '@/hooks/useNearbyClients';
+import { useRecentClients } from '@/hooks/useRecentClients';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { LoadingSpinner, EmptyState, Button } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
-import { User, Search, Check, ChevronLeft } from 'lucide-react-native';
+import { User, Search, Check, ChevronLeft, MapPin, Clock } from 'lucide-react-native';
 import type Cliente from '@/db/models/Cliente';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
@@ -33,6 +35,11 @@ function CrearPedidoStep1() {
   }, []);
 
   const { data: clientes, isLoading } = useOfflineClients(busqueda || undefined);
+  // Cercanos por GPS (offline, Haversine local). Solo se ejecuta si el
+  // dispositivo tiene permiso GPS y los clientes tienen lat/lng poblados.
+  const { nearby } = useNearbyClients(0.5, 5);
+  // Recientes (clientes con pedidos del vendedor en últimos 7 días).
+  const { recents } = useRecentClients(7, 5);
 
   const handleSelect = useCallback(
     (cliente: Cliente) => {
@@ -41,11 +48,37 @@ function CrearPedidoStep1() {
     [setCliente]
   );
 
+  // Selecciona Y avanza inmediatamente — para cards de Cercanos/Recientes,
+  // el vendedor ya tiene confianza en el cliente (1 tap reemplaza el patrón
+  // "tap card + tap Continuar"). Acelera el flujo.
+  const handleSelectAndContinue = useCallback(
+    (cliente: Cliente) => {
+      setCliente(cliente.id, cliente.serverId, cliente.nombre, cliente.listaPreciosId);
+      router.push('/(tabs)/vender/crear/productos' as any);
+    },
+    [setCliente, router]
+  );
+
   const handleContinue = () => {
     if (clienteId) {
       router.push('/(tabs)/vender/crear/productos' as any);
     }
   };
+
+  // Set de IDs ya mostrados en secciones top para no duplicarlos en la lista
+  // alfabética principal.
+  const idsTop = useMemo(() => {
+    const s = new Set<string>();
+    nearby.forEach(n => s.add(n.cliente.id));
+    recents.forEach(r => s.add(r.cliente.id));
+    return s;
+  }, [nearby, recents]);
+
+  const clientesFiltrados = useMemo(() => {
+    if (!clientes) return [];
+    if (busqueda) return clientes; // si está buscando, no filtramos por dedup
+    return clientes.filter(c => !idsTop.has(c.id));
+  }, [clientes, busqueda, idsTop]);
 
   const renderItem = useCallback(
     ({ item }: { item: Cliente }) => {
@@ -121,7 +154,7 @@ function CrearPedidoStep1() {
         <LoadingSpinner message="Cargando clientes..." />
       ) : (
         <FlatList
-          data={clientes ?? []}
+          data={clientesFiltrados}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
@@ -130,6 +163,92 @@ function CrearPedidoStep1() {
           windowSize={5}
           removeClippedSubviews
           keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            // Solo mostrar secciones especiales si NO hay búsqueda activa.
+            // Cuando vendedor escribe en el buscador, esperar resultados sobre
+            // toda la lista, no atascar con cercanos/recientes irrelevantes.
+            busqueda ? null : (
+              <View>
+                {nearby.length > 0 && (
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <MapPin size={14} color={COLORS.button} />
+                      <Text style={styles.sectionTitle}>Cercanos a ti</Text>
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.nearbyScroll}
+                    >
+                      {nearby.map(({ cliente, distanciaM }) => {
+                        const isSelected = clienteId === cliente.id;
+                        return (
+                          <TouchableOpacity
+                            key={cliente.id}
+                            style={[styles.nearbyCard, isSelected && styles.nearbyCardSelected]}
+                            onPress={() => handleSelectAndContinue(cliente)}
+                            activeOpacity={0.85}
+                            accessibilityLabel={`Vender a ${cliente.nombre}, a ${Math.round(distanciaM)} metros`}
+                            accessibilityRole="button"
+                          >
+                            <View style={styles.nearbyAvatar}>
+                              <MapPin size={16} color="#ffffff" />
+                            </View>
+                            <Text style={styles.nearbyName} numberOfLines={1}>
+                              {cliente.nombre}
+                            </Text>
+                            <Text style={styles.nearbyDistance}>
+                              {distanciaM < 1000
+                                ? `${Math.round(distanciaM)} m`
+                                : `${(distanciaM / 1000).toFixed(1)} km`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
+                {recents.length > 0 && (
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Clock size={14} color="#64748b" />
+                      <Text style={styles.sectionTitle}>Recientes</Text>
+                    </View>
+                    {recents.map(({ cliente }) => {
+                      const isSelected = clienteId === cliente.id;
+                      return (
+                        <TouchableOpacity
+                          key={cliente.id}
+                          style={[styles.clientItem, isSelected && styles.clientItemSelected]}
+                          onPress={() => handleSelectAndContinue(cliente)}
+                          activeOpacity={0.7}
+                          accessibilityLabel={`Cliente reciente ${cliente.nombre}`}
+                          accessibilityRole="button"
+                        >
+                          <View style={[styles.clientAvatar, isSelected && styles.clientAvatarSelected]}>
+                            <Clock size={18} color={isSelected ? '#ffffff' : '#64748b'} />
+                          </View>
+                          <View style={styles.clientInfo}>
+                            <Text style={[styles.clientName, isSelected && styles.clientNameSelected]}>
+                              {cliente.nombre}
+                            </Text>
+                            {cliente.telefono && (
+                              <Text style={styles.clientPhone}>{cliente.telefono}</Text>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+                {(nearby.length > 0 || recents.length > 0) && (
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: '#94a3b8' }]}>Todos los clientes</Text>
+                  </View>
+                )}
+              </View>
+            )
+          }
           ListEmptyComponent={
             <EmptyState
               icon={<User size={48} color="#cbd5e1" />}
@@ -215,6 +334,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
+  },
+  // Secciones "Cercanos" y "Recientes" en el header del FlatList
+  section: { marginTop: 8 },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 },
+  nearbyScroll: { paddingHorizontal: 16, gap: 10, paddingBottom: 4 },
+  nearbyCard: {
+    width: 140,
+    padding: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#dcfce7',
+    marginRight: 10,
+    alignItems: 'center',
+  },
+  nearbyCardSelected: {
+    borderColor: COLORS.button,
+    backgroundColor: COLORS.buttonLight,
+  },
+  nearbyAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#16a34a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  nearbyName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  nearbyDistance: {
+    fontSize: 11,
+    color: '#16a34a',
+    fontWeight: '600',
   },
 });
 

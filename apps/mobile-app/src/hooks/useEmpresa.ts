@@ -27,6 +27,10 @@ export interface DatosEmpresa {
   horaInicioJornada?: string | null;  // formato "HH:mm"
   horaFinJornada?: string | null;     // formato "HH:mm"
   diasLaborables?: string | null;     // CSV "1,2,3,4,5" (1=Lun..7=Dom)
+  // Modo default de venta. "Preventa" | "VentaDirecta" | "Preguntar".
+  // El mobile usa esto para saltar la pantalla de selección de modo y
+  // acelerar el flujo del vendedor cuando el tenant tiene un modo dominante.
+  modoVentaDefault?: string | null;
 }
 
 export function useEmpresa() {

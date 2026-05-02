@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,6 +56,26 @@ function CrearPedidoStep3() {
   } = useOrderDraftStore();
 
   const subtotalRaw = useOrderSubtotal();
+
+  // Recordar último método de pago del vendedor en AsyncStorage. Al abrir
+  // revisión, pre-seleccionamos el último que usó (ahorra 1 tap del modal de
+  // pago en 90% de los casos donde el vendedor cobra siempre del mismo modo).
+  const lastMetodoKey = `last_metodo_pago_${user?.id ?? 'default'}`;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(lastMetodoKey);
+        if (!cancelled && stored != null) {
+          const parsed = parseInt(stored, 10);
+          if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 5) {
+            setMetodoPago(parsed);
+          }
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [lastMetodoKey, setMetodoPago]);
 
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
@@ -145,6 +166,8 @@ function CrearPedidoStep3() {
       if (isDirecta) {
         const montoTotal = total;
         const metodo = metodoPago ?? 0;
+        // Persistir último método para próxima venta del mismo vendedor.
+        AsyncStorage.setItem(lastMetodoKey, String(metodo)).catch(() => {});
         const nombre = clienteNombre || 'Cliente';
         const paradaId = useOrderDraftStore.getState().fromParadaId;
         // Pedido + Cobro + parada.Completada en una sola transacción WDB:
