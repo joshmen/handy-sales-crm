@@ -127,9 +127,11 @@ public static class PromocionesEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("PromocionesActualizadas");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore — fallo de hub no debe romper el request del admin
+            // Loggeamos pero no propagamos — fallo de hub no debe romper el request
+            // del admin. Logging vía Serilog static (configurado en Program.cs).
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "PromocionesActualizadas", tenantId);
         }
     }
 }

@@ -145,9 +145,9 @@ public static class ZonasEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("ZonasActualizadas");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "ZonasActualizadas", tenantId);
         }
     }
 }
