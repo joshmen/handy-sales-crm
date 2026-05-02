@@ -2447,6 +2447,20 @@
         "sun": "Sun"
       }
     },
+    "salesMode": {
+      "title": "Default sales mode",
+      "description": "Defines which mode is auto-selected when starting a sale on mobile. Speeds up the seller flow by skipping one step.",
+      "modoPreventa": "Pre-order",
+      "modoPreventaDesc": "Seller takes the order and delivers/collects later. Recommended for orders for future delivery.",
+      "modoVentaDirecta": "Direct sale",
+      "modoVentaDirectaDesc": "Seller delivers and collects on the spot. Recommended for self-sale with product on board.",
+      "modoPreguntar": "Ask the seller",
+      "modoPreguntarDesc": "Keeps the current screen with both options. Useful if your team combines both schemes.",
+      "hint": "The seller can always switch mode from the sale screen if needed. This only defines what appears first.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Saved"
+    },
     "appearance": {
       "title": "Appearance",
       "theme": "Theme",

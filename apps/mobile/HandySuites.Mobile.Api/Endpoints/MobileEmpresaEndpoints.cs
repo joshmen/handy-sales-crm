@@ -65,6 +65,8 @@ public static class MobileEmpresaEndpoints
                     horaInicioJornada = (settings?.HoraInicioJornada ?? new TimeOnly(8, 0)).ToString("HH:mm"),
                     horaFinJornada = (settings?.HoraFinJornada ?? new TimeOnly(18, 0)).ToString("HH:mm"),
                     diasLaborables = settings?.DiasLaborables ?? "1,2,3,4,5", // CSV "1,2,3,4,5"
+                    // Modo default para acelerar UX en mobile. "Preguntar" preserva el flow actual.
+                    modoVentaDefault = settings?.ModoVentaDefault ?? "Preguntar",
                 }
             });
         })
