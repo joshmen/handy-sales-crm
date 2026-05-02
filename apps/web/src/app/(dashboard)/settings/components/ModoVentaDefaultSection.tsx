@@ -62,6 +62,7 @@ export const ModoVentaDefaultSection: React.FC = () => {
                 onClick={() => setModo(m.value)}
                 className={cn(
                   'w-full text-left p-4 rounded-lg border transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                   selected
                     ? 'bg-primary/10 border-primary'
                     : 'bg-surface-2 border-border hover:bg-surface-3'
