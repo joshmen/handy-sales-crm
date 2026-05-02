@@ -44,7 +44,8 @@ public static class MobileTrackingEndpoints
                 }, statusCode: StatusCodes.Status403Forbidden);
             }
         })
+        .RequireRateLimiting("mobile-tracking")
         .WithSummary("Batch de pings GPS del vendedor")
-        .WithDescription("Acepta un array de UbicacionPingDto. Persiste deduplicando por (UsuarioId, CapturadoEn). 403 si el plan no incluye tracking.");
+        .WithDescription("Acepta un array de UbicacionPingDto. Persiste deduplicando por (UsuarioId, CapturadoEn). 403 si el plan no incluye tracking. Rate limit: 60 batches/min/user.");
     }
 }

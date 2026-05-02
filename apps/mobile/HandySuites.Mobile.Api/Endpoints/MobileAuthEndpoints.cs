@@ -31,10 +31,22 @@ public static class MobileAuthEndpoints
             var deviceId = context.Request.Headers["X-Device-Id"].FirstOrDefault();
             var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
 
-            var result = await auth.LoginAsync(dto.email, dto.password, deviceId, deviceFingerprint);
+            var result = await auth.LoginAsync(dto.email, dto.password, deviceId, deviceFingerprint, dto.totpCode);
 
             if (!result.Success)
             {
+                if (result.TotpRequired)
+                {
+                    // 401 con code=TOTP_REQUIRED → cliente muestra UI para
+                    // ingresar código y reintenta el mismo POST con totpCode.
+                    return Results.Json(new
+                    {
+                        success = false,
+                        code = "TOTP_REQUIRED",
+                        message = result.Message
+                    }, statusCode: 401);
+                }
+
                 if (result.DeviceBound)
                 {
                     return Results.Json(new
@@ -66,7 +78,7 @@ public static class MobileAuthEndpoints
         })
         .RequireRateLimiting("mobile-auth")
         .WithSummary("Login de vendedor móvil")
-        .WithDescription("Autentica un vendedor y devuelve tokens JWT. Incluir headers X-Device-Id y X-Device-Fingerprint para device binding.")
+        .WithDescription("Autentica un vendedor y devuelve tokens JWT. Si el usuario tiene 2FA, primero retorna 401 + code=TOTP_REQUIRED; el cliente repite el POST con totpCode. Incluir headers X-Device-Id y X-Device-Fingerprint para device binding.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden);
@@ -86,10 +98,19 @@ public static class MobileAuthEndpoints
             var deviceId = context.Request.Headers["X-Device-Id"].FirstOrDefault();
             var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
 
-            var result = await auth.ForceLoginAsync(dto.email, dto.password, deviceId, deviceFingerprint);
+            var result = await auth.ForceLoginAsync(dto.email, dto.password, deviceId, deviceFingerprint, dto.totpCode);
 
             if (!result.Success)
             {
+                if (result.TotpRequired)
+                {
+                    return Results.Json(new
+                    {
+                        success = false,
+                        code = "TOTP_REQUIRED",
+                        message = result.Message
+                    }, statusCode: 401);
+                }
                 if (!string.IsNullOrEmpty(result.Message))
                 {
                     return Results.Json(new { success = false, message = result.Message }, statusCode: 401);
@@ -147,6 +168,22 @@ public static class MobileAuthEndpoints
                     {
                         token.IsRevoked = true;
                         token.RevokedAt = DateTime.UtcNow;
+                    }
+                }
+                else
+                {
+                    // SECURITY (audit MED): si el cliente NO mandó refreshToken
+                    // (caso default — el mobile no siempre lo incluye), revocamos
+                    // TODOS los refresh tokens activos de este user. Antes el
+                    // logout sin token era no-op y el token seguía válido hasta
+                    // expirar (default 30 días). Ahora logout = sesión muerta.
+                    var activeTokens = await db.RefreshTokens
+                        .Where(t => t.UserId == userId && !t.IsRevoked && t.ExpiresAt > DateTime.UtcNow)
+                        .ToListAsync();
+                    foreach (var t in activeTokens)
+                    {
+                        t.IsRevoked = true;
+                        t.RevokedAt = DateTime.UtcNow;
                     }
                 }
 

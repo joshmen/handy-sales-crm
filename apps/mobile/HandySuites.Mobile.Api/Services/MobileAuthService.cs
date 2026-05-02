@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using HandySuites.Application.TwoFactor;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
@@ -12,6 +13,9 @@ public class LoginResult
 {
     public bool Success { get; init; }
     public bool DeviceBound { get; init; }
+    /// <summary>True cuando el usuario tiene 2FA habilitado y el cliente debe
+    /// llamar a /verify-totp con el código antes de obtener tokens.</summary>
+    public bool TotpRequired { get; init; }
     public string? Message { get; init; }
     public object? Data { get; init; }
 }
@@ -20,14 +24,16 @@ public class MobileAuthService
 {
     private readonly HandySuitesDbContext _db;
     private readonly JwtTokenGenerator _jwt;
+    private readonly ITotpVerifier _totpVerifier;
 
-    public MobileAuthService(HandySuitesDbContext db, JwtTokenGenerator jwt)
+    public MobileAuthService(HandySuitesDbContext db, JwtTokenGenerator jwt, ITotpVerifier totpVerifier)
     {
         _db = db;
         _jwt = jwt;
+        _totpVerifier = totpVerifier;
     }
 
-    public async Task<LoginResult> LoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null)
+    public async Task<LoginResult> LoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null)
     {
         var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
 
@@ -39,6 +45,40 @@ public class MobileAuthService
         // Check if the user account is active
         if (!usuario.Activo)
             return new LoginResult { Success = false, Message = "Cuenta desactivada" };
+
+        // VULN-M03 fix: si el usuario tiene 2FA habilitado, exigir código TOTP
+        // antes de emitir tokens. Antes el mobile bypaseaba completamente la
+        // verificación — un atacante con creds robadas pivoteaba al endpoint
+        // mobile y obtenía full access ignorando el segundo factor.
+        if (usuario.TotpEnabled)
+        {
+            if (string.IsNullOrEmpty(totpCode))
+            {
+                return new LoginResult
+                {
+                    Success = false,
+                    TotpRequired = true,
+                    Message = "Se requiere código de autenticación 2FA"
+                };
+            }
+
+            var totpOk = await _totpVerifier.VerifyLoginCodeAsync(usuario.Id, totpCode);
+            if (!totpOk)
+            {
+                // Fallback: aceptar recovery code (formato XXXX-XXXX). El
+                // verifier marca el código como usado al consumirlo.
+                var recoveryOk = await _totpVerifier.UseRecoveryCodeAsync(usuario.Id, totpCode);
+                if (!recoveryOk)
+                {
+                    return new LoginResult
+                    {
+                        Success = false,
+                        TotpRequired = true,
+                        Message = "Código 2FA inválido"
+                    };
+                }
+            }
+        }
 
         // --- Device session management ---
         // Cambio 2026-04-28: el binding check ahora aplica aunque el cliente
@@ -182,12 +222,9 @@ public class MobileAuthService
 
         // 2FA enforcement on refresh: si el user habilitó 2FA POSTERIOR a la
         // creación del refresh token, invalidamos el token. El user tendrá que
-        // hacer re-login. Esto cierra la ventana donde un token capturado antes
-        // del 2FA-enable seguiría funcionando indefinidamente.
-        // BACKLOG: implementar flujo TOTP completo en mobile login (UI screen
-        // para ingresar código). Hoy mobile NO valida TOTP en login — un user
-        // con 2FA habilitado puede loguearse normal en mobile (gap conocido).
-        // Issue Notion: tracking 2FA Mobile UI.
+        // hacer re-login (que ahora SÍ enforce TOTP — ver LoginAsync). Esto
+        // cierra la ventana donde un token capturado antes del 2FA-enable
+        // seguiría funcionando indefinidamente.
         if (tokenEntity.Usuario.TotpEnabled &&
             tokenEntity.Usuario.TotpEnabledAt.HasValue &&
             tokenEntity.Usuario.TotpEnabledAt.Value > tokenEntity.CreatedAt)
@@ -355,9 +392,10 @@ public class MobileAuthService
     /// Login forzado: ignora el check DEVICE_BOUND y revoca todas las sesiones
     /// activas del usuario excepto la que se va a crear. El cliente lo invoca
     /// solo despues de que el usuario confirma en un modal "Continuar aqui"
-    /// tras recibir DEVICE_BOUND en el login normal.
+    /// tras recibir DEVICE_BOUND en el login normal. TOTP también se enforce
+    /// aquí (VULN-M03) — force-login no puede ser un bypass del 2FA.
     /// </summary>
-    public async Task<LoginResult> ForceLoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null)
+    public async Task<LoginResult> ForceLoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null)
     {
         var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
         var loginSuccess = usuario != null && BCrypt.Net.BCrypt.Verify(password, usuario.PasswordHash);
@@ -365,6 +403,34 @@ public class MobileAuthService
             return new LoginResult { Success = false };
         if (!usuario.Activo)
             return new LoginResult { Success = false, Message = "Cuenta desactivada" };
+
+        // Mismo enforcement TOTP que LoginAsync — force-login NO debe bypass.
+        if (usuario.TotpEnabled)
+        {
+            if (string.IsNullOrEmpty(totpCode))
+            {
+                return new LoginResult
+                {
+                    Success = false,
+                    TotpRequired = true,
+                    Message = "Se requiere código de autenticación 2FA"
+                };
+            }
+            var totpOk = await _totpVerifier.VerifyLoginCodeAsync(usuario.Id, totpCode);
+            if (!totpOk)
+            {
+                var recoveryOk = await _totpVerifier.UseRecoveryCodeAsync(usuario.Id, totpCode);
+                if (!recoveryOk)
+                {
+                    return new LoginResult
+                    {
+                        Success = false,
+                        TotpRequired = true,
+                        Message = "Código 2FA inválido"
+                    };
+                }
+            }
+        }
 
         // Revocar TODAS las sesiones Active del usuario (incluida la actual si la
         // hubiera con otro fingerprint). El cliente las re-creara via la nueva.

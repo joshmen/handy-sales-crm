@@ -112,6 +112,16 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ICurrentTenant, CurrentTenant>();
         services.AddScoped<MobileAuthService>();
 
+        // TOTP verification (compartido con web API). El mobile NO genera
+        // secrets ni recovery codes — solo valida códigos durante login.
+        // VULN-M03 fix: antes el mobile bypaseaba TOTP completamente.
+        var totpEncryptionKey = config["Totp:EncryptionKey"] ?? config["Jwt:Secret"]
+            ?? throw new InvalidOperationException(
+                "TOTP encryption key is required. Set 'Totp:EncryptionKey' or 'Jwt:Secret' in configuration.");
+        services.AddSingleton(new TotpEncryptionService(totpEncryptionKey));
+        services.AddScoped<HandySuites.Application.TwoFactor.ITotpVerifier,
+                            HandySuites.Infrastructure.TwoFactor.TotpVerifier>();
+
         // Push Notifications (HttpClient for Expo Push API)
         services.AddHttpClient<PushNotificationService>();
         services.AddScoped<HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService>();
