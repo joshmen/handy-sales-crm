@@ -2154,6 +2154,11 @@
     "gpsHistorial": {
       "title": "GPS History",
       "subtitle": "GPS tracking of your sellers: sales, payments, visits and routes.",
+      "subtitleWithCount": "{count, plural, one {# seller with GPS activity} other {# sellers with GPS activity}}",
+      "detailSubtitle": "GPS tracking: sales, payments, visits, workday and routes",
+      "eventsTimeline": "Timeline",
+      "emptyTitle": "No GPS activity",
+      "emptySearchMessage": "No sellers found matching your search.",
       "teamLabel": "Team",
       "columnVendor": "Seller",
       "columnLastEvent": "Last event",

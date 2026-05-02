@@ -1,30 +1,47 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
+import { SearchBar } from '@/components/common/SearchBar';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { teamLocationService, UltimaUbicacionVendedor } from '@/services/api/teamLocation';
+import { getInitials } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import { ChevronRight, Search } from 'lucide-react';
+import { RefreshCw, MapPin, ChevronRight, Users } from 'lucide-react';
 
 /**
  * Índice de "Histórico GPS" — lista de vendedores del tenant con su última
- * actividad GPS conocida. Es el entry point al detalle `/team/[id]/gps`.
+ * actividad GPS conocida. Sigue el patrón de catálogos (clients, products):
+ * PageHeader root + filter row + ErrorBanner + DataGrid con mobileCardRenderer.
  *
  * Reusa endpoint `/api/team/ubicaciones-recientes` que ya funde ambas fuentes
- * (`ClienteVisitas + UbicacionesVendedor`) — el chip "hace X min" en /team
- * sufría del bug de usar el endpoint legacy que solo leía visitas.
+ * (`ClienteVisitas + UbicacionesVendedor`).
  */
 export default function TeamGpsPage() {
   const t = useTranslations('team.gpsHistorial');
   const tc = useTranslations('common');
+  const router = useRouter();
+
   const [data, setData] = useState<UltimaUbicacionVendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busqueda, setBusqueda] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await teamLocationService.getUltimasUbicaciones();
+      setData(res);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error desconocido';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -46,13 +63,13 @@ export default function TeamGpsPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (!busqueda.trim()) return data;
-    const q = busqueda.trim().toLowerCase();
+    if (!searchTerm.trim()) return data;
+    const q = searchTerm.trim().toLowerCase();
     return data.filter(u =>
       u.nombre.toLowerCase().includes(q) ||
       (u.email && u.email.toLowerCase().includes(q))
     );
-  }, [data, busqueda]);
+  }, [data, searchTerm]);
 
   const formatTimeAgo = (iso: string): string => {
     const ms = Date.now() - new Date(iso).getTime();
@@ -82,7 +99,7 @@ export default function TeamGpsPage() {
     }
   };
 
-  const columns: DataGridColumn<UltimaUbicacionVendedor>[] = [
+  const columns: DataGridColumn<UltimaUbicacionVendedor>[] = useMemo(() => [
     {
       key: 'nombre',
       label: t('columnVendor'),
@@ -90,12 +107,12 @@ export default function TeamGpsPage() {
       sortable: true,
       cellRenderer: (u) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center text-sm font-semibold text-foreground/70">
-            {u.nombre[0]?.toUpperCase()}
+          <div className="w-9 h-9 rounded bg-foreground text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+            {getInitials(u.nombre)}
           </div>
-          <div>
-            <p className="text-[13px] font-medium text-foreground">{u.nombre}</p>
-            <p className="text-[11px] text-muted-foreground">{u.email ?? '—'}</p>
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-foreground truncate">{u.nombre}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{u.email ?? '—'}</p>
           </div>
         </div>
       ),
@@ -105,7 +122,7 @@ export default function TeamGpsPage() {
       label: t('columnLastEvent'),
       width: 160,
       cellRenderer: (u) => (
-        <span className="px-2 py-1 text-[11px] font-medium rounded bg-emerald-50 text-emerald-700">
+        <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
           {fuenteLabel(u.fuente)}
         </span>
       ),
@@ -142,57 +159,86 @@ export default function TeamGpsPage() {
     {
       key: 'actions',
       label: '',
-      width: 110,
+      width: 50,
       align: 'right',
       cellRenderer: (u) => (
-        <Link
-          href={`/team/${u.usuarioId}/gps`}
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+        <button
+          onClick={(e) => { e.stopPropagation(); router.push(`/team/${u.usuarioId}/gps`); }}
+          className="p-1 hover:bg-emerald-50 rounded transition-colors"
+          title={t('viewDetail')}
         >
-          {t('viewDetail')} <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
+          <ChevronRight className="w-4 h-4 text-emerald-500 hover:text-emerald-600" />
+        </button>
       ),
     },
-  ];
+  ], [t, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <PageHeader
-      title={t('title')}
-      subtitle={t('subtitle')}
       breadcrumbs={[
-        { label: tc('home'), href: '/' },
+        { label: tc('home'), href: '/dashboard' },
         { label: t('teamLabel'), href: '/team' },
         { label: t('title') },
       ]}
+      title={t('title')}
+      subtitle={data.length > 0 ? t('subtitleWithCount', { count: data.length }) : t('subtitle')}
     >
-      <div className="px-4 py-4 sm:px-8 sm:py-6">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="max-w-sm"
-            />
-            <span className="text-[12px] text-muted-foreground ml-auto">
-              {t('totalShown', { count: filtered.length })}
-            </span>
-          </div>
+      <div className="space-y-4">
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('searchPlaceholder')}
+          />
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-60"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{tc('refresh')}</span>
+          </button>
+        </div>
 
-          {error ? (
-            <div className="text-center py-8 text-red-500">{error}</div>
-          ) : (
-            <DataGrid<UltimaUbicacionVendedor>
-              data={filtered}
-              columns={columns}
-              loading={loading}
-              keyExtractor={(u) => u.usuarioId}
-              emptyMessage={t('emptyMessage')}
-            />
+        {/* Error message */}
+        <ErrorBanner error={error} onRetry={fetchData} />
+
+        {/* DataGrid */}
+        <DataGrid<UltimaUbicacionVendedor>
+          data={filtered}
+          columns={columns}
+          loading={loading}
+          loadingMessage={t('loading')}
+          keyExtractor={(u) => u.usuarioId}
+          emptyIcon={<Users className="w-10 h-10" />}
+          emptyTitle={t('emptyTitle')}
+          emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
+          onRowClick={(u) => router.push(`/team/${u.usuarioId}/gps`)}
+          mobileCardRenderer={(u) => (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded bg-foreground text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                {getInitials(u.nombre)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{u.nombre}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium">
+                    {fuenteLabel(u.fuente)}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">{formatTimeAgo(u.ultimaActividad)}</span>
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); router.push(`/team/${u.usuarioId}/gps`); }}
+                className="flex items-center gap-1 px-2 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{t('viewDetail')}</span>
+              </button>
+            </div>
           )}
-        </Card>
+        />
       </div>
     </PageHeader>
   );
