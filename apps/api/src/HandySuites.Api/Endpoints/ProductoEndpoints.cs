@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.Ai.Interfaces;
 using HandySuites.Application.CompanySettings.Interfaces;
 using HandySuites.Application.Productos.DTOs;
@@ -8,6 +9,7 @@ using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using ITransactionManager = HandySuites.Application.Common.Interfaces.ITransactionManager;
 
@@ -38,7 +40,8 @@ public static class ProductoEndpoints
             [FromServices] ISubscriptionEnforcementService enforcement,
             [FromServices] ICurrentTenant currentTenant,
             [FromServices] IAiEmbeddingService embeddingService,
-            [FromServices] ITransactionManager transactions) =>
+            [FromServices] ITransactionManager transactions,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -62,6 +65,7 @@ public static class ProductoEndpoints
             {
                 var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
                 _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", txResult.CreatedId, embeddingText);
+                await NotifyProductosActualizados(hubContext, currentTenant.TenantId);
             }
 
             return txResult.Response;
@@ -73,7 +77,8 @@ public static class ProductoEndpoints
             IValidator<ProductoCreateDto> validator,
             [FromServices] ProductoService servicio,
             [FromServices] ICurrentTenant currentTenant,
-            [FromServices] IAiEmbeddingService embeddingService) =>
+            [FromServices] IAiEmbeddingService embeddingService,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -88,33 +93,57 @@ public static class ProductoEndpoints
             {
                 var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
                 _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
+                await NotifyProductosActualizados(hubContext, currentTenant.TenantId);
             }
             return actualizado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/productos/{id:int}", async (int id, bool? forzar, [FromServices] ProductoService servicio) =>
+        app.MapDelete("/productos/{id:int}", async (
+            int id,
+            bool? forzar,
+            [FromServices] ProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await servicio.EliminarProductoAsync(id, forzar ?? false);
-            if (result.Success) return Results.NoContent();
+            if (result.Success)
+            {
+                await NotifyProductosActualizados(hubContext, currentTenant.TenantId);
+                return Results.NoContent();
+            }
             if (result.PedidosActivos > 0)
                 return Results.Conflict(new { error = result.Error, pedidosActivos = result.PedidosActivos });
             return Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/productos/{id:int}/activo", async (int id, [FromBody] CambiarActivoDto dto, [FromServices] ProductoService servicio, ILogger<ProductoService> logger) =>
+        app.MapPatch("/productos/{id:int}/activo", async (
+            int id,
+            [FromBody] CambiarActivoDto dto,
+            [FromServices] ProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext,
+            ILogger<ProductoService> logger) =>
         {
             logger.LogInformation("[PATCH /productos/{Id}/activo] Recibido: activo={Activo}", id, dto.Activo);
             var actualizado = await servicio.CambiarActivoAsync(id, dto.Activo);
             logger.LogInformation("[PATCH /productos/{Id}/activo] Resultado: actualizado={Actualizado}", id, actualizado);
+            if (actualizado)
+                await NotifyProductosActualizados(hubContext, currentTenant.TenantId);
             return actualizado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/productos/batch-toggle", async (ProductoBatchToggleRequest request, [FromServices] ProductoService servicio) =>
+        app.MapPatch("/productos/batch-toggle", async (
+            ProductoBatchToggleRequest request,
+            [FromServices] ProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
+            if (actualizados > 0)
+                await NotifyProductosActualizados(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
@@ -184,6 +213,18 @@ public static class ProductoEndpoints
             await servicio.ActualizarImagenAsync(id, null);
             return Results.NoContent();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
+    }
+
+    internal static async Task NotifyProductosActualizados(IHubContext<NotificationHub> hubContext, int tenantId)
+    {
+        try
+        {
+            await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("ProductosActualizados");
+        }
+        catch
+        {
+            // ignore
+        }
     }
 
     private static string? ExtractPublicIdFromUrl(string url)

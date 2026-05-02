@@ -1,7 +1,10 @@
 using FluentValidation;
+using HandySuites.Api.Hubs;
 using HandySuites.Application.Zonas.DTOs;
 using HandySuites.Application.Zonas.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySuites.Api.Endpoints;
 
@@ -9,7 +12,13 @@ public static class ZonasEndpoints
 {
     public static void MapZonaEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/zonas", async (CreateZonaDto dto, IValidator<CreateZonaDto> validator, [FromServices] ZonaService servicio, HttpContext context) =>
+        app.MapPost("/zonas", async (
+            CreateZonaDto dto,
+            IValidator<CreateZonaDto> validator,
+            [FromServices] ZonaService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext,
+            HttpContext context) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -19,6 +28,7 @@ public static class ZonasEndpoints
             var result = await servicio.CrearZonaAsync(dto, usuario);
             if (!result.Success)
                 return Results.BadRequest(new { error = result.Error });
+            await NotifyZonasActualizadas(hubContext, currentTenant.TenantId);
             return Results.Created($"/zonas/{result.Id}", new { id = result.Id });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
@@ -34,7 +44,14 @@ public static class ZonasEndpoints
             return zona is null ? Results.NotFound() : Results.Ok(zona);
         }).RequireAuthorization();
 
-        app.MapPut("/zonas/{id:int}", async (int id, UpdateZonaDto dto, IValidator<UpdateZonaDto> validator, [FromServices] ZonaService servicio, HttpContext context) =>
+        app.MapPut("/zonas/{id:int}", async (
+            int id,
+            UpdateZonaDto dto,
+            IValidator<UpdateZonaDto> validator,
+            [FromServices] ZonaService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext,
+            HttpContext context) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -51,10 +68,15 @@ public static class ZonasEndpoints
             var result = await servicio.ActualizarZonaAsync(id, dto, usuario);
             if (!result.Success)
                 return Results.BadRequest(new { error = result.Error });
+            await NotifyZonasActualizadas(hubContext, currentTenant.TenantId);
             return Results.NoContent();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapDelete("/zonas/{id:int}", async (int id, [FromServices] ZonaService servicio) =>
+        app.MapDelete("/zonas/{id:int}", async (
+            int id,
+            [FromServices] ZonaService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await servicio.EliminarZonaAsync(id);
 
@@ -74,10 +96,16 @@ public static class ZonasEndpoints
                 return Results.NotFound(new { message = result.Error });
             }
 
+            await NotifyZonasActualizadas(hubContext, currentTenant.TenantId);
             return Results.NoContent();
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/zonas/{id:int}/activo", async (int id, [FromBody] ZonaCambiarActivoDto dto, [FromServices] ZonaService servicio) =>
+        app.MapPatch("/zonas/{id:int}/activo", async (
+            int id,
+            [FromBody] ZonaCambiarActivoDto dto,
+            [FromServices] ZonaService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await servicio.CambiarActivoAsync(id, dto.Activo);
 
@@ -88,10 +116,15 @@ public static class ZonasEndpoints
                 return Results.NotFound(new { message = result.Error });
             }
 
+            await NotifyZonasActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizado = true });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
-        app.MapPatch("/zonas/batch-toggle", async (ZonaBatchToggleRequest request, [FromServices] ZonaService servicio) =>
+        app.MapPatch("/zonas/batch-toggle", async (
+            ZonaBatchToggleRequest request,
+            [FromServices] ZonaService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
@@ -101,8 +134,21 @@ public static class ZonasEndpoints
             if (!result.Success)
                 return Results.Conflict(new { message = result.Error, clientesCount = result.ClientesCount });
 
+            await NotifyZonasActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados = request.Ids.Count });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
+    }
+
+    private static async Task NotifyZonasActualizadas(IHubContext<NotificationHub> hubContext, int tenantId)
+    {
+        try
+        {
+            await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("ZonasActualizadas");
+        }
+        catch
+        {
+            // ignore
+        }
     }
 }
 
