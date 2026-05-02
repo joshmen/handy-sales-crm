@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, BackHandler } from 'react-nat
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
+import { useEmpresa } from '@/hooks/useEmpresa';
 import { ClipboardList, Truck, ChevronLeft } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -13,6 +14,8 @@ export default function ModoVentaScreen() {
   const { setTipoVenta, reset, clienteId } = useOrderDraftStore();
   const { fromParada } = useLocalSearchParams<{ fromParada?: string }>();
   const [selected, setSelected] = useState<number | null>(null);
+  const { data: empresa } = useEmpresa();
+  const modoDefault = empresa?.modoVentaDefault ?? 'Preguntar';
 
   const handleBack = useCallback(() => {
     if (fromParada) {
@@ -32,7 +35,7 @@ export default function ModoVentaScreen() {
     return () => handler.remove();
   }, [fromParada, handleBack]);
 
-  const handleSelect = (tipo: number) => {
+  const handleSelect = useCallback((tipo: number) => {
     setSelected(tipo);
     // If coming from parada, DON'T reset — client is already set
     if (!fromParada) {
@@ -45,7 +48,19 @@ export default function ModoVentaScreen() {
     } else {
       router.replace('/(tabs)/vender/crear' as any);
     }
-  };
+  }, [fromParada, reset, setTipoVenta, clienteId, router]);
+
+  // Auto-skip cuando admin configuró un modo default (Preventa o VentaDirecta).
+  // Saltamos esta pantalla totalmente y avanzamos al siguiente paso. Solo si
+  // el dato ya cargó del backend (empresa != null).
+  useEffect(() => {
+    if (!empresa) return;
+    if (modoDefault === 'Preventa') {
+      handleSelect(0);
+    } else if (modoDefault === 'VentaDirecta') {
+      handleSelect(1);
+    }
+  }, [empresa, modoDefault, handleSelect]);
 
   return (
     <View style={styles.container}>

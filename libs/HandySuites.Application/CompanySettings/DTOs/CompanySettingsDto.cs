@@ -78,6 +78,10 @@ namespace HandySuites.Application.CompanySettings.DTOs
         // CSV con días laborables (1=Lun..7=Dom).
         [JsonPropertyName("diasLaborables")]
         public string DiasLaborables { get; set; } = "1,2,3,4,5";
+
+        // Modo default de venta para mobile. "Preventa" | "VentaDirecta" | "Preguntar".
+        [JsonPropertyName("modoVentaDefault")]
+        public string ModoVentaDefault { get; set; } = "Preguntar";
     }
 
     public class UpdateCompanySettingsRequest
@@ -105,6 +109,8 @@ namespace HandySuites.Application.CompanySettings.DTOs
         public string? HoraFinJornada { get; set; }
         [JsonPropertyName("diasLaborables")]
         public string? DiasLaborables { get; set; }
+        [JsonPropertyName("modoVentaDefault")]
+        public string? ModoVentaDefault { get; set; }
     }
 
     public class UploadLogoResponse

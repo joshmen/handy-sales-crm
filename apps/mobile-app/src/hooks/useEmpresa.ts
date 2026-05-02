@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { Image } from 'react-native';
+import { setEmpresaConfigSnapshot } from '@/utils/empresaConfigSnapshot';
 
 export interface DatosEmpresa {
   razonSocial: string | null;
@@ -27,6 +28,10 @@ export interface DatosEmpresa {
   horaInicioJornada?: string | null;  // formato "HH:mm"
   horaFinJornada?: string | null;     // formato "HH:mm"
   diasLaborables?: string | null;     // CSV "1,2,3,4,5" (1=Lun..7=Dom)
+  // Modo default de venta. "Preventa" | "VentaDirecta" | "Preguntar".
+  // El mobile usa esto para saltar la pantalla de selección de modo y
+  // acelerar el flujo del vendedor cuando el tenant tiene un modo dominante.
+  modoVentaDefault?: string | null;
 }
 
 export function useEmpresa() {
@@ -42,6 +47,18 @@ export function useEmpresa() {
       // Prefetch logo into RN image cache so it renders instantly
       if (data?.logoUrl) {
         Image.prefetch(data.logoUrl).catch(() => {});
+      }
+
+      // Snapshot síncrono para que services no-React (recordPing, watchers
+      // que viven fuera del árbol React) puedan leer la config sin estar
+      // suscritos al query.
+      if (data) {
+        setEmpresaConfigSnapshot({
+          horaInicioJornada: data.horaInicioJornada ?? null,
+          horaFinJornada: data.horaFinJornada ?? null,
+          diasLaborables: data.diasLaborables ?? null,
+          modoVentaDefault: data.modoVentaDefault ?? null,
+        }).catch(() => {});
       }
 
       return data;

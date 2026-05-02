@@ -91,6 +91,15 @@ public class CompanySetting : AuditableEntity
     [MaxLength(20)]
     public string DiasLaborables { get; set; } = "1,2,3,4,5";
 
+    /// <summary>
+    /// Modo default para el flujo de venta en mobile. Acelera UX al saltar la
+    /// pantalla de selección Preventa vs VentaDirecta cuando el tenant tiene
+    /// uno claramente dominante. Valores: "Preventa", "VentaDirecta", "Preguntar".
+    /// </summary>
+    [Column("modo_venta_default")]
+    [MaxLength(20)]
+    public string ModoVentaDefault { get; set; } = "Preguntar";
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Company? Company { get; set; }

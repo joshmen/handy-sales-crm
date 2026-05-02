@@ -7,6 +7,7 @@ import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, Sty
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
+import { useEmpresa } from '@/hooks/useEmpresa';
 import { useAuthStore, useOrderDraftStore } from '@/stores';
 import { Card, LoadingSpinner, EmptyState, BottomSheet } from '@/components/ui';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
@@ -36,6 +37,11 @@ function VenderListScreenContent() {
   const router = useRouter();
   const role = useAuthStore(s => s.user?.role);
   const { setTipoVenta, reset: resetDraft } = useOrderDraftStore();
+  const { data: empresa } = useEmpresa();
+  // Modo default configurado por el admin del tenant. Si != "Preguntar",
+  // saltamos el BottomSheet y vamos directo al picker de cliente con el
+  // modo pre-seleccionado. Acelera el flujo de venta.
+  const modoDefault = empresa?.modoVentaDefault ?? 'Preguntar';
 
   const _role = role; // kept for future role-based filtering
 
@@ -55,6 +61,16 @@ function VenderListScreenContent() {
   const total = orders.length;
 
   const handleFabPress = () => {
+    // Si admin configuró un modo default (no "Preguntar"), saltamos el sheet
+    // de selección y vamos directo al picker de cliente con el modo seteado.
+    if (modoDefault === 'Preventa') {
+      handleOrderTypeSelect(0);
+      return;
+    }
+    if (modoDefault === 'VentaDirecta') {
+      handleOrderTypeSelect(1);
+      return;
+    }
     setShowOrderTypeSheet(true);
   };
 

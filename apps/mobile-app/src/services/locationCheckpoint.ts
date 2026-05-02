@@ -92,25 +92,44 @@ export async function recordPing(
   // visita SIN jornada activa, arrancamos automáticamente. Es el flujo principal
   // (no hay botón "Iniciar jornada" en home — esto reemplaza ese gesture).
   // No aplica para tipos que ya son de inicio/fin/checkpoint para evitar loops.
+  //
+  // FIX 2026-05-02: si el día/hora actual NO está en el horario laboral
+  // configurado por el admin, NO auto-iniciar. Antes el watcher cerraba la
+  // jornada inmediato después del auto-start, generando spam de 3 pings
+  // (Venta + InicioJornada + StopAutomatico) en el mismo timestamp. Reportado
+  // en Jeyma sábado 2026-05-02 con `dias_laborables='1,2,3,4,5'` (sin sábado).
   const esEventoNegocio = tipo === TipoPing.Venta || tipo === TipoPing.Cobro || tipo === TipoPing.Visita;
   if (esEventoNegocio) {
     try {
-      const { useJornadaStore } = await import('@/stores/jornadaStore');
-      const jornada = useJornadaStore.getState();
-      if (!jornada.activa) {
-        await jornada.iniciarJornada('manual');
-        // Toast informativo — el vendedor ve por qué arrancó el indicador
-        // "Tracking activo" en home.
-        try {
-          const ToastModule = await import('react-native-toast-message');
-          ToastModule.default.show({
-            type: 'info',
-            text1: 'Jornada iniciada',
-            text2: 'Tu ubicación se registra mientras tu jornada esté activa.',
-            visibilityTime: 4000,
-          });
-        } catch { /* ignore */ }
+      const { getEmpresaConfigSnapshot } = await import('@/utils/empresaConfigSnapshot');
+      const { enHorarioLaboral } = await import('@/utils/horarioLaboral');
+      const cfg = getEmpresaConfigSnapshot();
+      const enHorario = !cfg
+        ? true // sin snapshot → no podemos validar, mejor permitir (caso primer login)
+        : enHorarioLaboral(cfg.horaInicioJornada, cfg.horaFinJornada, cfg.diasLaborables);
+
+      if (enHorario) {
+        const { useJornadaStore } = await import('@/stores/jornadaStore');
+        const jornada = useJornadaStore.getState();
+        if (!jornada.activa) {
+          await jornada.iniciarJornada('manual');
+          // Toast informativo — el vendedor ve por qué arrancó el indicador
+          // "Tracking activo" en home.
+          try {
+            const ToastModule = await import('react-native-toast-message');
+            ToastModule.default.show({
+              type: 'info',
+              text1: 'Jornada iniciada',
+              text2: 'Tu ubicación se registra mientras tu jornada esté activa.',
+              visibilityTime: 4000,
+            });
+          } catch { /* ignore */ }
+        }
       }
+      // Si NO está en horario laboral: no auto-iniciar jornada. La venta/
+      // cobro/visita se registra normalmente; solo no se trackea ubicación
+      // GPS continua. Admin puede agregar el día actual a `diasLaborables`
+      // desde /settings si quiere capturar la actividad de hoy.
     } catch { /* ignore */ }
   }
 

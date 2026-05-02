@@ -94,6 +94,7 @@ namespace HandySuites.Application.CompanySettings.Services
                     HoraInicioJornada = settings.HoraInicioJornada.ToString("HH:mm"),
                     HoraFinJornada = settings.HoraFinJornada.ToString("HH:mm"),
                     DiasLaborables = settings.DiasLaborables,
+                    ModoVentaDefault = settings.ModoVentaDefault,
                 };
             }
             catch (Exception ex)
@@ -162,6 +163,15 @@ namespace HandySuites.Application.CompanySettings.Services
                 {
                     settings.DiasLaborables = request.DiasLaborables;
                 }
+                if (!string.IsNullOrWhiteSpace(request.ModoVentaDefault))
+                {
+                    // Whitelist — solo aceptar los 3 valores válidos.
+                    var valid = new[] { "Preventa", "VentaDirecta", "Preguntar" };
+                    if (Array.IndexOf(valid, request.ModoVentaDefault) >= 0)
+                    {
+                        settings.ModoVentaDefault = request.ModoVentaDefault;
+                    }
+                }
 
                 settings.ActualizadoPor = userId.ToString();
 
@@ -183,6 +193,7 @@ namespace HandySuites.Application.CompanySettings.Services
                     HoraInicioJornada = updatedSettings.HoraInicioJornada.ToString("HH:mm"),
                     HoraFinJornada = updatedSettings.HoraFinJornada.ToString("HH:mm"),
                     DiasLaborables = updatedSettings.DiasLaborables,
+                    ModoVentaDefault = updatedSettings.ModoVentaDefault,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };
             }

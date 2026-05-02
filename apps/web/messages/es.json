@@ -2447,6 +2447,20 @@
         "sun": "Dom"
       }
     },
+    "salesMode": {
+      "title": "Modo de venta default",
+      "description": "Define qué modo se selecciona automáticamente al iniciar una venta en mobile. Acelera el flujo del vendedor saltando un paso.",
+      "modoPreventa": "Preventa",
+      "modoPreventaDesc": "El vendedor toma el pedido y se entrega/cobra después. Recomendado si tu equipo levanta pedidos para entrega futura.",
+      "modoVentaDirecta": "Venta directa",
+      "modoVentaDirectaDesc": "El vendedor entrega y cobra en el momento. Recomendado si tu equipo opera en autoventa con producto a bordo.",
+      "modoPreguntar": "Preguntar al vendedor",
+      "modoPreguntarDesc": "Mantiene la pantalla actual con ambas opciones. Útil si tu equipo combina ambos esquemas.",
+      "hint": "El vendedor siempre puede cambiar el modo desde la pantalla de venta si lo necesita. Esto solo define qué se muestra primero.",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "saved": "Guardado"
+    },
     "appearance": {
       "title": "Apariencia",
       "theme": "Tema",

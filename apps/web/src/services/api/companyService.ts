@@ -48,6 +48,8 @@ export interface CompanySettings {
   horaInicioJornada?: string | null;
   horaFinJornada?: string | null;
   diasLaborables?: string | null; // CSV "1,2,3,4,5" (1=Lun..7=Dom)
+  // Modo default de venta para mobile. "Preventa" | "VentaDirecta" | "Preguntar".
+  modoVentaDefault?: string | null;
 }
 
 export interface UpdateGlobalSettingsRequest {
@@ -78,6 +80,7 @@ export interface UpdateCompanyRequest {
   horaInicioJornada?: string;
   horaFinJornada?: string;
   diasLaborables?: string;
+  modoVentaDefault?: string;
 }
 
 export interface ApiResponse<T> {
