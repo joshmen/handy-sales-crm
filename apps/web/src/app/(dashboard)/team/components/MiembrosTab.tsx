@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import { supervisorService } from '@/services/api';
@@ -489,6 +490,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   const t = useTranslations('team.members');
   const td = useTranslations('team.devices');
   const tc = useTranslations('common');
+  const router = useRouter();
   const showApiError = useApiErrorToast();
   const presenceLabels: PresenceLabels = { online: t('online'), agoMinutes: (min: number) => t('supervisor.minutesAgo', { min }), disconnected: t('supervisor.disconnected') };
   const { formatDate } = useFormatters();
@@ -1008,7 +1010,9 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       <button
         onClick={(e) => {
           e.stopPropagation();
-          handleOpenGpsActivity(user);
+          // Navega a la página dedicada en lugar de abrir el drawer.
+          // El drawer queda como fallback si la URL viene con ?openDrawer=1.
+          router.push(`/team/${user.id}/gps`);
         }}
         className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
         title={`${ub.fuente} · ${ub.clienteNombre ?? ''}`}

@@ -2151,6 +2151,57 @@
       "members": "Members",
       "devices": "Devices"
     },
+    "gpsHistorial": {
+      "title": "GPS History",
+      "subtitle": "GPS tracking of your sellers: sales, payments, visits and routes.",
+      "teamLabel": "Team",
+      "columnVendor": "Seller",
+      "columnLastEvent": "Last event",
+      "columnLastSeen": "Last seen",
+      "columnNearClient": "Nearby client",
+      "columnCoords": "Coordinates",
+      "viewDetail": "View detail",
+      "totalShown": "{count} sellers",
+      "searchPlaceholder": "Search seller by name or email...",
+      "emptyMessage": "No sellers with recent GPS activity.",
+      "back": "Back",
+      "exportCsv": "Export CSV",
+      "loading": "Loading...",
+      "noEvents": "No events in this range",
+      "tryDifferentRange": "Try changing to 'Yesterday' or '7 days'.",
+      "searchClient": "Search client...",
+      "justNow": "Just now",
+      "minutesAgo": "{count} min ago",
+      "hoursAgo": "{count} h ago",
+      "daysAgo": "{count} days ago",
+      "preset": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "last7days": "7 days",
+        "custom": "Custom"
+      },
+      "kpi": {
+        "events": "events",
+        "orders": "orders",
+        "payments": "payments",
+        "visits": "visits",
+        "start": "Start",
+        "end": "End"
+      },
+      "source": {
+        "order": "Order",
+        "payment": "Payment",
+        "visit": "Visit",
+        "stop": "Stop",
+        "checkpoint": "Checkpoint",
+        "routeStart": "Route start",
+        "routeEnd": "Route end",
+        "workdayStart": "Workday start",
+        "workdayEnd": "Workday end",
+        "autoStop": "Auto stop",
+        "tracking": "Tracking"
+      }
+    },
     "userCreated": "User created successfully",
     "userUpdated": "User updated",
     "members": {

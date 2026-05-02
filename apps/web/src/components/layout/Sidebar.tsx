@@ -265,9 +265,24 @@ const sidebarItems: SidebarItem[] = [
     id: 'team',
     label: 'Equipo',
     icon: SbTeam,
-    href: '/team',
     permission: 'view_team',
     section: 'Equipo',
+    submenu: [
+      {
+        id: 'team-members',
+        label: 'Miembros',
+        icon: SbTeam,
+        href: '/team',
+        permission: 'view_team',
+      },
+      {
+        id: 'team-gps',
+        label: 'Histórico GPS',
+        icon: SbDevices,
+        href: '/team/gps',
+        permission: 'view_team',
+      },
+    ],
   },
   {
     id: 'activity-logs',
