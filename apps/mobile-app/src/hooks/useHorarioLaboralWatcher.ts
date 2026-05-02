@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Toast from 'react-native-toast-message';
 import { useEmpresa } from './useEmpresa';
 import { useJornadaStore } from '@/stores';
+import { enHorarioLaboral } from '@/utils/horarioLaboral';
 
 const CHECK_INTERVAL_MS = 60_000; // 1 min
 
@@ -49,42 +50,5 @@ export function useHorarioLaboralWatcher() {
   }, [empresa, jornadaActiva, finalizarJornada]);
 }
 
-/**
- * Devuelve true si "ahora" cae dentro del horario configurado.
- * - Sin horaInicio ni horaFin → permitido (no hay rango horario).
- * - Sin diasLaborables → permitido cualquier día.
- * - Con uno o ambos → respeta lo que esté configurado.
- *
- * Day mapping: 1=Lun, 2=Mar, ..., 7=Dom (ISO).
- * `Date.getDay()` retorna 0=Dom, 1=Lun..6=Sáb → convertir a ISO.
- */
-function enHorarioLaboral(
-  horaInicio: string | null | undefined,
-  horaFin: string | null | undefined,
-  diasLaborables: string | null | undefined,
-): boolean {
-  const ahora = new Date();
-  const dowJs = ahora.getDay();              // 0=Dom..6=Sáb
-  const dowIso = dowJs === 0 ? 7 : dowJs;    // 1=Lun..7=Dom
-
-  if (diasLaborables) {
-    const setDias = new Set(diasLaborables.split(',').map(s => s.trim()));
-    if (setDias.size > 0 && !setDias.has(String(dowIso))) {
-      return false;
-    }
-  }
-
-  if (horaInicio || horaFin) {
-    const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
-    const inicioMin = horaInicio ? toMin(horaInicio) : 0;
-    const finMin = horaFin ? toMin(horaFin) : 24 * 60;
-    if (minutosAhora < inicioMin || minutosAhora >= finMin) return false;
-  }
-
-  return true;
-}
-
-function toMin(hhmm: string): number {
-  const [h, m] = hhmm.split(':').map(n => parseInt(n, 10));
-  return (h || 0) * 60 + (m || 0);
-}
+// Helper `enHorarioLaboral` extraído a `@/utils/horarioLaboral` para que
+// `recordPing` también pueda evaluarlo sin acoplarse a React.

@@ -87,6 +87,11 @@ function LocationTrackingBridge() {
   useEffect(() => {
     if (isAuthenticated && !hidratada) {
       hidratarDesdeStorage();
+      // Tomar la última config de empresa persistida (horario laboral, modo
+      // venta default). Si la app está sin red al startup, esto evita que
+      // recordPing decida con valores nulos y haga auto-start spam fuera de
+      // horario. El useEmpresa la sobrescribirá con datos frescos al fetch.
+      import('@/utils/empresaConfigSnapshot').then(m => m.hydrateEmpresaConfigSnapshot()).catch(() => {});
     }
   }, [isAuthenticated, hidratada, hidratarDesdeStorage]);
 
