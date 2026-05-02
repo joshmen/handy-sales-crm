@@ -260,12 +260,27 @@ export const authOptions: NextAuthOptions = {
       // For OAuth providers (Google, etc.), verify user exists in our backend
       if (account?.provider && user?.email) {
         try {
-          const sharedSecret = process.env.SOCIAL_LOGIN_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '';
+          // SECURITY (WEB-HIGH-1 fix): NUNCA caer a NEXTAUTH_SECRET — esa es
+          // la clave que firma cookies de sesión. Si la mandamos al backend
+          // como X-Social-Login-Secret, los logs del backend retienen el
+          // session signing key. Debe ser SOCIAL_LOGIN_SECRET o JWT_SECRET
+          // (que el backend ya conoce y compara). Si ninguno está set,
+          // bloqueamos el flow OAuth en producción.
+          const sharedSecret = process.env.SOCIAL_LOGIN_SECRET || process.env.JWT_SECRET;
+          if (!sharedSecret) {
+            if (process.env.NODE_ENV === 'production') {
+              console.error('[auth] SOCIAL_LOGIN_SECRET / JWT_SECRET not configured — blocking OAuth signIn');
+              return false;
+            }
+            // En dev permitimos un placeholder explícito (NO el secret de NextAuth).
+            console.warn('[auth] OAuth shared secret missing in dev — using placeholder');
+          }
+          const finalSecret = sharedSecret || 'dev-only-placeholder';
           const response = await serverApiInstance.post('/auth/social-login', {
             email: user.email,
             provider: account.provider,
           }, {
-            headers: { 'X-Social-Login-Secret': sharedSecret },
+            headers: { 'X-Social-Login-Secret': finalSecret },
           });
 
           const data = response.data;

@@ -122,13 +122,24 @@ const nextConfig = {
             key: process.env.NODE_ENV === "development"
               ? "Content-Security-Policy-Report-Only"
               : "Content-Security-Policy",
+            // SECURITY (WEB-HIGH-2/3 fix):
+            // - script-src usa 'strict-dynamic' en prod: neutraliza
+            //   'unsafe-inline' en browsers CSP3 (Chrome/Firefox/Safari ≥ 2018)
+            //   permitiendo solo scripts cargados por código ya autorizado.
+            //   El fallback 'unsafe-inline' aplica solo a IE/Edge legacy.
+            // - connect-src restringe http://localhost:* y ws: a development;
+            //   en prod solo HTTPS/WSS al backend Railway + servicios whitelist.
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com`,
+              process.env.NODE_ENV === "development"
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com"
+                : "script-src 'self' 'strict-dynamic' 'unsafe-inline' https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com https://*.tile.openstreetmap.org",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' http://localhost:* https://*.railway.app https://accounts.google.com https://www.google.com https://www.gstatic.com https://res.cloudinary.com https://maps.googleapis.com https://maps.gstatic.com wss: ws:",
+              process.env.NODE_ENV === "development"
+                ? "connect-src 'self' http://localhost:* https://*.railway.app https://accounts.google.com https://www.google.com https://www.gstatic.com https://res.cloudinary.com https://maps.googleapis.com https://maps.gstatic.com wss: ws:"
+                : "connect-src 'self' https://*.railway.app https://accounts.google.com https://www.google.com https://www.gstatic.com https://res.cloudinary.com https://maps.googleapis.com https://maps.gstatic.com wss://*.railway.app wss://handysuites.com",
               "frame-src 'self' https://accounts.google.com https://www.google.com https://js.stripe.com https://*.stripe.com",
               "frame-ancestors 'self'",
               "base-uri 'self'",
@@ -144,7 +155,18 @@ const nextConfig = {
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: process.env.NEXTAUTH_URL || "http://localhost:1083" },
+          // SECURITY (WEB-HIGH-4 fix): si NEXTAUTH_URL queda vacío, NO mandamos
+          // un Allow-Origin vacío (algunos browsers tratan eso como wildcard
+          // permisivo cuando va con Allow-Credentials=true). En prod fail-fast
+          // con un valor inválido para que CORS no lo abra; en dev el fallback
+          // es localhost.
+          {
+            key: "Access-Control-Allow-Origin",
+            value: process.env.NEXTAUTH_URL ||
+              (process.env.NODE_ENV === "production"
+                ? "https://invalid-no-nextauth-url-set"
+                : "http://localhost:1083"),
+          },
           {
             key: "Access-Control-Allow-Methods",
             value: "GET,OPTIONS,PATCH,DELETE,POST,PUT",
