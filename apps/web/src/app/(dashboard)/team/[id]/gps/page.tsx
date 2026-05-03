@@ -16,6 +16,7 @@ import {
 } from '@/services/api/teamLocation';
 import { cn } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useCompany } from '@/contexts/CompanyContext';
 
 // Mapa Leaflet sólo en cliente (manipula `window`)
 const GpsActivityMap = dynamic(
@@ -51,22 +52,41 @@ const TYPE_ICON: Record<string, string> = {
   checkpoint: '📍', tracking: '📡',
 };
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * Devuelve YYYY-MM-DD del instante `date` calculado en la TZ del tenant.
+ *
+ * BUG previo: usábamos `new Date().toISOString().slice(0,10)` que retorna
+ * la fecha en UTC. Para tenants en TZ negativa (Mazatlan UTC-7), después
+ * de las 5pm local el UTC ya está en el día siguiente — el filtro "Hoy"
+ * pedía la fecha de mañana al backend y los pings reales del día no salían.
+ * Reportado en prod 2026-05-02 19:27 PDT por Jeyma. (Locale 'en-CA'
+ * porque su formato default es YYYY-MM-DD, así no parseamos manualmente.)
+ */
+function isoDateInTz(date: Date, tz: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
-function ayerIso(): string {
+function todayIso(tz: string): string {
+  return isoDateInTz(new Date(), tz);
+}
+
+function ayerIso(tz: string): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  return isoDateInTz(d, tz);
 }
 
-function lastNDays(n: number): string[] {
+function lastNDays(n: number, tz: string): string[] {
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    out.push(d.toISOString().slice(0, 10));
+    out.push(isoDateInTz(d, tz));
   }
   return out;
 }
@@ -95,9 +115,12 @@ function TeamGpsDetailContent() {
   const searchParams = useSearchParams();
   const t = useTranslations('team.gpsHistorial');
   const { formatDate } = useFormatters();
+  const { settings } = useCompany();
+  // TZ del tenant (Mazatlan, México DF, etc.). Fallback a CDMX como en formatters.
+  const tz = settings?.timezone || 'America/Mexico_City';
 
   const usuarioId = parseInt(params.id, 10);
-  const diaParam = searchParams.get('dia') ?? todayIso();
+  const diaParam = searchParams.get('dia') ?? todayIso(tz);
 
   const [eventos, setEventos] = useState<EventoGpsDelDia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,10 +129,12 @@ function TeamGpsDetailContent() {
   const [busqueda, setBusqueda] = useState('');
   const [vendorName, setVendorName] = useState<string>('');
 
-  // Date preset state
+  // Date preset state — usa TZ del tenant para no marcar "hoy" como custom
+  // cuando el browser está en otra TZ (ej: admin viendo desde laptop en CDMX
+  // un tenant Jeyma en Mazatlan).
   const [preset, setPreset] = useState<'hoy' | 'ayer' | '7d' | 'custom'>(() => {
-    if (diaParam === todayIso()) return 'hoy';
-    if (diaParam === ayerIso()) return 'ayer';
+    if (diaParam === todayIso(tz)) return 'hoy';
+    if (diaParam === ayerIso(tz)) return 'ayer';
     return 'custom';
   });
 
@@ -163,20 +188,20 @@ function TeamGpsDetailContent() {
   // Cargar al cambiar usuarioId o preset
   useEffect(() => {
     if (preset === 'hoy') {
-      cargarDia(todayIso());
+      cargarDia(todayIso(tz));
     } else if (preset === 'ayer') {
-      cargarDia(ayerIso());
+      cargarDia(ayerIso(tz));
     } else if (preset === '7d') {
-      cargarRango(lastNDays(7));
+      cargarRango(lastNDays(7, tz));
     } else if (preset === 'custom' && diaParam) {
       cargarDia(diaParam);
     }
-  }, [usuarioId, preset, diaParam, cargarDia, cargarRango]);
+  }, [usuarioId, preset, diaParam, cargarDia, cargarRango, tz]);
 
   const handlePreset = (p: 'hoy' | 'ayer' | '7d' | 'custom') => {
     setPreset(p);
-    if (p === 'hoy') router.replace(`/team/${usuarioId}/gps?dia=${todayIso()}`);
-    else if (p === 'ayer') router.replace(`/team/${usuarioId}/gps?dia=${ayerIso()}`);
+    if (p === 'hoy') router.replace(`/team/${usuarioId}/gps?dia=${todayIso(tz)}`);
+    else if (p === 'ayer') router.replace(`/team/${usuarioId}/gps?dia=${ayerIso(tz)}`);
     else if (p === '7d') router.replace(`/team/${usuarioId}/gps?rango=7d`);
   };
 
