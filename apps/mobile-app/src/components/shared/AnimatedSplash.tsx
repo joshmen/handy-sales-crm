@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, TouchableOpacity } from 'react-native';
+import axios from 'axios';
 import Svg, {
   Defs,
   LinearGradient,
@@ -13,8 +14,9 @@ import { performSync } from '@/sync/syncEngine';
 import { api } from '@/api/client';
 import { Image as RNImage } from 'react-native';
 import { secureStorage } from '@/utils/storage';
-import { RefreshCcw } from 'lucide-react-native';
+import { RefreshCcw, LogOut } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
+import { useAuthStore } from '@/stores';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LOGO_SIZE = SCREEN_WIDTH * 0.32;
@@ -65,6 +67,34 @@ const SYNC_TEXTS = [
   'Cargando catálogos...',
   '¡Listo! Preparado para trabajar',
 ];
+
+/**
+ * Mapea cualquier error que pueda salir de performSync a un mensaje amigable
+ * para mostrar al usuario. NUNCA exponer err.message crudo de axios — la
+ * representación default ("Request failed with status code 401") confunde al
+ * usuario y se quedaba pegada en pantalla bloqueando login (hotfix mayo 2026).
+ */
+function friendlyErrorMessage(err: unknown): { text: string; isAuthError: boolean } {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status;
+    if (status === 401 || status === 403) {
+      return {
+        text: 'Tu sesión expiró. Vuelve a iniciar sesión.',
+        isAuthError: true,
+      };
+    }
+    if (status === 429) {
+      return { text: 'Servicio ocupado. Intenta en unos minutos.', isAuthError: false };
+    }
+    if (status && status >= 500) {
+      return { text: 'Error del servidor. Intenta más tarde.', isAuthError: false };
+    }
+    if (!err.response) {
+      return { text: 'Sin conexión. Verifica tu red e intenta de nuevo.', isAuthError: false };
+    }
+  }
+  return { text: 'Error de sincronización. Intenta de nuevo.', isAuthError: false };
+}
 
 export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedSplashProps) {
   const logoScale = useRef(new Animated.Value(0.3)).current;
@@ -183,8 +213,44 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
     } catch (err) {
       if (timerRef.current) clearInterval(timerRef.current);
       if (!mountedRef.current) return;
-      setSyncError(err instanceof Error ? err.message : 'Error de sincronización');
+
+      // HOTFIX: antes hacíamos `setSyncError(err.message)` lo cual mostraba
+      // strings axios crudos como "Request failed with status code 401"
+      // verbatim al usuario. Pero peor: si era 401, el splash quedaba pegado
+      // sin onFinish() — usuario no podía llegar a la pantalla de login.
+      const friendly = friendlyErrorMessage(err);
+
+      // Si es auth error: el interceptor de api/client.ts ya emitió
+      // forceLogout (limpió tokens + isAuthenticated=false). Cerrar el
+      // splash para que AuthGate redirija al login. Sin esto el splash
+      // se quedaba encima ocultando login screen — usuario reportaba
+      // "no me deja loguearme".
+      if (friendly.isAuthError) {
+        // Defensa adicional: forzar logout por si el interceptor no lo
+        // hizo (ej: error vino de una request directa sin pasar por
+        // apiInstance, o el evento se perdió).
+        try { useAuthStore.getState().logout(); } catch { /* ignore */ }
+        Animated.timing(containerOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+          if (mountedRef.current) onFinish();
+        });
+        return;
+      }
+
+      setSyncError(friendly.text);
     }
+  };
+
+  /**
+   * Escape hatch: si el user queda atrapado en el error box (ej: red intermitente
+   * con falsos positivos repetidos), permite cerrar sesión y volver al login.
+   * Cubre el caso edge donde `forceLogout` del interceptor no alcanzó a
+   * limpiar tokens (storage native error) y la app cree que sigue authenticated.
+   */
+  const handleLogoutAndExit = async () => {
+    try { await useAuthStore.getState().logout(); } catch { /* ignore */ }
+    Animated.timing(containerOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      if (mountedRef.current) onFinish();
+    });
   };
 
   useEffect(() => {
@@ -260,6 +326,10 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
                   <RefreshCcw size={16} color="#fff" />
                   <Text style={styles.retryText}>Reintentar</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogoutAndExit} activeOpacity={0.8}>
+                  <LogOut size={14} color="#94a3b8" />
+                  <Text style={styles.logoutText}>Cerrar sesión</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <>
@@ -322,4 +392,6 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 13, color: '#ef4444', textAlign: 'center' },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.primary, paddingHorizontal: 20, height: 40, borderRadius: 10 },
   retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, height: 36, marginTop: 4 },
+  logoutText: { color: '#94a3b8', fontWeight: '500', fontSize: 12 },
 });
