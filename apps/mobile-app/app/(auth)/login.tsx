@@ -159,7 +159,7 @@ export default function LoginScreen() {
             </View>
             <Text style={styles.title}>Handy Suites®</Text>
             <Text style={styles.subtitle}>
-              Gestiona tus ventas desde cualquier lugar ⚡
+              Gestiona tus ventas desde cualquier lugar
             </Text>
           </View>
           <Text style={styles.formTitle}>{totpRequired ? 'Verificación 2FA' : 'Iniciar Sesión'}</Text>
