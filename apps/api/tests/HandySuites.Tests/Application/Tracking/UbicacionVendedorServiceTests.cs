@@ -23,6 +23,10 @@ public class UbicacionVendedorServiceTests
     {
         _tenant.SetupGet(t => t.TenantId).Returns(Tenant);
         _tenant.SetupGet(t => t.UserId).Returns(UserId);
+        // Default: no última ubicación previa (vendedor nuevo). Tests que
+        // necesitan validar velocity check pueden override este setup.
+        _repo.Setup(r => r.ObtenerUltimasAsync(Tenant, It.IsAny<List<int>?>()))
+            .ReturnsAsync(new List<UltimaUbicacionDto>());
         _service = new UbicacionVendedorService(_repo.Object, _guard.Object, _tenant.Object);
     }
 
@@ -63,13 +67,15 @@ public class UbicacionVendedorServiceTests
         _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
             .ReturnsAsync((2, 0));
 
-        var capturedoEn = new DateTime(2026, 5, 1, 14, 30, 0, DateTimeKind.Utc);
+        // Timestamp dentro de la ventana válida (últimas 2h) — el service
+        // rechaza pings fuera de [-6h, +2min] desde UtcNow (VULN-M04 fix).
+        var capturedoEn = DateTime.UtcNow.AddMinutes(-30);
         var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
         {
             Pings = new List<UbicacionPingDto>
             {
                 new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Venta, CapturadoEn = capturedoEn, ReferenciaId = 100 },
-                new() { Latitud = 19.5m, Longitud = -99.2m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = capturedoEn.AddMinutes(15) },
+                new() { Latitud = 19.4327m, Longitud = -99.1333m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = capturedoEn.AddMinutes(15) },
             }
         });
 
@@ -108,6 +114,8 @@ public class UbicacionVendedorServiceTests
         _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
             .ReturnsAsync((3, 2)); // 3 nuevos, 2 dedup
 
+        // Timestamps en el pasado para no chocar con FutureTolerance (2min).
+        var now = DateTime.UtcNow;
         var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
         {
             Pings = Enumerable.Range(0, 5).Select(i => new UbicacionPingDto
@@ -115,7 +123,7 @@ public class UbicacionVendedorServiceTests
                 Latitud = 19m + i * 0.001m,
                 Longitud = -99m,
                 Tipo = TipoPingUbicacion.Checkpoint,
-                CapturadoEn = DateTime.UtcNow.AddMinutes(i),
+                CapturadoEn = now.AddMinutes(-(5 - i)),
             }).ToList(),
         });
 

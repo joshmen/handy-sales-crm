@@ -15,15 +15,19 @@ import Toast from 'react-native-toast-message';
 import { useLogin, useForceLogin } from '@/hooks';
 import { Button, Input } from '@/components/ui';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { Mail, Lock } from 'lucide-react-native';
+import { Mail, Lock, KeyRound } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { COLORS } from '@/theme/colors';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; totpCode?: string }>({});
   const [showDeviceBoundModal, setShowDeviceBoundModal] = useState(false);
+  // TOTP step: cuando el backend retorna TOTP_REQUIRED, mostramos un input
+  // para el código y reintentamos el login con totpCode. VULN-M03 fix.
+  const [totpRequired, setTotpRequired] = useState(false);
+  const [totpCode, setTotpCode] = useState('');
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -37,28 +41,50 @@ export default function LoginScreen() {
       setShowDeviceBoundModal(true);
       return;
     }
+    if (err?.code === 'TOTP_REQUIRED') {
+      setTotpRequired(true);
+      // Si el usuario ya había ingresado un código (segundo intento fallido),
+      // limpiarlo y avisar.
+      if (totpCode) {
+        setErrors((e) => ({ ...e, totpCode: 'Código inválido' }));
+        setTotpCode('');
+      }
+      return;
+    }
     Toast.show({
       type: 'error',
       text1: 'No se pudo iniciar sesión',
       text2: err?.message || 'Intenta de nuevo',
       visibilityTime: 4000,
     });
-  }, [loginMutation.isError, loginMutation.error]);
+  }, [loginMutation.isError, loginMutation.error, totpCode]);
 
   useEffect(() => {
     if (!forceLoginMutation.isError) return;
     const err = forceLoginMutation.error as any;
+    if (err?.code === 'TOTP_REQUIRED') {
+      setTotpRequired(true);
+      if (totpCode) {
+        setErrors((e) => ({ ...e, totpCode: 'Código inválido' }));
+        setTotpCode('');
+      }
+      return;
+    }
     Toast.show({
       type: 'error',
       text1: 'No se pudo iniciar sesión',
       text2: err?.message || 'Intenta de nuevo',
       visibilityTime: 4000,
     });
-  }, [forceLoginMutation.isError, forceLoginMutation.error]);
+  }, [forceLoginMutation.isError, forceLoginMutation.error, totpCode]);
 
   const handleConfirmForceLogin = () => {
     setShowDeviceBoundModal(false);
-    forceLoginMutation.mutate({ email: email.trim(), password });
+    forceLoginMutation.mutate({
+      email: email.trim(),
+      password,
+      totpCode: totpRequired ? totpCode.trim() : undefined,
+    });
   };
 
   const validate = (): boolean => {
@@ -81,8 +107,29 @@ export default function LoginScreen() {
   };
 
   const handleLogin = () => {
+    if (totpRequired) {
+      // En el step TOTP solo validamos el código (email/password ya pasaron).
+      const code = totpCode.trim();
+      if (!code) {
+        setErrors({ totpCode: 'Ingresa el código de tu app de autenticación' });
+        return;
+      }
+      // Acepta TOTP de 6 dígitos o recovery code XXXX-XXXX (8 hex + dash).
+      if (!/^\d{6}$/.test(code) && !/^[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}$/.test(code)) {
+        setErrors({ totpCode: 'Formato inválido (6 dígitos o XXXX-XXXX)' });
+        return;
+      }
+      loginMutation.mutate({ email: email.trim(), password, totpCode: code });
+      return;
+    }
     if (!validate()) return;
     loginMutation.mutate({ email: email.trim(), password });
+  };
+
+  const handleCancelTotp = () => {
+    setTotpRequired(false);
+    setTotpCode('');
+    setErrors({});
   };
 
   return (
@@ -115,49 +162,80 @@ export default function LoginScreen() {
               Gestiona tus ventas desde cualquier lugar
             </Text>
           </View>
-          <Text style={styles.formTitle}>Iniciar Sesión</Text>
+          <Text style={styles.formTitle}>{totpRequired ? 'Verificación 2FA' : 'Iniciar Sesión'}</Text>
 
-          <Input
-            testID="email-input"
-            label="Correo electrónico"
-            placeholder="tu@empresa.com"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
-            }}
-            error={errors.email}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            leftIcon={<Mail size={18} color="#94a3b8" />}
-          />
+          {!totpRequired && (
+            <>
+              <Input
+                testID="email-input"
+                label="Correo electrónico"
+                placeholder="tu@empresa.com"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
+                }}
+                error={errors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                leftIcon={<Mail size={18} color="#94a3b8" />}
+              />
 
-          <Input
-            testID="password-input"
-            label="Contraseña"
-            placeholder="••••••••"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password)
-                setErrors((e) => ({ ...e, password: undefined }));
-            }}
-            error={errors.password}
-            secureTextEntry
-            leftIcon={<Lock size={18} color="#94a3b8" />}
-          />
+              <Input
+                testID="password-input"
+                label="Contraseña"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password)
+                    setErrors((e) => ({ ...e, password: undefined }));
+                }}
+                error={errors.password}
+                secureTextEntry
+                leftIcon={<Lock size={18} color="#94a3b8" />}
+              />
 
-          {/* Forgot password link */}
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/forgot-password')}
-            style={styles.forgotLink}
-          >
-            <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-          </TouchableOpacity>
+              {/* Forgot password link */}
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/forgot-password')}
+                style={styles.forgotLink}
+              >
+                <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {totpRequired && (
+            <>
+              <Text style={styles.totpHint}>
+                Ingresa el código de 6 dígitos de tu app de autenticación
+                (Google Authenticator, Authy, etc.) o un código de recuperación.
+              </Text>
+              <Input
+                testID="totp-input"
+                label="Código de verificación"
+                placeholder="123456"
+                value={totpCode}
+                onChangeText={(text) => {
+                  setTotpCode(text);
+                  if (errors.totpCode) setErrors((e) => ({ ...e, totpCode: undefined }));
+                }}
+                error={errors.totpCode}
+                keyboardType="number-pad"
+                autoCapitalize="none"
+                maxLength={9}
+                leftIcon={<KeyRound size={18} color="#94a3b8" />}
+              />
+              <TouchableOpacity onPress={handleCancelTotp} style={styles.forgotLink}>
+                <Text style={styles.forgotText}>Cancelar</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           <Button
             testID="login-button"
-            title="Iniciar Sesión"
+            title={totpRequired ? 'Verificar' : 'Iniciar Sesión'}
             onPress={handleLogin}
             loading={loginMutation.isPending || forceLoginMutation.isPending}
             fullWidth
@@ -254,6 +332,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.primary,
     fontWeight: '500',
+  },
+  totpHint: {
+    fontSize: 13,
+    color: '#475569',
+    marginBottom: 16,
+    lineHeight: 18,
   },
   footer: {
     alignItems: 'center',

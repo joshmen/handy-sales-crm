@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-import { ChevronLeft, Download, MapPin, Search } from 'lucide-react';
+import { Download, MapPin, Search, ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import {
   teamLocationService,
@@ -78,8 +76,20 @@ function lastNDays(n: number): string[] {
  * Layout split: mapa a la izquierda, lista de eventos a la derecha.
  * Filtros sticky arriba: date preset (Hoy/Ayer/7d/Custom) + tipo + búsqueda.
  * KPI bar abajo.
+ *
+ * Wrapper exportado: envuelve el contenido en <Suspense> porque usa
+ * useSearchParams (Next.js 15 lo requiere para no convertir toda la ruta
+ * a client-side rendering durante hydration).
  */
 export default function TeamGpsDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Cargando…</div>}>
+      <TeamGpsDetailContent />
+    </Suspense>
+  );
+}
+
+function TeamGpsDetailContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -242,175 +252,214 @@ export default function TeamGpsDetailPage() {
     }
   };
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
-      {/* Header sticky */}
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0">
-        <Link
-          href="/team/gps"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t('back')}
-        </Link>
-        <div className="flex items-center gap-2 ml-2">
-          <div className="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center text-sm font-semibold text-foreground/70">
-            {vendorName[0]?.toUpperCase() ?? '?'}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{vendorName || `Vendedor #${usuarioId}`}</p>
-            <p className="text-[11px] text-muted-foreground">ID #{usuarioId}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 ml-auto">
-          {(['hoy', 'ayer', '7d'] as const).map(p => (
-            <button
-              key={p}
-              onClick={() => handlePreset(p)}
-              className={cn(
-                'px-3 py-1.5 text-[12px] font-medium rounded-lg ring-1 transition-colors',
-                preset === p
-                  ? 'bg-emerald-100 text-emerald-700 ring-emerald-300'
-                  : 'bg-surface-2 text-muted-foreground ring-transparent hover:bg-surface-3'
-              )}
-            >
-              {p === 'hoy' ? t('preset.today') : p === 'ayer' ? t('preset.yesterday') : t('preset.last7days')}
-            </button>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleExportCsv}
-            disabled={eventosFiltrados.length === 0}
-            className="ml-2"
-          >
-            <Download className="w-4 h-4 mr-1" />
-            {t('exportCsv')}
-          </Button>
-        </div>
-      </div>
+  const tc = useTranslations('common');
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-surface-1 shrink-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {ALL_TYPES.map(tipo => {
-            const active = tiposActivos.has(tipo);
+  return (
+    <PageHeader
+      breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('teamLabel'), href: '/team' },
+        { label: t('title'), href: '/team/gps' },
+        { label: vendorName || `#${usuarioId}` },
+      ]}
+      title={vendorName || `Vendedor #${usuarioId}`}
+      subtitle={t('detailSubtitle')}
+      actions={
+        <>
+          {(['hoy', 'ayer', '7d'] as const).map(p => {
+            const label = p === 'hoy' ? t('preset.today') : p === 'ayer' ? t('preset.yesterday') : t('preset.last7days');
             return (
               <button
-                key={tipo}
-                onClick={() => toggleTipo(tipo)}
+                key={p}
+                onClick={() => handlePreset(p)}
+                aria-pressed={preset === p}
                 className={cn(
-                  'px-2.5 py-1 text-[11px] font-medium rounded-full ring-1 transition-all',
-                  active
-                    ? `${TYPE_COLOR[tipo]} ring-current`
-                    : 'bg-surface-2 text-muted-foreground/50 ring-transparent line-through'
+                  'px-3 py-2 text-xs font-medium rounded transition-colors',
+                  preset === p
+                    ? 'bg-success text-success-foreground'
+                    : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
                 )}
               >
-                {TYPE_ICON[tipo]} {labelTipo(tipo)}
+                {label}
               </button>
             );
           })}
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <Search className="w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder={t('searchClient')}
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="h-8 text-[12px] w-44"
-          />
-        </div>
-      </div>
-
-      {/* Cuerpo split */}
-      <div className="flex flex-1 min-h-0 gap-0">
-        {/* Mapa */}
-        <div className="w-1/2 border-r border-border">
-          {loading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">{t('loading')}</div>
-          ) : error ? (
-            <div className="flex items-center justify-center h-full text-red-500">{error}</div>
-          ) : (
-            <GpsActivityMap
-              eventos={eventosFiltrados}
-              fullHeight
+          <button
+            onClick={handleExportCsv}
+            disabled={eventosFiltrados.length === 0}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="hidden sm:inline">{t('exportCsv')}</span>
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {/* Filter Row — chips por tipo + búsqueda cliente */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {ALL_TYPES.map(tipo => {
+              const active = tiposActivos.has(tipo);
+              const tipoLabel = labelTipo(tipo);
+              return (
+                <button
+                  key={tipo}
+                  onClick={() => toggleTipo(tipo)}
+                  aria-pressed={active}
+                  aria-label={`${active ? 'Desactivar' : 'Activar'} filtro: ${tipoLabel}`}
+                  className={cn(
+                    'px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors',
+                    active
+                      ? `${TYPE_COLOR[tipo]}`
+                      : 'bg-surface-3 text-muted-foreground/60 line-through'
+                  )}
+                >
+                  <span aria-hidden="true">{TYPE_ICON[tipo]}</span> {tipoLabel}
+                </button>
+              );
+            })}
+          </div>
+          <div className="relative ml-auto" style={{ width: '220px' }}>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder={t('searchClient')}
+              aria-label={t('searchClient')}
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-          )}
+          </div>
         </div>
 
-        {/* Lista */}
-        <div className="w-1/2 flex flex-col min-h-0">
-          <div className="overflow-y-auto flex-1 px-3 py-2 space-y-1.5">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-card border border-border-subtle rounded-lg px-4 py-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{t('kpi.events')}</div>
+            <div className="text-2xl font-bold text-foreground mt-1">{kpis.total}</div>
+          </div>
+          <div className="bg-card border border-border-subtle rounded-lg px-4 py-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{t('kpi.orders')}</div>
+            <div className="text-2xl font-bold text-blue-600 mt-1">{kpis.ventas}</div>
+          </div>
+          <div className="bg-card border border-border-subtle rounded-lg px-4 py-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{t('kpi.payments')}</div>
+            <div className="text-2xl font-bold text-violet-600 mt-1">{kpis.cobros}</div>
+          </div>
+          <div className="bg-card border border-border-subtle rounded-lg px-4 py-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{t('kpi.visits')}</div>
+            <div className="text-2xl font-bold text-emerald-600 mt-1">{kpis.visitas}</div>
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-700 dark:text-red-300">
+            {error}
+          </div>
+        )}
+
+        {/* Cuerpo split: mapa + lista */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-380px)] min-h-[400px]">
+          {/* Mapa */}
+          <div className="bg-card border border-border-subtle rounded-lg overflow-hidden">
             {loading ? (
-              <p className="text-center text-muted-foreground py-8 text-sm">{t('loading')}</p>
-            ) : eventosFiltrados.length === 0 ? (
-              <div className="text-center py-12">
-                <MapPin className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">{t('noEvents')}</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">{t('tryDifferentRange')}</p>
-              </div>
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{t('loading')}</div>
             ) : (
-              eventosFiltrados.map((ev, i) => {
-                const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
-                const fecha = formatDate(ev.cuando, { day: '2-digit', month: 'short' });
-                return (
-                  <div
-                    key={`${ev.tipo}-${ev.referenciaId ?? 'np'}-${i}`}
-                    className="flex items-start gap-3 p-2.5 bg-card rounded-lg border border-border-subtle hover:border-border transition-colors"
-                  >
-                    <div className="text-[10px] font-bold text-muted-foreground w-6 text-right pt-0.5">
-                      #{i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <Badge className={cn('text-[10px] px-1.5 py-0.5', TYPE_COLOR[ev.tipo])}>
-                          {TYPE_ICON[ev.tipo]} {labelTipo(ev.tipo)}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground">
-                          {fecha} · {hora}
-                        </span>
-                      </div>
-                      {ev.clienteNombre && (
-                        <p className="text-[12px] font-medium text-foreground truncate">
-                          {ev.clienteNombre}
-                        </p>
-                      )}
-                      <a
-                        href={`https://maps.google.com/?q=${ev.latitud},${ev.longitud}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] font-mono text-muted-foreground hover:text-primary"
-                      >
-                        {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)} ↗
-                      </a>
-                      {ev.distanciaCliente != null && (
-                        <span className="ml-2 text-[10px] text-muted-foreground/70">
-                          ({Math.round(ev.distanciaCliente)}m del cliente)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
+              <GpsActivityMap eventos={eventosFiltrados} fullHeight />
             )}
+          </div>
+
+          {/* Lista */}
+          <div className="bg-card border border-border-subtle rounded-lg flex flex-col min-h-0">
+            <div className="px-3 py-2 border-b border-border-subtle text-[11px] uppercase tracking-wide font-medium text-muted-foreground">
+              {t('eventsTimeline')}
+            </div>
+            <div className="overflow-y-auto flex-1 px-3 py-2 space-y-1.5">
+              {loading ? (
+                <p className="text-center text-muted-foreground py-8 text-sm">{t('loading')}</p>
+              ) : eventosFiltrados.length === 0 ? (
+                <div className="text-center py-12">
+                  <MapPin className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">{t('noEvents')}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-1">{t('tryDifferentRange')}</p>
+                </div>
+              ) : (
+                eventosFiltrados.map((ev, i) => {
+                  const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
+                  const fecha = formatDate(ev.cuando, { day: '2-digit', month: 'short' });
+                  // Indicador de eventos agrupados (mismo timestamp al minuto que el anterior).
+                  // Util para detectar el patrón Venta+InicioJornada+StopAutomatico que reportamos
+                  // en Jeyma sábado — mismo `cuando` apila 3 pings consecutivos.
+                  const esAgrupado = i > 0 &&
+                    eventosFiltrados[i - 1].cuando.slice(0, 16) === ev.cuando.slice(0, 16);
+                  // Link a la orden/cobro si el evento tiene referenciaId
+                  const tieneRef = ev.referenciaId != null && (ev.tipo === 'pedido' || ev.tipo === 'cobro');
+                  const refHref = ev.tipo === 'pedido' ? `/orders/${ev.referenciaId}` : `/cobranza/${ev.referenciaId}`;
+                  const refLabel = ev.tipo === 'pedido' ? 'pedido' : 'cobro';
+                  return (
+                    <div
+                      key={`${ev.tipo}-${ev.referenciaId ?? 'np'}-${i}`}
+                      className="flex items-start gap-3 p-2.5 bg-surface-1 rounded-lg border border-transparent hover:border-border-subtle transition-colors"
+                    >
+                      <div className="text-[10px] font-bold text-muted-foreground w-6 text-right pt-0.5">
+                        #{i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <Badge className={cn('text-[10px] px-1.5 py-0.5', TYPE_COLOR[ev.tipo])}>
+                            <span aria-hidden="true">{TYPE_ICON[ev.tipo]}</span> {labelTipo(ev.tipo)}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground">
+                            {fecha} · {hora}
+                          </span>
+                          {esAgrupado && (
+                            <span
+                              title="Evento simultáneo con el anterior"
+                              aria-label="Evento simultáneo con el anterior"
+                              className="w-2 h-2 rounded-full bg-amber-400 ring-1 ring-amber-200 flex-shrink-0"
+                            />
+                          )}
+                        </div>
+                        {ev.clienteNombre && (
+                          <p className="text-[12px] font-medium text-foreground truncate">
+                            {ev.clienteNombre}
+                          </p>
+                        )}
+                        <a
+                          href={`https://maps.google.com/?q=${ev.latitud},${ev.longitud}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Abrir en Google Maps: ${ev.latitud.toFixed(5)}, ${ev.longitud.toFixed(5)}`}
+                          className="text-[10px] font-mono text-muted-foreground hover:text-primary"
+                        >
+                          {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)} <span aria-hidden="true">↗</span>
+                        </a>
+                        {ev.distanciaCliente != null && (
+                          <span className="ml-2 text-[10px] text-muted-foreground/70">
+                            ({Math.round(ev.distanciaCliente)}m)
+                          </span>
+                        )}
+                        {tieneRef && (
+                          <Link
+                            href={refHref}
+                            className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline"
+                            aria-label={`Ver ${refLabel} #${ev.referenciaId}`}
+                          >
+                            <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                            Ver {refLabel} #{ev.referenciaId}
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* KPI bar */}
-      <div className="shrink-0 flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 border-t border-border bg-surface-1 text-[11px] text-muted-foreground">
-        <span><span className="font-semibold text-foreground">{kpis.total}</span> {t('kpi.events')}</span>
-        <span><span className="font-semibold text-blue-700">{kpis.ventas}</span> {t('kpi.orders')}</span>
-        <span><span className="font-semibold text-violet-700">{kpis.cobros}</span> {t('kpi.payments')}</span>
-        <span><span className="font-semibold text-emerald-700">{kpis.visitas}</span> {t('kpi.visits')}</span>
-        {kpis.inicio && (
-          <span>{t('kpi.start')}: {formatDate(kpis.inicio, { hour: '2-digit', minute: '2-digit' })}</span>
-        )}
-        {kpis.fin && kpis.fin !== kpis.inicio && (
-          <span>{t('kpi.end')}: {formatDate(kpis.fin, { hour: '2-digit', minute: '2-digit' })}</span>
-        )}
-      </div>
-    </div>
+    </PageHeader>
   );
 }

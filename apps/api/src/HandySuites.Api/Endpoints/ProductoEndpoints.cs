@@ -10,7 +10,6 @@ using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using System.Security.Claims;
 using ITransactionManager = HandySuites.Application.Common.Interfaces.ITransactionManager;
 
 namespace HandySuites.Api.Endpoints;
@@ -153,18 +152,18 @@ public static class ProductoEndpoints
             [FromServices] ProductoService servicio,
             [FromServices] ICloudinaryService cloudinaryService,
             [FromServices] HandySuitesDbContext dbContext,
-            ClaimsPrincipal user) =>
+            [FromServices] ICurrentTenant currentTenant) =>
         {
             try
             {
+                // Defensa en profundidad: ObtenerPorIdAsync ya filtra por tenant via
+                // el service, pero el folder Cloudinary debe usar el ICurrentTenant
+                // (no el JWT claim raw) para respetar impersonation/contexto actual.
                 var producto = await servicio.ObtenerPorIdAsync(id);
                 if (producto == null)
                     return Results.NotFound();
 
-                var tenantIdClaim = user.FindFirst("tenant_id")?.Value;
-                if (string.IsNullOrEmpty(tenantIdClaim) || !int.TryParse(tenantIdClaim, out var tenantId))
-                    return Results.BadRequest("Tenant no válido");
-
+                var tenantId = currentTenant.TenantId;
                 var tenant = await dbContext.Tenants.FindAsync(tenantId);
                 var tenantFolder = cloudinaryService.GenerateTenantFolder(tenantId, tenant?.NombreEmpresa ?? "default");
                 var productFolder = $"{tenantFolder}/products";
@@ -186,7 +185,7 @@ public static class ProductoEndpoints
 
                 return Results.Ok(new { imageUrl = result.SecureUrl });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Results.Problem("Error al subir imagen");
             }
@@ -221,9 +220,9 @@ public static class ProductoEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("ProductosActualizados");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "ProductosActualizados", tenantId);
         }
     }
 

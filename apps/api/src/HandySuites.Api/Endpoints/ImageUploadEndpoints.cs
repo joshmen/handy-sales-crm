@@ -8,6 +8,59 @@ namespace HandySuites.Api.Endpoints;
 
 public static class ImageUploadEndpoints
 {
+    // SECURITY (audit MED): magic byte validation. Antes confiábamos en
+    // file.ContentType (cliente-supplied) — un atacante podía declarar
+    // `image/png` y subir un SVG con <script>. Cloudinary mostly mitiga
+    // pero defense-in-depth en backend es trivial. SVG explícitamente
+    // rechazado: aunque sea "imagen", es XML ejecutable en browsers.
+    private static bool ValidateImageMagicBytes(byte[] bytes, out string detectedFormat)
+    {
+        detectedFormat = "unknown";
+        if (bytes.Length < 12) return false;
+
+        // JPEG: FF D8 FF
+        if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) { detectedFormat = "jpeg"; return true; }
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+            && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A)
+        { detectedFormat = "png"; return true; }
+        // GIF: 47 49 46 38 (GIF8)
+        if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) { detectedFormat = "gif"; return true; }
+        // WebP: RIFF....WEBP
+        if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
+            && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50)
+        { detectedFormat = "webp"; return true; }
+
+        return false;
+    }
+
+    private static async Task<bool> ValidateMagicBytesFromFormFileAsync(IFormFile file)
+    {
+        await using var stream = file.OpenReadStream();
+        var header = new byte[12];
+        var read = await stream.ReadAsync(header.AsMemory(0, 12));
+        if (read < 12) return false;
+        return ValidateImageMagicBytes(header, out _);
+    }
+
+    private static bool ValidateMagicBytesFromBase64(string base64DataUri)
+    {
+        // base64 data URI: "data:image/png;base64,iVBORw0KGgo..."
+        var commaIdx = base64DataUri.IndexOf(',');
+        var b64 = commaIdx > 0 ? base64DataUri[(commaIdx + 1)..] : base64DataUri;
+        // Solo necesitamos los primeros 16 bytes — base64 de 16 bytes ≈ 24 chars
+        var prefix = b64.Length > 24 ? b64[..24] : b64;
+        try
+        {
+            var bytes = Convert.FromBase64String(prefix);
+            return ValidateImageMagicBytes(bytes, out _);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
     public static void MapImageUploadEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/images")
@@ -32,10 +85,12 @@ public static class ImageUploadEndpoints
                 if (file.Length > 5 * 1024 * 1024)
                     return Results.BadRequest(new { error = "El archivo no debe superar 5MB" });
 
-                // Validate content type
+                // Validate content type (declared) Y magic bytes (real)
                 var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
                 if (!allowedTypes.Contains(file.ContentType?.ToLower()))
                     return Results.BadRequest(new { error = "Tipo de imagen no permitido. Use JPEG, PNG, GIF o WebP." });
+                if (!await ValidateMagicBytesFromFormFileAsync(file))
+                    return Results.BadRequest(new { error = "El archivo no es una imagen válida (JPEG/PNG/GIF/WebP)." });
 
                 var usuario = await dbContext.Usuarios
                     .Include(u => u.Tenant)
@@ -103,10 +158,12 @@ public static class ImageUploadEndpoints
                     return Results.NotFound("Empresa no encontrada");
                 }
 
-                // Validate content type
+                // Validate content type (declared) Y magic bytes (real)
                 var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
                 if (!allowedTypes.Contains(file.ContentType?.ToLower()))
                     return Results.BadRequest(new { error = "Tipo de imagen no permitido. Use JPEG, PNG, GIF o WebP." });
+                if (!await ValidateMagicBytesFromFormFileAsync(file))
+                    return Results.BadRequest(new { error = "El archivo no es una imagen válida (JPEG/PNG/GIF/WebP)." });
 
                 // Generar/usar carpeta del tenant
                 var tenantFolder = cloudinaryService.GenerateTenantFolder(tenantId, tenant.NombreEmpresa);
@@ -176,6 +233,11 @@ public static class ImageUploadEndpoints
                     }
                 }
 
+                // SECURITY: validar magic bytes del payload base64 — antes solo
+                // confiábamos en el MIME declarado, que el cliente controla.
+                if (!ValidateMagicBytesFromBase64(request.Base64Image))
+                    return Results.BadRequest(new { error = "El archivo no es una imagen válida (JPEG/PNG/GIF/WebP)." });
+
                 // Validate upload type
                 var allowedUploadTypes = new[] { "avatar", "logo", "product", "company" };
                 if (!string.IsNullOrEmpty(request.Type) && !allowedUploadTypes.Contains(request.Type.ToLower()))
@@ -195,6 +257,12 @@ public static class ImageUploadEndpoints
                 {
                     return Results.NotFound("Usuario no encontrado");
                 }
+
+                // SECURITY: gate logo/company uploads a ADMIN+. Antes el upload
+                // a Cloudinary procedía y solo el DB write se gateaba — un
+                // VENDEDOR podía spamear /logos/ con 5MB cada uno (storage abuse).
+                if ((request.Type == "logo" || request.Type == "company") && !usuario.IsAdminOrAbove)
+                    return Results.Forbid();
 
                 var tenantFolder = cloudinaryService.GenerateTenantFolder(usuario.TenantId, usuario.Tenant.NombreEmpresa);
                 var folder = $"{tenantFolder}/{request.Type}s"; // avatars, logos, etc.

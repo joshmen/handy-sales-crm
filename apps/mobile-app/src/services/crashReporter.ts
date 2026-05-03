@@ -8,6 +8,32 @@ import { getAccessToken } from '@/api/client';
 
 const QUEUE_KEY = '@crash_reports_queue';
 
+// SECURITY (audit MED): redactar PII antes de enviar stacks. RN traces a
+// veces incluyen string args inline del frame que falló (ej: TypeError en
+// `setEmail("user@example.com")` puede salir con el email en el frame).
+// También paths file:// que apuntan al sandbox del device.
+const PII_PATTERNS: Array<[RegExp, string]> = [
+  // Email
+  [/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '<email>'],
+  // Phone-like (10-15 dígitos consecutivos, opcional + prefix)
+  [/\+?\d{10,15}\b/g, '<phone>'],
+  // RFC mexicano (4 letras + 6 dígitos + 3 alfanum)
+  [/\b[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}\b/g, '<rfc>'],
+  // file:// paths absolutos (revelan layout del sandbox)
+  [/file:\/\/[^\s"')]+/g, '<file-path>'],
+  // /data/data/<package>/... paths (Android internal)
+  [/\/data\/data\/[^\s"')]+/g, '<android-path>'],
+];
+
+function redactPII(text: string | undefined): string | undefined {
+  if (!text) return text;
+  let result = text;
+  for (const [pattern, replacement] of PII_PATTERNS) {
+    result = result.replace(pattern, replacement);
+  }
+  return result;
+}
+
 interface CrashReportPayload {
   errorMessage: string;
   stackTrace?: string;
@@ -17,6 +43,9 @@ interface CrashReportPayload {
   osVersion: string;
   componentName?: string;
   severity: string;
+  // tenantId/userId YA NO se mandan desde el cliente — el backend los
+  // toma del JWT (VULN-M01 fix). Se dejan en la interface por compat con
+  // queue cargado de versiones previas pero no se setean en nuevos reports.
   tenantId?: number;
   userId?: number;
 }
@@ -31,21 +60,21 @@ async function reportCrash(
   severity: 'CRASH' | 'ERROR' | 'WARNING' = 'ERROR'
 ): Promise<void> {
   try {
-    const user = useAuthStore.getState().user;
+    // user no se usa para tenantId/userId (server toma del JWT) — queda
+    // por compat de la queue, pero nuevos reports no setean esos campos.
+    void useAuthStore.getState().user;
     const errorMessage = typeof error === 'string' ? error : error.message;
     const stackTrace = typeof error === 'string' ? undefined : error.stack;
 
     const payload: CrashReportPayload = {
-      errorMessage: errorMessage?.substring(0, 2000) || 'Unknown error',
-      stackTrace: stackTrace?.substring(0, 10000),
+      errorMessage: redactPII(errorMessage)?.substring(0, 2000) || 'Unknown error',
+      stackTrace: redactPII(stackTrace)?.substring(0, 10000),
       deviceId: Device.modelId || Device.modelName || 'unknown',
       deviceName: `${Device.brand || ''} ${Device.modelName || ''}`.trim() || 'unknown',
       appVersion: Application.nativeApplicationVersion || '1.0.0',
       osVersion: `${Platform.OS} ${Platform.Version}`,
       componentName,
       severity,
-      tenantId: user?.tenantId ? Number(user.tenantId) : undefined,
-      userId: user?.id ? Number(user.id) : undefined,
     };
 
     const token = getAccessToken();
@@ -68,9 +97,10 @@ async function reportCrash(
   } catch {
     try {
       const errorMessage = typeof error === 'string' ? error : error.message;
+      const stackTrace = typeof error === 'string' ? undefined : error.stack;
       await enqueueReport({
-        errorMessage: errorMessage?.substring(0, 2000) || 'Unknown error',
-        stackTrace: typeof error === 'string' ? undefined : error.stack?.substring(0, 10000),
+        errorMessage: redactPII(errorMessage)?.substring(0, 2000) || 'Unknown error',
+        stackTrace: redactPII(stackTrace)?.substring(0, 10000),
         deviceId: 'unknown',
         deviceName: 'unknown',
         appVersion: Application.nativeApplicationVersion || '1.0.0',

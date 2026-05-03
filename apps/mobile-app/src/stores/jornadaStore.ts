@@ -83,9 +83,19 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
   },
 
   iniciarJornada: async (motivo) => {
-    if (get().activa) return; // idempotente
+    // Atomic guard via set(updater) — solo el primer caller en el batch
+    // sincrónico atraviesa, los demás ven activa=true y retornan.
+    // Antes: `if (get().activa) return; set({activa:true})` permitía race
+    // entre dos callers en el mismo tick (ej: ruta accept + venta confirm
+    // simultáneos) generando ping InicioJornada duplicado.
+    let acquired = false;
     const ahora = Date.now();
-    set({ activa: true, iniciadaEn: ahora, terminadaEn: null, motivoStop: null });
+    set(state => {
+      if (state.activa) return state;
+      acquired = true;
+      return { ...state, activa: true, iniciadaEn: ahora, terminadaEn: null, motivoStop: null };
+    });
+    if (!acquired) return;
     await persist({ activa: true, iniciadaEn: ahora, terminadaEn: null, motivoStop: null });
 
     // Disparar el ping correspondiente. Importamos lazy para evitar ciclos.
@@ -107,9 +117,17 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
   },
 
   finalizarJornada: async (motivo) => {
-    if (!get().activa) return; // idempotente
+    // Mismo pattern atomic guard que iniciarJornada para evitar race entre
+    // watchers (horario + inactividad + ruta) que pueden disparar el cierre
+    // simultáneamente.
+    let acquired = false;
     const ahora = Date.now();
-    set({ activa: false, iniciadaEn: null, terminadaEn: ahora, motivoStop: motivo });
+    set(state => {
+      if (!state.activa) return state;
+      acquired = true;
+      return { ...state, activa: false, iniciadaEn: null, terminadaEn: ahora, motivoStop: motivo };
+    });
+    if (!acquired) return;
     await persist({ activa: false, iniciadaEn: null, terminadaEn: ahora, motivoStop: motivo });
 
     try {

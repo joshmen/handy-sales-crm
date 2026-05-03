@@ -38,13 +38,27 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // Anonymous endpoints (login, register, forgot-password): by IP
+    // Anonymous endpoints generales (register, forgot-password): 15/min/IP
     options.AddPolicy("anonymous", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 15,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Login específicamente: 5/min/IP (audit MED). 15/min permitía ~5,400
+    // intentos/hora desde una sola IP — suficiente para diccionarios cortos.
+    // El backend AuthService.LoginAsync ya implementa lockout per-email
+    // (5 intentos → bloqueo 15min) defense-in-depth.
+    options.AddPolicy("auth-login", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));

@@ -72,7 +72,7 @@ public static class AuthEndpoints
                 return Results.Ok(result);
 
             return Results.Ok(result);
-        }).RequireRateLimiting("anonymous");
+        }).RequireRateLimiting("auth-login");
 
         app.MapPost("/auth/verify-2fa", async (
             [FromBody] Verify2FADto dto,

@@ -33,7 +33,7 @@ public static class FamiliasProductosEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/familias-productos", async ([FromServices] FamiliaProductoService servicio) =>
         {
@@ -75,7 +75,7 @@ public static class FamiliasProductosEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/familias-productos/{id:int}", async (
             int id,
@@ -103,7 +103,7 @@ public static class FamiliasProductosEndpoints
 
             await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/familias-productos/{id:int}/activo", async (
             int id,
@@ -123,7 +123,7 @@ public static class FamiliasProductosEndpoints
 
             await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizado = true });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/familias-productos/batch-toggle", async (
             FamiliaBatchToggleRequest request,
@@ -141,7 +141,7 @@ public static class FamiliasProductosEndpoints
 
             await NotifyFamiliasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados = request.Ids.Count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 
     private static async Task NotifyFamiliasProductoActualizadas(IHubContext<NotificationHub> hubContext, int tenantId)
@@ -150,9 +150,9 @@ public static class FamiliasProductosEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("FamiliasProductoActualizadas");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "FamiliasProductoActualizadas", tenantId);
         }
     }
 }

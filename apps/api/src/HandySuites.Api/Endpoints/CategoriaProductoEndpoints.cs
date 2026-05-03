@@ -45,7 +45,7 @@ public static class CategoriaProductoEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/categorias-productos/{id:int}", async (
             int id,
@@ -74,7 +74,7 @@ public static class CategoriaProductoEndpoints
             {
                 return Results.Conflict(new { message = ex.Message });
             }
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/categorias-productos/{id:int}", async (
             int id,
@@ -102,7 +102,7 @@ public static class CategoriaProductoEndpoints
 
             await NotifyCategoriasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/categorias-productos/{id:int}/activo", async (
             int id,
@@ -122,7 +122,7 @@ public static class CategoriaProductoEndpoints
 
             await NotifyCategoriasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizado = true });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/categorias-productos/batch-toggle", async (
             CategoriaProductoBatchToggleRequest request,
@@ -140,7 +140,7 @@ public static class CategoriaProductoEndpoints
 
             await NotifyCategoriasProductoActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados = request.Ids.Count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 
     private static async Task NotifyCategoriasProductoActualizadas(IHubContext<NotificationHub> hubContext, int tenantId)
@@ -149,9 +149,9 @@ public static class CategoriaProductoEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("CategoriasProductoActualizadas");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "CategoriasProductoActualizadas", tenantId);
         }
     }
 }

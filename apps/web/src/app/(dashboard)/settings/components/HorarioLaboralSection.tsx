@@ -149,6 +149,7 @@ export const HorarioLaboralSection: React.FC = () => {
                   onClick={() => toggleDia(d.value)}
                   className={cn(
                     'px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                     selected
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-surface-2 text-foreground/70 border-border hover:bg-surface-3'

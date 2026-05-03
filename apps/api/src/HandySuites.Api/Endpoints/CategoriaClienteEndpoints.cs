@@ -38,7 +38,7 @@ public static class CategoriaClienteEndpoints
             var id = await servicio.CrearCategoriaAsync(dto);
             await NotifyCategoriasClienteActualizadas(hubContext, currentTenant.TenantId);
             return Results.Created($"/categorias-clientes/{id}", new { id });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPut("/categorias-clientes/{id:int}", async (
             int id,
@@ -60,7 +60,7 @@ public static class CategoriaClienteEndpoints
             if (actualizado)
                 await NotifyCategoriasClienteActualizadas(hubContext, currentTenant.TenantId);
             return actualizado ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapDelete("/categorias-clientes/{id:int}", async (
             int id,
@@ -88,7 +88,7 @@ public static class CategoriaClienteEndpoints
 
             await NotifyCategoriasClienteActualizadas(hubContext, currentTenant.TenantId);
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/categorias-clientes/{id:int}/activo", async (
             int id,
@@ -108,7 +108,7 @@ public static class CategoriaClienteEndpoints
 
             await NotifyCategoriasClienteActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizado = true });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapPatch("/categorias-clientes/batch-toggle", async (
             CategoriaClienteBatchToggleRequest request,
@@ -126,7 +126,7 @@ public static class CategoriaClienteEndpoints
 
             await NotifyCategoriasClienteActualizadas(hubContext, currentTenant.TenantId);
             return Results.Ok(new { actualizados = request.Ids.Count });
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 
     private static async Task NotifyCategoriasClienteActualizadas(IHubContext<NotificationHub> hubContext, int tenantId)
@@ -135,9 +135,9 @@ public static class CategoriaClienteEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("CategoriasClienteActualizadas");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "CategoriasClienteActualizadas", tenantId);
         }
     }
 }

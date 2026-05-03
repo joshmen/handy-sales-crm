@@ -2154,6 +2154,11 @@
     "gpsHistorial": {
       "title": "Histórico GPS",
       "subtitle": "Recorrido GPS de tus vendedores: ventas, cobros, visitas y trayectos.",
+      "subtitleWithCount": "{count, plural, one {# vendedor con actividad GPS} other {# vendedores con actividad GPS}}",
+      "detailSubtitle": "Recorrido GPS: ventas, cobros, visitas, jornada y rutas",
+      "eventsTimeline": "Línea de tiempo",
+      "emptyTitle": "Sin actividad GPS",
+      "emptySearchMessage": "No se encontraron vendedores que coincidan con tu búsqueda.",
       "teamLabel": "Equipo",
       "columnVendor": "Vendedor",
       "columnLastEvent": "Último evento",

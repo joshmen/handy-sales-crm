@@ -84,6 +84,22 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+    // Tracking GPS batch: 60 batches/min/user. Suficiente para checkpoint
+    // cada 15min + bursts post-offline; previene un token comprometido
+    // inflando la tabla GPS. Audit MED.
+    options.AddPolicy("mobile-tracking", context =>
+    {
+        var userId = context.User?.FindFirst("sub")?.Value
+                     ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? context.Connection.RemoteIpAddress?.ToString()
+                     ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
     options.OnRejected = async (context, cancellationToken) =>
     {
         context.HttpContext.Response.ContentType = "application/json";
@@ -113,15 +129,38 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<MobileSessionValidationMiddleware>();
 
-// Ensure wwwroot/uploads exists for static file serving (evidence uploads)
-// Placed AFTER auth middleware so static files require authentication
-var wwwroot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
-Directory.CreateDirectory(Path.Combine(wwwroot, "uploads", "evidence"));
-app.UseStaticFiles(new StaticFileOptions
+// Static files para evidence uploads. Solo en Development — en prod los
+// uploads se sirven desde Cloudinary (MobileAttachmentEndpoints retorna 501
+// en non-dev). En dev queremos enviar a través de un endpoint que valide
+// auth + tenant en lugar de UseStaticFiles, porque el StaticFileMiddleware
+// NO respeta [Authorize] aunque vaya después de UseAuthentication —
+// VULN-M02 del audit security.
+//
+// El callback OnPrepareResponse rechaza si no hay claim user_id. No
+// validamos tenant del archivo aquí porque eso requiere parsear el path
+// y resolver la entidad evidence — solo aceptamos requests autenticados,
+// el riesgo residual es que un usuario del tenant A acceda al GUID de
+// evidence del tenant B (mitigación: GUIDs son inadivinables por entropía
+// 122 bits + en prod no se sirve desde aquí).
+if (app.Environment.IsDevelopment())
 {
-    FileProvider = new PhysicalFileProvider(wwwroot),
-    RequestPath = ""
-});
+    var wwwroot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+    Directory.CreateDirectory(Path.Combine(wwwroot, "uploads", "evidence"));
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(wwwroot),
+        RequestPath = "",
+        OnPrepareResponse = ctx =>
+        {
+            if (!ctx.Context.User.Identity?.IsAuthenticated ?? true)
+            {
+                ctx.Context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                ctx.Context.Response.ContentLength = 0;
+                ctx.Context.Response.Body = Stream.Null;
+            }
+        }
+    });
+}
 
 // MOBILE-SPECIFIC ENDPOINTS
 app.MapMobileAuthEndpoints();

@@ -12,9 +12,26 @@ public static class CorsExtensions
 
                 if (environment == "Development")
                 {
-                    // Desarrollo: Permitir cualquier origen para pruebas móviles
+                    // Desarrollo: localhost + emulator + Expo Go LAN ranges.
+                    // Antes era AllowAnyOrigin — un dev visitando un sitio
+                    // malicioso con localhost:1052 corriendo permitía exfil
+                    // de datos locales. Audit MED.
                     builder
-                        .AllowAnyOrigin()
+                        .SetIsOriginAllowed(origin =>
+                        {
+                            if (string.IsNullOrEmpty(origin)) return false;
+                            if (origin == "capacitor://localhost") return true;
+                            if (origin == "ionic://localhost") return true;
+                            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+                            // localhost variants
+                            if (uri.Host == "localhost" || uri.Host == "127.0.0.1") return true;
+                            // Android emulator host
+                            if (uri.Host == "10.0.2.2") return true;
+                            // LAN IPs típicas del dev box
+                            if (uri.Host.StartsWith("192.168.") || uri.Host.StartsWith("10.")
+                                || uri.Host.StartsWith("172.")) return true;
+                            return false;
+                        })
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .SetPreflightMaxAge(TimeSpan.FromMinutes(10));

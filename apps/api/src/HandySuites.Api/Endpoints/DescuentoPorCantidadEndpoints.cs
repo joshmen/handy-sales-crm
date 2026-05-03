@@ -129,9 +129,9 @@ public static class DescuentosEndpoints
         {
             await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DescuentosActualizados");
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore — fallo de hub no debe romper el request
+            Serilog.Log.Warning(ex, "SignalR emit {Event} falló para tenant {TenantId}", "DescuentosActualizados", tenantId);
         }
     }
 }
