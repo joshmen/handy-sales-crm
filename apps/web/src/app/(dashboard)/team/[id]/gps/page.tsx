@@ -1,11 +1,16 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-import { Download, MapPin, Search, ExternalLink } from 'lucide-react';
+import {
+  Download, MapPin, Search, ExternalLink,
+  ShoppingCart, Wallet, Users, Play, StopCircle, Moon,
+  Navigation, Flag, MapPinned, Radar,
+  type LucideIcon,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
@@ -17,6 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useCompany } from '@/contexts/CompanyContext';
+import type { GpsActivityMapHandle } from '@/app/(dashboard)/team/components/GpsActivityMap';
 
 // Mapa Leaflet sólo en cliente (manipula `window`)
 const GpsActivityMap = dynamic(
@@ -45,11 +51,21 @@ const TYPE_COLOR: Record<string, string> = {
   tracking: 'bg-slate-100 text-slate-700 ring-slate-300',
 };
 
-const TYPE_ICON: Record<string, string> = {
-  pedido: '🛒', cobro: '💰', visita: '👥',
-  inicio_jornada: '🟢', fin_jornada: '🔴', stop_automatico: '🌙',
-  inicio_ruta: '▶️', fin_ruta: '⏹️', parada: '🛣️',
-  checkpoint: '📍', tracking: '📡',
+// Iconos lucide-react por tipo de evento. Reemplazó el map de emoji
+// (🛒💰👥...) que el usuario reportó como "modo IA" — inconsistente con
+// el resto del proyecto que usa SVG/lucide.
+const TYPE_ICON: Record<string, LucideIcon> = {
+  pedido: ShoppingCart,
+  cobro: Wallet,
+  visita: Users,
+  inicio_jornada: Play,
+  fin_jornada: StopCircle,
+  stop_automatico: Moon,
+  inicio_ruta: Navigation,
+  fin_ruta: Flag,
+  parada: MapPin,
+  checkpoint: MapPinned,
+  tracking: Radar,
 };
 
 /**
@@ -128,6 +144,10 @@ function TeamGpsDetailContent() {
   const [tiposActivos, setTiposActivos] = useState<Set<string>>(new Set(ALL_TYPES));
   const [busqueda, setBusqueda] = useState('');
   const [vendorName, setVendorName] = useState<string>('');
+  // Ref imperativo al mapa Leaflet para que el botón "Ver en mapa" del
+  // timeline pueda hacer flyTo + abrir el popup del marker correspondiente.
+  const mapRef = useRef<GpsActivityMapHandle | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Date preset state — usa TZ del tenant para no marcar "hoy" como custom
   // cuando el browser está en otra TZ (ej: admin viendo desde laptop en CDMX
@@ -327,6 +347,7 @@ function TeamGpsDetailContent() {
             {ALL_TYPES.map(tipo => {
               const active = tiposActivos.has(tipo);
               const tipoLabel = labelTipo(tipo);
+              const Icon = TYPE_ICON[tipo] ?? MapPin;
               return (
                 <button
                   key={tipo}
@@ -334,13 +355,14 @@ function TeamGpsDetailContent() {
                   aria-pressed={active}
                   aria-label={`${active ? 'Desactivar' : 'Activar'} filtro: ${tipoLabel}`}
                   className={cn(
-                    'px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors',
+                    'inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors',
                     active
                       ? `${TYPE_COLOR[tipo]}`
                       : 'bg-surface-3 text-muted-foreground/60 line-through'
                   )}
                 >
-                  <span aria-hidden="true">{TYPE_ICON[tipo]}</span> {tipoLabel}
+                  <Icon className="w-3 h-3" aria-hidden="true" />
+                  {tipoLabel}
                 </button>
               );
             })}
@@ -388,11 +410,11 @@ function TeamGpsDetailContent() {
         {/* Cuerpo split: mapa + lista */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-380px)] min-h-[400px]">
           {/* Mapa */}
-          <div className="bg-card border border-border-subtle rounded-lg overflow-hidden">
+          <div ref={mapContainerRef} className="bg-card border border-border-subtle rounded-lg overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{t('loading')}</div>
             ) : (
-              <GpsActivityMap eventos={eventosFiltrados} fullHeight />
+              <GpsActivityMap ref={mapRef} eventos={eventosFiltrados} fullHeight />
             )}
           </div>
 
@@ -433,8 +455,9 @@ function TeamGpsDetailContent() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <Badge className={cn('text-[10px] px-1.5 py-0.5', TYPE_COLOR[ev.tipo])}>
-                            <span aria-hidden="true">{TYPE_ICON[ev.tipo]}</span> {labelTipo(ev.tipo)}
+                          <Badge className={cn('inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5', TYPE_COLOR[ev.tipo])}>
+                            {(() => { const Icon = TYPE_ICON[ev.tipo] ?? MapPin; return <Icon className="w-3 h-3" aria-hidden="true" />; })()}
+                            {labelTipo(ev.tipo)}
                           </Badge>
                           <span className="text-[11px] text-muted-foreground">
                             {fecha} · {hora}
@@ -452,20 +475,33 @@ function TeamGpsDetailContent() {
                             {ev.clienteNombre}
                           </p>
                         )}
-                        <a
-                          href={`https://maps.google.com/?q=${ev.latitud},${ev.longitud}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Abrir en Google Maps: ${ev.latitud.toFixed(5)}, ${ev.longitud.toFixed(5)}`}
-                          className="text-[10px] font-mono text-muted-foreground hover:text-primary"
-                        >
-                          {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)} <span aria-hidden="true">↗</span>
-                        </a>
-                        {ev.distanciaCliente != null && (
-                          <span className="ml-2 text-[10px] text-muted-foreground/70">
-                            ({Math.round(ev.distanciaCliente)}m)
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                          {/* "Ver en mapa" — pan + abre popup del marker en el mapa Leaflet
+                              embedido. Antes había un link externo a Google Maps, removido
+                              porque sacaba al usuario de la app y no integraba con el mapa
+                              de la página. */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              mapRef.current?.focusEvent(i);
+                              // En layout vertical (mobile/tablet), traer el mapa a la vista.
+                              mapContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }}
+                            aria-label={`${t('viewOnMap')}: ${ev.tipo} #${i + 1}`}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                          >
+                            <MapPin className="w-3 h-3" aria-hidden="true" />
+                            {t('viewOnMap')}
+                          </button>
+                          <span className="text-[10px] font-mono text-muted-foreground/60">
+                            {ev.latitud.toFixed(5)}, {ev.longitud.toFixed(5)}
                           </span>
-                        )}
+                          {ev.distanciaCliente != null && (
+                            <span className="text-[10px] text-muted-foreground/70">
+                              ({Math.round(ev.distanciaCliente)}m)
+                            </span>
+                          )}
+                        </div>
                         {tieneRef && (
                           <Link
                             href={refHref}
