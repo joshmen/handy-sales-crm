@@ -9,6 +9,8 @@ import {
   ActividadItemSchema,
   VendedorResumenSchema,
   TenantResumenSchema,
+  TenantPedidoListItemSchema,
+  TenantCobroListItemSchema,
 } from './schemas/supervisor';
 import type {
   VendedorEquipo,
@@ -17,6 +19,8 @@ import type {
   ActividadItem,
   VendedorResumen,
   TenantResumen,
+  TenantPedidoListItem,
+  TenantCobroListItem,
 } from './schemas/supervisor';
 import type { ApiResponse } from '@/types';
 
@@ -31,6 +35,39 @@ const ActividadResponseSchema = z.object({
 }).passthrough();
 const VendedorResumenResponseSchema = ApiResponseSchema(VendedorResumenSchema);
 const TenantResumenResponseSchema = ApiResponseSchema(TenantResumenSchema);
+
+// Paginated list response shape (data[] + total + page + pageSize + hasMore)
+const TenantPedidosListResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(TenantPedidoListItemSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  hasMore: z.boolean(),
+}).passthrough();
+const TenantCobrosListResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(TenantCobroListItemSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  hasMore: z.boolean(),
+}).passthrough();
+
+export interface TenantPedidosPage {
+  data: TenantPedidoListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+export interface TenantCobrosPage {
+  data: TenantCobroListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
 const BASE = '/api/mobile/supervisor';
 
@@ -102,5 +139,45 @@ export const supervisorApi = {
       'GET /api/mobile/supervisor/resumen-tenant'
     );
     return validated.data;
+  },
+
+  // Admin/Supervisor — lista paginada de pedidos del tenant del día.
+  // Reportado admin@jeyma.com 2026-05-04: tab Vender vacío para admin.
+  getTenantPedidos: async (
+    opts?: { dia?: string; page?: number; pageSize?: number }
+  ): Promise<TenantPedidosPage> => {
+    const params = new URLSearchParams();
+    if (opts?.dia) params.set('dia', opts.dia);
+    if (opts?.page) params.set('page', String(opts.page));
+    if (opts?.pageSize) params.set('pageSize', String(opts.pageSize));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const { data } = await api.get(`${BASE}/pedidos${qs}`);
+    const validated = TenantPedidosListResponseSchema.parse(data);
+    return {
+      data: validated.data,
+      total: validated.total,
+      page: validated.page,
+      pageSize: validated.pageSize,
+      hasMore: validated.hasMore,
+    };
+  },
+
+  getTenantCobros: async (
+    opts?: { dia?: string; page?: number; pageSize?: number }
+  ): Promise<TenantCobrosPage> => {
+    const params = new URLSearchParams();
+    if (opts?.dia) params.set('dia', opts.dia);
+    if (opts?.page) params.set('page', String(opts.page));
+    if (opts?.pageSize) params.set('pageSize', String(opts.pageSize));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const { data } = await api.get(`${BASE}/cobros${qs}`);
+    const validated = TenantCobrosListResponseSchema.parse(data);
+    return {
+      data: validated.data,
+      total: validated.total,
+      page: validated.page,
+      pageSize: validated.pageSize,
+      hasMore: validated.hasMore,
+    };
   },
 };

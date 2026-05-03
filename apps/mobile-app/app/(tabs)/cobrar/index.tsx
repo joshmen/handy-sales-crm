@@ -6,12 +6,14 @@ import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useTenantLocale } from '@/hooks';
+import { useAuthStore } from '@/stores';
 import { startOfDayInTz, startOfWeekInTz, startOfMonthInTz } from '@/utils/dateTz';
 import { Wallet, ChevronRight, User, TrendingUp } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import type Cobro from '@/db/models/Cobro';
+import { AdminTenantCobrosList } from '@/components/admin/AdminTenantCobrosList';
 
 interface ClienteSaldo {
   clienteId: string;
@@ -53,6 +55,19 @@ function CobrarScreenContent() {
   const { money: formatCurrency, tz } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
+  const role = useAuthStore(s => s.user?.role);
+  const isAdminOrSupervisor = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
+
+  // Admin/Supervisor: ver TODOS los cobros del tenant del día.
+  // Reportado admin@jeyma.com 2026-05-04: WatermelonDB local solo sincroniza
+  // cobros del usuario actual; admin no opera en ruta → tab vacío.
+  if (isAdminOrSupervisor) {
+    return (
+      <View style={styles.container}>
+        <AdminTenantCobrosList />
+      </View>
+    );
+  }
 
   const { data: pedidos, isLoading: loadingPedidos } = useOfflineOrders();
   const { data: cobros, isLoading: loadingCobros } = useOfflineCobros();

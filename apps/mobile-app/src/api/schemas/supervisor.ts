@@ -79,9 +79,35 @@ export const TenantResumenSchema = z.object({
   vendedoresActivos: z.number(),
 });
 
+// Pedido / Cobro list items para admin (tab Vender/Cobrar tenant-wide).
+// Devuelto por GET /api/mobile/supervisor/pedidos y /cobros (paginated).
+export const TenantPedidoListItemSchema = z.object({
+  id: z.number(),
+  clienteId: z.number(),
+  clienteNombre: z.string(),
+  monto: z.number(),
+  fecha: z.string(),
+  usuarioId: z.number(),
+  usuarioNombre: z.string(),
+  estado: z.string(),
+});
+
+export const TenantCobroListItemSchema = z.object({
+  id: z.number(),
+  clienteId: z.number(),
+  clienteNombre: z.string(),
+  monto: z.number(),
+  fecha: z.string(),
+  usuarioId: z.number(),
+  usuarioNombre: z.string(),
+  metodoPago: z.string(),
+});
+
 export type VendedorEquipo = z.infer<typeof VendedorEquipoSchema>;
 export type SupervisorDashboard = z.infer<typeof SupervisorDashboardSchema>;
 export type UbicacionVendedor = z.infer<typeof UbicacionVendedorSchema>;
 export type ActividadItem = z.infer<typeof ActividadItemSchema>;
 export type VendedorResumen = z.infer<typeof VendedorResumenSchema>;
 export type TenantResumen = z.infer<typeof TenantResumenSchema>;
+export type TenantPedidoListItem = z.infer<typeof TenantPedidoListItemSchema>;
+export type TenantCobroListItem = z.infer<typeof TenantCobroListItemSchema>;

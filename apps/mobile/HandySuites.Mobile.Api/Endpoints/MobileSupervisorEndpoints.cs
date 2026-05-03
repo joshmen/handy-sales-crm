@@ -586,5 +586,173 @@ public static class MobileSupervisorEndpoints
         .WithDescription("Agregados (count + total) de todo el tenant para admins. Calcula 'hoy' en TZ del tenant.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status403Forbidden);
+
+        // GET /api/mobile/supervisor/pedidos?dia=YYYY-MM-DD&page=1&pageSize=20
+        // Lista paginada de TODOS los pedidos del tenant (admin/super_admin) o
+        // del equipo del supervisor. Incluye nombre del vendedor que lo creó.
+        // Reportado por admin@jeyma.com 2026-05-04: tab Vender vacío para admin
+        // porque WatermelonDB local solo sincroniza pedidos del usuario actual.
+        group.MapGet("/pedidos", async (
+            string? dia,
+            int? page,
+            int? pageSize,
+            ICurrentTenant tenant,
+            HandySuitesDbContext db) =>
+        {
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+                return Results.Forbid();
+
+            var supervisorId = int.Parse(tenant.UserId);
+            var p = Math.Max(1, page ?? 1);
+            var ps = Math.Clamp(pageSize ?? 20, 1, 100);
+
+            var tenantTz = await db.CompanySettings
+                .AsNoTracking()
+                .Where(cs => cs.TenantId == tenant.TenantId)
+                .Select(cs => cs.Timezone)
+                .FirstOrDefaultAsync() ?? "America/Mexico_City";
+
+            TimeZoneInfo tzInfo;
+            try { tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz); }
+            catch { tzInfo = TimeZoneInfo.Utc; }
+
+            DateTime diaLocal;
+            if (!string.IsNullOrEmpty(dia) && DateTime.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
+                diaLocal = fParsed;
+            else
+                diaLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
+
+            var localStart = DateTime.SpecifyKind(diaLocal, DateTimeKind.Unspecified);
+            var startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tzInfo);
+            var endUtc = TimeZoneInfo.ConvertTimeToUtc(localStart.AddDays(1), tzInfo);
+
+            // Para SUPERVISOR: limitar a sus subordinados; ADMIN/SUPER_ADMIN: tenant-wide.
+            var pedidosQuery = db.Pedidos.AsNoTracking()
+                .Where(pe => pe.TenantId == tenant.TenantId
+                          && pe.FechaPedido >= startUtc && pe.FechaPedido < endUtc
+                          && pe.Activo);
+
+            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            {
+                var subordinadosIds = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)
+                    .Select(u => u.Id).ToListAsync();
+                subordinadosIds.Add(supervisorId);
+                pedidosQuery = pedidosQuery.Where(pe => subordinadosIds.Contains(pe.UsuarioId));
+            }
+
+            var total = await pedidosQuery.CountAsync();
+            var pedidos = await pedidosQuery
+                .OrderByDescending(pe => pe.FechaPedido)
+                .Skip((p - 1) * ps)
+                .Take(ps)
+                .Select(pe => new
+                {
+                    id = pe.Id,
+                    clienteId = pe.ClienteId,
+                    clienteNombre = pe.Cliente!.Nombre,
+                    monto = pe.Total,
+                    fecha = pe.FechaPedido,
+                    usuarioId = pe.UsuarioId,
+                    usuarioNombre = pe.Usuario!.Nombre,
+                    estado = pe.Estado.ToString()
+                })
+                .ToListAsync();
+
+            return Results.Ok(new
+            {
+                success = true,
+                data = pedidos,
+                total,
+                page = p,
+                pageSize = ps,
+                hasMore = p * ps < total
+            });
+        })
+        .WithSummary("Lista de pedidos del tenant (admin/supervisor)")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status403Forbidden);
+
+        // GET /api/mobile/supervisor/cobros?dia=YYYY-MM-DD&page=1&pageSize=20
+        // Misma lógica que /pedidos pero para cobros.
+        group.MapGet("/cobros", async (
+            string? dia,
+            int? page,
+            int? pageSize,
+            ICurrentTenant tenant,
+            HandySuitesDbContext db) =>
+        {
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+                return Results.Forbid();
+
+            var supervisorId = int.Parse(tenant.UserId);
+            var p = Math.Max(1, page ?? 1);
+            var ps = Math.Clamp(pageSize ?? 20, 1, 100);
+
+            var tenantTz = await db.CompanySettings
+                .AsNoTracking()
+                .Where(cs => cs.TenantId == tenant.TenantId)
+                .Select(cs => cs.Timezone)
+                .FirstOrDefaultAsync() ?? "America/Mexico_City";
+
+            TimeZoneInfo tzInfo;
+            try { tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz); }
+            catch { tzInfo = TimeZoneInfo.Utc; }
+
+            DateTime diaLocal;
+            if (!string.IsNullOrEmpty(dia) && DateTime.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
+                diaLocal = fParsed;
+            else
+                diaLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
+
+            var localStart = DateTime.SpecifyKind(diaLocal, DateTimeKind.Unspecified);
+            var startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tzInfo);
+            var endUtc = TimeZoneInfo.ConvertTimeToUtc(localStart.AddDays(1), tzInfo);
+
+            var cobrosQuery = db.Cobros.AsNoTracking()
+                .Where(co => co.TenantId == tenant.TenantId
+                          && co.FechaCobro >= startUtc && co.FechaCobro < endUtc
+                          && co.Activo);
+
+            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            {
+                var subordinadosIds = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)
+                    .Select(u => u.Id).ToListAsync();
+                subordinadosIds.Add(supervisorId);
+                cobrosQuery = cobrosQuery.Where(co => subordinadosIds.Contains(co.UsuarioId));
+            }
+
+            var total = await cobrosQuery.CountAsync();
+            var cobros = await cobrosQuery
+                .OrderByDescending(co => co.FechaCobro)
+                .Skip((p - 1) * ps)
+                .Take(ps)
+                .Select(co => new
+                {
+                    id = co.Id,
+                    clienteId = co.ClienteId,
+                    clienteNombre = co.Cliente!.Nombre,
+                    monto = co.Monto,
+                    fecha = co.FechaCobro,
+                    usuarioId = co.UsuarioId,
+                    usuarioNombre = co.Usuario!.Nombre,
+                    metodoPago = co.MetodoPago.ToString()
+                })
+                .ToListAsync();
+
+            return Results.Ok(new
+            {
+                success = true,
+                data = cobros,
+                total,
+                page = p,
+                pageSize = ps,
+                hasMore = p * ps < total
+            });
+        })
+        .WithSummary("Lista de cobros del tenant (admin/supervisor)")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status403Forbidden);
     }
 }
