@@ -342,7 +342,32 @@ public static class MobileSupervisorEndpoints
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
-            var hoy = DateTime.UtcNow.Date;
+            // Calcular el rango UTC [startUtc, endUtc) que corresponde al "día
+            // local actual del tenant". Sin esto, `FechaPedido.Date == UtcNow.Date`
+            // excluía pedidos del día local cuando el tenant está en TZ negativa
+            // (ej: Jeyma Mazatlan UTC-7: a las 7pm local ya es día siguiente UTC).
+            // Reportado prod 2026-05-02 testeando admin@jeyma.com.
+            var tenantTz = await db.CompanySettings
+                .AsNoTracking()
+                .Where(cs => cs.TenantId == tenant.TenantId)
+                .Select(cs => cs.Timezone)
+                .FirstOrDefaultAsync() ?? "America/Mexico_City";
+            DateTime startUtc, endUtc;
+            try
+            {
+                var tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz);
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+                var localDayStart = DateTime.SpecifyKind(localNow.Date, DateTimeKind.Unspecified);
+                var localDayEnd = localDayStart.AddDays(1);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(localDayStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(localDayEnd, tzInfo);
+            }
+            catch
+            {
+                // Fallback: día UTC tradicional si TZ inválido (no debería pasar).
+                startUtc = DateTime.UtcNow.Date;
+                endUtc = startUtc.AddDays(1);
+            }
 
             // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
             var vendedorQuery = db.Usuarios
@@ -364,7 +389,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => p.UsuarioId == id
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= startUtc && p.FechaPedido < endUtc
                          && p.Activo)
                 .CountAsync();
 
@@ -372,7 +397,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => p.UsuarioId == id
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= startUtc && p.FechaPedido < endUtc
                          && p.Activo)
                 .SumAsync(p => (decimal?)p.Total) ?? 0;
 
@@ -380,7 +405,8 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(v => v.UsuarioId == id
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= startUtc && v.FechaHoraInicio < endUtc
                          && v.EliminadoEn == null)
                 .CountAsync();
 
@@ -388,7 +414,8 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(v => v.UsuarioId == id
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= startUtc && v.FechaHoraInicio < endUtc
                          && v.FechaHoraFin != null
                          && v.EliminadoEn == null)
                 .CountAsync();
@@ -397,7 +424,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(c => c.UsuarioId == id
                          && c.TenantId == tenant.TenantId
-                         && c.FechaCobro.Date == hoy
+                         && c.FechaCobro >= startUtc && c.FechaCobro < endUtc
                          && c.Activo)
                 .SumAsync(c => (decimal?)c.Monto) ?? 0;
 
