@@ -122,18 +122,22 @@ const nextConfig = {
             key: process.env.NODE_ENV === "development"
               ? "Content-Security-Policy-Report-Only"
               : "Content-Security-Policy",
-            // SECURITY (WEB-HIGH-2/3 fix):
-            // - script-src usa 'strict-dynamic' en prod: neutraliza
-            //   'unsafe-inline' en browsers CSP3 (Chrome/Firefox/Safari ≥ 2018)
-            //   permitiendo solo scripts cargados por código ya autorizado.
-            //   El fallback 'unsafe-inline' aplica solo a IE/Edge legacy.
-            // - connect-src restringe http://localhost:* y ws: a development;
-            //   en prod solo HTTPS/WSS al backend Railway + servicios whitelist.
+            // HOTFIX 2026-05-02: removí 'strict-dynamic' del script-src en
+            // prod. Mi assumption en el security audit fue incorrecta —
+            // CSP3 spec dicta que cuando 'strict-dynamic' está presente,
+            // los browsers IGNORAN 'unsafe-inline' y los hosts whitelist.
+            // Resultado: TODOS los inline scripts de Next.js (hydration,
+            // _document, runtime injection) bloqueados → dashboard roto en
+            // prod. La forma correcta de usar 'strict-dynamic' es con
+            // nonces per-request via middleware — substantial refactor que
+            // queda como follow-up. De momento mantenemos 'unsafe-inline'
+            // (igual que pre-audit) para restaurar servicio.
+            //
+            // connect-src: mantengo el tightening de localhost/ws: solo en
+            // dev — esa parte funciona OK y no causa el bloqueo.
             value: [
               "default-src 'self'",
-              process.env.NODE_ENV === "development"
-                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com"
-                : "script-src 'self' 'strict-dynamic' 'unsafe-inline' https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com",
+              "script-src 'self' 'unsafe-inline'" + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "") + " https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com https://*.tile.openstreetmap.org",
               "font-src 'self' data: https://fonts.gstatic.com",
