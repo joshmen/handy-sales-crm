@@ -11,6 +11,20 @@ export function useAuthSession() {
   const { setUser, setLoading } = useAppStore();
   const isSigningOut = useRef(false);
 
+  // SYNC durante render (NO en useEffect): React corre useEffects child-first →
+  // parent-last. Si seteamos el token en useEffect aquí (parent — HydrationProvider),
+  // los providers hijos (GlobalSettings/Company/Profile) ya dispararon sus fetches
+  // en su propio useEffect SIN el header Authorization → 401 silencioso (que el
+  // response interceptor reintenta, pero queda en consola). Escribir al cache
+  // módulo-level durante render es safe: no triggea re-renders.
+  if (typeof window !== 'undefined') {
+    if (status === 'authenticated' && session?.accessToken) {
+      setApiAccessToken(session.accessToken);
+    } else if (status === 'unauthenticated') {
+      setApiAccessToken(null);
+    }
+  }
+
   useEffect(() => {
     if (status === 'loading') {
       setLoading('auth', true);
@@ -40,10 +54,9 @@ export function useAuthSession() {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        setApiAccessToken(session.accessToken || null);
+        // Token cache ya seteado arriba en el sync render path.
       } else {
         setUser(null);
-        setApiAccessToken(null);
       }
     }
   }, [session, status, setUser, setLoading]);
