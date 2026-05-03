@@ -246,7 +246,7 @@ export default function NewClientPage() {
                 toast.error(t('errorFormFields', { fields: names }));
                 scrollToFirstError(fieldErrors);
               })}
-              disabled={saving || isOutOfZone}
+              disabled={saving}
               title={isOutOfZone ? t('outOfZoneTitle') : undefined}
               className="flex items-center gap-2 bg-success hover:bg-success/90 text-success-foreground text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
             >
@@ -596,7 +596,7 @@ export default function NewClientPage() {
                   <FormField label={t("managerLabel")} hint={t("managerHint")}>
                     <input type="text" {...register('encargado')} className={inputClass()} />
                   </FormField>
-                  <FormField label={t("phoneLabel")} required error={errors.telefono?.message} hint={t("phoneHint")}>
+                  <FormField label={t("phoneLabel")} error={errors.telefono?.message} hint={t("phoneHint")}>
                     <input
                       type="tel"
                       {...register('telefono')}
@@ -606,7 +606,7 @@ export default function NewClientPage() {
                   </FormField>
                 </div>
 
-                <FormField label={t("emailLabel")} required error={errors.email?.message}>
+                <FormField label={t("emailLabel")} error={errors.email?.message}>
                   <input type="email" {...register('email')} className={inputClass(errors.email)} />
                 </FormField>
 
