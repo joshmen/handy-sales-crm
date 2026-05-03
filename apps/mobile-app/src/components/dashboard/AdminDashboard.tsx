@@ -188,7 +188,13 @@ function PersonCard({ person, onPress }: { person: VendedorEquipo; onPress: () =
     .toUpperCase();
 
   return (
-    <TouchableOpacity style={styles.personCard} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.personCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityLabel={`${person.nombre}, ${person.isOnline ? 'En línea' : 'Desconectado'}`}
+      accessibilityRole="button"
+    >
       <View style={styles.personAvatar}>
         <Text style={styles.personAvatarText}>{initials}</Text>
       </View>
@@ -196,7 +202,10 @@ function PersonCard({ person, onPress }: { person: VendedorEquipo; onPress: () =
         <Text style={styles.personName}>{person.nombre}</Text>
         <Text style={styles.personEmail}>{person.email}</Text>
       </View>
-      <View style={[styles.statusDot, { backgroundColor: person.activo ? '#22c55e' : '#ef4444' }]} />
+      {/* Dot verde solo si vendedor tiene GPS ping reciente (últimos 15 min).
+          Antes usábamos `person.activo` (estado de cuenta = siempre true para
+          usuarios habilitados). Reportado por admin@jeyma.com 2026-05-04. */}
+      <View style={[styles.statusDot, { backgroundColor: person.isOnline ? '#22c55e' : '#94a3b8' }]} />
     </TouchableOpacity>
   );
 }
