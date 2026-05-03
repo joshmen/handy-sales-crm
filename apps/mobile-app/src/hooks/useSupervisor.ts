@@ -33,10 +33,13 @@ export function useActividadEquipo() {
   });
 }
 
-export function useVendedorResumen(vendedorId: number) {
+export function useVendedorResumen(
+  vendedorId: number,
+  opts?: { fecha?: string; rango?: '7d' }
+) {
   return useQuery({
-    queryKey: ['supervisor', 'vendedor', vendedorId],
-    queryFn: () => supervisorApi.getVendedorResumen(vendedorId),
+    queryKey: ['supervisor', 'vendedor', vendedorId, opts?.rango ?? opts?.fecha ?? 'hoy'],
+    queryFn: () => supervisorApi.getVendedorResumen(vendedorId, opts),
     enabled: vendedorId > 0,
   });
 }

@@ -44,6 +44,18 @@ export const ActividadItemSchema = z.object({
   usuarioId: z.number(),
 });
 
+export const VendedorDiaSchema = z.object({
+  pedidos: z.number(),
+  ventas: z.number(),
+  visitas: z.number(),
+  visitasCompletadas: z.number(),
+  cobros: z.number(),
+});
+
+export const VendedorDiaConFechaSchema = VendedorDiaSchema.extend({
+  fecha: z.string(), // YYYY-MM-DD en TZ del tenant
+});
+
 export const VendedorResumenSchema = z.object({
   vendedor: z.object({
     id: z.number(),
@@ -52,13 +64,14 @@ export const VendedorResumenSchema = z.object({
     avatarUrl: z.string().nullable().optional(),
     activo: z.boolean(),
   }),
-  hoy: z.object({
-    pedidos: z.number(),
-    ventas: z.number(),
-    visitas: z.number(),
-    visitasCompletadas: z.number(),
-    cobros: z.number(),
-  }),
+  // `rango` indica el shape de la respuesta:
+  // - "dia": `hoy` poblado con stats de ese día. `dias` = null
+  // - "7d": `dias` array de 7 días. `hoy` = null
+  // Backwards-compat: si el server no manda rango, asumimos "dia".
+  rango: z.enum(['dia', '7d']).optional().default('dia'),
+  fecha: z.string().optional(), // YYYY-MM-DD si rango=dia
+  hoy: VendedorDiaSchema.nullable().optional(),
+  dias: z.array(VendedorDiaConFechaSchema).nullable().optional(),
   totalClientes: z.number(),
   ultimaUbicacion: z.object({
     latitud: z.number(),
@@ -84,4 +97,6 @@ export type SupervisorDashboard = z.infer<typeof SupervisorDashboardSchema>;
 export type UbicacionVendedor = z.infer<typeof UbicacionVendedorSchema>;
 export type ActividadItem = z.infer<typeof ActividadItemSchema>;
 export type VendedorResumen = z.infer<typeof VendedorResumenSchema>;
+export type VendedorDia = z.infer<typeof VendedorDiaSchema>;
+export type VendedorDiaConFecha = z.infer<typeof VendedorDiaConFechaSchema>;
 export type TenantResumen = z.infer<typeof TenantResumenSchema>;
