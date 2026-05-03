@@ -64,6 +64,7 @@ export default function EditClientPage() {
   const router = useRouter();
   const params = useParams();
   const t = useTranslations('clients.formPage');
+  const tClients = useTranslations('clients');
   const tc = useTranslations('common');
   const clientId = params.id as string;
 
@@ -231,7 +232,7 @@ export default function EditClientPage() {
       setSaving(true);
       const dto = mapFormToBackendDto(data);
       await clientService.updateClient(parseInt(clientId), dto);
-      toast.success(tc('success'));
+      toast.success(tClients('clientUpdated'));
       router.push('/clients');
     } catch (error: unknown) {
       console.error('Error al actualizar cliente:', error);
