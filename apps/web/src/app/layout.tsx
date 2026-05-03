@@ -115,18 +115,19 @@ export default async function RootLayout({
         />
       </head>
       <body className={inter.className} suppressHydrationWarning>
+        {/* Skip-link: texto fijo en español (UI principal en es-MX). Antes
+            había un inline script que mutaba el textContent leyendo
+            localStorage tras el render del server, causando React error #418
+            (hydration mismatch). El a11y skip-link no necesita i18n full —
+            es un escape para usuarios de screen reader que en este producto
+            siempre están en español. */}
         <a
           id="skip-link"
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-surface-2 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:rounded-md focus:shadow-lg focus:ring-2 focus:ring-indigo-500"
         >
-          Skip to main content
+          Saltar al contenido principal
         </a>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem('company_settings')||'{}');if(s.language!=='en'){document.getElementById('skip-link').textContent='Saltar al contenido principal';}}catch(e){}`,
-          }}
-        />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ClientProviders>{children}</ClientProviders>
         </NextIntlClientProvider>

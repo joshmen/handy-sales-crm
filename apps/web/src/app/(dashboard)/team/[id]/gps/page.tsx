@@ -136,7 +136,8 @@ function TeamGpsDetailContent() {
   const tz = settings?.timezone || 'America/Mexico_City';
 
   const usuarioId = parseInt(params.id, 10);
-  const diaParam = searchParams.get('dia') ?? todayIso(tz);
+  const dia = searchParams.get('dia');
+  const rango = searchParams.get('rango');
 
   const [eventos, setEventos] = useState<EventoGpsDelDia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,14 +150,28 @@ function TeamGpsDetailContent() {
   const mapRef = useRef<GpsActivityMapHandle | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Date preset state — usa TZ del tenant para no marcar "hoy" como custom
-  // cuando el browser está en otra TZ (ej: admin viendo desde laptop en CDMX
-  // un tenant Jeyma en Mazatlan).
-  const [preset, setPreset] = useState<'hoy' | 'ayer' | '7d' | 'custom'>(() => {
-    if (diaParam === todayIso(tz)) return 'hoy';
-    if (diaParam === ayerIso(tz)) return 'ayer';
-    return 'custom';
-  });
+  // `defaultDia` se inicializa vacío (estable entre SSR y hydration) y se
+  // popula en useEffect — cualquier cómputo con `new Date()` durante render
+  // produce React error #418 (hydration mismatch) ya que el server usa la
+  // hora del server y el client la del browser. Reportado en prod por
+  // Jeyma 2026-05-02 navegando a /team/3/gps?rango=7d.
+  const [defaultDia, setDefaultDia] = useState<string>('');
+  useEffect(() => {
+    setDefaultDia(todayIso(tz));
+  }, [tz]);
+
+  const diaParam = dia ?? defaultDia;
+
+  // Preset state: se inicializa en valor estable y luego se ajusta en
+  // useEffect según la URL (?dia=... o ?rango=7d) y la fecha real (TZ tenant).
+  const [preset, setPreset] = useState<'hoy' | 'ayer' | '7d' | 'custom'>('hoy');
+  useEffect(() => {
+    if (rango === '7d') { setPreset('7d'); return; }
+    if (!dia) { setPreset('hoy'); return; }
+    if (dia === todayIso(tz)) { setPreset('hoy'); return; }
+    if (dia === ayerIso(tz)) { setPreset('ayer'); return; }
+    setPreset('custom');
+  }, [dia, rango, tz]);
 
   const cargarDia = useCallback(async (dia: string) => {
     try {
