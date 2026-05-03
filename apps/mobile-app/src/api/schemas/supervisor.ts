@@ -68,8 +68,20 @@ export const VendedorResumenSchema = z.object({
   }).nullable().optional(),
 });
 
+// Resumen tenant (admin only) — agregados del día calculados con TZ del tenant.
+// Acompaña el endpoint /api/mobile/supervisor/resumen-tenant.
+export const TenantResumenSchema = z.object({
+  pedidosCount: z.number(),
+  pedidosTotal: z.number(),
+  cobrosCount: z.number(),
+  cobrosTotal: z.number(),
+  visitasCount: z.number(),
+  vendedoresActivos: z.number(),
+});
+
 export type VendedorEquipo = z.infer<typeof VendedorEquipoSchema>;
 export type SupervisorDashboard = z.infer<typeof SupervisorDashboardSchema>;
 export type UbicacionVendedor = z.infer<typeof UbicacionVendedorSchema>;
 export type ActividadItem = z.infer<typeof ActividadItemSchema>;
 export type VendedorResumen = z.infer<typeof VendedorResumenSchema>;
+export type TenantResumen = z.infer<typeof TenantResumenSchema>;

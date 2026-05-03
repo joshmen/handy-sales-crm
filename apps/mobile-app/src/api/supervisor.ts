@@ -8,6 +8,7 @@ import {
   UbicacionVendedorSchema,
   ActividadItemSchema,
   VendedorResumenSchema,
+  TenantResumenSchema,
 } from './schemas/supervisor';
 import type {
   VendedorEquipo,
@@ -15,6 +16,7 @@ import type {
   UbicacionVendedor,
   ActividadItem,
   VendedorResumen,
+  TenantResumen,
 } from './schemas/supervisor';
 import type { ApiResponse } from '@/types';
 
@@ -28,6 +30,7 @@ const ActividadResponseSchema = z.object({
   count: z.number(),
 }).passthrough();
 const VendedorResumenResponseSchema = ApiResponseSchema(VendedorResumenSchema);
+const TenantResumenResponseSchema = ApiResponseSchema(TenantResumenSchema);
 
 const BASE = '/api/mobile/supervisor';
 
@@ -82,6 +85,21 @@ export const supervisorApi = {
       VendedorResumenResponseSchema,
       data,
       `GET /api/mobile/supervisor/vendedor/${vendedorId}/resumen`
+    );
+    return validated.data;
+  },
+
+  // Admin only — agregados de TODO el tenant del día actual (TZ del tenant).
+  // Permite a admin@jeyma.com ver "lo que se vendió hoy" en la app sin tener
+  // que sincronizar la data de cada vendedor en WatermelonDB.
+  getResumenTenant: async (): Promise<TenantResumen> => {
+    const { data } = await api.get<ApiResponse<TenantResumen>>(
+      `${BASE}/resumen-tenant`
+    );
+    const validated = validateResponse(
+      TenantResumenResponseSchema,
+      data,
+      'GET /api/mobile/supervisor/resumen-tenant'
     );
     return validated.data;
   },

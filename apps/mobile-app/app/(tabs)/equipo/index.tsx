@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
-import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
+import { useSupervisorDashboard, useMisVendedores, useTenantResumen } from '@/hooks/useSupervisor';
 import { useTenantLocale } from '@/hooks';
 import { SbTeam } from '@/components/icons/DashboardIcons';
 import { useState } from 'react';
@@ -62,6 +62,10 @@ function EquipoContent() {
   const role = useAuthStore(s => s.user?.role);
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
   const { currency, locale } = useTenantLocale();
+  // Resumen tenant — solo admin/super_admin lo ven. Permite ver ventas+cobros
+  // del tenant completo (no solo los del usuario actual). Reportado prod
+  // 2026-05-02: admin@jeyma.com no veía ventas de los vendedores en mobile.
+  const { data: resumenTenant } = useTenantResumen(isAdmin);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -134,6 +138,22 @@ function EquipoContent() {
           <KpiCard label="Visitas hoy" value={`${dashboard.visitasCompletadasHoy}/${dashboard.visitasHoy}`} />
           <KpiCard label="Pedidos mes" value={dashboard.pedidosMes} />
           <KpiCard label="Clientes" value={dashboard.totalClientes} />
+        </Animated.View>
+      )}
+
+      {/* Resumen tenant del día — solo admin. Refleja ventas/cobros de TODOS
+          los vendedores (no solo del admin que está logueado). */}
+      {isAdmin && resumenTenant && (
+        <Animated.View entering={FadeInDown.delay(50).duration(400)} style={styles.section} testID="admin-tenant-resumen">
+          <Text style={styles.sectionLabel}>HOY EN TODA LA EMPRESA</Text>
+          <View style={styles.kpiGrid}>
+            <KpiCard label="Pedidos" value={resumenTenant.pedidosCount} />
+            <KpiCard label="Total facturado" value={formatMoney(resumenTenant.pedidosTotal)} />
+            <KpiCard label="Cobros" value={resumenTenant.cobrosCount} />
+            <KpiCard label="Total cobrado" value={formatMoney(resumenTenant.cobrosTotal)} />
+            <KpiCard label="Visitas" value={resumenTenant.visitasCount} />
+            <KpiCard label="Vendedores activos" value={resumenTenant.vendedoresActivos} />
+          </View>
         </Animated.View>
       )}
 
