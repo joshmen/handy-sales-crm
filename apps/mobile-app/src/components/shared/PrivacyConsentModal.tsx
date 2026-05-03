@@ -24,8 +24,13 @@ export function PrivacyConsentModal() {
 
   const storageKey = user?.id ? `${STORAGE_KEY_PREFIX}_${user.id}` : null;
 
+  // Admin/Super_Admin no son rastreados por la jornada GPS — no necesitan
+  // ver el aviso de privacidad. Vendedor + Supervisor + Viewer (los roles
+  // que sí pueden tener tracking activo) sí lo ven.
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
   useEffect(() => {
-    if (!isAuthenticated || !storageKey) return;
+    if (!isAuthenticated || isAdmin || !storageKey) return;
     let cancelled = false;
     (async () => {
       try {
@@ -34,7 +39,7 @@ export function PrivacyConsentModal() {
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
-  }, [isAuthenticated, storageKey]);
+  }, [isAuthenticated, isAdmin, storageKey]);
 
   const handleClose = async () => {
     setVisible(false);

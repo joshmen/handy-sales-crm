@@ -40,3 +40,18 @@ export function useVendedorResumen(vendedorId: number) {
     enabled: vendedorId > 0,
   });
 }
+
+/**
+ * Admin only — agregados del día de TODO el tenant. Solo se llama si
+ * el rol del usuario actual es ADMIN/SUPER_ADMIN. Si no, queda disabled.
+ * Refresca cada 2 min para mantener los KPIs frescos durante el día.
+ */
+export function useTenantResumen(enabled: boolean) {
+  return useQuery({
+    queryKey: ['supervisor', 'resumen-tenant'],
+    queryFn: () => supervisorApi.getResumenTenant(),
+    enabled,
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  });
+}

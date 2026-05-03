@@ -65,15 +65,24 @@ export const clientSchema = z.object({
   longitud: z.number().default(0),
 
   // === Datos de contacto ===
+  // teléfono y email son OPCIONALES — alineado con mobile (los vendedores
+  // crean clientes en ruta sin pedir esos datos). Si se proveen, validamos
+  // formato. Backend acepta '' (NOT NULL con default ''). Reportado por
+  // admin@jeyma.com 2026-05-02: web bloqueaba edit de clientes que mobile
+  // creó sin email/teléfono.
   encargado: z.string().max(255).optional(),
   telefono: z
     .string()
-    .min(1, 'phoneRequired')
-    .regex(/^\d{10}$/, 'phoneMust10Digits'),
+    .trim()
+    .refine((v) => v === '' || /^\d{10}$/.test(v), { message: 'phoneMust10Digits' })
+    .optional()
+    .default(''),
   email: z
     .string()
-    .min(1, 'emailRequired')
-    .email('emailInvalid'),
+    .trim()
+    .refine((v) => v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), { message: 'emailInvalid' })
+    .optional()
+    .default(''),
 }).superRefine((data, ctx) => {
   // Validación condicional: si facturable=true, los campos fiscales son obligatorios
   if (data.facturable) {

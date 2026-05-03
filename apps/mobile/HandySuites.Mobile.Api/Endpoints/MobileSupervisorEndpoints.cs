@@ -44,7 +44,7 @@ public static class MobileSupervisorEndpoints
                 baseQuery = baseQuery.Where(u => u.SupervisorId == supervisorId);
             }
 
-            var vendedores = await baseQuery
+            var vendedoresBase = await baseQuery
                 .Select(u => new
                 {
                     u.Id,
@@ -55,6 +55,31 @@ public static class MobileSupervisorEndpoints
                     u.AvatarUrl
                 })
                 .ToListAsync();
+
+            // Calcular IsOnline real: último GPS ping en los últimos 15 min.
+            // Antes el frontend mostraba un punto verde basado en `activo` (= cuenta
+            // no eliminada), lo cual marcaba a TODOS los vendedores como "en línea"
+            // aunque no estuvieran trabajando. Reportado por admin@jeyma.com 2026-05-02.
+            var threshold = DateTime.UtcNow.AddMinutes(-15);
+            var idsList = vendedoresBase.Select(v => v.Id).ToList();
+            var lastPings = await db.UbicacionesVendedor
+                .AsNoTracking()
+                .Where(p => p.TenantId == tenant.TenantId && idsList.Contains(p.UsuarioId))
+                .GroupBy(p => p.UsuarioId)
+                .Select(g => new { UsuarioId = g.Key, UltimoPing = g.Max(p => p.CapturadoEn) })
+                .ToDictionaryAsync(x => x.UsuarioId, x => (DateTime?)x.UltimoPing);
+
+            var vendedores = vendedoresBase.Select(v => new
+            {
+                v.Id,
+                v.Nombre,
+                v.Email,
+                v.Rol,
+                v.Activo,           // estado de cuenta (legacy field, sigue para retrocompat)
+                v.AvatarUrl,
+                IsOnline = lastPings.TryGetValue(v.Id, out var p) && p.HasValue && p.Value >= threshold,
+                UltimoPing = lastPings.TryGetValue(v.Id, out var pp) ? pp : null
+            }).ToList();
 
             return Results.Ok(new { success = true, data = vendedores, count = vendedores.Count });
         })
@@ -342,7 +367,32 @@ public static class MobileSupervisorEndpoints
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
-            var hoy = DateTime.UtcNow.Date;
+            // Calcular el rango UTC [startUtc, endUtc) que corresponde al "día
+            // local actual del tenant". Sin esto, `FechaPedido.Date == UtcNow.Date`
+            // excluía pedidos del día local cuando el tenant está en TZ negativa
+            // (ej: Jeyma Mazatlan UTC-7: a las 7pm local ya es día siguiente UTC).
+            // Reportado prod 2026-05-02 testeando admin@jeyma.com.
+            var tenantTz = await db.CompanySettings
+                .AsNoTracking()
+                .Where(cs => cs.TenantId == tenant.TenantId)
+                .Select(cs => cs.Timezone)
+                .FirstOrDefaultAsync() ?? "America/Mexico_City";
+            DateTime startUtc, endUtc;
+            try
+            {
+                var tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz);
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+                var localDayStart = DateTime.SpecifyKind(localNow.Date, DateTimeKind.Unspecified);
+                var localDayEnd = localDayStart.AddDays(1);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(localDayStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(localDayEnd, tzInfo);
+            }
+            catch
+            {
+                // Fallback: día UTC tradicional si TZ inválido (no debería pasar).
+                startUtc = DateTime.UtcNow.Date;
+                endUtc = startUtc.AddDays(1);
+            }
 
             // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
             var vendedorQuery = db.Usuarios
@@ -364,7 +414,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => p.UsuarioId == id
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= startUtc && p.FechaPedido < endUtc
                          && p.Activo)
                 .CountAsync();
 
@@ -372,7 +422,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => p.UsuarioId == id
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= startUtc && p.FechaPedido < endUtc
                          && p.Activo)
                 .SumAsync(p => (decimal?)p.Total) ?? 0;
 
@@ -380,7 +430,8 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(v => v.UsuarioId == id
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= startUtc && v.FechaHoraInicio < endUtc
                          && v.EliminadoEn == null)
                 .CountAsync();
 
@@ -388,7 +439,8 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(v => v.UsuarioId == id
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= startUtc && v.FechaHoraInicio < endUtc
                          && v.FechaHoraFin != null
                          && v.EliminadoEn == null)
                 .CountAsync();
@@ -397,7 +449,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(c => c.UsuarioId == id
                          && c.TenantId == tenant.TenantId
-                         && c.FechaCobro.Date == hoy
+                         && c.FechaCobro >= startUtc && c.FechaCobro < endUtc
                          && c.Activo)
                 .SumAsync(c => (decimal?)c.Monto) ?? 0;
 
@@ -449,5 +501,90 @@ public static class MobileSupervisorEndpoints
         .WithDescription("KPIs del día y última ubicación de un vendedor específico del equipo.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
+
+        // GET /api/mobile/supervisor/resumen-tenant — agregados de TODO el tenant
+        // para admins. Permite a ADMIN/SUPER_ADMIN ver "lo que se vendió hoy" sin
+        // tener que sincronizar la data de todos los vendedores en WatermelonDB.
+        // Reportado prod 2026-05-02 por admin@jeyma.com: solo veía sus propias
+        // ventas (que eran 0) en vez del agregado del tenant (17 pedidos hoy).
+        group.MapGet("/resumen-tenant", async (
+            ICurrentTenant tenant,
+            HandySuitesDbContext db) =>
+        {
+            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+                return Results.Forbid();
+
+            // Calcular ventana UTC del día local del tenant (TZ-aware).
+            var tenantTz = await db.CompanySettings
+                .AsNoTracking()
+                .Where(cs => cs.TenantId == tenant.TenantId)
+                .Select(cs => cs.Timezone)
+                .FirstOrDefaultAsync() ?? "America/Mexico_City";
+            DateTime startUtc, endUtc;
+            try
+            {
+                var tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz);
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+                var localDayStart = DateTime.SpecifyKind(localNow.Date, DateTimeKind.Unspecified);
+                var localDayEnd = localDayStart.AddDays(1);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(localDayStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(localDayEnd, tzInfo);
+            }
+            catch
+            {
+                startUtc = DateTime.UtcNow.Date;
+                endUtc = startUtc.AddDays(1);
+            }
+
+            var pedidosCount = await db.Pedidos.AsNoTracking()
+                .CountAsync(p => p.TenantId == tenant.TenantId
+                              && p.FechaPedido >= startUtc && p.FechaPedido < endUtc
+                              && p.Activo);
+            var pedidosTotal = await db.Pedidos.AsNoTracking()
+                .Where(p => p.TenantId == tenant.TenantId
+                         && p.FechaPedido >= startUtc && p.FechaPedido < endUtc
+                         && p.Activo)
+                .SumAsync(p => (decimal?)p.Total) ?? 0;
+            var cobrosCount = await db.Cobros.AsNoTracking()
+                .CountAsync(c => c.TenantId == tenant.TenantId
+                              && c.FechaCobro >= startUtc && c.FechaCobro < endUtc
+                              && c.Activo);
+            var cobrosTotal = await db.Cobros.AsNoTracking()
+                .Where(c => c.TenantId == tenant.TenantId
+                         && c.FechaCobro >= startUtc && c.FechaCobro < endUtc
+                         && c.Activo)
+                .SumAsync(c => (decimal?)c.Monto) ?? 0;
+            var visitasCount = await db.ClienteVisitas.AsNoTracking()
+                .CountAsync(v => v.TenantId == tenant.TenantId
+                              && v.FechaHoraInicio != null
+                              && v.FechaHoraInicio >= startUtc && v.FechaHoraInicio < endUtc
+                              && v.EliminadoEn == null);
+
+            // # vendedores con al menos 1 ping en el día (vendedores "trabajando hoy")
+            var vendedoresActivos = await db.UbicacionesVendedor.AsNoTracking()
+                .Where(u => u.TenantId == tenant.TenantId
+                         && u.CapturadoEn >= startUtc && u.CapturadoEn < endUtc)
+                .Select(u => u.UsuarioId)
+                .Distinct()
+                .CountAsync();
+
+            return Results.Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    pedidosCount,
+                    pedidosTotal,
+                    cobrosCount,
+                    cobrosTotal,
+                    visitasCount,
+                    vendedoresActivos
+                }
+            });
+        })
+        .WithSummary("Resumen tenant del día")
+        .WithDescription("Agregados (count + total) de todo el tenant para admins. Calcula 'hoy' en TZ del tenant.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status403Forbidden);
     }
 }

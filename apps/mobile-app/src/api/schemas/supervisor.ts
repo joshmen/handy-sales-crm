@@ -7,6 +7,11 @@ export const VendedorEquipoSchema = z.object({
   rol: z.string(),
   activo: z.boolean(),
   avatarUrl: z.string().nullable().optional(),
+  // isOnline = vendedor con GPS ping en últimos 15 min (real "en línea").
+  // Optional/default false para retrocompat con APKs viejas o si el endpoint
+  // no incluye el campo (graceful degradation a "desconectado").
+  isOnline: z.boolean().optional().default(false),
+  ultimoPing: z.string().datetime().nullable().optional(),
 });
 
 export const SupervisorDashboardSchema = z.object({
@@ -63,8 +68,20 @@ export const VendedorResumenSchema = z.object({
   }).nullable().optional(),
 });
 
+// Resumen tenant (admin only) — agregados del día calculados con TZ del tenant.
+// Acompaña el endpoint /api/mobile/supervisor/resumen-tenant.
+export const TenantResumenSchema = z.object({
+  pedidosCount: z.number(),
+  pedidosTotal: z.number(),
+  cobrosCount: z.number(),
+  cobrosTotal: z.number(),
+  visitasCount: z.number(),
+  vendedoresActivos: z.number(),
+});
+
 export type VendedorEquipo = z.infer<typeof VendedorEquipoSchema>;
 export type SupervisorDashboard = z.infer<typeof SupervisorDashboardSchema>;
 export type UbicacionVendedor = z.infer<typeof UbicacionVendedorSchema>;
 export type ActividadItem = z.infer<typeof ActividadItemSchema>;
 export type VendedorResumen = z.infer<typeof VendedorResumenSchema>;
+export type TenantResumen = z.infer<typeof TenantResumenSchema>;

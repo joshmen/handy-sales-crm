@@ -8,6 +8,13 @@
     "scheme": "handysuites",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": {
+      "url": "https://u.expo.dev/e6259b5a-35d9-4b87-b700-5520b113fa68",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
