@@ -91,22 +91,44 @@ function MapImperativeBridge({
   markerRefs: React.MutableRefObject<Array<L.CircleMarker | null>>;
 }) {
   const map = useMap();
+  // Hotfix prod: el setTimeout(..., 750) sin cleanup causaba crash
+  // "Cannot read properties of undefined (reading '_leaflet_pos')" cuando
+  // el usuario navegaba dentro de la ventana de animación. Guardamos el
+  // timeout id para limpiar en unmount.
+  const popupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     handleRef.current = {
       focusEvent: (index: number) => {
         const ev = eventos[index];
         if (!ev) return;
         map.flyTo([ev.latitud, ev.longitud], 17, { duration: 0.7 });
-        // Pequeño delay para que la animación termine y el popup quede
-        // anclado al marker, no a la posición previa del viewport.
-        const marker = markerRefs.current[index];
-        if (marker) {
-          setTimeout(() => marker.openPopup(), 750);
-        }
+        // Cancelar timeout pendiente si el user dispara focusEvent múltiples
+        // veces antes de que el primero cumpla.
+        if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+        popupTimeoutRef.current = setTimeout(() => {
+          const marker = markerRefs.current[index];
+          // Defense-in-depth: verificar que el marker exista Y tenga
+          // _leaflet_pos (i.e., sigue agregado al map). Sin esto Leaflet
+          // crashea durante la zoom transition end.
+          if (marker && (marker as unknown as { _leaflet_pos?: unknown })._leaflet_pos) {
+            try {
+              marker.openPopup();
+            } catch {
+              // El marker puede haber sido destruido entre el check y el
+              // call (race muy improbable pero defensa total).
+            }
+          }
+        }, 750);
       },
     };
     return () => {
       handleRef.current = null;
+      // Crítico: si el componente desmonta dentro de la ventana de 750ms,
+      // limpiar el timeout — sino dispara sobre marker destroyed → crash.
+      if (popupTimeoutRef.current) {
+        clearTimeout(popupTimeoutRef.current);
+        popupTimeoutRef.current = null;
+      }
     };
   }, [map, eventos, markerRefs, handleRef]);
   return null;
