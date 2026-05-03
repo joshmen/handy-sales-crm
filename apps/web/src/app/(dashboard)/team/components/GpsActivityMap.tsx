@@ -1,12 +1,21 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin } from 'lucide-react';
+import {
+  MapPin, ShoppingCart, Wallet, Users, Play, StopCircle, Moon,
+  Navigation, Flag, MapPinned, Radar,
+  type LucideIcon,
+} from 'lucide-react';
 import type { EventoGpsDelDia } from '@/services/api/teamLocation';
 import { useFormatters } from '@/hooks/useFormatters';
+
+export interface GpsActivityMapHandle {
+  /** Pan + zoom + abre el popup del marker correspondiente al índice del evento. */
+  focusEvent: (index: number) => void;
+}
 
 interface GpsActivityMapProps {
   eventos: EventoGpsDelDia[];
@@ -31,17 +40,20 @@ const COLOR_BY_TYPE: Record<string, string> = {
   stop_automatico: '#64748b',
 };
 
-const ICON_BY_TYPE: Record<string, string> = {
-  visita: '👥',
-  pedido: '🛒',
-  cobro: '💰',
-  parada: '🛣️',
-  checkpoint: '📍',
-  inicio_ruta: '▶️',
-  fin_ruta: '⏹️',
-  inicio_jornada: '🟢',
-  fin_jornada: '🔴',
-  stop_automatico: '🌙',
+// Lucide icons por tipo — reemplazó el map de emoji previo. Mantengo
+// el mismo set de tipos que en page.tsx para consistencia visual.
+const ICON_BY_TYPE: Record<string, LucideIcon> = {
+  visita: Users,
+  pedido: ShoppingCart,
+  cobro: Wallet,
+  parada: MapPin,
+  checkpoint: MapPinned,
+  inicio_ruta: Navigation,
+  fin_ruta: Flag,
+  inicio_jornada: Play,
+  fin_jornada: StopCircle,
+  stop_automatico: Moon,
+  tracking: Radar,
 };
 
 /**
@@ -65,18 +77,55 @@ function FitBoundsOnChange({ points }: { points: [number, number][] }) {
 }
 
 /**
+ * Helper interno que expone via ref un handle imperativo para focar un
+ * evento desde el componente padre (botón "Ver en mapa" del timeline).
+ * Necesita estar DENTRO del MapContainer para acceder al `useMap()`.
+ */
+function MapImperativeBridge({
+  handleRef,
+  eventos,
+  markerRefs,
+}: {
+  handleRef: React.MutableRefObject<GpsActivityMapHandle | null>;
+  eventos: EventoGpsDelDia[];
+  markerRefs: React.MutableRefObject<Array<L.CircleMarker | null>>;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    handleRef.current = {
+      focusEvent: (index: number) => {
+        const ev = eventos[index];
+        if (!ev) return;
+        map.flyTo([ev.latitud, ev.longitud], 17, { duration: 0.7 });
+        // Pequeño delay para que la animación termine y el popup quede
+        // anclado al marker, no a la posición previa del viewport.
+        const marker = markerRefs.current[index];
+        if (marker) {
+          setTimeout(() => marker.openPopup(), 750);
+        }
+      },
+    };
+    return () => {
+      handleRef.current = null;
+    };
+  }, [map, eventos, markerRefs, handleRef]);
+  return null;
+}
+
+/**
  * Mapa Leaflet con polyline del recorrido del día y marcadores por tipo
  * de evento. Tile provider OpenStreetMap (gratis, sin token).
  *
  * Cargado vía dynamic import desde el componente padre para evitar SSR
  * (Leaflet manipula `window` directamente — falla en server-render).
+ *
+ * Expone via ref un handle `focusEvent(index)` que el timeline usa para
+ * panear+abrir popup cuando el user clickea "Ver en mapa".
  */
-export default function GpsActivityMap({
-  eventos,
-  visibleTypes,
-  fullHeight = false,
-  showSequenceNumbers = false,
-}: GpsActivityMapProps) {
+const GpsActivityMap = forwardRef<GpsActivityMapHandle, GpsActivityMapProps>(function GpsActivityMap(
+  { eventos, visibleTypes, fullHeight = false, showSequenceNumbers = false },
+  ref,
+) {
   const { formatDate } = useFormatters();
 
   // Filtramos por tipo visible (si el padre lo pasa). El polyline también
@@ -91,6 +140,24 @@ export default function GpsActivityMap({
     () => eventosVisibles.map(e => [e.latitud, e.longitud]),
     [eventosVisibles],
   );
+
+  // Refs por marker para poder abrir popup imperativamente.
+  const markerRefs = useRef<Array<L.CircleMarker | null>>([]);
+  // Bridge expone el handle al padre via forwardRef.
+  const handleRef = useRef<GpsActivityMapHandle | null>(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusEvent: (index: number) => handleRef.current?.focusEvent(index),
+    }),
+    [],
+  );
+
+  // Reset markerRefs cuando cambia la lista — evita refs stale a markers
+  // que ya no existen tras filtrar.
+  useEffect(() => {
+    markerRefs.current = markerRefs.current.slice(0, eventosVisibles.length);
+  }, [eventosVisibles.length]);
 
   if (eventosVisibles.length === 0) {
     return (
@@ -120,10 +187,11 @@ export default function GpsActivityMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBoundsOnChange points={polylinePoints} />
+        <MapImperativeBridge handleRef={handleRef} eventos={eventosVisibles} markerRefs={markerRefs} />
         <Polyline positions={polylinePoints} pathOptions={{ color: '#3b82f6', weight: 3, opacity: 0.7 }} />
         {eventosVisibles.map((ev, i) => {
           const color = COLOR_BY_TYPE[ev.tipo] ?? '#94a3b8';
-          const icon = ICON_BY_TYPE[ev.tipo] ?? '📍';
+          const Icon = ICON_BY_TYPE[ev.tipo] ?? MapPin;
           const hora = formatDate(ev.cuando, { hour: '2-digit', minute: '2-digit' });
           const tieneRef = ev.referenciaId != null && (ev.tipo === 'pedido' || ev.tipo === 'cobro');
           const refLabel = ev.tipo === 'pedido' ? 'Pedido' : 'Cobro';
@@ -131,6 +199,9 @@ export default function GpsActivityMap({
           return (
             <CircleMarker
               key={`${ev.tipo}-${ev.referenciaId ?? 'np'}-${i}`}
+              ref={(el) => {
+                markerRefs.current[i] = (el as unknown as L.CircleMarker | null);
+              }}
               center={[ev.latitud, ev.longitud]}
               radius={showSequenceNumbers ? 12 : 8}
               pathOptions={{ color, fillColor: color, fillOpacity: 0.8 }}
@@ -141,18 +212,27 @@ export default function GpsActivityMap({
                 </Tooltip>
               )}
               <Tooltip>
-                <div className="text-xs space-y-0.5">
-                  <div className="font-semibold">{icon} #{i + 1} · {hora}</div>
+                <div className="text-xs space-y-0.5 min-w-[140px]">
+                  <div className="font-semibold flex items-center gap-1">
+                    <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+                    #{i + 1} · {hora}
+                  </div>
                   <div className="text-muted-foreground capitalize">{ev.tipo.replace(/_/g, ' ')}</div>
-                  {ev.clienteNombre && <div>{ev.clienteNombre}</div>}
+                  {ev.clienteNombre && <div className="font-medium">{ev.clienteNombre}</div>}
                   {tieneRef && (
                     <div className="text-muted-foreground/70">{refLabel} #{ev.referenciaId}</div>
+                  )}
+                  {tieneRef && (
+                    <div className="text-blue-600 text-[10px] mt-1">Click para abrir detalles →</div>
                   )}
                 </div>
               </Tooltip>
               <Popup minWidth={180}>
                 <div className="text-xs space-y-1.5 min-w-[160px]">
-                  <div className="font-semibold text-slate-800">{icon} #{i + 1} · {hora}</div>
+                  <div className="font-semibold text-slate-800 flex items-center gap-1">
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    #{i + 1} · {hora}
+                  </div>
                   <div className="capitalize text-slate-500">{ev.tipo.replace(/_/g, ' ')}</div>
                   {ev.clienteNombre && (
                     <div className="font-medium text-slate-700">{ev.clienteNombre}</div>
@@ -184,4 +264,6 @@ export default function GpsActivityMap({
       </MapContainer>
     </div>
   );
-}
+});
+
+export default GpsActivityMap;
