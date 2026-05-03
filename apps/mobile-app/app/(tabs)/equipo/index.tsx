@@ -34,7 +34,7 @@ function VendedorRow({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress:
       style={styles.vendedorRow}
       onPress={onPress}
       testID={`vendedor-${vendedor.id}`}
-      accessibilityLabel={`${vendedor.nombre}, ${vendedor.activo ? 'Activo' : 'Inactivo'}`}
+      accessibilityLabel={`${vendedor.nombre}, ${vendedor.isOnline ? 'En línea' : 'Desconectado'}`}
       accessibilityRole="button"
     >
       <View style={styles.avatar}>
@@ -44,7 +44,11 @@ function VendedorRow({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress:
         <Text style={styles.vendedorName}>{vendedor.nombre}</Text>
         <Text style={styles.vendedorEmail}>{vendedor.email}</Text>
       </View>
-      <View style={[styles.statusDot, { backgroundColor: vendedor.activo ? '#22c55e' : '#ef4444' }]} />
+      {/* Punto verde = vendedor con GPS ping en últimos 15 min (real "en línea").
+          Gris = sin actividad reciente (desconectado o jornada cerrada). El campo
+          `activo` (estado de cuenta) ya no se usa para este indicador — antes
+          marcaba a todos como online aunque no estuvieran trabajando. */}
+      <View style={[styles.statusDot, { backgroundColor: vendedor.isOnline ? '#22c55e' : '#94a3b8' }]} />
     </Pressable>
   );
 }

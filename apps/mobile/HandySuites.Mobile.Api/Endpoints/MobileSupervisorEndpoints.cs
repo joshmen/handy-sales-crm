@@ -44,7 +44,7 @@ public static class MobileSupervisorEndpoints
                 baseQuery = baseQuery.Where(u => u.SupervisorId == supervisorId);
             }
 
-            var vendedores = await baseQuery
+            var vendedoresBase = await baseQuery
                 .Select(u => new
                 {
                     u.Id,
@@ -55,6 +55,31 @@ public static class MobileSupervisorEndpoints
                     u.AvatarUrl
                 })
                 .ToListAsync();
+
+            // Calcular IsOnline real: último GPS ping en los últimos 15 min.
+            // Antes el frontend mostraba un punto verde basado en `activo` (= cuenta
+            // no eliminada), lo cual marcaba a TODOS los vendedores como "en línea"
+            // aunque no estuvieran trabajando. Reportado por admin@jeyma.com 2026-05-02.
+            var threshold = DateTime.UtcNow.AddMinutes(-15);
+            var idsList = vendedoresBase.Select(v => v.Id).ToList();
+            var lastPings = await db.UbicacionesVendedor
+                .AsNoTracking()
+                .Where(p => p.TenantId == tenant.TenantId && idsList.Contains(p.UsuarioId))
+                .GroupBy(p => p.UsuarioId)
+                .Select(g => new { UsuarioId = g.Key, UltimoPing = g.Max(p => p.CapturadoEn) })
+                .ToDictionaryAsync(x => x.UsuarioId, x => (DateTime?)x.UltimoPing);
+
+            var vendedores = vendedoresBase.Select(v => new
+            {
+                v.Id,
+                v.Nombre,
+                v.Email,
+                v.Rol,
+                v.Activo,           // estado de cuenta (legacy field, sigue para retrocompat)
+                v.AvatarUrl,
+                IsOnline = lastPings.TryGetValue(v.Id, out var p) && p.HasValue && p.Value >= threshold,
+                UltimoPing = lastPings.TryGetValue(v.Id, out var pp) ? pp : null
+            }).ToList();
 
             return Results.Ok(new { success = true, data = vendedores, count = vendedores.Count });
         })

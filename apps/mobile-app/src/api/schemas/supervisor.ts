@@ -7,6 +7,11 @@ export const VendedorEquipoSchema = z.object({
   rol: z.string(),
   activo: z.boolean(),
   avatarUrl: z.string().nullable().optional(),
+  // isOnline = vendedor con GPS ping en últimos 15 min (real "en línea").
+  // Optional/default false para retrocompat con APKs viejas o si el endpoint
+  // no incluye el campo (graceful degradation a "desconectado").
+  isOnline: z.boolean().optional().default(false),
+  ultimoPing: z.string().datetime().nullable().optional(),
 });
 
 export const SupervisorDashboardSchema = z.object({
