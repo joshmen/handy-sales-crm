@@ -15,13 +15,33 @@ import type { TenantCobroListItem } from '@/api/schemas/supervisor';
  * del día con label del vendedor que los registró. Misma lógica que
  * AdminTenantPedidosList pero para cobros.
  */
+type Preset = 'hoy' | 'ayer' | '7d' | '30d';
+
+function getAyerIsoLocal(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function AdminTenantCobrosListContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [preset, setPreset] = useState<Preset>('hoy');
   const { money: formatMoney } = useTenantLocale();
 
-  const { data, isLoading, refetch } = useTenantCobros({ enabled: true, pageSize: 50 });
+  const queryOpts = preset === '7d'
+    ? { rango: '7d' as const }
+    : preset === '30d'
+      ? { rango: '30d' as const }
+      : preset === 'ayer'
+        ? { dia: getAyerIsoLocal() }
+        : {};
+
+  const { data, isLoading, refetch } = useTenantCobros({ enabled: true, pageSize: 50, ...queryOpts });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -73,6 +93,18 @@ function AdminTenantCobrosListContent() {
   }
 
   const cobros = data?.data ?? [];
+  const labelByPreset: Record<Preset, string> = {
+    hoy: 'Cobros hoy',
+    ayer: 'Cobros ayer',
+    '7d': 'Cobros últimos 7 días',
+    '30d': 'Cobros últimos 30 días',
+  };
+  const emptyLabelByPreset: Record<Preset, string> = {
+    hoy: 'Sin cobros hoy',
+    ayer: 'Sin cobros ayer',
+    '7d': 'Sin cobros en últimos 7 días',
+    '30d': 'Sin cobros en últimos 30 días',
+  };
 
   return (
     <FlatList
@@ -82,17 +114,37 @@ function AdminTenantCobrosListContent() {
       renderItem={renderItem}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       ListHeaderComponent={
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Cobros hoy</Text>
-          <Text style={styles.headerSubtitle}>
-            {data?.total ?? 0} {(data?.total ?? 0) === 1 ? 'cobro' : 'cobros'} en toda la empresa
-          </Text>
+        <View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{labelByPreset[preset]}</Text>
+            <Text style={styles.headerSubtitle}>
+              {data?.total ?? 0} {(data?.total ?? 0) === 1 ? 'cobro' : 'cobros'} en toda la empresa
+            </Text>
+          </View>
+          <View style={styles.presetRow}>
+            {(['hoy', 'ayer', '7d', '30d'] as const).map((pset) => {
+              const labelShort = pset === 'hoy' ? 'Hoy' : pset === 'ayer' ? 'Ayer' : pset === '7d' ? '7 días' : '30 días';
+              const active = preset === pset;
+              return (
+                <TouchableOpacity
+                  key={pset}
+                  onPress={() => setPreset(pset)}
+                  style={[styles.presetBtn, active && styles.presetBtnActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Mostrar ${labelShort}`}
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.presetText, active && styles.presetTextActive]}>{labelShort}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       }
       ListEmptyComponent={
         <View style={[styles.center, { paddingTop: 60 }]}>
           <Wallet size={48} color={COLORS.textTertiary} />
-          <Text style={styles.emptyTitle}>Sin cobros hoy</Text>
+          <Text style={styles.emptyTitle}>{emptyLabelByPreset[preset]}</Text>
           <Text style={styles.emptyHint}>Cuando los vendedores registren cobros aparecerán aquí.</Text>
         </View>
       }
@@ -106,6 +158,29 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingVertical: 12 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: COLORS.foreground },
   headerSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 4 },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  presetBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    minHeight: 44, // WCAG 2.5.5 touch target mínimo
+    justifyContent: 'center',
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  presetBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  presetText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
+  presetTextActive: { color: '#ffffff' },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

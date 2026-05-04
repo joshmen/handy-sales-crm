@@ -147,10 +147,13 @@ function VendedorDetalleContent() {
           </View>
           <Text style={styles.profileName}>{vendedor.nombre}</Text>
           <Text style={styles.profileEmail}>{vendedor.email}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: vendedor.activo ? '#dcfce7' : '#f1f5f9' }]}>
-            <View style={[styles.statusDotSmall, { backgroundColor: vendedor.activo ? '#22c55e' : '#ef4444' }]} />
-            <Text style={[styles.statusText, { color: vendedor.activo ? '#16a34a' : '#dc2626' }]}>
-              {vendedor.activo ? 'Activo' : 'Inactivo'}
+          {/* Badge usa isOnline (GPS ping últimos 15 min), NO activo (estado
+              de cuenta). Reportado admin@jeyma.com 2026-05-04: badge decía
+              "Activo" siempre aunque vendedor no estuviera trabajando. */}
+          <View style={[styles.statusBadge, { backgroundColor: vendedor.isOnline ? '#dcfce7' : '#f1f5f9' }]}>
+            <View style={[styles.statusDotSmall, { backgroundColor: vendedor.isOnline ? '#22c55e' : '#94a3b8' }]} />
+            <Text style={[styles.statusText, { color: vendedor.isOnline ? '#16a34a' : '#64748b' }]}>
+              {vendedor.isOnline ? 'En línea' : 'Desconectado'}
             </Text>
           </View>
         </View>

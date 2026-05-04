@@ -60,23 +60,36 @@ export function useTenantResumen(enabled: boolean) {
 }
 
 /**
- * Admin/Supervisor — lista paginada de pedidos del tenant del día.
- * Solo enabled cuando user es admin/supervisor — vendedores siguen viendo
- * su lista offline (WatermelonDB).
+ * Admin/Supervisor — lista paginada de pedidos del tenant.
+ * - sin opts.dia ni opts.rango: hoy (default)
+ * - opts.dia=YYYY-MM-DD: día específico (ayer)
+ * - opts.rango='7d'|'30d': últimos 7 o 30 días
  */
-export function useTenantPedidos(opts: { dia?: string; page?: number; pageSize?: number; enabled: boolean }) {
+export function useTenantPedidos(opts: {
+  dia?: string;
+  rango?: '7d' | '30d';
+  page?: number;
+  pageSize?: number;
+  enabled: boolean;
+}) {
   return useQuery({
-    queryKey: ['supervisor', 'pedidos', opts.dia ?? 'hoy', opts.page ?? 1, opts.pageSize ?? 20],
-    queryFn: () => supervisorApi.getTenantPedidos({ dia: opts.dia, page: opts.page, pageSize: opts.pageSize }),
+    queryKey: ['supervisor', 'pedidos', opts.rango ?? opts.dia ?? 'hoy', opts.page ?? 1, opts.pageSize ?? 20],
+    queryFn: () => supervisorApi.getTenantPedidos({ dia: opts.dia, rango: opts.rango, page: opts.page, pageSize: opts.pageSize }),
     enabled: opts.enabled,
     staleTime: 30_000,
   });
 }
 
-export function useTenantCobros(opts: { dia?: string; page?: number; pageSize?: number; enabled: boolean }) {
+export function useTenantCobros(opts: {
+  dia?: string;
+  rango?: '7d' | '30d';
+  page?: number;
+  pageSize?: number;
+  enabled: boolean;
+}) {
   return useQuery({
-    queryKey: ['supervisor', 'cobros', opts.dia ?? 'hoy', opts.page ?? 1, opts.pageSize ?? 20],
-    queryFn: () => supervisorApi.getTenantCobros({ dia: opts.dia, page: opts.page, pageSize: opts.pageSize }),
+    queryKey: ['supervisor', 'cobros', opts.rango ?? opts.dia ?? 'hoy', opts.page ?? 1, opts.pageSize ?? 20],
+    queryFn: () => supervisorApi.getTenantCobros({ dia: opts.dia, rango: opts.rango, page: opts.page, pageSize: opts.pageSize }),
     enabled: opts.enabled,
     staleTime: 30_000,
   });

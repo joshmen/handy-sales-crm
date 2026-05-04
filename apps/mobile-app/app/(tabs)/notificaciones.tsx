@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import { notificationStore, type StoredNotification } from '@/services/notificationStore';
+import Toast from 'react-native-toast-message';
 
 // ---------------------------------------------------------------------------
 // Relative time helper
@@ -70,7 +71,10 @@ function getDeepLinkForStoredNotification(n: StoredNotification): string | null 
     case 'goal.achieved':
       return '/(tabs)';
     case 'announcement':
-      return null; // Already on this screen
+      // Reportado admin@jeyma.com 2026-05-04: tap en notif de anuncio no
+      // hacía nada. Antes esto retornaba null asumiendo "ya estás en este
+      // screen", pero notificaciones es un screen distinto al de anuncios.
+      return '/(tabs)/anuncios';
     case 'route.published':
     case 'visit.reminder':
       return '/(tabs)/ruta';
@@ -117,6 +121,17 @@ function NotificacionesContent() {
     const deepLink = getDeepLinkForStoredNotification(item);
     if (deepLink) {
       router.push(deepLink as any);
+    } else {
+      // Fallback: tipo de notificación sin destino mapeado. Reportado
+      // admin@jeyma.com 2026-05-04: tap silencioso confundía al user.
+      // Texto neutral: el user puede pensar "error de navegación" si decimos
+      // "no tiene detalle". Mejor "solo informativa" — no es error, es by design.
+      Toast.show({
+        type: 'info',
+        text1: item.title || 'Notificación',
+        text2: item.body || 'Notificación solo informativa',
+        visibilityTime: 4000,
+      });
     }
   }, [router]);
 

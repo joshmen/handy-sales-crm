@@ -148,13 +148,16 @@ export const supervisorApi = {
     return validated.data;
   },
 
-  // Admin/Supervisor — lista paginada de pedidos del tenant del día.
-  // Reportado admin@jeyma.com 2026-05-04: tab Vender vacío para admin.
+  // Admin/Supervisor — lista paginada de pedidos del tenant.
+  // - sin params: hoy (default)
+  // - dia: día específico (ayer)
+  // - rango: 7d|30d (admin@jeyma.com 2026-05-04 pidió ver histórico)
   getTenantPedidos: async (
-    opts?: { dia?: string; page?: number; pageSize?: number }
+    opts?: { dia?: string; rango?: '7d' | '30d'; page?: number; pageSize?: number }
   ): Promise<TenantPedidosPage> => {
     const params = new URLSearchParams();
-    if (opts?.dia) params.set('dia', opts.dia);
+    if (opts?.rango) params.set('rango', opts.rango);
+    else if (opts?.dia) params.set('dia', opts.dia);
     if (opts?.page) params.set('page', String(opts.page));
     if (opts?.pageSize) params.set('pageSize', String(opts.pageSize));
     const qs = params.toString() ? `?${params.toString()}` : '';
@@ -170,10 +173,11 @@ export const supervisorApi = {
   },
 
   getTenantCobros: async (
-    opts?: { dia?: string; page?: number; pageSize?: number }
+    opts?: { dia?: string; rango?: '7d' | '30d'; page?: number; pageSize?: number }
   ): Promise<TenantCobrosPage> => {
     const params = new URLSearchParams();
-    if (opts?.dia) params.set('dia', opts.dia);
+    if (opts?.rango) params.set('rango', opts.rango);
+    else if (opts?.dia) params.set('dia', opts.dia);
     if (opts?.page) params.set('page', String(opts.page));
     if (opts?.pageSize) params.set('pageSize', String(opts.pageSize));
     const qs = params.toString() ? `?${params.toString()}` : '';
