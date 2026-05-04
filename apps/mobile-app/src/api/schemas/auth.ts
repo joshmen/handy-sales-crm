@@ -9,6 +9,13 @@ export const AuthUserSchema = z
     avatarUrl: z.string().nullable().optional(),
     tenantName: z.string().nullable().optional(),
     tenantLogo: z.string().nullable().optional(),
+    /**
+     * True cuando el usuario fue creado por admin con password temporal
+     * (vendedor de campo sin email) y debe cambiar contraseña en su primer
+     * login. AuthGate (`app/_layout.tsx`) fuerza navegación a
+     * `/(auth)/cambiar-password` antes de cualquier otra pantalla.
+     */
+    mustChangePassword: z.boolean().optional().default(false),
   })
   .passthrough();
 

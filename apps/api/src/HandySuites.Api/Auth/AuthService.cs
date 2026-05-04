@@ -776,7 +776,8 @@ public class AuthService
                 email = usuario.Email,
                 name = usuario.Nombre,
                 role = usuario.Rol,
-                onboardingCompleted
+                onboardingCompleted,
+                mustChangePassword = usuario.MustChangePassword
             },
             token = token,
             refreshToken = plainRefreshToken
@@ -862,7 +863,8 @@ public class AuthService
                 id = tokenEntity.Usuario.Id.ToString(),
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
-                role = tokenEntity.Usuario.Rol
+                role = tokenEntity.Usuario.Rol,
+                mustChangePassword = tokenEntity.Usuario.MustChangePassword
             },
             token = newAccessToken,
             refreshToken = newPlainToken

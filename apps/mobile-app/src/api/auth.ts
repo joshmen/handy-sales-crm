@@ -136,6 +136,26 @@ class MobileAuthApi {
     }
     return validated.data;
   }
+
+  /**
+   * Cambia la contraseña del usuario logueado. Se invoca:
+   * - Forzado al primer login si `mustChangePassword=true`
+     (vendedor de campo creado por admin con password temporal).
+   * - Cambio voluntario desde la pantalla de configuración (futuro).
+   *
+   * Backend: revoca refresh tokens del usuario en otros devices al cambiar.
+   */
+  async changePassword(oldPassword: string, newPassword: string): Promise<void> {
+    try {
+      await api.post(`${this.basePath}/change-password`, { oldPassword, newPassword });
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const msg = error.response?.data?.error;
+        if (msg) throw new Error(msg);
+      }
+      throw new Error('No se pudo cambiar la contraseña');
+    }
+  }
 }
 
 export const authApi = new MobileAuthApi();
