@@ -77,14 +77,21 @@ export const supervisorApi = {
     return { data: validated.data, usuarios: validated.usuarios };
   },
 
-  getVendedorResumen: async (vendedorId: number): Promise<VendedorResumen> => {
+  getVendedorResumen: async (
+    vendedorId: number,
+    opts?: { fecha?: string; rango?: '7d' }
+  ): Promise<VendedorResumen> => {
+    const params = new URLSearchParams();
+    if (opts?.rango === '7d') params.set('rango', '7d');
+    else if (opts?.fecha) params.set('fecha', opts.fecha);
+    const qs = params.toString() ? `?${params.toString()}` : '';
     const { data } = await api.get<ApiResponse<VendedorResumen>>(
-      `${BASE}/vendedor/${vendedorId}/resumen`
+      `${BASE}/vendedor/${vendedorId}/resumen${qs}`
     );
     const validated = validateResponse(
       VendedorResumenResponseSchema,
       data,
-      `GET /api/mobile/supervisor/vendedor/${vendedorId}/resumen`
+      `GET /api/mobile/supervisor/vendedor/${vendedorId}/resumen${qs}`
     );
     return validated.data;
   },

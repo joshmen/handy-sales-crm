@@ -357,9 +357,14 @@ public static class MobileSupervisorEndpoints
         .WithDescription("Feed de actividad reciente del equipo hoy: pedidos, visitas, cobros.")
         .Produces<object>(StatusCodes.Status200OK);
 
-        // GET /api/mobile/supervisor/vendedor/{id}/resumen
+        // GET /api/mobile/supervisor/vendedor/{id}/resumen?fecha=YYYY-MM-DD&rango=7d
+        // - Sin params → resumen del día actual (TZ tenant)
+        // - ?fecha=YYYY-MM-DD → resumen de ese día específico (TZ tenant)
+        // - ?rango=7d → array `dias[]` con desglose de últimos 7 días
         group.MapGet("/vendedor/{id:int}/resumen", async (
             int id,
+            string? fecha,
+            string? rango,
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
@@ -367,31 +372,29 @@ public static class MobileSupervisorEndpoints
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
-            // Calcular el rango UTC [startUtc, endUtc) que corresponde al "día
-            // local actual del tenant". Sin esto, `FechaPedido.Date == UtcNow.Date`
-            // excluía pedidos del día local cuando el tenant está en TZ negativa
-            // (ej: Jeyma Mazatlan UTC-7: a las 7pm local ya es día siguiente UTC).
-            // Reportado prod 2026-05-02 testeando admin@jeyma.com.
+
+            // Resolver TZ del tenant (Mazatlan, CDMX, etc.) — Reportado prod
+            // 2026-05-02 admin@jeyma.com: filtros UTC excluían pedidos del día
+            // local en TZ negativa.
             var tenantTz = await db.CompanySettings
                 .AsNoTracking()
                 .Where(cs => cs.TenantId == tenant.TenantId)
                 .Select(cs => cs.Timezone)
                 .FirstOrDefaultAsync() ?? "America/Mexico_City";
-            DateTime startUtc, endUtc;
-            try
+
+            TimeZoneInfo tzInfo;
+            try { tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz); }
+            catch { tzInfo = TimeZoneInfo.Utc; }
+
+            // Helper: dado un día local (sin hora), retorna (startUtc, endUtc)
+            // del rango [día 00:00 local, día siguiente 00:00 local).
+            (DateTime, DateTime) RangoUtcDeDiaLocal(DateTime localDay)
             {
-                var tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz);
-                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
-                var localDayStart = DateTime.SpecifyKind(localNow.Date, DateTimeKind.Unspecified);
+                var localDayStart = DateTime.SpecifyKind(localDay.Date, DateTimeKind.Unspecified);
                 var localDayEnd = localDayStart.AddDays(1);
-                startUtc = TimeZoneInfo.ConvertTimeToUtc(localDayStart, tzInfo);
-                endUtc = TimeZoneInfo.ConvertTimeToUtc(localDayEnd, tzInfo);
-            }
-            catch
-            {
-                // Fallback: día UTC tradicional si TZ inválido (no debería pasar).
-                startUtc = DateTime.UtcNow.Date;
-                endUtc = startUtc.AddDays(1);
+                var sUtc = TimeZoneInfo.ConvertTimeToUtc(localDayStart, tzInfo);
+                var eUtc = TimeZoneInfo.ConvertTimeToUtc(localDayEnd, tzInfo);
+                return (sUtc, eUtc);
             }
 
             // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
@@ -410,7 +413,112 @@ public static class MobileSupervisorEndpoints
             if (vendedor == null)
                 return Results.NotFound(new { success = false, message = "Vendedor no encontrado o no pertenece a tu equipo" });
 
-            var pedidosHoy = await db.Pedidos
+            var totalClientes = await db.Clientes
+                .AsNoTracking()
+                .Where(c => c.VendedorId == id
+                         && c.TenantId == tenant.TenantId
+                         && c.EliminadoEn == null)
+                .CountAsync();
+
+            // Última ubicación (no depende de fecha)
+            var ultimaUbicacion = await db.ClienteVisitas
+                .AsNoTracking()
+                .Include(v => v.Cliente)
+                .Where(v => v.UsuarioId == id
+                         && v.TenantId == tenant.TenantId
+                         && v.LatitudInicio != null
+                         && v.LongitudInicio != null)
+                .OrderByDescending(v => v.FechaHoraInicio)
+                .Select(v => new
+                {
+                    latitud = v.LatitudInicio!.Value,
+                    longitud = v.LongitudInicio!.Value,
+                    fecha = v.FechaHoraInicio,
+                    clienteNombre = v.Cliente!.Nombre
+                })
+                .FirstOrDefaultAsync();
+
+            // ── Modo `?rango=7d`: array de últimos 7 días ──
+            if (rango == "7d")
+            {
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+                var hoyLocal = localNow.Date;
+
+                // Calcular ventana de 7 días [hoy-6, hoy+1) en UTC
+                var (rangoStartUtc, _) = RangoUtcDeDiaLocal(hoyLocal.AddDays(-6));
+                var (_, rangoEndUtc) = RangoUtcDeDiaLocal(hoyLocal);
+
+                // Pull de pedidos / cobros / visitas del rango completo
+                var pedidosRango = await db.Pedidos.AsNoTracking()
+                    .Where(p => p.UsuarioId == id && p.TenantId == tenant.TenantId
+                             && p.FechaPedido >= rangoStartUtc && p.FechaPedido < rangoEndUtc
+                             && p.Activo)
+                    .Select(p => new { p.FechaPedido, p.Total })
+                    .ToListAsync();
+                var cobrosRango = await db.Cobros.AsNoTracking()
+                    .Where(c => c.UsuarioId == id && c.TenantId == tenant.TenantId
+                             && c.FechaCobro >= rangoStartUtc && c.FechaCobro < rangoEndUtc
+                             && c.Activo)
+                    .Select(c => new { c.FechaCobro, c.Monto })
+                    .ToListAsync();
+                var visitasRango = await db.ClienteVisitas.AsNoTracking()
+                    .Where(v => v.UsuarioId == id && v.TenantId == tenant.TenantId
+                             && v.FechaHoraInicio != null
+                             && v.FechaHoraInicio >= rangoStartUtc && v.FechaHoraInicio < rangoEndUtc
+                             && v.EliminadoEn == null)
+                    .Select(v => new { v.FechaHoraInicio, v.FechaHoraFin })
+                    .ToListAsync();
+
+                // Agrupar por día local del tenant
+                var dias = new List<object>();
+                for (int i = 0; i < 7; i++)
+                {
+                    var dia = hoyLocal.AddDays(-i);
+                    var (dStart, dEnd) = RangoUtcDeDiaLocal(dia);
+                    var pedidosDia = pedidosRango.Where(p => p.FechaPedido >= dStart && p.FechaPedido < dEnd).ToList();
+                    var cobrosDia = cobrosRango.Where(c => c.FechaCobro >= dStart && c.FechaCobro < dEnd).ToList();
+                    var visitasDia = visitasRango.Where(v => v.FechaHoraInicio >= dStart && v.FechaHoraInicio < dEnd).ToList();
+                    dias.Add(new
+                    {
+                        fecha = dia.ToString("yyyy-MM-dd"),
+                        pedidos = pedidosDia.Count,
+                        ventas = pedidosDia.Sum(p => p.Total),
+                        cobros = cobrosDia.Sum(c => c.Monto),
+                        visitas = visitasDia.Count,
+                        visitasCompletadas = visitasDia.Count(v => v.FechaHoraFin != null)
+                    });
+                }
+
+                return Results.Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        vendedor,
+                        rango = "7d",
+                        hoy = (object?)null,
+                        dias,
+                        totalClientes,
+                        ultimaUbicacion
+                    }
+                });
+            }
+
+            // ── Modo single-day (default = hoy, o ?fecha=YYYY-MM-DD) ──
+            DateTime diaLocal;
+            if (!string.IsNullOrEmpty(fecha) && DateTime.TryParseExact(fecha, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
+            {
+                diaLocal = fParsed;
+            }
+            else
+            {
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+                diaLocal = localNow.Date;
+            }
+
+            var (startUtc, endUtc) = RangoUtcDeDiaLocal(diaLocal);
+
+            var pedidosCount = await db.Pedidos
                 .AsNoTracking()
                 .Where(p => p.UsuarioId == id
                          && p.TenantId == tenant.TenantId
@@ -418,7 +526,7 @@ public static class MobileSupervisorEndpoints
                          && p.Activo)
                 .CountAsync();
 
-            var ventasHoy = await db.Pedidos
+            var ventasTotal = await db.Pedidos
                 .AsNoTracking()
                 .Where(p => p.UsuarioId == id
                          && p.TenantId == tenant.TenantId
@@ -426,7 +534,7 @@ public static class MobileSupervisorEndpoints
                          && p.Activo)
                 .SumAsync(p => (decimal?)p.Total) ?? 0;
 
-            var visitasHoy = await db.ClienteVisitas
+            var visitasCount = await db.ClienteVisitas
                 .AsNoTracking()
                 .Where(v => v.UsuarioId == id
                          && v.TenantId == tenant.TenantId
@@ -445,7 +553,7 @@ public static class MobileSupervisorEndpoints
                          && v.EliminadoEn == null)
                 .CountAsync();
 
-            var cobrosHoy = await db.Cobros
+            var cobrosTotal = await db.Cobros
                 .AsNoTracking()
                 .Where(c => c.UsuarioId == id
                          && c.TenantId == tenant.TenantId
@@ -453,45 +561,23 @@ public static class MobileSupervisorEndpoints
                          && c.Activo)
                 .SumAsync(c => (decimal?)c.Monto) ?? 0;
 
-            var totalClientes = await db.Clientes
-                .AsNoTracking()
-                .Where(c => c.VendedorId == id
-                         && c.TenantId == tenant.TenantId
-                         && c.EliminadoEn == null)
-                .CountAsync();
-
-            // Last known location
-            var ultimaUbicacion = await db.ClienteVisitas
-                .AsNoTracking()
-                .Include(v => v.Cliente)
-                .Where(v => v.UsuarioId == id
-                         && v.TenantId == tenant.TenantId
-                         && v.LatitudInicio != null
-                         && v.LongitudInicio != null)
-                .OrderByDescending(v => v.FechaHoraInicio)
-                .Select(v => new
-                {
-                    latitud = v.LatitudInicio!.Value,
-                    longitud = v.LongitudInicio!.Value,
-                    fecha = v.FechaHoraInicio,
-                    clienteNombre = v.Cliente!.Nombre
-                })
-                .FirstOrDefaultAsync();
-
             return Results.Ok(new
             {
                 success = true,
                 data = new
                 {
                     vendedor,
+                    rango = "dia",
+                    fecha = diaLocal.ToString("yyyy-MM-dd"),
                     hoy = new
                     {
-                        pedidos = pedidosHoy,
-                        ventas = ventasHoy,
-                        visitas = visitasHoy,
+                        pedidos = pedidosCount,
+                        ventas = ventasTotal,
+                        visitas = visitasCount,
                         visitasCompletadas,
-                        cobros = cobrosHoy
+                        cobros = cobrosTotal
                     },
+                    dias = (object?)null,
                     totalClientes,
                     ultimaUbicacion
                 }
