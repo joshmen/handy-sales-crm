@@ -11,7 +11,13 @@ export const VendedorEquipoSchema = z.object({
   // Optional/default false para retrocompat con APKs viejas o si el endpoint
   // no incluye el campo (graceful degradation a "desconectado").
   isOnline: z.boolean().optional().default(false),
-  ultimoPing: z.string().datetime().nullable().optional(),
+  // Backend serializa con .NET DateTime ToString("o"): formato
+  // "2026-05-04T00:59:18.3231698+00:00" (7 decimales, offset, sin Z).
+  // zod `.datetime()` por defecto rechaza offsets y +7 decimales — causaba
+  // "Invalid ISO datetime" en prod (admin@jeyma.com 2026-05-04 reportó tab
+  // Equipo cargando infinito). No validamos el formato — el backend es la
+  // fuente de verdad y el frontend solo lo muestra/parsea con new Date().
+  ultimoPing: z.string().nullable().optional(),
 });
 
 export const SupervisorDashboardSchema = z.object({
