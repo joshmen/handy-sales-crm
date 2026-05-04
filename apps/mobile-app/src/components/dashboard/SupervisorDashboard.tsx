@@ -154,24 +154,33 @@ export function SupervisorDashboard() {
 }
 
 function VendedorCard({ vendedor, onPress }: { vendedor: VendedorEquipo; onPress: () => void }) {
-  const initials = vendedor.nombre
-    .split(' ')
-    .filter(Boolean)
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const fallbackColor = vendedor.rol === 'SUPERVISOR' ? '#d97706' : '#16a34a';
 
   return (
-    <TouchableOpacity style={styles.vendedorCard} onPress={onPress} activeOpacity={0.85}>
-      <View style={styles.vendedorAvatar}>
-        <Text style={styles.vendedorAvatarText}>{initials}</Text>
-      </View>
+    <TouchableOpacity
+      style={styles.vendedorCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${vendedor.nombre}, ${vendedor.isOnline ? 'En línea' : 'Desconectado'}`}
+    >
+      <UserAvatar
+        name={vendedor.nombre}
+        avatarUrl={vendedor.avatarUrl}
+        size={40}
+        fallbackBgColor={fallbackColor}
+        fallbackTextColor="#ffffff"
+        style={{ marginRight: 12 }}
+      />
       <View style={styles.vendedorInfo}>
         <Text style={styles.vendedorName}>{vendedor.nombre}</Text>
         <Text style={styles.vendedorEmail}>{vendedor.email}</Text>
       </View>
-      <View style={[styles.statusDot, { backgroundColor: vendedor.activo ? '#22c55e' : '#ef4444' }]} />
+      {/* Dot verde = "En línea" (GPS ping <15min). Antes usábamos `vendedor.activo`
+          pero eso es estado de cuenta, no presencia real (creaba inconsistencia
+          con AdminDashboard que ya usa isOnline). Reportado por validator
+          frontend-ui-ux 2026-05-04. */}
+      <View style={[styles.statusDot, { backgroundColor: vendedor.isOnline ? '#22c55e' : '#94a3b8' }]} />
     </TouchableOpacity>
   );
 }

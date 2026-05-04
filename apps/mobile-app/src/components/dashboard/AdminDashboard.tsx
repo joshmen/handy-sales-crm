@@ -184,13 +184,10 @@ export function AdminDashboard() {
 }
 
 function PersonCard({ person, onPress }: { person: VendedorEquipo; onPress: () => void }) {
-  const initials = person.nombre
-    .split(' ')
-    .filter(Boolean)
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  // Color del avatar según rol (cuando no tiene foto). Mantiene la jerarquía
+  // visual del web (supervisor naranja, vendedor verde) — espejo de
+  // ROLE_COLORS en profile.tsx.
+  const fallbackColor = person.rol === 'SUPERVISOR' ? '#d97706' : '#16a34a';
 
   return (
     <TouchableOpacity
@@ -200,9 +197,14 @@ function PersonCard({ person, onPress }: { person: VendedorEquipo; onPress: () =
       accessibilityLabel={`${person.nombre}, ${person.isOnline ? 'En línea' : 'Desconectado'}`}
       accessibilityRole="button"
     >
-      <View style={styles.personAvatar}>
-        <Text style={styles.personAvatarText}>{initials}</Text>
-      </View>
+      <UserAvatar
+        name={person.nombre}
+        avatarUrl={person.avatarUrl}
+        size={40}
+        fallbackBgColor={fallbackColor}
+        fallbackTextColor="#ffffff"
+        style={{ marginRight: 12 }}
+      />
       <View style={styles.personInfo}>
         <Text style={styles.personName}>{person.nombre}</Text>
         <Text style={styles.personEmail}>{person.email}</Text>

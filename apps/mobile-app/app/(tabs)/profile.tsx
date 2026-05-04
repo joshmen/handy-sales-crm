@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
-import { useLogout, useUnreadNotificationCount } from '@/hooks';
-import { Card, Button, Badge, ConfirmModal, UserAvatar } from '@/components/ui';
-import { Mail, Shield, Building2, Smartphone, ChevronLeft, Bell, ChevronRight } from 'lucide-react-native';
+import { useLogout, useUnreadNotificationCount, useUploadAvatar, useDeleteAvatar } from '@/hooks';
+import { Card, Button, Badge, ConfirmModal, UserAvatar, BottomSheet } from '@/components/ui';
+import { Mail, Shield, Building2, Smartphone, ChevronLeft, Bell, ChevronRight, Camera, Image as ImageIcon, Trash2 } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
@@ -31,10 +31,29 @@ export default function ProfileScreen() {
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
   const { count: unreadNotifs } = useUnreadNotificationCount();
+  const uploadAvatar = useUploadAvatar();
+  const deleteAvatar = useDeleteAvatar();
   const [showLogout, setShowLogout] = useState(false);
+  const [showAvatarSheet, setShowAvatarSheet] = useState(false);
 
   const handleLogout = () => {
     setShowLogout(true);
+  };
+
+  const isAvatarBusy = uploadAvatar.isPending || deleteAvatar.isPending;
+  const closeAvatarSheet = () => setShowAvatarSheet(false);
+
+  const handleTakePhoto = () => {
+    closeAvatarSheet();
+    uploadAvatar.mutate('camera');
+  };
+  const handlePickGallery = () => {
+    closeAvatarSheet();
+    uploadAvatar.mutate('gallery');
+  };
+  const handleRemovePhoto = () => {
+    closeAvatarSheet();
+    deleteAvatar.mutate();
   };
 
   if (!user) return null;
@@ -55,18 +74,40 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Overlapping avatar + profile info — usa UserAvatar centralizado para
-          que la foto de perfil cambiada desde web aparezca aquí (vía useMe). */}
+      {/* Overlapping avatar + profile info — tap al avatar abre el sheet de
+          cambio de foto. UserAvatar mismo es el componente compartido (mismo
+          render que aparece en web). El sync hacia web ocurre vía Cloudinary
+          + useProfile en web. */}
       <Animated.View entering={FadeInDown.duration(400)} style={styles.profileHeader}>
-        <View style={styles.avatarLargeWrap}>
-          <UserAvatar
-            name={user.name}
-            avatarUrl={user.avatarUrl}
-            size={80}
-            badgeRingColor={COLORS.card}
-            testID="profile-avatar-large"
-          />
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowAvatarSheet(true)}
+          disabled={isAvatarBusy}
+          accessibilityRole="button"
+          accessibilityLabel="Cambiar foto de perfil"
+          testID="profile-avatar-tap"
+        >
+          <View style={styles.avatarLargeWrap}>
+            <UserAvatar
+              name={user.name}
+              avatarUrl={user.avatarUrl}
+              size={80}
+              badgeRingColor={COLORS.card}
+              cacheKey={user.avatarUrl ? Date.now() : undefined}
+              testID="profile-avatar-large"
+            />
+            {/* Camera affordance badge — señaliza que el avatar es tappable.
+                Patrón espejo del WhatsApp/Telegram para edit profile photo. */}
+            <View style={styles.avatarEditBadge} pointerEvents="none">
+              <Camera size={12} color={COLORS.foreground} />
+            </View>
+            {isAvatarBusy && (
+              <View style={styles.avatarLoadingOverlay} pointerEvents="none">
+                <ActivityIndicator color="#ffffff" />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
         <Text style={styles.userName}>{user.name}</Text>
         <View style={styles.emailRow}>
           <Mail size={13} color={COLORS.textTertiary} />
@@ -186,6 +227,64 @@ export default function ProfileScreen() {
       onConfirm={() => { setShowLogout(false); logoutMutation.mutate(); }}
       onCancel={() => setShowLogout(false)}
     />
+
+    <BottomSheet
+      visible={showAvatarSheet}
+      title="Foto de perfil"
+      subtitle="Elige cómo quieres cambiar tu foto"
+      onClose={closeAvatarSheet}
+    >
+      <View style={styles.avatarSheetOptions}>
+        <TouchableOpacity
+          style={styles.avatarSheetCard}
+          onPress={handleTakePhoto}
+          activeOpacity={0.85}
+          accessibilityLabel="Tomar foto"
+          accessibilityRole="button"
+          testID="avatar-sheet-camera"
+        >
+          <Camera size={22} color="#6b7280" />
+          <View style={styles.avatarSheetInfo}>
+            <Text style={styles.avatarSheetTitle}>Tomar foto</Text>
+            <Text style={styles.avatarSheetDesc}>Usar la cámara para tomar una nueva foto</Text>
+          </View>
+          <ChevronRight size={18} color={COLORS.textTertiary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.avatarSheetCard}
+          onPress={handlePickGallery}
+          activeOpacity={0.85}
+          accessibilityLabel="Elegir de galería"
+          accessibilityRole="button"
+          testID="avatar-sheet-gallery"
+        >
+          <ImageIcon size={22} color="#6b7280" />
+          <View style={styles.avatarSheetInfo}>
+            <Text style={styles.avatarSheetTitle}>Elegir de galería</Text>
+            <Text style={styles.avatarSheetDesc}>Seleccionar una foto guardada en tu dispositivo</Text>
+          </View>
+          <ChevronRight size={18} color={COLORS.textTertiary} />
+        </TouchableOpacity>
+
+        {user.avatarUrl && (
+          <TouchableOpacity
+            style={[styles.avatarSheetCard, styles.avatarSheetCardDanger]}
+            onPress={handleRemovePhoto}
+            activeOpacity={0.85}
+            accessibilityLabel="Quitar foto actual"
+            accessibilityRole="button"
+            testID="avatar-sheet-delete"
+          >
+            <Trash2 size={22} color="#dc2626" />
+            <View style={styles.avatarSheetInfo}>
+              <Text style={[styles.avatarSheetTitle, { color: '#dc2626' }]}>Quitar foto</Text>
+              <Text style={styles.avatarSheetDesc}>Volver a las iniciales como avatar</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+    </BottomSheet>
     </>
   );
 }
@@ -221,6 +320,47 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
+  avatarLoadingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 48,
+    // 0.55 alcanza el 3:1 de contraste WCAG 1.4.11 para el spinner blanco
+    // sobre cualquier avatar/iniciales (validado por frontend-ui-ux-validator).
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarSheetOptions: { gap: 12 },
+  avatarSheetCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 14,
+  },
+  avatarSheetCardDanger: {
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+  },
+  avatarSheetInfo: { flex: 1 },
+  avatarSheetTitle: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  avatarSheetDesc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   notifIconWrap: {
     width: 28,
     height: 28,
