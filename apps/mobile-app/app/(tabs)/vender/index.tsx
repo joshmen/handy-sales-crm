@@ -7,19 +7,19 @@ import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, Sty
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
-import { useEmpresa } from '@/hooks/useEmpresa';
-import { useAuthStore, useOrderDraftStore } from '@/stores';
-import { Card, LoadingSpinner, EmptyState, BottomSheet } from '@/components/ui';
+import { useAuthStore } from '@/stores';
+import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
-import { ShoppingCart, ChevronRight, Calendar, Plus, ClipboardList, Truck } from 'lucide-react-native';
+import { ShoppingCart, ChevronRight, Calendar, Plus } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import type Pedido from '@/db/models/Pedido';
 import { AdminTenantPedidosList } from '@/components/admin/AdminTenantPedidosList';
+import { useCreateOrderFlow } from '@/hooks/useCreateOrderFlow';
 
 const STATUS_FILTERS = [
   { label: 'Todos', value: undefined },
@@ -56,16 +56,16 @@ function VenderListScreenContent() {
 }
 
 // Vista vendedor regular — flujo original con WatermelonDB local + filtros
-// + BottomSheet + FAB. NO hace fetch al API supervisor.
+// + FAB que dispara `useCreateOrderFlow`. NO hace fetch al API supervisor.
 function VenderVendedorContent() {
   const insets = useSafeAreaInsets();
   const { money: formatCurrency, date: formatDate } = useTenantLocale();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
-  const [showOrderTypeSheet, setShowOrderTypeSheet] = useState(false);
   const router = useRouter();
-  const { setTipoVenta, reset: resetDraft } = useOrderDraftStore();
-  const { data: empresa } = useEmpresa();
-  const modoDefault = empresa?.modoVentaDefault ?? 'Preguntar';
+
+  // Hook compartido con VendedorDashboard (Hoy) y mapa.tsx — encapsula la
+  // lógica modoVentaDefault + BottomSheet + navegación.
+  const { openCreateOrder, SheetComponent } = useCreateOrderFlow();
 
   const { data: allOrders, isLoading } = useOfflineOrders();
   const clienteIds = useMemo(
@@ -81,27 +81,6 @@ function VenderVendedorContent() {
   }, [allOrders, statusFilter]);
 
   const total = orders.length;
-
-  const handleFabPress = () => {
-    // Si admin configuró un modo default (no "Preguntar"), saltamos el sheet
-    // de selección y vamos directo al picker de cliente con el modo seteado.
-    if (modoDefault === 'Preventa') {
-      handleOrderTypeSelect(0);
-      return;
-    }
-    if (modoDefault === 'VentaDirecta') {
-      handleOrderTypeSelect(1);
-      return;
-    }
-    setShowOrderTypeSheet(true);
-  };
-
-  const handleOrderTypeSelect = (tipo: number) => {
-    setShowOrderTypeSheet(false);
-    resetDraft();
-    setTipoVenta(tipo);
-    router.push('/(tabs)/vender/crear' as any);
-  };
 
   const renderItem = useCallback(
     ({ item }: { item: Pedido }) => (
@@ -213,7 +192,7 @@ function VenderVendedorContent() {
             title="Sin pedidos"
             message="No tienes pedidos registrados"
             actionText="Crear Pedido"
-            onAction={handleFabPress}
+            onAction={() => openCreateOrder()}
           />
         }
       />
@@ -222,7 +201,7 @@ function VenderVendedorContent() {
       <TouchableOpacity
         testID="fab-nuevo-pedido"
         style={styles.fab}
-        onPress={handleFabPress}
+        onPress={() => openCreateOrder()}
         activeOpacity={0.85}
         accessibilityLabel="Nuevo pedido"
         accessibilityRole="button"
@@ -230,44 +209,8 @@ function VenderVendedorContent() {
         <Plus size={24} color={COLORS.headerText} />
       </TouchableOpacity>
 
-      {/* BottomSheet for order type (Supervisor/Admin) */}
-      <BottomSheet
-        visible={showOrderTypeSheet}
-        title="¿Qué tipo de pedido?"
-        subtitle="Selecciona el tipo de venta"
-        onClose={() => setShowOrderTypeSheet(false)}
-      >
-        <View style={styles.orderTypeOptions}>
-          <TouchableOpacity
-            style={styles.orderTypeCard}
-            onPress={() => handleOrderTypeSelect(0)}
-            activeOpacity={0.85}
-            accessibilityLabel="Preventa"
-            accessibilityRole="button"
-          >
-            <ClipboardList size={24} color="#6b7280" />
-            <View style={styles.orderTypeInfo}>
-              <Text style={styles.orderTypeTitle}>Preventa</Text>
-              <Text style={styles.orderTypeDesc}>Registrar pedido para entrega posterior</Text>
-            </View>
-            <ChevronRight size={18} color={COLORS.textTertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.orderTypeCard}
-            onPress={() => handleOrderTypeSelect(1)}
-            activeOpacity={0.85}
-            accessibilityLabel="Venta Directa"
-            accessibilityRole="button"
-          >
-            <Truck size={24} color="#6b7280" />
-            <View style={styles.orderTypeInfo}>
-              <Text style={styles.orderTypeTitle}>Venta Directa</Text>
-              <Text style={styles.orderTypeDesc}>Vender, cobrar y entregar ahora</Text>
-            </View>
-            <ChevronRight size={18} color={COLORS.textTertiary} />
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
+      {/* BottomSheet "Preventa / Venta Directa" — provisto por useCreateOrderFlow */}
+      {SheetComponent}
     </View>
   );
 }
@@ -302,20 +245,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     shadowColor: COLORS.button, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
   },
-  orderTypeOptions: { gap: 12 },
-  orderTypeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 14,
-  },
-  orderTypeInfo: { flex: 1 },
-  orderTypeTitle: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
-  orderTypeDesc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
 });
 
 export default function VenderListScreen() {
