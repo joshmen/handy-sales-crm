@@ -49,30 +49,36 @@ function getPeriodStart(period: PeriodFilter, tz: string): Date | null {
   }
 }
 
+// Vista admin/supervisor — cobros tenant-wide. Componente separado para
+// no violar Rules of Hooks (admin no necesita useOfflineOrders/useOfflineCobros).
+function CobrarAdminContent() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.container}>
+      <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.screenTitle}>Cobros</Text>
+      </View>
+      <AdminTenantCobrosList />
+    </View>
+  );
+}
+
+// Wrapper que decide qué vista renderizar según el rol. Solo un hook.
 function CobrarScreenContent() {
+  const role = useAuthStore(s => s.user?.role);
+  const isAdminOrSupervisor = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
+  if (isAdminOrSupervisor) return <CobrarAdminContent />;
+  return <CobrarVendedorContent />;
+}
+
+// Vista vendedor regular — flujo original con WatermelonDB local + saldos
+// por cliente + filtros de período. No fetcha admin endpoints.
+function CobrarVendedorContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { money: formatCurrency, tz } = useTenantLocale();
   const [refreshing, setRefreshing] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
-  const role = useAuthStore(s => s.user?.role);
-  const isAdminOrSupervisor = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
-
-  // Admin/Supervisor: ver TODOS los cobros del tenant del día.
-  // Reportado admin@jeyma.com 2026-05-04: WatermelonDB local solo sincroniza
-  // cobros del usuario actual; admin no opera en ruta → tab vacío.
-  // Wrapper customHeader + paddingTop: insets.top — alineado con vender/index.tsx
-  // (admin@jeyma.com reportó SafeArea distinto entre Vender y Cobrar).
-  if (isAdminOrSupervisor) {
-    return (
-      <View style={styles.container}>
-        <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.screenTitle}>Cobros</Text>
-        </View>
-        <AdminTenantCobrosList />
-      </View>
-    );
-  }
 
   const { data: pedidos, isLoading: loadingPedidos } = useOfflineOrders();
   const { data: cobros, isLoading: loadingCobros } = useOfflineCobros();
