@@ -33,10 +33,13 @@ export function useActividadEquipo() {
   });
 }
 
-export function useVendedorResumen(vendedorId: number) {
+export function useVendedorResumen(
+  vendedorId: number,
+  opts?: { fecha?: string; rango?: '7d' }
+) {
   return useQuery({
-    queryKey: ['supervisor', 'vendedor', vendedorId],
-    queryFn: () => supervisorApi.getVendedorResumen(vendedorId),
+    queryKey: ['supervisor', 'vendedor', vendedorId, opts?.rango ?? opts?.fecha ?? 'hoy'],
+    queryFn: () => supervisorApi.getVendedorResumen(vendedorId, opts),
     enabled: vendedorId > 0,
   });
 }
@@ -53,5 +56,28 @@ export function useTenantResumen(enabled: boolean) {
     enabled,
     staleTime: 60_000,
     refetchInterval: 120_000,
+  });
+}
+
+/**
+ * Admin/Supervisor — lista paginada de pedidos del tenant del día.
+ * Solo enabled cuando user es admin/supervisor — vendedores siguen viendo
+ * su lista offline (WatermelonDB).
+ */
+export function useTenantPedidos(opts: { dia?: string; page?: number; pageSize?: number; enabled: boolean }) {
+  return useQuery({
+    queryKey: ['supervisor', 'pedidos', opts.dia ?? 'hoy', opts.page ?? 1, opts.pageSize ?? 20],
+    queryFn: () => supervisorApi.getTenantPedidos({ dia: opts.dia, page: opts.page, pageSize: opts.pageSize }),
+    enabled: opts.enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useTenantCobros(opts: { dia?: string; page?: number; pageSize?: number; enabled: boolean }) {
+  return useQuery({
+    queryKey: ['supervisor', 'cobros', opts.dia ?? 'hoy', opts.page ?? 1, opts.pageSize ?? 20],
+    queryFn: () => supervisorApi.getTenantCobros({ dia: opts.dia, page: opts.page, pageSize: opts.pageSize }),
+    enabled: opts.enabled,
+    staleTime: 30_000,
   });
 }

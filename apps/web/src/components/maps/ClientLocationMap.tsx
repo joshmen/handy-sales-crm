@@ -7,7 +7,7 @@ import {
   Marker as GMarker,
   Circle as GCircle,
 } from '@react-google-maps/api';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
@@ -269,11 +269,14 @@ export function ClientLocationMap({
         </GoogleMap>
       </div>
 
-      {/* Status messages */}
+      {/* Status messages — banner amber (warning informativo, no error).
+          El botón Guardar ya no se deshabilita por isOutside (PR #36); el banner
+          es solo orientativo. Reportado por admin@jeyma.com 2026-05-04: el rojo
+          se leía como bloqueante. */}
       {isOutside ? (
-        <p className="text-xs text-red-600 flex items-center gap-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-          {t('clientOutsideZone', { zone: selectedZone?.nombre ?? '' })}
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 flex items-start gap-1.5">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <span>{t('clientOutsideZone', { zone: selectedZone?.nombre ?? '' })}</span>
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">

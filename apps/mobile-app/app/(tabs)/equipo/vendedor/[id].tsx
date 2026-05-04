@@ -8,6 +8,9 @@ import { useVendedorResumen } from '@/hooks/useSupervisor';
 import { useTenantLocale } from '@/hooks';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
+import type { VendedorDiaConFecha } from '@/api/schemas/supervisor';
+
+type Preset = 'hoy' | 'ayer' | '7d';
 
 function StatCard({ label, value, isMoney }: { label: string; value: string | number; isMoney?: boolean }) {
   return (
@@ -28,12 +31,53 @@ function formatTimeAgo(dateStr: string): string {
   return `hace ${Math.floor(hrs / 24)} días`;
 }
 
+function formatDayLabel(fechaIso: string): string {
+  // Devuelve "Lun 28 abr" en español. fechaIso es YYYY-MM-DD del backend
+  // (ya en TZ del tenant), así que se parsea como hora local sin shift.
+  const [y, m, d] = fechaIso.split('-').map(n => parseInt(n, 10));
+  const date = new Date(y, m - 1, d);
+  return new Intl.DateTimeFormat('es-MX', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(date);
+}
+
+function isToday(fechaIso: string): boolean {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
+  // Aproximación — si el server y el cliente discrepan en TZ esto puede fallar.
+  // Aceptable para destacar visualmente "hoy" en la lista.
+  return fechaIso === today;
+}
+
+/**
+ * Calcula la fecha de "ayer" en formato YYYY-MM-DD usando la TZ local del
+ * device. El backend ignora horas y solo lee el string de fecha, así que
+ * aproximación es OK para el preset "Ayer".
+ */
+function getAyerIsoLocal(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function VendedorDetalleContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const vendedorId = parseInt(id, 10);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId);
+  const [preset, setPreset] = useState<Preset>('hoy');
+
+  const queryOpts = preset === '7d'
+    ? { rango: '7d' as const }
+    : preset === 'ayer'
+      ? { fecha: getAyerIsoLocal() }
+      : undefined; // 'hoy' = sin params (default backend = hoy en TZ tenant)
+
+  const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId, queryOpts);
   const [refreshing, setRefreshing] = useState(false);
   const { money: formatMoney } = useTenantLocale();
 
@@ -53,7 +97,7 @@ function VendedorDetalleContent() {
     </View>
   );
 
-  if (isLoading) {
+  if (isLoading && !resumen) {
     return (
       <View style={styles.container}>
         {Header}
@@ -76,12 +120,13 @@ function VendedorDetalleContent() {
     );
   }
 
-  const { vendedor, hoy, totalClientes, ultimaUbicacion } = resumen;
+  const { vendedor, hoy, dias, totalClientes, ultimaUbicacion } = resumen;
   const initials = vendedor.nombre.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const sectionLabel = preset === '7d' ? 'ÚLTIMOS 7 DÍAS' : preset === 'ayer' ? 'RESUMEN DE AYER' : 'RESUMEN DEL DÍA';
 
   return (
     <View style={styles.container}>
-      {/* Blue Header — fixed outside scroll */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
@@ -111,24 +156,69 @@ function VendedorDetalleContent() {
         </View>
       </Animated.View>
 
-      {/* Today's stats — white cards, no colored top borders */}
+      {/* Preset selector — Hoy / Ayer / 7d */}
+      <View style={styles.presetRow}>
+        {(['hoy', 'ayer', '7d'] as const).map((p) => {
+          const label = p === 'hoy' ? 'Hoy' : p === 'ayer' ? 'Ayer' : '7 días';
+          const active = preset === p;
+          return (
+            <TouchableOpacity
+              key={p}
+              onPress={() => setPreset(p)}
+              style={[styles.presetBtn, active && styles.presetBtnActive]}
+              accessibilityRole="button"
+              accessibilityLabel={`Mostrar ${label}`}
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.presetText, active && styles.presetTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Stats: hoy/ayer = grid 5 cards; 7d = lista por día */}
       <Animated.View entering={FadeInDown.duration(400).delay(200)}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>RESUMEN DEL DÍA</Text>
-          <View style={styles.statGrid} testID="vendedor-stats">
-            <StatCard label="Pedidos" value={hoy.pedidos} />
-            <StatCard label="Ventas" value={formatMoney(hoy.ventas)} isMoney />
-            <StatCard label="Visitas" value={`${hoy.visitasCompletadas}/${hoy.visitas}`} />
-            <StatCard label="Cobros" value={formatMoney(hoy.cobros)} isMoney />
-            <StatCard label="Clientes" value={totalClientes} />
-          </View>
+          <Text style={styles.sectionLabel}>{sectionLabel}</Text>
+
+          {preset === '7d' && dias && dias.length > 0 ? (
+            <View style={styles.diasList}>
+              {dias.map((d: VendedorDiaConFecha) => (
+                <View
+                  key={d.fecha}
+                  style={[styles.diaRow, isToday(d.fecha) && styles.diaRowHighlight]}
+                >
+                  <View style={styles.diaHeader}>
+                    <Text style={[styles.diaFecha, isToday(d.fecha) && { color: COLORS.primary }]}>
+                      {formatDayLabel(d.fecha)}{isToday(d.fecha) ? ' · Hoy' : ''}
+                    </Text>
+                  </View>
+                  <View style={styles.diaChips}>
+                    <Text style={styles.diaChip}>{d.pedidos} pedidos</Text>
+                    <Text style={[styles.diaChip, { color: COLORS.salesGreen }]}>{formatMoney(d.ventas)}</Text>
+                    <Text style={[styles.diaChip, { color: COLORS.salesGreen }]}>{formatMoney(d.cobros)} cob</Text>
+                    <Text style={styles.diaChip}>{d.visitasCompletadas}/{d.visitas} vis</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            // Hoy / Ayer = single-day grid
+            <View style={styles.statGrid} testID="vendedor-stats">
+              <StatCard label="Pedidos" value={hoy?.pedidos ?? 0} />
+              <StatCard label="Ventas" value={formatMoney(hoy?.ventas ?? 0)} isMoney />
+              <StatCard label="Visitas" value={`${hoy?.visitasCompletadas ?? 0}/${hoy?.visitas ?? 0}`} />
+              <StatCard label="Cobros" value={formatMoney(hoy?.cobros ?? 0)} isMoney />
+              <StatCard label="Clientes" value={totalClientes} />
+            </View>
+          )}
         </View>
       </Animated.View>
 
-      {/* Last known location */}
+      {/* Last known location — siempre el último ping registrado, no filtrado por fecha */}
       <Animated.View entering={FadeInDown.duration(400).delay(300)}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ULTIMA UBICACION</Text>
+          <Text style={styles.sectionLabel}>ÚLTIMA UBICACIÓN</Text>
           {ultimaUbicacion ? (
             <View style={styles.locationCard}>
               <View style={styles.locationRow}>
@@ -146,7 +236,7 @@ function VendedorDetalleContent() {
           ) : (
             <View style={styles.locationCard}>
               <MapPin size={24} color={COLORS.textTertiary} />
-              <Text style={styles.noLocationText}>Sin ubicacion registrada hoy</Text>
+              <Text style={styles.noLocationText}>Sin ubicación registrada</Text>
             </View>
           )}
         </View>
@@ -178,6 +268,27 @@ const styles = StyleSheet.create({
   },
   statusDotSmall: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 12, fontWeight: '600' },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 20,
+    marginTop: 4,
+  },
+  presetBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  presetBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  presetText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  presetTextActive: { color: '#ffffff' },
   section: { marginTop: 16, paddingHorizontal: 20 },
   sectionLabel: {
     fontSize: 11,
@@ -207,6 +318,43 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 18, fontWeight: '700', color: COLORS.foreground },
   statLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500', marginTop: 2 },
+  diasList: {
+    gap: 8,
+  },
+  diaRow: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  diaRowHighlight: {
+    borderColor: COLORS.primary,
+    borderWidth: 1.5,
+  },
+  diaHeader: {
+    marginBottom: 6,
+  },
+  diaFecha: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.foreground,
+    textTransform: 'capitalize',
+  },
+  diaChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  diaChip: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
   locationCard: {
     backgroundColor: COLORS.card,
     borderRadius: 14,

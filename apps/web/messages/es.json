@@ -5761,7 +5761,7 @@
     "loadingMap": "Cargando mapa...",
     "notConfigured": "Google Maps no configurado. Agrega",
     "notConfiguredSuffix": "en .env.local",
-    "clientOutsideZone": "El cliente está fuera de la zona \"{zone}\". Mueve el marcador dentro del área o selecciona otra zona.",
+    "clientOutsideZone": "Este cliente está fuera de la zona \"{zone}\". Puedes guardar igual, o mover el marcador para alinearlo a la zona asignada.",
     "mapInstructions": "Haz doble clic en el mapa o arrastra el marcador para ubicar al cliente.",
     "errorLoadingMaps": "Error al cargar Google Maps"
   },
