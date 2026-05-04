@@ -69,13 +69,18 @@ public class UbicacionVendedorServiceTests
 
         // Timestamp dentro de la ventana válida (últimas 2h) — el service
         // rechaza pings fuera de [-6h, +2min] desde UtcNow (VULN-M04 fix).
+        // Antes el segundo ping era capturedoEn.AddMinutes(15), pero si CI
+        // corría cerca de medianoche UTC los dos pings caían en días distintos
+        // y el All(p => p.DiaServicio == DateOnly.FromDateTime(capturedoEn))
+        // fallaba. Usar AddSeconds(15) reduce la ventana de flakiness a 15s/día
+        // y mantiene la validación de velocidad (2.4 km/h, pasa el guard).
         var capturedoEn = DateTime.UtcNow.AddMinutes(-30);
         var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
         {
             Pings = new List<UbicacionPingDto>
             {
                 new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Venta, CapturadoEn = capturedoEn, ReferenciaId = 100 },
-                new() { Latitud = 19.4327m, Longitud = -99.1333m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = capturedoEn.AddMinutes(15) },
+                new() { Latitud = 19.4327m, Longitud = -99.1333m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = capturedoEn.AddSeconds(15) },
             }
         });
 
