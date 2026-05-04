@@ -69,6 +69,11 @@ export const VendedorResumenSchema = z.object({
     email: z.string(),
     avatarUrl: z.string().nullable().optional(),
     activo: z.boolean(),
+    // isOnline = vendedor con GPS ping en últimos 15 min (calculado backend).
+    // Reportado admin@jeyma.com 2026-05-04: badge mostraba "Activo" siempre,
+    // debe ser "En línea"/"Desconectado" según GPS real.
+    isOnline: z.boolean().optional().default(false),
+    ultimoPing: z.string().nullable().optional(),
   }),
   // `rango` indica el shape de la respuesta:
   // - "dia": `hoy` poblado con stats de ese día. `dias` = null

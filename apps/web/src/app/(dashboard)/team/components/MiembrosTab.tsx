@@ -34,6 +34,7 @@ import {
   HelpCircle,
   Shield,
   Trash2,
+  Lock,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
@@ -1049,6 +1050,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         setSelectedUser(user);
         setIsEditModalOpen(true);
       }}
+      aria-label={`Editar ${user.name}`}
+      title={`Editar ${user.name}`}
       className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-muted/50 transition-colors"
     >
       <Edit className="w-4 h-4 text-muted-foreground" />
@@ -1605,21 +1608,39 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-1">{t("email")}</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-foreground/80 mb-1">
+                {t("email")}
+                <Lock className="w-3 h-3 text-muted-foreground" aria-hidden />
+                <span className="text-xs text-muted-foreground">(no editable)</span>
+              </label>
+              {/* Email read-only: cambiar email = cambiar identidad de la persona.
+                  Si necesitás otra persona, dá de alta nuevo usuario. Reportado
+                  por admin@jeyma.com 2026-05-04: edit fallaba con error genérico
+                  porque el backend rejecta cambios de email. Solo `readOnly`
+                  (NO `disabled`) — el atributo disabled excluye el campo del
+                  payload del form en algunos handlers. */}
               <input
                 type="email"
                 value={selectedUser.email}
-                onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
-                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                readOnly
+                aria-readonly="true"
+                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm bg-muted text-muted-foreground cursor-not-allowed focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-1">{t('phone')}</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-foreground/80 mb-1">
+                {t('phone')}
+                <Lock className="w-3 h-3 text-muted-foreground" aria-hidden />
+                <span className="text-xs text-muted-foreground">(no editable)</span>
+              </label>
+              {/* Teléfono read-only por consistencia con email — vinculado a
+                  notificaciones SMS. Para cambiar, contactá soporte. */}
               <input
                 type="tel"
                 value={selectedUser.phone || ''}
-                onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                readOnly
+                aria-readonly="true"
+                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm bg-muted text-muted-foreground cursor-not-allowed focus:outline-none"
               />
             </div>
             <div>

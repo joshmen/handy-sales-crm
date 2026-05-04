@@ -150,7 +150,10 @@ export function AdminDashboard() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo')}
+            // router.replace en vez de push — push preservaba el stack interno
+            // del tab equipo (vendedor detail previo) → user veía detail viejo
+            // pegado en lugar del index. Reportado admin@jeyma.com 2026-05-04.
+            onPress={() => router.replace('/(tabs)/equipo')}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Equipo</Text>
