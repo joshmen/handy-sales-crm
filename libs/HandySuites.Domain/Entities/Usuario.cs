@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HandySuites.Domain.Common;
 
@@ -41,6 +42,17 @@ public class Usuario : AuditableEntity
 
     [Column("avatar_url")]
     public string? AvatarUrl { get; set; }
+
+    /// <summary>
+    /// Teléfono de contacto del usuario. Formato libre — admins MX usan
+    /// "+52 55..." pero permitimos cualquier país. El validador del DTO acepta
+    /// dígitos + separadores comunes ("(", ")", "-", " "). Nullable para
+    /// retro-compat con usuarios existentes. MaxLength 20 cubre formatos
+    /// internacionales completos (E.164 max 15 + separadores).
+    /// </summary>
+    [Column("telefono")]
+    [MaxLength(20)]
+    public string? Telefono { get; set; }
 
     [Column("CompanyId")]
     public int? CompanyId { get; set; }
