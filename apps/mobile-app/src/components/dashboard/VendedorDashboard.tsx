@@ -18,6 +18,7 @@ import { COLORS } from '@/theme/colors';
 import { api } from '@/api/client';
 import { Target } from 'lucide-react-native';
 import { JornadaCard } from './JornadaCard';
+import { useCreateOrderFlow } from '@/hooks/useCreateOrderFlow';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
@@ -26,6 +27,12 @@ export function VendedorDashboard() {
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Hook compartido — abre BottomSheet "¿Preventa o Autoventa?" si la
+  // empresa tiene modoVentaDefault='Preguntar'; sino salta directo. Antes
+  // este quick action navegaba a /vender/crear sin preguntar tipo (bug
+  // reportado por vendedor1@jeyma.com 2026-05-04).
+  const { openCreateOrder, SheetComponent } = useCreateOrderFlow();
 
   // Route stats — single source of truth via direct query on focus
   const [routeStats, setRouteStats] = useState({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 });
@@ -121,6 +128,7 @@ export function VendedorDashboard() {
 
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -285,7 +293,7 @@ export function VendedorDashboard() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/vender/crear' as any)}
+            onPress={() => openCreateOrder()}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Nuevo Pedido</Text>
@@ -317,6 +325,9 @@ export function VendedorDashboard() {
         </View>
       </Card>
     </ScrollView>
+    {/* BottomSheet "Preventa / Venta Directa" — provisto por useCreateOrderFlow */}
+    {SheetComponent}
+    </>
   );
 }
 

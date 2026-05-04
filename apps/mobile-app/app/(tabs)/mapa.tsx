@@ -28,6 +28,7 @@ import { NextStopPanel } from '@/components/map/NextStopPanel';
 import { CheckInPanel } from '@/components/map/CheckInPanel';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { COLORS } from '@/theme/colors';
+import { useCreateOrderFlow } from '@/hooks/useCreateOrderFlow';
 
 const DEFAULT_REGION: Region = {
   latitude: 19.4326,
@@ -42,6 +43,12 @@ function MapaScreenContent() {
   const { mode: initialMode } = useLocalSearchParams<{ mode?: string }>();
   const mapRef = useRef<any>(null);
   const user = useAuthStore((s) => s.user);
+
+  // Flujo "crear pedido" compartido (FAB Vender + quick action Hoy + Vender desde Mapa).
+  // Cuando se invoca con cliente preseleccionado, abre el sheet con título "Vender a {nombre}"
+  // y al confirmar tipo de venta navega a /vender/crear con query params que auto-seleccionan
+  // cliente y saltan al paso de productos.
+  const { openCreateOrder, SheetComponent } = useCreateOrderFlow();
 
   // Map mode
   const [mapMode, setMapMode] = useState<MapMode>(
@@ -418,7 +425,12 @@ function MapaScreenContent() {
           bottomInset={insets.bottom}
           onClose={() => setSelectedClient(null)}
           onViewDetail={() => router.push(`/(tabs)/clients/${selectedClient.id}` as any)}
-          onSell={() => router.push('/(tabs)/vender/crear' as any)}
+          onSell={() =>
+            openCreateOrder({
+              clienteId: String(selectedClient.id),
+              clienteNombre: selectedClient.nombre,
+            })
+          }
         />
       )}
 
@@ -434,6 +446,9 @@ function MapaScreenContent() {
           onCheckIn={handleNextStopCheckIn}
         />
       )}
+
+      {/* BottomSheet "Preventa / Venta Directa" — provisto por useCreateOrderFlow. */}
+      {SheetComponent}
     </View>
   );
 }
