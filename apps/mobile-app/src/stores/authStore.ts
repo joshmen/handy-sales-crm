@@ -17,6 +17,12 @@ interface AuthState {
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   setLoggingIn: (loading: boolean) => void;
+  /**
+   * Actualiza campos del usuario logueado (merge parcial). Persiste el
+   * snapshot en secureStorage. Usado por `useMe` cuando refresca el perfil
+   * desde el backend (e.g. avatar cambiado desde web).
+   */
+  setUser: (partial: Partial<AuthUser>) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -35,6 +41,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         email: user.email,
         name: user.name,
         role: user.role,
+        avatarUrl: user.avatarUrl ?? null,
+        tenantName: user.tenantName ?? null,
+        tenantLogo: user.tenantLogo ?? null,
       })),
     ]);
     set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false });
@@ -75,6 +84,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           email: parsed.email,
           name: parsed.name,
           role: parsed.role,
+          avatarUrl: parsed.avatarUrl ?? null,
           tenantName: parsed.tenantName ?? null,
           tenantLogo: parsed.tenantLogo ?? null,
         };
@@ -92,6 +102,26 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setLoggingIn: (loading) => set({ isLoggingIn: loading }),
+
+  setUser: async (partial) => {
+    const current = useAuthStore.getState().user;
+    if (!current) return;
+    const merged: AuthUser = { ...current, ...partial };
+    set({ user: merged });
+    try {
+      await secureStorage.set(STORAGE_KEYS.USER_DATA, JSON.stringify({
+        id: merged.id,
+        email: merged.email,
+        name: merged.name,
+        role: merged.role,
+        avatarUrl: merged.avatarUrl ?? null,
+        tenantName: merged.tenantName ?? null,
+        tenantLogo: merged.tenantLogo ?? null,
+      }));
+    } catch {
+      // Persistencia best-effort. State en memoria ya está actualizado.
+    }
+  },
 }));
 
 // Listen for force logout from API interceptor

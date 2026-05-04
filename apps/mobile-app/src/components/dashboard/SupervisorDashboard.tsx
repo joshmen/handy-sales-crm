@@ -6,7 +6,8 @@ import { useAuthStore } from '@/stores';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
-import { useTenantLocale } from '@/hooks';
+import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
+import { UserAvatar } from '@/components/ui';
 import { getGreetingForTz } from '@/utils/greeting';
 import { COLORS } from '@/theme/colors';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
@@ -27,13 +28,8 @@ export function SupervisorDashboard() {
     setRefreshing(false);
   };
 
-  const initials = (user?.name ?? 'S')
-    .split(' ')
-    .filter(Boolean)
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  // Badge de notif sin leer encima de la foto/iniciales del avatar.
+  const { count: unreadNotifs } = useUnreadNotificationCount();
 
   return (
     <View style={styles.container}>
@@ -56,9 +52,15 @@ export function SupervisorDashboard() {
               })()}
             </Text>
           </View>
-          <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarText}>{initials}</Text>
-          </View>
+          <UserAvatar
+            name={user?.name}
+            avatarUrl={user?.avatarUrl}
+            size={40}
+            unreadCount={unreadNotifs}
+            onPress={() => router.push('/(tabs)/profile')}
+            badgeRingColor={COLORS.headerBg}
+            testID="header-avatar"
+          />
         </View>
       </View>
 

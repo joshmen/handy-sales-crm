@@ -187,6 +187,7 @@ public class MobileAuthService
                     email = usuario.Email,
                     name = usuario.Nombre,
                     role = usuario.Rol,
+                    avatarUrl = usuario.AvatarUrl,
                     tenantLogo = companyLogo ?? ""
                 },
                 token = token,
@@ -262,10 +263,44 @@ public class MobileAuthService
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
                 role = tokenEntity.Usuario.Rol,
+                avatarUrl = tokenEntity.Usuario.AvatarUrl,
                 tenantLogo = companyLogo ?? ""
             },
             token = newAccessToken,
             refreshToken = newPlainToken
+        };
+    }
+
+    /// <summary>
+    /// Devuelve el snapshot del usuario logueado a partir de las claims del JWT.
+    /// Usado por el cliente mobile para refrescar avatar/nombre/role cuando se
+    /// vuelve al foreground (p. ej. el admin actualizó la foto desde web).
+    /// SIEMPRE retorna SOLO los datos del usuario en el token — nunca otro id.
+    /// </summary>
+    public async Task<object?> GetMeAsync(int userId)
+    {
+        var usuario = await _db.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (usuario == null) return null;
+
+        var companyLogo = await _db.CompanySettings
+            .AsNoTracking()
+            .Where(cs => cs.TenantId == usuario.TenantId)
+            .Select(cs => cs.LogoUrl)
+            .FirstOrDefaultAsync();
+
+        return new
+        {
+            user = new
+            {
+                id = usuario.Id.ToString(),
+                email = usuario.Email,
+                name = usuario.Nombre,
+                role = usuario.Rol,
+                avatarUrl = usuario.AvatarUrl,
+                tenantLogo = companyLogo ?? ""
+            }
         };
     }
 
@@ -489,6 +524,7 @@ public class MobileAuthService
                     email = usuario.Email,
                     name = usuario.Nombre,
                     role = usuario.Rol,
+                    avatarUrl = usuario.AvatarUrl,
                     tenantLogo = companyLogo ?? ""
                 },
                 token = token,

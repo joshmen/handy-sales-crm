@@ -6,6 +6,7 @@ export const AuthUserSchema = z
     email: z.string(),
     name: z.string(),
     role: z.enum(['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'VENDEDOR']),
+    avatarUrl: z.string().nullable().optional(),
     tenantName: z.string().nullable().optional(),
     tenantLogo: z.string().nullable().optional(),
   })
@@ -22,6 +23,15 @@ export const LoginResponseSchema = z
   .passthrough();
 
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+
+// GET /api/mobile/auth/me — solo retorna el snapshot del usuario, sin tokens.
+export const MeResponseSchema = z
+  .object({
+    user: AuthUserSchema,
+  })
+  .passthrough();
+
+export type MeResponse = z.infer<typeof MeResponseSchema>;
 
 // Request types (no Zod needed — outgoing, not validated)
 export interface LoginRequest {
