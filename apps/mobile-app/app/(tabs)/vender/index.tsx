@@ -19,6 +19,7 @@ import { ShoppingCart, ChevronRight, Calendar, Plus, ClipboardList, Truck } from
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import type Pedido from '@/db/models/Pedido';
+import { AdminTenantPedidosList } from '@/components/admin/AdminTenantPedidosList';
 
 const STATUS_FILTERS = [
   { label: 'Todos', value: undefined },
@@ -36,6 +37,7 @@ function VenderListScreenContent() {
   const [showOrderTypeSheet, setShowOrderTypeSheet] = useState(false);
   const router = useRouter();
   const role = useAuthStore(s => s.user?.role);
+  const isAdminOrSupervisor = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
   const { setTipoVenta, reset: resetDraft } = useOrderDraftStore();
   const { data: empresa } = useEmpresa();
   // Modo default configurado por el admin del tenant. Si != "Preguntar",
@@ -44,6 +46,21 @@ function VenderListScreenContent() {
   const modoDefault = empresa?.modoVentaDefault ?? 'Preguntar';
 
   const _role = role; // kept for future role-based filtering
+
+  // Admin/Supervisor: ver TODOS los pedidos del tenant del día.
+  // Reportado admin@jeyma.com 2026-05-04: WatermelonDB local solo sincroniza
+  // pedidos del usuario actual; admin no opera en ruta → tab vacío.
+  // Vendedores siguen viendo el flujo offline original (WatermelonDB) abajo.
+  if (isAdminOrSupervisor) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
+          <Text style={styles.screenTitle}>Pedidos</Text>
+        </View>
+        <AdminTenantPedidosList />
+      </View>
+    );
+  }
 
   const { data: allOrders, isLoading } = useOfflineOrders();
   const clienteIds = useMemo(
