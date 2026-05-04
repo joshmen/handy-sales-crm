@@ -52,6 +52,7 @@ const MAPS_LIBRARIES: ('places')[] = ['places'];
 export default function NewClientPage() {
   const router = useRouter();
   const t = useTranslations('clients.formPage');
+  const tClients = useTranslations('clients');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
 
@@ -186,7 +187,7 @@ export default function NewClientPage() {
       setSaving(true);
       const dto = mapFormToBackendDto(data);
       await clientService.createClient(dto);
-      toast.success(tc('success'));
+      toast.success(tClients('clientCreated'));
       router.push('/clients');
     } catch (error: unknown) {
       console.error('Error al crear cliente:', error);
