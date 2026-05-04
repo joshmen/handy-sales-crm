@@ -276,8 +276,46 @@ public class UsuarioService
             throw new UnauthorizedAccessException("Solo el propio usuario o un SUPER_ADMIN puede modificar cuentas de administrador.");
         }
 
-        usuario.Email = dto.Email;
+        // Patch semantics: solo se aplican los campos que vienen en el request.
+        // Antes el DTO requería Email obligatorio y al editar desde web Equipo
+        // (que solo manda nombre/rol/activo/telefono) caía con 400. Ahora cada
+        // campo es opcional excepto Nombre (que el FE siempre envía).
+        if (!string.IsNullOrWhiteSpace(dto.Email))
+        {
+            usuario.Email = dto.Email;
+        }
+
         usuario.Nombre = dto.Nombre;
+
+        // Rol: solo SUPER_ADMIN puede promover/demover a admin/super_admin.
+        // Un admin que cambia de rol a otro vendedor → OK. Un admin que intenta
+        // cambiar a otro admin a super_admin → bloqueado por chequeo BR-030
+        // arriba (no puede tocar a otros admins). Aquí defendemos contra el
+        // caso "admin se promueve a sí mismo" desde un endpoint malformado.
+        if (!string.IsNullOrWhiteSpace(dto.Rol))
+        {
+            if (dto.Rol == RoleNames.SuperAdmin && !_tenant.IsSuperAdmin)
+            {
+                throw new UnauthorizedAccessException("Solo un SUPER_ADMIN puede asignar el rol SUPER_ADMIN.");
+            }
+            usuario.RolExplicito = dto.Rol;
+        }
+
+        if (dto.Activo.HasValue)
+        {
+            usuario.Activo = dto.Activo.Value;
+        }
+
+        if (dto.Telefono != null)
+        {
+            // Permitir vaciar el campo enviando string vacío.
+            usuario.Telefono = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim();
+        }
+
+        if (dto.AvatarUrl != null)
+        {
+            usuario.AvatarUrl = string.IsNullOrWhiteSpace(dto.AvatarUrl) ? null : dto.AvatarUrl.Trim();
+        }
 
         if (!string.IsNullOrEmpty(dto.Password))
         {

@@ -1,5 +1,6 @@
 export { useLogin, useForceLogin, useLogout } from './useAuth';
-export { useMe, invalidateMe } from './useMe';
+export { useMe, invalidateMe, ME_QUERY_KEY } from './useMe';
+export { useUploadAvatar, useDeleteAvatar } from './useAvatarUpload';
 export { useRealtime } from './useRealtime';
 export { useClientsList, useClientDetail } from './useClients';
 export { useOrdersList, useOrderDetail, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from './useOrders';

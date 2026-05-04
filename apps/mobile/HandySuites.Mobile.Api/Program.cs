@@ -164,6 +164,7 @@ if (app.Environment.IsDevelopment())
 
 // MOBILE-SPECIFIC ENDPOINTS
 app.MapMobileAuthEndpoints();
+app.MapMobileProfileEndpoints();
 app.MapMobilePedidoEndpoints();
 app.MapMobileVisitaEndpoints();
 app.MapMobileClienteEndpoints();
