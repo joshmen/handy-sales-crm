@@ -17,6 +17,7 @@ import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { SecurityTab } from '@/app/(dashboard)/settings/components/SecurityTab';
 import { NotificationsTab } from '@/app/(dashboard)/settings/components/NotificationsTab';
+import Link from 'next/link';
 import {
   User,
   Shield,
@@ -26,7 +27,10 @@ import {
   MapPin,
   Building,
   Clock,
+  Bell,
+  ArrowRight,
 } from 'lucide-react';
+import { useNotifications } from '@/hooks/useNotifications';
 import { getInitials } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -52,6 +56,8 @@ export default function ProfilePage() {
     uploadAvatar,
     deleteAvatar,
   } = useProfile();
+  const { unreadCount } = useNotifications();
+  const unreadDisplay = unreadCount > 99 ? '99+' : String(unreadCount);
 
   const [devices, setDevices] = useState<DeviceSessionDto[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
@@ -308,6 +314,53 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick link to /notifications — el owner pidió un acceso directo desde
+          Mi Perfil al listado de notificaciones (no la tab de preferencias).
+          La tab "Notifications" abajo sigue siendo para preferencias (email,
+          push, etc.); aquí mostramos el badge con sin-leer y CTA a la lista. */}
+      <Link
+        href="/notifications"
+        data-testid="profile-notifications-link"
+        className="block group"
+        aria-label={
+          unreadCount > 0
+            ? `Notificaciones, ${unreadCount} sin leer`
+            : 'Notificaciones'
+        }
+      >
+        <Card className="transition-colors hover:bg-accent/50 cursor-pointer">
+          <CardContent className="flex items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative flex-shrink-0 rounded-lg bg-orange-50 dark:bg-orange-950/30 p-2.5">
+                <Bell className="h-5 w-5 text-orange-500" strokeWidth={2} />
+                {unreadCount > 0 && (
+                  <span
+                    data-testid="profile-notifications-badge"
+                    className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white ring-2 ring-white dark:ring-gray-900"
+                  >
+                    {unreadDisplay}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {tc('notificationsTitle')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {unreadCount > 0
+                    ? `${unreadCount} sin leer`
+                    : 'Estás al día'}
+                </p>
+              </div>
+            </div>
+            <span className="inline-flex items-center text-xs font-medium text-blue-600 group-hover:text-blue-700 transition-colors flex-shrink-0">
+              Ver todas
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </span>
+          </CardContent>
+        </Card>
+      </Link>
 
       <Tabs defaultValue="personal" className="space-y-4">
         <TabsList data-tour="profile-tabs">

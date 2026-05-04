@@ -11,8 +11,9 @@ export type { Pagination, ApiError } from './common';
 export {
   AuthUserSchema,
   LoginResponseSchema,
+  MeResponseSchema,
 } from './auth';
-export type { AuthUser, LoginResponse, LoginRequest, RefreshRequest } from './auth';
+export type { AuthUser, LoginResponse, LoginRequest, RefreshRequest, MeResponse } from './auth';
 
 // Client
 export {

@@ -7,9 +7,9 @@ import { useAuthStore } from '@/stores';
 import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros } from '@/hooks';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
-import { Card, LoadingSpinner } from '@/components/ui';
+import { Card, LoadingSpinner, UserAvatar } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { useTenantLocale } from '@/hooks';
+import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { getGreetingForTz } from '@/utils/greeting';
 import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -112,13 +112,9 @@ export function VendedorDashboard() {
       .reduce((sum, p) => sum + (p.total || 0), 0);
   }, [pedidos]);
 
-  const initials = (user?.name ?? 'V')
-    .split(' ')
-    .filter(Boolean)
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  // Badge de notif sin leer — al lado de la foto/iniciales en el header.
+  // Tap al avatar abre /profile que tiene link directo a /notificaciones.
+  const { count: unreadNotifs } = useUnreadNotificationCount();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -150,9 +146,15 @@ export function VendedorDashboard() {
               {greeting}, {user?.name?.split(' ')[0] || 'Vendedor'}
             </Text>
           </View>
-          <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarText}>{initials}</Text>
-          </View>
+          <UserAvatar
+            name={user?.name}
+            avatarUrl={user?.avatarUrl}
+            size={40}
+            unreadCount={unreadNotifs}
+            onPress={() => router.push('/(tabs)/profile')}
+            badgeRingColor={COLORS.headerBg}
+            testID="header-avatar"
+          />
         </View>
       </View>
 

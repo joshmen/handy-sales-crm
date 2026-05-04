@@ -1,0 +1,58 @@
+appId: host.exp.exponent
+name: "Vendedor: tap avatar → /profile → link Notificaciones → /notificaciones"
+---
+
+# ════════════════════════════════════════════════════════════
+# PREREQ: ya logueado como vendedor1@jeyma.com (preserva sesión)
+#
+# Valida los cambios reportados 2026-05-04:
+#   - El avatar/iniciales en el header del dashboard es tappable.
+#   - Tap navega a Mi Perfil (/profile).
+#   - Mi Perfil tiene una card "Notificaciones" arriba con badge.
+#   - Tap a la card navega a /notificaciones.
+# ════════════════════════════════════════════════════════════
+
+# Reset al tab Hoy (donde vive el VendedorDashboard)
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "ACCIONES RÁPIDAS"
+    timeout: 15000
+
+# ────────────────────────────────────────────
+# PASO 1: tap al avatar/iniciales del header
+# ────────────────────────────────────────────
+# UserAvatar tiene testID="header-avatar" y accessibilityLabel "Mi perfil".
+- tapOn:
+    id: "header-avatar"
+- waitForAnimationToEnd
+
+# ────────────────────────────────────────────
+# PASO 2: estamos en /profile, validamos shape
+# ────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Vendedor 1 Jeyma"
+    timeout: 5000
+- assertVisible: "Notificaciones"
+- assertVisible:
+    text: "Estás al día|sin leer"
+    optional: false
+
+- takeScreenshot: "avatar-01-profile"
+
+# ────────────────────────────────────────────
+# PASO 3: tap a la card Notificaciones
+# ────────────────────────────────────────────
+- tapOn:
+    id: "profile-notifications-link"
+- waitForAnimationToEnd
+
+# ────────────────────────────────────────────
+# PASO 4: estamos en /notificaciones
+# ────────────────────────────────────────────
+# La pantalla muestra empty state si no hay notif, o una lista si las hay.
+- assertVisible:
+    text: "No tienes notificaciones|Notificaciones"
+    optional: false
+
+- takeScreenshot: "avatar-02-notificaciones"

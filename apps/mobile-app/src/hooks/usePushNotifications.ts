@@ -34,6 +34,11 @@ function invalidateCachesForType(queryClient: ReturnType<typeof useQueryClient>,
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   } else if (type.startsWith('goal.')) {
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  } else if (type.startsWith('user.') || type.startsWith('profile.')) {
+    // Cambio de avatar/nombre/role del propio usuario o de un equipo: refresca
+    // el snapshot `me` para que el avatar/badge en el header se vea al instante.
+    queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   } else {
     // For any other type, at least refresh the dashboard
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });

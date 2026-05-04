@@ -131,6 +131,29 @@ public static class MobileAuthEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        // GET /api/mobile/auth/me — snapshot del usuario actual (avatar, nombre,
+        // role) desde JWT claims + DB. El cliente mobile lo invoca al volver al
+        // foreground para detectar cambios hechos desde web (foto de perfil).
+        group.MapGet("/me", async (
+            [FromServices] MobileAuthService auth,
+            HttpContext context) =>
+        {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? context.User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Results.Unauthorized();
+
+            var data = await auth.GetMeAsync(userId);
+            if (data == null) return Results.NotFound();
+
+            return Results.Ok(new { success = true, data });
+        })
+        .RequireAuthorization()
+        .WithSummary("Snapshot del usuario logueado")
+        .WithDescription("Retorna { user: { id, email, name, role, avatarUrl, tenantLogo } } del usuario en el JWT. Usado por el cliente para refrescar avatar al volver al foreground.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/refresh", async (
             RefreshTokenDto dto,
             [FromServices] MobileAuthService auth) =>

@@ -4,10 +4,13 @@ import { validateResponse } from './validateResponse';
 import {
   ApiResponseSchema,
   LoginResponseSchema,
+  MeResponseSchema,
 } from './schemas';
 import type { ApiResponse, LoginResponse } from '@/types';
+import type { MeResponse } from './schemas';
 
 const LoginResponseWrapperSchema = ApiResponseSchema(LoginResponseSchema);
+const MeResponseWrapperSchema = ApiResponseSchema(MeResponseSchema);
 
 class MobileAuthApi {
   private basePath = '/api/mobile/auth';
@@ -114,6 +117,24 @@ class MobileAuthApi {
     } catch {
       // Ignore — always clear local state
     }
+  }
+
+  /**
+   * Snapshot del usuario actual desde JWT claims. Se invoca al volver al
+   * foreground para detectar cambios de avatar/nombre hechos desde web.
+   * NO retorna tokens — sólo `{ user }`.
+   */
+  async getMe(): Promise<MeResponse> {
+    const response = await api.get<ApiResponse<MeResponse>>(`${this.basePath}/me`);
+    const validated = validateResponse(
+      MeResponseWrapperSchema,
+      response.data,
+      'GET /api/mobile/auth/me'
+    );
+    if (!validated.success) {
+      throw new Error('No se pudo obtener el perfil');
+    }
+    return validated.data;
   }
 }
 
