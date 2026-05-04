@@ -28,23 +28,46 @@ export function useApiErrorToast() {
 
   return useCallback(
     (err: unknown, fallbackMessage: string): void => {
-      const backendMsg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        (err as { message?: string })?.message;
+      const responseData = (err as { response?: { data?: unknown } })?.response?.data as
+        | { message?: string; errors?: string[]; [k: string]: unknown }
+        | undefined;
+
+      const backendMsg = responseData?.message ?? (err as { message?: string })?.message;
+
+      // FluentValidation devuelve { "FieldName": ["error1", ...] } sin .message.
+      // Extraer el primer error de validación si está presente, para evitar
+      // mostrar el fallback genérico cuando hay info útil del backend.
+      // Reportado admin@jeyma.com 2026-05-04: edit team member fallaba con
+      // error genérico aunque backend devolvía mensaje específico de validación.
+      let validationFirstMsg: string | undefined;
+      if (responseData && typeof responseData === 'object' && !backendMsg) {
+        const candidateKeys = Object.keys(responseData).filter(
+          (k) => k !== 'errors' && k !== 'message' && Array.isArray((responseData as Record<string, unknown>)[k])
+        );
+        for (const k of candidateKeys) {
+          const arr = (responseData as Record<string, unknown>)[k] as unknown[];
+          if (arr.length && typeof arr[0] === 'string') {
+            validationFirstMsg = arr[0] as string;
+            break;
+          }
+        }
+      }
+
+      const effective = backendMsg ?? validationFirstMsg;
 
       // Ignore the generic axios "Request failed with status code ..." boilerplate —
       // that's not a real business message.
       const isGeneric =
-        !backendMsg ||
-        backendMsg.toLowerCase().startsWith('request failed with status') ||
-        backendMsg.toLowerCase() === 'network error';
+        !effective ||
+        effective.toLowerCase().startsWith('request failed with status') ||
+        effective.toLowerCase() === 'network error';
 
       if (isGeneric) {
         toast.error(fallbackMessage);
         return;
       }
 
-      toast.error(tApi(backendMsg));
+      toast.error(tApi(effective));
     },
     [tApi]
   );

@@ -406,12 +406,35 @@ public static class MobileSupervisorEndpoints
             if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
                 vendedorQuery = vendedorQuery.Where(u => u.SupervisorId == supervisorId);
 
-            var vendedor = await vendedorQuery
+            var vendedorBase = await vendedorQuery
                 .Select(u => new { u.Id, u.Nombre, u.Email, u.AvatarUrl, u.Activo })
                 .FirstOrDefaultAsync();
 
-            if (vendedor == null)
+            if (vendedorBase == null)
                 return Results.NotFound(new { success = false, message = "Vendedor no encontrado o no pertenece a tu equipo" });
+
+            // Calcular IsOnline real (último GPS ping en últimos 15 min) — mismo
+            // patrón que mis-vendedores. Reportado por admin@jeyma.com 2026-05-04:
+            // el badge en vendor detail mostraba "Activo" siempre, debe mostrar
+            // "En línea"/"Desconectado" según GPS real.
+            var onlineThreshold = DateTime.UtcNow.AddMinutes(-15);
+            var lastPing = await db.UbicacionesVendedor
+                .AsNoTracking()
+                .Where(p => p.TenantId == tenant.TenantId && p.UsuarioId == id)
+                .OrderByDescending(p => p.CapturadoEn)
+                .Select(p => (DateTime?)p.CapturadoEn)
+                .FirstOrDefaultAsync();
+
+            var vendedor = new
+            {
+                vendedorBase.Id,
+                vendedorBase.Nombre,
+                vendedorBase.Email,
+                vendedorBase.AvatarUrl,
+                vendedorBase.Activo,
+                IsOnline = lastPing.HasValue && lastPing.Value >= onlineThreshold,
+                UltimoPing = lastPing
+            };
 
             var totalClientes = await db.Clientes
                 .AsNoTracking()
@@ -420,23 +443,47 @@ public static class MobileSupervisorEndpoints
                          && c.EliminadoEn == null)
                 .CountAsync();
 
-            // Última ubicación (no depende de fecha)
-            var ultimaUbicacion = await db.ClienteVisitas
+            // Última ubicación: leer de UbicacionesVendedor (GPS pings reales,
+            // capturados cada acción + heartbeat 15min). Antes leía de
+            // ClienteVisitas que solo se popula cuando vendedor hace check-in
+            // explícito de visita — y no todos los movimientos son visitas.
+            // Reportado prod 2026-05-04: vendedor1 trabajó días anteriores pero
+            // "ÚLTIMA UBICACIÓN" decía vacío.
+            // Fallback a ClienteVisitas si no hay pings (tenant sin tracking).
+            var ultimaUbicacionPing = await db.UbicacionesVendedor
                 .AsNoTracking()
-                .Include(v => v.Cliente)
-                .Where(v => v.UsuarioId == id
-                         && v.TenantId == tenant.TenantId
-                         && v.LatitudInicio != null
-                         && v.LongitudInicio != null)
-                .OrderByDescending(v => v.FechaHoraInicio)
-                .Select(v => new
+                .Where(p => p.UsuarioId == id && p.TenantId == tenant.TenantId)
+                .OrderByDescending(p => p.CapturadoEn)
+                .Select(p => new
                 {
-                    latitud = v.LatitudInicio!.Value,
-                    longitud = v.LongitudInicio!.Value,
-                    fecha = v.FechaHoraInicio,
-                    clienteNombre = v.Cliente!.Nombre
+                    latitud = p.Latitud,
+                    longitud = p.Longitud,
+                    fecha = (DateTime?)p.CapturadoEn,
+                    clienteNombre = (string?)null
                 })
                 .FirstOrDefaultAsync();
+
+            object? ultimaUbicacion = ultimaUbicacionPing;
+            if (ultimaUbicacion == null)
+            {
+                var fallbackVisita = await db.ClienteVisitas
+                    .AsNoTracking()
+                    .Include(v => v.Cliente)
+                    .Where(v => v.UsuarioId == id
+                             && v.TenantId == tenant.TenantId
+                             && v.LatitudInicio != null
+                             && v.LongitudInicio != null)
+                    .OrderByDescending(v => v.FechaHoraInicio)
+                    .Select(v => new
+                    {
+                        latitud = (decimal)v.LatitudInicio!.Value,
+                        longitud = (decimal)v.LongitudInicio!.Value,
+                        fecha = v.FechaHoraInicio,
+                        clienteNombre = v.Cliente!.Nombre
+                    })
+                    .FirstOrDefaultAsync();
+                ultimaUbicacion = fallbackVisita;
+            }
 
             // ── Modo `?rango=7d`: array de últimos 7 días ──
             if (rango == "7d")
@@ -673,13 +720,18 @@ public static class MobileSupervisorEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status403Forbidden);
 
-        // GET /api/mobile/supervisor/pedidos?dia=YYYY-MM-DD&page=1&pageSize=20
+        // GET /api/mobile/supervisor/pedidos?dia=YYYY-MM-DD&rango=7d|30d&page=1&pageSize=20
         // Lista paginada de TODOS los pedidos del tenant (admin/super_admin) o
         // del equipo del supervisor. Incluye nombre del vendedor que lo creó.
+        // - sin params: hoy (default)
+        // - ?dia=YYYY-MM-DD: día específico (ej. "ayer")
+        // - ?rango=7d: últimos 7 días (incluye hoy)
+        // - ?rango=30d: últimos 30 días
         // Reportado por admin@jeyma.com 2026-05-04: tab Vender vacío para admin
         // porque WatermelonDB local solo sincroniza pedidos del usuario actual.
         group.MapGet("/pedidos", async (
             string? dia,
+            string? rango,
             int? page,
             int? pageSize,
             ICurrentTenant tenant,
@@ -702,15 +754,32 @@ public static class MobileSupervisorEndpoints
             try { tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz); }
             catch { tzInfo = TimeZoneInfo.Utc; }
 
-            DateTime diaLocal;
-            if (!string.IsNullOrEmpty(dia) && DateTime.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
-                diaLocal = fParsed;
+            // Calcular [startUtc, endUtc) según preset:
+            // - rango=7d: [hoy-6, hoy+1)
+            // - rango=30d: [hoy-29, hoy+1)
+            // - dia=YYYY-MM-DD: [dia, dia+1)
+            // - default: [hoy, hoy+1)
+            DateTime startUtc, endUtc;
+            var hoyLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
+            if (rango == "7d" || rango == "30d")
+            {
+                var diasBack = rango == "30d" ? 29 : 6;
+                var rangeStart = DateTime.SpecifyKind(hoyLocal.AddDays(-diasBack), DateTimeKind.Unspecified);
+                var rangeEnd = DateTime.SpecifyKind(hoyLocal.AddDays(1), DateTimeKind.Unspecified);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(rangeStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(rangeEnd, tzInfo);
+            }
             else
-                diaLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
-
-            var localStart = DateTime.SpecifyKind(diaLocal, DateTimeKind.Unspecified);
-            var startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tzInfo);
-            var endUtc = TimeZoneInfo.ConvertTimeToUtc(localStart.AddDays(1), tzInfo);
+            {
+                DateTime diaLocal;
+                if (!string.IsNullOrEmpty(dia) && DateTime.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
+                    diaLocal = fParsed;
+                else
+                    diaLocal = hoyLocal;
+                var localStart = DateTime.SpecifyKind(diaLocal, DateTimeKind.Unspecified);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(localStart.AddDays(1), tzInfo);
+            }
 
             // Para SUPERVISOR: limitar a sus subordinados; ADMIN/SUPER_ADMIN: tenant-wide.
             var pedidosQuery = db.Pedidos.AsNoTracking()
@@ -759,10 +828,11 @@ public static class MobileSupervisorEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status403Forbidden);
 
-        // GET /api/mobile/supervisor/cobros?dia=YYYY-MM-DD&page=1&pageSize=20
+        // GET /api/mobile/supervisor/cobros?dia=YYYY-MM-DD&rango=7d|30d&page=1&pageSize=20
         // Misma lógica que /pedidos pero para cobros.
         group.MapGet("/cobros", async (
             string? dia,
+            string? rango,
             int? page,
             int? pageSize,
             ICurrentTenant tenant,
@@ -785,15 +855,27 @@ public static class MobileSupervisorEndpoints
             try { tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz); }
             catch { tzInfo = TimeZoneInfo.Utc; }
 
-            DateTime diaLocal;
-            if (!string.IsNullOrEmpty(dia) && DateTime.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
-                diaLocal = fParsed;
+            DateTime startUtc, endUtc;
+            var hoyLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
+            if (rango == "7d" || rango == "30d")
+            {
+                var diasBack = rango == "30d" ? 29 : 6;
+                var rangeStart = DateTime.SpecifyKind(hoyLocal.AddDays(-diasBack), DateTimeKind.Unspecified);
+                var rangeEnd = DateTime.SpecifyKind(hoyLocal.AddDays(1), DateTimeKind.Unspecified);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(rangeStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(rangeEnd, tzInfo);
+            }
             else
-                diaLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
-
-            var localStart = DateTime.SpecifyKind(diaLocal, DateTimeKind.Unspecified);
-            var startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tzInfo);
-            var endUtc = TimeZoneInfo.ConvertTimeToUtc(localStart.AddDays(1), tzInfo);
+            {
+                DateTime diaLocal;
+                if (!string.IsNullOrEmpty(dia) && DateTime.TryParseExact(dia, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var fParsed))
+                    diaLocal = fParsed;
+                else
+                    diaLocal = hoyLocal;
+                var localStart = DateTime.SpecifyKind(diaLocal, DateTimeKind.Unspecified);
+                startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tzInfo);
+                endUtc = TimeZoneInfo.ConvertTimeToUtc(localStart.AddDays(1), tzInfo);
+            }
 
             var cobrosQuery = db.Cobros.AsNoTracking()
                 .Where(co => co.TenantId == tenant.TenantId

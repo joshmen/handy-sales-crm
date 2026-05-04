@@ -61,9 +61,14 @@ function CobrarScreenContent() {
   // Admin/Supervisor: ver TODOS los cobros del tenant del día.
   // Reportado admin@jeyma.com 2026-05-04: WatermelonDB local solo sincroniza
   // cobros del usuario actual; admin no opera en ruta → tab vacío.
+  // Wrapper customHeader + paddingTop: insets.top — alineado con vender/index.tsx
+  // (admin@jeyma.com reportó SafeArea distinto entre Vender y Cobrar).
   if (isAdminOrSupervisor) {
     return (
       <View style={styles.container}>
+        <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
+          <Text style={styles.screenTitle}>Cobros</Text>
+        </View>
         <AdminTenantCobrosList />
       </View>
     );
