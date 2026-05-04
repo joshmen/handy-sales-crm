@@ -4,7 +4,8 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
-import { View, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
+import { View, ActivityIndicator, LogBox, BackHandler, Alert, Platform, AppState, type AppStateStatus } from 'react-native';
+import { focusManager } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 import { crashReporter } from '@/services/crashReporter';
@@ -36,7 +37,7 @@ import { database } from '@/db/database';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
-import { useRealtime } from '@/hooks';
+import { useRealtime, useMe } from '@/hooks';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { useHorarioLaboralWatcher } from '@/hooks/useHorarioLaboralWatcher';
 import { useRutaJornadaWatcher } from '@/hooks/useRutaJornadaWatcher';
@@ -63,6 +64,32 @@ function RealtimeBridge() {
 function SessionRefreshBridge() {
   useSessionRefresh();
   return null;
+}
+
+/**
+ * Mantiene `useAuthStore.user` sincronizado con el backend (avatar, nombre,
+ * role). Refresca al pasar a foreground (vía focusManager bridge) y respeta
+ * `staleTime: 30s` mientras la app está activa. Resuelve el caso "admin sube
+ * foto en web → mobile la ve al regresar a la app" sin SignalR.
+ */
+function MeRefreshBridge() {
+  useMe();
+  return null;
+}
+
+/**
+ * Bridge AppState → focusManager. Forma idiomática que recomienda la doc
+ * oficial de TanStack Query para React Native: en lugar de listeners ad-hoc
+ * en cada hook, expones `focusManager.setFocused(active)` y todas las queries
+ * con `refetchOnWindowFocus: true` se refrescan automáticamente al volver al
+ * foreground. Una sola vez al root, no por hook.
+ */
+function setupTanStackFocusBridge() {
+  if (Platform.OS === 'web') return undefined;
+  const sub = AppState.addEventListener('change', (status: AppStateStatus) => {
+    focusManager.setFocused(status === 'active');
+  });
+  return () => sub.remove();
 }
 
 /**
@@ -231,6 +258,12 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [needsInitialSync, setNeedsInitialSync] = useState(false);
 
+  // Cableado AppState → focusManager para que `refetchOnWindowFocus: true`
+  // funcione en RN. Una sola registración por sesión de app.
+  useEffect(() => {
+    return setupTanStackFocusBridge();
+  }, []);
+
   const handleAppReady = useCallback((firstSync?: boolean) => {
     if (!appReady) {
       setAppReady(true);
@@ -257,6 +290,7 @@ export default function RootLayout() {
             <AuthGate onReady={handleAppReady} />
             <RealtimeBridge />
             <SessionRefreshBridge />
+            <MeRefreshBridge />
             <LocationTrackingBridge />
             {showSplash && appReady && (
               <AnimatedSplash

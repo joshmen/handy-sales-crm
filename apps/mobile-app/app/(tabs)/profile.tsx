@@ -4,9 +4,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
-import { useLogout } from '@/hooks';
-import { Card, Button, Badge, ConfirmModal } from '@/components/ui';
-import { Mail, Shield, Building2, Smartphone, ChevronLeft } from 'lucide-react-native';
+import { useLogout, useUnreadNotificationCount } from '@/hooks';
+import { Card, Button, Badge, ConfirmModal, UserAvatar } from '@/components/ui';
+import { Mail, Shield, Building2, Smartphone, ChevronLeft, Bell, ChevronRight } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
@@ -30,6 +30,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
+  const { count: unreadNotifs } = useUnreadNotificationCount();
   const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
@@ -54,12 +55,17 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Overlapping avatar + profile info */}
+      {/* Overlapping avatar + profile info — usa UserAvatar centralizado para
+          que la foto de perfil cambiada desde web aparezca aquí (vía useMe). */}
       <Animated.View entering={FadeInDown.duration(400)} style={styles.profileHeader}>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarText}>
-            {user.name?.[0]?.toUpperCase() || 'U'}
-          </Text>
+        <View style={styles.avatarLargeWrap}>
+          <UserAvatar
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            size={80}
+            badgeRingColor={COLORS.card}
+            testID="profile-avatar-large"
+          />
         </View>
         <Text style={styles.userName}>{user.name}</Text>
         <View style={styles.emailRow}>
@@ -78,6 +84,43 @@ export default function ProfileScreen() {
 
       {/* Info Cards */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.infoSection}>
+        {/* Link directo a notificaciones — el owner pidió este atajo para que
+            el vendedor entre rápido a "ver qué está sucediendo" sin tener que
+            buscarlo en la tab Más. El badge espeja el count del header. */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/(tabs)/notificaciones' as any)}
+          testID="profile-notifications-link"
+          accessibilityRole="button"
+          accessibilityLabel={
+            unreadNotifs > 0
+              ? `Notificaciones, ${unreadNotifs} sin leer`
+              : 'Notificaciones'
+          }
+        >
+          <Card className="mb-3">
+            <View style={styles.infoRow}>
+              <View style={styles.notifIconWrap}>
+                <Bell size={16} color="#f97316" />
+                {unreadNotifs > 0 && (
+                  <View style={styles.notifBadge} pointerEvents="none">
+                    <Text style={styles.notifBadgeText}>
+                      {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Notificaciones</Text>
+                <Text style={styles.infoValue}>
+                  {unreadNotifs > 0 ? `${unreadNotifs} sin leer` : 'Estás al día'}
+                </Text>
+              </View>
+              <ChevronRight size={18} color={COLORS.textTertiary} />
+            </View>
+          </Card>
+        </TouchableOpacity>
+
         <Card className="mb-3">
           <View style={styles.infoRow}>
             <Shield size={16} color="#6b7280" style={{ marginRight: 12 }} />
@@ -167,26 +210,47 @@ const styles = StyleSheet.create({
     marginTop: -50,
     paddingBottom: 20,
   },
-  avatarLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: COLORS.headerBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarLargeWrap: {
     marginBottom: 16,
-    borderWidth: 4,
-    borderColor: COLORS.card,
+    padding: 4,
+    borderRadius: 48,
+    backgroundColor: COLORS.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
-  avatarText: {
-    fontSize: 32,
+  notifIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    backgroundColor: '#fff7ed',
+    // Android clips children absolutos por default → sin esto el badge
+    // (top:-4 right:-4) se corta en Android.
+    overflow: 'visible',
+  },
+  notifBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#dc2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  notifBadgeText: {
+    color: '#ffffff',
+    fontSize: 9,
     fontWeight: '700',
-    color: COLORS.headerText,
   },
   userName: {
     fontSize: 22,

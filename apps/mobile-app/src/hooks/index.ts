@@ -1,4 +1,5 @@
 export { useLogin, useForceLogin, useLogout } from './useAuth';
+export { useMe, invalidateMe } from './useMe';
 export { useRealtime } from './useRealtime';
 export { useClientsList, useClientDetail } from './useClients';
 export { useOrdersList, useOrderDetail, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from './useOrders';

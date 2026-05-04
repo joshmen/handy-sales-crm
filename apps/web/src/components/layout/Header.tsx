@@ -391,22 +391,35 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           {/* Divider */}
           <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
-          {/* User menu */}
+          {/* User menu — avatar con badge de notif no leídas (mismo dato que
+              el Bell icon, doble entrada visual por decisión del owner) */}
           <Button
             data-tour="header-user-menu"
             variant="ghost"
             className="flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto transition-colors duration-200"
             onClick={() => setIsUserMenuOpen(true)}
+            aria-label={unread > 0 ? `Mi cuenta, ${unread} sin leer` : 'Mi cuenta'}
           >
             <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-foreground leading-none">{currentUser.name}</p>
             </div>
-            <Avatar className="h-8 w-8 ring-2 ring-gray-100 dark:ring-gray-800">
-              <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                {getInitials(currentUser.name)}
-              </AvatarFallback>
-            </Avatar>
+            <span className="relative inline-flex overflow-visible">
+              <Avatar className="h-8 w-8 ring-2 ring-gray-100 dark:ring-gray-800">
+                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                  {getInitials(currentUser.name)}
+                </AvatarFallback>
+              </Avatar>
+              {unread > 0 && (
+                <span
+                  data-testid="avatar-unread-badge"
+                  className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white dark:ring-gray-900"
+                  aria-label={`${unread} notificaciones sin leer`}
+                >
+                  {unreadDisplay}
+                </span>
+              )}
+            </span>
           </Button>
         </div>
       </div>
@@ -555,6 +568,31 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             </div>
 
             <div className="space-y-2">
+              <Button
+                data-testid="user-menu-notifications"
+                variant="ghost"
+                className="w-full justify-start h-12 text-foreground hover:bg-accent"
+                onClick={() => {
+                  router.push('/notifications');
+                  setIsUserMenuOpen(false);
+                }}
+                aria-label={
+                  unread > 0
+                    ? `${tc('notificationsTitle')}, ${unread} sin leer`
+                    : undefined
+                }
+              >
+                <Bell className="h-4 w-4 mr-3 text-orange-500" />
+                <span className="flex-1 text-left">{tc('notificationsTitle')}</span>
+                {unread > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
+                  >
+                    {unreadDisplay}
+                  </span>
+                )}
+              </Button>
               <Button
                 variant="ghost"
                 className="w-full justify-start h-12 text-foreground hover:bg-accent"
