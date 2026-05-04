@@ -30,37 +30,42 @@ const STATUS_FILTERS = [
   { label: 'Cancelado', value: 6 },
 ];
 
+// Vista admin/supervisor — pedidos tenant-wide via API supervisor.
+// Componente separado del flujo vendedor para no violar Rules of Hooks
+// (admin path no necesita useOfflineOrders, useClientNameMap, useOrderDraft,
+// etc. que solo aplica al vendedor que crea pedidos).
+function VenderAdminContent() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.container}>
+      <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.screenTitle}>Pedidos</Text>
+      </View>
+      <AdminTenantPedidosList />
+    </View>
+  );
+}
+
+// Wrapper que decide qué vista renderizar según el rol del user.
+// Solo tiene UN hook (useAuthStore) → no hay risk de Rules of Hooks.
 function VenderListScreenContent() {
+  const role = useAuthStore(s => s.user?.role);
+  const isAdminOrSupervisor = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
+  if (isAdminOrSupervisor) return <VenderAdminContent />;
+  return <VenderVendedorContent />;
+}
+
+// Vista vendedor regular — flujo original con WatermelonDB local + filtros
+// + BottomSheet + FAB. NO hace fetch al API supervisor.
+function VenderVendedorContent() {
   const insets = useSafeAreaInsets();
   const { money: formatCurrency, date: formatDate } = useTenantLocale();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
   const [showOrderTypeSheet, setShowOrderTypeSheet] = useState(false);
   const router = useRouter();
-  const role = useAuthStore(s => s.user?.role);
-  const isAdminOrSupervisor = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPERVISOR';
   const { setTipoVenta, reset: resetDraft } = useOrderDraftStore();
   const { data: empresa } = useEmpresa();
-  // Modo default configurado por el admin del tenant. Si != "Preguntar",
-  // saltamos el BottomSheet y vamos directo al picker de cliente con el
-  // modo pre-seleccionado. Acelera el flujo de venta.
   const modoDefault = empresa?.modoVentaDefault ?? 'Preguntar';
-
-  const _role = role; // kept for future role-based filtering
-
-  // Admin/Supervisor: ver TODOS los pedidos del tenant del día.
-  // Reportado admin@jeyma.com 2026-05-04: WatermelonDB local solo sincroniza
-  // pedidos del usuario actual; admin no opera en ruta → tab vacío.
-  // Vendedores siguen viendo el flujo offline original (WatermelonDB) abajo.
-  if (isAdminOrSupervisor) {
-    return (
-      <View style={styles.container}>
-        <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.screenTitle}>Pedidos</Text>
-        </View>
-        <AdminTenantPedidosList />
-      </View>
-    );
-  }
 
   const { data: allOrders, isLoading } = useOfflineOrders();
   const clienteIds = useMemo(
