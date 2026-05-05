@@ -686,7 +686,10 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         rol: formData.role,
         sinEmail: formData.sinEmail,
       });
-      toast.success(formData.sinEmail ? t('userCreated') : (t as any)('inviteSent') || 'Invitación enviada');
+      // Mensaje distinto según el flujo: vendedor sin email vs invite-link.
+      // Hardcodeado en español por simplicidad — agregar a i18n cuando se
+      // expanda el bundle (bypass de t-typing strict para la key 'inviteSent').
+      toast.success(formData.sinEmail ? t('userCreated') : 'Invitación enviada');
       setIsCreateModalOpen(false);
       setFormData({ email: '', nombre: '', password: '', telefono: '', role: 'VENDEDOR', sinEmail: false });
       loadUsers();
