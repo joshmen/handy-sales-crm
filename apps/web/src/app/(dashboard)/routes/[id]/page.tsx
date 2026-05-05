@@ -27,6 +27,7 @@ import { Modal } from '@/components/ui/Modal';
 import { FieldError } from '@/components/forms/FieldError';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import {
+  AlertTriangle,
   ArrowLeft,
   Play,
   CheckCircle,
@@ -113,6 +114,9 @@ export default function RouteDetailPage() {
   // Cancel modal
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState('');
+  // Typing-confirm para cancelar cuando vendedor activo (EnProgreso/CargaAceptada).
+  // Antes solo bastaba el click; un admin canceló por error una ruta activa hoy.
+  const [cancelTypingConfirm, setCancelTypingConfirm] = useState('');
 
   // Send to Load confirmation modal
   const [isSendOpen, setIsSendOpen] = useState(false);
@@ -230,7 +234,17 @@ export default function RouteDetailPage() {
   const isPlanificada = route?.estado === 0;
   const isEnProgreso = route?.estado === 1;
   const isPendienteAceptar = route?.estado === 4;
+  const isCargaAceptada = route?.estado === 5;
   const isEditable = isPlanificada;
+  // Vendedor activo = ya aceptó la carga o está visitando paradas. Cancelar
+  // ahora aborta su jornada → modal con typing-confirm + motivo obligatorio.
+  const vendedorActivo = isEnProgreso || isCargaAceptada;
+  const cancelMotivoTrimmed = cancelMotivo.trim();
+  // Normalizamos a uppercase en el state via onChange (W1 UI/UX validator).
+  const cancelTypingMatches = cancelTypingConfirm.trim() === 'CANCELAR';
+  const cancelMotivoTooShort = cancelMotivoTrimmed.length < 5;
+  const cancelDisabled =
+    actionLoading || (vendedorActivo && (cancelMotivoTooShort || !cancelTypingMatches));
 
   // Send to Load handler — reemplaza el confirm() nativo del /load page.
   // Usa un Modal. Se invoca desde el botón del header.
@@ -279,6 +293,7 @@ export default function RouteDetailPage() {
       toast.success(t('detail.routeCancelled'));
       setIsCancelOpen(false);
       setCancelMotivo('');
+      setCancelTypingConfirm('');
       await fetchAll();
     } catch (err) {
       showApiError(err, t('detail.errorCancelling'));
@@ -477,29 +492,100 @@ export default function RouteDetailPage() {
         </Tabs>
       </div>
 
-      {/* Cancel Route Modal */}
+      {/* Cancel Route Modal — Modo reforzado cuando vendedor activo */}
       <Modal
         isOpen={isCancelOpen}
-        onClose={() => !actionLoading && setIsCancelOpen(false)}
-        title={t('detail.cancelRoute')}
+        onClose={() => {
+          if (actionLoading) return;
+          setIsCancelOpen(false);
+          setCancelMotivo('');
+          setCancelTypingConfirm('');
+        }}
+        title={vendedorActivo ? t('detail.cancelActiveTitle') : t('detail.cancelRoute')}
       >
         <div className="space-y-4">
-          <p className="text-sm text-foreground/70">{t('detail.cancelConfirm')}</p>
+          {vendedorActivo ? (
+            <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+              <p className="font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                {t('detail.cancelActiveHeading')}
+              </p>
+              <ul className="mt-2 list-disc list-inside space-y-1 text-red-800">
+                <li className="font-semibold">{t('detail.cancelActiveIrreversible')}</li>
+                <li>{t('detail.cancelActiveAbortJornada')}</li>
+                <li>
+                  {t('detail.cancelActiveReversaPedidos', { count: pedidos.length })}
+                </li>
+                <li>
+                  {t('detail.cancelActiveOmitirParadas', {
+                    count: route.paradasPendientes ?? 0,
+                  })}
+                </li>
+                <li>{t('detail.cancelActiveAvisoMobile')}</li>
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-foreground/70">{t('detail.cancelConfirm')}</p>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
-              {t('detail.reasonOptional')}
+            <label
+              htmlFor="cancel-motivo"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              {vendedorActivo ? t('detail.reasonRequired') : t('detail.reasonOptional')}
             </label>
             <textarea
+              id="cancel-motivo"
               value={cancelMotivo}
               onChange={(e) => setCancelMotivo(e.target.value)}
               rows={2}
               placeholder={t('detail.reasonPlaceholder')}
+              {...(vendedorActivo ? { 'aria-required': true } : {})}
               className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
             />
+            {vendedorActivo && cancelMotivo.length > 0 && cancelMotivoTooShort && (
+              <p className="mt-1 text-xs text-red-600">
+                {t('detail.cancelReasonMinLength')}
+              </p>
+            )}
           </div>
+
+          {vendedorActivo && (
+            <div>
+              <label
+                htmlFor="cancel-typing-confirm"
+                className="block text-sm font-medium text-foreground/80 mb-1"
+              >
+                {t('detail.cancelTypingConfirm')}
+              </label>
+              <input
+                id="cancel-typing-confirm"
+                type="text"
+                value={cancelTypingConfirm}
+                onChange={(e) => setCancelTypingConfirm(e.target.value.toUpperCase())}
+                placeholder="CANCELAR"
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+            </div>
+          )}
+
+          {/* Feedback de por qué el botón está disabled (W2 UI/UX validator). */}
+          {vendedorActivo && cancelDisabled && !actionLoading && (
+            <p className="text-xs text-red-600 text-right">
+              {t('detail.cancelRequirementsNotMet')}
+            </p>
+          )}
+
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
-              onClick={() => setIsCancelOpen(false)}
+              onClick={() => {
+                setIsCancelOpen(false);
+                setCancelMotivo('');
+                setCancelTypingConfirm('');
+              }}
               disabled={actionLoading}
               className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
@@ -507,11 +593,13 @@ export default function RouteDetailPage() {
             </button>
             <button
               onClick={handleCancelar}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+              disabled={cancelDisabled}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('detail.cancelRoute')}
+              {vendedorActivo
+                ? t('detail.cancelActiveButton')
+                : t('detail.cancelRoute')}
             </button>
           </div>
         </div>

@@ -45,13 +45,21 @@ function invalidateCachesForType(queryClient: ReturnType<typeof useQueryClient>,
   }
 }
 
-/** Persist notification content to the local store. */
+/** Persist notification content to the local store.
+ *
+ * Si el push viene del backend con `notificationHistoryId`, usamos ese id
+ * — así el sync incremental dedupea contra el push live (caller puede
+ * llamar también `notificationStore.add` con el mismo id sin duplicar).
+ */
 function persistNotification(notification: any) {
   const content = notification?.request?.content;
   const data = content?.data;
   if (!content) return;
 
+  const nhId = data?.notificationHistoryId;
+
   notificationStore.add({
+    id: nhId ? String(nhId) : undefined,
     title: content.title ?? 'Notificación',
     body: content.body ?? '',
     type: data?.type ?? 'unknown',
