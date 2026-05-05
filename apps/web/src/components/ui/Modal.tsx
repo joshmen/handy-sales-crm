@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {
@@ -31,6 +31,8 @@ export const Modal: React.FC<ModalProps> = ({
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     setMounted(true);
@@ -78,6 +80,42 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [visible, handleClose]);
 
+  // Focus trap: cuando el panel se monta, mover foco al primer elemento
+  // focuseable y prevenir Tab/Shift+Tab que salgan del dialog. Crítico
+  // para a11y (B1 del UI/UX validator) — usuarios de teclado no deben
+  // poder navegar al document subyacente mientras el modal está abierto.
+  useEffect(() => {
+    if (!visible) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const focusableSelector =
+      'button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])';
+
+    const getFocusable = () =>
+      Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector));
+
+    const focusable = getFocusable();
+    focusable[0]?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const items = getFocusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener('keydown', onKeyDown);
+    return () => panel.removeEventListener('keydown', onKeyDown);
+  }, [visible]);
+
   if (!visible || !mounted) return null;
 
   const modalContent = (
@@ -92,6 +130,10 @@ export const Modal: React.FC<ModalProps> = ({
         />
         {/* Panel */}
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? titleId : undefined}
           className={`relative w-full ${sizeClasses[size]} bg-surface-4 rounded-xl shadow-elevation-3 transition-all duration-200 ${
             entered
               ? "opacity-100 scale-100"
@@ -101,10 +143,11 @@ export const Modal: React.FC<ModalProps> = ({
         >
           {title && (
             <div className="flex items-center justify-between border-b p-4">
-              <h3 className="text-lg font-semibold">{title}</h3>
+              <h3 id={titleId} className="text-lg font-semibold">{title}</h3>
               {showCloseButton && (
                 <button
                   onClick={handleClose}
+                  aria-label="Cerrar"
                   className="text-muted-foreground hover:text-foreground"
                 >
                   ✕

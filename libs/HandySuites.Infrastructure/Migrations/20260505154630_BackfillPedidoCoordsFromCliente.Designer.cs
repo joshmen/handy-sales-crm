@@ -3,6 +3,7 @@ using System;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace HandySuites.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySuitesDbContext))]
-    partial class HandySuitesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505154630_BackfillPedidoCoordsFromCliente")]
+    partial class BackfillPedidoCoordsFromCliente
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3192,14 +3195,13 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("DeviceSessionId");
 
+                    b.HasIndex("UsuarioId");
+
                     b.HasIndex("TenantId", "Status");
 
                     b.HasIndex("TenantId", "Tipo");
 
                     b.HasIndex("TenantId", "UsuarioId");
-
-                    b.HasIndex("UsuarioId", "TenantId", "EnviadoEn")
-                        .HasDatabaseName("IX_NotificationHistory_UsuarioId_TenantId_EnviadoEn");
 
                     b.ToTable("NotificationHistory", (string)null);
                 });

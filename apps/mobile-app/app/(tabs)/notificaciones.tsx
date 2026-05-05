@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import { notificationStore, type StoredNotification } from '@/services/notificationStore';
+import { syncNotificationsFromBackend } from '@/services/notificationSync';
 import Toast from 'react-native-toast-message';
 
 // ---------------------------------------------------------------------------
@@ -102,11 +103,20 @@ function NotificacionesContent() {
   }, []);
 
   useEffect(() => {
+    // Al abrir la tab: cargar local + sync backend en background. Si llega un
+    // push live mientras hacíamos sync, se dedupea por nhId en el store.
     loadNotifications();
+    syncNotificationsFromBackend()
+      .then((added) => {
+        if (added > 0) loadNotifications();
+      })
+      .catch(() => { /* sync best-effort */ });
   }, [loadNotifications]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // Pull-to-refresh: traer lo último del backend antes de releer el store.
+    await syncNotificationsFromBackend();
     await loadNotifications();
     setRefreshing(false);
   }, [loadNotifications]);

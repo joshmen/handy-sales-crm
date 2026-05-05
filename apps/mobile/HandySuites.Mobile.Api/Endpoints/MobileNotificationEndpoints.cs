@@ -1,5 +1,10 @@
+using System.Globalization;
+using System.Text.Json;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using HandySuites.Mobile.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace HandySuites.Mobile.Api.Endpoints;
@@ -84,6 +89,62 @@ public static class MobileNotificationEndpoints
         .WithSummary("Enviar push de prueba")
         .WithDescription("Envía una notificación push de prueba al dispositivo del usuario autenticado.")
         .Produces<object>(StatusCodes.Status200OK);
+
+        // GET /api/mobile/notifications — historial del usuario para sync mobile.
+        // Respaldo para cuando un push live no llegó (app no instalada, push
+        // descartado por error, network off al recibir). Mobile guarda esto
+        // en notificationStore (AsyncStorage) usando notificationHistoryId
+        // como id, dedup contra el push live.
+        group.MapGet("/", async (
+            [FromQuery] DateTime? since,
+            [FromQuery] int? limit,
+            [FromServices] HandySuitesDbContext db,
+            HttpContext context) =>
+        {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? context.User.FindFirst("sub")?.Value;
+            var tenantIdClaim = context.User.FindFirst("tenant_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(tenantIdClaim))
+                return Results.Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var tenantId = int.Parse(tenantIdClaim);
+
+            // Sin since, default últimos 30d (alineado con cleanup worker).
+            var minSince = DateTime.UtcNow.AddDays(-30);
+            var effectiveSince = since.HasValue && since.Value > minSince ? since.Value : minSince;
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+
+            var rows = await db.NotificationHistory
+                .IgnoreQueryFilters()
+                .Where(nh => nh.UsuarioId == userId &&
+                             nh.TenantId == tenantId &&
+                             nh.EnviadoEn != null &&
+                             nh.EnviadoEn >= effectiveSince &&
+                             (nh.Status == NotificationStatus.Sent ||
+                              nh.Status == NotificationStatus.Delivered ||
+                              nh.Status == NotificationStatus.Read) &&
+                             nh.EliminadoEn == null)
+                .OrderByDescending(nh => nh.EnviadoEn)
+                .Take(take)
+                .Select(nh => new
+                {
+                    id = nh.Id,
+                    titulo = nh.Titulo,
+                    mensaje = nh.Mensaje,
+                    tipo = nh.Tipo.ToString(),
+                    data = nh.DataJson,
+                    enviadoEn = nh.EnviadoEn,
+                    leidoEn = nh.LeidoEn,
+                })
+                .ToListAsync();
+
+            return Results.Ok(rows);
+        })
+        .WithSummary("Listar notificaciones del usuario")
+        .WithDescription("Retorna el histórico de notificaciones push (status Sent/Delivered/Read) del usuario autenticado. Usado por el mobile para sync incremental cuando un push live no llegó.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
     }
 }
 

@@ -204,6 +204,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       // Never block sync for GPS ping flush
     }
 
+    // Phase 6: Sync notification history (rescata pushes que no llegaron en
+    // vivo — app cerrada, sin red en el momento, fresh install). Best-effort.
+    try {
+      const { syncNotificationsFromBackend } = await import('@/services/notificationSync');
+      const added = await syncNotificationsFromBackend();
+      if (__DEV__ && added > 0) console.log(`[Sync] Pulled ${added} notifications from backend`);
+    } catch {
+      // Never block sync for notification history fetch
+    }
+
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
     // Atomic batch write — await garantiza persistencia antes de resolver el
     // sync. Sin esto, un logout justo después podía dejar storage stale.
