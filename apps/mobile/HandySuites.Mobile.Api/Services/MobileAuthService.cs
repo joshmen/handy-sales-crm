@@ -188,7 +188,8 @@ public class MobileAuthService
                     name = usuario.Nombre,
                     role = usuario.Rol,
                     avatarUrl = usuario.AvatarUrl,
-                    tenantLogo = companyLogo ?? ""
+                    tenantLogo = companyLogo ?? "",
+                    mustChangePassword = usuario.MustChangePassword
                 },
                 token = token,
                 refreshToken = plainRefreshToken
@@ -264,7 +265,8 @@ public class MobileAuthService
                 name = tokenEntity.Usuario.Nombre,
                 role = tokenEntity.Usuario.Rol,
                 avatarUrl = tokenEntity.Usuario.AvatarUrl,
-                tenantLogo = companyLogo ?? ""
+                tenantLogo = companyLogo ?? "",
+                mustChangePassword = tokenEntity.Usuario.MustChangePassword
             },
             token = newAccessToken,
             refreshToken = newPlainToken
@@ -299,7 +301,8 @@ public class MobileAuthService
                 name = usuario.Nombre,
                 role = usuario.Rol,
                 avatarUrl = usuario.AvatarUrl,
-                tenantLogo = companyLogo ?? ""
+                tenantLogo = companyLogo ?? "",
+                mustChangePassword = usuario.MustChangePassword
             }
         };
     }
@@ -525,7 +528,8 @@ public class MobileAuthService
                     name = usuario.Nombre,
                     role = usuario.Rol,
                     avatarUrl = usuario.AvatarUrl,
-                    tenantLogo = companyLogo ?? ""
+                    tenantLogo = companyLogo ?? "",
+                    mustChangePassword = usuario.MustChangePassword
                 },
                 token = token,
                 refreshToken = plainRefreshToken

@@ -165,10 +165,12 @@ public static class UsuarioEndpoints
                 return new TxUsuarioResult(Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId }), usuarioId);
             });
 
-            if (txResult.CreatedId > 0)
+            if (txResult.CreatedId > 0 && !dto.SinEmail)
             {
-                // Send invitation email so the new user can set their password
-                // App:FrontendUrl is validated at startup in Program.cs
+                // Invite link flow (default): enviar email para que el usuario
+                // establezca su propia contraseña vía /set-password. Cuando
+                // dto.SinEmail=true el admin asigna password temporal manual,
+                // así que SKIP este send (no hay email destino).
                 var baseUrl = config["App:FrontendUrl"]!;
                 try { await authService.SendInvitationEmailAsync(txResult.CreatedId, baseUrl); }
                 catch { /* logged inside SendInvitationEmailAsync */ }
@@ -176,13 +178,17 @@ public static class UsuarioEndpoints
 
             return txResult.Response;
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return Results.Forbid();
+            // Propagar el mensaje específico (e.g. "Tu rol no permite crear...")
+            // para que el cliente entienda por qué falló. 403 + body con detalle.
+            return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status403Forbidden);
         }
         catch (InvalidOperationException ex)
         {
-            return Results.BadRequest(new { error = "No se pudo completar la operación." });
+            // Propagar el mensaje específico (e.g. "Password requerida..." o
+            // "Email ya está en uso") en vez del mensaje genérico anterior.
+            return Results.BadRequest(new { error = ex.Message });
         }
     }
 

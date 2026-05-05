@@ -41,11 +41,19 @@ export interface UsuarioUbicacion {
 }
 
 export interface CreateUserRequest {
-  email: string;
-  password: string;
+  /** Required cuando sinEmail=false (default). Opcional cuando sinEmail=true. */
+  email?: string;
+  /** Required SOLO cuando sinEmail=true (vendedor sin email). En el flujo invite-link el backend genera placeholder. */
+  password?: string;
   nombre: string;
   telefono?: string;
   rol: string;
+  /**
+   * True = vendedor de campo MX sin email corporativo. Admin asigna password
+   * temporal; backend marca MustChangePassword=true para forzar cambio en el
+   * primer login mobile. False (default) = invite link al email del usuario.
+   */
+  sinEmail?: boolean;
 }
 
 export interface UpdateUserRequest {
