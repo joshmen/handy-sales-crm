@@ -480,5 +480,25 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v20 (2026-05-05): coords del momento de venta en `pedidos`. Antes
+      // los pedidos no almacenaban lat/long propias — el GPS ping iba a
+      // tabla aparte (`ubicaciones_vendedor`) y la pantalla GPS Activity
+      // del backend filtraba por `Pedido.Latitud != null` mostrando 3/5
+      // pedidos del vendedor (los que tenían coords del cliente como
+      // fallback). Ahora `captureOrderLocation` setea estos campos al
+      // momento de crear pedido con cascada device GPS → lastKnown →
+      // cliente coords.
+      toVersion: 20,
+      steps: [
+        addColumns({
+          table: 'pedidos',
+          columns: [
+            { name: 'latitud', type: 'number', isOptional: true },
+            { name: 'longitud', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

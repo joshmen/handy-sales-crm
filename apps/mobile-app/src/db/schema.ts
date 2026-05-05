@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 19,
+  version: 20,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -97,6 +97,11 @@ export const schema = appSchema({
         { name: 'impuesto', type: 'number' },
         { name: 'total', type: 'number' },
         { name: 'notas', type: 'string', isOptional: true },
+        // Coords del momento de venta (snapshot). v20: capturado por
+        // captureOrderLocation con cascada device GPS → lastKnown → cliente.
+        // El backend filtra GPS Activity por NOT NULL para plotear en mapa.
+        { name: 'latitud', type: 'number', isOptional: true },
+        { name: 'longitud', type: 'number', isOptional: true },
         { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number', isIndexed: true },

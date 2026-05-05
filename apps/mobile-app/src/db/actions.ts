@@ -8,6 +8,8 @@ import Producto from './models/Producto';
 import RutaDetalle from './models/RutaDetalle';
 import { round2 } from '@/utils/money';
 import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
+import { captureOrderLocation } from '@/services/captureOrderLocation';
+import Toast from 'react-native-toast-message';
 
 /**
  * Create a cliente offline in WatermelonDB.
@@ -155,6 +157,44 @@ export async function createPedidoOffline(
   // (compat backward con código viejo que aún no actualizó callers).
   const { subtotal, descuentoTotal, impuesto, total } = calculateOrderTotals(items);
 
+  // Capturar GPS ANTES de la transacción WDB. La cascada de fallbacks
+  // garantiza que siempre tengamos un valor (device fresh / lastKnown /
+  // cliente coords) o null si nada aplica. Funciona offline.
+  // Reportado 2026-05-05: pedidos sin coords no aparecían en GPS Activity
+  // del backend (ej. Rodrigo 3/5).
+  let capturedLat: number | null = null;
+  let capturedLng: number | null = null;
+  let gpsCaptured = false;
+  try {
+    const cliente = await database.get<Cliente>('clientes').find(clienteId);
+    const captured = await captureOrderLocation({
+      latitud: (cliente as any).latitud,
+      longitud: (cliente as any).longitud,
+    });
+    if (captured) {
+      capturedLat = captured.latitude;
+      capturedLng = captured.longitude;
+      gpsCaptured = true;
+    }
+  } catch {
+    // Cliente no encontrado o error en captura — pedido se crea sin coords.
+  }
+
+  // UX: si ningún fallback funcionó, informar al vendedor (no es error,
+  // solo aviso para que active GPS la próxima vez). El pedido SÍ se crea.
+  if (!gpsCaptured) {
+    // type: 'info' (azul) — react-native-toast-message v2 no incluye
+    // 'warning' built-in y no hay toastConfig custom para overhead de
+    // un solo caso. El copy enfatiza "Pedido creado" para confirmar éxito
+    // antes del aviso GPS, alineado con feedback de frontend-ui-ux-validator.
+    Toast.show({
+      type: 'info',
+      text1: 'Pedido creado',
+      text2: 'Sin ubicación GPS — activa el GPS para mejor seguimiento.',
+      visibilityTime: 5000,
+    });
+  }
+
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
       record.serverId = null;
@@ -170,6 +210,8 @@ export async function createPedidoOffline(
       record.impuesto = impuesto;
       record.total = total;
       record.notas = notas || null;
+      record.latitud = capturedLat;
+      record.longitud = capturedLng;
       record.activo = true;
       record.version = 1;
       record.updatedAt = new Date();

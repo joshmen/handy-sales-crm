@@ -21,6 +21,11 @@ export default class Pedido extends Model {
   @field('impuesto') impuesto!: number;
   @field('total') total!: number;
   @text('notas') notas!: string | null;
+  // Coords del momento de venta (snapshot). v20: capturado por
+  // captureOrderLocation con cascada device GPS → lastKnown → cliente.
+  // El backend filtra GPS Activity por NOT NULL para plotear en mapa.
+  @field('latitud') latitud!: number | null;
+  @field('longitud') longitud!: number | null;
   @field('activo') activo!: boolean;
   @field('version') version!: number;
   @readonly @date('created_at') createdAt!: Date;
