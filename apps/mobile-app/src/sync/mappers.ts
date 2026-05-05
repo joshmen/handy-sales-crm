@@ -812,6 +812,12 @@ function rawToPedidoDto(raw: DirtyRaw, operation: number): any {
     impuestos: raw.impuesto ?? 0,
     total: raw.total ?? 0,
     notas: raw.notas,
+    // Coords del momento de venta — capturado por captureOrderLocation
+    // (cascada device → lastKnown → cliente). Backend `PedidoCreateDto`
+    // ya soporta estos campos opcionales; antes de v20 mobile siempre
+    // enviaba null, ahora respeta el snapshot del WDB local.
+    latitud: raw.latitud ?? null,
+    longitud: raw.longitud ?? null,
     activo: raw.activo ?? true,
     version: raw.version ?? 1,
     operation,
