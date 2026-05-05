@@ -60,6 +60,16 @@ public class Usuario : AuditableEntity
     [Column("activo")]
     public new bool Activo { get; set; } = false;
 
+    /// <summary>
+    /// True cuando el usuario debe cambiar su contraseña en el primer login.
+    /// Caso típico: vendedor de campo creado por admin con password temporal
+    /// (porque no tiene email corporativo). El cliente mobile/web fuerza la
+    /// pantalla de "cambiar contraseña" antes de cualquier otra navegación.
+    /// Se setea a false cuando el usuario completa el cambio.
+    /// </summary>
+    [Column("must_change_password")]
+    public bool MustChangePassword { get; set; } = false;
+
     // Session management
     [Column("session_version")]
     public int SessionVersion { get; set; } = 1;

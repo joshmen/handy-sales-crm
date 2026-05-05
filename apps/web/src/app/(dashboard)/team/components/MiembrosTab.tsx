@@ -553,6 +553,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     password: '',
     telefono: '',
     role: 'VENDEDOR',
+    sinEmail: false, // 2026-05-04: vendedor de campo MX sin email corporativo
   });
 
   // Load roles and zones
@@ -671,16 +672,26 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
 
   const handleCreateUser = async () => {
     try {
+      // 2 flujos según `sinEmail`:
+      // - false (default): mandar solo email + nombre + rol. Backend genera
+      //   placeholder password + envía invite link. Usuario establece su
+      //   password vía /set-password.
+      // - true (vendedor de campo): mandar email opcional + password temporal.
+      //   Backend marca MustChangePassword=true → forzado en primer login.
       await createUserMutation.mutateAsync({
-        email: formData.email,
+        email: formData.email || undefined,
         nombre: formData.nombre,
-        password: formData.password,
-        telefono: formData.telefono,
+        password: formData.sinEmail ? formData.password : undefined,
+        telefono: formData.telefono || undefined,
         rol: formData.role,
+        sinEmail: formData.sinEmail,
       });
-      toast.success(t('userCreated'));
+      // Mensaje distinto según el flujo: vendedor sin email vs invite-link.
+      // Hardcodeado en español por simplicidad — agregar a i18n cuando se
+      // expanda el bundle (bypass de t-typing strict para la key 'inviteSent').
+      toast.success(formData.sinEmail ? t('userCreated') : 'Invitación enviada');
       setIsCreateModalOpen(false);
-      setFormData({ email: '', nombre: '', password: '', telefono: '', role: 'VENDEDOR' });
+      setFormData({ email: '', nombre: '', password: '', telefono: '', role: 'VENDEDOR', sinEmail: false });
       loadUsers();
     } catch (err) {
       showApiError(err, t('errorCreating'));
@@ -1505,26 +1516,73 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   placeholder={t('placeholderName')}
                 />
               </div>
+
+              {/* Toggle "sin email" — vendedor de campo MX. Default off:
+                  invite-link via email (best practice OWASP/NIST). On:
+                  admin asigna password temporal + el usuario lo cambia en
+                  primer login (MustChangePassword=true). */}
+              <div className="flex items-start gap-2 p-3 rounded-lg border border-border-subtle bg-surface-1/40">
+                <input
+                  type="checkbox"
+                  id="sin-email-checkbox"
+                  data-testid="create-user-sin-email"
+                  checked={formData.sinEmail}
+                  onChange={(e) => setFormData({ ...formData, sinEmail: e.target.checked })}
+                  className="mt-1 cursor-pointer"
+                />
+                <label htmlFor="sin-email-checkbox" className="text-sm text-foreground/80 cursor-pointer flex-1">
+                  <span className="font-medium">Vendedor de campo (sin email)</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    Marca esta opción para asignar una contraseña temporal manualmente. El usuario la cambiará en su primer inicio de sesión.
+                  </span>
+                </label>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("email")} *</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
+                  {t("email")} {!formData.sinEmail && '*'}
+                </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={t('placeholderEmail')}
+                  required={!formData.sinEmail}
+                  disabled={formData.sinEmail}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-1">{t("password")} *</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="********"
-                />
-              </div>
+
+              {formData.sinEmail ? (
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">
+                    Contraseña temporal *
+                  </label>
+                  <input
+                    type="password"
+                    data-testid="create-user-password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Min. 8 caracteres con mayúsculas, minúsculas y números"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Compártela verbalmente con el vendedor. Él la cambiará al iniciar sesión.
+                  </p>
+                </div>
+              ) : formData.email ? (
+                <div
+                  role="alert"
+                  className="flex gap-2 items-start text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3"
+                >
+                  <span aria-hidden="true">📧</span>
+                  <span>
+                    Le enviaremos un correo a <strong>{formData.email}</strong> con instrucciones para que establezca su propia contraseña. El enlace expira en 24 horas.
+                  </span>
+                </div>
+              ) : null}
+
               <div>
                 <label className="block text-sm font-medium text-foreground/80 mb-1">{t("phone")}</label>
                 <input
@@ -1539,7 +1597,20 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                 <label className="block text-sm font-medium text-foreground/80 mb-1">{t("role")}</label>
                 <SearchableSelect
                   options={roles
-                    .filter(role => isSuperAdmin || role.nombre.toUpperCase() !== 'ADMIN')
+                    .filter(role => {
+                      // RoleHierarchy mirror del backend (libs/HandySuites.Domain/Common/RoleHierarchy.cs).
+                      // Source of truth sigue siendo server-side en UsuarioService.
+                      const target = role.nombre.toUpperCase();
+                      const caller = (session?.user?.role || '').toUpperCase();
+                      if (caller === 'SUPER_ADMIN') return true;
+                      if (caller === 'ADMIN') {
+                        return target === 'SUPERVISOR' || target === 'VIEWER' || target === 'VENDEDOR';
+                      }
+                      if (caller === 'SUPERVISOR') {
+                        return target === 'VENDEDOR' || target === 'VIEWER';
+                      }
+                      return false;
+                    })
                     .map(role => ({ value: role.nombre, label: role.nombre }))}
                   value={formData.role || null}
                   onChange={(val) => setFormData({ ...formData, role: val ? String(val) : '' })}

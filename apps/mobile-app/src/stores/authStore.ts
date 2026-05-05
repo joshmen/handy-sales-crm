@@ -44,6 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         avatarUrl: user.avatarUrl ?? null,
         tenantName: user.tenantName ?? null,
         tenantLogo: user.tenantLogo ?? null,
+        mustChangePassword: user.mustChangePassword ?? false,
       })),
     ]);
     set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false });
@@ -87,6 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           avatarUrl: parsed.avatarUrl ?? null,
           tenantName: parsed.tenantName ?? null,
           tenantLogo: parsed.tenantLogo ?? null,
+          mustChangePassword: parsed.mustChangePassword ?? false,
         };
         set({
           user,
@@ -117,6 +119,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         avatarUrl: merged.avatarUrl ?? null,
         tenantName: merged.tenantName ?? null,
         tenantLogo: merged.tenantLogo ?? null,
+        mustChangePassword: merged.mustChangePassword ?? false,
       }));
     } catch {
       // Persistencia best-effort. State en memoria ya está actualizado.

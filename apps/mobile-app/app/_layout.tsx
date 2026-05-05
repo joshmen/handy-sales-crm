@@ -158,7 +158,7 @@ SplashScreen.preventAutoHideAsync();
 const INITIAL_SYNC_KEY = 'initial_sync_complete';
 
 function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
-  const { isAuthenticated, isLoading, restoreSession } = useAuthStore();
+  const { isAuthenticated, isLoading, restoreSession, user } = useAuthStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const segments = useSegments();
   const router = useRouter();
@@ -201,6 +201,7 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
+    const onCambiarPasswordScreen = inAuthGroup && (segments as string[])[1] === 'cambiar-password';
 
     if (!isAuthenticated && !inAuthGroup) {
       if (!onboardingDone) {
@@ -208,11 +209,17 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
       } else {
         router.replace('/(auth)/login');
       }
-    } else if (isAuthenticated && !inTabsGroup) {
+    } else if (isAuthenticated && user?.mustChangePassword && !onCambiarPasswordScreen) {
+      // Force-redirect a cambiar-password — el usuario fue creado con password
+      // temporal por un admin (caso vendedor de campo MX sin email). No puede
+      // navegar a otra pantalla hasta cambiarla. Backend MustChangePassword
+      // flag = source of truth; sync local en setUser tras success.
+      router.replace('/(auth)/cambiar-password' as any);
+    } else if (isAuthenticated && !user?.mustChangePassword && !inTabsGroup) {
       // Navigate to tabs — splash overlay handles sync if needed
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, onboardingDone,segments]);
+  }, [isAuthenticated, isLoading, onboardingDone, segments, user?.mustChangePassword]);
 
   // Handle cold-start deep links (e.g., from killed notification tap)
   useEffect(() => {

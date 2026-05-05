@@ -83,46 +83,97 @@ public class UsuarioService
 
     public async Task<int> CrearUsuarioAsync(CrearUsuarioDto dto)
     {
-        // Authorization: only Admin or SuperAdmin
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        // Authorization base: solo Admin/SuperAdmin/Supervisor pueden crear
+        // usuarios. La jerarquía exacta de qué rol puede asignar qué la
+        // resuelve RoleHierarchy.CanCreateRole abajo.
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor)
             throw new UnauthorizedAccessException("No tienes permisos para crear usuarios");
 
-        // Validate email
-        if (DisposableEmailService.IsDisposable(dto.Email))
-            throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
-        if (await _repo.ExisteEmailAsync(dto.Email))
-            throw new InvalidOperationException("El email ya está en uso");
+        var rolUpper = (dto.Rol ?? string.Empty).ToUpperInvariant();
 
-        // Validate password
-        if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
-            throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
-
-        // Role resolution — RolExplicito es la fuente de verdad ahora.
-        var rolUpper = dto.Rol?.ToUpperInvariant() ?? RoleNames.Vendedor;
-        int? roleId = null;
-
-        if (rolUpper == RoleNames.Admin)
+        // RBAC hierarchy enforcement (single source of truth: RoleHierarchy).
+        // Bloquea: ADMIN intentando crear SUPER_ADMIN/ADMIN, SUPERVISOR
+        // intentando crear ADMIN/SUPER_ADMIN/SUPERVISOR, etc.
+        if (!RoleHierarchy.CanCreateRole(_tenant.Role, rolUpper))
         {
-            if (!_tenant.IsSuperAdmin)
-                throw new UnauthorizedAccessException("Solo el SuperAdmin puede crear administradores");
+            throw new UnauthorizedAccessException(
+                $"Tu rol no permite crear usuarios con rol {rolUpper}.");
         }
-        else if (rolUpper != RoleNames.Vendedor)
+
+        // Validate email duplicado (solo si email viene — caso SinEmail puede dejar vacío).
+        if (!string.IsNullOrWhiteSpace(dto.Email))
+        {
+            if (DisposableEmailService.IsDisposable(dto.Email))
+                throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
+            if (await _repo.ExisteEmailAsync(dto.Email))
+                throw new InvalidOperationException("El email ya está en uso");
+        }
+
+        // Resolver RoleId si rol no es Vendedor (legacy compat).
+        int? roleId = null;
+        if (rolUpper != RoleNames.Vendedor)
         {
             var role = await _repo.ObtenerRolPorNombreAsync(rolUpper);
             if (role != null) roleId = role.Id;
         }
 
-        var usuario = new Usuario
+        // Branch: invite link (default) vs sin-email (admin temp password).
+        Usuario usuario;
+        if (dto.SinEmail)
         {
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Nombre = dto.Nombre,
-            TenantId = _tenant.TenantId,
-            RolExplicito = rolUpper,
-            RoleId = roleId,
-            Activo = true,
-            CreadoPor = _tenant.UserId
-        };
+            // Vendedor de campo MX sin email corporativo. Admin asigna password
+            // temporal; flag MustChangePassword=true fuerza cambio en primer login.
+            if (string.IsNullOrEmpty(dto.Password))
+                throw new InvalidOperationException("La contraseña temporal es obligatoria para usuarios sin email.");
+
+            // Defense-in-depth: HIBP check incluso para passwords temporales.
+            if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
+                throw new InvalidOperationException("La contraseña fue encontrada en filtraciones de datos. Elige otra distinta.");
+
+            usuario = new Usuario
+            {
+                Email = dto.Email ?? string.Empty,
+                Nombre = dto.Nombre,
+                Telefono = dto.Telefono,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                TenantId = _tenant.TenantId,
+                RolExplicito = rolUpper,
+                RoleId = roleId,
+                Activo = true, // puede usar la app de inmediato pero forzado a cambiar password
+                MustChangePassword = true,
+                CreadoPor = _tenant.UserId,
+            };
+        }
+        else
+        {
+            // Invite link flow (default + recommended por OWASP/NIST).
+            // Generamos un placeholder random para que la columna NOT NULL no
+            // falle. El usuario establecerá su propia contraseña al redeem el
+            // invite token (genera AuthService.SendInvitationEmailAsync, ya
+            // cableado en UsuarioEndpoints.CreateUsuario).
+            var placeholderBytes = new byte[32];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(placeholderBytes);
+            var placeholder = Convert.ToBase64String(placeholderBytes);
+
+            usuario = new Usuario
+            {
+                Email = dto.Email,
+                Nombre = dto.Nombre,
+                Telefono = dto.Telefono,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(placeholder),
+                TenantId = _tenant.TenantId,
+                RolExplicito = rolUpper,
+                RoleId = roleId,
+                // Activo=true para que aparezca en listas como "activo" (consistente
+                // con UX existente). El gating real es vía email invite — sin
+                // redeem el usuario no tiene password real para login. El flag
+                // MustChangePassword sigue false (al redeem el invite, /set-password
+                // setea la contraseña directamente, no necesita doble cambio).
+                Activo = true,
+                MustChangePassword = false,
+                CreadoPor = _tenant.UserId,
+            };
+        }
 
         var creado = await _repo.RegistrarAsync(usuario);
         return creado.Id;

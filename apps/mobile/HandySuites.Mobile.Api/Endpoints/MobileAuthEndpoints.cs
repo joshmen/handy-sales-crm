@@ -154,6 +154,68 @@ public static class MobileAuthEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        // POST /api/mobile/auth/change-password — cambiar contraseña del propio
+        // usuario logueado. Forzado al primer login si MustChangePassword=true
+        // (vendedor de campo creado por admin con password temporal). También
+        // disponible en cualquier momento como cambio voluntario.
+        group.MapPost("/change-password", async (
+            ChangePasswordDto dto,
+            [FromServices] HandySuitesDbContext db,
+            HttpContext context) =>
+        {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? context.User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Results.Unauthorized();
+
+            // Validación strong password (regex similar al register/crear).
+            if (string.IsNullOrEmpty(dto.NewPassword) || dto.NewPassword.Length < 8)
+                return Results.BadRequest(new { error = "La nueva contraseña debe tener al menos 8 caracteres." });
+            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.NewPassword, @"[a-z]")
+                || !System.Text.RegularExpressions.Regex.IsMatch(dto.NewPassword, @"[A-Z]")
+                || !System.Text.RegularExpressions.Regex.IsMatch(dto.NewPassword, @"\d"))
+            {
+                return Results.BadRequest(new { error = "La nueva contraseña debe contener al menos una minúscula, una mayúscula y un número." });
+            }
+            if (dto.NewPassword == dto.OldPassword)
+                return Results.BadRequest(new { error = "La nueva contraseña debe ser distinta a la actual." });
+
+            var usuario = await db.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
+            if (usuario == null) return Results.NotFound();
+
+            // Validar password actual contra hash. Usamos BCrypt.Verify.
+            if (string.IsNullOrEmpty(dto.OldPassword)
+                || !BCrypt.Net.BCrypt.Verify(dto.OldPassword, usuario.PasswordHash))
+            {
+                return Results.BadRequest(new { error = "La contraseña actual es incorrecta." });
+            }
+
+            usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            usuario.MustChangePassword = false;
+
+            // Revocar todos los refresh tokens del usuario para forzar re-login con
+            // el nuevo password en otros dispositivos. El device actual sigue
+            // funcionando con su access token vigente hasta que expire.
+            var activeTokens = await db.RefreshTokens
+                .Where(t => t.UserId == userId && !t.IsRevoked && t.ExpiresAt > DateTime.UtcNow)
+                .ToListAsync();
+            foreach (var t in activeTokens)
+            {
+                t.IsRevoked = true;
+                t.RevokedAt = DateTime.UtcNow;
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { success = true, message = "Contraseña actualizada exitosamente." });
+        })
+        .RequireAuthorization()
+        .WithSummary("Cambiar contraseña del usuario logueado")
+        .WithDescription("Valida oldPassword contra hash actual; setea nueva (BCrypt) + MustChangePassword=false. Revoca refresh tokens del usuario en otros devices.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/refresh", async (
             RefreshTokenDto dto,
             [FromServices] MobileAuthService auth) =>
@@ -302,3 +364,6 @@ public class LogoutRequest
 {
     public string? RefreshToken { get; set; }
 }
+
+/// <summary>Payload para POST /api/mobile/auth/change-password.</summary>
+public record ChangePasswordDto(string OldPassword, string NewPassword);
