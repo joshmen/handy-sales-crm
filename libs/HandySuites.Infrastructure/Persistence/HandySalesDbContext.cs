@@ -591,6 +591,10 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(nh => new { nh.TenantId, nh.Status });
             entity.HasIndex(nh => new { nh.TenantId, nh.Tipo });
             entity.HasIndex(nh => nh.CreadoEn);
+            // Sync mobile (GET /api/mobile/notifications): WHERE usuario_id=X
+            // AND tenant_id=Y AND enviado_en >= since ORDER BY enviado_en DESC.
+            entity.HasIndex(nh => new { nh.UsuarioId, nh.TenantId, nh.EnviadoEn })
+                  .HasDatabaseName("IX_NotificationHistory_UsuarioId_TenantId_EnviadoEn");
         });
 
         // Configure ImpersonationSession entity (Platform-level - NO tenant filter)

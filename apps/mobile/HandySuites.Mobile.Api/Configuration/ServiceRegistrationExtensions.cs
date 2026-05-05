@@ -128,6 +128,9 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<OrderNotificationHelper>();
         services.AddScoped<StockNotificationService>();
 
+        // Cleanup worker: borra NotificationHistory > 30 días una vez al día.
+        services.AddHostedService<NotificationCleanupWorker>();
+
         // Sync notification bridge (Mobile API → Main API via HTTP)
         var mainApiUrl = config["MainApiUrl"] ?? "http://localhost:1050";
         services.AddHttpClient<SyncNotificationService>(client =>
