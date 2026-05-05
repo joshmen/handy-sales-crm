@@ -27,16 +27,19 @@ namespace HandySuites.Infrastructure.Migrations
         {
             // Postgres-specific. UPDATE...FROM permite tomar valores de Clientes
             // sin subquery por fila (más rápido en tablas grandes que correlated
-            // subquery). El ClienteId tiene índice ya — lookup constante.
+            // subquery). El cliente_id tiene índice FK ya — lookup constante.
+            //
+            // Convención del schema: tablas en PascalCase entrecomilladas
+            // ("Pedidos", "Clientes"), columnas en snake_case sin comillas.
             migrationBuilder.Sql(@"
                 UPDATE ""Pedidos"" p
-                SET ""Latitud"" = c.""Latitud"",
-                    ""Longitud"" = c.""Longitud""
+                SET latitud = c.latitud,
+                    longitud = c.longitud
                 FROM ""Clientes"" c
-                WHERE p.""ClienteId"" = c.""Id""
-                  AND p.""Latitud"" IS NULL
-                  AND c.""Latitud"" IS NOT NULL
-                  AND c.""Longitud"" IS NOT NULL;
+                WHERE p.cliente_id = c.id
+                  AND p.latitud IS NULL
+                  AND c.latitud IS NOT NULL
+                  AND c.longitud IS NOT NULL;
             ");
         }
 
