@@ -82,7 +82,28 @@ export function useRealtime() {
         useAuthStore.getState().logout();
       }),
       signalR.on('ReceiveNotification', () => {
+        // Backend persiste NotificationHistory antes de mandar push. Disparar
+        // sync incremental → trae nuevas entries → notificationStore notifica
+        // a sus subscribers (pantalla notificaciones se actualiza sin pull).
+        // Dedup por nhId garantiza que push live + sync no dupliquen.
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        import('@/services/notificationSync')
+          .then(m => m.syncNotificationsFromBackend())
+          .catch(() => { /* best-effort */ });
+      }),
+      // Admin asignó/republicó una ruta al vendedor. Disparar sync general:
+      // trae la ruta nueva (estado=PendienteAceptar/CargaAceptada) + sus
+      // pedidos asignados + carga. Pantalla "Hoy" lee de WDB observable
+      // (useOfflineRutaHoy) → se actualiza solo cuando WDB cambie.
+      signalR.on('RutaAssigned', () => {
+        queryClient.invalidateQueries({ queryKey: ['rutas'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        performSync().catch(() => {});
+      }),
+      signalR.on('RutaCancelada', () => {
+        queryClient.invalidateQueries({ queryKey: ['rutas'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        performSync().catch(() => {});
       }),
       // Cuando admin/super-admin edita datos de empresa o logo/branding desde
       // el backoffice web, el backend emite este evento → mobile invalida el

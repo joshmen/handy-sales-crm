@@ -22,4 +22,7 @@ public class SignalRPushService : IRealtimePushService
             _hub.Clients.Group($"user:{uid}").SendAsync("ReceiveNotification", payload));
         await Task.WhenAll(tasks);
     }
+
+    public Task SendEventToUserAsync(int userId, string eventName, object payload)
+        => _hub.Clients.Group($"user:{userId}").SendAsync(eventName, payload);
 }

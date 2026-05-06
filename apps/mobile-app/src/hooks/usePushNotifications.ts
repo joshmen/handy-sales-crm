@@ -39,6 +39,14 @@ function invalidateCachesForType(queryClient: ReturnType<typeof useQueryClient>,
     // el snapshot `me` para que el avatar/badge en el header se vea al instante.
     queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  } else if (type.startsWith('route.')) {
+    // Ruta asignada/cancelada/cerrada: invalidar React Query y disparar sync
+    // general (trae nueva ruta + sus pedidos + carga a WDB). Pantalla "Hoy"
+    // es observable de WDB → se actualiza sin pull cuando llega data nueva.
+    // Fallback en caso que SignalR esté caído (ver useRealtime.ts RutaAssigned).
+    queryClient.invalidateQueries({ queryKey: ['rutas'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    performSync().catch(() => { /* sync best-effort */ });
   } else {
     // For any other type, at least refresh the dashboard
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });

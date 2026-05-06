@@ -49,7 +49,12 @@ export function useOfflineRutaHoy() {
         Q.where('usuario_id', Number(user.id)),
         Q.where('activo', true),
         Q.where('fecha', Q.gte(windowStart)),
-        Q.where('fecha', Q.lt(windowEnd))
+        Q.where('fecha', Q.lt(windowEnd)),
+        // Excluir estados terminales: Cancelada (3), Cerrada (6). Reportado
+        // 2026-05-05: vendedor2 veía solo "RUTA DE MARTES Cancelada" en
+        // pantalla "Hoy" mientras la nueva ruta asignada no aparecía. La
+        // ruta cancelada ya no es accionable y solo confunde.
+        Q.where('estado', Q.notIn([3, 6])),
       )
       .observe();
   }, [user?.id, tz]);
