@@ -237,63 +237,134 @@ public static class TeamLocationEndpoints
             : new List<HandySuites.Application.Tracking.DTOs.UbicacionVendedorDto>();
 
         // Dedupe contra fuentes canónicas (Pedidos / ClienteVisitas):
-        // - Cada venta produce DOS eventos: uno desde la tabla `Pedidos` (con
-        //   clienteNombre + coords del cliente) y uno desde el ping `Venta` que
-        //   mobile dispara al confirmar (con coords reales del vendedor pero
-        //   sin clienteNombre). Lo mismo para visitas.
-        // - Preferimos el ping (ubicación real del vendedor en el momento) y
-        //   lo enriquecemos con `clienteNombre/clienteId` del registro
-        //   canónico vía `ReferenciaId`. Luego dropeamos el evento canónico
-        //   para evitar duplicados.
-        // - Pings sin matching `ReferenciaId` (ej. mobile build viejo, ping
-        //   creado antes del backfill) pasan sin enriquecimiento — quedan
-        //   en la timeline con clienteNombre=null pero con su link.
+        // Cada venta produce DOS eventos: uno desde la tabla `Pedidos` (con
+        // clienteNombre + coords del cliente) y uno desde el ping `Venta` que
+        // mobile dispara al confirmar (con coords reales del vendedor pero
+        // sin clienteNombre). Lo mismo para visitas.
+        //
+        // Estrategia de matching en dos pasos:
+        //   PASS 1 (exacto)    — ping.ReferenciaId == Pedido/Visita.Id.
+        //   PASS 2 (proximity) — para pings sin ReferenciaId, matchear con
+        //                        el Pedido/Visita NO cubierto del mismo
+        //                        vendedor cuyo timestamp está más cerca,
+        //                        dentro de ±5 min. Mobile dispara `recordPing`
+        //                        sub-segundo después de crear la entidad,
+        //                        así que sub-minuto es lo esperado; los 5 min
+        //                        son margen para clock-skew + latencia sync.
+        //
+        // El ping ganador conserva sus coords (ubicación REAL del vendedor)
+        // y se enriquece con clienteNombre/clienteId/referenciaId desde la
+        // fuente canónica. La fuente canónica matcheada se descarta.
+        // Edge cases preservados: pings sin match alguno y entidades canónicas
+        // sin ping matching pasan tal cual — no perdemos data.
         var pedidoLookup = pedidos.ToDictionary(p => p.referenciaId!.Value);
         var visitaLookup = visitas.ToDictionary(v => v.referenciaId!.Value);
         var pedidoIdsCubiertos = new HashSet<int>();
         var visitaIdsCubiertos = new HashSet<int>();
 
-        var trackingPings = rawPings.Select(p =>
-        {
-            var tipo = p.Tipo == TipoPingUbicacion.Checkpoint ? "checkpoint"
-                : p.Tipo == TipoPingUbicacion.Venta ? "pedido"
-                : p.Tipo == TipoPingUbicacion.Visita ? "visita"
-                : p.Tipo == TipoPingUbicacion.Cobro ? "cobro"
-                : p.Tipo == TipoPingUbicacion.InicioRuta ? "inicio_ruta"
-                : p.Tipo == TipoPingUbicacion.FinRuta ? "fin_ruta"
-                : p.Tipo == TipoPingUbicacion.InicioJornada ? "inicio_jornada"
-                : p.Tipo == TipoPingUbicacion.FinJornada ? "fin_jornada"
-                : p.Tipo == TipoPingUbicacion.StopAutomatico ? "stop_automatico"
-                : "checkpoint";
+        // Resolución por índice del rawPings — calculamos antes de materializar
+        // los anon types para que cada ping tenga su info de cliente correcta.
+        var pingResolution = new Dictionary<int, (int? clienteId, string? clienteNombre, int? referenciaId)>();
 
-            int? clienteId = null;
-            string? clienteNombre = null;
-            if (p.ReferenciaId.HasValue)
+        static string MapTipo(TipoPingUbicacion t) => t switch
+        {
+            TipoPingUbicacion.Checkpoint => "checkpoint",
+            TipoPingUbicacion.Venta => "pedido",
+            TipoPingUbicacion.Visita => "visita",
+            TipoPingUbicacion.Cobro => "cobro",
+            TipoPingUbicacion.InicioRuta => "inicio_ruta",
+            TipoPingUbicacion.FinRuta => "fin_ruta",
+            TipoPingUbicacion.InicioJornada => "inicio_jornada",
+            TipoPingUbicacion.FinJornada => "fin_jornada",
+            TipoPingUbicacion.StopAutomatico => "stop_automatico",
+            _ => "checkpoint"
+        };
+
+        // PASS 1: matching exacto por ReferenciaId.
+        for (int i = 0; i < rawPings.Count; i++)
+        {
+            var p = rawPings[i];
+            if (!p.ReferenciaId.HasValue) continue;
+            var tipo = MapTipo(p.Tipo);
+
+            if (tipo == "pedido"
+                && !pedidoIdsCubiertos.Contains(p.ReferenciaId.Value)
+                && pedidoLookup.TryGetValue(p.ReferenciaId.Value, out var ped))
             {
-                if (tipo == "pedido" && pedidoLookup.TryGetValue(p.ReferenciaId.Value, out var ped))
+                pedidoIdsCubiertos.Add(p.ReferenciaId.Value);
+                pingResolution[i] = (ped.clienteId, ped.clienteNombre, p.ReferenciaId);
+            }
+            else if (tipo == "visita"
+                     && !visitaIdsCubiertos.Contains(p.ReferenciaId.Value)
+                     && visitaLookup.TryGetValue(p.ReferenciaId.Value, out var vis))
+            {
+                visitaIdsCubiertos.Add(p.ReferenciaId.Value);
+                pingResolution[i] = (vis.clienteId, vis.clienteNombre, p.ReferenciaId);
+            }
+        }
+
+        // PASS 2: proximity match para pings sin ReferenciaId. Greedy en orden
+        // cronológico — el primer ping reclama el pedido más cercano disponible.
+        // Como pings y pedidos llegan en mismo orden temporal, el greedy es
+        // suficientemente robusto sin requerir bipartite matching óptimo.
+        const double maxDeltaSeconds = 300.0; // 5 min
+        for (int i = 0; i < rawPings.Count; i++)
+        {
+            if (pingResolution.ContainsKey(i)) continue; // ya matcheado
+            var p = rawPings[i];
+            if (p.ReferenciaId.HasValue) continue; // tiene ref pero no matcheó (no debería pasar)
+            var tipo = MapTipo(p.Tipo);
+
+            if (tipo == "pedido")
+            {
+                var match = pedidos
+                    .Where(ped => !pedidoIdsCubiertos.Contains(ped.referenciaId!.Value))
+                    .Select(ped => new { ped, delta = Math.Abs((ped.cuando - p.CapturadoEn).TotalSeconds) })
+                    .OrderBy(x => x.delta)
+                    .FirstOrDefault();
+                if (match != null && match.delta <= maxDeltaSeconds)
                 {
-                    pedidoIdsCubiertos.Add(p.ReferenciaId.Value);
-                    clienteId = ped.clienteId;
-                    clienteNombre = ped.clienteNombre;
-                }
-                else if (tipo == "visita" && visitaLookup.TryGetValue(p.ReferenciaId.Value, out var vis))
-                {
-                    visitaIdsCubiertos.Add(p.ReferenciaId.Value);
-                    clienteId = vis.clienteId;
-                    clienteNombre = vis.clienteNombre;
+                    pedidoIdsCubiertos.Add(match.ped.referenciaId!.Value);
+                    pingResolution[i] = (match.ped.clienteId, match.ped.clienteNombre, match.ped.referenciaId);
                 }
             }
+            else if (tipo == "visita")
+            {
+                var match = visitas
+                    .Where(vis => !visitaIdsCubiertos.Contains(vis.referenciaId!.Value))
+                    .Select(vis => new { vis, delta = Math.Abs((vis.cuando - p.CapturadoEn).TotalSeconds) })
+                    .OrderBy(x => x.delta)
+                    .FirstOrDefault();
+                if (match != null && match.delta <= maxDeltaSeconds)
+                {
+                    visitaIdsCubiertos.Add(match.vis.referenciaId!.Value);
+                    pingResolution[i] = (match.vis.clienteId, match.vis.clienteNombre, match.vis.referenciaId);
+                }
+            }
+        }
 
+        // Materializar trackingPings con la resolución calculada.
+        var trackingPings = rawPings.Select((p, i) =>
+        {
+            int? clienteId = null;
+            string? clienteNombre = null;
+            int? referenciaId = p.ReferenciaId;
+            if (pingResolution.TryGetValue(i, out var res))
+            {
+                clienteId = res.clienteId;
+                clienteNombre = res.clienteNombre;
+                referenciaId = res.referenciaId;
+            }
             return new
             {
-                tipo,
+                tipo = MapTipo(p.Tipo),
                 cuando = p.CapturadoEn,
                 latitud = (double)p.Latitud,
                 longitud = (double)p.Longitud,
                 clienteId,
                 clienteNombre,
                 distanciaCliente = (double?)null,
-                referenciaId = p.ReferenciaId,
+                referenciaId,
             };
         }).ToList();
 
