@@ -232,31 +232,79 @@ public static class TeamLocationEndpoints
 
         // Pings de tracking continuo (Fase B). Solo si el plan tiene la feature.
         var hasTracking = await featureGuard.HasFeatureAsync(tenantId, "tracking_vendedor");
-        var trackingPings = hasTracking
-            ? (await ubicacionRepo.ObtenerRecorridoEntreAsync(tenantId, id, inicio, fin))
-                .Select(p => new
-                {
-                    tipo = p.Tipo == TipoPingUbicacion.Checkpoint ? "checkpoint"
-                        : p.Tipo == TipoPingUbicacion.Venta ? "pedido"
-                        : p.Tipo == TipoPingUbicacion.Visita ? "visita"
-                        : p.Tipo == TipoPingUbicacion.Cobro ? "cobro"
-                        : p.Tipo == TipoPingUbicacion.InicioRuta ? "inicio_ruta"
-                        : p.Tipo == TipoPingUbicacion.FinRuta ? "fin_ruta"
-                        : p.Tipo == TipoPingUbicacion.InicioJornada ? "inicio_jornada"
-                        : p.Tipo == TipoPingUbicacion.FinJornada ? "fin_jornada"
-                        : p.Tipo == TipoPingUbicacion.StopAutomatico ? "stop_automatico"
-                        : "checkpoint",
-                    cuando = p.CapturadoEn,
-                    latitud = (double)p.Latitud,
-                    longitud = (double)p.Longitud,
-                    clienteId = (int?)null,
-                    clienteNombre = (string?)null,
-                    distanciaCliente = (double?)null,
-                    referenciaId = p.ReferenciaId,
-                }).ToList()
-            : new List<dynamic>().Select(_ => new { tipo = "", cuando = DateTime.MinValue, latitud = 0d, longitud = 0d, clienteId = (int?)null, clienteNombre = (string?)null, distanciaCliente = (double?)null, referenciaId = (int?)null }).ToList();
+        var rawPings = hasTracking
+            ? await ubicacionRepo.ObtenerRecorridoEntreAsync(tenantId, id, inicio, fin)
+            : new List<HandySuites.Application.Tracking.DTOs.UbicacionVendedorDto>();
 
-        var todos = visitas.Concat(paradas).Concat(pedidos).Concat(trackingPings)
+        // Dedupe contra fuentes canónicas (Pedidos / ClienteVisitas):
+        // - Cada venta produce DOS eventos: uno desde la tabla `Pedidos` (con
+        //   clienteNombre + coords del cliente) y uno desde el ping `Venta` que
+        //   mobile dispara al confirmar (con coords reales del vendedor pero
+        //   sin clienteNombre). Lo mismo para visitas.
+        // - Preferimos el ping (ubicación real del vendedor en el momento) y
+        //   lo enriquecemos con `clienteNombre/clienteId` del registro
+        //   canónico vía `ReferenciaId`. Luego dropeamos el evento canónico
+        //   para evitar duplicados.
+        // - Pings sin matching `ReferenciaId` (ej. mobile build viejo, ping
+        //   creado antes del backfill) pasan sin enriquecimiento — quedan
+        //   en la timeline con clienteNombre=null pero con su link.
+        var pedidoLookup = pedidos.ToDictionary(p => p.referenciaId!.Value);
+        var visitaLookup = visitas.ToDictionary(v => v.referenciaId!.Value);
+        var pedidoIdsCubiertos = new HashSet<int>();
+        var visitaIdsCubiertos = new HashSet<int>();
+
+        var trackingPings = rawPings.Select(p =>
+        {
+            var tipo = p.Tipo == TipoPingUbicacion.Checkpoint ? "checkpoint"
+                : p.Tipo == TipoPingUbicacion.Venta ? "pedido"
+                : p.Tipo == TipoPingUbicacion.Visita ? "visita"
+                : p.Tipo == TipoPingUbicacion.Cobro ? "cobro"
+                : p.Tipo == TipoPingUbicacion.InicioRuta ? "inicio_ruta"
+                : p.Tipo == TipoPingUbicacion.FinRuta ? "fin_ruta"
+                : p.Tipo == TipoPingUbicacion.InicioJornada ? "inicio_jornada"
+                : p.Tipo == TipoPingUbicacion.FinJornada ? "fin_jornada"
+                : p.Tipo == TipoPingUbicacion.StopAutomatico ? "stop_automatico"
+                : "checkpoint";
+
+            int? clienteId = null;
+            string? clienteNombre = null;
+            if (p.ReferenciaId.HasValue)
+            {
+                if (tipo == "pedido" && pedidoLookup.TryGetValue(p.ReferenciaId.Value, out var ped))
+                {
+                    pedidoIdsCubiertos.Add(p.ReferenciaId.Value);
+                    clienteId = ped.clienteId;
+                    clienteNombre = ped.clienteNombre;
+                }
+                else if (tipo == "visita" && visitaLookup.TryGetValue(p.ReferenciaId.Value, out var vis))
+                {
+                    visitaIdsCubiertos.Add(p.ReferenciaId.Value);
+                    clienteId = vis.clienteId;
+                    clienteNombre = vis.clienteNombre;
+                }
+            }
+
+            return new
+            {
+                tipo,
+                cuando = p.CapturadoEn,
+                latitud = (double)p.Latitud,
+                longitud = (double)p.Longitud,
+                clienteId,
+                clienteNombre,
+                distanciaCliente = (double?)null,
+                referenciaId = p.ReferenciaId,
+            };
+        }).ToList();
+
+        // Filtrar las fuentes canónicas: solo dejamos los que NO fueron
+        // absorbidos por un ping. Si no hay ping (mobile no capturó por
+        // permiso/red/etc.), el evento del Pedido/Visita queda como única
+        // representación en la timeline — no perdemos data.
+        var pedidosFinal = pedidos.Where(p => !pedidoIdsCubiertos.Contains(p.referenciaId!.Value)).ToList();
+        var visitasFinal = visitas.Where(v => !visitaIdsCubiertos.Contains(v.referenciaId!.Value)).ToList();
+
+        var todos = visitasFinal.Concat(paradas).Concat(pedidosFinal).Concat(trackingPings)
             .OrderBy(x => x.cuando)
             .ToList();
 
