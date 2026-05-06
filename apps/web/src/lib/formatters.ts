@@ -101,3 +101,70 @@ export function formatNumber(
   const locale = getLocale(settings);
   return value.toLocaleString(locale);
 }
+
+/**
+ * Returns the current calendar date *in the tenant's timezone* as YYYY-MM-DD.
+ * Antes muchos pages usaban `new Date()` (TZ del browser) lo que generaba
+ * inconsistencias entre clientes en diferentes zonas vs el tenant configurado.
+ */
+export function tenantToday(settings: FormatSettings | null): string {
+  const tz = settings?.timezone || 'America/Mexico_City';
+  // sv-SE → ISO 8601 (YYYY-MM-DD HH:mm:ss). Tomamos la parte de fecha.
+  const formatted = new Date().toLocaleString('sv-SE', { timeZone: tz });
+  return formatted.split(' ')[0] ?? '';
+}
+
+/**
+ * Returns the UTC instant corresponding to the start of a tenant calendar day.
+ * Day param can be a Date or YYYY-MM-DD string. If undefined, uses tenant today.
+ */
+export function tenantStartOfDayUtc(
+  day: Date | string | undefined,
+  settings: FormatSettings | null
+): Date {
+  const tz = settings?.timezone || 'America/Mexico_City';
+  const dayStr = typeof day === 'string'
+    ? day
+    : day
+      ? day.toLocaleString('sv-SE', { timeZone: tz }).split(' ')[0]
+      : tenantToday(settings);
+
+  // Estrategia: construye una fecha "en la TZ del tenant a las 00:00" usando
+  // un offset calculado para esa fecha (DST-aware). `Intl.DateTimeFormat` con
+  // `timeZoneName: 'shortOffset'` da el offset GMT±HH:MM exacto.
+  const probe = new Date(`${dayStr}T00:00:00Z`);
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    timeZoneName: 'shortOffset',
+  });
+  const parts = dtf.formatToParts(probe);
+  const offsetPart = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+0';
+  // shortOffset format: "GMT-7" or "GMT-07:00" or "GMT"
+  const m = offsetPart.match(/GMT(?:([+-])(\d{1,2})(?::?(\d{2}))?)?/);
+  let offsetMinutes = 0;
+  if (m && m[1]) {
+    const sign = m[1] === '-' ? -1 : 1;
+    const hh = parseInt(m[2] ?? '0', 10);
+    const mm = parseInt(m[3] ?? '0', 10);
+    offsetMinutes = sign * (hh * 60 + mm);
+  }
+  // local 00:00 in tenant TZ → UTC = local - offsetMinutes
+  return new Date(probe.getTime() - offsetMinutes * 60_000);
+}
+
+/**
+ * Returns YYYY-MM-DD for the Monday-aligned start of the tenant's current week.
+ * Lunes como inicio de semana (es-MX/MX común). Cambiar a domingo = día 0
+ * si tu app usa esa convención.
+ */
+export function tenantStartOfWeek(settings: FormatSettings | null): string {
+  const today = tenantToday(settings);
+  const [y, m, d] = today.split('-').map(Number);
+  if (!y || !m || !d) return today;
+  const noon = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  // 0 = Sunday … 6 = Saturday → lunes-aligned: (dow + 6) % 7
+  const dow = noon.getUTCDay();
+  const diff = (dow + 6) % 7;
+  noon.setUTCDate(noon.getUTCDate() - diff);
+  return noon.toISOString().slice(0, 10);
+}

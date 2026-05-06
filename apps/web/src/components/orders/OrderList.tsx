@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Order } from '@/types/orders';
 import { Plus, Package } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface OrderListProps {
   orders: Order[];
@@ -28,6 +29,10 @@ export const OrderList: React.FC<OrderListProps> = ({
   className = '',
 }) => {
   const t = useTranslations('orders.list');
+  // Día calendario en TZ tenant — antes los presets ("hoy", "esta semana")
+  // dependían de la TZ del browser, descartando órdenes legítimas en TZ
+  // negativa al cruce de medianoche.
+  const { tenantToday } = useFormatters();
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -35,42 +40,48 @@ export const OrderList: React.FC<OrderListProps> = ({
   const [dateFilter, setDateFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('');
 
-  // Función para filtrar por fecha
+  // Función para filtrar por fecha (anclada en día tenant)
   const filterByDate = (order: Order, filter: string) => {
     if (!filter) return true;
 
-    const orderDate = new Date(order.orderDate);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const orderKey = (typeof order.orderDate === 'string'
+      ? order.orderDate
+      : new Date(order.orderDate).toISOString()
+    ).slice(0, 10);
+    const todayKey = tenantToday();
+    const [ty, tm, td] = todayKey.split('-').map(Number);
+    const todayUtcNoon = new Date(Date.UTC(ty ?? 0, (tm ?? 1) - 1, td ?? 1, 12, 0, 0));
+    const ymdOf = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 
     switch (filter) {
       case 'today':
-        return orderDate.toDateString() === today.toDateString();
-      case 'yesterday':
-        return orderDate.toDateString() === yesterday.toDateString();
-      case 'this_week':
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        return orderDate >= weekStart;
-      case 'last_week':
-        const lastWeekStart = new Date(today);
-        lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
+        return orderKey === todayKey;
+      case 'yesterday': {
+        const y = new Date(todayUtcNoon);
+        y.setUTCDate(y.getUTCDate() - 1);
+        return orderKey === ymdOf(y);
+      }
+      case 'this_week': {
+        const weekStart = new Date(todayUtcNoon);
+        weekStart.setUTCDate(todayUtcNoon.getUTCDate() - todayUtcNoon.getUTCDay());
+        return orderKey >= ymdOf(weekStart);
+      }
+      case 'last_week': {
+        const lastWeekStart = new Date(todayUtcNoon);
+        lastWeekStart.setUTCDate(todayUtcNoon.getUTCDate() - todayUtcNoon.getUTCDay() - 7);
         const lastWeekEnd = new Date(lastWeekStart);
-        lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
-        return orderDate >= lastWeekStart && orderDate <= lastWeekEnd;
-      case 'this_month':
-        return (
-          orderDate.getMonth() === today.getMonth() &&
-          orderDate.getFullYear() === today.getFullYear()
-        );
-      case 'last_month':
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(today.getMonth() - 1);
-        return (
-          orderDate.getMonth() === lastMonth.getMonth() &&
-          orderDate.getFullYear() === lastMonth.getFullYear()
-        );
+        lastWeekEnd.setUTCDate(lastWeekStart.getUTCDate() + 6);
+        return orderKey >= ymdOf(lastWeekStart) && orderKey <= ymdOf(lastWeekEnd);
+      }
+      case 'this_month': {
+        return orderKey.slice(0, 7) === todayKey.slice(0, 7);
+      }
+      case 'last_month': {
+        const lm = new Date(todayUtcNoon);
+        lm.setUTCMonth(todayUtcNoon.getUTCMonth() - 1);
+        return orderKey.slice(0, 7) === `${lm.getUTCFullYear()}-${String(lm.getUTCMonth() + 1).padStart(2, '0')}`;
+      }
       default:
         return true;
     }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using HandySuites.Application.Tenants.DTOs;
@@ -56,7 +57,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetDashboardMetrics(
         [FromServices] HandySuitesDbContext context,
-        [FromServices] ICurrentTenant currentTenant)
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] ITenantTimeZoneService tenantTz)
     {
         try
         {
@@ -66,30 +68,38 @@ public static class DashboardEndpoints
                 .Where(u => u.TenantId == tenantId && u.Activo)
                 .CountAsync();
 
-            // ActivityLogs queries — graceful fallback if table doesn't exist yet
+            // ActivityLogs queries — graceful fallback if table doesn't exist yet.
+            // Ventanas calculadas en TZ tenant (no UTC) para que "hoy/semana/mes"
+            // alineen con el día calendario del tenant, no del servidor.
             int todayActivities = 0, weekActivities = 0, monthlyLogins = 0, activeUsersToday = 0, recentErrors = 0;
             try
             {
-                var today = DateTime.UtcNow.Date;
-                var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
-                var startOfMonth = new DateTime(today.Year, today.Month, 1);
+                var todayTenant = await tenantTz.GetTenantTodayAsync();
+                var weekStartTenant = todayTenant.AddDays(-(int)todayTenant.DayOfWeek);
+                var monthStartTenant = new DateOnly(todayTenant.Year, todayTenant.Month, 1);
+                var sevenDaysAgoTenant = todayTenant.AddDays(-7);
+
+                var todayUtc = await tenantTz.ConvertTenantDateToUtcAsync(todayTenant);
+                var weekStartUtc = await tenantTz.ConvertTenantDateToUtcAsync(weekStartTenant);
+                var monthStartUtc = await tenantTz.ConvertTenantDateToUtcAsync(monthStartTenant);
+                var sevenDaysAgoUtc = await tenantTz.ConvertTenantDateToUtcAsync(sevenDaysAgoTenant);
 
                 todayActivities = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= today)
+                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= todayUtc)
                     .CountAsync();
 
                 weekActivities = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= startOfWeek)
+                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= weekStartUtc)
                     .CountAsync();
 
                 monthlyLogins = await context.ActivityLogs
                     .Where(a => a.TenantId == tenantId
                         && a.ActivityType == "login"
-                        && a.CreatedAt >= startOfMonth)
+                        && a.CreatedAt >= monthStartUtc)
                     .CountAsync();
 
                 activeUsersToday = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= today)
+                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= todayUtc)
                     .Select(a => a.UserId)
                     .Distinct()
                     .CountAsync();
@@ -97,7 +107,7 @@ public static class DashboardEndpoints
                 recentErrors = await context.ActivityLogs
                     .Where(a => a.TenantId == tenantId
                         && a.ActivityStatus == "failed"
-                        && a.CreatedAt >= today.AddDays(-7))
+                        && a.CreatedAt >= sevenDaysAgoUtc)
                     .CountAsync();
             }
             catch
@@ -182,16 +192,32 @@ public static class DashboardEndpoints
     private static async Task<IResult> GetActivityChart(
         [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
+        [FromServices] ITenantTimeZoneService tenantTz,
         [FromQuery] int days = 7)
     {
         try
         {
             var tenantId = currentTenant.TenantId;
-            var startDate = DateTime.UtcNow.Date.AddDays(-days);
+            var todayTenant = await tenantTz.GetTenantTodayAsync();
+            var startTenant = todayTenant.AddDays(-days);
+            var startUtc = await tenantTz.ConvertTenantDateToUtcAsync(startTenant);
+            var tzInfo = await tenantTz.GetTenantTimeZoneAsync();
 
-            var activityData = await context.ActivityLogs
-                .Where(a => a.TenantId == tenantId && a.CreatedAt >= startDate)
-                .GroupBy(a => a.CreatedAt.Date)
+            // Pull raw rows then group por día calendario tenant en memoria
+            // (CreatedAt.Date en SQL agrupa por UTC, lo cual mete pings de
+            // 17:00 Mazatlán al "día siguiente" UTC).
+            var rawRows = await context.ActivityLogs
+                .Where(a => a.TenantId == tenantId && a.CreatedAt >= startUtc)
+                .Select(a => new { a.CreatedAt, a.ActivityType, a.ActivityStatus, a.UserId })
+                .ToListAsync();
+
+            DateOnly TenantDayOf(DateTime utc) => DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTimeFromUtc(
+                    utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+                    tzInfo));
+
+            var activityData = rawRows
+                .GroupBy(a => TenantDayOf(a.CreatedAt))
                 .Select(g => new
                 {
                     date = g.Key,
@@ -200,16 +226,14 @@ public static class DashboardEndpoints
                     errors = g.Count(x => x.ActivityStatus == "failed"),
                     uniqueUsers = g.Select(x => x.UserId).Distinct().Count()
                 })
-                .OrderBy(x => x.date)
-                .ToListAsync();
+                .ToList();
 
-            // Llenar los días faltantes con ceros
             var chartData = new List<object>();
             for (int i = days; i >= 0; i--)
             {
-                var date = DateTime.UtcNow.Date.AddDays(-i);
+                var date = todayTenant.AddDays(-i);
                 var dayData = activityData.FirstOrDefault(a => a.date == date);
-                
+
                 chartData.Add(new
                 {
                     date = date.ToString("MMM dd"),
@@ -226,10 +250,11 @@ public static class DashboardEndpoints
         catch
         {
             // activity_logs table may not exist yet — return empty chart
+            var todayTenant = await tenantTz.GetTenantTodayAsync();
             var emptyChart = new List<object>();
             for (int i = days; i >= 0; i--)
             {
-                var d = DateTime.UtcNow.Date.AddDays(-i);
+                var d = todayTenant.AddDays(-i);
                 emptyChart.Add(new { date = d.ToString("MMM dd"), fullDate = d, totalActivities = 0, logins = 0, errors = 0, uniqueUsers = 0 });
             }
             return Results.Ok(new { chartData = emptyChart });
@@ -239,6 +264,7 @@ public static class DashboardEndpoints
     private static async Task<IResult> GetMyPerformance(
         [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
+        [FromServices] ITenantTimeZoneService tenantTz,
         [FromQuery] string? startDate = null,
         [FromQuery] string? endDate = null)
     {
@@ -248,9 +274,14 @@ public static class DashboardEndpoints
                 return Results.Unauthorized();
 
             var tenantId = currentTenant.TenantId;
-            var today = DateTime.UtcNow.Date;
-            var desde = startDate != null ? DateTime.Parse(startDate) : today.AddDays(-30);
-            var hasta = endDate != null ? DateTime.Parse(endDate) : today.AddDays(1);
+            var todayTenant = await tenantTz.GetTenantTodayAsync();
+            // Bordes de filtro en TZ tenant. `desde/hasta` son DateTime UTC
+            // que representan medianoche del día calendario tenant
+            // (ConvertTenantDateToUtcAsync hace la conversión).
+            var desdeTenantDate = startDate != null ? DateOnly.Parse(startDate) : todayTenant.AddDays(-30);
+            var hastaTenantDate = endDate != null ? DateOnly.Parse(endDate) : todayTenant.AddDays(1);
+            var desde = await tenantTz.ConvertTenantDateToUtcAsync(desdeTenantDate);
+            var hasta = await tenantTz.ConvertTenantDateToUtcAsync(hastaTenantDate);
 
             // Mis pedidos (proyección para evitar columnas faltantes en DB)
             var pedidosPeriodo = await context.Pedidos
@@ -305,7 +336,10 @@ public static class DashboardEndpoints
                 // Rutas
                 rutasTotal = misRutas.Count,
                 rutasCompletadas = misRutas.Count(r => r.Estado == EstadoRuta.Completada || r.Estado == EstadoRuta.Cerrada),
-                rutasHoy = misRutas.Count(r => r.Fecha.Date == today),
+                // "rutasHoy" compara contra día calendario tenant, no UTC.
+                // Se asume que `Fecha` se almacena a medianoche UTC del día
+                // tenant, así que basta comparar la parte de fecha.
+                rutasHoy = misRutas.Count(r => DateOnly.FromDateTime(r.Fecha) == todayTenant),
 
                 // Clientes
                 clientesAsignados = misClientes,

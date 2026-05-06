@@ -1,4 +1,5 @@
 using FluentAssertions;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.ActivityTracking.Repositories;
 using HandySuites.Infrastructure.Persistence;
@@ -16,7 +17,31 @@ namespace HandySuites.Tests.Infrastructure.ActivityTracking
         {
             var scope = factory.Services.CreateScope();
             _context = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
-            _repository = new ActivityTrackingRepository(_context);
+            // Forzamos stub UTC: el real `TenantTimeZoneService` requiere
+            // `ICurrentTenant` en scope (HTTP context), que el test fixture
+            // no provee.
+            _repository = new ActivityTrackingRepository(_context, new FixedUtcTenantTimeZoneService());
+        }
+
+        // Stub UTC para tests cuando el container no registra el servicio real.
+        private sealed class FixedUtcTenantTimeZoneService : ITenantTimeZoneService
+        {
+            public Task<TimeZoneInfo> GetTenantTimeZoneAsync(System.Threading.CancellationToken ct = default)
+                => Task.FromResult(TimeZoneInfo.Utc);
+            public Task<TimeZoneInfo> GetTimeZoneForTenantAsync(int tenantId, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(TimeZoneInfo.Utc);
+            public Task<DateOnly> GetTenantTodayAsync(System.Threading.CancellationToken ct = default)
+                => Task.FromResult(DateOnly.FromDateTime(DateTime.UtcNow));
+            public Task<(DateTime InicioUtc, DateTime FinUtc)> GetTenantDayWindowUtcAsync(DateOnly? dia = null, System.Threading.CancellationToken ct = default)
+            {
+                var d = dia ?? DateOnly.FromDateTime(DateTime.UtcNow);
+                var start = d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                return Task.FromResult((start, start.AddDays(1)));
+            }
+            public Task<DateTime> ConvertTenantDateToUtcAsync(DateOnly tenantDate, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(tenantDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            public Task<DateOnly> GetTenantDayFromUtcAsync(DateTime utcInstant, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(DateOnly.FromDateTime(utcInstant));
         }
 
         [Fact]

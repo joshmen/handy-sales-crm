@@ -89,10 +89,14 @@ public class UbicacionVendedorRepository : IUbicacionVendedorRepository
     // Mapeo a UltimaUbicacionDto se hace en C# después del query.
     private record UltimaUbicacionRaw(int usuario_id, decimal latitud, decimal longitud, int tipo, DateTime capturado_en);
 
-    public Task<List<UbicacionVendedorDto>> ObtenerRecorridoDelDiaAsync(int tenantId, int usuarioId, DateOnly dia)
+    public Task<List<UbicacionVendedorDto>> ObtenerRecorridoEntreAsync(
+        int tenantId, int usuarioId, DateTime inicioUtc, DateTime finUtc)
     {
         return _db.UbicacionesVendedor.AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.UsuarioId == usuarioId && u.DiaServicio == dia)
+            .Where(u => u.TenantId == tenantId
+                     && u.UsuarioId == usuarioId
+                     && u.CapturadoEn >= inicioUtc
+                     && u.CapturadoEn < finUtc)
             .OrderBy(u => u.CapturadoEn)
             .Select(u => new UbicacionVendedorDto
             {

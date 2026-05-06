@@ -110,6 +110,8 @@ public static class ServiceRegistrationExtensions
         // Core Services
         services.AddScoped<JwtTokenGenerator>();
         services.AddScoped<ICurrentTenant, CurrentTenant>();
+        services.AddScoped<HandySuites.Application.Common.Interfaces.ITenantTimeZoneService,
+                            HandySuites.Infrastructure.Common.TenantTimeZoneService>();
         services.AddScoped<MobileAuthService>();
 
         // TOTP verification (compartido con web API). El mobile NO genera

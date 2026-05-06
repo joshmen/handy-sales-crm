@@ -68,12 +68,18 @@ type MetaFormData = z.infer<typeof metaSchema>;
 
 // ─── Helpers ───────────────────────────────────────────
 
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
-const nextMonthStr = () => {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  return d.toISOString().slice(0, 10);
+/**
+ * "Hoy" y "+1 mes" calculados sobre el día calendario del tenant
+ * (se inyecta `today` desde `useFormatters().tenantToday()`).
+ * Antes ambas funciones usaban `new Date()` (browser local), generando
+ * defaults de form un día desfasado para tenants en TZ negativa.
+ */
+const todayStrFromTenantToday = (today: string) => today;
+const nextMonthStrFromTenantToday = (today: string) => {
+  const [y, m, d] = today.split('-').map(Number);
+  const utc = new Date(Date.UTC((y ?? 0), (m ?? 1) - 1, (d ?? 1), 12, 0, 0));
+  utc.setUTCMonth(utc.getUTCMonth() + 1);
+  return utc.toISOString().slice(0, 10);
 };
 
 // ─── Page ──────────────────────────────────────────────
@@ -81,7 +87,9 @@ export default function MetasPage() {
   const t = useTranslations('goals');
   const tc = useTranslations('common');
   const showApiError = useApiErrorToast();
-  const { formatDate, formatNumber } = useFormatters();
+  const { formatDate, formatNumber, tenantToday } = useFormatters();
+  const todayStr = () => todayStrFromTenantToday(tenantToday());
+  const nextMonthStr = () => nextMonthStrFromTenantToday(tenantToday());
   const { data: session } = useSession();
 
   const TIPO_OPTIONS = [

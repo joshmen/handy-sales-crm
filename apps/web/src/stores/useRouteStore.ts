@@ -149,7 +149,13 @@ interface RouteStore {
 
   // Actions - Statistics
   updateStatistics: (stats: Partial<RouteStatistics>) => void;
-  calculateStatistics: () => void;
+  /**
+   * Recalcula estadísticas usando el día calendario del tenant.
+   * `tenantTodayDate` opcional: pasar `tenantToday()` desde `useFormatters`
+   * para que "rutas de hoy" filtre por el día calendario tenant en lugar
+   * del día calendario del browser.
+   */
+  calculateStatistics: (tenantTodayDate?: string) => void;
 
   // Computed
   getFilteredRoutes: () => Route[];
@@ -357,15 +363,19 @@ const useRouteStore = create<RouteStore>()(
             state.statistics = { ...state.statistics, ...stats };
           }),
 
-        calculateStatistics: () =>
+        calculateStatistics: (tenantTodayDate?: string) =>
           set(state => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // Si recibimos `tenantTodayDate` (YYYY-MM-DD) usamos ese día como
+            // "hoy"; sino caemos al browser local (legacy). Compara extrayendo
+            // la parte de fecha del campo `date` para evitar drifts por TZ.
+            const todayKey = tenantTodayDate ?? (() => {
+              const t = new Date();
+              return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+            })();
 
             const todayRoutes = state.routes.filter(r => {
-              const routeDate = new Date(r.date);
-              routeDate.setHours(0, 0, 0, 0);
-              return routeDate.getTime() === today.getTime();
+              const dateStr = typeof r.date === 'string' ? r.date : new Date(r.date).toISOString();
+              return dateStr.slice(0, 10) === todayKey;
             });
 
             const activeRoutes = todayRoutes.filter(

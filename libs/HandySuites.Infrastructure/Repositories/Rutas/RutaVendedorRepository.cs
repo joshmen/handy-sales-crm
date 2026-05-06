@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Interfaces;
 using HandySuites.Domain.Entities;
@@ -9,10 +10,12 @@ namespace HandySuites.Infrastructure.Repositories.Rutas;
 public class RutaVendedorRepository : IRutaVendedorRepository
 {
     private readonly HandySuitesDbContext _db;
+    private readonly ITenantTimeZoneService _tenantTz;
 
-    public RutaVendedorRepository(HandySuitesDbContext db)
+    public RutaVendedorRepository(HandySuitesDbContext db, ITenantTimeZoneService tenantTz)
     {
         _db = db;
+        _tenantTz = tenantTz;
     }
 
     public async Task<int> CrearAsync(RutaVendedor ruta)
@@ -190,7 +193,19 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     public async Task<RutaVendedorDto?> ObtenerRutaDelDiaAsync(int tenantId, int usuarioId, DateTime? fecha = null)
     {
-        var fechaBusqueda = fecha?.Date ?? DateTime.Today;
+        // Día calendario en TZ tenant. `fecha` (si viene del caller) ya es UTC
+        // representando un día tenant; lo convertimos a DateOnly tenant. Si no
+        // viene, usamos "hoy" en TZ tenant.
+        DateOnly diaBusqueda;
+        if (fecha.HasValue)
+        {
+            diaBusqueda = await _tenantTz.GetTenantDayFromUtcAsync(fecha.Value);
+        }
+        else
+        {
+            diaBusqueda = await _tenantTz.GetTenantTodayAsync();
+        }
+        var (inicioUtc, finUtc) = await _tenantTz.GetTenantDayWindowUtcAsync(diaBusqueda);
 
         var ruta = await _db.RutasVendedor
             .AsNoTracking()
@@ -201,7 +216,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .FirstOrDefaultAsync(r =>
                 r.TenantId == tenantId &&
                 r.UsuarioId == usuarioId &&
-                r.Fecha.Date == fechaBusqueda &&
+                r.Fecha >= inicioUtc && r.Fecha < finUtc &&
                 r.Activo == true &&
                 !r.EsTemplate);
 
@@ -210,6 +225,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     public async Task<List<RutaVendedorDto>> ObtenerRutasPendientesAsync(int tenantId, int usuarioId)
     {
+        // "Hoy" en TZ tenant (no día UTC del servidor).
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var (hoyInicioUtc, _) = await _tenantTz.GetTenantDayWindowUtcAsync(hoyTenant);
         var rutas = await _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Usuario)
@@ -220,7 +238,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 r.TenantId == tenantId &&
                 r.UsuarioId == usuarioId &&
                 (r.Estado == EstadoRuta.Planificada || r.Estado == EstadoRuta.EnProgreso) &&
-                r.Fecha >= DateTime.Today &&
+                r.Fecha >= hoyInicioUtc &&
                 r.Activo == true &&
                 !r.EsTemplate)
             .OrderBy(r => r.Fecha)

@@ -47,7 +47,15 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             return new AutomationResult(true, M("result.todosClientesVisitados", lang));
 
         // ── Auto-schedule visits for next business day ──
-        var nextBusinessDay = GetNextBusinessDay(DateTime.UtcNow);
+        // Cálculo del siguiente día hábil en TZ tenant — antes usaba calendario
+        // UTC, lo que en TZ negativas dejaba la visita un día antes (sábado real).
+        TimeZoneInfo tzInfo;
+        try { tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTz); }
+        catch { tzInfo = TimeZoneInfo.Utc; }
+        var nextBusinessDay = GetNextBusinessDayInTenantTz(DateTime.UtcNow, tzInfo);
+        // "Hoy o después" en TZ tenant para detectar visitas ya agendadas.
+        var hoyTenantLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo).Date;
+        var hoyTenantUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(hoyTenantLocal, DateTimeKind.Unspecified), tzInfo);
         var visitasCreadas = 0;
 
         foreach (var cliente in clientesInactivos)
@@ -59,7 +67,7 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             var yaAgendada = await context.Db.ClienteVisitas
                 .AnyAsync(v => v.TenantId == context.TenantId
                     && v.ClienteId == cliente.Id
-                    && v.FechaProgramada >= DateTime.UtcNow.Date
+                    && v.FechaProgramada >= hoyTenantUtc
                     && v.Resultado == ResultadoVisita.Pendiente, ct);
 
             if (yaAgendada) continue;
@@ -150,8 +158,10 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             var vendedor = c.VendedorId.HasValue
                 ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang)))
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
+            // Render fecha en TZ tenant para que el email muestre el día calendario correcto.
+            var nextBusinessDayLocal = TimeZoneInfo.ConvertTimeFromUtc(nextBusinessDay, tzInfo);
             var agendada = c.VendedorId.HasValue
-                ? $"<span style=\"color:#16a34a;font-weight:600;\">{nextBusinessDay:dd/MM/yyyy}</span>"
+                ? $"<span style=\"color:#16a34a;font-weight:600;\">{nextBusinessDayLocal:dd/MM/yyyy}</span>"
                 : "<span style=\"color:#9ca3af;\">—</span>";
             return new[] { System.Net.WebUtility.HtmlEncode(c.Nombre), ultimaVisita, vendedor, agendada };
         }).ToList();
@@ -174,14 +184,16 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
     }
 
     /// <summary>
-    /// Returns the next business day (Monday–Friday), skipping weekends.
-    /// Sets time to 9:00 AM UTC as a reasonable default.
+    /// Returns the next business day (Monday–Friday) in the tenant's timezone,
+    /// at 9:00 AM local, converted to UTC for storage.
     /// </summary>
-    private static DateTime GetNextBusinessDay(DateTime from)
+    private static DateTime GetNextBusinessDayInTenantTz(DateTime fromUtc, TimeZoneInfo tzInfo)
     {
-        var next = from.Date.AddDays(1);
+        var localToday = TimeZoneInfo.ConvertTimeFromUtc(fromUtc, tzInfo).Date;
+        var next = localToday.AddDays(1);
         while (next.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
             next = next.AddDays(1);
-        return next.AddHours(9); // 9 AM UTC ≈ 3 AM CST, will display in tenant TZ
+        var localNineAm = DateTime.SpecifyKind(next.AddHours(9), DateTimeKind.Unspecified);
+        return TimeZoneInfo.ConvertTimeToUtc(localNineAm, tzInfo);
     }
 }
