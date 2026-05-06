@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
@@ -155,16 +156,21 @@ public static class TeamLocationEndpoints
         [FromServices] HandySuitesDbContext db,
         [FromServices] ICurrentTenant currentUser,
         [FromServices] IUbicacionVendedorRepository ubicacionRepo,
-        [FromServices] ISubscriptionFeatureGuard featureGuard)
+        [FromServices] ISubscriptionFeatureGuard featureGuard,
+        [FromServices] ITenantTimeZoneService tenantTz)
     {
         var role = currentUser.Role;
         if (role != RoleNames.Admin && role != RoleNames.Supervisor && role != RoleNames.SuperAdmin)
             return Results.Forbid();
 
         var tenantId = currentUser.TenantId;
-        var fecha = (dia ?? DateTime.UtcNow).Date;
-        var inicio = fecha;
-        var fin = fecha.AddDays(1);
+        // Window calculado en TZ del tenant. Reportado 2026-05-06: vendedor en
+        // Mazatlán (UTC-7) veía pings del 5 mayo 17:19 (=00:19 UTC del 6) como
+        // si fueran "hoy" porque el server filtraba con DateTime.UtcNow.Date.
+        var fechaTenant = dia.HasValue
+            ? DateOnly.FromDateTime(dia.Value)
+            : await tenantTz.GetTenantTodayAsync();
+        var (inicio, fin) = await tenantTz.GetTenantDayWindowUtcAsync(fechaTenant);
 
         var visitas = await db.ClienteVisitas.AsNoTracking()
             .Where(v => v.TenantId == tenantId
@@ -227,7 +233,7 @@ public static class TeamLocationEndpoints
         // Pings de tracking continuo (Fase B). Solo si el plan tiene la feature.
         var hasTracking = await featureGuard.HasFeatureAsync(tenantId, "tracking_vendedor");
         var trackingPings = hasTracking
-            ? (await ubicacionRepo.ObtenerRecorridoDelDiaAsync(tenantId, id, DateOnly.FromDateTime(fecha)))
+            ? (await ubicacionRepo.ObtenerRecorridoEntreAsync(tenantId, id, inicio, fin))
                 .Select(p => new
                 {
                     tipo = p.Tipo == TipoPingUbicacion.Checkpoint ? "checkpoint"
@@ -254,7 +260,7 @@ public static class TeamLocationEndpoints
             .OrderBy(x => x.cuando)
             .ToList();
 
-        return Results.Ok(new { dia = fecha, usuarioId = id, eventos = todos });
+        return Results.Ok(new { dia = fechaTenant, usuarioId = id, eventos = todos });
     }
 
     private record RawActivity(int UsuarioId, double Lat, double Lng, DateTime Cuando, string Fuente, int? ClienteId, int Id);

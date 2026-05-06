@@ -169,6 +169,8 @@ public static class ServiceRegistrationExtensions
 
         services.AddScoped<JwtTokenGenerator>();
         services.AddScoped<ICurrentTenant, CurrentTenant>();
+        services.AddScoped<HandySuites.Application.Common.Interfaces.ITenantTimeZoneService,
+                            HandySuites.Infrastructure.Common.TenantTimeZoneService>();
         services.AddScoped<AuthService>();
 
         services.AddScoped<IClienteRepository, ClienteRepository>();

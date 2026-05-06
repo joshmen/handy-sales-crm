@@ -77,11 +77,19 @@ const activityIcons: Record<string, React.ElementType> = {
   export: FileDown,
 };
 
-function getDateRange(periodo: 'semana' | 'mes' | 'trimestre') {
-  const hasta = new Date().toISOString().slice(0, 10);
-  const desdeDate = new Date();
-  desdeDate.setDate(desdeDate.getDate() - (periodo === 'semana' ? 7 : periodo === 'mes' ? 30 : 90));
-  const desde = desdeDate.toISOString().slice(0, 10);
+/**
+ * Calcula el rango YYYY-MM-DD usando el día calendario en TZ del tenant.
+ * `today` se inyecta desde `useFormatters().tenantToday()` para que la consulta
+ * coincida con lo que ve el admin en su zona (Mazatlán/CDMX/etc) en lugar
+ * del calendario UTC del browser.
+ */
+function getDateRange(periodo: 'semana' | 'mes' | 'trimestre', today: string) {
+  const hasta = today;
+  const [y, m, d] = today.split('-').map(Number);
+  const days = periodo === 'semana' ? 7 : periodo === 'mes' ? 30 : 90;
+  const desdeUtcNoon = new Date(Date.UTC((y ?? 0), (m ?? 1) - 1, (d ?? 1), 12, 0, 0));
+  desdeUtcNoon.setUTCDate(desdeUtcNoon.getUTCDate() - days);
+  const desde = desdeUtcNoon.toISOString().slice(0, 10);
   return { desde, hasta };
 }
 
@@ -131,7 +139,7 @@ export default function DashboardPage() {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { on, off } = useSignalR();
-  const { formatCurrency, formatNumber, formatDate } = useFormatters();
+  const { formatCurrency, formatNumber, formatDate, tenantToday } = useFormatters();
 
   // Listen for real-time updates via SignalR (debounced)
   useEffect(() => {
@@ -224,16 +232,20 @@ export default function DashboardPage() {
       }));
     }
     // Semana (7 days) or Mes (30 days): fill missing days
+    // Anclamos en "hoy" tenant (no browser local) para que el chart muestre
+    // el mismo día calendario que ven los usuarios del tenant.
     const days = periodo === 'semana' ? 7 : 30;
     const salesMap = new Map(ventasDiarias.map(p => [p.fecha, Number(p.totalVentas)]));
     const result: { day: string; value: number }[] = [];
+    const today = tenantToday();
+    const [ty, tm, td] = today.split('-').map(Number);
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const baseUtcNoon = new Date(Date.UTC(ty ?? 0, (tm ?? 1) - 1, td ?? 1, 12, 0, 0));
+      baseUtcNoon.setUTCDate(baseUtcNoon.getUTCDate() - i);
+      const key = baseUtcNoon.toISOString().slice(0, 10);
       const label = periodo === 'semana'
-        ? formatDate(d, { weekday: 'short' })
-        : formatDate(d, { day: 'numeric' });
+        ? formatDate(baseUtcNoon, { weekday: 'short' })
+        : formatDate(baseUtcNoon, { day: 'numeric' });
       result.push({ day: label, value: salesMap.get(key) ?? 0 });
     }
     return result;
@@ -241,7 +253,7 @@ export default function DashboardPage() {
   const maxChartValue = Math.max(...chartData.map(d => d.value), 1);
 
   // Date range for display
-  const { desde, hasta } = getDateRange(periodo);
+  const { desde, hasta } = getDateRange(periodo, tenantToday());
 
   // Export hook
   const { exportPDF, exporting } = useReportExport({
@@ -268,7 +280,9 @@ export default function DashboardPage() {
           try {
             const userId = parseInt(session?.user?.id ?? '0');
             if (userId) {
-              const today = new Date().toISOString().slice(0, 10);
+              // Día calendario tenant (no UTC), para no excluir metas vigentes
+              // del último/primer minuto del día en TZ del browser ≠ tenant.
+              const today = tenantToday();
               const metas = await metaVendedorService.getAll(userId);
               const activa = metas.find(m => m.activo && m.fechaInicio <= today && m.fechaFin >= today) ?? null;
               setMetaActiva(activa);
@@ -278,7 +292,7 @@ export default function DashboardPage() {
           }
         } else {
           // Admin/Supervisor: load real data from APIs
-          const { desde: d, hasta: h } = getDateRange(periodo);
+          const { desde: d, hasta: h } = getDateRange(periodo, tenantToday());
 
           const [ejResult, vpResult, actResult] = await Promise.allSettled([
             getDashboardEjecutivo({ periodo }),

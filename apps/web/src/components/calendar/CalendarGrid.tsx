@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Visit } from "@/types/calendar";
+import { useFormatters } from "@/hooks/useFormatters";
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -29,22 +30,29 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   className = "",
 }) => {
   const tcal = useTranslations("visits.calendar");
-  const getDaysForView = (): DayInfo[] => {
-    const today = new Date();
+  // "Hoy" en TZ tenant — antes el highlight `isToday` dependía del browser,
+  // por lo que un admin CDMX viendo un tenant Mazatlán cruzando medianoche
+  // Mazatlán (=1am CDMX) marcaba el día siguiente.
+  const { tenantToday } = useFormatters();
+  const todayKey = tenantToday();
 
+  const ymd = (d: Date): string =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const getDaysForView = (): DayInfo[] => {
     switch (viewMode) {
       case "month":
-        return getMonthDays(currentDate, today);
+        return getMonthDays(currentDate);
       case "week":
-        return getWeekDays(currentDate, today);
+        return getWeekDays(currentDate);
       case "day":
-        return [getDayInfo(currentDate, today)];
+        return [getDayInfo(currentDate)];
       default:
         return [];
     }
   };
 
-  const getMonthDays = (date: Date, today: Date): DayInfo[] => {
+  const getMonthDays = (date: Date): DayInfo[] => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -60,7 +68,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
       days.push({
         date: prevDate,
         isCurrentMonth: false,
-        isToday: prevDate.toDateString() === today.toDateString(),
+        isToday: ymd(prevDate) === todayKey,
       });
     }
 
@@ -70,7 +78,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
       days.push({
         date: dayDate,
         isCurrentMonth: true,
-        isToday: dayDate.toDateString() === today.toDateString(),
+        isToday: ymd(dayDate) === todayKey,
       });
     }
 
@@ -81,14 +89,14 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
       days.push({
         date: nextDate,
         isCurrentMonth: false,
-        isToday: nextDate.toDateString() === today.toDateString(),
+        isToday: ymd(nextDate) === todayKey,
       });
     }
 
     return days;
   };
 
-  const getWeekDays = (date: Date, today: Date): DayInfo[] => {
+  const getWeekDays = (date: Date): DayInfo[] => {
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - date.getDay() + 1); // Lunes
 
@@ -99,17 +107,17 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
       days.push({
         date: dayDate,
         isCurrentMonth: true,
-        isToday: dayDate.toDateString() === today.toDateString(),
+        isToday: ymd(dayDate) === todayKey,
       });
     }
 
     return days;
   };
 
-  const getDayInfo = (date: Date, today: Date): DayInfo => ({
+  const getDayInfo = (date: Date): DayInfo => ({
     date: new Date(date),
     isCurrentMonth: true,
-    isToday: date.toDateString() === today.toDateString(),
+    isToday: ymd(date) === todayKey,
   });
 
   const getVisitsForDate = (date: Date): Visit[] => {

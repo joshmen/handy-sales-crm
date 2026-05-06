@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Visit } from "@/types/calendar";
+import { useFormatters } from "@/hooks/useFormatters";
 
 interface CalendarViewProps {
   visits: Visit[];
@@ -20,6 +21,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   selectedUser,
 }) => {
   const tcal = useTranslations("visits.calendar");
+  // "Hoy" en TZ tenant — el highlight `isToday` antes dependía del browser.
+  const { tenantToday } = useFormatters();
+  const todayKey = tenantToday();
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const [viewMode] = useState<"month" | "week" | "day">("month");
 
   const getDaysInMonth = (date: Date) => {
@@ -120,8 +126,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {/* Días del calendario */}
           {days.map((dayInfo, index) => {
             const dayVisits = getVisitsForDate(dayInfo.date);
-            const isToday =
-              dayInfo.date.toDateString() === new Date().toDateString();
+            const isToday = ymd(dayInfo.date) === todayKey;
 
             return (
               <div

@@ -1,4 +1,5 @@
 using HandySuites.Application.ActivityTracking.Interfaces;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +9,12 @@ namespace HandySuites.Infrastructure.ActivityTracking.Repositories;
 public class ActivityTrackingRepository : IActivityTrackingRepository
 {
     private readonly HandySuitesDbContext _context;
+    private readonly ITenantTimeZoneService _tenantTz;
 
-    public ActivityTrackingRepository(HandySuitesDbContext context)
+    public ActivityTrackingRepository(HandySuitesDbContext context, ITenantTimeZoneService tenantTz)
     {
         _context = context;
+        _tenantTz = tenantTz;
     }
 
     public async Task<ActivityLog> CreateActivityLogAsync(ActivityLog activityLog)
@@ -145,11 +148,25 @@ public class ActivityTrackingRepository : IActivityTrackingRepository
 
     public async Task<IEnumerable<object>> GetActivityChartDataAsync(int tenantId, int days = 7)
     {
-        var startDate = DateTime.UtcNow.Date.AddDays(-days);
+        // Ventana y agrupamiento en TZ tenant. SQL agrupa por UTC, así que
+        // traemos rows crudos y agrupamos por día tenant en memoria.
+        var todayTenant = await _tenantTz.GetTenantTodayAsync();
+        var startTenant = todayTenant.AddDays(-days);
+        var startUtc = await _tenantTz.ConvertTenantDateToUtcAsync(startTenant);
+        var tzInfo = await _tenantTz.GetTimeZoneForTenantAsync(tenantId);
 
-        var activityData = await _context.ActivityLogs
-            .Where(a => a.TenantId == tenantId && a.CreatedAt >= startDate)
-            .GroupBy(a => a.CreatedAt.Date)
+        var rawRows = await _context.ActivityLogs
+            .Where(a => a.TenantId == tenantId && a.CreatedAt >= startUtc)
+            .Select(a => new { a.CreatedAt, a.ActivityType, a.ActivityStatus, a.UserId })
+            .ToListAsync();
+
+        DateOnly TenantDayOf(DateTime utc) => DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTimeFromUtc(
+                utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+                tzInfo));
+
+        var activityData = rawRows
+            .GroupBy(a => TenantDayOf(a.CreatedAt))
             .Select(g => new
             {
                 date = g.Key,
@@ -158,16 +175,14 @@ public class ActivityTrackingRepository : IActivityTrackingRepository
                 errors = g.Count(x => x.ActivityStatus == "failed"),
                 uniqueUsers = g.Select(x => x.UserId).Distinct().Count()
             })
-            .OrderBy(x => x.date)
-            .ToListAsync();
+            .ToList();
 
-        // Llenar los días faltantes con ceros
         var chartData = new List<object>();
         for (int i = days; i >= 0; i--)
         {
-            var date = DateTime.UtcNow.Date.AddDays(-i);
+            var date = todayTenant.AddDays(-i);
             var dayData = activityData.FirstOrDefault(a => a.date == date);
-            
+
             chartData.Add(new
             {
                 date = date.ToString("MMM dd"),

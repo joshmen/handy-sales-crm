@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.DeviceSessions.Interfaces;
 using HandySuites.Application.Usuarios.DTOs;
 using HandySuites.Application.Usuarios.Interfaces;
@@ -162,13 +163,20 @@ public static class SupervisorEndpoints
         // GET /api/supervisores/dashboard
         group.MapGet("/dashboard", async (
             ICurrentTenant tenant,
+            ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
             if (!tenant.IsSupervisor)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
-            var hoy = DateTime.UtcNow.Date;
+            // Ventanas en TZ tenant — antes "hoy" y "mes" usaban UTC del servidor.
+            var hoyTenant = await tenantTzSvc.GetTenantTodayAsync();
+            var (hoyStartUtc, hoyEndUtc) = await tenantTzSvc.GetTenantDayWindowUtcAsync(hoyTenant);
+            var mesStart = new DateOnly(hoyTenant.Year, hoyTenant.Month, 1);
+            var mesEnd = mesStart.AddMonths(1);
+            var mesStartUtc = await tenantTzSvc.ConvertTenantDateToUtcAsync(mesStart);
+            var mesEndUtc = await tenantTzSvc.ConvertTenantDateToUtcAsync(mesEnd);
 
             var subordinadoIds = await db.Usuarios
                 .AsNoTracking()
@@ -184,7 +192,7 @@ public static class SupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= hoyStartUtc && p.FechaPedido < hoyEndUtc
                          && p.Activo)
                 .CountAsync();
 
@@ -192,8 +200,7 @@ public static class SupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Month == hoy.Month
-                         && p.FechaPedido.Year == hoy.Year
+                         && p.FechaPedido >= mesStartUtc && p.FechaPedido < mesEndUtc
                          && p.Activo)
                 .CountAsync();
 
@@ -209,8 +216,7 @@ public static class SupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Month == hoy.Month
-                         && p.FechaPedido.Year == hoy.Year
+                         && p.FechaPedido >= mesStartUtc && p.FechaPedido < mesEndUtc
                          && p.Activo)
                 .SumAsync(p => (decimal?)p.Total) ?? 0;
 

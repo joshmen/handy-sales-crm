@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ClienteVisitaListaDto, ResultadoVisita } from '@/types/visits';
 import { Plus, MapPin } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface VisitListProps {
   visits: ClienteVisitaListaDto[];
@@ -28,55 +29,60 @@ export const VisitList: React.FC<VisitListProps> = ({
   className = '',
 }) => {
   const t = useTranslations('visits.list');
+  // Día calendario en TZ tenant — antes los presets ("hoy", etc.) usaban
+  // TZ del browser, lo que dejaba fuera visitas legítimas en cruce de
+  // medianoche para tenants con TZ negativa.
+  const { tenantToday } = useFormatters();
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('');
   const [resultadoFilter, setResultadoFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 
-  // Función para filtrar por fecha
+  // Función para filtrar por fecha (anclada en día tenant)
   const filterByDate = (visit: ClienteVisitaListaDto, filter: string) => {
     if (!filter) return true;
 
-    const visitDate = visit.fechaProgramada
-      ? new Date(visit.fechaProgramada)
-      : visit.fechaHoraInicio
-      ? new Date(visit.fechaHoraInicio)
-      : null;
+    const sourceDate = visit.fechaProgramada ?? visit.fechaHoraInicio;
+    if (!sourceDate) return true;
 
-    if (!visitDate) return true;
-
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const visitKey = (typeof sourceDate === 'string'
+      ? sourceDate
+      : new Date(sourceDate).toISOString()
+    ).slice(0, 10);
+    const todayKey = tenantToday();
+    const [ty, tm, td] = todayKey.split('-').map(Number);
+    const todayUtcNoon = new Date(Date.UTC(ty ?? 0, (tm ?? 1) - 1, td ?? 1, 12, 0, 0));
+    const ymdOf = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 
     switch (filter) {
       case 'today':
-        return visitDate.toDateString() === today.toDateString();
-      case 'yesterday':
-        return visitDate.toDateString() === yesterday.toDateString();
-      case 'this_week':
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        return visitDate >= weekStart;
-      case 'last_week':
-        const lastWeekStart = new Date(today);
-        lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
+        return visitKey === todayKey;
+      case 'yesterday': {
+        const y = new Date(todayUtcNoon);
+        y.setUTCDate(y.getUTCDate() - 1);
+        return visitKey === ymdOf(y);
+      }
+      case 'this_week': {
+        const weekStart = new Date(todayUtcNoon);
+        weekStart.setUTCDate(todayUtcNoon.getUTCDate() - todayUtcNoon.getUTCDay());
+        return visitKey >= ymdOf(weekStart);
+      }
+      case 'last_week': {
+        const lastWeekStart = new Date(todayUtcNoon);
+        lastWeekStart.setUTCDate(todayUtcNoon.getUTCDate() - todayUtcNoon.getUTCDay() - 7);
         const lastWeekEnd = new Date(lastWeekStart);
-        lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
-        return visitDate >= lastWeekStart && visitDate <= lastWeekEnd;
+        lastWeekEnd.setUTCDate(lastWeekStart.getUTCDate() + 6);
+        return visitKey >= ymdOf(lastWeekStart) && visitKey <= ymdOf(lastWeekEnd);
+      }
       case 'this_month':
-        return (
-          visitDate.getMonth() === today.getMonth() &&
-          visitDate.getFullYear() === today.getFullYear()
-        );
-      case 'last_month':
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(today.getMonth() - 1);
-        return (
-          visitDate.getMonth() === lastMonth.getMonth() &&
-          visitDate.getFullYear() === lastMonth.getFullYear()
-        );
+        return visitKey.slice(0, 7) === todayKey.slice(0, 7);
+      case 'last_month': {
+        const lm = new Date(todayUtcNoon);
+        lm.setUTCMonth(todayUtcNoon.getUTCMonth() - 1);
+        return visitKey.slice(0, 7) === `${lm.getUTCFullYear()}-${String(lm.getUTCMonth() + 1).padStart(2, '0')}`;
+      }
       default:
         return true;
     }
