@@ -22,7 +22,32 @@ export type AddNotificationInput = Omit<StoredNotification, 'id' | 'receivedAt' 
   receivedAt?: string;
 };
 
+// ---------------------------------------------------------------------------
+// Reactive subscribe pattern (vanilla, sin Zustand)
+//
+// Necesario para que la pantalla `notificaciones.tsx` se entere cuando el
+// store cambia desde fuera (push live, sync backend, otro tab abierto).
+// Antes solo leía en mount → push llegaba pero la lista no actualizaba
+// hasta pull-to-refresh.
+// ---------------------------------------------------------------------------
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+function notify(): void {
+  listeners.forEach(l => {
+    try { l(); } catch (e) {
+      if (__DEV__) console.warn('[notificationStore] listener threw:', e);
+    }
+  });
+}
+
 export const notificationStore = {
+  /** Suscribirse a cambios. Retorna función para des-suscribirse. */
+  subscribe(fn: Listener): () => void {
+    listeners.add(fn);
+    return () => { listeners.delete(fn); };
+  },
+
   async getAll(): Promise<StoredNotification[]> {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -68,22 +93,39 @@ export const notificationStore = {
     // Keep only the latest MAX_NOTIFICATIONS
     if (items.length > MAX_NOTIFICATIONS) items.length = MAX_NOTIFICATIONS;
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    notify();
     return newItem;
   },
 
   async markAsRead(id: string): Promise<void> {
     const items = await this.getAll();
     const item = items.find(i => i.id === id);
-    if (item) {
+    if (item && !item.read) {
       item.read = true;
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      notify();
     }
   },
 
   async markAllAsRead(): Promise<void> {
     const items = await this.getAll();
+    const hadUnread = items.some(i => !i.read);
+    if (!hadUnread) return;
     items.forEach(i => { i.read = true; });
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    notify();
+  },
+
+  /** Elimina una notificación individual del store local. NO se sincroniza
+   *  al backend (la persistencia backend es para "no perder push si app
+   *  cerrada"; un delete local solo afecta este device — coherente con
+   *  Mail/Slack pattern). */
+  async removeById(id: string): Promise<void> {
+    const items = await this.getAll();
+    const filtered = items.filter(i => i.id !== id);
+    if (filtered.length === items.length) return;
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    notify();
   },
 
   async getUnreadCount(): Promise<number> {
@@ -93,5 +135,6 @@ export const notificationStore = {
 
   async clear(): Promise<void> {
     await AsyncStorage.removeItem(STORAGE_KEY);
+    notify();
   },
 };
