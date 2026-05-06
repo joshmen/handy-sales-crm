@@ -514,6 +514,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 CantidadEntrega = c.CantidadEntrega,
                 CantidadVenta = c.CantidadVenta,
                 CantidadTotal = c.CantidadTotal,
+                CantidadVendida = c.CantidadVendida,
+                CantidadEntregada = c.CantidadEntregada,
                 PrecioUnitario = c.PrecioUnitario,
                 Disponible = c.Producto.Inventario != null ? (int?)c.Producto.Inventario.CantidadActual : null
             })

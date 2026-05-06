@@ -31,7 +31,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
 # Install ICU for globalization + curl for health checks
-RUN apk add --no-cache icu-libs curl
+# tzdata: required by TimeZoneInfo.FindSystemTimeZoneById con IANA names.
+RUN apk add --no-cache icu-libs curl tzdata
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

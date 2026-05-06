@@ -204,6 +204,37 @@ public static class MobileVentaDirectaEndpoints
                         db.Cobros.Add(cobro);
                         await db.SaveChangesAsync();
 
+                        // Tracking de carga: si el vendedor tiene una ruta activa
+                        // (EnProgreso=1 o CargaAceptada=5) y el producto está en
+                        // RutasCarga de esa ruta, incrementar CantidadVendida para
+                        // que el progreso se refleje en mobile sin esperar al cierre.
+                        // Reportado 2026-05-05: el progreso de ruta de venta libre
+                        // mostraba 0/0 aunque el vendedor sí estaba vendiendo.
+                        var rutaActiva = await db.RutasVendedor
+                            .Where(r => r.UsuarioId == usuarioId
+                                     && r.TenantId == tenantId
+                                     && r.Activo
+                                     && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
+                            .Select(r => (int?)r.Id)
+                            .FirstOrDefaultAsync();
+                        if (rutaActiva.HasValue)
+                        {
+                            foreach (var detalle in detalles)
+                            {
+                                var carga = await db.RutasCarga
+                                    .FirstOrDefaultAsync(c => c.RutaId == rutaActiva.Value
+                                        && c.ProductoId == detalle.ProductoId
+                                        && c.TenantId == tenantId
+                                        && c.Activo);
+                                if (carga != null)
+                                {
+                                    carga.CantidadVendida += (int)detalle.Cantidad;
+                                    carga.ActualizadoEn = DateTime.UtcNow;
+                                }
+                            }
+                            await db.SaveChangesAsync();
+                        }
+
                         return (pedido.Id, cobro.Id, numeroPedido, total);
                     });
 

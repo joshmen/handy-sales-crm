@@ -500,5 +500,21 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v21: tracking realtime de progreso de carga. CantidadVendida se
+      // incrementa al hacer venta directa con ruta activa; CantidadEntregada
+      // al marcar pedido pre-asignado como Entregado. Permite mostrar
+      // progreso en mobile sin esperar al cierre manual del admin.
+      toVersion: 21,
+      steps: [
+        addColumns({
+          table: 'ruta_carga',
+          columns: [
+            { name: 'cantidad_vendida', type: 'number' },
+            { name: 'cantidad_entregada', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });
