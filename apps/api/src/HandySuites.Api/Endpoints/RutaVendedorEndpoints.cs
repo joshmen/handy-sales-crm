@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using FluentValidation;
+using HandySuites.Application.Notifications.Interfaces;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Services;
 using HandySuites.Domain.Entities;
@@ -94,6 +95,35 @@ public static class RutaVendedorEndpoints
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Failed to notify Mobile API of route assignment ruta {RutaId} pedido {PedidoId}", rutaId, pedidoId);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Emite evento SignalR `RutaAssigned` al vendedor para que el cliente
+    /// mobile dispare un sync inmediato de WatermelonDB y la pantalla "Hoy"
+    /// actualice sin pull. Complementa el push nativo: si el cliente está
+    /// online via SignalR, se entera al instante; si solo recibe el push
+    /// nativo, también dispara sync (vía usePushNotifications.ts).
+    /// Reportado 2026-05-05: vendedor2 no veía la nueva ruta tras admin asignar.
+    /// </summary>
+    private static void EmitRouteAssignedSignalR(
+        IRealtimePushService? realtimePush,
+        int vendedorId,
+        int rutaId,
+        ILogger logger)
+    {
+        if (realtimePush is null) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await realtimePush.SendEventToUserAsync(vendedorId, "RutaAssigned",
+                    new { rutaId, usuarioId = vendedorId });
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to emit SignalR RutaAssigned to vendedor {VendedorId} ruta {RutaId}", vendedorId, rutaId);
             }
         });
     }
@@ -256,6 +286,8 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
+            [FromServices] IRealtimePushService realtimePush,
+            [FromServices] ILogger<RutaVendedorEndpointsLog> rtLogger,
             [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var validation = await validator.ValidateAsync(dto);
@@ -289,6 +321,8 @@ public static class RutaVendedorEndpoints
                     }
                 }
                 catch { /* push failure should not block route creation */ }
+                // SignalR para sync inmediato en cliente mobile online.
+                EmitRouteAssignedSignalR(realtimePush, dto.UsuarioId, id, rtLogger);
             }
 
             return Results.Created($"/rutas/{id}", new { id });
@@ -316,6 +350,8 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
+            [FromServices] IRealtimePushService realtimePush,
+            [FromServices] ILogger<RutaVendedorEndpointsLog> rtLogger,
             [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var rutaAntes = await servicio.ObtenerPorIdAsync(id);
@@ -353,6 +389,8 @@ public static class RutaVendedorEndpoints
                     });
                 }
                 catch { /* push failure should not block route update */ }
+                // SignalR sync inmediato si cliente está conectado.
+                EmitRouteAssignedSignalR(realtimePush, nuevoUsuarioId, id, rtLogger);
             }
 
             return Results.NoContent();
@@ -675,14 +713,19 @@ public static class RutaVendedorEndpoints
             HttpContext context,
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IRealtimePushService realtimePush,
             [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
         {
             var resumen = await servicio.EnviarACargaAsync(id);
 
-            // Push fire-and-forget con resumen para el vendedor.
+            // Push fire-and-forget con resumen para el vendedor + SignalR
+            // event para que el cliente mobile actualice la pantalla "Hoy"
+            // sin pull cuando esté conectado.
             if (int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
             {
                 NotifyMobileRouteSentToLoad(httpClientFactory, tenantId, resumen, logger);
+                if (resumen.VendedorId.HasValue)
+                    EmitRouteAssignedSignalR(realtimePush, resumen.VendedorId.Value, resumen.RutaId, logger);
             }
 
             return Results.Ok(new

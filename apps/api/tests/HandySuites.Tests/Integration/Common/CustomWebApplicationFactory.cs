@@ -149,6 +149,7 @@ internal class FakeRealtimePushService : IRealtimePushService
 {
     public Task SendToUserAsync(int userId, object payload) => Task.CompletedTask;
     public Task SendToUsersAsync(IEnumerable<int> userIds, object payload) => Task.CompletedTask;
+    public Task SendEventToUserAsync(int userId, string eventName, object payload) => Task.CompletedTask;
 }
 
 /// <summary>

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Animated, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Bell, BellOff, CheckCheck } from 'lucide-react-native';
+import { ChevronLeft, Bell, BellOff, CheckCheck, Trash2 } from 'lucide-react-native';
 import { EmptyState } from '@/components/ui';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import { notificationStore, type StoredNotification } from '@/services/notificationStore';
 import { syncNotificationsFromBackend } from '@/services/notificationSync';
@@ -77,11 +77,147 @@ function getDeepLinkForStoredNotification(n: StoredNotification): string | null 
       // screen", pero notificaciones es un screen distinto al de anuncios.
       return '/(tabs)/anuncios';
     case 'route.published':
+    case 'route.assigned':
+    case 'route.closed-by-admin':
     case 'visit.reminder':
       return '/(tabs)/ruta';
     default:
       return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Swipeable item — swipe-to-left revela botón trash. Implementado con
+// PanResponder + Animated (RN core) para no requerir react-native-gesture-handler
+// (no instalado en el proyecto y agregar deps nativas requiere `eas build`,
+// no OTA). Threshold: -80px para revelar; -160 auto-cierra y elimina con
+// fade-out.
+// ---------------------------------------------------------------------------
+const SWIPE_THRESHOLD_REVEAL = -80;
+const SWIPE_THRESHOLD_DELETE = -180;
+const ACTION_WIDTH = 88;
+
+interface SwipeableNotifItemProps {
+  item: StoredNotification;
+  onPress: () => void;
+  onDelete: () => void;
+  index: number;
+}
+
+function SwipeableNotifItem({ item, onPress, onDelete, index }: SwipeableNotifItemProps) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const isOpen = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Solo responder a movimientos horizontales claros — no robar el scroll vertical de la lista.
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_, g) => {
+        // Solo permitir swipe a la izquierda (dx negativo) — clamp a 0 para derecha.
+        const clamped = Math.min(0, Math.max(g.dx, -ACTION_WIDTH * 2.5));
+        translateX.setValue(clamped);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dx < SWIPE_THRESHOLD_DELETE) {
+          // Swipe muy fuerte → animar fuera y eliminar.
+          Animated.parallel([
+            Animated.timing(translateX, { toValue: -500, duration: 200, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+          ]).start(() => onDelete());
+          return;
+        }
+        if (g.dx < SWIPE_THRESHOLD_REVEAL) {
+          // Swipe moderado → mantener revelado.
+          isOpen.current = true;
+          Animated.spring(translateX, {
+            toValue: -ACTION_WIDTH,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        } else {
+          // Insuficiente → cerrar.
+          isOpen.current = false;
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        // Si otro responder gana (e.g. scroll), cerrar.
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+      },
+    })
+  ).current;
+
+  const handleDeleteTap = () => {
+    // Animar fade-out + slide-out para feedback visual claro.
+    Animated.parallel([
+      Animated.timing(translateX, { toValue: -500, duration: 200, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start(() => onDelete());
+  };
+
+  const handleItemPress = () => {
+    if (isOpen.current) {
+      // Si está revelado, primer tap cierra (no abre el deep link).
+      Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+      isOpen.current = false;
+      return;
+    }
+    onPress();
+  };
+
+  return (
+    <Reanimated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)} style={{ position: 'relative' }}>
+      {/* Capa background con botón trash a la derecha. */}
+      <View style={styles.swipeActions} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={handleDeleteTap}
+          style={styles.deleteAction}
+          accessibilityLabel="Eliminar notificación"
+          accessibilityRole="button"
+        >
+          <Trash2 size={22} color="#fff" />
+          <Text style={styles.deleteActionLabel}>Eliminar</Text>
+        </TouchableOpacity>
+      </View>
+      {/* Capa item — se desplaza horizontal con PanResponder. */}
+      <Animated.View
+        style={[{ transform: [{ translateX }], opacity }]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity
+          style={[styles.notifItem, !item.read && styles.notifUnread]}
+          onPress={handleItemPress}
+          activeOpacity={0.7}
+          accessibilityLabel={`Notificación: ${item.title}${!item.read ? ' (sin leer)' : ''}`}
+          accessibilityRole="button"
+        >
+          <View style={styles.notifRow}>
+            {!item.read && <View style={styles.unreadDot} />}
+            <View style={[styles.notifIcon, { backgroundColor: !item.read ? COLORS.primaryLight : '#f1f5f9' }]}>
+              <Bell size={18} color={!item.read ? COLORS.primary : '#94a3b8'} />
+            </View>
+            <View style={styles.notifContent}>
+              <View style={styles.notifHeader}>
+                <Text style={[styles.notifTitle, !item.read && styles.notifTitleUnread]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={styles.notifTime}>{formatRelativeTime(item.receivedAt)}</Text>
+              </View>
+              <Text style={styles.notifMessage} numberOfLines={2}>
+                {item.body}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </Reanimated.View>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -106,11 +242,13 @@ function NotificacionesContent() {
     // Al abrir la tab: cargar local + sync backend en background. Si llega un
     // push live mientras hacíamos sync, se dedupea por nhId en el store.
     loadNotifications();
-    syncNotificationsFromBackend()
-      .then((added) => {
-        if (added > 0) loadNotifications();
-      })
-      .catch(() => { /* sync best-effort */ });
+    // Suscribirse a cambios del store: cuando llega push live (vía
+    // usePushNotifications) o sync incremental (SignalR ReceiveNotification),
+    // el store notifica a todos los listeners y la pantalla se actualiza
+    // sin necesidad de pull-to-refresh manual.
+    const unsubscribe = notificationStore.subscribe(() => loadNotifications());
+    syncNotificationsFromBackend().catch(() => { /* sync best-effort */ });
+    return unsubscribe;
   }, [loadNotifications]);
 
   const onRefresh = useCallback(async () => {
@@ -124,9 +262,7 @@ function NotificacionesContent() {
   const handlePress = useCallback(async (item: StoredNotification) => {
     if (!item.read) {
       await notificationStore.markAsRead(item.id);
-      setNotifications(prev =>
-        prev.map(n => (n.id === item.id ? { ...n, read: true } : n))
-      );
+      // No setNotifications optimista — el subscribe ya recarga.
     }
     const deepLink = getDeepLinkForStoredNotification(item);
     if (deepLink) {
@@ -145,39 +281,22 @@ function NotificacionesContent() {
     }
   }, [router]);
 
+  const handleDelete = useCallback(async (id: string) => {
+    await notificationStore.removeById(id);
+    // El subscribe se encarga de recargar la lista — no hace falta setNotifications.
+  }, []);
+
   const handleMarkAllAsRead = useCallback(async () => {
     await notificationStore.markAllAsRead();
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   }, []);
 
   const renderNotification = ({ item, index }: { item: StoredNotification; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
-      <TouchableOpacity
-        style={[styles.notifItem, !item.read && styles.notifUnread]}
-        onPress={() => handlePress(item)}
-        activeOpacity={0.7}
-        accessibilityLabel={`Notificación: ${item.title}${!item.read ? ' (sin leer)' : ''}`}
-        accessibilityRole="button"
-      >
-        <View style={styles.notifRow}>
-          {!item.read && <View style={styles.unreadDot} />}
-          <View style={[styles.notifIcon, { backgroundColor: !item.read ? COLORS.primaryLight : '#f1f5f9' }]}>
-            <Bell size={18} color={!item.read ? COLORS.primary : '#94a3b8'} />
-          </View>
-          <View style={styles.notifContent}>
-            <View style={styles.notifHeader}>
-              <Text style={[styles.notifTitle, !item.read && styles.notifTitleUnread]} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.notifTime}>{formatRelativeTime(item.receivedAt)}</Text>
-            </View>
-            <Text style={styles.notifMessage} numberOfLines={2}>
-              {item.body}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
+    <SwipeableNotifItem
+      item={item}
+      index={index}
+      onPress={() => handlePress(item)}
+      onDelete={() => handleDelete(item.id)}
+    />
   );
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -315,6 +434,31 @@ const styles = StyleSheet.create({
   notifTitleUnread: { fontWeight: '700', color: '#0f172a' },
   notifTime: { fontSize: 11, color: '#94a3b8' },
   notifMessage: { fontSize: 13, color: '#64748b', lineHeight: 18 },
+  // Swipe action background
+  swipeActions: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    right: 16,
+    width: ACTION_WIDTH,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    overflow: 'hidden',
+  },
+  deleteAction: {
+    flex: 1,
+    backgroundColor: '#dc2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  deleteActionLabel: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },
 });
 
 export default function NotificacionesScreen() {
