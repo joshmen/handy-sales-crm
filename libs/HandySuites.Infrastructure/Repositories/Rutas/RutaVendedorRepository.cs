@@ -591,32 +591,59 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             }
         }
 
-        var existente = await _db.RutasCarga
-            .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == productoId && c.TenantId == tenantId && c.Activo);
+        // Upsert con retry: si entre el FirstOrDefault y SaveChanges otra
+        // request crea el mismo (rutaId, productoId), atrapamos el 23505
+        // (UNIQUE violation IX_RutasCarga_ruta_id_producto_id) y reintenta
+        // en la 2da iteración como UPDATE — la constraint UNIQUE garantiza
+        // serialización efectiva y la fila ya existirá.
+        // Reportado 2026-05-05 (post EAS Update OTA): admin asignaba mismo
+        // producto 2x consecutivo, segundo POST fallaba con 500.
+        const int maxRetries = 2;
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var existente = await _db.RutasCarga
+                .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == productoId && c.TenantId == tenantId && c.Activo);
 
-        if (existente != null)
-        {
-            existente.CantidadVenta = cantidad;
-            existente.PrecioUnitario = precio > 0 ? precio : existente.PrecioUnitario;
-            existente.CantidadTotal = existente.CantidadEntrega + cantidad;
-            existente.ActualizadoEn = DateTime.UtcNow;
-        }
-        else
-        {
-            _db.RutasCarga.Add(new RutaCarga
+            if (existente != null)
             {
-                RutaId = rutaId,
-                ProductoId = productoId,
-                TenantId = tenantId,
-                CantidadVenta = cantidad,
-                CantidadEntrega = 0,
-                CantidadTotal = cantidad,
-                PrecioUnitario = precio,
-                CreadoEn = DateTime.UtcNow
-            });
-        }
+                existente.CantidadVenta = cantidad;
+                existente.PrecioUnitario = precio > 0 ? precio : existente.PrecioUnitario;
+                existente.CantidadTotal = existente.CantidadEntrega + cantidad;
+                existente.ActualizadoEn = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.RutasCarga.Add(new RutaCarga
+                {
+                    RutaId = rutaId,
+                    ProductoId = productoId,
+                    TenantId = tenantId,
+                    CantidadVenta = cantidad,
+                    CantidadEntrega = 0,
+                    CantidadTotal = cantidad,
+                    PrecioUnitario = precio,
+                    CreadoEn = DateTime.UtcNow
+                });
+            }
 
-        await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+                return;
+            }
+            catch (DbUpdateException ex) when (
+                attempt < maxRetries
+                && ex.InnerException is Npgsql.PostgresException pg
+                && pg.SqlState == "23505"
+                && pg.ConstraintName == "IX_RutasCarga_ruta_id_producto_id")
+            {
+                // Otra request creó el mismo (rutaId, productoId) en paralelo.
+                // Detach el entity local para que la próxima iteración haga
+                // FirstOrDefault → encuentre la fila → UPDATE.
+                foreach (var entry in _db.ChangeTracker.Entries<RutaCarga>().ToList())
+                    entry.State = EntityState.Detached;
+            }
+        }
     }
 
     public async Task RemoverProductoCargaAsync(int rutaId, int productoId, int tenantId)

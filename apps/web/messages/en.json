@@ -1823,6 +1823,7 @@
       "backToRoutes": "Back to routes",
       "startRoute": "Start route",
       "sendToLoad": "Send to load",
+      "sendToLoadConfirm": "Confirm sending this route to the seller? The seller will receive a push notification and will be able to accept the route. Once sent, you won't be able to edit stops, orders, or load.",
       "completeRoute": "Complete route",
       "closeRoute": "Close route",
       "viewClosure": "View closure",

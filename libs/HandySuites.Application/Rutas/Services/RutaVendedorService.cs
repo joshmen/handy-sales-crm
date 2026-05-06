@@ -893,7 +893,13 @@ public class RutaVendedorService
         public int TotalParadas { get; set; }
         public int TotalPedidos { get; set; }
         public int TotalProductosCarga { get; set; }
+        /// <summary>Suma del valor monetario de los pedidos asignados a la ruta.</summary>
         public double MontoTotalEntrega { get; set; }
+        /// <summary>Suma del valor monetario de los productos sueltos cargados
+        /// para venta libre en ruta (CantidadTotal × PrecioUnitario por producto).
+        /// Reportado 2026-05-05: el push notif solo mostraba MontoTotalEntrega,
+        /// confundía al vendedor cuando solo había carga sin pedidos pre-asignados.</summary>
+        public double MontoTotalCarga { get; set; }
     }
 
     public async Task<EnviarACargaResumen> EnviarACargaAsync(int rutaId)
@@ -935,6 +941,7 @@ public class RutaVendedorService
             TotalPedidos = pedidosAsignados.Count,
             TotalProductosCarga = carga.Count,
             MontoTotalEntrega = pedidosAsignados.Sum(p => p.MontoTotal),
+            MontoTotalCarga = carga.Sum(c => c.MontoTotal),
         };
     }
 
