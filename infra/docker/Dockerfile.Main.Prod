@@ -31,7 +31,12 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
 # Install ICU for globalization support (Mexican locale, currency formatting)
-RUN apk add --no-cache icu-libs curl
+# tzdata: required by TimeZoneInfo.FindSystemTimeZoneById with IANA names
+# (e.g. "America/Mazatlan", "America/Mexico_City"). Sin esto, .NET busca en
+# /usr/share/zoneinfo/<tz> que no existe en Alpine por default → throws
+# TimeZoneNotFoundException. Reportado 2026-05-05 en automation
+# ResumenDiarioHandler para tenant en TZ Mazatlán.
+RUN apk add --no-cache icu-libs curl tzdata
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

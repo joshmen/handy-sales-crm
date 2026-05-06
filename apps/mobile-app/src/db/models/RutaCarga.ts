@@ -26,6 +26,12 @@ export default class RutaCarga extends Model {
   @field('cantidad_entrega') cantidadEntrega!: number;
   @field('cantidad_venta') cantidadVenta!: number;
   @field('cantidad_total') cantidadTotal!: number;
+  /** v21: unidades vendidas durante la jornada (venta directa con ruta activa).
+   *  Se sincroniza desde backend; mobile NO la muta directamente. */
+  @field('cantidad_vendida') cantidadVendida!: number;
+  /** v21: unidades entregadas (de pedidos pre-asignados marcados como Entregado).
+   *  Se sincroniza desde backend; mobile NO la muta directamente. */
+  @field('cantidad_entregada') cantidadEntregada!: number;
   @field('precio_unitario') precioUnitario!: number;
   @field('activo') activo!: boolean;
   @readonly @date('created_at') createdAt!: Date;

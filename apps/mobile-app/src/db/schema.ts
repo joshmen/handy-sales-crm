@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 20,
+  version: 21,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -188,6 +188,9 @@ export const schema = appSchema({
         { name: 'cantidad_entrega', type: 'number' },
         { name: 'cantidad_venta', type: 'number' },
         { name: 'cantidad_total', type: 'number' },
+        // v21: tracking realtime de progreso de carga sin esperar al cierre.
+        { name: 'cantidad_vendida', type: 'number' },
+        { name: 'cantidad_entregada', type: 'number' },
         { name: 'precio_unitario', type: 'number' },
         { name: 'activo', type: 'boolean' },
         { name: 'created_at', type: 'number' },
