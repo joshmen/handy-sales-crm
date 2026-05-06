@@ -306,7 +306,10 @@ export default function DashboardPage() {
 
           // Load ALL active metas for Admin/Supervisor
           try {
-            const today = new Date().toISOString().slice(0, 10);
+            // CRIT-5: día calendario en TZ del tenant (no UTC del browser).
+            // Antes `new Date().toISOString()` excluía metas activas en TZ
+            // negativa cerca de medianoche.
+            const today = tenantToday();
             const metas = await metaVendedorService.getAll();
             const activas = metas.filter(m => m.activo && m.fechaInicio <= today && m.fechaFin >= today);
             setAllMetasActivas(activas);
@@ -315,7 +318,7 @@ export default function DashboardPage() {
           }
           // Load delivery stats for Admin/Supervisor
           try {
-            const today = new Date().toISOString().split('T')[0];
+            const today = tenantToday();
             const stats = await deliveryService.getDeliveryStats({
               fechaDesde: today,
               fechaHasta: today,
@@ -327,8 +330,10 @@ export default function DashboardPage() {
             // Non-critical — dashboard works without delivery stats
           }
         }
-      } catch (error) {
-        console.error('Error loading metrics:', error);
+      } catch {
+        // BUG-3: no console.error en prod. Toast solo si afecta UX
+        // (load del dashboard ya tiene `setIsLoading(false)` finally que
+        // libera spinner; los caches stale de gráficos son no-críticos).
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
