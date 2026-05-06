@@ -11,6 +11,7 @@ import { Card, LoadingSpinner, UserAvatar } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { getGreetingForTz } from '@/utils/greeting';
+import { startOfDayInTz } from '@/utils/dateTz';
 import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
@@ -40,12 +41,19 @@ export function VendedorDashboard() {
   useFocusEffect(useCallback(() => {
     const userId = Number(user?.id ?? 0);
     if (!userId) return;
-    const now = new Date();
-    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    // Window simétrico de ±12h alrededor del midnight tenant TZ — alineado
+    // con useOfflineRutaHoy. Antes usaba device TZ + +36h, lo que mostraba
+    // rutas del día siguiente al vendedor (reportado 2026-05-05: aceptó
+    // por error la ruta del miércoles cuando aún era martes).
+    const tenantMidnight = startOfDayInTz(tz || 'America/Mexico_City').getTime();
+    const windowStart = tenantMidnight - 12 * 3600000;
+    const windowEnd = tenantMidnight + 12 * 3600000;
     database.get('rutas').query(
       Q.where('usuario_id', userId), Q.where('activo', true),
-      Q.where('fecha', Q.gte(localMidnight - 12 * 3600000)),
-      Q.where('fecha', Q.lt(localMidnight + 36 * 3600000))
+      Q.where('fecha', Q.gte(windowStart)),
+      Q.where('fecha', Q.lt(windowEnd)),
+      // Excluir terminales (Cancelada=3, Cerrada=6) — alineado con useOfflineRutaHoy.
+      Q.where('estado', Q.notIn([3, 6])),
     ).fetch().then(async (rutas: any[]) => {
       const r = rutas[0];
       if (!r) { setRouteStats({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 }); return; }
@@ -57,7 +65,7 @@ export function VendedorDashboard() {
         routeEstado: r.estado ?? 0,
       });
     }).catch(() => {});
-  }, [user?.id]));
+  }, [user?.id, tz]));
 
   // Local WDB data (for other KPIs)
   const { data: todayVisits } = useOfflineTodayVisits();
