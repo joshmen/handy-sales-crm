@@ -56,11 +56,14 @@ export function useOfflineRutaHoy() {
         Q.where('activo', true),
         Q.where('fecha', Q.gte(windowStart)),
         Q.where('fecha', Q.lt(windowEnd)),
-        // Excluir estados terminales: Cancelada (3), Cerrada (6). Reportado
-        // 2026-05-05: vendedor2 veía solo "RUTA DE MARTES Cancelada" en
-        // pantalla "Hoy" mientras la nueva ruta asignada no aparecía. La
-        // ruta cancelada ya no es accionable y solo confunde.
-        Q.where('estado', Q.notIn([3, 6])),
+        // Excluir estados terminales/no-accionables:
+        // - Completada (2): vendedor terminó todas las paradas; va al historial
+        // - Cancelada (3): admin la canceló
+        // - Cerrada (6): admin cerró formalmente
+        // Reportado 2026-05-05: tras completar una ruta y recibir la siguiente,
+        // tap en notif abría la completada (no la nueva). Filtrar Completada
+        // hace que useOfflineRutaHoy solo retorne rutas accionables.
+        Q.where('estado', Q.notIn([2, 3, 6])),
       )
       .observe();
   }, [user?.id, tz]);

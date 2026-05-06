@@ -36,6 +36,20 @@ let failedQueue: Array<{
 
 export function setAccessToken(token: string | null) {
   _cachedAccessToken = token;
+  // Login fresh / refresh exitoso: limpiar state in-flight de la sesión
+  // vieja. Sin esto, una refreshPromise iniciada con el refresh_token
+  // viejo (cuando la sesión previa expiró) puede resolver con
+  // SESSION_REVOKED segundos después del login y disparar forceLogout —
+  // matando la sesión recién emitida. Reportado 2026-05-05 (Mazatlán
+  // 6:38pm): user veía logout automático ~1s post-login.
+  if (token) {
+    isRefreshing = false;
+    refreshPromise = null;
+    // Resolver requests en queue con el nuevo token (no rejectar — el
+    // login ya validó que el token es bueno).
+    failedQueue.forEach(({ resolve }) => resolve(token));
+    failedQueue = [];
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -131,9 +145,21 @@ apiInstance.interceptors.response.use(
 
     if (error.response?.status === 401) {
       const errorCode = error.response.data?.code;
+      // Capturamos el token con el que se mandó la request original.
+      // Si entre el envío y recibir el 401, el user hizo login fresh,
+      // _cachedAccessToken cambió — el 401 corresponde a la sesión vieja
+      // y NO debe disparar forceLogout sobre la sesión nueva.
+      const tokenAtRequest = (originalRequest.headers?.Authorization as string | undefined)
+        ?.replace('Bearer ', '');
 
       // Device was revoked by admin — force logout with specific message
       if (errorCode === 'DEVICE_REVOKED' || errorCode === 'SESSION_REVOKED') {
+        // Guard: si el JWT actual ya es uno nuevo, ignorar — el revoke
+        // aplicaba a la sesión previa, ya superada por login fresh.
+        if (tokenAtRequest && _cachedAccessToken && tokenAtRequest !== _cachedAccessToken) {
+          if (__DEV__) console.log('[API] 401 SESSION_REVOKED on stale token — ignoring (user re-logged in)');
+          return Promise.reject(error);
+        }
         authEventEmitter.emit('deviceRevoked');
         return Promise.reject(error);
       }
@@ -160,6 +186,14 @@ apiInstance.interceptors.response.use(
         } catch (e) {
           // fall through
           if (__DEV__) console.warn('[API]', e);
+        }
+
+        // Guard: si el cliente ya tiene un token válido distinto del que
+        // falló (login fresh ocurrió mientras hacíamos refresh), no
+        // forzamos logout — la sesión nueva es válida.
+        if (tokenAtRequest && _cachedAccessToken && tokenAtRequest !== _cachedAccessToken) {
+          if (__DEV__) console.log('[API] refresh fail on stale token — ignoring (user re-logged in)');
+          return Promise.reject(error);
         }
 
         processQueueError(new Error('Token refresh failed'));

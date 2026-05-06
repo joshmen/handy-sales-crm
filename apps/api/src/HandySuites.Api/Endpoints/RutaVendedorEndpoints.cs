@@ -145,9 +145,15 @@ public static class RutaVendedorEndpoints
             try
             {
                 var client = factory.CreateClient("MobileApi");
+                // Cuerpo del push: paradas + pedidos + 2 totales separados.
+                // Pedidos = pre-asignados a clientes; Carga = productos sueltos
+                // para venta libre. Reportado 2026-05-05: el body solo mostraba
+                // MontoTotalEntrega ($0 cuando solo había carga) y confundía al
+                // vendedor sobre qué llevaba realmente.
                 var body = $"Ruta: {resumen.RutaNombre}. {resumen.TotalParadas} parada{(resumen.TotalParadas == 1 ? "" : "s")}, "
                          + $"{resumen.TotalPedidos} pedido{(resumen.TotalPedidos == 1 ? "" : "s")}. "
-                         + $"Total a entregar: ${resumen.MontoTotalEntrega:0.00}. Toca para revisar y aceptar.";
+                         + $"Pedidos: ${resumen.MontoTotalEntrega:0.00} | Carga: ${resumen.MontoTotalCarga:0.00}. "
+                         + "Toca para revisar y aceptar.";
                 var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
                 {
                     tenantId,
