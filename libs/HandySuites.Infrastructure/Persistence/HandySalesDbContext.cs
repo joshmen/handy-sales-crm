@@ -124,6 +124,54 @@ public class HandySuitesDbContext : DbContext
             }
         }
 
+        // Auto-fill `Pedido.Latitud/Longitud` desde `Cliente` cuando el caller
+        // no las provee (mobile build viejo, GPS off, flujo de venta directa
+        // que no captura, etc.). Single chokepoint EF Core 8 idiomático
+        // (`ChangeTracker` en `SaveChangesAsync` override) — corre uniforme
+        // para sync, venta directa, web admin y cualquier endpoint futuro.
+        //
+        // Si el caller pasa coords reales (más precisas, GPS device-fresh)
+        // se preservan. Sólo se rellena cuando ambas vienen null y el cliente
+        // tiene coords. La pantalla GPS Activity filtra `WHERE Latitud IS NOT
+        // NULL`, así garantizamos que cada pedido aparezca con su link "Ver
+        // pedido #X" en el timeline. Reportado prod 2026-05-06: pedidos de
+        // Rodrigo (Jeyma, venta directa) llegaban sin coords y no se veían
+        // en `/team/{id}/gps`. La migration `BackfillPedidoCoordsFromCliente`
+        // (5 mayo) hizo el backfill histórico una vez; este interceptor
+        // mantiene la propiedad invariante hacia adelante.
+        var pedidosNuevosSinCoords = ChangeTracker.Entries<Pedido>()
+            .Where(e => e.State == EntityState.Added
+                     && e.Entity.Latitud == null
+                     && e.Entity.Longitud == null
+                     && e.Entity.ClienteId > 0)
+            .ToList();
+
+        if (pedidosNuevosSinCoords.Count > 0)
+        {
+            var clienteIds = pedidosNuevosSinCoords
+                .Select(e => e.Entity.ClienteId)
+                .Distinct()
+                .ToList();
+
+            // 1 query batch — si N pedidos refieren a M ≤ N clientes, traemos
+            // sólo los M clientes con coords no-null. Diccionario en memoria.
+            var coordsPorCliente = await Clientes.AsNoTracking()
+                .Where(c => clienteIds.Contains(c.Id)
+                         && c.Latitud != null
+                         && c.Longitud != null)
+                .Select(c => new { c.Id, c.Latitud, c.Longitud })
+                .ToDictionaryAsync(c => c.Id, cancellationToken);
+
+            foreach (var entry in pedidosNuevosSinCoords)
+            {
+                if (coordsPorCliente.TryGetValue(entry.Entity.ClienteId, out var coords))
+                {
+                    entry.Entity.Latitud = coords.Latitud;
+                    entry.Entity.Longitud = coords.Longitud;
+                }
+            }
+        }
+
         return await base.SaveChangesAsync(cancellationToken);
     }
 
