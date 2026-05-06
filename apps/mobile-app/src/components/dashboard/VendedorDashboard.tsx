@@ -52,8 +52,11 @@ export function VendedorDashboard() {
       Q.where('usuario_id', userId), Q.where('activo', true),
       Q.where('fecha', Q.gte(windowStart)),
       Q.where('fecha', Q.lt(windowEnd)),
-      // Excluir terminales (Cancelada=3, Cerrada=6) — alineado con useOfflineRutaHoy.
-      Q.where('estado', Q.notIn([3, 6])),
+      // Excluir terminales/no-accionables: Completada=2, Cancelada=3, Cerrada=6 —
+      // alineado con useOfflineRutaHoy. Las completadas van al historial; si el
+      // dashboard las mostraba y el vendedor recibía notif de ruta nueva, el
+      // tap abría la vieja completada en vez de la nueva (reportado 2026-05-05).
+      Q.where('estado', Q.notIn([2, 3, 6])),
     ).fetch().then(async (rutas: any[]) => {
       const r = rutas[0];
       if (!r) { setRouteStats({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 }); return; }

@@ -1823,6 +1823,7 @@
       "backToRoutes": "Volver a rutas",
       "startRoute": "Iniciar ruta",
       "sendToLoad": "Enviar a carga",
+      "sendToLoadConfirm": "¿Confirmas enviar esta ruta al vendedor? El vendedor recibirá una notificación push y podrá aceptar la ruta. Una vez enviada no podrás editar paradas, pedidos ni carga.",
       "completeRoute": "Completar ruta",
       "closeRoute": "Cerrar ruta",
       "viewClosure": "Ver cierre",
