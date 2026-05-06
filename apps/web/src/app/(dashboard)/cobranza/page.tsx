@@ -69,11 +69,16 @@ type CobroFormData = z.infer<typeof cobroSchema>;
 
 // fmtDate moved inside component to use locale-aware useFormatters hook
 
-function defaultDates() {
-  const h = new Date();
-  const d = new Date(h);
-  d.setMonth(d.getMonth() - 1);
-  return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
+/**
+ * Calcula `defaultDates` y `DATE_PRESETS` ANCLADOS al día calendario del tenant.
+ * Antes usaban `new Date()` (TZ del browser), causando que un admin en CDMX
+ * abriendo el panel de un tenant Mazatlán filtrara con un día desfasado.
+ */
+function defaultDatesFromTenantToday(today: string) {
+  const [y, m, d] = today.split('-').map(Number);
+  const past = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1, 12, 0, 0));
+  past.setUTCMonth(past.getUTCMonth() - 1);
+  return { desde: past.toISOString().slice(0, 10), hasta: today };
 }
 
 const metodoPagoColors: Record<number, string> = {
@@ -85,28 +90,30 @@ const metodoPagoColors: Record<number, string> = {
   5: 'bg-surface-3 text-foreground/80',
 };
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+function buildDatePresets(today: string): { label: string; calc: () => { desde: string; hasta: string } }[] {
+  const [y, m, d] = today.split('-').map(Number);
+  const todayUtc = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1, 12, 0, 0));
+  const isoOf = (date: Date) => date.toISOString().slice(0, 10);
 
-const DATE_PRESETS: { label: string; calc: () => { desde: string; hasta: string } }[] = [
-  { label: 'today', calc: () => { const t = iso(new Date()); return { desde: t, hasta: t }; } },
-  { label: 'thisWeek', calc: () => {
-    const now = new Date();
-    const day = now.getDay();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-    return { desde: iso(mon), hasta: iso(now) };
-  }},
-  { label: 'thisMonth', calc: () => {
-    const now = new Date();
-    return { desde: iso(new Date(now.getFullYear(), now.getMonth(), 1)), hasta: iso(now) };
-  }},
-  { label: 'last90Days', calc: () => {
-    const now = new Date();
-    const past = new Date(now);
-    past.setDate(past.getDate() - 90);
-    return { desde: iso(past), hasta: iso(now) };
-  }},
-];
+  return [
+    { label: 'today', calc: () => ({ desde: today, hasta: today }) },
+    { label: 'thisWeek', calc: () => {
+      const day = todayUtc.getUTCDay();
+      const mon = new Date(todayUtc);
+      mon.setUTCDate(todayUtc.getUTCDate() - (day === 0 ? 6 : day - 1));
+      return { desde: isoOf(mon), hasta: today };
+    }},
+    { label: 'thisMonth', calc: () => {
+      const first = new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), 1, 12, 0, 0));
+      return { desde: isoOf(first), hasta: today };
+    }},
+    { label: 'last90Days', calc: () => {
+      const past = new Date(todayUtc);
+      past.setUTCDate(past.getUTCDate() - 90);
+      return { desde: isoOf(past), hasta: today };
+    }},
+  ];
+}
 
 type Tab = 'cobros' | 'saldos';
 
@@ -115,13 +122,15 @@ type Tab = 'cobros' | 'saldos';
 export default function CobranzaPage() {
   const t = useTranslations('collections');
   const tc = useTranslations('common');
-  const { formatCurrency, formatDate } = useFormatters();
+  const { formatCurrency, formatDate, tenantToday } = useFormatters();
   const fmtDate = (d: string) => formatDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
 
   const [tab, setTab] = useState<Tab>('saldos');
-  const [dates, setDates] = useState(defaultDates);
+  const [dates, setDates] = useState(() => defaultDatesFromTenantToday(tenantToday()));
+  // Presets recompiled when tenant TZ/day changes (rare).
+  const DATE_PRESETS = useMemo(() => buildDatePresets(tenantToday()), [tenantToday]);
   const [resumen, setResumen] = useState<ResumenCartera | null>(null);
 
   // Cobros

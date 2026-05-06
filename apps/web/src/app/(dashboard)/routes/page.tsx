@@ -70,7 +70,7 @@ export default function RoutesPage() {
   const tc = useTranslations('common');
   const showApiError = useApiErrorToast();
   const router = useRouter();
-  const { formatDateOnly } = useFormatters();
+  const { formatDateOnly, tenantToday } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
@@ -343,7 +343,10 @@ export default function RoutesPage() {
 
   // Create/Edit handlers
   const handleOpenCreate = () => {
-    const todayString = new Date().toISOString().split('T')[0];
+    // Default `fecha` al día calendario tenant. Antes usaba UTC del browser
+    // (`new Date().toISOString()`) lo que en TZ negativa preseleccionaba el
+    // día siguiente.
+    const todayString = tenantToday();
     resetForm({
       nombre: '',
       usuarioId: 0,

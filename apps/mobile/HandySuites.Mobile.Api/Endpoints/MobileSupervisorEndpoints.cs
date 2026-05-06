@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Usuarios.DTOs;
 using HandySuites.Domain.Common;
 using HandySuites.Infrastructure.Persistence;
@@ -90,13 +91,22 @@ public static class MobileSupervisorEndpoints
         // GET /api/mobile/supervisor/dashboard
         group.MapGet("/dashboard", async (
             ICurrentTenant tenant,
+            ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
             if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
-            var hoy = DateTime.UtcNow.Date;
+            // Ventanas en TZ tenant — antes "hoy" y "mes" filtraban por
+            // calendario UTC del servidor, lo que excluía pedidos de TZ
+            // negativas en rangos al límite del día/mes.
+            var hoyTenant = await tenantTzSvc.GetTenantTodayAsync();
+            var (hoyStartUtc, hoyEndUtc) = await tenantTzSvc.GetTenantDayWindowUtcAsync(hoyTenant);
+            var mesStart = new DateOnly(hoyTenant.Year, hoyTenant.Month, 1);
+            var mesEnd = mesStart.AddMonths(1);
+            var mesStartUtc = await tenantTzSvc.ConvertTenantDateToUtcAsync(mesStart);
+            var mesEndUtc = await tenantTzSvc.ConvertTenantDateToUtcAsync(mesEnd);
 
             List<int> allIds;
             if (tenant.IsAdmin || tenant.IsSuperAdmin)
@@ -117,7 +127,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= hoyStartUtc && p.FechaPedido < hoyEndUtc
                          && p.Activo)
                 .CountAsync();
 
@@ -125,8 +135,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Month == hoy.Month
-                         && p.FechaPedido.Year == hoy.Year
+                         && p.FechaPedido >= mesStartUtc && p.FechaPedido < mesEndUtc
                          && p.Activo)
                 .CountAsync();
 
@@ -142,8 +151,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Month == hoy.Month
-                         && p.FechaPedido.Year == hoy.Year
+                         && p.FechaPedido >= mesStartUtc && p.FechaPedido < mesEndUtc
                          && p.Activo)
                 .SumAsync(p => (decimal?)p.Total) ?? 0;
 
@@ -151,7 +159,8 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(v => allIds.Contains(v.UsuarioId)
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= hoyStartUtc && v.FechaHoraInicio < hoyEndUtc
                          && v.EliminadoEn == null)
                 .CountAsync();
 
@@ -159,7 +168,8 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(v => allIds.Contains(v.UsuarioId)
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= hoyStartUtc && v.FechaHoraInicio < hoyEndUtc
                          && v.FechaHoraFin != null
                          && v.EliminadoEn == null)
                 .CountAsync();
@@ -248,13 +258,15 @@ public static class MobileSupervisorEndpoints
         // GET /api/mobile/supervisor/actividad
         group.MapGet("/actividad", async (
             ICurrentTenant tenant,
+            ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
             if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
-            var hoy = DateTime.UtcNow.Date;
+            // Ventana "hoy" en TZ tenant — antes filtraba por UTC.
+            var (hoyStartUtc, hoyEndUtc) = await tenantTzSvc.GetTenantDayWindowUtcAsync();
 
             List<int> allIds;
             if (tenant.IsAdmin || tenant.IsSuperAdmin)
@@ -277,7 +289,7 @@ public static class MobileSupervisorEndpoints
                 .Include(p => p.Cliente)
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
-                         && p.FechaPedido.Date == hoy
+                         && p.FechaPedido >= hoyStartUtc && p.FechaPedido < hoyEndUtc
                          && p.Activo)
                 .OrderByDescending(p => p.CreadoEn)
                 .Take(20)
@@ -299,7 +311,8 @@ public static class MobileSupervisorEndpoints
                 .Include(v => v.Cliente)
                 .Where(v => allIds.Contains(v.UsuarioId)
                          && v.TenantId == tenant.TenantId
-                         && v.FechaHoraInicio != null && v.FechaHoraInicio.Value.Date == hoy
+                         && v.FechaHoraInicio != null
+                         && v.FechaHoraInicio >= hoyStartUtc && v.FechaHoraInicio < hoyEndUtc
                          && v.EliminadoEn == null)
                 .OrderByDescending(v => v.FechaHoraInicio)
                 .Take(20)
@@ -321,7 +334,7 @@ public static class MobileSupervisorEndpoints
                 .Include(c => c.Cliente)
                 .Where(c => allIds.Contains(c.UsuarioId)
                          && c.TenantId == tenant.TenantId
-                         && c.FechaCobro.Date == hoy
+                         && c.FechaCobro >= hoyStartUtc && c.FechaCobro < hoyEndUtc
                          && c.Activo)
                 .OrderByDescending(c => c.CreadoEn)
                 .Take(10)

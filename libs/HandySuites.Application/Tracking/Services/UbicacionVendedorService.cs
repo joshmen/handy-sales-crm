@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Tracking.DTOs;
 using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Domain.Entities;
@@ -33,15 +34,18 @@ public class UbicacionVendedorService
     private readonly IUbicacionVendedorRepository _repo;
     private readonly ISubscriptionFeatureGuard _guard;
     private readonly ICurrentTenant _tenant;
+    private readonly ITenantTimeZoneService _tenantTz;
 
     public UbicacionVendedorService(
         IUbicacionVendedorRepository repo,
         ISubscriptionFeatureGuard guard,
-        ICurrentTenant tenant)
+        ICurrentTenant tenant,
+        ITenantTimeZoneService tenantTz)
     {
         _repo = repo;
         _guard = guard;
         _tenant = tenant;
+        _tenantTz = tenantTz;
     }
 
     /// <summary>
@@ -113,6 +117,16 @@ public class UbicacionVendedorService
         if (accepted.Count == 0)
             return new UbicacionBatchResultDto { Aceptados = 0, Duplicados = request.Pings.Count };
 
+        // DiaServicio se calcula en TZ del tenant (no UTC) para que las queries
+        // por "día calendario tenant" funcionen correctamente. Reportado
+        // 2026-05-06: ping de 17:19 Mazatlán (=00:19 UTC del día siguiente)
+        // se almacenaba con DiaServicio = día UTC (incorrecto).
+        var tenantTzInfo = await _tenantTz.GetTenantTimeZoneAsync();
+        DateOnly DiaServicioParaUtc(DateTime utc) =>
+            DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(
+                utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+                tenantTzInfo));
+
         var entidades = accepted
             .Select(p => new UbicacionVendedor
             {
@@ -124,7 +138,7 @@ public class UbicacionVendedorService
                 Tipo = p.Tipo,
                 CapturadoEn = p.CapturadoEn,
                 ReferenciaId = p.ReferenciaId,
-                DiaServicio = DateOnly.FromDateTime(p.CapturadoEn),
+                DiaServicio = DiaServicioParaUtc(p.CapturadoEn),
                 Activo = true,
                 CreadoEn = ahora,
                 CreadoPor = _tenant.UserId,
@@ -162,6 +176,7 @@ public class UbicacionVendedorService
     public Task<List<UltimaUbicacionDto>> ObtenerUltimasAsync(List<int>? usuarioIds = null)
         => _repo.ObtenerUltimasAsync(_tenant.TenantId, usuarioIds);
 
-    public Task<List<UbicacionVendedorDto>> ObtenerRecorridoDelDiaAsync(int usuarioId, DateOnly dia)
-        => _repo.ObtenerRecorridoDelDiaAsync(_tenant.TenantId, usuarioId, dia);
+    public Task<List<UbicacionVendedorDto>> ObtenerRecorridoEntreAsync(
+        int usuarioId, DateTime inicioUtc, DateTime finUtc)
+        => _repo.ObtenerRecorridoEntreAsync(_tenant.TenantId, usuarioId, inicioUtc, finUtc);
 }

@@ -1,5 +1,6 @@
 using HandySuites.Application.Ai.DTOs;
 using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ public class AiActionDetector : IAiActionDetector
     private readonly HandySuitesDbContext _db;
     private readonly IMemoryCache _cache;
     private readonly ILogger<AiActionDetector> _logger;
+    private readonly ITenantTimeZoneService _tenantTz;
 
     private const int MaxActions = 2;
     private const int ActionCreditCost = 2;
@@ -21,11 +23,13 @@ public class AiActionDetector : IAiActionDetector
     public AiActionDetector(
         HandySuitesDbContext db,
         IMemoryCache cache,
-        ILogger<AiActionDetector> logger)
+        ILogger<AiActionDetector> logger,
+        ITenantTimeZoneService tenantTz)
     {
         _db = db;
         _cache = cache;
         _logger = logger;
+        _tenantTz = tenantTz;
     }
 
     public async Task<List<AiSuggestedAction>> DetectActionsAsync(
@@ -106,12 +110,23 @@ public class AiActionDetector : IAiActionDetector
 
         if (clientesSinVisita.Count == 0) return;
 
-        var visitDtos = clientesSinVisita.Select((c, i) => new
+        // FechaProgramada en TZ tenant (no UTC del servidor) — antes "mañana
+        // 9am" se convertía a una hora rara para tenants en TZ negativa.
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var tzInfo = await _tenantTz.GetTenantTimeZoneAsync();
+        var visitDtos = clientesSinVisita.Select((c, i) =>
         {
-            ClienteId = c.Id,
-            FechaProgramada = DateTime.UtcNow.Date.AddDays(i < 3 ? 1 : 2).AddHours(9 + i),
-            TipoVisita = 0, // Rutina
-            Notas = "Visita programada por asistente IA"
+            var diaTenant = hoyTenant.AddDays(i < 3 ? 1 : 2);
+            var localDateTime = diaTenant.ToDateTime(new TimeOnly(9 + i, 0));
+            var localUnspecified = DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified);
+            var fechaUtc = TimeZoneInfo.ConvertTimeToUtc(localUnspecified, tzInfo);
+            return new
+            {
+                ClienteId = c.Id,
+                FechaProgramada = fechaUtc,
+                TipoVisita = 0, // Rutina
+                Notas = "Visita programada por asistente IA"
+            };
         }).ToList();
 
         var clientNames = string.Join(", ", clientesSinVisita.Take(3).Select(c => c.Nombre));
@@ -189,8 +204,12 @@ public class AiActionDetector : IAiActionDetector
         var metaSugerida = Math.Ceiling(ventasUltimos30d * 1.1m / 100) * 100; // Round up to nearest 100
         if (metaSugerida < 1000) metaSugerida = 5000; // Minimum meaningful goal
 
-        var startOfNextMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
-        var endOfNextMonth = startOfNextMonth.AddMonths(1).AddDays(-1);
+        // "Próximo mes" se calcula en calendario tenant — antes usaba mes UTC.
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var nextMonthTenant = new DateOnly(hoyTenant.Year, hoyTenant.Month, 1).AddMonths(1);
+        var endNextMonthTenant = nextMonthTenant.AddMonths(1).AddDays(-1);
+        var startOfNextMonth = await _tenantTz.ConvertTenantDateToUtcAsync(nextMonthTenant);
+        var endOfNextMonth = await _tenantTz.ConvertTenantDateToUtcAsync(endNextMonthTenant);
 
         var metaDto = new
         {
@@ -218,10 +237,12 @@ public class AiActionDetector : IAiActionDetector
     {
         if (actions.Count >= MaxActions) return;
 
-        // Check if user has a route for today/tomorrow
-        var today = DateTime.UtcNow.Date;
+        // "Hoy/mañana" en TZ tenant — antes usaba UTC del servidor.
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var todayUtc = await _tenantTz.ConvertTenantDateToUtcAsync(hoyTenant);
+        var dayAfterTomorrowUtc = await _tenantTz.ConvertTenantDateToUtcAsync(hoyTenant.AddDays(2));
         var hasRouteToday = await _db.RutasVendedor
-            .AnyAsync(r => r.UsuarioId == userId && r.Fecha >= today && r.Fecha < today.AddDays(2));
+            .AnyAsync(r => r.UsuarioId == userId && r.Fecha >= todayUtc && r.Fecha < dayAfterTomorrowUtc);
 
         if (hasRouteToday) return;
 
@@ -238,11 +259,12 @@ public class AiActionDetector : IAiActionDetector
 
         if (clientesParaRuta.Count < 2) return;
 
-        var tomorrow = today.AddDays(1);
+        var tomorrowTenant = hoyTenant.AddDays(1);
+        var tomorrow = await _tenantTz.ConvertTenantDateToUtcAsync(tomorrowTenant);
         var rutaDto = new
         {
             UsuarioId = userId,
-            Nombre = $"Ruta IA — {tomorrow:dd MMM yyyy}",
+            Nombre = $"Ruta IA — {tomorrowTenant:dd MMM yyyy}",
             Descripcion = "Ruta sugerida por asistente IA",
             Fecha = tomorrow,
             HoraInicioEstimada = new TimeSpan(9, 0, 0),
@@ -257,6 +279,7 @@ public class AiActionDetector : IAiActionDetector
         };
 
         var clientNames = string.Join(", ", clientesParaRuta.Take(3).Select(c => c.Nombre));
+        // tomorrowTenant declared above; rutaDto.Fecha is the UTC instant.
 
         actions.Add(new AiSuggestedAction(
             ActionId: Guid.NewGuid().ToString("N"),
@@ -303,10 +326,12 @@ public class AiActionDetector : IAiActionDetector
     {
         if (actions.Count >= MaxActions) return;
 
-        // Check if user already has a route for tomorrow
-        var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+        // "Mañana" en TZ tenant — la ventana del día depende del calendario tenant.
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var tomorrow = await _tenantTz.ConvertTenantDateToUtcAsync(hoyTenant.AddDays(1));
+        var dayAfterTomorrow = await _tenantTz.ConvertTenantDateToUtcAsync(hoyTenant.AddDays(2));
         var hasRouteTomorrow = await _db.RutasVendedor
-            .AnyAsync(r => r.UsuarioId == userId && r.Fecha >= tomorrow && r.Fecha < tomorrow.AddDays(1));
+            .AnyAsync(r => r.UsuarioId == userId && r.Fecha >= tomorrow && r.Fecha < dayAfterTomorrow);
 
         if (hasRouteTomorrow) return;
 
@@ -379,10 +404,11 @@ public class AiActionDetector : IAiActionDetector
             current = nearest;
         }
 
+        var tomorrowTenant = hoyTenant.AddDays(1);
         var rutaDto = new
         {
             UsuarioId = userId,
-            Nombre = $"Ruta Optimizada IA — {tomorrow:dd MMM yyyy}",
+            Nombre = $"Ruta Optimizada IA — {tomorrowTenant:dd MMM yyyy}",
             Descripcion = "Ruta optimizada geográficamente por asistente IA",
             Fecha = tomorrow,
             HoraInicioEstimada = new TimeSpan(9, 0, 0),

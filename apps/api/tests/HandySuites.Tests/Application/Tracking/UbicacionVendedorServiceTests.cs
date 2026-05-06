@@ -1,4 +1,5 @@
 using FluentAssertions;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Tracking.DTOs;
 using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Application.Tracking.Services;
@@ -17,17 +18,22 @@ public class UbicacionVendedorServiceTests
     private readonly Mock<IUbicacionVendedorRepository> _repo = new();
     private readonly Mock<ISubscriptionFeatureGuard> _guard = new();
     private readonly Mock<ICurrentTenant> _tenant = new();
+    private readonly Mock<ITenantTimeZoneService> _tz = new();
     private readonly UbicacionVendedorService _service;
 
     public UbicacionVendedorServiceTests()
     {
         _tenant.SetupGet(t => t.TenantId).Returns(Tenant);
         _tenant.SetupGet(t => t.UserId).Returns(UserId);
+        // TZ tenant default: UTC. Tests que validen el ajuste TZ del campo
+        // DiaServicio pueden setupear otra zona.
+        _tz.Setup(t => t.GetTenantTimeZoneAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TimeZoneInfo.Utc);
         // Default: no última ubicación previa (vendedor nuevo). Tests que
         // necesitan validar velocity check pueden override este setup.
         _repo.Setup(r => r.ObtenerUltimasAsync(Tenant, It.IsAny<List<int>?>()))
             .ReturnsAsync(new List<UltimaUbicacionDto>());
-        _service = new UbicacionVendedorService(_repo.Object, _guard.Object, _tenant.Object);
+        _service = new UbicacionVendedorService(_repo.Object, _guard.Object, _tenant.Object, _tz.Object);
     }
 
     [Fact]
