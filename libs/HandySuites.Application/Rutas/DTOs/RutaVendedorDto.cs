@@ -209,6 +209,13 @@ public class RutaCargaDto
     public int CantidadEntrega { get; set; }
     public int CantidadVenta { get; set; }
     public int CantidadTotal { get; set; }
+    /// <summary>Unidades vendidas durante la jornada (venta directa con ruta
+    /// activa). Se incrementa en tiempo real. Mobile lo usa para mostrar
+    /// progreso "X disponibles / Y cargados" sin esperar al cierre manual.</summary>
+    public int CantidadVendida { get; set; }
+    /// <summary>Unidades entregadas (de pedidos pre-asignados marcados como
+    /// Entregado). Mobile lo usa para mostrar progreso de carga.</summary>
+    public int CantidadEntregada { get; set; }
     public double PrecioUnitario { get; set; }
     public double MontoTotal => CantidadTotal * PrecioUnitario;
     public int? Disponible { get; set; }

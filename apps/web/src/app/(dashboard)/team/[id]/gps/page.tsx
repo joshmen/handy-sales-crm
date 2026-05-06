@@ -422,10 +422,15 @@ function TeamGpsDetailContent() {
           </div>
         )}
 
-        {/* Cuerpo split: mapa + lista */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-380px)] min-h-[400px]">
+        {/* Cuerpo split: mapa + lista.
+            Mobile: stack vertical con alturas explícitas — el grid de 1 col
+            colapsaba el mapa Leaflet a height 0 porque su contenedor no
+            tenía altura intrínseca y `fullHeight` interno depende del padre.
+            Desktop (lg+): split 50/50 con calc(100vh-380px) compartido.
+            Reportado 2026-05-05: mapa no se veía desde móvil web. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:h-[calc(100vh-380px)] lg:min-h-[400px]">
           {/* Mapa */}
-          <div ref={mapContainerRef} className="bg-card border border-border-subtle rounded-lg overflow-hidden">
+          <div ref={mapContainerRef} className="bg-card border border-border-subtle rounded-lg overflow-hidden h-[320px] lg:h-auto">
             {loading ? (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{t('loading')}</div>
             ) : (
@@ -434,7 +439,7 @@ function TeamGpsDetailContent() {
           </div>
 
           {/* Lista */}
-          <div className="bg-card border border-border-subtle rounded-lg flex flex-col min-h-0">
+          <div className="bg-card border border-border-subtle rounded-lg flex flex-col min-h-0 h-[480px] lg:h-auto">
             <div className="px-3 py-2 border-b border-border-subtle text-[11px] uppercase tracking-wide font-medium text-muted-foreground">
               {t('eventsTimeline')}
             </div>

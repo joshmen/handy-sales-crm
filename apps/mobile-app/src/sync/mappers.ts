@@ -403,6 +403,8 @@ function extractRutaCarga(
         cantidad_entrega: rc.cantidadEntrega ?? 0,
         cantidad_venta: rc.cantidadVenta ?? 0,
         cantidad_total: rc.cantidadTotal ?? 0,
+        cantidad_vendida: rc.cantidadVendida ?? 0,
+        cantidad_entregada: rc.cantidadEntregada ?? 0,
         precio_unitario: rc.precioUnitario ?? 0,
         activo: rc.activo ?? true,
         created_at: toTimestamp(rc.creadoEn ?? ruta.actualizadoEn),

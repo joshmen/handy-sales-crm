@@ -6,6 +6,7 @@ using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Mobile.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HandySuites.Mobile.Api.Endpoints;
 
@@ -274,7 +275,8 @@ public static class MobilePedidoEndpoints
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config,
-            [FromServices] IServiceScopeFactory scopeFactory) =>
+            [FromServices] IServiceScopeFactory scopeFactory,
+            [FromServices] HandySuitesDbContext db) =>
         {
             var resultado = await servicio.EntregarAsync(id, dto?.NotasEntrega);
             if (!resultado)
@@ -294,6 +296,38 @@ public static class MobilePedidoEndpoints
                     try { await stockNotifier.CheckAndNotifyLowStockAsync(id, tenantId); }
                     catch { /* logged inside service */ }
                 });
+
+                // Tracking de carga: si el pedido está asignado a una ruta activa,
+                // incrementar RutaCarga.CantidadEntregada por cada producto del
+                // pedido. Permite reflejar el progreso en mobile y pre-rellenar
+                // el cierre sin captura manual.
+                var rutaPedido = await db.RutasPedidos
+                    .AsNoTracking()
+                    .Where(rp => rp.PedidoId == id && rp.Activo)
+                    .Select(rp => new { rp.RutaId })
+                    .FirstOrDefaultAsync();
+                if (rutaPedido != null)
+                {
+                    var detalles = await db.DetallePedidos
+                        .AsNoTracking()
+                        .Where(d => d.PedidoId == id && d.Activo)
+                        .Select(d => new { d.ProductoId, d.Cantidad })
+                        .ToListAsync();
+                    foreach (var det in detalles)
+                    {
+                        var carga = await db.RutasCarga
+                            .FirstOrDefaultAsync(c => c.RutaId == rutaPedido.RutaId
+                                && c.ProductoId == det.ProductoId
+                                && c.TenantId == tenantId
+                                && c.Activo);
+                        if (carga != null)
+                        {
+                            carga.CantidadEntregada += (int)det.Cantidad;
+                            carga.ActualizadoEn = DateTime.UtcNow;
+                        }
+                    }
+                    await db.SaveChangesAsync();
+                }
             }
 
             return Results.Ok(new { success = true, message = "Pedido entregado" });
