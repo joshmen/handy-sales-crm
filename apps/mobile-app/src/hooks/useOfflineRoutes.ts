@@ -34,14 +34,20 @@ export function useOfflineRutaHoy() {
 
   const observable = useMemo(() => {
     if (!user?.id) return null;
-    // Window de ±12h alrededor del inicio de día en TZ tenant.
-    // Un ruta con fecha "2026-03-26T00:00:00Z" debe aparecer tanto en marzo 25
-    // local (Mexico UTC-6) como marzo 26 local. El ±12h cubre cualquier offset.
-    // Usar tenant TZ en vez de device TZ corrige el bug cuando vendedor tiene
-    // device en otra zona o tenant opera en TZ distinta a CDMX.
+    // Window simétrico de ±12h alrededor del inicio de día en TZ tenant.
+    // Una ruta con fecha "2026-05-06T00:00:00Z" representa "miércoles 6 mayo"
+    // en cualquier TZ (convención: fecha = día calendario @ 00:00 UTC).
+    // Para martes 5 mayo CDMX (tenantMidnight = 5 mayo 06:00 UTC):
+    //   window = [4 mayo 18:00 UTC, 5 mayo 18:00 UTC]
+    //   - MARTES (5 mayo 00:00 UTC) → dentro ✓
+    //   - MIERCOLES (6 mayo 00:00 UTC) → fuera ✓
+    // Bug previo (2026-05-05): el end era +36h en vez de +12h, lo cual
+    // incluía rutas del día siguiente y vendedor2 vio "RUTA DE MIERCOLES"
+    // en su pantalla "Hoy" cuando aún era martes — y aceptó la ruta por
+    // error pensando que era la de hoy.
     const tenantMidnight = startOfDayInTz(tz).getTime();
     const windowStart = tenantMidnight - 12 * 3600000;
-    const windowEnd = tenantMidnight + 36 * 3600000;
+    const windowEnd = tenantMidnight + 12 * 3600000;
 
     return database
       .get<Ruta>('rutas')
