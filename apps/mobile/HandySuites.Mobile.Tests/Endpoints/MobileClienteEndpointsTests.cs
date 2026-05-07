@@ -157,7 +157,8 @@ public class MobileClienteEndpointsTests
     [Fact]
     public async Task ObtenerPorIdAsync_ReturnsClient_WhenExists()
     {
-        // Arrange
+        // Arrange — admin tiene acceso a cualquier cliente
+        _tenantMock.Setup(t => t.IsAdmin).Returns(true);
         _repoMock.Setup(r => r.ObtenerPorIdAsync(1, 1))
             .ReturnsAsync(_testClientes.First());
 
@@ -174,6 +175,7 @@ public class MobileClienteEndpointsTests
     public async Task ObtenerPorIdAsync_ReturnsNull_WhenNotExists()
     {
         // Arrange
+        _tenantMock.Setup(t => t.IsAdmin).Returns(true);
         _repoMock.Setup(r => r.ObtenerPorIdAsync(999, 1))
             .ReturnsAsync((ClienteDto?)null);
 
@@ -181,6 +183,51 @@ public class MobileClienteEndpointsTests
         var cliente = await _clienteService.ObtenerPorIdAsync(999);
 
         // Assert
+        cliente.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ObtenerPorIdAsync_ReturnsClient_WhenVendedorOwnsIt()
+    {
+        // BUG-2 fix: vendedor solo ve clientes asignados a él.
+        // Cliente.VendedorId = 42 y vendedor logueado es 42 → acceso permitido.
+        var clienteAsignado = new ClienteDto
+        {
+            Id = 1, Nombre = "Mi Cliente", VendedorId = 42,
+            RFC = "XAXX010101000", Correo = "x@x.com",
+            Telefono = "555", Direccion = "Calle 1", Activo = true
+        };
+        _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+        _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
+        _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
+        _tenantMock.Setup(t => t.UserId).Returns("42");
+        _repoMock.Setup(r => r.ObtenerPorIdAsync(1, 1)).ReturnsAsync(clienteAsignado);
+
+        var cliente = await _clienteService.ObtenerPorIdAsync(1);
+
+        cliente.Should().NotBeNull();
+        cliente!.Id.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ObtenerPorIdAsync_ReturnsNull_WhenVendedorDoesNotOwnClient()
+    {
+        // BUG-2 fix: vendedor 42 NO ve cliente asignado a vendedor 99.
+        // Antes: information disclosure cross-vendor (devolvía el cliente).
+        var clienteOtroVendedor = new ClienteDto
+        {
+            Id = 1, Nombre = "Cliente Ajeno", VendedorId = 99,
+            RFC = "XAXX010101000", Correo = "x@x.com",
+            Telefono = "555", Direccion = "Calle 1", Activo = true
+        };
+        _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+        _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
+        _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
+        _tenantMock.Setup(t => t.UserId).Returns("42");
+        _repoMock.Setup(r => r.ObtenerPorIdAsync(1, 1)).ReturnsAsync(clienteOtroVendedor);
+
+        var cliente = await _clienteService.ObtenerPorIdAsync(1);
+
         cliente.Should().BeNull();
     }
 
@@ -241,7 +288,8 @@ public class MobileClienteEndpointsTests
     [Fact]
     public async Task ObtenerClienteUbicacion_ReturnsLocationData()
     {
-        // Arrange
+        // Arrange — admin tiene acceso a cualquier cliente
+        _tenantMock.Setup(t => t.IsAdmin).Returns(true);
         _repoMock.Setup(r => r.ObtenerPorIdAsync(1, 1))
             .ReturnsAsync(_testClientes.First());
 

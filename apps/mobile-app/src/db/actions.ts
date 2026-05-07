@@ -269,6 +269,42 @@ export async function createVentaDirectaOffline(
   // v16: cálculo branched per-item (ver comentario en createPedidoOffline).
   const { subtotal, descuentoTotal, impuesto, total } = calculateOrderTotals(items);
 
+  // CRIT-2 fix (audit 2026-05-06): captura GPS antes de la transacción WDB.
+  // Antes esta función se olvidaba el bloque que `createPedidoOffline` SÍ
+  // tenía → todos los pedidos de venta directa llegaban al backend con
+  // `latitud=null/longitud=null` y desaparecían de GPS Activity (filtra
+  // `WHERE Latitud IS NOT NULL`). Era la causa raíz que estábamos
+  // enmascarando server-side con el `SaveChangesAsync` interceptor que
+  // rellenaba desde Cliente.coords. Ahora con captura device-fresh, el
+  // mapa muestra la ubicación REAL del vendedor (no la dirección fija
+  // del cliente).
+  let capturedLat: number | null = null;
+  let capturedLng: number | null = null;
+  let gpsCaptured = false;
+  try {
+    const cliente = await database.get<Cliente>('clientes').find(clienteId);
+    const captured = await captureOrderLocation({
+      latitud: (cliente as any).latitud,
+      longitud: (cliente as any).longitud,
+    });
+    if (captured) {
+      capturedLat = captured.latitude;
+      capturedLng = captured.longitude;
+      gpsCaptured = true;
+    }
+  } catch {
+    // Cliente no encontrado o error en captura — venta directa se crea sin coords.
+  }
+
+  if (!gpsCaptured) {
+    Toast.show({
+      type: 'info',
+      text1: 'Venta registrada',
+      text2: 'Sin ubicación GPS — activa el GPS para mejor seguimiento.',
+      visibilityTime: 5000,
+    });
+  }
+
   return database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
       record.serverId = null;
@@ -284,6 +320,8 @@ export async function createVentaDirectaOffline(
       record.impuesto = impuesto;
       record.total = total;
       record.notas = notas || null;
+      record.latitud = capturedLat;
+      record.longitud = capturedLng;
       record.activo = true;
       record.version = 1;
       record.updatedAt = new Date();

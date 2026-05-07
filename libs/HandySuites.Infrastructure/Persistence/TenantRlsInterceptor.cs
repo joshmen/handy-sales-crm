@@ -73,10 +73,10 @@ public class TenantRlsInterceptor : DbCommandInterceptor
     private void PrependSet(DbCommand command)
     {
         // Avoid re-setting on nested/batch calls
-        if (command.CommandText.StartsWith("SET app.")) return;
+        if (command.CommandText.StartsWith("SET app.") || command.CommandText.StartsWith("SELECT set_config(")) return;
 
-        string tenantId;
-        string isSuperAdmin;
+        int tenantIdInt;
+        bool isSuperAdminBool;
 
         var httpContext = _httpContextAccessor.HttpContext;
         var tenantClaim = httpContext?.User?.FindFirst("tenant_id");
@@ -85,21 +85,45 @@ public class TenantRlsInterceptor : DbCommandInterceptor
 
         if (tenantClaim != null && !string.IsNullOrEmpty(tenantClaim.Value))
         {
-            // Authenticated HTTP request
-            tenantId = tenantClaim.Value;
-            isSuperAdmin = roleClaim?.Value == "SUPER_ADMIN" ? "true" : "false";
+            // Authenticated HTTP request. CRIT-1 fix: validate tenant claim
+            // is a non-negative int. Antes lo interpolábamos raw en SQL — un
+            // JWT forjado con claim tipo `0'; DROP TABLE x;--` ejecutaba SQL
+            // arbitrario.
+            if (!int.TryParse(tenantClaim.Value, System.Globalization.NumberStyles.Integer,
+                              System.Globalization.CultureInfo.InvariantCulture, out tenantIdInt)
+                || tenantIdInt < 0)
+            {
+                throw new InvalidOperationException(
+                    "Invalid tenant_id claim — value must be a non-negative integer.");
+            }
+            isSuperAdminBool = roleClaim?.Value == "SUPER_ADMIN";
         }
         else
         {
             // No HttpContext OR no tenant claim (background worker, webhook, anonymous request).
             // System context: bypass RLS. Trusted code paths only.
-            tenantId = "0";
-            isSuperAdmin = "true";
+            tenantIdInt = 0;
+            isSuperAdminBool = true;
         }
 
+        // `set_config(name, value, is_local)` admite parámetros bound (a diferencia
+        // del `SET` plano que es comando DDL en Postgres). Defense in depth: aunque
+        // los valores ya están saneados arriba, los pasamos como parámetros para
+        // que no sean ni siquiera evaluados como SQL literal.
         using var setCmd = command.Connection!.CreateCommand();
         setCmd.Transaction = command.Transaction;
-        setCmd.CommandText = $"SET app.tenant_id = '{tenantId}'; SET app.is_super_admin = '{isSuperAdmin}'";
+        setCmd.CommandText = "SELECT set_config('app.tenant_id', @tid, false), set_config('app.is_super_admin', @sup, false)";
+
+        var pTid = setCmd.CreateParameter();
+        pTid.ParameterName = "@tid";
+        pTid.Value = tenantIdInt.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        setCmd.Parameters.Add(pTid);
+
+        var pSup = setCmd.CreateParameter();
+        pSup.ParameterName = "@sup";
+        pSup.Value = isSuperAdminBool ? "true" : "false";
+        setCmd.Parameters.Add(pSup);
+
         setCmd.ExecuteNonQuery();
     }
 }
