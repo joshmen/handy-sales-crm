@@ -130,8 +130,10 @@ export default function RoutesPage() {
       setRoutes(response.items);
       setTotalItems(response.total);
       setTotalPages(Math.ceil(response.total / pageSize) || 1);
-    } catch (err) {
-      console.error('Error al cargar rutas:', err);
+    } catch {
+      // BUG-3: el toast + setError ya comunican el fallo al user; no
+      // necesitamos console.error en prod (se va a Sentry/Vercel logs
+      // automáticamente vía error boundary si llegara a propagar).
       setError(t('errorLoadingRetry'));
       toast.error(t('errorLoading'));
     } finally {
