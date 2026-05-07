@@ -190,6 +190,7 @@
     "skipToContent": "Skip to main content",
     "previousPage": "Previous page",
     "nextPage": "Next page",
+    "paginationRange": "Showing {from}–{to} of {total}",
     "viewDetail": "View detail",
     "editMapping": "Edit mapping",
     "deleteMapping": "Delete mapping",

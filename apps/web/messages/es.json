@@ -190,6 +190,7 @@
     "skipToContent": "Saltar al contenido principal",
     "previousPage": "Página anterior",
     "nextPage": "Página siguiente",
+    "paginationRange": "Mostrando {from}–{to} de {total}",
     "viewDetail": "Ver detalle",
     "editMapping": "Editar mapeo",
     "deleteMapping": "Eliminar mapeo",
