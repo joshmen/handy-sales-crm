@@ -114,6 +114,18 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
     } catch {
       // No bloquear si el ping falla — el estado de jornada ya está activo
     }
+
+    // Mec 1 — Programar notif local a hora_fin del tenant. Sobrevive
+    // app cerrada (OS dispara aunque proceso esté muerto). Si vendedor
+    // ignora la notif, el watcher useHorarioLaboralWatcher lo cierra al
+    // siguiente foreground; si tampoco fue, useInactividadJornadaWatcher
+    // (4h sin pings) es la última red de seguridad.
+    try {
+      const notifs = await import('@/services/jornadaNotifications');
+      await notifs.scheduleHorarioFinNotification();
+    } catch {
+      // ignore — notif no es crítica
+    }
   },
 
   finalizarJornada: async (motivo) => {
@@ -143,6 +155,16 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
       // Stop timer al final — el ping de cierre todavía necesita el timer
       // activo (currentUsuarioId queda null si paramos antes del ping).
       mod.stopCheckpointTimer();
+    } catch {
+      // ignore
+    }
+
+    // Cancelar notifs locales pendientes (Mec 1 + Mec 4) ya que la jornada
+    // está cerrada. Si no, el vendedor recibiría "¿Ya terminaste?" cuando
+    // ya cerró.
+    try {
+      const notifs = await import('@/services/jornadaNotifications');
+      await notifs.cancelAllJornadaNotifications();
     } catch {
       // ignore
     }

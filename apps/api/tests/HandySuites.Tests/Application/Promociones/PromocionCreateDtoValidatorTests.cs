@@ -53,7 +53,7 @@ namespace HandySuites.Tests.Application.Promociones
                 ProductoIds = new List<int> { 1 },
                 DescuentoPorcentaje = 15,
                 FechaInicio = DateTime.Today,
-                FechaFin = DateTime.Now.AddMonths(1),
+                FechaFin = DateTime.UtcNow.AddMonths(1),
                 Descripcion = "descripción"
             };
 

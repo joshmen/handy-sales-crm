@@ -33,8 +33,8 @@ namespace HandySuites.Tests.Integration.Promociones
                 ProductoIds = new List<int> { 1 },
                 Descripcion = "Promocion Descripcion",
                 DescuentoPorcentaje = 10,
-                FechaInicio = DateTime.Now,
-                FechaFin = DateTime.Now.AddYears(2)
+                FechaInicio = DateTime.UtcNow,
+                FechaFin = DateTime.UtcNow.AddYears(2)
             };
 
             var response = await _client.PostAsJsonAsync("/promociones", dto);
@@ -49,8 +49,8 @@ namespace HandySuites.Tests.Integration.Promociones
                 Nombre = "Actualización",
                 ProductoIds = new List<int> { 1 },
                 DescuentoPorcentaje = 10,
-                FechaInicio = DateTime.Now,
-                FechaFin = DateTime.Now.AddYears(2)
+                FechaInicio = DateTime.UtcNow,
+                FechaFin = DateTime.UtcNow.AddYears(2)
             };
 
             var response = await _client.PutAsJsonAsync("/promociones/9999", dto);
