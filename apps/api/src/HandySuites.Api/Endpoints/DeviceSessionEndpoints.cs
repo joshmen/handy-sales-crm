@@ -121,7 +121,8 @@ public static class DeviceSessionEndpoints
             LogoutDeviceDto? dto,
             [FromServices] DeviceSessionService servicio,
             [FromServices] ICurrentTenant currentTenant,
-            [FromServices] IHttpClientFactory httpClientFactory) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ILoggerFactory loggerFactory) =>
         {
             if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var cantidad = await servicio.CerrarTodasSesionesUsuarioAsync(usuarioId, dto?.Reason);
@@ -141,7 +142,14 @@ public static class DeviceSessionEndpoints
                         data = new Dictionary<string, string> { ["type"] = "security.session_revoked" }
                     });
                 }
-                catch { /* fire-and-forget */ }
+                catch (Exception ex)
+                {
+                    // Fire-and-forget: la sesión ya se cerró, el push es nice-to-have.
+                    // Log Debug para que aparezca en Vercel/Railway logs si recurre,
+                    // sin contaminar Error level (que dispara alertas).
+                    loggerFactory.CreateLogger("DeviceSessionEndpoints")
+                        .LogDebug(ex, "Push notification post-revoke falló (fire-and-forget) usuarioId={UsuarioId}", usuarioId);
+                }
             }
 
             return Results.Ok(new { mensaje = $"Se cerraron {cantidad} sesiones del usuario", cantidad });

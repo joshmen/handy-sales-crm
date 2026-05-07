@@ -147,6 +147,56 @@ function LocationTrackingBridge() {
   useRutaJornadaWatcher();
   useInactividadJornadaWatcher();
 
+  // Setup notif category + listener de tap (Mec 1 + Mec 4 cierre via notif)
+  useEffect(() => {
+    let removeSub: (() => void) | undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const Notifications = await import('expo-notifications');
+        const notifs = await import('@/services/jornadaNotifications');
+        if (cancelled) return;
+        await notifs.setupJornadaNotificationCategory();
+
+        const sub = Notifications.addNotificationResponseReceivedListener(async (response) => {
+          const data = response.notification.request.content.data ?? {};
+          if ((data as any).action !== 'jornada-close-prompt') return;
+
+          const action = response.actionIdentifier;
+          const source = (data as any).source as 'horario' | 'inactividad' | undefined;
+
+          if (action === notifs.NOTIF_ACTION_EXTENDER) {
+            // "Sigo trabajando" → reschedule notif inactividad para otras 2h.
+            // (No tocamos jornada — sigue activa.)
+            await notifs.rescheduleInactividadNotification();
+            return;
+          }
+
+          // Default action (tap en notif) o action "cerrar" → cerrar jornada
+          // con el motivo que originó la notif.
+          if (action === notifs.NOTIF_ACTION_CERRAR
+              || action === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+            const motivo: 'horario' | 'inactividad' | 'manual' =
+              source === 'horario' ? 'horario'
+              : source === 'inactividad' ? 'inactividad'
+              : 'manual';
+            await useJornadaStore.getState().finalizarJornada(motivo);
+          }
+        });
+        removeSub = () => sub.remove();
+      } catch {
+        // expo-notifications puede fallar en Expo Go SDK 53+ (limitación
+        // del runtime). En dev development build / EAS build funciona.
+        // Watchers (useHorarioLaboralWatcher, useInactividad) cubren el
+        // caso si las notifs no llegan.
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (removeSub) removeSub();
+    };
+  }, []);
+
   return null;
 }
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)

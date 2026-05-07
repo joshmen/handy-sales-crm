@@ -174,6 +174,18 @@ export async function recordPing(
       });
     });
     lastPingAt = ahora;
+
+    // Mec 4 — reset notif local de inactividad. Si el ping fue de un
+    // evento de negocio (Venta/Cobro/Visita), reschedule para 2h después.
+    // El timer de la notif anterior se cancela primero.
+    if (esEventoNegocio) {
+      try {
+        const notifs = await import('@/services/jornadaNotifications');
+        await notifs.rescheduleInactividadNotification();
+      } catch {
+        // ignore — notif no es crítica
+      }
+    }
   } catch {
     // Silent — GPS errors no rompen flujo
   }
