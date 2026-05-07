@@ -35,6 +35,7 @@ import Cliente from '@/db/models/Cliente';
 import Producto from '@/db/models/Producto';
 import Pedido from '@/db/models/Pedido';
 import { Package } from 'lucide-react-native';
+import ProgressCard from '@/components/shared/ProgressCard';
 
 const STOP_DOT_COLORS: Record<number, string> = {
   0: '#e2e8f0', // Pendiente — gray
@@ -54,92 +55,6 @@ const STOP_STATUS_TEXT_COLORS: Record<number, string> = {
   2: '#16a34a', // green
   3: '#ef4444', // red
 };
-
-/**
- * Card de progreso para paradas/pedidos/productos. Si la ruta no tiene
- * elementos en esa categoría (`total === 0`), renderiza una versión gris
- * con caption explicativo en vez de "0 de 0 (NaN%)" — decisión UX owner
- * 2026-05-05: más informativo que ocultar y menos engañoso que mostrar 100%.
- */
-interface ProgressCardProps {
-  label: string;
-  current: number;
-  total: number;
-  color: string;
-  emptyCaption: string;
-}
-
-function ProgressCard({ label, current, total, color, emptyCaption }: ProgressCardProps) {
-  const isEmpty = total === 0;
-  const pct = isEmpty ? 0 : Math.min(100, (current / total) * 100);
-  const fillColor = isEmpty ? '#cbd5e1' : color;
-  const labelColor = isEmpty ? COLORS.textSecondary : COLORS.foreground;
-  return (
-    <View style={progressCardStyles.container}>
-      <View style={progressCardStyles.headerRow}>
-        <Text style={[progressCardStyles.label, { color: labelColor }]} numberOfLines={1}>
-          {label}
-        </Text>
-        <Text style={[progressCardStyles.count, { color: labelColor }]}>
-          {isEmpty ? '—' : `${current} / ${total}`}
-        </Text>
-      </View>
-      <View style={progressCardStyles.track}>
-        <View
-          style={[
-            progressCardStyles.fill,
-            { width: `${pct}%`, backgroundColor: fillColor },
-            isEmpty && progressCardStyles.trackEmpty,
-          ]}
-        />
-      </View>
-      {isEmpty && (
-        <Text style={progressCardStyles.emptyCaption}>{emptyCaption}</Text>
-      )}
-    </View>
-  );
-}
-
-const progressCardStyles = StyleSheet.create({
-  container: {
-    marginTop: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 8,
-  },
-  count: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  track: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#e5e7eb',
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  trackEmpty: {
-    opacity: 0.6,
-  },
-  emptyCaption: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-});
 
 export default function RutaScreen() {
   const insets = useSafeAreaInsets();

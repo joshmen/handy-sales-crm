@@ -4,11 +4,14 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore, useJornadaStore } from '@/stores';
-import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros } from '@/hooks';
+import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros, useOfflineRutaPedidos, useOfflineRutaCarga } from '@/hooks';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import { Card, LoadingSpinner, UserAvatar, ConfirmModal } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import ProgressCard from '@/components/shared/ProgressCard';
+import RutaCarga from '@/db/models/RutaCarga';
+import RutaPedido from '@/db/models/RutaPedido';
 import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { getGreetingForTz } from '@/utils/greeting';
 import { startOfDayInTz } from '@/utils/dateTz';
@@ -85,6 +88,31 @@ export function VendedorDashboard() {
   const { data: pedidos } = useOfflineOrders();
   const { data: cobros } = useOfflineCobros();
 
+  // Carga (productos asignados al camión) y pedidos pre-asignados a la
+  // ruta — consumidos para los 3 ProgressCards del card "Ruta del día".
+  // Mismo patrón que app/(tabs)/ruta/index.tsx — el home muestra los
+  // 3 progresos para que el vendedor vea actividad real aún si la ruta
+  // se creó sin paradas (ej. ruta solo de venta directa con carga inicial).
+  const { data: pedidosCargados } = useOfflineRutaPedidos(route?.id ?? '');
+  const { data: cargaProductos } = useOfflineRutaCarga(route?.id ?? '');
+
+  const pedidosEntregados = useMemo(() => {
+    return ((pedidosCargados as RutaPedido[] | undefined) ?? [])
+      .filter((rp) => rp.estado === 1).length; // EstadoPedidoRuta.Entregado
+  }, [pedidosCargados]);
+  const totalPedidosCargados = (pedidosCargados as RutaPedido[] | undefined)?.length ?? 0;
+
+  const { cargaTotalUnidades, cargaConsumidasUnidades } = useMemo(() => {
+    const carga = (cargaProductos as RutaCarga[] | undefined) ?? [];
+    let total = 0;
+    let consumidas = 0;
+    for (const c of carga) {
+      total += c.cantidadTotal ?? 0;
+      consumidas += (c.cantidadVendida ?? 0) + (c.cantidadEntregada ?? 0);
+    }
+    return { cargaTotalUnidades: total, cargaConsumidasUnidades: consumidas };
+  }, [cargaProductos]);
+
   // Compute KPIs
   const visitasCompletadas = todayVisits?.filter((v) => v.checkOutAt != null).length ?? 0;
   const visitasConVenta = todayVisits?.length ?? 0;
@@ -108,7 +136,6 @@ export function VendedorDashboard() {
   }, []));
 
   const stats = routeStats;
-  const progress = stats.total > 0 ? (stats.atendidas / stats.total) * 100 : 0;
 
   // Additional KPIs — orders and sales today
   const pedidosHoy = useMemo(() => {
@@ -284,17 +311,33 @@ export function VendedorDashboard() {
               </View>
               <StatusBadge type="route" status={route.estado} />
             </View>
-            <View style={styles.progressSection}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progress}%` }]} />
-              </View>
-              <View style={styles.progressRow}>
-                <Text style={styles.progressText}>
-                  {stats.atendidas}/{stats.total} paradas
-                </Text>
-                <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
-              </View>
-            </View>
+            {/* 3 ProgressCards: Paradas / Pedidos / Productos. Idéntico
+                a /ruta — coherencia visual y mismo cómputo. Si la ruta
+                se creó sin paradas (caso reportado 2026-05-07 vendedor
+                Rodrigo) la barra de Productos sigue mostrando avance
+                real porque la carga inicial decrementa con cada
+                venta directa confirmada. */}
+            <ProgressCard
+              label="Paradas atendidas"
+              current={stats.atendidas}
+              total={stats.total}
+              color={COLORS.primary}
+              emptyCaption="Esta ruta no tiene paradas asignadas"
+            />
+            <ProgressCard
+              label="Pedidos entregados"
+              current={pedidosEntregados}
+              total={totalPedidosCargados}
+              color={COLORS.success}
+              emptyCaption="Esta ruta no tiene pedidos pre-asignados"
+            />
+            <ProgressCard
+              label="Productos (vendidos + entregados)"
+              current={cargaConsumidasUnidades}
+              total={cargaTotalUnidades}
+              color="#d97706"
+              emptyCaption="Esta ruta no tiene productos cargados"
+            />
           </Card>
         ) : (
           <Card className="mb-5">
@@ -450,17 +493,6 @@ const styles = StyleSheet.create({
   },
   routeInfo: { flex: 1 },
   routeName: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
-  progressSection: { marginTop: 14, gap: 6 },
-  progressTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.borderMedium,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.primary },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  progressText: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
-  progressPercent: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
   emptyRoute: { alignItems: 'center', paddingVertical: 20, gap: 8 },
   emptyRouteText: { fontSize: 14, color: COLORS.textTertiary },
   quickActions: { flexDirection: 'row', gap: 10, marginBottom: 24 },
