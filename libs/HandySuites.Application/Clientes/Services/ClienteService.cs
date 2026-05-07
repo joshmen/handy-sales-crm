@@ -25,7 +25,37 @@ public class ClienteService
 
     public async Task<ClienteDto?> ObtenerPorIdAsync(int id)
     {
-        return await _repo.ObtenerPorIdAsync(id, _tenant.TenantId);
+        var cliente = await _repo.ObtenerPorIdAsync(id, _tenant.TenantId);
+        if (cliente == null) return null;
+
+        // BUG-2 fix: RBAC en GET por ID. Antes el listado paginado SÍ filtraba
+        // por VendedorId pero este endpoint no, permitiendo a vendedor1 leer
+        // clientes de vendedor2 (information disclosure cross-vendor).
+        // Aplicamos la misma matriz que `ObtenerPorFiltroAsync`:
+        //   ADMIN/SUPER_ADMIN → acceso total
+        //   SUPERVISOR        → su equipo (subordinados + sí mismo)
+        //   VENDEDOR          → solo clientes asignados a él
+        if (_tenant.IsAdmin || _tenant.IsSuperAdmin) return cliente;
+
+        if (_tenant.IsSupervisor)
+        {
+            if (!int.TryParse(_tenant.UserId, out var supervisorId)) return null;
+            if (cliente.VendedorId == supervisorId) return cliente;
+            var subordinadoIds = await _usuarioRepository.ObtenerSubordinadoIdsAsync(supervisorId, _tenant.TenantId);
+            return cliente.VendedorId.HasValue && subordinadoIds.Contains(cliente.VendedorId.Value)
+                ? cliente
+                : null;
+        }
+
+        // Vendedor regular: solo si el cliente está asignado a él. Devolvemos
+        // null (mismo shape que "no existe") en lugar de throw para no filtrar
+        // existencia del recurso a través del status code.
+        if (int.TryParse(_tenant.UserId, out var vendedorId)
+            && cliente.VendedorId == vendedorId)
+        {
+            return cliente;
+        }
+        return null;
     }
 
     public record CrearClienteResult(bool Success, int Id = 0, string? Error = null);
