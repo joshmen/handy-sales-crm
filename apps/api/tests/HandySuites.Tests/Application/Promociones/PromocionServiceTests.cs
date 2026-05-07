@@ -49,8 +49,8 @@ namespace HandySuites.Tests.Application.Promociones
                 ProductoIds = new List<int> { 1 },
                 Descripcion = "Descripcion",
                 DescuentoPorcentaje = 10,
-                FechaInicio = DateTime.Now,
-                FechaFin = DateTime.Now.AddYears(2)
+                FechaInicio = DateTime.UtcNow,
+                FechaFin = DateTime.UtcNow.AddYears(2)
             };
 
             _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, null)).ReturnsAsync(false);
@@ -70,8 +70,8 @@ namespace HandySuites.Tests.Application.Promociones
                 ProductoIds = new List<int> { 1 },
                 Descripcion = "Descripcion",
                 DescuentoPorcentaje = 10,
-                FechaInicio = DateTime.Now,
-                FechaFin = DateTime.Now.AddYears(2)
+                FechaInicio = DateTime.UtcNow,
+                FechaFin = DateTime.UtcNow.AddYears(2)
             };
 
             _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, 99)).ReturnsAsync(false);

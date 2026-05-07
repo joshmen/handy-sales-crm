@@ -10,13 +10,51 @@ import * as Crypto from 'expo-crypto';
 import { API_CONFIG, STORAGE_KEYS } from '@/utils/constants';
 import { secureStorage } from '@/utils/storage';
 
-// TODO [SEC-M2]: Implement SSL/TLS certificate pinning
-// Steps:
-// 1. Install: npx expo install expo-certificate-transparency (or react-native-ssl-pinning)
-// 2. Pin the certificate SHA-256 fingerprints for: api.handysuites.com, *.railway.app
-// 3. Reject connections if certificate doesn't match pinned fingerprints
-// 4. Add monitoring for certificate rotation (pins must be updated before cert expires)
-// Priority: HIGH — prevents MITM attacks on untrusted networks (WiFi público)
+// TODO [CRIT-4 / SEC-M2]: SSL/TLS public-key pinning.
+// PRIORIDAD: HIGH — vector real de MITM en WiFi público (cafetería, evento).
+// Vendedor con tablet en ruta es target.
+//
+// IMPLEMENTACIÓN REAL (paso a paso, requiere acceso a producción):
+//
+// 1. Extraer SHA-256 SPKI pins del cert prod:
+//    openssl s_client -servername api.handysuites.com -connect api.handysuites.com:443 \
+//      < /dev/null 2>/dev/null \
+//      | openssl x509 -pubkey -noout \
+//      | openssl pkey -pubin -outform der \
+//      | openssl dgst -sha256 -binary \
+//      | openssl enc -base64
+//    Repetir para `*.railway.app` (backup pin durante rotación).
+//
+// 2. Instalar el paquete:
+//    npx expo install react-native-ssl-public-key-pinning
+//    (NO `react-native-ssl-pinning` — esa es legacy y no soporta SDK 52).
+//
+// 3. Config en `app.config.ts` plugins:
+//    plugins: [..., 'react-native-ssl-public-key-pinning']
+//    + EAS build (es native module, NO ota update sirve).
+//
+// 4. Config los pins ANTES de crear el axios instance:
+//    import { addSslPinningConfig } from 'react-native-ssl-public-key-pinning';
+//    await addSslPinningConfig({
+//      'api.handysuites.com': {
+//        includeSubdomains: false,
+//        publicKeyHashes: [
+//          'sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', // primary cert SPKI
+//          'sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=', // backup (next rotation)
+//        ],
+//      },
+//    });
+//
+// 5. ROTATION PROCEDURE (DOCUMENTAR antes de prod):
+//    - Pre-rotation: incluir el cert nuevo en pins ANTES de rotar (overlap window).
+//    - Post-rotation: remover el cert viejo en siguiente EAS build.
+//    - Si se rompe: app no puede conectar; única recuperación es nuevo APK con
+//      pins actualizados. NO hay forma de "deshacer" via OTA.
+//
+// 6. Monitoring: alerta cuando el cert prod esté a <30 días de expirar.
+//
+// IMPACT si se omite: vendedores con plan corporativo en hotspot maliciosa
+// pueden ver tokens JWT, datos de cliente, ubicaciones GPS interceptados.
 
 // --- Axios instance ---
 const apiInstance: AxiosInstance = axios.create({

@@ -29,6 +29,7 @@ public static class MetaVendedorEndpoints
             [FromServices] MetaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] ILoggerFactory loggerFactory,
             HttpContext context) =>
         {
             // Admin only
@@ -68,7 +69,13 @@ public static class MetaVendedorEndpoints
                     });
                 }
             }
-            catch { /* fire-and-forget */ }
+            catch (Exception ex)
+            {
+                // Fire-and-forget: la meta ya se creó, el push es nice-to-have.
+                // Debug level — visible en logs si recurre, sin alertar.
+                loggerFactory.CreateLogger("MetaVendedorEndpoints")
+                    .LogDebug(ex, "Push notification post-meta-create falló (fire-and-forget) usuarioId={UsuarioId}", dto.UsuarioId);
+            }
 
             return Results.Created($"/api/metas/{id}", new { id });
         });

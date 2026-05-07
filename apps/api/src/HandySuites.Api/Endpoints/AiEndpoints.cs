@@ -77,6 +77,12 @@ public static class AiEndpoints
         return (tenantId, userId);
     }
 
+    // Rate-limit in-memory por instancia. Decisión consciente — Railway corre
+    // 1 instancia API hoy, así que un dict static funciona y evita la carga
+    // operacional + costo de Redis para un caso no-crítico.
+    // Si en el futuro escalamos a multi-instancia, migrar a `IDistributedCache`
+    // (Redis) o `Microsoft.AspNetCore.RateLimiting`. NO tocar mientras sigamos
+    // single-instance — bumpear el límite por usuario si hace falta.
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (int Count, DateTime WindowStart)> _rateLimitState = new();
 
     private static bool CheckRateLimit(IMemoryCache cache, string key, int maxRequests)
