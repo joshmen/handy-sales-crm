@@ -3,14 +3,28 @@ import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ChevronLeft, Route, CheckCircle, XCircle, Clock, ChevronRight } from 'lucide-react-native';
-import { database } from '@/db/database';
-import { Q } from '@nozbe/watermelondb';
-import { useAuthStore } from '@/stores';
+import { api } from '@/api/client';
 import { EmptyState } from '@/components/ui';
-import { performSync } from '@/sync/syncEngine';
 import { COLORS } from '@/theme/colors';
 import { useTenantLocale } from '@/hooks';
-import type Ruta from '@/db/models/Ruta';
+
+// Bug #7 (audit 2026-05-07): la pantalla antes leía la tabla `rutas` de
+// WatermelonDB con `Q.where('usuario_id', userId)`. El WDB solo mantiene
+// la ruta del día + pendientes (pulled del sync), así que el historial
+// salía vacío. Ahora consulta el endpoint nuevo `/api/mobile/rutas/historico`
+// que devuelve rutas en estado Completada/Cerrada/Cancelada del vendedor.
+//
+// No persistimos el resultado en WDB porque el historial se usa siempre
+// online (el vendedor abre la pantalla, fetchea, ve la lista — no necesita
+// offline porque no es flujo crítico de venta).
+
+interface RutaHistoricoItem {
+  id: number;
+  nombre: string;
+  fecha: string; // ISO
+  estado: number;
+  zonaNombre?: string | null;
+}
 
 const ESTADO_LABELS: Record<number, string> = {
   0: 'Planificada', 1: 'En progreso', 2: 'Completada', 3: 'Cancelada',
@@ -26,34 +40,34 @@ export default function HistorialRutasScreen() {
   const router = useRouter();
   const { date: fmt } = useTenantLocale();
   const formatDate = (date: Date | null) => (date ? fmt(date) : '--');
-  const userId = Number(useAuthStore(s => s.user?.id) ?? 0);
-  const [rutas, setRutas] = useState<Ruta[]>([]);
+  const [rutas, setRutas] = useState<RutaHistoricoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchRutas = useCallback(async () => {
     try {
-      const results = await database.get<Ruta>('rutas').query(
-        Q.where('usuario_id', userId),
-        Q.where('activo', true),
-        Q.sortBy('fecha', Q.desc),
-        Q.take(50),
-      ).fetch();
-      setRutas(results);
-    } catch { /* silent */ }
+      const res = await api.get<{ success: boolean; data: RutaHistoricoItem[]; count: number }>(
+        '/api/mobile/rutas/historico',
+        { params: { limit: 30 } }
+      );
+      setRutas(res.data?.data ?? []);
+    } catch {
+      // Silent — empty state se mostrará. Toast/error explícito sería
+      // ruido si vendedor solo está sin red al abrir la pantalla.
+      setRutas([]);
+    }
     setLoading(false);
-  }, [userId]);
+  }, []);
 
   useFocusEffect(useCallback(() => { fetchRutas(); }, [fetchRutas]));
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await performSync();
     await fetchRutas();
     setRefreshing(false);
   };
 
-  const renderItem = useCallback(({ item }: { item: Ruta }) => {
+  const renderItem = useCallback(({ item }: { item: RutaHistoricoItem }) => {
     const estado = item.estado ?? 0;
     const color = ESTADO_COLORS[estado] || '#94a3b8';
     const label = ESTADO_LABELS[estado] || 'Desconocido';
@@ -76,7 +90,10 @@ export default function HistorialRutasScreen() {
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardName} numberOfLines={1}>{item.nombre}</Text>
-            <Text style={styles.cardDate}>{formatDate(item.fecha)}</Text>
+            <Text style={styles.cardDate}>
+              {formatDate(item.fecha ? new Date(item.fecha) : null)}
+              {item.zonaNombre ? ` · ${item.zonaNombre}` : ''}
+            </Text>
           </View>
           <View style={styles.cardRight}>
             <Text style={[styles.estadoBadge, { color, backgroundColor: color + '15' }]}>{label}</Text>
@@ -99,7 +116,7 @@ export default function HistorialRutasScreen() {
 
       <FlatList
         data={rutas}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         initialNumToRender={15}

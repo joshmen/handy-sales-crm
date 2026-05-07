@@ -72,7 +72,19 @@ let failedQueue: Array<{
   reject: (err: Error) => void;
 }> = [];
 
+// Bug #1 (audit 2026-05-07): tokens explícitamente superados por un
+// login/force-login fresh. Cualquier 401 que regrese con uno de estos
+// tokens en la Authorization debe ser ignorado — pertenece a la sesión
+// vieja revocada, no a la sesión nueva válida. Sin este Set, un 401
+// que regresa después del setAccessToken pero ANTES de que `_cachedAccessToken`
+// haya sido leído por el interceptor (race del orden de microtasks)
+// dispara refresh con el token viejo (revocado por force-login) →
+// retry loop → rate limit 429 → toast "demasiados reintentos" + forceLogout.
+const _staleTokens = new Set<string>();
+const STALE_TOKEN_TTL_MS = 30_000;
+
 export function setAccessToken(token: string | null) {
+  const previousToken = _cachedAccessToken;
   _cachedAccessToken = token;
   // Login fresh / refresh exitoso: limpiar state in-flight de la sesión
   // vieja. Sin esto, una refreshPromise iniciada con el refresh_token
@@ -81,6 +93,13 @@ export function setAccessToken(token: string | null) {
   // matando la sesión recién emitida. Reportado 2026-05-05 (Mazatlán
   // 6:38pm): user veía logout automático ~1s post-login.
   if (token) {
+    // Marcar el token previo como stale por 30s (suficiente para que
+    // requests en vuelo terminen sin matar la sesión nueva). Cubre el
+    // bug de session takeover reportado 2026-05-07.
+    if (previousToken && previousToken !== token) {
+      _staleTokens.add(previousToken);
+      setTimeout(() => _staleTokens.delete(previousToken), STALE_TOKEN_TTL_MS);
+    }
     isRefreshing = false;
     refreshPromise = null;
     // Resolver requests en queue con el nuevo token (no rejectar — el
@@ -189,6 +208,19 @@ apiInstance.interceptors.response.use(
       // y NO debe disparar forceLogout sobre la sesión nueva.
       const tokenAtRequest = (originalRequest.headers?.Authorization as string | undefined)
         ?.replace('Bearer ', '');
+
+      // Bug #1 (audit 2026-05-07): si la request usó un token que fue
+      // explícitamente superado por login/force-login fresh, ignorar el
+      // 401 SIN intentar refresh. El refresh_token previo también fue
+      // revocado server-side; intentar refresh solo logra:
+      //   1) golpear el rate limit (5/min) → 429 → toast "demasiados reintentos"
+      //   2) processQueueError + forceLogout cascade → mata la sesión
+      //      nueva válida que el user acaba de aceptar
+      // Reportado: vendedor@jeyma.com, modal "Continuar aquí" → logout instantáneo.
+      if (tokenAtRequest && _staleTokens.has(tokenAtRequest)) {
+        if (__DEV__) console.log('[API] 401 on stale token — ignoring (superseded by force-login)');
+        return Promise.reject(error);
+      }
 
       // Device was revoked by admin — force logout with specific message
       if (errorCode === 'DEVICE_REVOKED' || errorCode === 'SESSION_REVOKED') {
