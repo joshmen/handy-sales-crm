@@ -183,6 +183,28 @@ public class RutaVendedorService
         return await _repo.ObtenerRutasPendientesAsync(_tenant.TenantId, usuarioId);
     }
 
+    /// <summary>
+    /// Bug #7 (audit 2026-05-07) — Historial de rutas del vendedor.
+    /// Devuelve las últimas N rutas del vendedor en estado terminal
+    /// (Completada, Cerrada o Cancelada) ordenadas DESC por fecha.
+    /// La pantalla "Historial de Rutas" del mobile la consume para
+    /// mostrar al vendedor sus rutas pasadas (antes la pantalla
+    /// quedaba vacía porque solo leía WDB local que mantiene únicamente
+    /// la ruta del día y las pendientes).
+    /// </summary>
+    public async Task<List<RutaVendedorDto>> ObtenerMiHistoricoAsync(int limit = 30)
+    {
+        if (limit < 1 || limit > 100) limit = 30;
+        var usuarioId = int.Parse(_tenant.UserId);
+        var rutas = await _repo.ObtenerPorUsuarioAsync(_tenant.TenantId, usuarioId);
+        return rutas
+            .Where(r => r.Estado == EstadoRuta.Completada
+                     || r.Estado == EstadoRuta.Cerrada
+                     || r.Estado == EstadoRuta.Cancelada)
+            .Take(limit)
+            .ToList();
+    }
+
     public async Task<List<RutaVendedorDto>> ObtenerRutasPorUsuarioAsync(int usuarioId)
     {
         return await _repo.ObtenerPorUsuarioAsync(_tenant.TenantId, usuarioId);

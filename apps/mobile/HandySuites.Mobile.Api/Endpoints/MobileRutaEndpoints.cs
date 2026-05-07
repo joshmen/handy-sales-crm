@@ -36,6 +36,23 @@ public static class MobileRutaEndpoints
         .WithDescription("Lista todas las rutas pendientes asignadas al vendedor.")
         .Produces<object>(StatusCodes.Status200OK);
 
+        // Bug #7 (audit 2026-05-07): nuevo endpoint para historial de
+        // rutas del vendedor — devuelve las últimas N rutas en estado
+        // terminal (Completada, Cerrada, Cancelada). La pantalla
+        // mobile "Historial de Rutas" lo consume para mostrar al
+        // vendedor sus rutas pasadas (antes solo leía WDB local que
+        // mantiene únicamente la ruta del día + pendientes).
+        group.MapGet("/historico", async (
+            [FromQuery] int? limit,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            var rutas = await servicio.ObtenerMiHistoricoAsync(limit ?? 30);
+            return Results.Ok(new { success = true, data = rutas, count = rutas.Count });
+        })
+        .WithSummary("Mi historial de rutas")
+        .WithDescription("Lista las últimas N rutas del vendedor en estado terminal (Completada/Cerrada/Cancelada). Default 30, max 100.")
+        .Produces<object>(StatusCodes.Status200OK);
+
         group.MapGet("/{id:int}", async (
             int id,
             [FromServices] RutaVendedorService servicio) =>

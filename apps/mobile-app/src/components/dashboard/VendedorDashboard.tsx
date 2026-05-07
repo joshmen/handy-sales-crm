@@ -3,11 +3,11 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } 
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useJornadaStore } from '@/stores';
 import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros } from '@/hooks';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
-import { Card, LoadingSpinner, UserAvatar } from '@/components/ui';
+import { Card, LoadingSpinner, UserAvatar, ConfirmModal } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { getGreetingForTz } from '@/utils/greeting';
@@ -28,6 +28,14 @@ export function VendedorDashboard() {
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Bug #6 (audit 2026-05-07): reemplazo del botón "Ver Mapa" (duplicado
+  // con tab inferior "Mapa") por "Cerrar jornada". Calza con los 4
+  // mecanismos de notif local del cierre — vendedor tiene acceso fácil
+  // al cierre manual además de las notifs automáticas.
+  const jornadaActiva = useJornadaStore(s => s.activa);
+  const finalizarJornada = useJornadaStore(s => s.finalizarJornada);
+  const [showCerrarJornadaConfirm, setShowCerrarJornadaConfirm] = useState(false);
 
   // Hook compartido — abre BottomSheet "¿Preventa o Autoventa?" si la
   // empresa tiene modoVentaDefault='Preguntar'; sino salta directo. Antes
@@ -319,11 +327,17 @@ export function VendedorDashboard() {
             <Text style={styles.quickActionText}>Registrar Cobro</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/mapa')}
-            activeOpacity={0.85}
+            style={[styles.quickAction, !jornadaActiva && styles.quickActionDisabled]}
+            onPress={() => jornadaActiva && setShowCerrarJornadaConfirm(true)}
+            activeOpacity={jornadaActiva ? 0.85 : 1}
+            disabled={!jornadaActiva}
+            accessibilityLabel="Cerrar jornada"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !jornadaActiva }}
           >
-            <Text style={styles.quickActionText}>Ver Mapa</Text>
+            <Text style={[styles.quickActionText, !jornadaActiva && styles.quickActionTextDisabled]}>
+              Cerrar jornada
+            </Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -340,6 +354,20 @@ export function VendedorDashboard() {
     </ScrollView>
     {/* BottomSheet "Preventa / Venta Directa" — provisto por useCreateOrderFlow */}
     {SheetComponent}
+    {/* Bug #6: confirm dialog antes de cerrar jornada manualmente */}
+    <ConfirmModal
+      visible={showCerrarJornadaConfirm}
+      title="¿Cerrar jornada?"
+      message="Tu tracking GPS se detendrá. Podrás iniciar una nueva jornada confirmando una venta o desde el botón de iniciar."
+      confirmText="Cerrar jornada"
+      cancelText="Cancelar"
+      destructive
+      onConfirm={async () => {
+        setShowCerrarJornadaConfirm(false);
+        await finalizarJornada('manual');
+      }}
+      onCancel={() => setShowCerrarJornadaConfirm(false)}
+    />
     </>
   );
 }
@@ -452,6 +480,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   quickActionText: { fontSize: 12, fontWeight: '600', color: COLORS.foreground },
+  // Bug #6: estilos para botón "Cerrar jornada" deshabilitado cuando
+  // jornadaActiva=false (no hay nada que cerrar).
+  quickActionDisabled: {
+    backgroundColor: '#f1f5f9',
+    borderColor: '#e2e8f0',
+  },
+  quickActionTextDisabled: { color: '#94a3b8' },
   activityEmpty: {
     flexDirection: 'row',
     alignItems: 'center',

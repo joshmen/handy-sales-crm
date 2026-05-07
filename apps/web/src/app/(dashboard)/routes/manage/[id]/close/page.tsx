@@ -17,10 +17,12 @@ import {
   AlertTriangle,
   X,
   Package,
+  Info,
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
+import { RouteLifecycleStepper } from '@/components/routes/RouteLifecycleStepper';
 
 export default function CloseRoutePage() {
   const { formatCurrency, formatDate } = useFormatters();
@@ -30,14 +32,10 @@ export default function CloseRoutePage() {
   const tc = useTranslations('common');
   const showApiError = useApiErrorToast();
 
-  // Lifecycle steps for route status timeline
-  const LIFECYCLE_STEPS = [
-    { estado: ESTADO_RUTA.PendienteAceptar, label: tl('lifecyclePending') },
-    { estado: ESTADO_RUTA.CargaAceptada, label: tl('lifecycleLoadAccepted') },
-    { estado: ESTADO_RUTA.EnProgreso, label: tl('lifecycleInProgress') },
-    { estado: ESTADO_RUTA.Completada, label: tl('lifecycleCompleted') },
-    { estado: ESTADO_RUTA.Cerrada, label: tl('lifecycleClosed') },
-  ];
+  // Bug #4-web (audit 2026-05-07): la definición inline de LIFECYCLE_STEPS
+  // se reemplazó por el componente <RouteLifecycleStepper /> con icons
+  // dedicados, padding correcto y design system. Ver
+  // `apps/web/src/components/routes/RouteLifecycleStepper.tsx`.
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
@@ -229,35 +227,13 @@ export default function CloseRoutePage() {
           </div>
         </div>
 
-        {/* Status Timeline */}
-        <div data-tour="routes-close-tabs" className="flex items-center mt-4 -mb-6">
-          {LIFECYCLE_STEPS.map((step, idx) => {
-            const stepOrder = LIFECYCLE_STEPS.findIndex(s => s.estado === ruta.estado);
-            const currentIdx = LIFECYCLE_STEPS.findIndex(s => s.estado === step.estado);
-            const isCompleted = currentIdx < stepOrder;
-            const isCurrent = step.estado === ruta.estado;
-            return (
-              <React.Fragment key={step.estado}>
-                <div className="flex items-center gap-1.5">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isCompleted ? 'bg-success text-success-foreground' :
-                    isCurrent ? 'bg-green-100 border-2 border-green-600 text-green-700' :
-                    'bg-surface-3 text-muted-foreground'
-                  }`}>
-                    {isCompleted ? '✓' : idx + 1}
-                  </div>
-                  <span className={`text-[11px] font-medium ${
-                    isCurrent ? 'text-green-700' : isCompleted ? 'text-foreground/70' : 'text-muted-foreground'
-                  }`}>
-                    {step.label}
-                  </span>
-                </div>
-                {idx < LIFECYCLE_STEPS.length - 1 && (
-                  <div className={`flex-1 h-px mx-2 ${isCompleted ? 'bg-green-400' : 'bg-surface-3'}`} />
-                )}
-              </React.Fragment>
-            );
-          })}
+        {/* Bug #4-web: nuevo stepper con padding propio, iconos lucide,
+            tamaño aumentado, sin negative margin hack. */}
+        <div data-tour="routes-close-tabs" className="mt-4">
+          <RouteLifecycleStepper
+            estado={ruta.estado}
+            cancelada={ruta.estado === ESTADO_RUTA.Cancelada}
+          />
         </div>
       </div>
 
@@ -344,8 +320,23 @@ export default function CloseRoutePage() {
                 <span className="text-muted-foreground">{t('presaleOrders')} ({resumen.pedidosPreventaCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
               </div>
+              {/* Bug #5 (audit 2026-05-07): label clarificado +
+                  tooltip informativo. El campo lo poblará el flujo
+                  de devolución que captura mobile durante la entrega.
+                  Hoy siempre llega 0 porque ese flujo aún no captura
+                  monetariamente — solo cantidad física en el inventario
+                  de retorno. Este label evita la confusión "¿dónde
+                  pongo las devoluciones?". */}
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('returns')} ({resumen.devolucionesCount})</span>
+                <span className="text-muted-foreground inline-flex items-center gap-1">
+                  {t('returnsRegistered')} ({resumen.devolucionesCount})
+                  <Info
+                    className="w-3 h-3 text-muted-foreground/60 cursor-help"
+                    aria-label={t('returnsTooltip')}
+                  >
+                    <title>{t('returnsTooltip')}</title>
+                  </Info>
+                </span>
                 <span className="font-medium text-red-600">{formatCurrency(resumen.devoluciones)}</span>
               </div>
             </div>

@@ -22,6 +22,8 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
   Eye,
   Loader2,
@@ -127,7 +129,10 @@ export default function CobranzaPage() {
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
 
-  const [tab, setTab] = useState<Tab>('saldos');
+  // Bug #10 (audit 2026-05-07): default tab cambiado a 'cobros'
+  // (Historial). Owner reportó que al cargar /cobranza esperaba ver
+  // primero los pagos recibidos del día.
+  const [tab, setTab] = useState<Tab>('cobros');
   const [dates, setDates] = useState(() => defaultDatesFromTenantToday(tenantToday()));
   // Presets recompiled when tenant TZ/day changes (rare).
   const DATE_PRESETS = useMemo(() => buildDatePresets(tenantToday()), [tenantToday]);
@@ -418,6 +423,25 @@ export default function CobranzaPage() {
       || c.referencia?.toLowerCase().includes(q);
   }), [sortedCobros, searchCobros]);
 
+  // Bug #10: paginación cliente-side (los datos ya vienen filtrados por
+  // fecha desde el backend; lo único que falta es paginar el render
+  // para no flashear 1000+ rows). 25 por página = balance entre scroll
+  // y clicks de paginación.
+  const PAGE_SIZE = 25;
+  const [cobrosPage, setCobrosPage] = useState(1);
+
+  // Reset página a 1 cuando cambian filtros/búsqueda/tab — evita
+  // quedar en una página inexistente del nuevo conjunto.
+  useEffect(() => {
+    setCobrosPage(1);
+  }, [searchCobros, dates.desde, dates.hasta, tab]);
+
+  const totalPagesCobros = Math.max(1, Math.ceil(filteredCobros.length / PAGE_SIZE));
+  const paginatedCobros = useMemo(
+    () => filteredCobros.slice((cobrosPage - 1) * PAGE_SIZE, cobrosPage * PAGE_SIZE),
+    [filteredCobros, cobrosPage]
+  );
+
   // Totals
   const totalCobros = useMemo(() => cobros.reduce((s, c) => s + c.monto, 0), [cobros]);
 
@@ -613,7 +637,7 @@ export default function CobranzaPage() {
                       <p className="text-sm text-muted-foreground">{searchCobros ? tc('noResults') : t('noPayments')}</p>
                     </div>
                   ) : (
-                    filteredCobros.map((c) => (
+                    paginatedCobros.map((c) => (
                       <div key={c.id} className="border border-border-subtle rounded-lg p-3 bg-surface-2" onClick={() => openDetail(c.clienteId)}>
                         {/* Row 1: Icon + Name/Subtitle + Amount */}
                         <div className="flex items-center gap-3 mb-2">
@@ -714,7 +738,7 @@ export default function CobranzaPage() {
                   ) : (
                     /* Table Rows */
                     <div className={`transition-opacity duration-200 ${cobrosLoading ? 'opacity-50' : 'opacity-100'}`}>
-                      {filteredCobros.map((c) => (
+                      {paginatedCobros.map((c) => (
                         <div
                           key={c.id}
                           className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors cursor-pointer min-w-[800px]"
@@ -789,6 +813,41 @@ export default function CobranzaPage() {
                   )}
                 </div>
               </div>
+
+              {/* Bug #10: paginación cliente-side. Solo se muestra si hay
+                  más de PAGE_SIZE registros tras filtros. */}
+              {filteredCobros.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between mt-3 px-1">
+                  <div className="text-xs text-muted-foreground">
+                    {tc('paginationRange', {
+                      from: (cobrosPage - 1) * PAGE_SIZE + 1,
+                      to: Math.min(cobrosPage * PAGE_SIZE, filteredCobros.length),
+                      total: filteredCobros.length,
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCobrosPage(p => Math.max(1, p - 1))}
+                      disabled={cobrosPage === 1}
+                      className="px-3 py-1.5 text-xs font-medium border border-border-default rounded hover:bg-surface-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                      aria-label={tc('previousPage')}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-foreground/70 px-2">
+                      {cobrosPage} / {totalPagesCobros}
+                    </span>
+                    <button
+                      onClick={() => setCobrosPage(p => Math.min(totalPagesCobros, p + 1))}
+                      disabled={cobrosPage >= totalPagesCobros}
+                      className="px-3 py-1.5 text-xs font-medium border border-border-default rounded hover:bg-surface-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                      aria-label={tc('nextPage')}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
               </>
             )}
 

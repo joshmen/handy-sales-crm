@@ -17,10 +17,17 @@ export default function ProductoDetailScreen() {
   const { money: formatCurrency } = useTenantLocale();
 
   const { data: product, isLoading } = useOfflineProductById(id || '');
-  const { items, addItem, updateQuantity, removeItem } = useOrderDraftStore();
+  const { clienteId, items, addItem, updateQuantity, removeItem } = useOrderDraftStore();
 
   const draftItem = items.find((i) => i.productoId === id);
   const qty = draftItem?.cantidad || 0;
+
+  // Bug #8 (audit 2026-05-07): el botón "Agregar al pedido" solo
+  // aplica cuando hay un pedido en curso (cliente seleccionado en
+  // el draft). Si el vendedor llega desde Más → Productos solo está
+  // explorando — no tiene cliente, no tiene draft, el botón no
+  // tiene sentido.
+  const isOrderFlowActive = !!clienteId;
 
   if (isLoading || !product) {
     return (
@@ -101,30 +108,34 @@ export default function ProductoDetailScreen() {
           </Animated.View>
         ) : null}
 
-        {/* Add to Order */}
-        <Animated.View entering={FadeInDown.duration(300).delay(400)}>
-          <View style={styles.addSection}>
-            {qty > 0 ? (
-              <View style={styles.addedRow}>
-                <ShoppingBag size={20} color={COLORS.button} />
-                <Text style={styles.addedText}>En tu pedido:</Text>
-                <QuantityStepper
-                  value={qty}
-                  onChange={(val) => {
-                    if (val <= 0) removeItem(id || '');
-                    else updateQuantity(id || '', val);
-                  }}
+        {/* Bug #8: Add to Order solo cuando hay flujo de pedido activo
+            (cliente seleccionado en draft). Cuando vendedor llega desde
+            Más → Productos es solo informativo — no muestra acciones. */}
+        {isOrderFlowActive && (
+          <Animated.View entering={FadeInDown.duration(300).delay(400)}>
+            <View style={styles.addSection}>
+              {qty > 0 ? (
+                <View style={styles.addedRow}>
+                  <ShoppingBag size={20} color={COLORS.button} />
+                  <Text style={styles.addedText}>En tu pedido:</Text>
+                  <QuantityStepper
+                    value={qty}
+                    onChange={(val) => {
+                      if (val <= 0) removeItem(id || '');
+                      else updateQuantity(id || '', val);
+                    }}
+                  />
+                </View>
+              ) : (
+                <Button
+                  title="Agregar al Pedido"
+                  onPress={() => addItem(product)}
+                  fullWidth
                 />
-              </View>
-            ) : (
-              <Button
-                title="Agregar al Pedido"
-                onPress={() => addItem(product)}
-                fullWidth
-              />
-            )}
-          </View>
-        </Animated.View>
+              )}
+            </View>
+          </Animated.View>
+        )}
       </ScrollView>
     </View>
   );

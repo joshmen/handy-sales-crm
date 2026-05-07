@@ -114,12 +114,8 @@ function MasScreenContent() {
       iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/anuncios' as any),
     },
-    {
-      label: 'Ruta del Día',
-      icon: <SbRoute size={20} />,
-      iconBg: COLORS.background,
-      onPress: () => router.push('/(tabs)/ruta' as any),
-    },
+    // Bug #9 (audit 2026-05-07): item "Ruta del Día" removido —
+    // ya aparece en el home/dashboard del vendedor. Evita duplicación.
     {
       label: 'Sincronización',
       icon: <RefreshCcw size={20} color="#6b7280" />,
