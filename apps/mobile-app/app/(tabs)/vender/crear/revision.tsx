@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// AsyncStorage import removido — solo se usaba para persistir el último
+// método de pago (Bug #2: ahora siempre Efectivo).
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,20 +18,17 @@ import { useTenantLocale } from '@/hooks';
 import { round2 } from '@/utils/money';
 import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
 import { useOfflineProducts } from '@/hooks';
-import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
+import { User, Package, Send, Zap, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { usePricingMap } from '@/hooks/usePricing';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
-const METODO_PAGO_OPTIONS = [
-  { value: 0, label: 'Efectivo', icon: Banknote },
-  { value: 1, label: 'Transferencia', icon: Building2 },
-  { value: 2, label: 'Cheque', icon: FileText },
-  { value: 3, label: 'T. Crédito', icon: CreditCard },
-  { value: 4, label: 'T. Débito', icon: Wallet },
-  { value: 5, label: 'Otro', icon: MoreHorizontal },
-];
+// Bug #2 (audit 2026-05-07): selector de método de pago removido.
+// Owner pidió que venta directa siempre use Efectivo. Dejamos el campo
+// `metodoPago` en el store pero hardcoded a 0 en `executeEnviarPedido`
+// (línea ~174). Si en el futuro se requiere multi-método, restaurar
+// METODO_PAGO_OPTIONS desde git history (commit anterior a este).
 
 function CrearPedidoStep3() {
   const router = useRouter();
@@ -47,41 +45,18 @@ function CrearPedidoStep3() {
     items,
     notas,
     tipoVenta,
-    metodoPago,
     updateQuantity,
     removeItem,
     setNotas,
-    setMetodoPago,
     reset,
   } = useOrderDraftStore();
 
   const subtotalRaw = useOrderSubtotal();
 
-  // Recordar último método de pago del vendedor en AsyncStorage. Al abrir
-  // revisión, pre-seleccionamos el último que usó (ahorra 1 tap del modal de
-  // pago en 90% de los casos donde el vendedor cobra siempre del mismo modo).
-  //
-  // SECURITY: solo escribir/leer si user.id está presente. Antes el fallback
-  // era 'default' que causaba leak cross-user en devices compartidos: si dos
-  // vendedores con user.id null usaban el mismo device, el segundo veía el
-  // método del primero. Reportado en code-review P1-2.
-  const lastMetodoKey = user?.id ? `last_metodo_pago_${user.id}` : null;
-  useEffect(() => {
-    if (!lastMetodoKey) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const stored = await AsyncStorage.getItem(lastMetodoKey);
-        if (!cancelled && stored != null) {
-          const parsed = parseInt(stored, 10);
-          if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 5) {
-            setMetodoPago(parsed);
-          }
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [lastMetodoKey, setMetodoPago]);
+  // Bug #2: el selector de método de pago se removió — venta directa
+  // siempre Efectivo (0). Persistencia AsyncStorage del último método
+  // ya no aplica. Si owner pide volver a multi-método, restaurar este
+  // useEffect desde git history.
 
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
@@ -171,12 +146,8 @@ function CrearPedidoStep3() {
 
       if (isDirecta) {
         const montoTotal = total;
-        const metodo = metodoPago ?? 0;
-        // Persistir último método para próxima venta del mismo vendedor.
-        // Solo si tenemos user.id (lastMetodoKey != null) — evita leak cross-user.
-        if (lastMetodoKey) {
-          AsyncStorage.setItem(lastMetodoKey, String(metodo)).catch(() => {});
-        }
+        // Bug #2: venta directa siempre Efectivo (0). Selector removido.
+        const metodo = 0;
         const nombre = clienteNombre || 'Cliente';
         const paradaId = useOrderDraftStore.getState().fromParadaId;
         // Pedido + Cobro + parada.Completada en una sola transacción WDB:
@@ -353,46 +324,9 @@ function CrearPedidoStep3() {
           </View>
         </Card>
 
-        {/* Payment Method (Venta Directa only) */}
-        {isDirecta && (
-          <Card className="mx-4 mb-3">
-            <Text style={styles.paymentLabel}>Método de Pago</Text>
-            <View style={styles.paymentGrid}>
-              {METODO_PAGO_OPTIONS.map((option) => {
-                const isSelected = metodoPago === option.value;
-                const Icon = option.icon;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.paymentOption,
-                      isSelected && styles.paymentOptionSelected,
-                    ]}
-                    onPress={() => setMetodoPago(option.value)}
-                    activeOpacity={0.7}
-                    accessibilityLabel={`Método de pago: ${option.label}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    <Icon
-                      size={20}
-                      color={isSelected ? '#16a34a' : '#64748b'}
-                    />
-                    <Text
-                      style={[
-                        styles.paymentOptionText,
-                        isSelected && styles.paymentOptionTextSelected,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </Card>
-        )}
+        {/* Bug #2: bloque de selector método de pago removido —
+            venta directa siempre Efectivo. Si necesitas restaurar
+            multi-método: ver git history del commit anterior. */}
 
         {/* Notes */}
         <Card className="mx-4 mb-4">

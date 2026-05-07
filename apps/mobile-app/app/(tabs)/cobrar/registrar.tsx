@@ -332,47 +332,20 @@ function RegistrarCobroScreen() {
           ) : null}
         </View>
 
-        {/* Método de Pago */}
-        <Text style={styles.sectionLabel}>Método de Pago</Text>
-        <View style={styles.metodosGrid}>
-          {Object.entries(METODO_PAGO).filter(([key]) => Number(key) <= 1).map(([key, label]) => {
-            const keyNum = Number(key);
-            const isSelected = metodoPago === keyNum;
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.metodoCard, isSelected && styles.metodoCardSelected]}
-                onPress={() => setMetodoPago(keyNum)}
-                activeOpacity={0.7}
-                accessibilityLabel={`Método de pago: ${label}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-              >
-                {METODO_ICONS[keyNum]}
-                <Text style={[styles.metodoLabel, isSelected && styles.metodoLabelSelected]}>
-                  {label}
-                </Text>
-                {isSelected && (
-                  <View style={styles.metodoCheck}>
-                    <Check size={12} color="#ffffff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+        {/* Bug #4-mobile (audit 2026-05-07): selector método de pago
+            removido. Cobranza siempre Efectivo. `metodoPago` queda en
+            state inicializado a 0 (línea ~85) — el flujo POST sigue
+            enviándolo al backend correctamente.
+            Mostramos solo un info badge para confirmar al vendedor que
+            es cobro en efectivo. */}
+        <View style={styles.efectivoInfoCard}>
+          <Banknote size={20} color="#16a34a" />
+          <Text style={styles.efectivoInfoText}>Pago en efectivo</Text>
         </View>
 
-        {/* Referencia */}
-        <Text style={styles.sectionLabel}>Referencia (opcional)</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="No. de transferencia, cheque, etc."
-          placeholderTextColor="#94a3b8"
-          value={referencia}
-          onChangeText={setReferencia}
-          onFocus={(e) => scrollToInput(e.target)}
-          accessibilityLabel="Referencia"
-        />
+        {/* Bug #4-mobile: campo Referencia oculto cuando solo
+            efectivo. Si owner pide volver a multi-método, restaurar
+            ambos bloques desde git history. */}
 
         {/* Notas */}
         <Text style={styles.sectionLabel}>Notas (opcional)</Text>
@@ -553,41 +526,26 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 10,
   },
-  metodosGrid: {
+  // Bug #4-mobile: estilos de selector método de pago (metodosGrid,
+  // metodoCard, etc.) ya no se usan — UI removida. Mantengo solo
+  // efectivoInfoCard para el badge informativo "Pago en efectivo".
+  efectivoInfoCard: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    gap: 8,
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginHorizontal: 16,
     marginBottom: 20,
   },
-  metodoCard: {
-    width: '30%',
-    flexGrow: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 2,
-    borderColor: '#f1f5f9',
-  },
-  metodoCardSelected: {
-    borderColor: COLORS.button,
-    backgroundColor: COLORS.buttonLight,
-  },
-  metodoLabel: { fontSize: 11, fontWeight: '600', color: '#64748b', textAlign: 'center' },
-  metodoLabelSelected: { color: COLORS.button },
-  metodoCheck: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: COLORS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
+  efectivoInfoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#166534',
   },
   textInput: {
     backgroundColor: '#ffffff',
