@@ -200,17 +200,31 @@ apiInstance.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Audit 2026-05-08: middleware backend ahora responde 403 + DEVICE_BOUND
+    // Audit 2026-05-08: middleware backend responde 403 + DEVICE_BOUND
     // cuando el fingerprint del request no matchea ninguna sesión activa
-    // (caso reinstalo, OS update, sesión huérfana, cuenta compartida).
-    // Antes era 401 + DEVICE_NOT_RECOGNIZED → cliente caía al refresh-token
-    // loop → "no hay conexión". Ahora limpiamos local state y emitimos
-    // 'deviceTakeoverRequired' para que la UI navegue a login + auto-abra
-    // modal "Continuar aquí" (mismo flow que cuando login devuelve
-    // DEVICE_BOUND directamente). El user ya tiene UI lista en
-    // app/(auth)/login.tsx para esto — solo cambiamos el trigger.
-    if (error.response?.status === 403 && error.response.data?.code === 'DEVICE_BOUND') {
-      if (__DEV__) console.log('[API] 403 DEVICE_BOUND on request — emitting deviceTakeoverRequired');
+    // (reinstalo, OS update, sesión huérfana). Cliente VIEJO caía al
+    // refresh-token loop → "no hay conexión". Ahora limpiamos local
+    // state y emitimos 'deviceTakeoverRequired' para que la UI navegue a
+    // login + muestre hint takeover.
+    //
+    // CRITICAL (2026-05-08 hotfix #2): SKIP este handler para endpoints
+    // de auth (login/force-login/refresh). En esos casos:
+    //   - /login DEVICE_BOUND ya lo maneja auth.ts.sanitizeAuthError +
+    //     useLogin onError + login.tsx modal takeover (flow original).
+    //   - Si emitimos deviceTakeoverRequired aquí, authStore.logout() se
+    //     dispara durante el login en curso, desmonta /login screen,
+    //     cancela la mutation, y user ve "sin conexión" sin modal.
+    //   - /force-login mismo problema.
+    //   - /refresh: si falla con DEVICE_BOUND, dejamos que el path de
+    //     refresh natural lo maneje (forceLogout o silencio).
+    const requestUrl = originalRequest?.url || '';
+    const isAuthEndpoint = requestUrl.includes('/api/mobile/auth/');
+    if (
+      !isAuthEndpoint &&
+      error.response?.status === 403 &&
+      error.response.data?.code === 'DEVICE_BOUND'
+    ) {
+      if (__DEV__) console.log('[API] 403 DEVICE_BOUND on non-auth request — emitting deviceTakeoverRequired');
       authEventEmitter.emit('deviceTakeoverRequired');
       return Promise.reject(error);
     }
