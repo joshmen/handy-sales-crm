@@ -100,43 +100,31 @@ public class MobileAuthService
                     (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
         }
 
-        // Device binding check — only for non-admin users.
-        // Reportado 2026-04-28: la version anterior tenia 3 escapes:
-        // 1) Solo aplicaba si cliente mandaba fingerprint (el if externo)
-        // 2) Excluia sesiones con fingerprint NULL (legacy)
-        // 3) Permitia status LoggedOut como activo
-        // Ahora la regla es: si EXISTE OTRA sesion Active del mismo usuario
-        // (con o sin fingerprint), bloquear. Esto refuerza el modelo de
-        // negocio "1 vendedor = 1 device".
-        if (!usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
+        // Device binding check — RELAJADO 2026-05-08 (incident prod):
+        // La regla previa "1 vendedor = 1 device" bloqueaba a vendedores
+        // legítimos en cualquiera de estos casos comunes en campo:
+        //   - Cuenta compartida entre varios vendedores (modelo PYME)
+        //   - Vendedor con phone + tablet
+        //   - Reinstalo de app cambia fingerprint (Android getAndroidId
+        //     se preserva, pero el fingerprint depende también de modelName
+        //     que puede variar tras OS update mayor)
+        //   - Mi propias pruebas curl quedaron como sesiones huérfanas
+        //
+        // Ahora: NO bloqueamos por DeviceBound. Permitimos múltiples
+        // DeviceSessions Active simultáneas para el mismo user. Cada
+        // device tiene su sesión y el middleware
+        // (MobileSessionValidationMiddleware) sigue validando por
+        // fingerprint match a nivel request. Si quieren restringir
+        // a "1 vendedor = 1 device" en un futuro, hacerlo con flag
+        // per-tenant, no hardcoded global.
+        //
+        // Reportado: 2026-05-08, vendedores Jeyma "no hay conexión"
+        // (era DEVICE_BOUND HTTP 403 que el cliente no manejaba bien).
+        if (false && !usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
         {
-            var boundSession = await _db.DeviceSessions
-                .IgnoreQueryFilters()
-                .Where(ds => ds.UsuarioId == usuario.Id &&
-                             ds.TenantId == usuario.TenantId &&
-                             ds.EliminadoEn == null &&
-                             ds.Status == SessionStatus.Active &&
-                             (
-                                 (!string.IsNullOrEmpty(ds.DeviceFingerprint)
-                                   && ds.DeviceFingerprint != deviceFingerprint) ||
-                                 (string.IsNullOrEmpty(ds.DeviceFingerprint)
-                                   && !string.IsNullOrEmpty(ds.DeviceId)
-                                   && (string.IsNullOrEmpty(deviceId) || ds.DeviceId != deviceId)) ||
-                                 (string.IsNullOrEmpty(ds.DeviceFingerprint)
-                                   && string.IsNullOrEmpty(ds.DeviceId))
-                             ))
-                .OrderByDescending(ds => ds.LastActivity)
-                .FirstOrDefaultAsync();
-
-            if (boundSession != null)
-            {
-                return new LoginResult
-                {
-                    Success = false,
-                    DeviceBound = true,
-                    Message = "Tu cuenta está activa en otro dispositivo. Por seguridad, solo se permite una sesión a la vez."
-                };
-            }
+            // Bloque desactivado intencionalmente con `if (false)` para
+            // evitar romper el control de flujo del método. Conservado
+            // como referencia hasta decidir solución per-tenant.
         }
 
         // Reuse existing session or create new one
