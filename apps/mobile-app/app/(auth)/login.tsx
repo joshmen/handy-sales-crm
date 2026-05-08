@@ -18,12 +18,20 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Mail, Lock, KeyRound } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { COLORS } from '@/theme/colors';
+import { secureStorage } from '@/utils/storage';
+import { STORAGE_KEYS } from '@/utils/constants';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; totpCode?: string }>({});
   const [showDeviceBoundModal, setShowDeviceBoundModal] = useState(false);
+  // Audit 2026-05-08: cuando llegamos aquí desde un takeover automático
+  // (interceptor recibió 403 DEVICE_BOUND mid-session), el authStore
+  // listener guarda el email del user previo en PENDING_TAKEOVER_EMAIL.
+  // Pre-rellenamos email + mostramos hint para que sepa qué pasa, en vez
+  // de aparentar un "te cerró sesión sin razón".
+  const [takeoverHintEmail, setTakeoverHintEmail] = useState<string | null>(null);
   // TOTP step: cuando el backend retorna TOTP_REQUIRED, mostramos un input
   // para el código y reintentamos el login con totpCode. VULN-M03 fix.
   const [totpRequired, setTotpRequired] = useState(false);
@@ -33,6 +41,20 @@ export default function LoginScreen() {
 
   const loginMutation = useLogin();
   const forceLoginMutation = useForceLogin();
+
+  // Audit 2026-05-08: leer pending takeover email al montar la pantalla.
+  // Setteado por el listener `deviceTakeoverRequired` en authStore cuando
+  // el interceptor recibe 403 DEVICE_BOUND mid-session.
+  useEffect(() => {
+    (async () => {
+      const pending = await secureStorage.get(STORAGE_KEYS.PENDING_TAKEOVER_EMAIL);
+      if (pending) {
+        setEmail(pending);
+        setTakeoverHintEmail(pending);
+        await secureStorage.remove(STORAGE_KEYS.PENDING_TAKEOVER_EMAIL);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!loginMutation.isError) return;
@@ -163,6 +185,16 @@ export default function LoginScreen() {
             </Text>
           </View>
           <Text style={styles.formTitle}>{totpRequired ? 'Verificación 2FA' : 'Iniciar Sesión'}</Text>
+
+          {/* Audit 2026-05-08: hint cuando llegamos aquí desde takeover */}
+          {takeoverHintEmail && !totpRequired && (
+            <View style={styles.takeoverHint}>
+              <Text style={styles.takeoverHintText}>
+                Tu sesión está activa en otro dispositivo. Ingresa tu contraseña
+                para continuar aquí.
+              </Text>
+            </View>
+          )}
 
           {!totpRequired && (
             <>
@@ -337,6 +369,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#475569',
     marginBottom: 16,
+    lineHeight: 18,
+  },
+  takeoverHint: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#d97706',
+  },
+  takeoverHintText: {
+    fontSize: 13,
+    color: '#78350f',
     lineHeight: 18,
   },
   footer: {

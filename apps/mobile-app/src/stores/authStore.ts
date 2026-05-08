@@ -140,3 +140,19 @@ authEventEmitter.on('deviceRevoked', () => {
     [{ text: 'Aceptar', onPress: () => useAuthStore.getState().logout() }]
   );
 });
+
+// Audit 2026-05-08: middleware backend dispara DEVICE_BOUND (403) cuando
+// fingerprint del request no matchea ninguna sesión activa pero user
+// tiene otras (caso reinstalo, OS update, sesión huérfana). Preservamos
+// el email del user para que la pantalla de login lo pre-rellene y
+// muestre hint "Tu sesión está activa en otro dispositivo. Ingresa tu
+// contraseña para tomarla aquí". User pone password → tap login → backend
+// devuelve DEVICE_BOUND → modal takeover normal → /force-login.
+authEventEmitter.on('deviceTakeoverRequired', () => {
+  const state = useAuthStore.getState();
+  const email = state.user?.email;
+  if (email) {
+    secureStorage.set(STORAGE_KEYS.PENDING_TAKEOVER_EMAIL, email).catch(() => {});
+  }
+  state.logout();
+});
