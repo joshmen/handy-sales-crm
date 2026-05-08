@@ -200,6 +200,21 @@ apiInstance.interceptors.response.use(
       _retry?: boolean;
     };
 
+    // Audit 2026-05-08: middleware backend ahora responde 403 + DEVICE_BOUND
+    // cuando el fingerprint del request no matchea ninguna sesión activa
+    // (caso reinstalo, OS update, sesión huérfana, cuenta compartida).
+    // Antes era 401 + DEVICE_NOT_RECOGNIZED → cliente caía al refresh-token
+    // loop → "no hay conexión". Ahora limpiamos local state y emitimos
+    // 'deviceTakeoverRequired' para que la UI navegue a login + auto-abra
+    // modal "Continuar aquí" (mismo flow que cuando login devuelve
+    // DEVICE_BOUND directamente). El user ya tiene UI lista en
+    // app/(auth)/login.tsx para esto — solo cambiamos el trigger.
+    if (error.response?.status === 403 && error.response.data?.code === 'DEVICE_BOUND') {
+      if (__DEV__) console.log('[API] 403 DEVICE_BOUND on request — emitting deviceTakeoverRequired');
+      authEventEmitter.emit('deviceTakeoverRequired');
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       const errorCode = error.response.data?.code;
       // Capturamos el token con el que se mandó la request original.
