@@ -64,11 +64,16 @@ public class MobileSessionValidationMiddleware
 
             if (hasSessions)
             {
-                context.Response.StatusCode = 401;
+                // Audit 2026-05-08: alias a DEVICE_BOUND/403 (mismo que login).
+                // Antes era DEVICE_FINGERPRINT_REQUIRED/401 — el cliente no lo
+                // manejaba y caía al refresh-token loop → vendedor veía
+                // "no hay conexión" sin poder salir. Ahora reusa el mismo
+                // flow takeover del login (modal "Continuar aquí").
+                context.Response.StatusCode = 403;
                 await context.Response.WriteAsJsonAsync(new
                 {
-                    code = "DEVICE_FINGERPRINT_REQUIRED",
-                    message = "Se requiere el header X-Device-Fingerprint para este usuario."
+                    code = "DEVICE_BOUND",
+                    message = "Tu cuenta está activa en otro dispositivo. Continúa aquí para tomar la sesión."
                 });
                 return;
             }
@@ -104,11 +109,19 @@ public class MobileSessionValidationMiddleware
                     if (hasOtherSessions)
                     {
                         _cache.Set(cacheKey, sessionStatus, TimeSpan.FromSeconds(30));
-                        context.Response.StatusCode = 401;
+                        // Audit 2026-05-08: alias a DEVICE_BOUND/403 (mismo que login).
+                        // Antes era DEVICE_NOT_RECOGNIZED/401 — el cliente no lo
+                        // manejaba y caía al refresh-token loop → "no hay
+                        // conexión" sin salida. Ahora reusa el flow takeover.
+                        // Casos comunes: reinstalo de app cambia fingerprint,
+                        // OS update mayor cambia modelName, sesiones huérfanas
+                        // de QA/dev. La regla "1 vendedor = 1 device" se
+                        // mantiene en login + force-login.
+                        context.Response.StatusCode = 403;
                         await context.Response.WriteAsJsonAsync(new
                         {
-                            code = "DEVICE_NOT_RECOGNIZED",
-                            message = "Dispositivo no reconocido. Registra este dispositivo o contacta a tu administrador."
+                            code = "DEVICE_BOUND",
+                            message = "Tu cuenta está activa en otro dispositivo. Continúa aquí para tomar la sesión."
                         });
                         return;
                     }

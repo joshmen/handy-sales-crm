@@ -64,6 +64,10 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   USER_DATA: 'user_data',
   DEVICE_ID: 'device_id',
+  // Audit 2026-05-08: persistido cuando el middleware backend devuelve
+  // 403 DEVICE_BOUND mid-session (fingerprint cambió o sesión huérfana).
+  // Login screen lee al montar y pre-rellena email + muestra hint.
+  PENDING_TAKEOVER_EMAIL: 'pending_takeover_email',
 } as const;
 
 export const USER_ROLES = {
