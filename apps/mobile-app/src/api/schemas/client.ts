@@ -14,8 +14,13 @@ export const MobileClienteSchema = z
     ciudad: z.string().nullable().optional(),
     codigoPostal: z.string().nullable().optional(),
     encargado: z.string().nullable().optional(),
-    idZona: z.number(),
-    categoriaClienteId: z.number(),
+    // Bug 4 (audit 2026-05-08): clientes legacy en DB tenían `zona_id=null` y
+    // `categoria_cliente_id=null` — el schema marcaba required y Zod fallaba con
+    // "expected number, received null" al hacer GET /api/mobile/clientes/{id}.
+    // Relajado a nullable para no fallar el flow del vendedor; backend sigue
+    // siendo source of truth y la UI maneja null mostrando "Sin zona/categoría".
+    idZona: z.number().nullable(),
+    categoriaClienteId: z.number().nullable(),
     latitud: z.number().optional(),
     longitud: z.number().optional(),
     vendedorId: z.number().optional(),

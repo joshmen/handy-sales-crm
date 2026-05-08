@@ -231,7 +231,11 @@ public static class MobilePedidoEndpoints
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             await NotifyOrderPush(scopeFactory, context, id, EstadoPedido.Cancelado);
-            return Results.Ok(new { success = true, message = "Pedido cancelado" });
+            // Devolver pedido full — el mobile valida response contra
+            // MobilePedidoSchema; `data: undefined` causaba "expected object,
+            // received undefined". Audit 2026-05-08.
+            var pedidoActualizado = await servicio.ObtenerPorIdAsync(id);
+            return Results.Ok(new { success = true, data = pedidoActualizado });
         })
         .WithSummary("Cancelar pedido")
         .WithDescription("Cancela el pedido. Se requiere motivo de cancelación.")

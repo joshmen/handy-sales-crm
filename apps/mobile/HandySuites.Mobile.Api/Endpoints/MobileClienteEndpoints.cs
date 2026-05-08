@@ -160,8 +160,14 @@ public static class MobileClienteEndpoints
             if (!resultado.Success)
                 return Results.Conflict(new { success = false, message = resultado.Error });
 
+            // Devolver cliente full — el schema Zod del mobile valida la response
+            // contra MobileClienteSchema (todos los campos requeridos). Devolver
+            // solo `{ id }` causaba "expected string, received undefined" → 330
+            // crashes en 2 semanas (vendedor Jeyma reintentaba). Reportado audit
+            // 2026-05-08.
+            var clienteCreado = await servicio.ObtenerPorIdAsync(resultado.Id);
             return Results.Created($"/api/mobile/clientes/{resultado.Id}",
-                new { success = true, data = new { id = resultado.Id } });
+                new { success = true, data = clienteCreado });
         })
         .WithSummary("Crear cliente")
         .WithDescription("Crea un nuevo cliente con nombre, RFC, teléfono, email, dirección, zona y categoría.")
@@ -182,7 +188,11 @@ public static class MobileClienteEndpoints
                 return Results.Conflict(new { success = false, message = resultado.Error });
             }
 
-            return Results.Ok(new { success = true, message = "Cliente actualizado" });
+            // Devolver cliente full — mismo motivo que POST: el mobile valida
+            // response contra MobileClienteSchema, y `data: undefined` causaba
+            // "expected object, received undefined". Audit 2026-05-08.
+            var clienteActualizado = await servicio.ObtenerPorIdAsync(id);
+            return Results.Ok(new { success = true, data = clienteActualizado });
         })
         .WithSummary("Editar cliente")
         .WithDescription("Actualiza los datos de un cliente existente.")
