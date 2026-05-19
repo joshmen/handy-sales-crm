@@ -74,6 +74,17 @@ public class SubscriptionPlan
     [Column("orden")]
     public int Orden { get; set; }
 
+    /// <summary>
+    /// Sesiones concurrentes permitidas por usuario en mobile (Netflix-style).
+    /// Default 1 (mantiene compat con regla histórica "1 vendedor = 1 device").
+    /// Plans más altos pueden permitir más (BUSINESS=10 ej.).
+    /// Cuando user intenta login y ya tiene N sesiones activas, el endpoint
+    /// devuelve SESSION_LIMIT_REACHED con lista — UI muestra picker para
+    /// revocar una y entrar.
+    /// </summary>
+    [Column("max_concurrent_sessions")]
+    public int MaxConcurrentSessions { get; set; } = 1;
+
     // Navigation
     public virtual ICollection<Tenant> Tenants { get; set; } = new List<Tenant>();
 }

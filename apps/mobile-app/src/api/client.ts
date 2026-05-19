@@ -192,7 +192,16 @@ apiInstance.interceptors.request.use(async (config: InternalAxiosRequestConfig) 
   return config;
 });
 
-// --- Response interceptor: 401 handling with token refresh + device binding ---
+// --- Response interceptor: 401 handling with token refresh ---
+// Audit 2026-05-18 — rediseño Netflix/Spotify-style:
+// Backend ahora responde 1 solo código de session error: SESSION_REVOKED (401).
+// Cliente: emite 'sessionRevoked' como SOFT signal (no auto-logout). El
+// authStore listener muestra banner persistente; user decide cuándo
+// re-loguear. Tokens locales SE CONSERVAN hasta que user vaya a login
+// screen. Pending data en WDB intacto.
+//
+// Para AUTH endpoints (login/refresh/revoke-and-login), NO emitir eventos
+// porque el caller (useLogin/auth.ts) maneja directamente.
 apiInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ code?: string; message?: string }>) => {
@@ -200,70 +209,40 @@ apiInstance.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Audit 2026-05-08: middleware backend responde 403 + DEVICE_BOUND
-    // cuando el fingerprint del request no matchea ninguna sesión activa
-    // (reinstalo, OS update, sesión huérfana). Cliente VIEJO caía al
-    // refresh-token loop → "no hay conexión". Ahora limpiamos local
-    // state y emitimos 'deviceTakeoverRequired' para que la UI navegue a
-    // login + muestre hint takeover.
-    //
-    // CRITICAL (2026-05-08 hotfix #2): SKIP este handler para endpoints
-    // de auth (login/force-login/refresh). En esos casos:
-    //   - /login DEVICE_BOUND ya lo maneja auth.ts.sanitizeAuthError +
-    //     useLogin onError + login.tsx modal takeover (flow original).
-    //   - Si emitimos deviceTakeoverRequired aquí, authStore.logout() se
-    //     dispara durante el login en curso, desmonta /login screen,
-    //     cancela la mutation, y user ve "sin conexión" sin modal.
-    //   - /force-login mismo problema.
-    //   - /refresh: si falla con DEVICE_BOUND, dejamos que el path de
-    //     refresh natural lo maneje (forceLogout o silencio).
     const requestUrl = originalRequest?.url || '';
     const isAuthEndpoint = requestUrl.includes('/api/mobile/auth/');
-    if (
-      !isAuthEndpoint &&
-      error.response?.status === 403 &&
-      error.response.data?.code === 'DEVICE_BOUND'
-    ) {
-      if (__DEV__) console.log('[API] 403 DEVICE_BOUND on non-auth request — emitting deviceTakeoverRequired');
-      authEventEmitter.emit('deviceTakeoverRequired');
-      return Promise.reject(error);
-    }
 
     if (error.response?.status === 401) {
       const errorCode = error.response.data?.code;
-      // Capturamos el token con el que se mandó la request original.
-      // Si entre el envío y recibir el 401, el user hizo login fresh,
-      // _cachedAccessToken cambió — el 401 corresponde a la sesión vieja
-      // y NO debe disparar forceLogout sobre la sesión nueva.
       const tokenAtRequest = (originalRequest.headers?.Authorization as string | undefined)
         ?.replace('Bearer ', '');
 
-      // Bug #1 (audit 2026-05-07): si la request usó un token que fue
-      // explícitamente superado por login/force-login fresh, ignorar el
-      // 401 SIN intentar refresh. El refresh_token previo también fue
-      // revocado server-side; intentar refresh solo logra:
-      //   1) golpear el rate limit (5/min) → 429 → toast "demasiados reintentos"
-      //   2) processQueueError + forceLogout cascade → mata la sesión
-      //      nueva válida que el user acaba de aceptar
-      // Reportado: vendedor@jeyma.com, modal "Continuar aquí" → logout instantáneo.
+      // Guard race: si el token de la request fue superado por login fresh,
+      // ignorar el 401 sin emitir nada (la sesión nueva es válida).
       if (tokenAtRequest && _staleTokens.has(tokenAtRequest)) {
-        if (__DEV__) console.log('[API] 401 on stale token — ignoring (superseded by force-login)');
+        if (__DEV__) console.log('[API] 401 on stale token — ignoring (superseded by fresh login)');
         return Promise.reject(error);
       }
 
-      // Device was revoked by admin — force logout with specific message
-      if (errorCode === 'DEVICE_REVOKED' || errorCode === 'SESSION_REVOKED') {
-        // Guard: si el JWT actual ya es uno nuevo, ignorar — el revoke
-        // aplicaba a la sesión previa, ya superada por login fresh.
+      // SESSION_REVOKED: sesión específica revocada server-side (logout en
+      // otro device, admin revoke, expiración, etc.). Emit 'sessionRevoked'
+      // como SOFT signal. authStore NO hace clear de tokens — sólo marca
+      // state.sessionExpired = true. UI muestra banner persistente.
+      // Pending data en WDB intacta.
+      if (errorCode === 'SESSION_REVOKED' || errorCode === 'DEVICE_REVOKED') {
         if (tokenAtRequest && _cachedAccessToken && tokenAtRequest !== _cachedAccessToken) {
           if (__DEV__) console.log('[API] 401 SESSION_REVOKED on stale token — ignoring (user re-logged in)');
           return Promise.reject(error);
         }
-        authEventEmitter.emit('deviceRevoked');
+        if (!isAuthEndpoint) {
+          if (__DEV__) console.log('[API] 401 SESSION_REVOKED — emitting sessionRevoked (soft)');
+          authEventEmitter.emit('sessionRevoked');
+        }
         return Promise.reject(error);
       }
 
-      if (!originalRequest._retry) {
+      // 401 sin code conocido: intentar token refresh una vez.
+      if (!originalRequest._retry && !isAuthEndpoint) {
         originalRequest._retry = true;
 
         if (!isRefreshing) {
@@ -283,21 +262,29 @@ apiInstance.interceptors.response.use(
             return apiInstance(originalRequest);
           }
         } catch (e) {
-          // fall through
-          if (__DEV__) console.warn('[API]', e);
+          if (__DEV__) console.warn('[API] refresh failed', e);
         }
 
-        // Guard: si el cliente ya tiene un token válido distinto del que
-        // falló (login fresh ocurrió mientras hacíamos refresh), no
-        // forzamos logout — la sesión nueva es válida.
+        // Refresh fail: si el cliente ya tiene token nuevo distinto, no
+        // hacer logout (race con login fresh).
         if (tokenAtRequest && _cachedAccessToken && tokenAtRequest !== _cachedAccessToken) {
-          if (__DEV__) console.log('[API] refresh fail on stale token — ignoring (user re-logged in)');
+          if (__DEV__) console.log('[API] refresh fail on stale token — ignoring');
           return Promise.reject(error);
         }
 
+        // Refresh definitivamente falló → tratar como sesión revocada (soft).
+        // NO emit 'forceLogout' (legacy hard logout). Emit sessionRevoked
+        // para que UI muestre banner y user decida.
         processQueueError(new Error('Token refresh failed'));
-        authEventEmitter.emit('forceLogout');
+        if (__DEV__) console.log('[API] refresh exhausted — emitting sessionRevoked (soft)');
+        authEventEmitter.emit('sessionRevoked');
       }
+    }
+
+    // Network errors (axios sin response): marcar específicamente para que
+    // callers diferencien "sin conexión" vs "401 sin procesar".
+    if (!error.response) {
+      (error as AxiosError & { isNetworkError?: boolean }).isNetworkError = true;
     }
 
     return Promise.reject(error);

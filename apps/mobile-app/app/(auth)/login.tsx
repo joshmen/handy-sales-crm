@@ -59,14 +59,32 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!loginMutation.isError) return;
     const err = loginMutation.error as any;
+
+    // Audit 2026-05-18: nuevo flow Netflix-style. Si el user alcanzó el
+    // límite de sesiones del plan, navegar a la pantalla session-limit
+    // que muestra picker con las sesiones activas. User elige cual
+    // revocar para entrar (atomic via /revoke-and-login).
+    if (err?.code === 'SESSION_LIMIT_REACHED') {
+      router.push({
+        pathname: '/(auth)/session-limit' as any,
+        params: {
+          email: email.trim(),
+          password,
+          totpCode: totpRequired ? totpCode.trim() : '',
+          activeSessions: JSON.stringify(err.activeSessions ?? []),
+          maxSessions: String(err.maxSessions ?? 1),
+        },
+      });
+      return;
+    }
+
+    // Legacy fallback: DEVICE_BOUND viene solo de /force-login (deprecated).
     if (err?.code === 'DEVICE_BOUND') {
       setShowDeviceBoundModal(true);
       return;
     }
     if (err?.code === 'TOTP_REQUIRED') {
       setTotpRequired(true);
-      // Si el usuario ya había ingresado un código (segundo intento fallido),
-      // limpiarlo y avisar.
       if (totpCode) {
         setErrors((e) => ({ ...e, totpCode: 'Código inválido' }));
         setTotpCode('');
@@ -79,7 +97,7 @@ export default function LoginScreen() {
       text2: err?.message || 'Intenta de nuevo',
       visibilityTime: 4000,
     });
-  }, [loginMutation.isError, loginMutation.error, totpCode]);
+  }, [loginMutation.isError, loginMutation.error, totpCode, email, password, totpRequired, router]);
 
   useEffect(() => {
     if (!forceLoginMutation.isError) return;

@@ -12,6 +12,22 @@ import type { MeResponse } from './schemas';
 const LoginResponseWrapperSchema = ApiResponseSchema(LoginResponseSchema);
 const MeResponseWrapperSchema = ApiResponseSchema(MeResponseSchema);
 
+/**
+ * Audit 2026-05-18 — sesión activa según endpoint /my-sessions y datos del
+ * picker en SESSION_LIMIT_REACHED.
+ */
+export interface MySession {
+  id: number;
+  deviceName: string;
+  deviceType: string;
+  lastActivity: string;
+  loggedInAt: string;
+  appVersion: string;
+  osVersion: string;
+  ipCity: string;
+  isCurrent: boolean;
+}
+
 class MobileAuthApi {
   private basePath = '/api/mobile/auth';
 
@@ -27,17 +43,25 @@ class MobileAuthApi {
       const code = error.response?.data?.code;
       const backendMessage = error.response?.data?.message;
 
+      // Legacy: DEVICE_BOUND seguía siendo usado por /force-login (deprecated).
+      // Nuevo flow LoginAsync (audit 2026-05-18) usa SESSION_LIMIT_REACHED.
       if (status === 403 && code === 'DEVICE_BOUND') {
         const err = new Error(backendMessage || 'Tu cuenta está activa en otro dispositivo.');
         (err as any).code = 'DEVICE_BOUND';
         throw err;
       }
-      // VULN-M03 fix: backend retorna 401 + code=TOTP_REQUIRED cuando el
-      // usuario tiene 2FA habilitado. La UI debe mostrar un input para
-      // ingresar el código y reintentar el mismo login con totpCode.
+      // VULN-M03 fix: 2FA enforcement.
       if (status === 401 && code === 'TOTP_REQUIRED') {
         const err = new Error(backendMessage || 'Se requiere código de autenticación 2FA');
         (err as any).code = 'TOTP_REQUIRED';
+        throw err;
+      }
+      // Audit 2026-05-18 — session revoked durante refresh attempt o explicit
+      // (admin revoke, otro device tomó la sesión, etc.). Cliente debe mostrar
+      // mensaje claro pero sin auto-logout brusco.
+      if (status === 401 && (code === 'SESSION_REVOKED' || code === 'DEVICE_REVOKED')) {
+        const err = new Error(backendMessage || 'Tu sesión fue cerrada. Por favor inicia sesión de nuevo.');
+        (err as any).code = 'SESSION_REVOKED';
         throw err;
       }
       if (status === 401) throw new Error('Correo o contraseña incorrectos');
@@ -52,14 +76,56 @@ class MobileAuthApi {
 
   async login(email: string, password: string, totpCode?: string): Promise<LoginResponse> {
     try {
-      const response = await api.post<ApiResponse<LoginResponse>>(
+      const response = await api.post<any>(
         `${this.basePath}/login`,
         { email, password, totpCode }
+      );
+
+      // Audit 2026-05-18: nuevo flow Netflix-style. Si el user alcanzó el
+      // límite de sesiones del plan, el backend devuelve 200 con
+      // success=false + code=SESSION_LIMIT_REACHED + data.activeSessions.
+      // Throw error con code para que useLogin lo propague a la pantalla
+      // de session-limit (picker).
+      const body = response.data;
+      if (body && body.success === false && body.code === 'SESSION_LIMIT_REACHED') {
+        const err = new Error(body.message || 'Has alcanzado el límite de sesiones');
+        (err as any).code = 'SESSION_LIMIT_REACHED';
+        (err as any).activeSessions = body.data?.activeSessions ?? [];
+        (err as any).maxSessions = body.data?.maxSessions ?? 1;
+        throw err;
+      }
+
+      const validated = validateResponse(
+        LoginResponseWrapperSchema,
+        body,
+        'POST /api/mobile/auth/login'
+      );
+      if (!validated.success) {
+        throw new Error(validated.message || 'Error al iniciar sesión');
+      }
+      return validated.data;
+    } catch (error) {
+      // Re-throw si ya tiene code (SESSION_LIMIT_REACHED u otro propagado).
+      if (error instanceof Error && (error as any).code) throw error;
+      this.sanitizeAuthError(error);
+    }
+  }
+
+  /**
+   * Audit 2026-05-18 — flow nuevo Netflix-style. User llegó aquí desde
+   * la pantalla session-limit (picker) tras tocar el límite en login normal.
+   * Atomic: revoca la sesión que user eligió + crea nueva + emite tokens.
+   */
+  async revokeAndLogin(email: string, password: string, revokeSessionId: number, totpCode?: string): Promise<LoginResponse> {
+    try {
+      const response = await api.post<ApiResponse<LoginResponse>>(
+        `${this.basePath}/revoke-and-login`,
+        { email, password, totpCode, revokeSessionId }
       );
       const validated = validateResponse(
         LoginResponseWrapperSchema,
         response.data,
-        'POST /api/mobile/auth/login'
+        'POST /api/mobile/auth/revoke-and-login'
       );
       if (!validated.success) {
         throw new Error(validated.message || 'Error al iniciar sesión');
@@ -71,9 +137,28 @@ class MobileAuthApi {
   }
 
   /**
-   * Force-login: cierra otras sesiones activas y crea nueva. El cliente lo
-   * invoca tras confirmar en modal "¿Desconectar otro dispositivo?". También
-   * acepta totpCode si el usuario tiene 2FA habilitado.
+   * Audit 2026-05-18 — pantalla "Mis sesiones".
+   */
+  async getMySessions(): Promise<MySession[]> {
+    const response = await api.get<{ success: boolean; data: MySession[] }>(
+      `${this.basePath}/my-sessions`
+    );
+    return response.data?.data ?? [];
+  }
+
+  /**
+   * Audit 2026-05-18 — revocar una sesión propia (self-service). Si revoca
+   * la actual, el siguiente request devuelve 401 SESSION_REVOKED.
+   */
+  async revokeMySession(sessionId: number): Promise<void> {
+    await api.post(`${this.basePath}/revoke-session/${sessionId}`);
+  }
+
+  /**
+   * Force-login: deprecated (audit 2026-05-18). Reemplazado por flow
+   * SESSION_LIMIT_REACHED + revokeAndLogin. Mantenido como fallback durante
+   * window de compat para clientes pre-OTA. Será removido en 60 días.
+   * @deprecated Use revokeAndLogin con sessionId del picker.
    */
   async forceLogin(email: string, password: string, totpCode?: string): Promise<LoginResponse> {
     try {

@@ -12,10 +12,19 @@ namespace HandySuites.Mobile.Api.Services;
 public class LoginResult
 {
     public bool Success { get; init; }
+    /// <summary>Legacy: true cuando el viejo flow detecta DeviceBound. Mantenido
+    /// para back-compat con ForceLoginAsync. El nuevo flow usa SessionLimitReached
+    /// (audit 2026-05-18). Cuando ambos están en false y Success en false, es
+    /// un fallo de credenciales puro.</summary>
     public bool DeviceBound { get; init; }
     /// <summary>True cuando el usuario tiene 2FA habilitado y el cliente debe
     /// llamar a /verify-totp con el código antes de obtener tokens.</summary>
     public bool TotpRequired { get; init; }
+    /// <summary>Audit 2026-05-18: true cuando el user alcanzó el límite de
+    /// sesiones concurrentes de su plan. En este caso Data incluye
+    /// `activeSessions` (lista para que UI muestre picker) y `maxSessions`.
+    /// User debe revocar una via /revoke-and-login para entrar.</summary>
+    public bool SessionLimitReached { get; init; }
     public string? Message { get; init; }
     public object? Data { get; init; }
 }
@@ -33,143 +42,264 @@ public class MobileAuthService
         _totpVerifier = totpVerifier;
     }
 
-    public async Task<LoginResult> LoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null)
+    public async Task<LoginResult> LoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null, string? deviceName = null)
+    {
+        // ---- 1. Credenciales + estado de cuenta ----
+        var (usuario, authResult) = await AuthenticateCredsAsync(email, password, totpCode);
+        if (authResult != null) return authResult; // login failure (creds, totp, deactivated)
+        // usuario garantizado no-null aquí
+
+        // ---- 2. Check concurrent session limit (Netflix-style) ----
+        // Reusar sesión Active existente del mismo device si la hay (mismo
+        // fingerprint o mismo deviceId). NO cuenta para el limit porque es
+        // el mismo device físico re-logging.
+        var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario!.Id, usuario.TenantId, deviceFingerprint, deviceId);
+
+        var maxSessions = await GetMaxConcurrentSessionsAsync(usuario.TenantId);
+        var activeCount = await CountActiveSessionsAsync(usuario.Id, usuario.TenantId, excludeSessionId: existingSessionSameDevice?.Id);
+
+        if (activeCount >= maxSessions)
+        {
+            // SessionLimitReached: devolver lista de sesiones para que cliente
+            // muestre picker. NO crear sesión nueva ni emitir tokens.
+            var activeSessions = await GetActiveSessionsDtoAsync(usuario.Id, usuario.TenantId);
+            return new LoginResult
+            {
+                Success = false,
+                SessionLimitReached = true,
+                Message = $"Has alcanzado el límite de {maxSessions} sesión{(maxSessions == 1 ? "" : "es")} activa{(maxSessions == 1 ? "" : "s")}. Elige una para cerrarla y continuar aquí.",
+                Data = new
+                {
+                    maxSessions,
+                    currentCount = activeCount,
+                    activeSessions
+                }
+            };
+        }
+
+        // ---- 3. Create/reuse session + emit tokens ----
+        return await CreateSessionAndTokensAsync(usuario, existingSessionSameDevice, deviceId, deviceFingerprint, deviceName);
+    }
+
+    /// <summary>
+    /// Audit 2026-05-18: nuevo flow. El user llegó aquí porque su login tocó
+    /// el límite de sesiones (SESSION_LIMIT_REACHED) y eligió en el picker
+    /// qué sesión revocar. Atomic: verifica creds + TOTP + revoca la sesión
+    /// elegida + crea nueva + emite tokens.
+    /// </summary>
+    public async Task<LoginResult> RevokeAndLoginAsync(string email, string password, int revokeSessionId, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null, string? deviceName = null)
+    {
+        var (usuario, authResult) = await AuthenticateCredsAsync(email, password, totpCode);
+        if (authResult != null) return authResult;
+
+        // Verificar que la sesión a revocar pertenece a este usuario.
+        var sessionToRevoke = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ds => ds.Id == revokeSessionId &&
+                                       ds.UsuarioId == usuario!.Id &&
+                                       ds.TenantId == usuario.TenantId &&
+                                       ds.EliminadoEn == null);
+
+        if (sessionToRevoke == null)
+        {
+            return new LoginResult
+            {
+                Success = false,
+                Message = "La sesión seleccionada ya no existe."
+            };
+        }
+
+        // Revocar la sesión elegida + sus refresh tokens.
+        await RevokeSessionInternalAsync(sessionToRevoke, reason: "limit_picker");
+
+        // Reuso sesión existente del mismo device si la hay (post-revoke).
+        var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario!.Id, usuario.TenantId, deviceFingerprint, deviceId);
+
+        return await CreateSessionAndTokensAsync(usuario, existingSessionSameDevice, deviceId, deviceFingerprint, deviceName);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Helpers privados — extracción de duplicación cross LoginAsync,
+    // ForceLoginAsync, RevokeAndLoginAsync.
+    // ──────────────────────────────────────────────────────────────
+
+    private async Task<(Usuario? usuario, LoginResult? failure)> AuthenticateCredsAsync(string email, string password, string? totpCode)
     {
         var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
-
         var loginSuccess = usuario != null && BCrypt.Net.BCrypt.Verify(password, usuario.PasswordHash);
 
         if (!loginSuccess || usuario == null)
-            return new LoginResult { Success = false };
+            return (null, new LoginResult { Success = false });
 
-        // Check if the user account is active
         if (!usuario.Activo)
-            return new LoginResult { Success = false, Message = "Cuenta desactivada" };
+            return (usuario, new LoginResult { Success = false, Message = "Cuenta desactivada" });
 
-        // VULN-M03 fix: si el usuario tiene 2FA habilitado, exigir código TOTP
-        // antes de emitir tokens. Antes el mobile bypaseaba completamente la
-        // verificación — un atacante con creds robadas pivoteaba al endpoint
-        // mobile y obtenía full access ignorando el segundo factor.
+        // VULN-M03 fix: 2FA enforcement.
         if (usuario.TotpEnabled)
         {
             if (string.IsNullOrEmpty(totpCode))
             {
-                return new LoginResult
+                return (usuario, new LoginResult
                 {
                     Success = false,
                     TotpRequired = true,
                     Message = "Se requiere código de autenticación 2FA"
-                };
+                });
             }
 
             var totpOk = await _totpVerifier.VerifyLoginCodeAsync(usuario.Id, totpCode);
             if (!totpOk)
             {
-                // Fallback: aceptar recovery code (formato XXXX-XXXX). El
-                // verifier marca el código como usado al consumirlo.
                 var recoveryOk = await _totpVerifier.UseRecoveryCodeAsync(usuario.Id, totpCode);
                 if (!recoveryOk)
                 {
-                    return new LoginResult
+                    return (usuario, new LoginResult
                     {
                         Success = false,
                         TotpRequired = true,
                         Message = "Código 2FA inválido"
-                    };
+                    });
                 }
             }
         }
 
-        // --- Device session management ---
-        // Cambio 2026-04-28: el binding check ahora aplica aunque el cliente
-        // NO mande fingerprint (caso APK viejo). Antes el if externo bypaseaba
-        // la restriccion completa para esos clientes.
-        DeviceSession? existingSession = null;
-        if (!string.IsNullOrEmpty(deviceFingerprint) || !string.IsNullOrEmpty(deviceId))
-        {
-            // Find existing session by fingerprint or deviceId (reuse same device session)
-            existingSession = await _db.DeviceSessions
-                .IgnoreQueryFilters()
-                .Where(ds => ds.UsuarioId == usuario.Id &&
-                             ds.TenantId == usuario.TenantId &&
-                             ds.EliminadoEn == null &&
-                             (ds.Status == SessionStatus.Active || ds.Status == SessionStatus.LoggedOut))
-                .OrderByDescending(ds => ds.LastActivity)
-                .FirstOrDefaultAsync(ds =>
-                    (!string.IsNullOrEmpty(deviceFingerprint) && ds.DeviceFingerprint == deviceFingerprint) ||
-                    (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
-        }
+        return (usuario, null);
+    }
 
-        // Device binding check — only for non-admin users.
-        // Reportado 2026-04-28: la version anterior tenia 3 escapes:
-        // 1) Solo aplicaba si cliente mandaba fingerprint (el if externo)
-        // 2) Excluia sesiones con fingerprint NULL (legacy)
-        // 3) Permitia status LoggedOut como activo
-        // Ahora la regla es: si EXISTE OTRA sesion Active del mismo usuario
-        // (con o sin fingerprint), bloquear. Esto refuerza el modelo de
-        // negocio "1 vendedor = 1 device".
-        if (!usuario.IsAdminOrAbove && usuario.Rol != RoleNames.Supervisor)
-        {
-            var boundSession = await _db.DeviceSessions
-                .IgnoreQueryFilters()
-                .Where(ds => ds.UsuarioId == usuario.Id &&
-                             ds.TenantId == usuario.TenantId &&
-                             ds.EliminadoEn == null &&
-                             ds.Status == SessionStatus.Active &&
-                             (
-                                 (!string.IsNullOrEmpty(ds.DeviceFingerprint)
-                                   && ds.DeviceFingerprint != deviceFingerprint) ||
-                                 (string.IsNullOrEmpty(ds.DeviceFingerprint)
-                                   && !string.IsNullOrEmpty(ds.DeviceId)
-                                   && (string.IsNullOrEmpty(deviceId) || ds.DeviceId != deviceId)) ||
-                                 (string.IsNullOrEmpty(ds.DeviceFingerprint)
-                                   && string.IsNullOrEmpty(ds.DeviceId))
-                             ))
-                .OrderByDescending(ds => ds.LastActivity)
-                .FirstOrDefaultAsync();
+    private async Task<DeviceSession?> FindExistingSessionForDeviceAsync(int usuarioId, int tenantId, string? deviceFingerprint, string? deviceId)
+    {
+        if (string.IsNullOrEmpty(deviceFingerprint) && string.IsNullOrEmpty(deviceId))
+            return null;
 
-            if (boundSession != null)
+        return await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == usuarioId &&
+                         ds.TenantId == tenantId &&
+                         ds.EliminadoEn == null &&
+                         ds.Status == SessionStatus.Active)
+            .OrderByDescending(ds => ds.LastActivity)
+            .FirstOrDefaultAsync(ds =>
+                (!string.IsNullOrEmpty(deviceFingerprint) && ds.DeviceFingerprint == deviceFingerprint) ||
+                (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
+    }
+
+    private async Task<int> GetMaxConcurrentSessionsAsync(int tenantId)
+    {
+        // Cada Tenant tiene un SubscriptionPlanId; el plan define max sessions.
+        // Fallback a 1 si no hay plan asignado (defensa contra rows huérfanas).
+        var max = await _db.Tenants
+            .AsNoTracking()
+            .Where(t => t.Id == tenantId)
+            .Join(_db.SubscriptionPlans.AsNoTracking(),
+                  t => t.SubscriptionPlanId,
+                  p => p.Id,
+                  (t, p) => p.MaxConcurrentSessions)
+            .FirstOrDefaultAsync();
+
+        return max > 0 ? max : 1;
+    }
+
+    private async Task<int> CountActiveSessionsAsync(int usuarioId, int tenantId, int? excludeSessionId = null)
+    {
+        var query = _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == usuarioId &&
+                         ds.TenantId == tenantId &&
+                         ds.EliminadoEn == null &&
+                         ds.Status == SessionStatus.Active);
+
+        if (excludeSessionId.HasValue)
+            query = query.Where(ds => ds.Id != excludeSessionId.Value);
+
+        return await query.CountAsync();
+    }
+
+    private async Task<List<object>> GetActiveSessionsDtoAsync(int usuarioId, int tenantId, int? currentSessionId = null)
+    {
+        var sessions = await _db.DeviceSessions
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == usuarioId &&
+                         ds.TenantId == tenantId &&
+                         ds.EliminadoEn == null &&
+                         ds.Status == SessionStatus.Active)
+            .OrderByDescending(ds => ds.LastActivity)
+            .Select(ds => new
             {
-                return new LoginResult
-                {
-                    Success = false,
-                    DeviceBound = true,
-                    Message = "Tu cuenta está activa en otro dispositivo. Por seguridad, solo se permite una sesión a la vez."
-                };
-            }
-        }
+                id = ds.Id,
+                deviceName = ds.DeviceName ?? ds.DeviceModel ?? "Dispositivo desconocido",
+                deviceType = ds.DeviceType.ToString(),
+                lastActivity = ds.LastActivity,
+                loggedInAt = ds.LoggedInAt,
+                appVersion = ds.AppVersion ?? "",
+                osVersion = ds.OsVersion ?? "",
+                ipCity = "", // futuro: geo-IP lookup
+                isCurrent = currentSessionId.HasValue && ds.Id == currentSessionId.Value
+            })
+            .ToListAsync();
 
-        // Reuse existing session or create new one
+        return sessions.Cast<object>().ToList();
+    }
+
+    private async Task RevokeSessionInternalAsync(DeviceSession session, string reason)
+    {
+        var now = DateTime.UtcNow;
+        session.Status = SessionStatus.RevokedByUser;
+        session.LoggedOutAt = now;
+        session.LogoutReason = reason;
+        session.ActualizadoEn = now;
+
+        // Revocar refresh tokens vinculados a esta sesión específica.
+        var linkedTokens = await _db.RefreshTokens
+            .Where(rt => rt.DeviceSessionId == session.Id && !rt.IsRevoked)
+            .ToListAsync();
+
+        foreach (var token in linkedTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = now;
+        }
+        // NO llamamos SaveChangesAsync — caller decide cuándo persistir.
+    }
+
+    private async Task<LoginResult> CreateSessionAndTokensAsync(Usuario usuario, DeviceSession? existingSession, string? deviceId, string? deviceFingerprint, string? deviceName)
+    {
+        DeviceSession session;
         if (existingSession != null)
         {
-            existingSession.DeviceFingerprint = deviceFingerprint;
+            existingSession.DeviceFingerprint = deviceFingerprint ?? existingSession.DeviceFingerprint;
             existingSession.DeviceId = deviceId ?? existingSession.DeviceId;
+            existingSession.DeviceName = deviceName ?? existingSession.DeviceName;
             existingSession.LastActivity = DateTime.UtcNow;
             existingSession.Status = SessionStatus.Active;
+            session = existingSession;
         }
-        else if (!string.IsNullOrEmpty(deviceId))
+        else
         {
-            _db.DeviceSessions.Add(new DeviceSession
+            session = new DeviceSession
             {
                 TenantId = usuario.TenantId,
                 UsuarioId = usuario.Id,
-                DeviceId = deviceId,
+                DeviceId = deviceId ?? Guid.NewGuid().ToString(),
                 DeviceFingerprint = deviceFingerprint,
-                DeviceName = null,
+                DeviceName = deviceName,
                 DeviceType = DeviceType.Unknown,
                 Status = SessionStatus.Active,
                 LastActivity = DateTime.UtcNow,
                 LoggedInAt = DateTime.UtcNow
-            });
+            };
+            _db.DeviceSessions.Add(session);
         }
 
+        // SaveChanges para obtener session.Id si es nueva.
         await _db.SaveChangesAsync();
 
-        var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
+        // Crear refresh token VINCULADO a esta DeviceSession específica (1:1)
+        var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id, session.Id);
 
-        var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);
+        // JWT con sid claim para que el middleware pueda validar por-sesión.
+        var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol, sessionId: session.Id);
 
-        // Fetch company logo for the tenant (nullable)
         var companyLogo = await _db.CompanySettings
             .AsNoTracking()
             .Where(cs => cs.TenantId == usuario.TenantId)
@@ -192,7 +322,8 @@ public class MobileAuthService
                     mustChangePassword = usuario.MustChangePassword
                 },
                 token = token,
-                refreshToken = plainRefreshToken
+                refreshToken = plainRefreshToken,
+                sessionId = session.Id
             }
         };
     }
@@ -393,11 +524,24 @@ public class MobileAuthService
         await _db.SaveChangesAsync();
     }
 
-    private async Task<(RefreshToken Entity, string PlainToken)> CreateRefreshTokenAsync(int userId)
+    /// <summary>
+    /// Crea refresh token. Audit 2026-05-18:
+    /// - Si `deviceSessionId` está, revoca SOLO tokens previos de ESA sesión
+    ///   (1:1 nuevo modelo). Otras sesiones del user no se ven afectadas.
+    /// - Si `deviceSessionId` es null (legacy callers como RefreshTokenAsync
+    ///   sin sid), revoca todos los tokens del user (comportamiento viejo).
+    /// </summary>
+    private async Task<(RefreshToken Entity, string PlainToken)> CreateRefreshTokenAsync(int userId, int? deviceSessionId = null)
     {
-        var existingTokens = await _db.RefreshTokens
-            .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
-            .ToListAsync();
+        IQueryable<RefreshToken> existingQuery = _db.RefreshTokens
+            .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
+
+        if (deviceSessionId.HasValue)
+        {
+            existingQuery = existingQuery.Where(rt => rt.DeviceSessionId == deviceSessionId.Value);
+        }
+
+        var existingTokens = await existingQuery.ToListAsync();
 
         foreach (var token in existingTokens)
         {
@@ -410,6 +554,7 @@ public class MobileAuthService
         {
             Token = HashToken(plainToken),
             UserId = userId,
+            DeviceSessionId = deviceSessionId,
             ExpiresAt = DateTime.UtcNow.AddDays(30),
             CreatedAt = DateTime.UtcNow
         };
@@ -418,6 +563,59 @@ public class MobileAuthService
         await _db.SaveChangesAsync();
 
         return (refreshToken, plainToken);
+    }
+
+    /// <summary>
+    /// Audit 2026-05-18: lista sesiones activas del usuario actual. UI mobile
+    /// usa esto en pantalla "Mis sesiones" para gestión por el propio user.
+    /// `currentSessionId` viene del JWT sid claim para marcar cuál es esta.
+    /// </summary>
+    public async Task<List<object>> GetMySessionsAsync(int userId, int tenantId, int? currentSessionId)
+    {
+        return await GetActiveSessionsDtoAsync(userId, tenantId, currentSessionId);
+    }
+
+    /// <summary>
+    /// Audit 2026-05-18: revoca una sesión específica del usuario (self-service).
+    /// Si el sid es el del request actual, equivale a logout. Si es otro,
+    /// es un "logout remoto" desde mobile.
+    /// </summary>
+    public async Task<bool> RevokeMySessionAsync(int userId, int tenantId, int sessionIdToRevoke)
+    {
+        var session = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ds => ds.Id == sessionIdToRevoke &&
+                                       ds.UsuarioId == userId &&
+                                       ds.TenantId == tenantId &&
+                                       ds.EliminadoEn == null);
+
+        if (session == null || session.Status != SessionStatus.Active)
+            return false;
+
+        await RevokeSessionInternalAsync(session, reason: "user_revoke");
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>
+    /// Audit 2026-05-18: logout per-session (no más logout que revoca todos los
+    /// tokens del user). Marca la sesión del `sid` del JWT actual como
+    /// RevokedByUser + revoca solo sus refresh tokens. Otras sessions del
+    /// user en otros devices: intactas.
+    /// </summary>
+    public async Task LogoutSessionAsync(int userId, int sessionId)
+    {
+        var session = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ds => ds.Id == sessionId &&
+                                       ds.UsuarioId == userId &&
+                                       ds.EliminadoEn == null);
+
+        if (session != null && session.Status == SessionStatus.Active)
+        {
+            await RevokeSessionInternalAsync(session, reason: "logout");
+            await _db.SaveChangesAsync();
+        }
     }
 
     private static string HashToken(string token)
