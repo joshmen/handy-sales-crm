@@ -44,16 +44,34 @@ export default function HistorialRutasScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const fetchRutas = useCallback(async () => {
+    setErrorMsg(null);
     try {
       const res = await api.get<{ success: boolean; data: RutaHistoricoItem[]; count: number }>(
         '/api/mobile/rutas/historico',
         { params: { limit: 30 } }
       );
       setRutas(res.data?.data ?? []);
-    } catch {
-      // Silent — empty state se mostrará. Toast/error explícito sería
-      // ruido si vendedor solo está sin red al abrir la pantalla.
+    } catch (err: any) {
+      // Audit 2026-05-18: ya no silenciamos errores. Logueamos para
+      // diagnóstico y mostramos mensaje al user — ocultar el error
+      // hacía aparecer "Sin rutas" cuando en realidad había auth/network
+      // issue, confundiendo al vendedor.
+      const status = err?.response?.status;
+      const code = err?.response?.data?.code;
+      if (__DEV__) console.warn('[historial-rutas] fetch failed', status, code, err?.message);
+
+      if (code === 'SESSION_REVOKED' || code === 'DEVICE_REVOKED') {
+        setErrorMsg('Tu sesión fue cerrada. Inicia sesión de nuevo.');
+      } else if (err?.isNetworkError || !err?.response) {
+        setErrorMsg('Sin conexión. Verifica tu red.');
+      } else if (status && status >= 500) {
+        setErrorMsg('Error del servidor. Intenta más tarde.');
+      } else {
+        setErrorMsg('No se pudo cargar el historial. Intenta de nuevo.');
+      }
       setRutas([]);
     }
     setLoading(false);
@@ -125,7 +143,13 @@ export default function HistorialRutasScreen() {
         removeClippedSubviews
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
         ListEmptyComponent={
-          loading ? null : (
+          loading ? null : errorMsg ? (
+            <EmptyState
+              icon={<Route size={48} color="#dc2626" />}
+              title="Error al cargar"
+              message={errorMsg}
+            />
+          ) : (
             <EmptyState
               icon={<Route size={48} color="#cbd5e1" />}
               title="Sin rutas"
