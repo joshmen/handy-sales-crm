@@ -12,11 +12,20 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isLoggingIn: boolean;
+  /**
+   * Audit 2026-05-18 — soft signal: sesión revocada server-side (otro device
+   * tomó la sesión, admin revoke, expiración). UI muestra banner persistente
+   * "Tu sesión fue cerrada, presiona aquí para iniciar sesión". Mientras
+   * tanto, tokens locales NO se borran y WDB conserva pending data
+   * (pedidos, clientes capturados offline). User decide cuándo re-loguear.
+   */
+  sessionExpired: boolean;
 
   login: (user: AuthUser, token: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   setLoggingIn: (loading: boolean) => void;
+  setSessionExpired: (expired: boolean) => void;
   /**
    * Actualiza campos del usuario logueado (merge parcial). Persiste el
    * snapshot en secureStorage. Usado por `useMe` cuando refresca el perfil
@@ -30,6 +39,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   isLoggingIn: false,
+  sessionExpired: false,
 
   login: async (user, token, refreshToken) => {
     setAccessToken(token);
@@ -47,8 +57,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         mustChangePassword: user.mustChangePassword ?? false,
       })),
     ]);
-    set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false });
+    // Clear sessionExpired flag al hacer login fresh.
+    set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false, sessionExpired: false });
   },
+
+  setSessionExpired: (expired: boolean) => set({ sessionExpired: expired }),
 
   logout: async () => {
     setAccessToken(null);
@@ -141,18 +154,28 @@ authEventEmitter.on('deviceRevoked', () => {
   );
 });
 
-// Audit 2026-05-08: middleware backend dispara DEVICE_BOUND (403) cuando
-// fingerprint del request no matchea ninguna sesión activa pero user
-// tiene otras (caso reinstalo, OS update, sesión huérfana). Preservamos
-// el email del user para que la pantalla de login lo pre-rellene y
-// muestre hint "Tu sesión está activa en otro dispositivo. Ingresa tu
-// contraseña para tomarla aquí". User pone password → tap login → backend
-// devuelve DEVICE_BOUND → modal takeover normal → /force-login.
+// Audit 2026-05-18 — soft session revoked. Backend devolvió 401
+// SESSION_REVOKED en algún endpoint (sesión cerrada en otro device,
+// admin revoke, refresh agotado). NO hacer auto-logout que limpie
+// tokens — eso destruye pending data path en WDB y confunde al user.
+// Solo marcar state.sessionExpired = true; UI muestra banner persistente
+// con tap → login screen.
+//
+// Beneficios vs viejo flow (deviceTakeoverRequired/forceLogout):
+// 1. WDB local intacto — pedidos/clientes pendientes no se pierden
+// 2. User decide cuándo re-loguear (no forzado)
+// 3. No race conditions durante mutations en flight
+// 4. Si vuelve la sesión válida (race con otra app session activa),
+//    el siguiente request natural sucede sin interrupciones
+authEventEmitter.on('sessionRevoked', () => {
+  useAuthStore.getState().setSessionExpired(true);
+});
+
+// Backward-compat listeners: handlers viejos siguen disparando si el bundle
+// recibe eventos legacy. Mismo comportamiento soft (no clear tokens).
+authEventEmitter.on('forceLogout', () => {
+  useAuthStore.getState().setSessionExpired(true);
+});
 authEventEmitter.on('deviceTakeoverRequired', () => {
-  const state = useAuthStore.getState();
-  const email = state.user?.email;
-  if (email) {
-    secureStorage.set(STORAGE_KEYS.PENDING_TAKEOVER_EMAIL, email).catch(() => {});
-  }
-  state.logout();
+  useAuthStore.getState().setSessionExpired(true);
 });

@@ -32,5 +32,15 @@ public class RefreshToken
     [Column("SessionVersionAtCreation")]
     public int? SessionVersionAtCreation { get; set; }
 
+    /// <summary>
+    /// FK a DeviceSession 1:1 — cada refresh token pertenece a UNA session.
+    /// Permite que logout en device A revoque solo SUS tokens (no del user
+    /// completo). Nullable durante migration window; NOT NULL después de
+    /// backfill (Phase 3 del rediseño 2026-05-18).
+    /// </summary>
+    [Column("DeviceSessionId")]
+    public int? DeviceSessionId { get; set; }
+
     public Usuario Usuario { get; set; } = null!;
+    public DeviceSession? DeviceSession { get; set; }
 }

@@ -212,6 +212,15 @@ public class HandySuitesDbContext : DbContext
                   .HasPrincipalKey(u => u.Id);
             // Matching query filter with Usuario (suppresses EF Core warning)
             entity.HasQueryFilter(rt => rt.Usuario!.EliminadoEn == null);
+
+            // Audit 2026-05-18: vinculo RefreshToken 1:1 con DeviceSession.
+            // Permite revoke per-device sin afectar otras sesiones del user.
+            // Nullable durante migration window; NOT NULL después de backfill.
+            entity.HasOne(rt => rt.DeviceSession)
+                  .WithMany()
+                  .HasForeignKey(rt => rt.DeviceSessionId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(rt => rt.DeviceSessionId);
         });
 
         // Configure Producto relationships explicitly

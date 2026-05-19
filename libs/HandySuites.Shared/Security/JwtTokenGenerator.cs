@@ -21,10 +21,16 @@ public class JwtTokenGenerator
         return GenerateTokenWithRoles(userId, tenantId, "VENDEDOR", sessionVersion);
     }
 
-    public string GenerateTokenWithRoles(string userId, int tenantId, string role, int sessionVersion = 1)
+    public string GenerateTokenWithRoles(string userId, int tenantId, string role, int sessionVersion = 1, int? sessionId = null)
     {
         // Single source of truth: claim "role" (string).
         // Los claims booleanos legacy "es_admin" / "es_super_admin" se eliminaron en abril 2026.
+        //
+        // Audit 2026-05-18 — sid claim (DeviceSession.Id):
+        // Permite al middleware validar el token contra una DeviceSession
+        // específica para per-device revocation, en lugar de validar por
+        // fingerprint match (frágil). Solo se incluye si sessionId != null;
+        // tokens de impersonación / web no llevan sid.
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId),
@@ -33,6 +39,11 @@ public class JwtTokenGenerator
             new Claim("role", role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (sessionId.HasValue)
+        {
+            claims.Add(new Claim("sid", sessionId.Value.ToString()));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

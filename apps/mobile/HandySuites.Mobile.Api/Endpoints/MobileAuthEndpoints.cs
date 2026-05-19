@@ -37,8 +37,6 @@ public static class MobileAuthEndpoints
             {
                 if (result.TotpRequired)
                 {
-                    // 401 con code=TOTP_REQUIRED → cliente muestra UI para
-                    // ingresar código y reintenta el mismo POST con totpCode.
                     return Results.Json(new
                     {
                         success = false,
@@ -47,6 +45,25 @@ public static class MobileAuthEndpoints
                     }, statusCode: 401);
                 }
 
+                // Audit 2026-05-18: nuevo flow Netflix-style. Cuando user
+                // alcanza el límite del plan, devolver 200 con código
+                // SESSION_LIMIT_REACHED + lista de sesiones activas. UI
+                // muestra picker; user elige una para revocar via
+                // /revoke-and-login.
+                if (result.SessionLimitReached)
+                {
+                    return Results.Ok(new
+                    {
+                        success = false,
+                        code = "SESSION_LIMIT_REACHED",
+                        message = result.Message,
+                        data = result.Data
+                    });
+                }
+
+                // Legacy DeviceBound (ForceLoginAsync sigue lo usando para
+                // back-compat con clients pre-OTA). Nuevo LoginAsync ya no
+                // lo devuelve.
                 if (result.DeviceBound)
                 {
                     return Results.Json(new
@@ -78,10 +95,109 @@ public static class MobileAuthEndpoints
         })
         .RequireRateLimiting("mobile-auth")
         .WithSummary("Login de vendedor móvil")
-        .WithDescription("Autentica un vendedor y devuelve tokens JWT. Si el usuario tiene 2FA, primero retorna 401 + code=TOTP_REQUIRED; el cliente repite el POST con totpCode. Incluir headers X-Device-Id y X-Device-Fingerprint para device binding.")
+        .WithDescription("Autentica un vendedor y devuelve tokens JWT. Si tiene 2FA → 401 TOTP_REQUIRED. Si alcanzó límite de sesiones del plan → 200 SESSION_LIMIT_REACHED con lista de sesiones activas (UI debe mostrar picker).")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden);
+
+        // ──────────────────────────────────────────────────────────
+        // POST /revoke-and-login (audit 2026-05-18)
+        // Atomic: revoca sesión elegida en picker + crea nueva + emite tokens.
+        // Body: { email, password, totpCode?, revokeSessionId }
+        // ──────────────────────────────────────────────────────────
+        group.MapPost("/revoke-and-login", async (
+            RevokeAndLoginDto dto,
+            IValidator<UsuarioLoginDto> loginValidator,
+            [FromServices] MobileAuthService auth,
+            HttpContext context) =>
+        {
+            // Reuso validator de login para email + password.
+            var loginDto = new UsuarioLoginDto { email = dto.email, password = dto.password, totpCode = dto.totpCode };
+            var validation = await loginValidator.ValidateAsync(loginDto);
+            if (!validation.IsValid)
+                return Results.BadRequest(new { success = false, errors = validation.ToDictionary() });
+
+            if (dto.revokeSessionId <= 0)
+                return Results.BadRequest(new { success = false, message = "revokeSessionId es requerido" });
+
+            var deviceId = context.Request.Headers["X-Device-Id"].FirstOrDefault();
+            var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
+
+            var result = await auth.RevokeAndLoginAsync(
+                dto.email, dto.password, dto.revokeSessionId,
+                deviceId, deviceFingerprint, dto.totpCode);
+
+            if (!result.Success)
+            {
+                if (result.TotpRequired)
+                {
+                    return Results.Json(new { success = false, code = "TOTP_REQUIRED", message = result.Message }, statusCode: 401);
+                }
+                if (!string.IsNullOrEmpty(result.Message))
+                {
+                    return Results.Json(new { success = false, message = result.Message }, statusCode: 401);
+                }
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(new { success = true, data = result.Data });
+        })
+        .RequireRateLimiting("mobile-auth")
+        .WithSummary("Revoke other session + login (picker UX)")
+        .WithDescription("Usado tras SESSION_LIMIT_REACHED: user eligió una sesión en el picker UI. Revoca esa sesión + crea nueva en este device + emite tokens. Atomic.")
+        .Produces<object>(StatusCodes.Status200OK);
+
+        // ──────────────────────────────────────────────────────────
+        // GET /my-sessions (audit 2026-05-18)
+        // User ve sus propias sesiones activas. UI mobile "Mis sesiones".
+        // ──────────────────────────────────────────────────────────
+        group.MapGet("/my-sessions", async (
+            [FromServices] MobileAuthService auth,
+            HttpContext context) =>
+        {
+            var userIdStr = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            ?? context.User.FindFirstValue("sub");
+            var tenantIdStr = context.User.FindFirstValue("tenant_id");
+            var sidStr = context.User.FindFirstValue("sid");
+
+            if (!int.TryParse(userIdStr, out var userId) || !int.TryParse(tenantIdStr, out var tenantId))
+                return Results.Unauthorized();
+
+            int? currentSid = int.TryParse(sidStr, out var s) ? s : (int?)null;
+
+            var sessions = await auth.GetMySessionsAsync(userId, tenantId, currentSid);
+            return Results.Ok(new { success = true, data = sessions });
+        })
+        .RequireAuthorization()
+        .WithSummary("Mis sesiones activas")
+        .WithDescription("Devuelve las sesiones activas del user actual con flag isCurrent para identificar la del JWT actual.");
+
+        // ──────────────────────────────────────────────────────────
+        // POST /revoke-session/{sid} (audit 2026-05-18)
+        // User revoca una de sus propias sesiones (self-service).
+        // Si revoca la actual, equivale a logout.
+        // ──────────────────────────────────────────────────────────
+        group.MapPost("/revoke-session/{sessionId:int}", async (
+            int sessionId,
+            [FromServices] MobileAuthService auth,
+            HttpContext context) =>
+        {
+            var userIdStr = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            ?? context.User.FindFirstValue("sub");
+            var tenantIdStr = context.User.FindFirstValue("tenant_id");
+
+            if (!int.TryParse(userIdStr, out var userId) || !int.TryParse(tenantIdStr, out var tenantId))
+                return Results.Unauthorized();
+
+            var ok = await auth.RevokeMySessionAsync(userId, tenantId, sessionId);
+            if (!ok)
+                return Results.NotFound(new { success = false, message = "Sesión no encontrada o ya inactiva" });
+
+            return Results.Ok(new { success = true, message = "Sesión revocada" });
+        })
+        .RequireAuthorization()
+        .WithSummary("Revocar mi sesión específica")
+        .WithDescription("User revoca una de sus propias sesiones (self-service). Si revoca la actual, su próximo request devolverá 401 SESSION_REVOKED.");
 
         // Force-login: ignora DEVICE_BOUND y revoca otras sesiones activas.
         // Cliente lo invoca tras confirmar en modal "¿Desconectar otro dispositivo?".
@@ -234,66 +350,75 @@ public static class MobileAuthEndpoints
 
         group.MapPost("/logout", async (
             LogoutRequest? request,
+            [FromServices] MobileAuthService auth,
             [FromServices] HandySuitesDbContext db,
             HttpContext context) =>
         {
             var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                            ?? context.User.FindFirst("sub")?.Value;
+            var sidClaim = context.User.FindFirst("sid")?.Value;
 
             if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var userId))
             {
-                // Revoke refresh token if provided (tokens are stored as SHA-256 hashes)
-                if (!string.IsNullOrEmpty(request?.RefreshToken))
+                // Audit 2026-05-18: nuevo flow per-session. Si el JWT tiene
+                // `sid`, revocamos SOLO esa sesión + sus refresh tokens.
+                // Otras sesiones del user en otros devices: intactas
+                // (key feature del modelo Netflix-style).
+                if (!string.IsNullOrEmpty(sidClaim) && int.TryParse(sidClaim, out var sessionId))
                 {
-                    var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(request.RefreshToken));
-                    var tokenHash = Convert.ToBase64String(hash);
-                    var token = await db.RefreshTokens
-                        .FirstOrDefaultAsync(t => t.Token == tokenHash && !t.IsRevoked);
-                    if (token != null)
-                    {
-                        token.IsRevoked = true;
-                        token.RevokedAt = DateTime.UtcNow;
-                    }
+                    await auth.LogoutSessionAsync(userId, sessionId);
                 }
                 else
                 {
-                    // SECURITY (audit MED): si el cliente NO mandó refreshToken
-                    // (caso default — el mobile no siempre lo incluye), revocamos
-                    // TODOS los refresh tokens activos de este user. Antes el
-                    // logout sin token era no-op y el token seguía válido hasta
-                    // expirar (default 30 días). Ahora logout = sesión muerta.
-                    var activeTokens = await db.RefreshTokens
-                        .Where(t => t.UserId == userId && !t.IsRevoked && t.ExpiresAt > DateTime.UtcNow)
-                        .ToListAsync();
-                    foreach (var t in activeTokens)
+                    // Fallback legacy (JWT sin sid, pre-rediseño): comportamiento
+                    // anterior — revocar todos los refresh tokens del user +
+                    // sesión por fingerprint si está. Backward-compat window.
+                    if (!string.IsNullOrEmpty(request?.RefreshToken))
                     {
-                        t.IsRevoked = true;
-                        t.RevokedAt = DateTime.UtcNow;
+                        var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(request.RefreshToken));
+                        var tokenHash = Convert.ToBase64String(hash);
+                        var token = await db.RefreshTokens
+                            .FirstOrDefaultAsync(t => t.Token == tokenHash && !t.IsRevoked);
+                        if (token != null)
+                        {
+                            token.IsRevoked = true;
+                            token.RevokedAt = DateTime.UtcNow;
+                        }
                     }
-                }
-
-                // Update device session status if fingerprint provided
-                var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(deviceFingerprint))
-                {
-                    var session = await db.DeviceSessions
-                        .IgnoreQueryFilters()
-                        .Where(ds => ds.UsuarioId == userId
-                                  && ds.DeviceFingerprint == deviceFingerprint
-                                  && ds.EliminadoEn == null
-                                  && ds.Status == SessionStatus.Active)
-                        .OrderByDescending(ds => ds.LastActivity)
-                        .FirstOrDefaultAsync();
-
-                    if (session != null)
+                    else
                     {
-                        session.Status = SessionStatus.LoggedOut;
-                        session.LoggedOutAt = DateTime.UtcNow;
-                        session.LogoutReason = "user_logout";
+                        var activeTokens = await db.RefreshTokens
+                            .Where(t => t.UserId == userId && !t.IsRevoked && t.ExpiresAt > DateTime.UtcNow)
+                            .ToListAsync();
+                        foreach (var t in activeTokens)
+                        {
+                            t.IsRevoked = true;
+                            t.RevokedAt = DateTime.UtcNow;
+                        }
                     }
-                }
 
-                await db.SaveChangesAsync();
+                    var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(deviceFingerprint))
+                    {
+                        var session = await db.DeviceSessions
+                            .IgnoreQueryFilters()
+                            .Where(ds => ds.UsuarioId == userId
+                                      && ds.DeviceFingerprint == deviceFingerprint
+                                      && ds.EliminadoEn == null
+                                      && ds.Status == SessionStatus.Active)
+                            .OrderByDescending(ds => ds.LastActivity)
+                            .FirstOrDefaultAsync();
+
+                        if (session != null)
+                        {
+                            session.Status = SessionStatus.LoggedOut;
+                            session.LoggedOutAt = DateTime.UtcNow;
+                            session.LogoutReason = "user_logout_legacy";
+                        }
+                    }
+
+                    await db.SaveChangesAsync();
+                }
             }
 
             return Results.Ok(new { success = true, message = "Sesión cerrada exitosamente" });
@@ -367,3 +492,14 @@ public class LogoutRequest
 
 /// <summary>Payload para POST /api/mobile/auth/change-password.</summary>
 public record ChangePasswordDto(string OldPassword, string NewPassword);
+
+/// <summary>Audit 2026-05-18 — payload para POST /api/mobile/auth/revoke-and-login.
+/// User llegó aquí desde el picker UI tras SESSION_LIMIT_REACHED en login normal.
+/// revokeSessionId = id de la sesión que user eligió cerrar.</summary>
+public class RevokeAndLoginDto
+{
+    public string email { get; set; } = string.Empty;
+    public string password { get; set; } = string.Empty;
+    public string? totpCode { get; set; }
+    public int revokeSessionId { get; set; }
+}
