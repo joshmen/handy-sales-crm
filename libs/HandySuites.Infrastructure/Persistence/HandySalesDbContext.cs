@@ -221,6 +221,18 @@ public class HandySuitesDbContext : DbContext
                   .HasForeignKey(rt => rt.DeviceSessionId)
                   .OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(rt => rt.DeviceSessionId);
+
+            // Audit 2026-05-19: optimistic concurrency vía xmin (system column PG).
+            // Race fix: dos /refresh paralelas con el mismo source token ahora
+            // serializan a nivel DB — solo una UPDATE pasa, la otra recibe
+            // DbUpdateConcurrencyException (capturada en RefreshTokenAsync → null).
+            // Sin esto: ambas creaban tokens nuevos, uno quedaba huérfano y el
+            // device terminaba con un token revocado (incident vendedor@jeyma 2026-05-19).
+            // Patrón moderno (UseXminAsConcurrencyToken obsoleto): shadow property.
+            entity.Property<uint>("xmin")
+                  .HasColumnType("xid")
+                  .ValueGeneratedOnAddOrUpdate()
+                  .IsConcurrencyToken();
         });
 
         // Configure Producto relationships explicitly

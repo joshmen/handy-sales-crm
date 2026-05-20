@@ -333,7 +333,8 @@ public class MobileAuthService
         if (string.IsNullOrEmpty(refreshToken))
             return null;
 
-        // Hash incoming token to compare with stored hash
+        // Hash incoming token to compare with stored hash. AsTracking() es
+        // necesario para que el concurrency token (xmin) se compare en el UPDATE.
         var tokenHash = HashToken(refreshToken);
         var tokenEntity = await _db.RefreshTokens
             .Include(rt => rt.Usuario)
@@ -373,12 +374,32 @@ public class MobileAuthService
 
         var newAccessToken = _jwt.GenerateTokenWithRoles(
             tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId,
-            tokenEntity.Usuario.Rol);
+            tokenEntity.Usuario.Rol,
+            sessionId: tokenEntity.DeviceSessionId);
 
-        var (newTokenEntity, newPlainToken) = await CreateRefreshTokenAsync(tokenEntity.UserId);
-        tokenEntity.ReplacedByToken = newTokenEntity.Token;
-
-        await _db.SaveChangesAsync();
+        // Audit 2026-05-19: pasar DeviceSessionId preserva el linkage 1:1 que
+        // armamos en el redesign. Sin esto, los refresh tokens post-login
+        // quedaban con sid=NULL (visible en datos prod 1026/1027/1029) y
+        // CreateRefreshTokenAsync revocaba TODOS los tokens del user, no solo
+        // los de esta sesión. También: en CreateRefreshTokenAsync el filtro
+        // .Where(rt => rt.DeviceSessionId == sid) reduce el alcance del UPDATE
+        // y minimiza la ventana de race.
+        (RefreshToken newTokenEntity, string newPlainToken) newToken;
+        try
+        {
+            newToken = await CreateRefreshTokenAsync(tokenEntity.UserId, tokenEntity.DeviceSessionId);
+            tokenEntity.ReplacedByToken = newToken.newTokenEntity.Token;
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otra request paralela ya rotó este mismo refresh token (xmin mismatch).
+            // El cliente debe reintentar con el token nuevo que la otra call ya
+            // emitió. Devolvemos null → endpoint /refresh responde 401 → interceptor
+            // del cliente reintenta (con el nuevo token que ya guardó). Esto evita
+            // el orphan token problem que vimos en prod (vendedor@jeyma 2026-05-19).
+            return null;
+        }
 
         // Fetch company logo for the tenant (nullable)
         var companyLogo = await _db.CompanySettings
@@ -400,7 +421,7 @@ public class MobileAuthService
                 mustChangePassword = tokenEntity.Usuario.MustChangePassword
             },
             token = newAccessToken,
-            refreshToken = newPlainToken
+            refreshToken = newToken.newPlainToken
         };
     }
 

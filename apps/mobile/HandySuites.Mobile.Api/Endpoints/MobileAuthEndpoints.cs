@@ -342,7 +342,13 @@ public static class MobileAuthEndpoints
 
             return Results.Ok(new { success = true, data = result });
         })
-        .RequireRateLimiting("mobile-auth")
+        // Audit 2026-05-19: removido RequireRateLimiting("mobile-auth").
+        // Esa policy es 5/min POR IP — causaba 429 a oficinas con varios
+        // vendedores compartiendo NAT (vendedor@jeyma incident). Refresh es
+        // flow OAuth normal (no brute-force target — el RFC 2.1 lo trata
+        // como tal), basta el global limiter de 120/min/IP. Si quisiéramos
+        // per-user, necesitaríamos extraer userId del refresh token antes de
+        // que el middleware corra, lo cual no es trivial — mejor sin policy.
         .WithSummary("Refrescar token")
         .WithDescription("Obtiene un nuevo access token usando el refresh token.")
         .Produces<object>(StatusCodes.Status200OK)
