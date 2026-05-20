@@ -16,30 +16,29 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
-// Audit 2026-05-20 — Stub css-tree y mdn-data en bundle dev.
+// Audit 2026-05-20 — Stub css-tree y mdn-data SOLO con env var explícito.
 //
-// Causa: react-native-svg/css/css.js importa `css-tree` para "SVG style
-// element inlining" (parsea <style> dentro de <svg>). Esa feature no la
-// usamos — solo usamos <Svg> con props nativos. Pero el require eager
-// jala el bundle de mdn-data (~10K líneas CSS data) que Hermes dev parser
-// no logra parsear (errores cambiantes "'}' expected", "non-terminated
-// string", etc. dentro del módulo de datos CSS).
+// HOTFIX incident 2026-05-20: este stub se aplicaba a TODOS los bundles
+// (incluyendo EAS Update production), causando crash en startup en
+// vendedores que descargaron el bundle nuevo ("error de conexión" porque
+// react-native-svg fallaba al cargar css-tree stubbeado). Rollback
+// inmediato a group 5b819849 + ahora detrás de env var explícito.
 //
-// Producción (EAS Build con bytecode pre-compilado) NO se ve afectada
-// porque Hermes solo parsea una vez al build, no en runtime.
-//
-// Stub: devolvemos un módulo vacío en lugar de css-tree/mdn-data. Si
-// algún día usamos SVG con <style> embebido el código fallará en runtime
-// (csstree.parse() = undefined) y será obvio. Sin esto, dev mode no carga.
-const emptyStub = path.resolve(__dirname, 'metro-stubs/empty-module.js');
-const previousResolver = config.resolver.resolveRequest;
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === 'css-tree' || moduleName === 'mdn-data' ||
-      moduleName.startsWith('css-tree/') || moduleName.startsWith('mdn-data/')) {
-    return { type: 'sourceFile', filePath: emptyStub };
-  }
-  if (previousResolver) return previousResolver(context, moduleName, platform);
-  return context.resolveRequest(context, moduleName, platform);
-};
+// USO en dev local cuando Expo Go dev parser Hermes falla con mdn-data:
+//   STUB_CSS_TREE=1 npx expo start --go
+// EAS Update / EAS Build NUNCA setean esta var → siempre incluyen
+// css-tree y mdn-data como deps reales en el bundle production.
+if (process.env.STUB_CSS_TREE === '1') {
+  const emptyStub = path.resolve(__dirname, 'metro-stubs/empty-module.js');
+  const previousResolver = config.resolver.resolveRequest;
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    if (moduleName === 'css-tree' || moduleName === 'mdn-data' ||
+        moduleName.startsWith('css-tree/') || moduleName.startsWith('mdn-data/')) {
+      return { type: 'sourceFile', filePath: emptyStub };
+    }
+    if (previousResolver) return previousResolver(context, moduleName, platform);
+    return context.resolveRequest(context, moduleName, platform);
+  };
+}
 
 module.exports = withNativeWind(config, { input: './global.css' });
