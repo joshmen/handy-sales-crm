@@ -228,11 +228,18 @@ public class HandySuitesDbContext : DbContext
             // DbUpdateConcurrencyException (capturada en RefreshTokenAsync → null).
             // Sin esto: ambas creaban tokens nuevos, uno quedaba huérfano y el
             // device terminaba con un token revocado (incident vendedor@jeyma 2026-05-19).
-            // Patrón moderno (UseXminAsConcurrencyToken obsoleto): shadow property.
-            entity.Property<uint>("xmin")
-                  .HasColumnType("xid")
-                  .ValueGeneratedOnAddOrUpdate()
-                  .IsConcurrencyToken();
+            //
+            // Solo se aplica cuando el provider es Npgsql (PostgreSQL). En tests
+            // que corren contra SQLite el xmin no existe como columna sistema y
+            // EF intentaría crearlo como NOT NULL plain → INSERT fails con
+            // "NOT NULL constraint failed: RefreshTokens.xmin". Skip en non-PG.
+            if (Database.IsNpgsql())
+            {
+                entity.Property<uint>("xmin")
+                      .HasColumnType("xid")
+                      .ValueGeneratedOnAddOrUpdate()
+                      .IsConcurrencyToken();
+            }
         });
 
         // Configure Producto relationships explicitly
