@@ -245,17 +245,12 @@ apiInstance.interceptors.response.use(
       if (!originalRequest._retry && !isAuthEndpoint) {
         originalRequest._retry = true;
 
-        if (!isRefreshing) {
-          isRefreshing = true;
-          refreshPromise = tryRefreshToken();
-          refreshPromise.finally(() => {
-            isRefreshing = false;
-            refreshPromise = null;
-          });
-        }
-
+        // Coalesce: si useSessionRefresh u otro 401 ya disparó refresh,
+        // reusamos el mismo promise. Sin esto teníamos 2 fuentes paralelas
+        // (interceptor + hook) hitting /refresh server-side al mismo tiempo
+        // → orphan tokens (incident vendedor@jeyma 2026-05-19).
         try {
-          const newToken = await refreshPromise;
+          const newToken = await coalesceRefresh();
           if (newToken) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             processQueue(newToken);
@@ -315,6 +310,32 @@ async function tryRefreshToken(): Promise<string | null> {
   }
 
   return null;
+}
+
+/**
+ * Audit 2026-05-19: coalesce de refresh calls cross-source.
+ *
+ * Antes: `useSessionRefresh` hook hacía raw `axios.post('/refresh')` paralelo
+ * al interceptor, causando dos /refresh server-side simultáneas que producían
+ * orphan tokens (incident vendedor@jeyma 2026-05-19). El backend ahora atrapa
+ * el race con DbUpdateConcurrencyException, pero igual queremos coalescer
+ * client-side para ahorrar request + ancho de banda.
+ *
+ * Esta función reusa el mismo `refreshPromise` que el interceptor cuando hay
+ * un refresh in-flight; si no, lo dispara. Result: 1 sola POST a /refresh
+ * sin importar cuántos callers paralelos (hook + interceptor + N requests).
+ */
+export async function coalesceRefresh(): Promise<string | null> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+  isRefreshing = true;
+  refreshPromise = tryRefreshToken();
+  refreshPromise.finally(() => {
+    isRefreshing = false;
+    refreshPromise = null;
+  });
+  return refreshPromise;
 }
 
 function processQueue(token: string) {

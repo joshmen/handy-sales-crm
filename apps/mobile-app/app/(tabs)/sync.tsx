@@ -21,6 +21,36 @@ function formatLastSync(timestamp: number | null, dateTimeFmt: (d: Date) => stri
   return dateTimeFmt(new Date(timestamp));
 }
 
+/**
+ * Audit 2026-05-19: vendedor@jeyma vio "Network Error" cuando en realidad
+ * el device estaba conectado (banner verde "Conectado") pero el refresh
+ * de tokens había fallado por race condition server-side. El mensaje
+ * técnico no era accionable. Esta función traduce:
+ * - "Network Error" + online → "Reintentando..." (probable race/timeout
+ *   transient; el SessionExpiredBanner se encarga si es auth)
+ * - "Network Error" + offline → mostrar offline-genuine (raro porque
+ *   ya tenemos OfflineBanner pero defensivo)
+ * - 401/sesión → mensaje claro de re-login (también cubierto por
+ *   SessionExpiredBanner pero útil aquí también)
+ * - Otros → mensaje original
+ */
+function translateSyncError(rawError: string, isOnline: boolean): string {
+  const msg = rawError.toLowerCase();
+  if (msg.includes('network error') && isOnline) {
+    return 'Reintentando conexión con el servidor...';
+  }
+  if (msg.includes('network error') || msg.includes('timeout')) {
+    return 'Sin conexión estable. Reintentaremos cuando haya señal.';
+  }
+  if (msg.includes('401') || msg.includes('session_revoked') || msg.includes('unauthorized')) {
+    return 'Tu sesión necesita renovarse. Toca "Iniciar sesión" en el banner rojo.';
+  }
+  if (msg.includes('500') || msg.includes('502') || msg.includes('503')) {
+    return 'Servidor temporalmente no disponible. Reintenta en un momento.';
+  }
+  return rawError;
+}
+
 export default function SyncScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -64,11 +94,13 @@ export default function SyncScreen() {
         </View>
       </Animated.View>
 
-      {/* Error banner */}
+      {/* Error banner — audit 2026-05-19: traducir mensajes técnicos
+          (axios "Network Error" / "Request failed status 401") a algo
+          accionable para el vendedor en campo. */}
       {status === 'error' && error && (
         <View style={styles.errorBanner}>
           <AlertTriangle size={18} color="#dc2626" />
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{translateSyncError(error, isOnline)}</Text>
         </View>
       )}
 

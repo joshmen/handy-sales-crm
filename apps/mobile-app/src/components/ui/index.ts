@@ -7,5 +7,6 @@ export { EmptyState } from './EmptyState';
 export { ConfirmModal } from './ConfirmModal';
 export { BottomSheet } from './BottomSheet';
 export { OfflineBanner } from './OfflineBanner';
+export { SessionExpiredBanner } from './SessionExpiredBanner';
 export { UserAvatar } from './UserAvatar';
 export type { UserAvatarProps } from './UserAvatar';
