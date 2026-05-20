@@ -9,6 +9,7 @@ import { usePendingCount } from '@/hooks';
 import { useAuthStore } from '@/stores';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { SessionExpiredBanner } from '@/components/ui/SessionExpiredBanner';
 import { COLORS } from '@/theme/colors';
 
 export default function TabsLayout() {
@@ -137,6 +138,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="facturas" options={{ href: null }} />
     </Tabs>
     <OfflineBanner />
+    <SessionExpiredBanner />
     </View>
     </ErrorBoundary>
   );
