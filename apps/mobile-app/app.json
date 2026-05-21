@@ -2,7 +2,7 @@
   "expo": {
     "name": "Handy Suites",
     "slug": "handy-suites",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "handysuites",
@@ -11,7 +11,7 @@
     "runtimeVersion": { "policy": "appVersion" },
     "updates": {
       "url": "https://u.expo.dev/e6259b5a-35d9-4b87-b700-5520b113fa68",
-      "enabled": true,
+      "enabled": false,
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD"
     },
@@ -29,7 +29,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2563eb"
       },
-      "package": "com.handysuites.app"
+      "package": "com.handysuites.app",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
