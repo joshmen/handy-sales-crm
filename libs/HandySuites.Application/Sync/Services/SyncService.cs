@@ -578,6 +578,10 @@ public class SyncService
                             PrecioUnitario = rc.PrecioUnitario,
                             Activo = rc.Activo,
                             CreadoEn = rc.CreadoEn,
+                            // Audit 2026-05-21: incluir progreso consumido para que el
+                            // mobile pueda mostrar barra "Productos (vendidos + entregados)".
+                            CantidadVendida = rc.CantidadVendida,
+                            CantidadEntregada = rc.CantidadEntregada,
                         }).ToList();
                     }
                 }

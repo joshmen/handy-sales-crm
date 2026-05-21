@@ -437,6 +437,13 @@ public class SyncRutaCargaDto
     public double PrecioUnitario { get; set; }
     public bool Activo { get; set; } = true;
     public DateTime? CreadoEn { get; set; }
+    // Audit 2026-05-21: estos 2 campos son los CONSUMIDOS (no la capacidad).
+    // Faltaban en el pull sync DTO desde la migration 20260506062036, asi que
+    // aunque el backend incrementaba CantidadVendida/CantidadEntregada en
+    // RutasCarga, el mobile nunca los recibia y la barra "Productos
+    // (vendidos + entregados)" siempre se quedaba en 0 (incident vendedor@jeyma).
+    public int CantidadVendida { get; set; }
+    public int CantidadEntregada { get; set; }
 }
 
 public class SyncRutaDetalleDto
