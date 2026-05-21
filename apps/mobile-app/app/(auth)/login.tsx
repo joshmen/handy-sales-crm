@@ -20,6 +20,15 @@ import { HandyLogo } from '@/components/shared/HandyLogo';
 import { COLORS } from '@/theme/colors';
 import { secureStorage } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/utils/constants';
+import * as Application from 'expo-application';
+
+// Audit 2026-05-20: pantalla de login muestra version del APK debajo del
+// subtitle. Necesario porque el user dejo de usar OTA channel (EAS update)
+// y ahora distribuye APKs directamente — vendedor necesita ver que version
+// tiene instalada para reportar a soporte si hay bugs.
+const APP_VERSION = Application.nativeApplicationVersion || '1.0.0';
+const APP_BUILD = Application.nativeBuildVersion || '';
+const ENV_LABEL = process.env.EXPO_PUBLIC_ENV === 'production' ? '' : (process.env.EXPO_PUBLIC_ENV || '');
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -200,6 +209,9 @@ export default function LoginScreen() {
             <Text style={styles.title}>Handy Suites®</Text>
             <Text style={styles.subtitle}>
               Gestiona tus ventas desde cualquier lugar
+            </Text>
+            <Text style={styles.versionText}>
+              Versión {APP_VERSION}{APP_BUILD ? ` (${APP_BUILD})` : ''}{ENV_LABEL ? ` · ${ENV_LABEL}` : ''}
             </Text>
           </View>
           <Text style={styles.formTitle}>{totpRequired ? 'Verificación 2FA' : 'Iniciar Sesión'}</Text>
@@ -388,6 +400,12 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginBottom: 16,
     lineHeight: 18,
+  },
+  versionText: {
+    fontSize: 11,
+    color: '#94a3b8',
+    textAlign: 'center',
+    marginTop: 6,
   },
   takeoverHint: {
     backgroundColor: '#fef3c7',
