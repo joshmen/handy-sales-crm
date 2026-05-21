@@ -43,12 +43,11 @@
     },
     "production-apk": {
       "distribution": "internal",
-      "channel": "production",
       "android": {
         "buildType": "apk"
       },
       "env": {
-        "_comment": "production-apk apunta a PROD APIs pero genera APK para distribucion directa al cliente (sin pasar por Play Store). Mismas URLs que production.",
+        "_comment": "production-apk apunta a PROD APIs pero genera APK para distribucion directa al cliente (sin pasar por Play Store). Mismas URLs que production. Audit 2026-05-20: removido `channel` para que la APK NO se asocie con ningun canal EAS Update (combinado con app.json updates.enabled=false hace que la APK sea totalmente auto-contenida).",
         "EXPO_PUBLIC_API_URL": "https://mobile-api-production-f934.up.railway.app",
         "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
         "EXPO_PUBLIC_ENV": "production"
