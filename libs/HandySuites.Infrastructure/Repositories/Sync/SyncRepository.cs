@@ -527,6 +527,65 @@ public class SyncRepository : ISyncRepository
                     }
                 }
 
+                // BR-RUTA-CARGA (audit 2026-05-21, incident vendedor@jeyma):
+                // Replicar incremento de RutasCarga que hacen los endpoints directos
+                // /api/mobile/ventas-directas (CantidadVendida) y
+                // /api/mobile/pedidos/{id}/entregar (CantidadEntregada). El offline-first
+                // del mobile pushea via /sync/push → UpsertPedidoAsync, que ANTES de este
+                // fix saltaba este incremento. Resultado: barra "Productos (vendidos +
+                // entregados)" en pantalla Ruta del Día se quedaba en 0 aunque los
+                // pedidos sí se guardaban (counters de Pedidos hoy + Ventas hoy SÍ
+                // funcionaban porque vienen de local WDB).
+                if (pedido.Estado == EstadoPedido.Entregado && newDetalles.Count > 0)
+                {
+                    int? rutaId = null;
+
+                    // Caso 1: Pedido con RutasPedidos pre-link (preventa entregada en ruta)
+                    var rutaPedidoLink = await _db.RutasPedidos
+                        .AsNoTracking()
+                        .Where(rp => rp.PedidoId == pedido.Id && rp.Activo)
+                        .Select(rp => (int?)rp.RutaId)
+                        .FirstOrDefaultAsync();
+                    if (rutaPedidoLink.HasValue)
+                    {
+                        rutaId = rutaPedidoLink;
+                    }
+                    else if (pedido.TipoVenta == TipoVenta.VentaDirecta)
+                    {
+                        // Caso 2: VentaDirecta sin pre-link — buscar ruta activa del vendedor.
+                        // Mismo filtro que MobileVentaDirectaEndpoints.cs:213-219.
+                        rutaId = await _db.RutasVendedor
+                            .AsNoTracking()
+                            .Where(r => r.UsuarioId == usuarioId
+                                     && r.TenantId == tenantId
+                                     && r.Activo
+                                     && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
+                            .Select(r => (int?)r.Id)
+                            .FirstOrDefaultAsync();
+                    }
+
+                    if (rutaId.HasValue)
+                    {
+                        foreach (var detalle in newDetalles)
+                        {
+                            var carga = await _db.RutasCarga
+                                .FirstOrDefaultAsync(c => c.RutaId == rutaId.Value
+                                    && c.ProductoId == detalle.ProductoId
+                                    && c.TenantId == tenantId
+                                    && c.Activo);
+                            if (carga != null)
+                            {
+                                if (pedido.TipoVenta == TipoVenta.VentaDirecta)
+                                    carga.CantidadVendida += (int)detalle.Cantidad;
+                                else
+                                    carga.CantidadEntregada += (int)detalle.Cantidad;
+                                carga.ActualizadoEn = DateTime.UtcNow;
+                                carga.ActualizadoPor = userId;
+                            }
+                        }
+                    }
+                }
+
                 return (pedido, wasConflict);
             }
             catch (DbUpdateException ex) when (
