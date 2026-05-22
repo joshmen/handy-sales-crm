@@ -966,24 +966,37 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 await _db.SaveChangesAsync();
         }
 
+        // Vendidos/Entregados se leen en vivo desde RutasCarga (source of truth post sync push).
+        // Los registros en RutasRetornoInventario solo aportan CantidadInicial + ajustes manuales
+        // (Devueltos, Mermas, RecAlmacen, CargaVehiculo).
         return await _db.RutasRetornoInventario
             .Include(r => r.Producto)
             .Where(r => r.RutaId == rutaId && r.TenantId == tenantId && r.Activo)
-            .Select(r => new RutaRetornoItemDto
+            .Select(r => new
             {
-                Id = r.Id,
-                ProductoId = r.ProductoId,
-                ProductoNombre = r.Producto.Nombre,
-                ProductoSku = r.Producto.CodigoBarra,
-                VentasMonto = r.VentasMonto,
-                CantidadInicial = r.CantidadInicial,
-                Vendidos = r.Vendidos,
-                Entregados = r.Entregados,
-                Devueltos = r.Devueltos,
-                Mermas = r.Mermas,
-                RecAlmacen = r.RecAlmacen,
-                CargaVehiculo = r.CargaVehiculo,
-                Diferencia = r.CantidadInicial - r.Vendidos - r.Entregados - r.Devueltos - r.Mermas - r.RecAlmacen - r.CargaVehiculo
+                Retorno = r,
+                Carga = _db.RutasCarga
+                    .Where(c => c.RutaId == r.RutaId && c.ProductoId == r.ProductoId && c.TenantId == r.TenantId && c.Activo)
+                    .FirstOrDefault()
+            })
+            .Select(x => new RutaRetornoItemDto
+            {
+                Id = x.Retorno.Id,
+                ProductoId = x.Retorno.ProductoId,
+                ProductoNombre = x.Retorno.Producto.Nombre,
+                ProductoSku = x.Retorno.Producto.CodigoBarra,
+                VentasMonto = x.Retorno.VentasMonto,
+                CantidadInicial = x.Retorno.CantidadInicial,
+                Vendidos = x.Carga != null ? x.Carga.CantidadVendida : x.Retorno.Vendidos,
+                Entregados = x.Carga != null ? x.Carga.CantidadEntregada : x.Retorno.Entregados,
+                Devueltos = x.Retorno.Devueltos,
+                Mermas = x.Retorno.Mermas,
+                RecAlmacen = x.Retorno.RecAlmacen,
+                CargaVehiculo = x.Retorno.CargaVehiculo,
+                Diferencia = x.Retorno.CantidadInicial
+                           - (x.Carga != null ? x.Carga.CantidadVendida : x.Retorno.Vendidos)
+                           - (x.Carga != null ? x.Carga.CantidadEntregada : x.Retorno.Entregados)
+                           - x.Retorno.Devueltos - x.Retorno.Mermas - x.Retorno.RecAlmacen - x.Retorno.CargaVehiculo
             })
             .ToListAsync();
     }
@@ -995,10 +1008,18 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
         if (retorno != null)
         {
+            // Diferencia se calcula con Vendidos/Entregados en vivo desde RutasCarga (source of truth).
+            var carga = await _db.RutasCarga
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == productoId && c.TenantId == tenantId && c.Activo);
+
+            int vendidos = carga?.CantidadVendida ?? retorno.Vendidos;
+            int entregados = carga?.CantidadEntregada ?? retorno.Entregados;
+
             retorno.Mermas = mermas;
             retorno.RecAlmacen = recAlmacen;
             retorno.CargaVehiculo = cargaVehiculo;
-            retorno.Diferencia = retorno.CantidadInicial - retorno.Vendidos - retorno.Entregados - retorno.Devueltos - mermas - recAlmacen - cargaVehiculo;
+            retorno.Diferencia = retorno.CantidadInicial - vendidos - entregados - retorno.Devueltos - mermas - recAlmacen - cargaVehiculo;
             retorno.ActualizadoEn = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
