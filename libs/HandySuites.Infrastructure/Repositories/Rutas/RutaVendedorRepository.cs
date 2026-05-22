@@ -913,23 +913,158 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
         if (ruta == null) return new CierreRutaResumenDto();
 
-        // Calculate valor de la ruta (total carga)
+        var fechaInicio = ruta.Fecha.Date;
+        var fechaFin = fechaInicio.AddDays(1);
+        var usuarioId = ruta.UsuarioId;
+
+        // 1. Valor de la ruta (carga total)
         var valorRuta = (await _db.RutasCarga
             .AsNoTracking()
             .Where(c => c.RutaId == rutaId && c.TenantId == tenantId && c.Activo)
-            .Select(c => c.CantidadTotal * c.PrecioUnitario)
+            .Select(c => (double)(c.CantidadTotal * c.PrecioUnitario))
             .ToListAsync())
             .Sum();
 
-        // For now return basic structure - real calculations will use pedidos/ventas data
+        // 2. Pedidos vinculados a la ruta:
+        //    - Preventa via RutasPedidos (planificados)
+        //    - VentaDirecta same-day + same-user (no se planifican por adelantado)
+        //    - Preventas nuevos creados por el vendedor durante la ruta (no en RutasPedidos)
+        var pedidosPreventaIds = await _db.RutasPedidos
+            .AsNoTracking()
+            .Where(rp => rp.RutaId == rutaId && rp.TenantId == tenantId && rp.Activo)
+            .Select(rp => rp.PedidoId)
+            .ToListAsync();
+
+        var pedidosRuta = await _db.Pedidos
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId && p.Activo
+                     && (pedidosPreventaIds.Contains(p.Id)
+                         || (p.UsuarioId == usuarioId
+                             && p.CreadoEn >= fechaInicio && p.CreadoEn < fechaFin
+                             && (p.TipoVenta == TipoVenta.VentaDirecta
+                                 || (p.TipoVenta == TipoVenta.Preventa && p.Estado != EstadoPedido.Entregado)))))
+            .Select(p => new { p.Id, p.Total, p.TipoVenta, p.Estado })
+            .ToListAsync();
+
+        // 3. Cobros asociados a esos pedidos
+        var pedidoIds = pedidosRuta.Select(p => p.Id).ToList();
+        var cobrosPedidos = await _db.Cobros
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo
+                     && c.PedidoId.HasValue && pedidoIds.Contains(c.PedidoId.Value))
+            .Select(c => new { c.PedidoId, c.Monto, c.MetodoPago })
+            .ToListAsync();
+
+        // 4. Cobranza de adeudos: cobros sin pedido (saldos previos) hechos por el vendedor el dia de la ruta
+        var cobrosAdeudos = await _db.Cobros
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo
+                     && c.PedidoId == null
+                     && c.UsuarioId == usuarioId
+                     && c.FechaCobro >= fechaInicio && c.FechaCobro < fechaFin)
+            .Select(c => new { c.Monto, c.MetodoPago })
+            .ToListAsync();
+
+        // 5. Devoluciones registradas en el retorno (Devueltos * PrecioUnitario de la carga)
+        var devoluciones = await (
+            from rri in _db.RutasRetornoInventario.AsNoTracking()
+            join c in _db.RutasCarga.AsNoTracking()
+                on new { rri.RutaId, rri.ProductoId, rri.TenantId }
+                equals new { c.RutaId, c.ProductoId, c.TenantId }
+            where rri.RutaId == rutaId && rri.TenantId == tenantId && rri.Activo && c.Activo && rri.Devueltos > 0
+            select new { rri.Devueltos, c.PrecioUnitario }
+        ).ToListAsync();
+
+        // Particionar pedidos por tipo + estado
+        var pedidosVDEntregados = pedidosRuta.Where(p => p.TipoVenta == TipoVenta.VentaDirecta && p.Estado == EstadoPedido.Entregado).ToList();
+        var pedidosPVEntregados = pedidosRuta.Where(p => p.TipoVenta == TipoVenta.Preventa && p.Estado == EstadoPedido.Entregado).ToList();
+        var pedidosPreventaActivos = pedidosRuta
+            .Where(p => p.TipoVenta == TipoVenta.Preventa
+                     && p.Estado != EstadoPedido.Entregado
+                     && p.Estado != EstadoPedido.Cancelado)
+            .ToList();
+
+        // Helpers
+        double EfectivoDePedido(int pedidoId) => (double)cobrosPedidos
+            .Where(c => c.PedidoId == pedidoId && c.MetodoPago == MetodoPago.Efectivo)
+            .Sum(c => c.Monto);
+
+        // Ventas contado: cash recibido por VentaDirecta entregada
+        double ventasContado = pedidosVDEntregados.Sum(p => EfectivoDePedido(p.Id));
+        int ventasContadoCount = pedidosVDEntregados.Count(p => EfectivoDePedido(p.Id) > 0);
+
+        // Entregas cobradas: cash recibido por Preventa entregada
+        double entregasCobradas = pedidosPVEntregados.Sum(p => EfectivoDePedido(p.Id));
+        int entregasCobradasCount = pedidosPVEntregados.Count(p => EfectivoDePedido(p.Id) > 0);
+
+        // Cobranza adeudos: cobros sin pedido en efectivo
+        double cobranzaAdeudos = (double)cobrosAdeudos
+            .Where(c => c.MetodoPago == MetodoPago.Efectivo)
+            .Sum(c => c.Monto);
+        int cobranzaAdeudosCount = cobrosAdeudos.Count(c => c.MetodoPago == MetodoPago.Efectivo);
+
+        // Ventas credito: saldo no cobrado en efectivo de VentaDirecta entregada
+        double ventasCredito = 0;
+        int ventasCreditoCount = 0;
+        foreach (var p in pedidosVDEntregados)
+        {
+            var saldo = (double)p.Total - EfectivoDePedido(p.Id);
+            if (saldo > 0.01)
+            {
+                ventasCredito += saldo;
+                ventasCreditoCount++;
+            }
+        }
+
+        // Entregas credito: saldo no cobrado en efectivo de Preventa entregada
+        double entregasCredito = 0;
+        int entregasCreditoCount = 0;
+        foreach (var p in pedidosPVEntregados)
+        {
+            var saldo = (double)p.Total - EfectivoDePedido(p.Id);
+            if (saldo > 0.01)
+            {
+                entregasCredito += saldo;
+                entregasCreditoCount++;
+            }
+        }
+
+        // Pedidos preventa: orden Preventa no entregada (nueva captura)
+        double pedidosPreventaTotal = pedidosPreventaActivos.Sum(p => (double)p.Total);
+        int pedidosPreventaCount = pedidosPreventaActivos.Count;
+
+        // Devoluciones registradas
+        double devolucionesMonto = devoluciones.Sum(d => (double)(d.Devueltos * d.PrecioUnitario));
+        int devolucionesCount = devoluciones.Count;
+
         var resumen = new CierreRutaResumenDto
         {
             ValorRuta = valorRuta,
             EfectivoInicial = ruta.EfectivoInicial ?? 0,
-            Recibido = ruta.MontoRecibido
+            Recibido = ruta.MontoRecibido,
+
+            // Efectivo entrante
+            VentasContado = ventasContado,
+            VentasContadoCount = ventasContadoCount,
+            EntregasCobradas = entregasCobradas,
+            EntregasCobradasCount = entregasCobradasCount,
+            CobranzaAdeudos = cobranzaAdeudos,
+            CobranzaAdeudosCount = cobranzaAdeudosCount,
+
+            // Movimientos a saldo (credito)
+            VentasCredito = ventasCredito,
+            VentasCreditoCount = ventasCreditoCount,
+            EntregasCredito = entregasCredito,
+            EntregasCreditoCount = entregasCreditoCount,
+
+            // Otros movimientos
+            PedidosPreventa = pedidosPreventaTotal,
+            PedidosPreventaCount = pedidosPreventaCount,
+            Devoluciones = devolucionesMonto,
+            DevolucionesCount = devolucionesCount,
         };
 
-        // Calculate ARecibir = EfectivoEntrante - Movimientos + EfectivoInicial
+        // A recibir = efectivo entrante + efectivo inicial
         resumen.ARecibir = resumen.VentasContado + resumen.EntregasCobradas + resumen.CobranzaAdeudos + resumen.EfectivoInicial;
         resumen.Diferencia = resumen.Recibido.HasValue ? resumen.Recibido.Value - resumen.ARecibir : null;
 
