@@ -287,4 +287,8 @@ public record AutomationContext(
     }
 }
 
-public record AutomationResult(bool Success, string ActionTaken, string? Error = null);
+// Detalle: objeto serializable a JSON con los datos ricos de la ejecución
+// (top vendedores, lista de clientes flaggeados, KPIs específicos, etc.).
+// Lo guarda LogExecutionAsync en AutomationExecutions.resultado_json para
+// que el web pueda renderizar el detalle expandido del historial.
+public record AutomationResult(bool Success, string ActionTaken, string? Error = null, object? Detalle = null);

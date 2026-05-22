@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using HandySuites.Api.Automations;
 using HandySuites.Application.Automations.DTOs;
 using HandySuites.Application.Automations.Interfaces;
@@ -196,6 +197,7 @@ public static class AutomationEndpoints
                         TemplateSlug = slug,
                         Status = result.Success ? ExecutionStatus.Success : ExecutionStatus.Failed,
                         ActionTaken = $"[TEST] {result.ActionTaken}",
+                        ResultadoJson = result.Detalle == null ? null : JsonSerializer.Serialize(result.Detalle),
                         ErrorMessage = result.Error,
                         EjecutadoEn = DateTime.UtcNow,
                     });

@@ -31,7 +31,8 @@ public class InventarioCriticoHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (productosEnCero.Count == 0)
-            return new AutomationResult(true, string.Format(M("inventarioCritico.result", lang), 0));
+            return new AutomationResult(true, string.Format(M("inventarioCritico.result", lang), 0),
+                Detalle: new { productos = Array.Empty<object>() });
 
         // ── Push notification (brief) ──
         var productList = string.Join(", ", productosEnCero.Take(5).Select(p => p.Nombre));
@@ -88,6 +89,17 @@ public class InventarioCriticoHandler : IAutomationHandler
             $"URGENTE: {productosEnCero.Count} {M("inventarioCritico.kpi.afectados", lang).ToLower()}",
             language: lang);
 
-        return new AutomationResult(true, string.Format(M("inventarioCritico.result", lang), productosEnCero.Count));
+        var detalle = new
+        {
+            productos = productosEnCero.Select(p => new
+            {
+                nombre = p.Nombre,
+                stockActual = (double)p.Cantidad,
+                stockMinimo = (double)p.StockMinimo
+            }).ToList()
+        };
+
+        return new AutomationResult(true, string.Format(M("inventarioCritico.result", lang), productosEnCero.Count),
+            Detalle: detalle);
     }
 }

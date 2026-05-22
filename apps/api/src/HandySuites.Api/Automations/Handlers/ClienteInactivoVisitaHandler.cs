@@ -44,7 +44,8 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (clientesInactivos.Count == 0)
-            return new AutomationResult(true, M("result.todosClientesVisitados", lang));
+            return new AutomationResult(true, M("result.todosClientesVisitados", lang),
+                Detalle: new { inactivos = Array.Empty<object>() });
 
         // ── Auto-schedule visits for next business day ──
         // Cálculo del siguiente día hábil en TZ tenant — antes usaba calendario
@@ -180,7 +181,29 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
         var resultMsg = lang == "en"
             ? $"Inactive clients: {clientesInactivos.Count}, visits scheduled: {visitasCreadas}, notifications: {notified}"
             : $"Clientes inactivos: {clientesInactivos.Count}, visitas agendadas: {visitasCreadas}, notificaciones: {notified}";
-        return new AutomationResult(true, resultMsg);
+
+        var detalle = new
+        {
+            visitasAgendadas = visitasCreadas,
+            notificacionesEnviadas = notified,
+            inactivos = clientesInactivos.Select(c =>
+            {
+                int? diasInactivo = null;
+                if (ultimaVisitaDict.TryGetValue(c.Id, out var uv) && uv.HasValue)
+                    diasInactivo = (int)(DateTime.UtcNow - uv.Value).TotalDays;
+                return new
+                {
+                    clienteNombre = c.Nombre,
+                    vendedorNombre = c.VendedorId.HasValue
+                        ? vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang))
+                        : M("misc.sinAsignar", lang),
+                    diasInactivo,
+                    ultimaVisita = ultimaVisitaDict.TryGetValue(c.Id, out var uv2) ? uv2 : null
+                };
+            }).ToList()
+        };
+
+        return new AutomationResult(true, resultMsg, Detalle: detalle);
     }
 
     /// <summary>
