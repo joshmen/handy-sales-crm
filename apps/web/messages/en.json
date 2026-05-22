@@ -2894,6 +2894,116 @@
     "drawerConfigDesc": "Adjust the parameters of this automation",
     "emptyHistoryTitle": "No executions recorded",
     "emptyHistoryDesc": "Executions will appear here when automations run.",
+    "clickForDetail": "Click to see full detail",
+    "status": {
+      "success": "Success",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "detailDrawer": {
+      "dateLabel": "Date",
+      "statusLabel": "Status",
+      "whatItDoes": "What this automation does",
+      "resultSummary": "Result summary",
+      "errorLabel": "Error",
+      "fullDetail": "Full detail",
+      "noDetail": "This execution has no structured detail (may predate the feature).",
+      "parseError": "Could not parse detail (invalid JSON).",
+      "resumenDiario": {
+        "ventas": "Sales",
+        "cobros": "Payments",
+        "visitas": "Visits",
+        "clientesNuevos": "New clients",
+        "topVendedores": "Top vendors of the day",
+        "topClientes": "Top clients of the day",
+        "cVendedor": "Vendor",
+        "cCliente": "Client",
+        "cPedidos": "Orders",
+        "cTotal": "Total"
+      },
+      "pedidoRecurrente": {
+        "evaluados": "Clients evaluated",
+        "flagged": "Clients with overdue cycle",
+        "allOk": "All clients are within their normal cycle.",
+        "cCliente": "Client",
+        "cVendedor": "Vendor",
+        "cIntervalo": "Avg cycle",
+        "cSinPedido": "Days w/o order",
+        "cUrgencia": "Urgency",
+        "cMontoPromedio": "Avg ticket"
+      },
+      "metaAutoRenovacion": {
+        "noneToRenew": "No goals were due for renewal.",
+        "cVendedor": "Vendor",
+        "cTipo": "Type",
+        "cPeriodo": "Period",
+        "cMonto": "Goal amount",
+        "cPeriodoNuevo": "New period"
+      },
+      "bienvenida": {
+        "noNew": "No new clients registered.",
+        "cCliente": "Client",
+        "cContacto": "Contact",
+        "cVendedor": "Vendor"
+      },
+      "cobroExitoso": {
+        "none": "No new payments in this window.",
+        "totalCobrado": "Total collected",
+        "cCliente": "Client",
+        "cMonto": "Amount",
+        "cFecha": "Date"
+      },
+      "cobroVencido": {
+        "none": "No overdue balances.",
+        "totalVencido": "Total overdue",
+        "cCliente": "Client",
+        "cMonto": "Balance",
+        "cDias": "Overdue",
+        "cVendedor": "Vendor"
+      },
+      "clienteInactivo": {
+        "allActive": "All clients have been visited recently.",
+        "visitasAgendadas": "Auto-scheduled visits",
+        "cCliente": "Client",
+        "cVendedor": "Vendor",
+        "cDiasInactivo": "Days w/o visit",
+        "cUltimaVisita": "Last visit"
+      },
+      "rutaSemanal": {
+        "noneCreated": "No routes generated (already exist or no clients).",
+        "cVendedor": "Vendor",
+        "cFecha": "Date",
+        "cClientes": "Clients",
+        "cGeo": "Geo-optimized",
+        "geoYes": "Yes",
+        "geoNo": "By urgency"
+      },
+      "metaNoCumplida": {
+        "allOk": "All vendors are meeting their goal.",
+        "umbral": "Alert threshold",
+        "cVendedor": "Vendor",
+        "cTipo": "Type",
+        "cMeta": "Goal",
+        "cAlcanzado": "Achieved",
+        "cCumplimiento": "Completion"
+      },
+      "inventarioCritico": {
+        "allOk": "No products are out of stock.",
+        "cProducto": "Product",
+        "cStock": "Current stock",
+        "cMinimo": "Min stock"
+      },
+      "stockBajo": {
+        "allOk": "All products are within stock range.",
+        "umbral": "Threshold",
+        "cProducto": "Product",
+        "cStock": "Current stock",
+        "cMinimo": "Min",
+        "cEstado": "Status",
+        "sinStock": "Out of stock",
+        "stockBajo": "Low stock"
+      }
+    },
     "emptyDefault": "Automations will appear here when available.",
     "notifiesTo": "Notifies: {label}",
     "range": "Range: {min} – {max}",

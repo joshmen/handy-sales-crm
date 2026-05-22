@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { formatTimeAgo } from '@/lib/utils';
 import { automationService } from '@/services/api/automations';
+import { ExecutionDetailDrawer } from '@/components/automations/ExecutionDetailDrawer';
 import type { AutomationTemplate, AutomationExecution } from '@/types/automations';
 import { PARAM_CONFIG, CATEGORY_COLORS, CATEGORY_LABEL_KEYS, TEMPLATE_KEYS } from '@/types/automations';
 import { toast } from '@/hooks/useToast';
@@ -36,6 +37,7 @@ import {
   Sparkle,
   Play,
   CircleNotch,
+  Info,
 } from '@phosphor-icons/react';
 import type { IconProps } from '@phosphor-icons/react';
 import { Switch } from '@/components/ui/Switch';
@@ -141,6 +143,7 @@ export default function AutomationsPage() {
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialPage, setHistorialPage] = useState(1);
   const [historialLoading, setHistorialLoading] = useState(false);
+  const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -527,12 +530,20 @@ export default function AutomationsPage() {
                         </thead>
                         <tbody>
                           {historial.map(exec => (
-                            <tr key={exec.id} className="border-b border-border-subtle hover:bg-surface-1/50 transition-colors">
+                            <tr
+                              key={exec.id}
+                              onClick={() => setSelectedExecution(exec)}
+                              className="border-b border-border-subtle hover:bg-surface-1/50 transition-colors cursor-pointer"
+                              title={t('clickForDetail')}
+                            >
                               <td className="px-5 py-2.5 text-foreground/70 whitespace-nowrap">
                                 {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </td>
                               <td className="px-5 py-2.5 font-medium text-foreground">
-                                {tName(exec.templateSlug, exec.templateNombre)}
+                                <span className="inline-flex items-center gap-1.5">
+                                  {tName(exec.templateSlug, exec.templateNombre)}
+                                  <Info size={14} className="text-muted-foreground/60" />
+                                </span>
                               </td>
                               <td className="px-5 py-2.5">
                                 <StatusBadge status={exec.status} />
@@ -549,9 +560,16 @@ export default function AutomationsPage() {
                     {/* Mobile cards */}
                     <div className="sm:hidden divide-y divide-border-subtle">
                       {historial.map(exec => (
-                        <div key={exec.id} className="px-4 py-3">
+                        <div
+                          key={exec.id}
+                          onClick={() => setSelectedExecution(exec)}
+                          className="px-4 py-3 cursor-pointer active:bg-surface-1/50"
+                        >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm text-foreground">{tName(exec.templateSlug, exec.templateNombre)}</span>
+                            <span className="font-medium text-sm text-foreground inline-flex items-center gap-1.5">
+                              {tName(exec.templateSlug, exec.templateNombre)}
+                              <Info size={13} className="text-muted-foreground/60" />
+                            </span>
                             <StatusBadge status={exec.status} size="xs" />
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{tAction(exec.errorMessage || exec.actionTaken)}</p>
@@ -723,6 +741,12 @@ export default function AutomationsPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* Execution detail drawer (click on a history row) */}
+      <ExecutionDetailDrawer
+        execution={selectedExecution}
+        onClose={() => setSelectedExecution(null)}
+      />
     </>
   );
 }

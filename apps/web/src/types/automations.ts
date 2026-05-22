@@ -28,6 +28,8 @@ export interface AutomationExecution {
   actionTaken: string;
   errorMessage: string | null;
   ejecutadoEn: string;
+  /** JSON crudo con el detalle estructurado de la ejecución. Frontend parsea según templateSlug. Null para logs anteriores al feature. */
+  resultadoJson?: string | null;
 }
 
 export type ParamConfigEntry =
