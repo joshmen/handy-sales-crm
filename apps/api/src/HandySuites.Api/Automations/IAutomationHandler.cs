@@ -206,25 +206,32 @@ public record AutomationContext(
     {
         if (EmailService == null) return;
 
-        var adminId = await GetAdminUserIdAsync(ct);
-        if (!adminId.HasValue) return;
-
-        var adminPrefs = await Db.NotificationPreferences
-            .AsNoTracking()
-            .Where(p => p.UserId == adminId.Value && p.TenantId == TenantId)
-            .FirstOrDefaultAsync(ct);
-        if (!(adminPrefs?.EmailNotifications ?? true)) return;
-
-        var email = await Db.Usuarios
-            .Where(u => u.Id == adminId.Value)
-            .Select(u => u.Email)
-            .FirstOrDefaultAsync(ct);
-
-        if (string.IsNullOrEmpty(email)) return;
+        // Multi-recipient: envia a TODOS los admins del tenant, no solo al primero.
+        // Audit 2026-05-22: antes solo iba al admin de menor id (en jeyma era el
+        // genérico admin@jeyma.com), por eso reportes no llegaban a Josue/Abraham.
+        var adminIds = await GetAdminUserIdsAsync(ct);
+        if (adminIds.Count == 0) return;
 
         var template = await EmailTemplateBuilder.CreateAsync(Db, TenantId, ct);
         var html = template.Build(titulo, contentHtml, preheader, language);
-        await EmailService.SendAsync(email, $"HandySuites: {titulo}", html);
+
+        foreach (var adminId in adminIds)
+        {
+            var adminPrefs = await Db.NotificationPreferences
+                .AsNoTracking()
+                .Where(p => p.UserId == adminId && p.TenantId == TenantId)
+                .FirstOrDefaultAsync(ct);
+            if (!(adminPrefs?.EmailNotifications ?? true)) continue;
+
+            var email = await Db.Usuarios
+                .Where(u => u.Id == adminId)
+                .Select(u => u.Email)
+                .FirstOrDefaultAsync(ct);
+
+            if (string.IsNullOrEmpty(email)) continue;
+
+            await EmailService.SendAsync(email, $"HandySuites: {titulo}", html);
+        }
     }
 
     /// <summary>
