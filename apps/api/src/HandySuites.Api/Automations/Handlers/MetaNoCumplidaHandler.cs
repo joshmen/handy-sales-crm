@@ -42,7 +42,8 @@ public class MetaNoCumplidaHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (metas.Count == 0)
-            return new AutomationResult(true, M("result.sinMetasConfiguradas", lang));
+            return new AutomationResult(true, M("result.sinMetasConfiguradas", lang),
+                Detalle: new { vendedores = Array.Empty<object>() });
 
         var alertas = new List<(string VendedorNombre, int VendedorId, string Tipo, decimal Meta, decimal Real, int Pct)>();
 
@@ -89,7 +90,8 @@ public class MetaNoCumplidaHandler : IAutomationHandler
         if (alertas.Count == 0)
             return new AutomationResult(true, lang == "en"
                 ? $"All vendors are at ≥{porcentajeAlerta}% of their goal"
-                : $"Todos los vendedores están al ≥{porcentajeAlerta}% de su meta");
+                : $"Todos los vendedores están al ≥{porcentajeAlerta}% de su meta",
+                Detalle: new { vendedores = Array.Empty<object>(), umbralPct = porcentajeAlerta });
 
         // ── Push to each vendedor ──
         foreach (var (nombre, vendedorId, tipo, metaMonto, real, pct) in alertas)
@@ -160,9 +162,23 @@ public class MetaNoCumplidaHandler : IAutomationHandler
                 language: lang);
         }
 
+        var detalle = new
+        {
+            umbralPct = porcentajeAlerta,
+            vendedores = alertas.OrderBy(a => a.Pct).Select(a => new
+            {
+                nombre = a.VendedorNombre,
+                tipo = a.Tipo,
+                metaTotal = (double)a.Meta,
+                alcanzado = (double)a.Real,
+                porcentaje = a.Pct
+            }).ToList()
+        };
+
         return new AutomationResult(true, lang == "en"
             ? $"Alerts sent: {alertas.Count} vendor{(alertas.Count != 1 ? "s" : "")} below {porcentajeAlerta}%"
-            : $"Alertas enviadas: {alertas.Count} vendedor{(alertas.Count != 1 ? "es" : "")} bajo el {porcentajeAlerta}%");
+            : $"Alertas enviadas: {alertas.Count} vendedor{(alertas.Count != 1 ? "es" : "")} bajo el {porcentajeAlerta}%",
+            Detalle: detalle);
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);

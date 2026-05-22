@@ -37,6 +37,9 @@ public class AutomationExecutionDto
     public string ActionTaken { get; set; } = "";
     public string? ErrorMessage { get; set; }
     public DateTime EjecutadoEn { get; set; }
+    // JSON crudo con el detalle de la ejecución (top vendedores, listas, KPIs, etc.).
+    // Frontend parsea según TemplateSlug. Null para logs anteriores al feature.
+    public string? ResultadoJson { get; set; }
 }
 
 // ═══════════════════════════════════════════════════════

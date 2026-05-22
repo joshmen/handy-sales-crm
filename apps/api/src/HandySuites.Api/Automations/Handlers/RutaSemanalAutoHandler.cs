@@ -24,7 +24,8 @@ public class RutaSemanalAutoHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (vendedores.Count == 0)
-            return new AutomationResult(true, M("result.sinVendedoresActivos", lang));
+            return new AutomationResult(true, M("result.sinVendedoresActivos", lang),
+                Detalle: new { rutas = Array.Empty<object>() });
 
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
@@ -33,6 +34,7 @@ public class RutaSemanalAutoHandler : IAutomationHandler
         if (nextMonday == today) nextMonday = nextMonday.AddDays(7);
 
         var rutasCreadas = 0;
+        var rutasInfo = new List<object>();
 
         foreach (var vendedor in vendedores)
         {
@@ -132,6 +134,13 @@ public class RutaSemanalAutoHandler : IAutomationHandler
 
             await context.Db.SaveChangesAsync(ct);
             rutasCreadas++;
+            rutasInfo.Add(new
+            {
+                vendedorNombre = vendedor.Nombre ?? "—",
+                fecha = nextMonday,
+                clientesCount = ordenados.Count,
+                geoOptimizado
+            });
 
             if (context.Destinatario is "vendedores" or "ambos")
             {
@@ -160,10 +169,12 @@ public class RutaSemanalAutoHandler : IAutomationHandler
         return rutasCreadas > 0
             ? new AutomationResult(true, lang == "en"
                 ? $"{rutasCreadas} weekly routes generated"
-                : $"{rutasCreadas} rutas semanales generadas")
+                : $"{rutasCreadas} rutas semanales generadas",
+                Detalle: new { rutas = rutasInfo, semana = nextMonday })
             : new AutomationResult(true, lang == "en"
                 ? "No new routes to generate (already exist or no assigned clients)"
-                : "Sin rutas nuevas por generar (ya existen o sin clientes asignados)");
+                : "Sin rutas nuevas por generar (ya existen o sin clientes asignados)",
+                Detalle: new { rutas = Array.Empty<object>() });
     }
 
     /// <summary>

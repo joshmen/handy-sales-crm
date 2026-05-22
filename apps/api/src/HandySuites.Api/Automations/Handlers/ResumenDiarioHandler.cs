@@ -134,8 +134,32 @@ public class ResumenDiarioHandler : IAutomationHandler
             $"{M("resumenDiario.kpi.ventas", lang)}: {FormatMoney(ventasTotal, culture)} | {M("resumenDiario.kpi.cobros", lang)}: {FormatMoney(cobrosTotal, culture)} | {visitasHoy} {M("resumenDiario.kpi.visitas", lang).ToLower()}",
             language: lang);
 
+        var detalle = new
+        {
+            fecha = today.ToString("yyyy-MM-dd"),
+            ventasCount,
+            ventasTotal = (double)ventasTotal,
+            cobrosCount,
+            cobrosTotal = (double)cobrosTotal,
+            visitasHoy,
+            clientesNuevos,
+            topVendedores = topVendedores.Select(v => new
+            {
+                nombre = v.Nombre,
+                pedidos = v.Pedidos,
+                total = (double)v.Total
+            }).ToList(),
+            topClientes = topClientes.Select(c => new
+            {
+                nombre = c.Nombre,
+                pedidos = c.Pedidos,
+                total = (double)c.Total
+            }).ToList()
+        };
+
         return new AutomationResult(true,
-            string.Format(M("resumenDiario.result", lang), ventasCount, cobrosCount, visitasHoy));
+            string.Format(M("resumenDiario.result", lang), ventasCount, cobrosCount, visitasHoy),
+            Detalle: detalle);
     }
 
     private static string FormatMoney(decimal amount, CultureInfo culture)

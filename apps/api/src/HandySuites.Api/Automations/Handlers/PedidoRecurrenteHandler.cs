@@ -36,7 +36,8 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (clienteOrders.Count == 0)
-            return new AutomationResult(true, M("result.sinClientesRecurrentes", lang));
+            return new AutomationResult(true, M("result.sinClientesRecurrentes", lang),
+                Detalle: new { clientesEvaluados = 0, urgentes = Array.Empty<object>() });
 
         var now = DateTime.UtcNow;
 
@@ -69,7 +70,8 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .ToList();
 
         if (clientesSugeridos.Count == 0)
-            return new AutomationResult(true, M("result.todosClientesCicloNormal", lang));
+            return new AutomationResult(true, M("result.todosClientesCicloNormal", lang),
+                Detalle: new { clientesEvaluados = clienteOrders.Count, urgentes = Array.Empty<object>() });
 
         // ── Push: one aggregated notification per vendedor ──
         var notified = 0;
@@ -162,8 +164,26 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             $"{clientesSugeridos.Count} {M("pedidoRecurrente.kpi.oportunidades", lang).ToLower()}",
             language: lang);
 
+        var detalle = new
+        {
+            clientesEvaluados = clienteOrders.Count,
+            notificacionesEnviadas = notified,
+            urgentes = clientesSugeridos.Select(c => new
+            {
+                clienteNombre = c.Nombre,
+                vendedorNombre = c.VendedorId.HasValue
+                    ? vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang))
+                    : M("misc.sinAsignar", lang),
+                intervaloDias = (int)c.IntervaloPromedio,
+                diasSinPedido = c.DiasDesde,
+                urgenciaPct = (int)(c.Urgencia * 100),
+                montoPromedio = (double)c.MontoPromedio
+            }).ToList()
+        };
+
         return new AutomationResult(true, lang == "en"
             ? $"Reorder: {clientesSugeridos.Count} clients with overdue cycle ({notified} notifications)"
-            : $"Reorden: {clientesSugeridos.Count} clientes con ciclo superado ({notified} notificaciones)");
+            : $"Reorden: {clientesSugeridos.Count} clientes con ciclo superado ({notified} notificaciones)",
+            Detalle: detalle);
     }
 }
