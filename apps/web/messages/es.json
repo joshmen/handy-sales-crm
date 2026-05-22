@@ -1196,7 +1196,9 @@
       "statusReadyShip": "Lista envío",
       "statusEnRoute": "En ruta",
       "statusDelivered": "Entregado",
-      "statusCancelled": "Cancelado"
+      "statusCancelled": "Cancelado",
+      "tipoVentaDirecta": "Venta directa",
+      "tipoVentaPreventa": "Preventa"
     }
   },
   "clients": {

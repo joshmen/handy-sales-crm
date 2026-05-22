@@ -7,7 +7,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { orderService, type OrderDetail } from '@/services/api/orders';
+import { orderService, type OrderDetail, estadoIntToStatus } from '@/services/api/orders';
 import { OrderStatus } from '@/types';
 import { toast } from '@/hooks/useToast';
 
@@ -34,6 +34,16 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
   const cfg = STATUS_STYLES[status] ?? { color: 'text-foreground/80', bg: 'bg-surface-3' };
   return (
     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cfg.color} ${cfg.bg}`}>
+      {label}
+    </span>
+  );
+}
+
+function TipoVentaBadge({ tipoVenta, label }: { tipoVenta: number; label: string }) {
+  const isDirecta = tipoVenta === 1;
+  const cls = isDirecta ? 'text-orange-700 bg-orange-100' : 'text-cyan-700 bg-cyan-100';
+  return (
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cls}`}>
       {label}
     </span>
   );
@@ -168,13 +178,16 @@ export default function OrderDetailPage() {
     );
   }
 
-  const isCancelled = order.estado === OrderStatus.CANCELADA;
-  const isDelivered = order.estado === OrderStatus.ENTREGADA;
+  // Backend serializa Estado como int; normalizamos al string del enum frontend
+  // para que STATUS_LABELS/STEPPER_STEPS comparen contra el mismo tipo.
+  const estadoNorm = estadoIntToStatus(order.estado);
+  const isCancelled = estadoNorm === OrderStatus.CANCELADA;
+  const isDelivered = estadoNorm === OrderStatus.ENTREGADA;
 
   // Determine which step is active for the stepper
   const activeStepIndex = isCancelled
     ? -1
-    : STEPPER_STEPS.indexOf(order.estado as OrderStatus);
+    : STEPPER_STEPS.indexOf(estadoNorm);
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
@@ -191,11 +204,12 @@ export default function OrderDetailPage() {
             <h1 className="text-[22px] font-bold text-foreground">
               {t('orderTitle', { number: order.numeroPedido })}
             </h1>
-            <StatusBadge status={order.estado} label={STATUS_LABELS[order.estado] ?? order.estado} />
+            <StatusBadge status={estadoNorm} label={STATUS_LABELS[estadoNorm] ?? estadoNorm} />
+            <TipoVentaBadge tipoVenta={order.tipoVenta} label={order.tipoVenta === 1 ? t('tipoVentaDirecta') : t('tipoVentaPreventa')} />
           </div>
 
           <div className="flex items-center gap-2">
-            {order.estado === OrderStatus.PENDIENTE && (
+            {estadoNorm === OrderStatus.PENDIENTE && (
               <button
                 onClick={() => handleAction('confirmar')}
                 disabled={!!actionLoading}
@@ -205,7 +219,7 @@ export default function OrderDetailPage() {
                 {t('confirmBtn')}
               </button>
             )}
-            {order.estado === OrderStatus.CONFIRMADA && (
+            {estadoNorm === OrderStatus.CONFIRMADA && (
               <button
                 onClick={() => handleAction('en-ruta')}
                 disabled={!!actionLoading}
@@ -215,7 +229,7 @@ export default function OrderDetailPage() {
                 {t('enRouteBtn')}
               </button>
             )}
-            {order.estado === OrderStatus.ENVIADA && (
+            {estadoNorm === OrderStatus.ENVIADA && (
               <button
                 onClick={() => handleAction('entregar')}
                 disabled={!!actionLoading}
