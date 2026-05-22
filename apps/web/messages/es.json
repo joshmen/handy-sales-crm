@@ -2894,6 +2894,116 @@
     "drawerConfigDesc": "Ajusta los parámetros de esta automatización",
     "emptyHistoryTitle": "Sin ejecuciones registradas",
     "emptyHistoryDesc": "Las ejecuciones aparecerán aquí cuando las automatizaciones se ejecuten.",
+    "clickForDetail": "Click para ver detalle completo",
+    "status": {
+      "success": "Exitoso",
+      "failed": "Error",
+      "skipped": "Omitido"
+    },
+    "detailDrawer": {
+      "dateLabel": "Fecha",
+      "statusLabel": "Estado",
+      "whatItDoes": "Qué hace esta automatización",
+      "resultSummary": "Resumen del resultado",
+      "errorLabel": "Error",
+      "fullDetail": "Detalle completo",
+      "noDetail": "Esta ejecución no tiene detalle estructurado (puede ser anterior al feature).",
+      "parseError": "No se pudo leer el detalle (JSON inválido).",
+      "resumenDiario": {
+        "ventas": "Ventas",
+        "cobros": "Cobros",
+        "visitas": "Visitas",
+        "clientesNuevos": "Clientes nuevos",
+        "topVendedores": "Top vendedores del día",
+        "topClientes": "Top clientes del día",
+        "cVendedor": "Vendedor",
+        "cCliente": "Cliente",
+        "cPedidos": "Pedidos",
+        "cTotal": "Total"
+      },
+      "pedidoRecurrente": {
+        "evaluados": "Clientes evaluados",
+        "flagged": "Clientes con ciclo superado",
+        "allOk": "Todos los clientes están dentro de su ciclo normal.",
+        "cCliente": "Cliente",
+        "cVendedor": "Vendedor",
+        "cIntervalo": "Ciclo prom.",
+        "cSinPedido": "Días sin pedido",
+        "cUrgencia": "Urgencia",
+        "cMontoPromedio": "Ticket prom."
+      },
+      "metaAutoRenovacion": {
+        "noneToRenew": "No había metas vencidas por renovar.",
+        "cVendedor": "Vendedor",
+        "cTipo": "Tipo",
+        "cPeriodo": "Periodo",
+        "cMonto": "Monto meta",
+        "cPeriodoNuevo": "Nuevo periodo"
+      },
+      "bienvenida": {
+        "noNew": "No se registraron clientes nuevos.",
+        "cCliente": "Cliente",
+        "cContacto": "Contacto",
+        "cVendedor": "Vendedor"
+      },
+      "cobroExitoso": {
+        "none": "No hubo cobros nuevos en el periodo.",
+        "totalCobrado": "Total cobrado",
+        "cCliente": "Cliente",
+        "cMonto": "Monto",
+        "cFecha": "Fecha"
+      },
+      "cobroVencido": {
+        "none": "No hay saldos vencidos.",
+        "totalVencido": "Total vencido",
+        "cCliente": "Cliente",
+        "cMonto": "Saldo",
+        "cDias": "Vencido",
+        "cVendedor": "Vendedor"
+      },
+      "clienteInactivo": {
+        "allActive": "Todos los clientes han sido visitados recientemente.",
+        "visitasAgendadas": "Visitas agendadas auto.",
+        "cCliente": "Cliente",
+        "cVendedor": "Vendedor",
+        "cDiasInactivo": "Días sin visita",
+        "cUltimaVisita": "Última visita"
+      },
+      "rutaSemanal": {
+        "noneCreated": "No se generaron rutas (ya existen o sin clientes).",
+        "cVendedor": "Vendedor",
+        "cFecha": "Fecha",
+        "cClientes": "Clientes",
+        "cGeo": "Geo-optimizada",
+        "geoYes": "Sí",
+        "geoNo": "Por urgencia"
+      },
+      "metaNoCumplida": {
+        "allOk": "Todos los vendedores están al día con su meta.",
+        "umbral": "Umbral de alerta",
+        "cVendedor": "Vendedor",
+        "cTipo": "Tipo",
+        "cMeta": "Meta",
+        "cAlcanzado": "Alcanzado",
+        "cCumplimiento": "Cumplimiento"
+      },
+      "inventarioCritico": {
+        "allOk": "No hay productos con stock en cero.",
+        "cProducto": "Producto",
+        "cStock": "Stock actual",
+        "cMinimo": "Stock mínimo"
+      },
+      "stockBajo": {
+        "allOk": "Todos los productos están dentro del rango de stock.",
+        "umbral": "Umbral",
+        "cProducto": "Producto",
+        "cStock": "Stock actual",
+        "cMinimo": "Mínimo",
+        "cEstado": "Estado",
+        "sinStock": "Sin stock",
+        "stockBajo": "Stock bajo"
+      }
+    },
     "emptyDefault": "Las automatizaciones aparecerán aquí cuando estén disponibles.",
     "notifiesTo": "Notifica a: {label}",
     "range": "Rango: {min} – {max}",
