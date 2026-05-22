@@ -17,13 +17,12 @@ export function ExecutionDetailDrawer({ execution, onClose }: Props) {
   const t = useTranslations('automations');
   const { formatDate } = useFormatters();
 
-  if (!execution) {
-    return <Drawer isOpen={false} onClose={onClose} width="lg">{null}</Drawer>;
-  }
-
+  // Parse detalle defensivamente. Si execution es null devolvemos defaults
+  // para que el Drawer pueda renderizarse igual con isOpen=false (un solo
+  // árbol estable de React — evita unmount/remount al togglear).
   let detalle: unknown = null;
   let parseError = false;
-  if (execution.resultadoJson) {
+  if (execution?.resultadoJson) {
     try {
       detalle = JSON.parse(execution.resultadoJson);
     } catch {
@@ -31,10 +30,11 @@ export function ExecutionDetailDrawer({ execution, onClose }: Props) {
     }
   }
 
-  const templateKey = TEMPLATE_KEYS[execution.templateSlug];
+  const templateKey = execution ? TEMPLATE_KEYS[execution.templateSlug] : null;
   // Si la traducción no existe, next-intl lanza error; usamos un IIFE try/catch
   // para fallback silencioso al campo del backend.
   const templateName = (() => {
+    if (!execution) return '';
     if (!templateKey) return execution.templateNombre;
     try { return t(templateKey.nameKey as never); } catch { return execution.templateNombre; }
   })();
@@ -48,71 +48,73 @@ export function ExecutionDetailDrawer({ execution, onClose }: Props) {
       isOpen={!!execution}
       onClose={onClose}
       width="lg"
-      title={templateName}
+      title={templateName || ' '}
       icon={<Lightning size={20} className="text-amber-500" />}
     >
-      <div className="space-y-5">
-        {/* Header info */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <div>
-            <span className="font-medium">{t('detailDrawer.dateLabel')}: </span>
-            {formatDate(execution.ejecutadoEn, {
-              day: '2-digit', month: 'short', year: 'numeric',
-              hour: '2-digit', minute: '2-digit',
-            })}
-          </div>
-          <div>
-            <span className="font-medium">{t('detailDrawer.statusLabel')}: </span>
-            <span className={
-              execution.status === 'Success' ? 'text-green-600' :
-              execution.status === 'Failed' ? 'text-red-600' :
-              'text-amber-600'
-            }>{t(`status.${execution.status.toLowerCase()}` as never)}</span>
-          </div>
-        </div>
-
-        {/* Description */}
-        {templateDesc && (
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900">
-            <div className="font-semibold text-xs uppercase tracking-wide text-blue-700 mb-1">
-              {t('detailDrawer.whatItDoes')}
+      {execution && (
+        <div className="space-y-5">
+          {/* Header info */}
+          <div className="text-xs text-muted-foreground space-y-1">
+            <div>
+              <span className="font-medium">{t('detailDrawer.dateLabel')}: </span>
+              {formatDate(execution.ejecutadoEn, {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+              })}
             </div>
-            {templateDesc}
-          </div>
-        )}
-
-        {/* ActionTaken */}
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
-            {t('detailDrawer.resultSummary')}
-          </div>
-          <div className="text-sm text-foreground">{execution.actionTaken}</div>
-        </div>
-
-        {/* Error */}
-        {execution.errorMessage && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-900">
-            <div className="font-semibold text-xs uppercase tracking-wide text-red-700 mb-1">
-              {t('detailDrawer.errorLabel')}
+            <div>
+              <span className="font-medium">{t('detailDrawer.statusLabel')}: </span>
+              <span className={
+                execution.status === 'Success' ? 'text-green-600' :
+                execution.status === 'Failed' ? 'text-red-600' :
+                'text-amber-600'
+              }>{t(`status.${execution.status.toLowerCase()}` as never)}</span>
             </div>
-            {execution.errorMessage}
           </div>
-        )}
 
-        {/* Detail */}
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">
-            {t('detailDrawer.fullDetail')}
-          </div>
-          {parseError ? (
-            <p className="text-sm text-muted-foreground italic">{t('detailDrawer.parseError')}</p>
-          ) : !detalle ? (
-            <p className="text-sm text-muted-foreground italic">{t('detailDrawer.noDetail')}</p>
-          ) : (
-            <DetailRenderer slug={execution.templateSlug} data={detalle} />
+          {/* Description */}
+          {templateDesc && (
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900">
+              <div className="font-semibold text-xs uppercase tracking-wide text-blue-700 mb-1">
+                {t('detailDrawer.whatItDoes')}
+              </div>
+              {templateDesc}
+            </div>
           )}
+
+          {/* ActionTaken */}
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
+              {t('detailDrawer.resultSummary')}
+            </div>
+            <div className="text-sm text-foreground">{execution.actionTaken}</div>
+          </div>
+
+          {/* Error */}
+          {execution.errorMessage && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-900">
+              <div className="font-semibold text-xs uppercase tracking-wide text-red-700 mb-1">
+                {t('detailDrawer.errorLabel')}
+              </div>
+              {execution.errorMessage}
+            </div>
+          )}
+
+          {/* Detail */}
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+              {t('detailDrawer.fullDetail')}
+            </div>
+            {parseError ? (
+              <p className="text-sm text-muted-foreground italic">{t('detailDrawer.parseError')}</p>
+            ) : !detalle ? (
+              <p className="text-sm text-muted-foreground italic">{t('detailDrawer.noDetail')}</p>
+            ) : (
+              <DetailRenderer slug={execution.templateSlug} data={detalle} />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </Drawer>
   );
 }
