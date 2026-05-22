@@ -211,6 +211,7 @@ public class AutomationRepository : IAutomationRepository
                 ActionTaken = e.ActionTaken,
                 ErrorMessage = e.ErrorMessage,
                 EjecutadoEn = e.EjecutadoEn,
+                ResultadoJson = e.ResultadoJson,
             })
             .ToListAsync();
 

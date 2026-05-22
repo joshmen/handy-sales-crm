@@ -41,7 +41,8 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (cobros.Count == 0)
-            return new AutomationResult(true, M("result.sinCobrosNuevos", lang));
+            return new AutomationResult(true, M("result.sinCobrosNuevos", lang),
+                Detalle: new { cobros = Array.Empty<object>() });
 
         var totalMonto = cobros.Sum(c => c.Monto);
         var adminId = await context.GetAdminUserIdAsync(ct);
@@ -64,7 +65,17 @@ public class CobroExitosoAvisoHandler : IAutomationHandler
         var resultMsg = lang == "en"
             ? $"{cobros.Count} payment{(cobros.Count != 1 ? "s" : "")} — {FormatMoney(totalMonto, culture)}"
             : $"{cobros.Count} cobro{(cobros.Count != 1 ? "s" : "")} — {FormatMoney(totalMonto, culture)}";
-        return new AutomationResult(true, resultMsg);
+        var detalle = new
+        {
+            totalMonto = (double)totalMonto,
+            cobros = cobros.Select(c => new
+            {
+                clienteNombre = c.ClienteNombre,
+                monto = (double)c.Monto,
+                fecha = c.CreadoEn
+            }).ToList()
+        };
+        return new AutomationResult(true, resultMsg, Detalle: detalle);
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);

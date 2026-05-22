@@ -35,7 +35,8 @@ public class StockBajoAlertaHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (productosBajos.Count == 0)
-            return new AutomationResult(true, string.Format(M("stockBajo.result", lang), 0));
+            return new AutomationResult(true, string.Format(M("stockBajo.result", lang), 0),
+                Detalle: new { productos = Array.Empty<object>(), umbralPorcentaje });
 
         // ── Push notification (brief) ──
         var productList = string.Join(", ", productosBajos.Take(5).Select(p => $"{p.Nombre} ({p.Cantidad}/{p.StockMinimo})"));
@@ -87,6 +88,19 @@ public class StockBajoAlertaHandler : IAutomationHandler
             $"{productosBajos.Count} {M("stockBajo.notification", lang)}",
             language: lang);
 
-        return new AutomationResult(true, string.Format(M("stockBajo.result", lang), productosBajos.Count));
+        var detalle = new
+        {
+            umbralPorcentaje,
+            productos = productosBajos.Select(p => new
+            {
+                nombre = p.Nombre,
+                stockActual = (double)p.Cantidad,
+                stockMinimo = (double)p.StockMinimo,
+                sinStock = p.SinStock
+            }).ToList()
+        };
+
+        return new AutomationResult(true, string.Format(M("stockBajo.result", lang), productosBajos.Count),
+            Detalle: detalle);
     }
 }

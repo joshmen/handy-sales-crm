@@ -146,6 +146,7 @@ public class AutomationEngine : BackgroundService
                     TemplateSlug = automation.Template.Slug,
                     Status = result.Success ? ExecutionStatus.Success : ExecutionStatus.Failed,
                     ActionTaken = result.ActionTaken,
+                    ResultadoJson = result.Detalle == null ? null : JsonSerializer.Serialize(result.Detalle),
                     ErrorMessage = result.Error,
                     EjecutadoEn = DateTime.UtcNow,
                 }, automation.Id);

@@ -25,9 +25,19 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (expiradas.Count == 0)
-            return new AutomationResult(true, M("result.sinMetasAutoRenovar", lang));
+            return new AutomationResult(true, M("result.sinMetasAutoRenovar", lang),
+                Detalle: new { metasRenovadas = Array.Empty<object>() });
+
+        // Resolve vendedor names for the detalle
+        var usuarioIds = expiradas.Select(m => m.UsuarioId).Distinct().ToList();
+        var usuarios = await context.Db.Usuarios
+            .Where(u => usuarioIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.Nombre })
+            .ToListAsync(ct);
+        var usuarioDict = usuarios.ToDictionary(u => u.Id, u => u.Nombre ?? "—");
 
         var renovadas = 0;
+        var renovadasInfo = new List<object>();
 
         foreach (var meta in expiradas)
         {
@@ -56,6 +66,16 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
             meta.ActualizadoEn = DateTime.UtcNow;
             meta.ActualizadoPor = "sistema-auto-renovacion";
 
+            renovadasInfo.Add(new
+            {
+                vendedorNombre = usuarioDict.GetValueOrDefault(meta.UsuarioId, "—"),
+                tipo = meta.Tipo,
+                periodo = meta.Periodo,
+                montoMeta = (double)meta.Monto,
+                periodoAnterior = $"{meta.FechaInicio:yyyy-MM-dd} - {meta.FechaFin:yyyy-MM-dd}",
+                periodoNuevo = $"{nuevaInicio:yyyy-MM-dd} - {nuevaFin:yyyy-MM-dd}"
+            });
+
             renovadas++;
         }
 
@@ -74,6 +94,7 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
 
         return new AutomationResult(true, lang == "en"
             ? $"{renovadas} goal{(renovadas != 1 ? "s" : "")} renewed"
-            : $"{renovadas} meta{(renovadas != 1 ? "s" : "")} renovada{(renovadas != 1 ? "s" : "")}");
+            : $"{renovadas} meta{(renovadas != 1 ? "s" : "")} renovada{(renovadas != 1 ? "s" : "")}",
+            Detalle: new { metasRenovadas = renovadasInfo });
     }
 }

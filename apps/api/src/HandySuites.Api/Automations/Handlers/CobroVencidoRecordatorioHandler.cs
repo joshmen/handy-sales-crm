@@ -40,7 +40,8 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             .ToListAsync(ct);
 
         if (pedidosVencidos.Count == 0)
-            return new AutomationResult(true, M("result.sinSaldosVencidos", lang), null);
+            return new AutomationResult(true, M("result.sinSaldosVencidos", lang), null,
+                Detalle: new { vencidos = Array.Empty<object>() });
 
         // Calculate balances
         var pedidoIds = pedidosVencidos.Select(p => p.Id).ToList();
@@ -67,7 +68,8 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             .ToList();
 
         if (vencidos.Count == 0)
-            return new AutomationResult(true, M("result.sinSaldosVencidos", lang), null);
+            return new AutomationResult(true, M("result.sinSaldosVencidos", lang), null,
+                Detalle: new { vencidos = Array.Empty<object>() });
 
         // ── Push: notify vendedores ──
         var porVendedor = vencidos.GroupBy(v => v.UsuarioId);
@@ -149,9 +151,23 @@ public class CobroVencidoRecordatorioHandler : IAutomationHandler
             $"{vencidos.Count} {(lang == "en" ? "overdue payments" : "cobros")} — {FormatMoney(totalVencido, culture)}",
             language: lang);
 
+        var detalle = new
+        {
+            totalVencido = (double)totalVencido,
+            notificacionesEnviadas = notificaciones,
+            vencidos = vencidos.Select(v => new
+            {
+                clienteNombre = v.ClienteNombre,
+                montoSaldo = (double)v.Saldo,
+                diasVencido = v.DiasVencido,
+                vendedorNombre = vendedorDict.GetValueOrDefault(v.UsuarioId, M("misc.sinAsignar", lang))
+            }).ToList()
+        };
+
         return new AutomationResult(true, lang == "en"
             ? $"Reminders sent: {notificaciones} notifications about {vencidos.Count} overdue balances"
-            : $"Recordatorios enviados: {notificaciones} notificaciones sobre {vencidos.Count} saldos vencidos");
+            : $"Recordatorios enviados: {notificaciones} notificaciones sobre {vencidos.Count} saldos vencidos",
+            Detalle: detalle);
     }
 
     private static string FormatMoney(decimal amount, System.Globalization.CultureInfo culture) => amount.ToString("C0", culture);
