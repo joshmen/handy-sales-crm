@@ -404,7 +404,7 @@ export default function OrdersPage() {
   };
 
   const handleEditOrder = (orderId: string) => openOrderDrawer(orderId, true);
-  const handleViewDetails = (orderId: string) => openOrderDrawer(orderId, false);
+  const handleViewDetails = (orderId: string) => router.push(`/orders/${orderId}`);
 
   const handleDeleteOrder = (orderId: string) => {
     // Reemplaza window.confirm() nativo por Modal (consistencia con cancelar y

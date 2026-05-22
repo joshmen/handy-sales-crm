@@ -2,6 +2,24 @@
 import { api, handleApiError } from '@/lib/api';
 import { OrderStatus } from '@/types';
 
+// ============ MAPPERS ============
+
+// Backend serializa EstadoPedido como int (0=Borrador, 2=Confirmado, 4=EnRuta,
+// 5=Entregado, 6=Cancelado). Frontend usa OrderStatus enum de strings.
+// Pass-through si ya es string (defensivo para StringEnumConverter).
+const ESTADO_INT_TO_STATUS: Record<number, OrderStatus> = {
+  0: OrderStatus.PENDIENTE,
+  2: OrderStatus.CONFIRMADA,
+  4: OrderStatus.ENVIADA,
+  5: OrderStatus.ENTREGADA,
+  6: OrderStatus.CANCELADA,
+};
+
+export function estadoIntToStatus(estado: number | OrderStatus): OrderStatus {
+  if (typeof estado === 'string') return estado;
+  return ESTADO_INT_TO_STATUS[estado] ?? OrderStatus.PENDIENTE;
+}
+
 // ============ TIPOS ============
 
 export interface OrdersListResponse {
@@ -40,7 +58,10 @@ export interface OrderDetail {
   clienteDireccion?: string;
   usuarioId: number;
   usuarioNombre: string;
-  estado: OrderStatus;
+  estado: OrderStatus | number;
+  estadoNombre?: string;
+  tipoVenta: number;
+  tipoVentaNombre: string;
   subtotal: number;
   descuento: number;
   impuestos: number;
