@@ -95,8 +95,7 @@ public record AutomationContext(
 
         if (Destinatario is "admin" or "ambos")
         {
-            var adminId = await GetAdminUserIdAsync(ct);
-            if (adminId.HasValue) ids.Add(adminId.Value);
+            ids.AddRange(await GetAdminUserIdsAsync(ct));
         }
 
         if (Destinatario is "vendedores" or "ambos")
@@ -268,6 +267,23 @@ public record AutomationContext(
                 && u.RolExplicito == RoleNames.Admin)
             .Select(u => (int?)u.Id)
             .FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Lista TODOS los user IDs con rol ADMIN activos en el tenant. SuperAdmin
+    /// queda fuera (es admin del sistema, no del tenant operativo). Usado por
+    /// ResolveDestinatarioIdsAsync para que las automatizaciones con
+    /// destinatario=admin notifiquen a todos los admins del tenant, no solo
+    /// al primero (audit 2026-05-22, ticket vendedor@jeyma).
+    /// </summary>
+    public async Task<List<int>> GetAdminUserIdsAsync(CancellationToken ct)
+    {
+        return await Db.Usuarios
+            .Where(u => u.TenantId == TenantId && u.Activo
+                && u.RolExplicito == RoleNames.Admin)
+            .OrderBy(u => u.Id)
+            .Select(u => u.Id)
+            .ToListAsync(ct);
     }
 }
 
