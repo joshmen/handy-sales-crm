@@ -31,6 +31,14 @@ public record AutomationContext(
     public string Destinatario => GetParam("destinatario", "admin");
 
     /// <summary>
+    /// Base URL del web — usado para construir CTAs en los emails (ej.
+    /// "Ver oportunidades", "Programar visita"). Configurable via env var
+    /// WEB_BASE_URL; default https://www.handysuites.com.
+    /// </summary>
+    public string WebBaseUrl =>
+        Environment.GetEnvironmentVariable("WEB_BASE_URL") ?? "https://www.handysuites.com";
+
+    /// <summary>
     /// Parse a typed param from the automation's JSON config, falling back to a default value.
     /// </summary>
     public T GetParam<T>(string key, T defaultValue)

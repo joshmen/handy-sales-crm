@@ -2850,6 +2850,39 @@
     }
   },
   "automations": {
+    "oportunidadesReorden": {
+      "title": "Reorder opportunities",
+      "breadcrumbClients": "Clients",
+      "runNow": "Analyze now",
+      "runNowSuccess": "Analysis completed",
+      "lastRun": "Last updated: {when}",
+      "noData": "No analysis data yet",
+      "noDataHint": "Click 'Analyze now' to run the automation for the first time",
+      "noLocationHint": "No flagged clients have a registered location; they only appear in the table.",
+      "mapTitle": "Map ({count} with location)",
+      "tableTitle": "Clients with reorder opportunity",
+      "empty": "No clients with reorder opportunity right now",
+      "kpi": {
+        "evaluados": "Clients evaluated",
+        "urgentes": "Overdue cycle",
+        "valorEstimado": "Estimated value"
+      },
+      "col": {
+        "cliente": "Client",
+        "vendedor": "Vendor",
+        "ciclo": "Avg cycle",
+        "diasSinPedido": "Days w/o order",
+        "urgencia": "Urgency",
+        "ticketProm": "Avg ticket",
+        "acciones": "Actions"
+      },
+      "action": {
+        "view": "View",
+        "viewClient": "View client detail",
+        "visit": "Schedule visit",
+        "scheduleVisit": "Schedule visit with this client"
+      }
+    },
     "title": "Automations",
     "subtitle": "Activate recipes so the system works for you",
     "errorLoading": "Error loading automations",

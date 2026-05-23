@@ -122,7 +122,16 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             .ToListAsync(ct);
         var vendedorDict = vendedores.ToDictionary(v => v.Id, v => v.Nombre ?? M("misc.sinAsignar", lang));
 
+        // Ubicaciones de clientes (para mapa en el web + persistir en Detalle)
+        var clienteIds = clientesSugeridos.Select(c => c.ClienteId).ToList();
+        var clienteUbicaciones = await context.Db.Clientes
+            .Where(c => clienteIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Latitud, c.Longitud })
+            .ToDictionaryAsync(c => c.Id, c => new { c.Latitud, c.Longitud }, ct);
+
         var urgentes = clientesSugeridos.Count(c => c.Urgencia >= 2.0);
+        var baseUrl = context.WebBaseUrl;
+        var oportunidadesUrl = $"{baseUrl}/clients/oportunidades-reorden";
 
         var content = new StringBuilder();
         content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));
@@ -136,6 +145,11 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             M("pedidoRecurrente.heading", lang).ToLower() + ".",
             "info"));
 
+        // CTA principal — abre la página de oportunidades con mapa
+        content.Append(EmailTemplateBuilder.PrimaryButton(
+            oportunidadesUrl,
+            lang == "en" ? "View all opportunities on map" : "Ver todas las oportunidades en mapa"));
+
         var rows = clientesSugeridos.Select(c =>
         {
             var vendedor = c.VendedorId.HasValue
@@ -143,6 +157,8 @@ public class PedidoRecurrenteHandler : IAutomationHandler
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
             var pct = (int)(c.Urgencia * 100);
             var pctColor = pct >= 200 ? "#dc2626" : pct >= 150 ? "#d97706" : "#2563eb";
+            var visitaUrl = $"{baseUrl}/visits?clienteId={c.ClienteId}";
+            var ctaCell = EmailTemplateBuilder.LinkButton(visitaUrl, lang == "en" ? "📅 Schedule visit" : "📅 Programar visita");
             return new[]
             {
                 System.Net.WebUtility.HtmlEncode(c.Nombre),
@@ -150,12 +166,13 @@ public class PedidoRecurrenteHandler : IAutomationHandler
                 $"{c.DiasDesde} {M("table.dias", lang).ToLower()}",
                 $"<span style=\"color:{pctColor};font-weight:700;\">{pct}%</span>",
                 vendedor,
+                ctaCell,
             };
         }).ToList();
 
         content.Append(EmailTemplateBuilder.SectionHeading(M("pedidoRecurrente.heading", lang)));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { M("table.cliente", lang), M("table.ciclo", lang), M("table.diasSinPedido", lang), M("table.urgencia", lang), M("table.vendedor", lang) }, rows));
+            new[] { M("table.cliente", lang), M("table.ciclo", lang), M("table.diasSinPedido", lang), M("table.urgencia", lang), M("table.vendedor", lang), lang == "en" ? "Action" : "Acción" }, rows));
 
         await context.SendAdminEmailAsync(
             M("pedidoRecurrente.subject", lang),
@@ -170,14 +187,19 @@ public class PedidoRecurrenteHandler : IAutomationHandler
             notificacionesEnviadas = notified,
             urgentes = clientesSugeridos.Select(c => new
             {
+                clienteId = c.ClienteId,
                 clienteNombre = c.Nombre,
+                vendedorId = c.VendedorId,
                 vendedorNombre = c.VendedorId.HasValue
                     ? vendedorDict.GetValueOrDefault(c.VendedorId.Value, M("misc.sinAsignar", lang))
                     : M("misc.sinAsignar", lang),
                 intervaloDias = (int)c.IntervaloPromedio,
                 diasSinPedido = c.DiasDesde,
                 urgenciaPct = (int)(c.Urgencia * 100),
-                montoPromedio = (double)c.MontoPromedio
+                montoPromedio = (double)c.MontoPromedio,
+                ultimoPedido = c.UltimoPedido,
+                latitud = clienteUbicaciones.TryGetValue(c.ClienteId, out var u) ? u.Latitud : null,
+                longitud = clienteUbicaciones.TryGetValue(c.ClienteId, out var u2) ? u2.Longitud : null,
             }).ToList()
         };
 

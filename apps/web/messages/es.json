@@ -2850,6 +2850,39 @@
     }
   },
   "automations": {
+    "oportunidadesReorden": {
+      "title": "Oportunidades de reorden",
+      "breadcrumbClients": "Clientes",
+      "runNow": "Analizar ahora",
+      "runNowSuccess": "Análisis completado",
+      "lastRun": "Última actualización: {when}",
+      "noData": "Sin datos del análisis todavía",
+      "noDataHint": "Click 'Analizar ahora' para correr la automatización por primera vez",
+      "noLocationHint": "Ningún cliente flaggeado tiene ubicación registrada; aparecen solo en la tabla.",
+      "mapTitle": "Mapa ({count} con ubicación)",
+      "tableTitle": "Clientes con oportunidad de reorden",
+      "empty": "No hay clientes con oportunidad de reorden en este momento",
+      "kpi": {
+        "evaluados": "Clientes evaluados",
+        "urgentes": "Con ciclo superado",
+        "valorEstimado": "Valor estimado"
+      },
+      "col": {
+        "cliente": "Cliente",
+        "vendedor": "Vendedor",
+        "ciclo": "Ciclo prom.",
+        "diasSinPedido": "Días sin pedido",
+        "urgencia": "Urgencia",
+        "ticketProm": "Ticket prom.",
+        "acciones": "Acciones"
+      },
+      "action": {
+        "view": "Ver",
+        "viewClient": "Ver detalle del cliente",
+        "visit": "Programar visita",
+        "scheduleVisit": "Programar visita con este cliente"
+      }
+    },
     "title": "Automatizaciones",
     "subtitle": "Activa recetas para que el sistema trabaje por ti",
     "errorLoading": "Error al cargar automatizaciones",
