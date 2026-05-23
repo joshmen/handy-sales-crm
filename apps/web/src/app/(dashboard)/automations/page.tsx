@@ -211,6 +211,14 @@ export default function AutomationsPage() {
         : template.defaultParamsJson
         ? JSON.parse(template.defaultParamsJson)
         : {};
+
+      // Auto-inject cooldown_horas para Condition triggers que aún no lo
+      // tienen guardado. Permite que el user configure la frecuencia desde
+      // el drawer aunque el template/tenant haya sido creado antes del feature.
+      if (template.triggerType === 'Condition' && !('cooldown_horas' in params)) {
+        params.cooldown_horas = '1';
+      }
+
       setConfigParams(params);
     } catch {
       setConfigParams({});

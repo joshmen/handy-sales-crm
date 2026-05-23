@@ -110,6 +110,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_clients',
       },
       {
+        id: 'reorder-opportunities',
+        label: 'Oportunidades de reorden',
+        icon: SbAutomations,
+        href: '/clients/reorder-opportunities',
+        permission: 'view_clients',
+      },
+      {
         id: 'client-categories',
         label: 'Categorías de clientes',
         icon: SbCategory,
