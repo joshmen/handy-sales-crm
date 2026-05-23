@@ -31,12 +31,18 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
 # Install ICU for globalization support (Mexican locale, currency formatting)
+# icu-libs: el binario de la librería.
+# icu-data-full: locale data para TODOS los idiomas. SIN ESTO, Alpine solo
+# tiene datos en inglés y CultureInfo("es-MX").ToString("dddd") devuelve
+# "Friday" en vez de "viernes". Reportado 2026-05-22 en automation
+# PedidoRecurrenteHandler: emails con header "Friday, 22 de May 2026"
+# en tenant configurado en español. Tamaño extra: ~28MB. Vale la pena.
 # tzdata: required by TimeZoneInfo.FindSystemTimeZoneById with IANA names
 # (e.g. "America/Mazatlan", "America/Mexico_City"). Sin esto, .NET busca en
 # /usr/share/zoneinfo/<tz> que no existe en Alpine por default → throws
 # TimeZoneNotFoundException. Reportado 2026-05-05 en automation
 # ResumenDiarioHandler para tenant en TZ Mazatlán.
-RUN apk add --no-cache icu-libs curl tzdata
+RUN apk add --no-cache icu-libs icu-data-full curl tzdata
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

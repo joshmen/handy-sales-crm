@@ -31,8 +31,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
 # Install ICU for globalization + curl for health checks
+# icu-data-full agregado 2026-05-22: sin esto, CultureInfo("es-MX") cae a
+# datos de invariant culture en Alpine → emails muestran "Friday" en vez
+# de "viernes". Mismo fix aplicado en Main y Billing.
 # tzdata: required by TimeZoneInfo.FindSystemTimeZoneById con IANA names.
-RUN apk add --no-cache icu-libs curl tzdata
+RUN apk add --no-cache icu-libs icu-data-full curl tzdata
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
