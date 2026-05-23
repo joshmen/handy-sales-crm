@@ -3074,6 +3074,14 @@
       "maxParadas": "Maximum stops",
       "porcentajeAlerta": "Minimum achievement percentage",
       "destinatario": "Who to notify?",
+      "cooldownHoras": "Execution frequency",
+      "cooldown": {
+        "hourly": "Every hour",
+        "every6h": "Every 6 hours",
+        "every12h": "Every 12 hours",
+        "daily": "Daily (every 24h)",
+        "every2days": "Every 2 days"
+      },
       "days": {
         "monday": "Monday",
         "tuesday": "Tuesday",
