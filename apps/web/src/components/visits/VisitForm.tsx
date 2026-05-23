@@ -31,6 +31,8 @@ interface VisitFormProps {
   onSave: (data: ClienteVisitaCreateDto) => void;
   onCancel: () => void;
   defaultDate?: string;
+  /** Pre-selecciona cliente al abrir el form (ej. al venir desde /clients/oportunidades-reorden). */
+  initialClienteId?: number;
 }
 
 export const VisitForm: React.FC<VisitFormProps> = ({
@@ -38,6 +40,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
   onSave,
   onCancel,
   defaultDate,
+  initialClienteId,
 }) => {
   const t = useTranslations('visits.form');
   const tc = useTranslations('common');
@@ -50,7 +53,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
   } = useForm<VisitFormInput>({
     resolver: zodResolver(visitFormSchema),
     defaultValues: {
-      clienteId: 0,
+      clienteId: initialClienteId ?? 0,
       tipoVisita: TipoVisita.Rutina,
       fechaProgramada: defaultDate || '',
       notas: '',
