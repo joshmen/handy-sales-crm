@@ -16,6 +16,55 @@ test.describe('Oportunidades de Reorden', () => {
     await expect(page.getByTestId('run-now-btn')).toBeVisible();
   });
 
+  test('sidebar entry under Clientes navigates to the page', async ({ page }) => {
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+
+    // Expandir submenu Clientes (button con label "Clientes") y luego click en
+    // "Oportunidades de reorden" dentro del submenu.
+    const clientesButton = page.locator('aside button, aside a').filter({ hasText: /^Clientes$/ }).first();
+    await expect(clientesButton).toBeVisible({ timeout: 10000 });
+    await clientesButton.click();
+
+    const sidebarLink = page.locator('a[href="/clients/reorder-opportunities"]').first();
+    await expect(sidebarLink).toBeVisible({ timeout: 5000 });
+    await sidebarLink.click();
+
+    await expect(page).toHaveURL(/reorder-opportunities/, { timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Oportunidades de reorden' })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('automation config drawer shows Frecuencia selector for Sugerir reorden', async ({ page }) => {
+    await page.goto('/automations');
+    await expect(page).toHaveURL(/automations/, { timeout: 15000 });
+
+    // Localizar el ⚙️ config button del template pedido-recurrente
+    // Cada card tiene su botón de config; buscamos por nombre del template.
+    const cards = page.locator('[data-tour="automations-grid"] > div');
+    await expect(cards.first()).toBeVisible({ timeout: 10000 });
+
+    // Buscar la card con texto que coincida con "reorden" (slug pedido-recurrente)
+    const reordenCard = cards.filter({ hasText: /reorden/i }).first();
+    await expect(reordenCard).toBeVisible({ timeout: 10000 });
+
+    // Click en el botón de config (ícono Gear) dentro de esa card
+    const configBtn = reordenCard.locator('button[title*="onfigur"], button[aria-label*="onfigur"]').first();
+    // Fallback: cualquier botón con la rueda
+    if (await configBtn.count() === 0) {
+      // El config button suele estar al final de la card; buscar por SVG
+      await reordenCard.locator('button').last().click();
+    } else {
+      await configBtn.click();
+    }
+
+    // Drawer abre con el form de config
+    const drawer = page.locator('[data-drawer-panel]');
+    await expect(drawer).toBeVisible({ timeout: 10000 });
+
+    // Verificar que aparece el label "Frecuencia de ejecución"
+    await expect(drawer.getByText(/Frecuencia de ejecuci/i)).toBeVisible({ timeout: 5000 });
+  });
+
   test('run-now triggers analysis and shows KPIs', async ({ page }) => {
     await page.goto('/clients/reorder-opportunities');
     await expect(page.getByRole('heading', { name: 'Oportunidades de reorden' })).toBeVisible({ timeout: 10000 });
