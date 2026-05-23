@@ -79,6 +79,17 @@ export const PARAM_CONFIG: Record<string, ParamConfigEntry> = {
       { value: 'ambos', labelKey: 'params.recipientOptions.both' },
     ],
   },
+  cooldown_horas: {
+    labelKey: 'params.cooldownHoras',
+    type: 'select',
+    optionKeys: [
+      { value: '1',  labelKey: 'params.cooldown.hourly' },
+      { value: '6',  labelKey: 'params.cooldown.every6h' },
+      { value: '12', labelKey: 'params.cooldown.every12h' },
+      { value: '24', labelKey: 'params.cooldown.daily' },
+      { value: '48', labelKey: 'params.cooldown.every2days' },
+    ],
+  },
 };
 
 /** Badge colors (light backgrounds, used inside cards) */

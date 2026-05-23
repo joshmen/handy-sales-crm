@@ -183,11 +183,18 @@ public class AutomationEngine : BackgroundService
     {
         var template = automation.Template;
 
-        // Condition triggers: run every poll cycle, but respect cooldown
+        // Condition triggers: run every poll cycle, but respect cooldown.
+        // Cooldown configurable via "cooldown_horas" param (default: 1h).
+        // El user lo configura desde /automatizaciones → config drawer. Audit
+        // 2026-05-23: antes era hardcoded 60min, ahora ej. 24 = diario.
         if (template.TriggerType == AutomationTriggerType.Condition)
         {
-            // Cooldown: don't run more than once per hour
-            if (automation.LastExecutedAt.HasValue && (nowUtc - automation.LastExecutedAt.Value).TotalMinutes < 60)
+            var cooldownHoras = 1;
+            var cooldownHorasParam = GetParamString(automation.ParamsJson, "cooldown_horas");
+            if (!string.IsNullOrEmpty(cooldownHorasParam) && int.TryParse(cooldownHorasParam, out var h) && h > 0)
+                cooldownHoras = h;
+
+            if (automation.LastExecutedAt.HasValue && (nowUtc - automation.LastExecutedAt.Value).TotalMinutes < 60 * cooldownHoras)
                 return false;
 
             return true;
@@ -283,8 +290,12 @@ public class AutomationEngine : BackgroundService
         try
         {
             using var doc = JsonDocument.Parse(paramsJson);
-            if (doc.RootElement.TryGetProperty(key, out var prop) && prop.ValueKind == JsonValueKind.String)
-                return prop.GetString();
+            if (doc.RootElement.TryGetProperty(key, out var prop))
+            {
+                if (prop.ValueKind == JsonValueKind.String) return prop.GetString();
+                // Acepta también números crudos (ej. "cooldown_horas": 24 sin comillas)
+                if (prop.ValueKind == JsonValueKind.Number) return prop.GetRawText();
+            }
         }
         catch { /* ignore */ }
         return null;
