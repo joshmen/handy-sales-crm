@@ -131,7 +131,7 @@ public class PedidoRecurrenteHandler : IAutomationHandler
 
         var urgentes = clientesSugeridos.Count(c => c.Urgencia >= 2.0);
         var baseUrl = context.WebBaseUrl;
-        var oportunidadesUrl = $"{baseUrl}/clients/oportunidades-reorden";
+        var oportunidadesUrl = $"{baseUrl}/clients/reorder-opportunities";
 
         var content = new StringBuilder();
         content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz, lang));

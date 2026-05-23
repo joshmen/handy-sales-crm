@@ -31,7 +31,7 @@ interface VisitFormProps {
   onSave: (data: ClienteVisitaCreateDto) => void;
   onCancel: () => void;
   defaultDate?: string;
-  /** Pre-selecciona cliente al abrir el form (ej. al venir desde /clients/oportunidades-reorden). */
+  /** Pre-selecciona cliente al abrir el form (ej. al venir desde /clients/reorder-opportunities). */
   initialClienteId?: number;
 }
 
