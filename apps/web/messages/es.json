@@ -3074,6 +3074,14 @@
       "maxParadas": "Máximo de paradas",
       "porcentajeAlerta": "Porcentaje mínimo de cumplimiento",
       "destinatario": "¿A quién notificar?",
+      "cooldownHoras": "Frecuencia de ejecución",
+      "cooldown": {
+        "hourly": "Cada hora",
+        "every6h": "Cada 6 horas",
+        "every12h": "Cada 12 horas",
+        "daily": "Diario (cada 24h)",
+        "every2days": "Cada 2 días"
+      },
       "days": {
         "monday": "Lunes",
         "tuesday": "Martes",

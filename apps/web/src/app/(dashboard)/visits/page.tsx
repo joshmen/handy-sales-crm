@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -155,17 +155,26 @@ function VisitsPageContent() {
 
   // Honra ?clienteId=X (deep link desde email "Programar visita" o
   // desde /clients/oportunidades-reorden) — abre el drawer con cliente
-  // pre-seleccionado.
+  // pre-seleccionado. Debe esperar a que `clients` cargue para que el
+  // SearchableSelect encuentre la opción correspondiente; sin esto el
+  // form monta con clientOptions=[] y queda en placeholder. useRef
+  // garantiza que abrimos el drawer una sola vez por navegación.
+  const handledClienteIdRef = useRef<string | null>(null);
   useEffect(() => {
+    if (clients.length === 0) return;
     const clienteIdParam = searchParams.get('clienteId');
-    if (clienteIdParam) {
-      const parsed = parseInt(clienteIdParam, 10);
-      if (!isNaN(parsed) && parsed > 0) {
-        setPrefilledClienteId(parsed);
-        setShowVisitForm(true);
-      }
+    if (!clienteIdParam) {
+      handledClienteIdRef.current = null;
+      return;
     }
-  }, [searchParams]);
+    if (handledClienteIdRef.current === clienteIdParam) return;
+    const parsed = parseInt(clienteIdParam, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      setPrefilledClienteId(parsed);
+      setShowVisitForm(true);
+      handledClienteIdRef.current = clienteIdParam;
+    }
+  }, [searchParams, clients.length]);
 
   const setView = (view: ViewMode) => {
     router.push(`/visits${view === 'calendar' ? '?view=calendar' : ''}`, { scroll: false });
