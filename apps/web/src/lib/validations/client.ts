@@ -61,6 +61,11 @@ export const clientSchema = z.object({
     .int()
     .positive('zoneRequired'),
 
+  // Vendedor asignado (opcional). Si se asigna, el cliente aparece en
+  // las rutas semanales auto de ese vendedor + en oportunidades de reorden.
+  // Sin vendedor → solo aparece en bulk transfers + reasignaciones manuales.
+  vendedorId: z.number().int().positive().nullable().optional(),
+
   latitud: z.number().default(0),
   longitud: z.number().default(0),
 
@@ -135,6 +140,7 @@ export const clientDefaultValues: ClientFormData = {
   colonia: '',
   codigoPostal: '',
   zonaId: 0,
+  vendedorId: null,
   latitud: 0,
   longitud: 0,
   encargado: '',
@@ -191,6 +197,7 @@ export function mapFormToBackendDto(data: ClientFormData) {
     direccion: data.direccion,
     numeroExterior: data.numeroExterior,
     idZona: data.zonaId,
+    vendedorId: data.vendedorId ?? null,
     categoriaClienteId: data.categoriaId ? parseInt(data.categoriaId) : 1,
     esProspecto: data.esProspecto,
     comentarios: data.comentarios || null,

@@ -150,6 +150,15 @@ public class ClienteService
         => _repo.RechazarProspectoAsync(id, _tenant.TenantId);
 
     /// <summary>
+    /// Reasigna todos los clientes del vendedor fromUsuarioId al vendedor
+    /// toUsuarioId dentro del tenant actual. Sólo cliente activos por
+    /// default. Usado por admin cuando un vendedor renuncia o cambia su
+    /// cartera operativa de forma permanente.
+    /// </summary>
+    public Task<int> TransferirCarteraAsync(int fromUsuarioId, int toUsuarioId, bool soloActivos)
+        => _repo.TransferirCarteraAsync(fromUsuarioId, toUsuarioId, _tenant.TenantId, soloActivos);
+
+    /// <summary>
     /// Valida que zona, categoría, lista de precios y vendedor del DTO pertenezcan
     /// al tenant actual. Previene cross-tenant leakage y FK 500 downstream.
     /// </summary>

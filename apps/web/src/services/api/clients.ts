@@ -228,6 +228,22 @@ class ClientService {
     }
   }
 
+  /**
+   * Bulk transfer: reasigna todos los clientes del vendedor `fromUsuarioId`
+   * al vendedor `toUsuarioId` (mismo tenant). Solo ADMIN/SUPER_ADMIN. Útil
+   * cuando un vendedor renuncia o cambia cartera permanentemente.
+   */
+  async transferirCartera(fromUsuarioId: number, toUsuarioId: number, soloActivos = true): Promise<{ transferidos: number }> {
+    try {
+      const response = await api.post<{ transferidos: number }>(`${this.basePath}/transferir-cartera`, {
+        fromUsuarioId, toUsuarioId, soloActivos,
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async createClient(clientData: CreateClientRequest): Promise<{ id: number }> {
     try {
       const response = await api.post<{ id: number }>(this.basePath, clientData);
