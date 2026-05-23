@@ -156,8 +156,28 @@ public static class ClienteEndpoints
                 ? Results.NoContent()
                 : Results.NotFound(new { message = "Prospecto no encontrado o ya fue procesado." });
         }).RequireAuthorization();
+
+        // Bulk transfer: reasignar todos los clientes de un vendedor a otro.
+        // Usado cuando un vendedor renuncia o cambia su cartera (operación
+        // permanente). Para sustitución temporal de un día, mejor crear ruta
+        // manual desde /routes sin tocar las asignaciones.
+        app.MapPost("/clientes/transferir-cartera", async (
+            ClienteTransferirCarteraDto dto,
+            [FromServices] ClienteService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
+        {
+            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                return Results.Forbid();
+
+            if (dto.FromUsuarioId == dto.ToUsuarioId)
+                return Results.BadRequest(new { message = "El vendedor origen y destino no pueden ser el mismo." });
+
+            var count = await servicio.TransferirCarteraAsync(dto.FromUsuarioId, dto.ToUsuarioId, dto.SoloActivos ?? true);
+            return Results.Ok(new { transferidos = count });
+        }).RequireAuthorization();
     }
 }
 
 public record ClienteCambiarActivoDto(bool Activo);
 public record ClienteBatchToggleRequest(List<int> Ids, bool Activo);
+public record ClienteTransferirCarteraDto(int FromUsuarioId, int ToUsuarioId, bool? SoloActivos);

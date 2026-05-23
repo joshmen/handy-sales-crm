@@ -72,6 +72,7 @@ export default function EditClientPage() {
   const [loading, setLoading] = useState(true);
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [categorias, setCategorias] = useState<CategoriaCliente[]>([]);
+  const [vendedores, setVendedores] = useState<Array<{ id: number; nombre: string }>>([]);
   const [listasPrecios, setListasPrecios] = useState<ListaPrecios[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [clientNotFound, setClientNotFound] = useState(false);
@@ -157,16 +158,23 @@ export default function EditClientPage() {
         setLoading(true);
         setLoadingData(true);
 
-        const [zonasRes, categoriasRes, listasRes, clientData] = await Promise.all([
+        const [zonasRes, categoriasRes, listasRes, vendedoresRes, clientData] = await Promise.all([
           api.get<Zona[]>('/zonas').catch(() => ({ data: [] })),
           api.get<CategoriaCliente[]>('/categorias-clientes').catch(() => ({ data: [] })),
           api.get<ListaPrecios[]>('/listas-precios').catch(() => ({ data: [] })),
+          api.get<{ items: Array<{ id: number; nombre: string; rol?: string; activo?: boolean }> } | Array<{ id: number; nombre: string; rol?: string; activo?: boolean }>>('/api/usuarios?pagina=1&tamanoPagina=500').catch(() => ({ data: [] as Array<{ id: number; nombre: string; rol?: string; activo?: boolean }> })),
           clientService.getClientById(clientId),
         ]);
 
         setZonas(zonasRes.data);
         setCategorias(categoriasRes.data);
         setListasPrecios(listasRes.data);
+        const userList = Array.isArray(vendedoresRes.data)
+          ? vendedoresRes.data
+          : (vendedoresRes.data?.items || []);
+        setVendedores(userList
+          .filter(u => (u.activo === undefined || u.activo === true) && (!u.rol || u.rol === 'VENDEDOR'))
+          .map(u => ({ id: u.id, nombre: u.nombre })));
 
         // Mapear datos del cliente al formulario
         reset({
@@ -195,6 +203,7 @@ export default function EditClientPage() {
           colonia: clientData.colonia || '',
           codigoPostal: clientData.codigoPostal || '',
           zonaId: clientData.zoneId || 0,
+          vendedorId: clientData.vendedorId ?? null,
           latitud: clientData.latitude || 0,
           longitud: clientData.longitude || 0,
           encargado: clientData.encargado || '',
@@ -605,6 +614,20 @@ export default function EditClientPage() {
                     <input type="text" {...register('codigoPostal')} className={inputClass()} />
                   </FormField>
                 </div>
+
+                <FormField
+                  label="Vendedor asignado"
+                  hint="Cliente aparecerá en sus rutas semanales auto + oportunidades de reorden."
+                >
+                  <SearchableSelect
+                    options={vendedores.map(v => ({ value: v.id, label: v.nombre }))}
+                    value={watch('vendedorId') || null}
+                    onChange={(val) => setValue('vendedorId', val ? Number(val) : null, { shouldValidate: true, shouldDirty: true })}
+                    placeholder="Sin asignar"
+                    searchPlaceholder="Buscar vendedor..."
+                    disabled={loadingData}
+                  />
+                </FormField>
 
                 <div className="grid grid-cols-[1fr_100px_100px] gap-3">
                   <FormField label={t("zoneLabel")} required error={errors.zonaId?.message}>

@@ -71,6 +71,7 @@ export default function NewClientPage() {
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [categorias, setCategorias] = useState<CategoriaCliente[]>([]);
   const [listasPrecios, setListasPrecios] = useState<ListaPrecios[]>([]);
+  const [vendedores, setVendedores] = useState<Array<{ id: number; nombre: string }>>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [isOutOfZone, setIsOutOfZone] = useState(false);
 
@@ -154,14 +155,24 @@ export default function NewClientPage() {
     async function loadData() {
       try {
         setLoadingData(true);
-        const [zonasRes, categoriasRes, listasRes] = await Promise.all([
+        const [zonasRes, categoriasRes, listasRes, vendedoresRes] = await Promise.all([
           api.get<Zona[]>('/zonas').catch(() => ({ data: [] })),
           api.get<CategoriaCliente[]>('/categorias-clientes').catch(() => ({ data: [] })),
           api.get<ListaPrecios[]>('/listas-precios').catch(() => ({ data: [] })),
+          // Endpoint /api/usuarios devuelve paginado o array directo (depende del backend).
+          api.get<{ items: Array<{ id: number; nombre: string; rol?: string; activo?: boolean }> } | Array<{ id: number; nombre: string; rol?: string; activo?: boolean }>>('/api/usuarios?pagina=1&tamanoPagina=500').catch(() => ({ data: [] as Array<{ id: number; nombre: string; rol?: string; activo?: boolean }> })),
         ]);
         setZonas(zonasRes.data);
         setCategorias(categoriasRes.data);
         setListasPrecios(listasRes.data);
+        // Filtrar solo VENDEDORes activos (el backend retorna todos los usuarios).
+        const userList = Array.isArray(vendedoresRes.data)
+          ? vendedoresRes.data
+          : (vendedoresRes.data?.items || []);
+        const vendList = userList
+          .filter(u => (u.activo === undefined || u.activo === true) && (!u.rol || u.rol === 'VENDEDOR'))
+          .map(u => ({ id: u.id, nombre: u.nombre }));
+        setVendedores(vendList);
       } catch (error) {
         console.error('Error cargando datos:', error);
       } finally {
@@ -525,6 +536,20 @@ export default function NewClientPage() {
                     <input type="text" {...register('codigoPostal')} className={inputClass()} />
                   </FormField>
                 </div>
+
+                <FormField
+                  label="Vendedor asignado"
+                  hint="Cliente aparecerá en sus rutas semanales auto + oportunidades de reorden. Sin vendedor → solo bulk transfers o ruta manual."
+                >
+                  <SearchableSelect
+                    options={vendedores.map(v => ({ value: v.id, label: v.nombre }))}
+                    value={watch('vendedorId') || null}
+                    onChange={(val) => setValue('vendedorId', val ? Number(val) : null, { shouldValidate: true, shouldDirty: true })}
+                    placeholder="Sin asignar"
+                    searchPlaceholder="Buscar vendedor..."
+                    disabled={loadingData}
+                  />
+                </FormField>
 
                 <div className="grid grid-cols-[1fr_100px_100px] gap-3">
                   <FormField label={t("zoneLabel")} required error={errors.zonaId?.message}>

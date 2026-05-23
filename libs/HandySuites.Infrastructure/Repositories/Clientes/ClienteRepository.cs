@@ -286,6 +286,24 @@ public class ClienteRepository : IClienteRepository
         return entities.Count;
     }
 
+    public async Task<int> TransferirCarteraAsync(int fromUsuarioId, int toUsuarioId, int tenantId, bool soloActivos)
+    {
+        var query = _db.Clientes.Where(c => c.VendedorId == fromUsuarioId && c.TenantId == tenantId);
+        if (soloActivos) query = query.Where(c => c.Activo);
+
+        var clientes = await query.ToListAsync();
+        var actualizadoPor = $"bulk-transfer-{fromUsuarioId}-to-{toUsuarioId}";
+        foreach (var cliente in clientes)
+        {
+            cliente.VendedorId = toUsuarioId;
+            cliente.ActualizadoEn = DateTime.UtcNow;
+            cliente.ActualizadoPor = actualizadoPor;
+        }
+
+        await _db.SaveChangesAsync();
+        return clientes.Count;
+    }
+
     public async Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null)
     {
         return await _db.Clientes.AsNoTracking().AnyAsync(c =>

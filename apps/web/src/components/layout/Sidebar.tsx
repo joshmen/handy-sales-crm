@@ -289,6 +289,13 @@ const sidebarItems: SidebarItem[] = [
         href: '/team/gps',
         permission: 'view_team',
       },
+      {
+        id: 'team-transferir',
+        label: 'Transferir cartera',
+        icon: SbTeam,
+        href: '/team/transferir-cartera',
+        permission: 'manage_roles',
+      },
     ],
   },
   {
