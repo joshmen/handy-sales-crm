@@ -12,6 +12,11 @@ public interface IClienteRepository
     Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro, int tenantId, List<int>? filterByVendedorIds = null);
     Task<bool> CambiarActivoAsync(int id, bool activo, int tenantId);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
+    /// <summary>
+    /// Reasigna en bulk los clientes del vendedor fromUsuarioId al toUsuarioId
+    /// (dentro del mismo tenant). Returns: número de clientes transferidos.
+    /// </summary>
+    Task<int> TransferirCarteraAsync(int fromUsuarioId, int toUsuarioId, int tenantId, bool soloActivos);
     Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null);
     Task<bool> AprobarProspectoAsync(int id, int tenantId);
     Task<bool> RechazarProspectoAsync(int id, int tenantId);
