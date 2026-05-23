@@ -151,6 +151,21 @@ function VisitsPageContent() {
   const [visitDetail, setVisitDetail] = useState<ClienteVisitaDto | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>();
+  const [prefilledClienteId, setPrefilledClienteId] = useState<number | undefined>();
+
+  // Honra ?clienteId=X (deep link desde email "Programar visita" o
+  // desde /clients/oportunidades-reorden) — abre el drawer con cliente
+  // pre-seleccionado.
+  useEffect(() => {
+    const clienteIdParam = searchParams.get('clienteId');
+    if (clienteIdParam) {
+      const parsed = parseInt(clienteIdParam, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        setPrefilledClienteId(parsed);
+        setShowVisitForm(true);
+      }
+    }
+  }, [searchParams]);
 
   const setView = (view: ViewMode) => {
     router.push(`/visits${view === 'calendar' ? '?view=calendar' : ''}`, { scroll: false });
@@ -358,6 +373,7 @@ function VisitsPageContent() {
   // Handlers
   const handleCreateVisit = () => {
     setPrefilledDate(undefined);
+    setPrefilledClienteId(undefined);
     setShowVisitForm(true);
   };
 
@@ -631,7 +647,7 @@ function VisitsPageContent() {
       {/* Drawer: Programar Visita */}
       <Drawer
         isOpen={showVisitForm}
-        onClose={() => setShowVisitForm(false)}
+        onClose={() => { setShowVisitForm(false); setPrefilledClienteId(undefined); }}
         title={t('detail.scheduleTitle')}
         icon={<CalendarDays className="w-5 h-5 text-green-600" />}
         width="md"
@@ -640,8 +656,9 @@ function VisitsPageContent() {
           <VisitForm
             clients={clients}
             onSave={handleSaveVisit}
-            onCancel={() => setShowVisitForm(false)}
+            onCancel={() => { setShowVisitForm(false); setPrefilledClienteId(undefined); }}
             defaultDate={prefilledDate}
+            initialClienteId={prefilledClienteId}
           />
         </div>
       </Drawer>
