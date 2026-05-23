@@ -305,6 +305,29 @@ public class EmailTemplateBuilder
     }
 
     /// <summary>
+    /// Big centered CTA button. Links to a deep-link en el web (ej. una página
+    /// accionable que el receptor debe abrir). Usar 1 por email — el principal.
+    /// </summary>
+    public static string PrimaryButton(string url, string label)
+    {
+        return $"""
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0 24px 0;">
+                <tr><td align="center">
+                    <a href="{url}" target="_blank" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 28px;border-radius:8px;">{label}</a>
+                </td></tr>
+            </table>
+        """;
+    }
+
+    /// <summary>
+    /// Small inline link button — para usar dentro de celdas de tabla (CTA per-row).
+    /// </summary>
+    public static string LinkButton(string url, string label)
+    {
+        return $"""<a href="{url}" target="_blank" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;white-space:nowrap;">{label}</a>""";
+    }
+
+    /// <summary>
     /// Date/time stamp line.
     /// </summary>
     public static string DateStamp(DateTime date, string? timezone = "America/Mexico_City", string? language = "es")
