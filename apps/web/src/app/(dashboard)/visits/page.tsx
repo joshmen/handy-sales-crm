@@ -154,14 +154,13 @@ function VisitsPageContent() {
   const [prefilledClienteId, setPrefilledClienteId] = useState<number | undefined>();
 
   // Honra ?clienteId=X (deep link desde email "Programar visita" o
-  // desde /clients/oportunidades-reorden) — abre el drawer con cliente
-  // pre-seleccionado. Debe esperar a que `clients` cargue para que el
-  // SearchableSelect encuentre la opción correspondiente; sin esto el
-  // form monta con clientOptions=[] y queda en placeholder. useRef
-  // garantiza que abrimos el drawer una sola vez por navegación.
+  // desde /clients/reorder-opportunities) — abre el drawer con cliente
+  // pre-seleccionado. Como fetchClients() solo trae los primeros 100,
+  // el cliente del deep-link puede no estar en la lista; en ese caso
+  // lo fetcheamos por id y lo agregamos antes de abrir el drawer.
+  // useRef previene re-fetch si el query param no cambió.
   const handledClienteIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (clients.length === 0) return;
     const clienteIdParam = searchParams.get('clienteId');
     if (!clienteIdParam) {
       handledClienteIdRef.current = null;
@@ -169,12 +168,35 @@ function VisitsPageContent() {
     }
     if (handledClienteIdRef.current === clienteIdParam) return;
     const parsed = parseInt(clienteIdParam, 10);
-    if (!isNaN(parsed) && parsed > 0) {
+    if (isNaN(parsed) || parsed <= 0) return;
+
+    // Esperar a que el primer fetch de clients termine (clients.length > 0)
+    // para evitar competir con el cleanup del fetchClients inicial.
+    if (clients.length === 0) return;
+
+    handledClienteIdRef.current = clienteIdParam;
+
+    // Si el cliente ya está en la lista cargada, abrir el drawer directo.
+    const exists = clients.some(c => parseInt(c.id) === parsed);
+    if (exists) {
       setPrefilledClienteId(parsed);
       setShowVisitForm(true);
-      handledClienteIdRef.current = clienteIdParam;
+      return;
     }
-  }, [searchParams, clients.length]);
+
+    // No está en los primeros 100 — fetchear por id e inyectar en clients[].
+    (async () => {
+      try {
+        const cliente = await clientService.getClientById(parsed);
+        setClients(prev => prev.some(c => c.id === cliente.id) ? prev : [...prev, cliente]);
+        setPrefilledClienteId(parsed);
+        setShowVisitForm(true);
+      } catch {
+        // Cliente no existe o error — abrir drawer vacío, el user selecciona manualmente
+        setShowVisitForm(true);
+      }
+    })();
+  }, [searchParams, clients]);
 
   const setView = (view: ViewMode) => {
     router.push(`/visits${view === 'calendar' ? '?view=calendar' : ''}`, { scroll: false });
