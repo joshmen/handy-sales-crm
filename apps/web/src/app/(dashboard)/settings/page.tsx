@@ -90,6 +90,15 @@ function SettingsPageContent() {
       title={t('title')}
       subtitle={t('subtitle')}
     >
+      {/* Audit M-1: cross-link a billing settings para evitar que admin se pierda
+          buscando configuración fiscal (CSD, mapeo SAT, series). */}
+      <div className="mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 text-sm text-blue-900 dark:text-blue-200">
+        ¿Buscas configuración fiscal (CSD, series, mapeo SAT)? Está en{' '}
+        <a href="/billing/settings" className="font-medium underline hover:no-underline">
+          Facturación → Configuración Fiscal
+        </a>.
+      </div>
+
       <Tabs
         value={activeTab}
         onValueChange={value => {
