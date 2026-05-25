@@ -41,7 +41,7 @@ test.describe('Vendedor Assignment + Bulk Transfer', () => {
     await page.goto('/team/transferir-cartera');
     await expect(page).toHaveURL(/transferir-cartera/, { timeout: 15000 });
 
-    await expect(page.getByRole('heading', { name: /Transferir cartera/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /(Transferir|Reasignar) cartera/i })).toBeVisible({ timeout: 10000 });
 
     // Use locator instead of getByText (label has nested span with asterisk)
     const container = page.getByTestId('transferir-cartera-page');
@@ -51,25 +51,33 @@ test.describe('Vendedor Assignment + Bulk Transfer', () => {
     await expect(page.getByTestId('submit-transfer-btn')).toBeDisabled();
   });
 
-  test('sidebar entry under Equipo navigates to transferir-cartera', async ({ page }) => {
+  test('sidebar entry under Clientes navigates to reasignar cartera', async ({ page }) => {
+    // Audit H-5 (2026-05-25): movido de Equipo a Clientes. El path viejo
+    // /team/transferir-cartera mantiene redirect 301 → /clients/transferir-cartera.
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
 
-    const equipoButton = page.locator('aside button, aside a').filter({ hasText: /^Equipo$/ }).first();
-    await expect(equipoButton).toBeVisible({ timeout: 10000 });
-    await equipoButton.click();
+    const clientesButton = page.locator('aside button, aside a').filter({ hasText: /^Clientes$/ }).first();
+    await expect(clientesButton).toBeVisible({ timeout: 10000 });
+    await clientesButton.click();
 
-    const sidebarLink = page.locator('a[href="/team/transferir-cartera"]').first();
+    const sidebarLink = page.locator('a[href="/clients/transferir-cartera"]').first();
     await expect(sidebarLink).toBeVisible({ timeout: 5000 });
     await sidebarLink.click();
 
     await expect(page).toHaveURL(/transferir-cartera/, { timeout: 15000 });
-    await expect(page.getByRole('heading', { name: /Transferir cartera/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /(Transferir|Reasignar) cartera/i })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('legacy /team/transferir-cartera redirects to /clients/transferir-cartera', async ({ page }) => {
+    // Audit H-5: redirect 301 para no romper bookmarks/links externos.
+    await page.goto('/team/transferir-cartera');
+    await expect(page).toHaveURL(/\/clients\/transferir-cartera/, { timeout: 15000 });
   });
 
   test('submit button enables when FROM and TO are different vendedores', async ({ page }) => {
     await page.goto('/team/transferir-cartera');
-    await expect(page.getByRole('heading', { name: /Transferir cartera/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /(Transferir|Reasignar) cartera/i })).toBeVisible({ timeout: 10000 });
 
     // FROM selector — open and pick first option
     const fromCombobox = page.getByRole('combobox').first();
