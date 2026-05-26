@@ -28,28 +28,43 @@ public class FinkokRegistrationService : IRegistrationService
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<FinkokRegistrationService> _logger;
-    private readonly string _resellerUsername;
-    private readonly string _resellerPassword;
+    private readonly string? _resellerUsername;
+    private readonly string? _resellerPassword;
     private readonly bool _isProduction;
 
     public FinkokRegistrationService(HttpClient httpClient, IConfiguration config, ILogger<FinkokRegistrationService> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
-        // Reutilizar las mismas env vars que FacturasController usa para timbrado.
-        // Es la misma cuenta partner Finkok — no hay razón para duplicar credenciales.
-        _resellerUsername = config["FINKOK_USUARIO"]
-            ?? throw new InvalidOperationException("FINKOK_USUARIO no configurado en env vars");
-        _resellerPassword = config["FINKOK_PASSWORD"]
-            ?? throw new InvalidOperationException("FINKOK_PASSWORD no configurado en env vars");
+        // Resiliente: NO tirar en el constructor si faltan env vars. Romper el DI haría
+        // caer endpoints sin relación (ej. GET configuracion-fiscal). En lugar, RegisterEmitterAsync
+        // devuelve un RegisterEmitterResult con success=false + Message claro.
+        // Reutilizamos las mismas env vars que FacturasController usa para timbrado.
+        _resellerUsername = config["FINKOK_USUARIO"];
+        _resellerPassword = config["FINKOK_PASSWORD"];
         var ambiente = config["FINKOK_AMBIENTE"]?.ToLowerInvariant() ?? "sandbox";
         _isProduction = ambiente == "production";
     }
+
+    private bool CredentialsConfigured =>
+        !string.IsNullOrEmpty(_resellerUsername) && !string.IsNullOrEmpty(_resellerPassword);
+
+    private RegisterEmitterResult MissingCredentialsResult() => new()
+    {
+        Success = false,
+        ErrorCode = "CONFIG_MISSING",
+        Message = "Credenciales Finkok no configuradas (FINKOK_USUARIO/FINKOK_PASSWORD). Contacta soporte.",
+    };
 
     private string Url => _isProduction ? ProductionUrl : SandboxUrl;
 
     public async Task<RegisterEmitterResult> RegisterEmitterAsync(RegisterEmitterRequest request, CancellationToken ct = default)
     {
+        if (!CredentialsConfigured)
+        {
+            _logger.LogError("FINKOK_USUARIO o FINKOK_PASSWORD vacíos — RegisterEmitter omitido");
+            return MissingCredentialsResult();
+        }
         var cerB64 = Convert.ToBase64String(request.CerBytes);
         var keyB64 = Convert.ToBase64String(request.KeyBytes);
 
@@ -91,6 +106,7 @@ public class FinkokRegistrationService : IRegistrationService
 
     public async Task<RegisterEmitterResult> UpdateEmitterAsync(UpdateEmitterRequest request, CancellationToken ct = default)
     {
+        if (!CredentialsConfigured) return MissingCredentialsResult();
         // Si vienen bytes nuevos del CSD, los pasamos; sino, vacío (Finkok mantiene el actual).
         var cerTag = request.CerBytes != null
             ? $"<apps:cer>{Convert.ToBase64String(request.CerBytes)}</apps:cer>"
@@ -138,6 +154,8 @@ public class FinkokRegistrationService : IRegistrationService
 
     public async Task<EmitterInfoResult> GetEmitterInfoAsync(string rfc, CancellationToken ct = default)
     {
+        if (!CredentialsConfigured)
+            return new EmitterInfoResult { Success = false, Message = "Credenciales Finkok no configuradas" };
         var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
                   xmlns:apps=""{Namespace}"">
@@ -165,6 +183,8 @@ public class FinkokRegistrationService : IRegistrationService
 
     public async Task<AssignCreditsResult> AssignCreditsAsync(string rfc, int credits, CancellationToken ct = default)
     {
+        if (!CredentialsConfigured)
+            return new AssignCreditsResult { Success = false, Message = "Credenciales Finkok no configuradas" };
         if (credits <= 0)
             return new AssignCreditsResult { Success = false, Message = "credits debe ser > 0" };
 
@@ -351,9 +371,11 @@ public class FinkokRegistrationService : IRegistrationService
     private string SanitizeErrorMessage(string? message)
     {
         if (string.IsNullOrEmpty(message)) return "Error de comunicación con Finkok";
-        var sanitized = message
-            .Replace(_resellerUsername, "[RESELLER_USER]")
-            .Replace(_resellerPassword, "[REDACTED]");
+        var sanitized = message;
+        if (!string.IsNullOrEmpty(_resellerUsername))
+            sanitized = sanitized.Replace(_resellerUsername, "[RESELLER_USER]");
+        if (!string.IsNullOrEmpty(_resellerPassword))
+            sanitized = sanitized.Replace(_resellerPassword, "[REDACTED]");
         return sanitized;
     }
 
