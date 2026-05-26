@@ -1083,5 +1083,12 @@ public class HandySuitesDbContext : DbContext
             // SQLite tests: ignore AiEmbedding entity (Vector type not supported)
             modelBuilder.Ignore<AiEmbedding>();
         }
+
+        // Audit L-1 (2026-05-25): AutomationSchedule tiene TenantId pero no se usaba
+        // todavía (entity orphan + migration sin DbSet). Aplicamos query filter
+        // preventivo para que cualquier uso futuro (db.Set<AutomationSchedule>())
+        // herede multi-tenancy correctamente desde día 1.
+        modelBuilder.Entity<AutomationSchedule>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
     }
 }

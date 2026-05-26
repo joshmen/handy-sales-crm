@@ -123,6 +123,17 @@ const sidebarItems: SidebarItem[] = [
         href: '/client-categories',
         permission: 'manage_catalogs',
       },
+      // Audit H-5 (2026-05-25): movido desde Equipo. Es una operación de cartera
+      // de clientes (reasignar vendedor a N clientes), no de gestión del equipo.
+      // El path /team/transferir-cartera se mantiene activo + redirect en
+      // /clients/transferir-cartera para no romper bookmarks.
+      {
+        id: 'clients-transferir',
+        label: 'Reasignar cartera',
+        icon: SbTeam,
+        href: '/clients/transferir-cartera',
+        permission: 'manage_roles',
+      },
     ],
   },
   {
@@ -289,13 +300,8 @@ const sidebarItems: SidebarItem[] = [
         href: '/team/gps',
         permission: 'view_team',
       },
-      {
-        id: 'team-transferir',
-        label: 'Transferir cartera',
-        icon: SbTeam,
-        href: '/team/transferir-cartera',
-        permission: 'manage_roles',
-      },
+      // Audit H-5: "Transferir cartera" movido a Clientes > Reasignar cartera.
+      // La página vieja redirige 301 al nuevo path para no romper bookmarks.
     ],
   },
   {

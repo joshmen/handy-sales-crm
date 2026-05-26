@@ -1486,8 +1486,12 @@ Reglas:
 
         try
         {
-            await db.Database.ExecuteSqlRawAsync("SELECT refresh_ai_materialized_views()");
-            await db.Database.ExecuteSqlRawAsync("SELECT refresh_report_materialized_views()");
+            // ExecuteSqlInterpolated en lugar de Raw para defense-in-depth (no
+            // hay user input aquí, los strings son literales — pero la diferencia
+            // entre Raw e Interpolated es la única señal estática de seguridad
+            // para quien revise el archivo en el futuro).
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT refresh_ai_materialized_views()");
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT refresh_report_materialized_views()");
             return Results.Ok(new { message = "Vistas materializadas actualizadas correctamente.", refreshedAt = DateTime.UtcNow });
         }
         catch (Exception ex)

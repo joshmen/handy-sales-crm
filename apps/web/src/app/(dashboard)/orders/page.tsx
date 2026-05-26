@@ -39,63 +39,16 @@ import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 
-// Mapeo de estados de API a estados del componente
-const estadoToStatus: Record<string, Order['status']> = {
-  'Borrador': 'draft',
-  'Confirmado': 'confirmed',
-  'EnRuta': 'en_route',
-  'Entregado': 'delivered',
-  'Cancelado': 'cancelled',
-  // Legacy: old states map to confirmed for backwards compat
-  'Enviado': 'confirmed',
-  'EnProceso': 'confirmed',
-};
-
-const statusLabels: Record<string, string> = {
-  'draft': 'Borrador',
-  'confirmed': 'Confirmado',
-  'en_route': 'En Ruta',
-  'delivered': 'Entregado',
-  'cancelled': 'Cancelado',
-};
-
-// Dot color + subtle text — no pastel backgrounds
-const statusDotColors: Record<string, string> = {
-  'draft': 'bg-muted-foreground ring-2 ring-border-subtle ring-offset-1',
-  'confirmed': 'bg-blue-500 ring-2 ring-blue-200 ring-offset-1',
-  'en_route': 'bg-cyan-500 ring-2 ring-cyan-200 ring-offset-1',
-  'delivered': 'bg-emerald-500',
-  'cancelled': 'bg-red-400',
-};
-const statusTextColors: Record<string, string> = {
-  'draft': 'text-muted-foreground',
-  'confirmed': 'text-blue-700',
-  'en_route': 'text-cyan-700',
-  'delivered': 'text-emerald-700',
-  'cancelled': 'text-red-500',
-};
-// Left border accent for rows needing attention
-const statusBorderColors: Record<string, string> = {
-  'draft': 'border-l-border-default',
-  'confirmed': 'border-l-blue-400',
-  'en_route': 'border-l-cyan-400',
-  'delivered': '',
-  'cancelled': '',
-};
-
-// Transition map: given the raw API estado, returns the primary forward action
-function getNextAction(apiEstado?: string): { label: string; action: string; colorClasses: string } | null {
-  switch (apiEstado) {
-    case 'Borrador':
-      return { label: 'Confirmar', action: 'confirmar', colorClasses: 'border border-blue-300 text-blue-700 hover:bg-blue-50' };
-    case 'Confirmado':
-      return { label: 'Enviar a Ruta', action: 'en-ruta', colorClasses: 'border border-cyan-300 text-cyan-700 hover:bg-cyan-50' };
-    case 'EnRuta':
-      return { label: 'Entregar', action: 'entregar', colorClasses: 'bg-emerald-600 text-white hover:bg-emerald-700' };
-    default:
-      return null;
-  }
-}
+// Audit M-4: estilos de estado centralizados en lib/constants/orderStatusStyles.ts
+// (antes 22 strings de Tailwind hardcoded en este archivo).
+import {
+  ESTADO_TO_STATUS as estadoToStatus,
+  STATUS_LABELS as statusLabels,
+  STATUS_DOT_COLORS as statusDotColors,
+  STATUS_TEXT_COLORS as statusTextColors,
+  STATUS_BORDER_COLORS as statusBorderColors,
+  getNextAction,
+} from '@/lib/constants/orderStatusStyles';
 
 // Non-terminal states that can be cancelled
 const cancellableEstados = new Set(['Borrador', 'Confirmado', 'EnRuta']);

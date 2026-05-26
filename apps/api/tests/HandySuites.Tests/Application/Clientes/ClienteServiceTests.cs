@@ -119,5 +119,86 @@ namespace HandySuites.Tests.Application.Clientes
             _repoMock.Verify(r => r.ContarPedidosActivosAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
             _repoMock.Verify(r => r.EliminarAsync(4, 1), Times.Once);
         }
+
+        // ─── RBAC en ObtenerPorIdAsync (audit H-1 — documenta el contract IDOR-safe) ───
+        // El listado paginado SÍ filtra por VendedorId (matriz role-based), pero el GET
+        // por id antes no — vendedor1 leía clientes de vendedor2. Fixed via service.
+        // Estos tests previenen regresiones si alguien remueve el RBAC del service.
+
+        [Fact]
+        public async Task ObtenerPorIdAsync_VendedorRegular_NoVeClienteDeOtroVendedor()
+        {
+            // Vendedor con id=5 intenta leer cliente asignado a vendedor id=99
+            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
+            _tenantMock.Setup(t => t.UserId).Returns("5");
+            var clienteDeOtro = new ClienteDto { Id = 10, Nombre = "X", RFC = "R", Correo = "x@x.com", Telefono = "1", Direccion = "D", VendedorId = 99 };
+            _repoMock.Setup(r => r.ObtenerPorIdAsync(10, 1)).ReturnsAsync(clienteDeOtro);
+
+            var resultado = await _service.ObtenerPorIdAsync(10);
+
+            resultado.Should().BeNull("vendedor regular solo debe ver clientes asignados a él");
+        }
+
+        [Fact]
+        public async Task ObtenerPorIdAsync_VendedorRegular_VeClienteAsignadoAEl()
+        {
+            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
+            _tenantMock.Setup(t => t.UserId).Returns("5");
+            var clientePropio = new ClienteDto { Id = 11, Nombre = "Y", RFC = "R", Correo = "y@y.com", Telefono = "1", Direccion = "D", VendedorId = 5 };
+            _repoMock.Setup(r => r.ObtenerPorIdAsync(11, 1)).ReturnsAsync(clientePropio);
+
+            var resultado = await _service.ObtenerPorIdAsync(11);
+
+            resultado.Should().NotBeNull();
+            resultado!.Id.Should().Be(11);
+        }
+
+        [Fact]
+        public async Task ObtenerPorIdAsync_Supervisor_VeClienteDeSubordinado()
+        {
+            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSupervisor).Returns(true);
+            _tenantMock.Setup(t => t.UserId).Returns("7");
+            _usuarioRepoMock.Setup(r => r.ObtenerSubordinadoIdsAsync(7, 1)).ReturnsAsync(new List<int> { 20, 21 });
+            var clienteSubordinado = new ClienteDto { Id = 12, Nombre = "Z", RFC = "R", Correo = "z@z.com", Telefono = "1", Direccion = "D", VendedorId = 20 };
+            _repoMock.Setup(r => r.ObtenerPorIdAsync(12, 1)).ReturnsAsync(clienteSubordinado);
+
+            var resultado = await _service.ObtenerPorIdAsync(12);
+
+            resultado.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task ObtenerPorIdAsync_Supervisor_NoVeClienteDeOtroEquipo()
+        {
+            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsSupervisor).Returns(true);
+            _tenantMock.Setup(t => t.UserId).Returns("7");
+            _usuarioRepoMock.Setup(r => r.ObtenerSubordinadoIdsAsync(7, 1)).ReturnsAsync(new List<int> { 20, 21 });
+            var clienteFuera = new ClienteDto { Id = 13, Nombre = "W", RFC = "R", Correo = "w@w.com", Telefono = "1", Direccion = "D", VendedorId = 99 };
+            _repoMock.Setup(r => r.ObtenerPorIdAsync(13, 1)).ReturnsAsync(clienteFuera);
+
+            var resultado = await _service.ObtenerPorIdAsync(13);
+
+            resultado.Should().BeNull("supervisor no debe ver clientes fuera de su equipo");
+        }
+
+        [Fact]
+        public async Task ObtenerPorIdAsync_Admin_VeCualquierClienteDelTenant()
+        {
+            // Default fixture: IsAdmin=true, TenantId=1
+            var cliente = new ClienteDto { Id = 14, Nombre = "Q", RFC = "R", Correo = "q@q.com", Telefono = "1", Direccion = "D", VendedorId = 99 };
+            _repoMock.Setup(r => r.ObtenerPorIdAsync(14, 1)).ReturnsAsync(cliente);
+
+            var resultado = await _service.ObtenerPorIdAsync(14);
+
+            resultado.Should().NotBeNull();
+        }
     }
 }
