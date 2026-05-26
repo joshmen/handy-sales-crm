@@ -378,6 +378,104 @@ public class CatalogosController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// BILL-1 retry: si el upload inicial guardó CSD pero el registro Finkok falló,
+    /// este endpoint reintenta el registro reusando el CSD ya guardado (descifrado).
+    /// Útil cuando red caída, Finkok temporalmente fuera, password mal entonces corregido vía PUT.
+    /// </summary>
+    [HttpPost("configuracion-fiscal/{id}/retry-finkok-registration")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
+    public async Task<ActionResult> RetryFinkokRegistration(int id)
+    {
+        var tenantId = GetTenantId();
+
+        var config = await _context.ConfiguracionesFiscales
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+
+        if (config == null)
+            return NotFound();
+
+        if (string.IsNullOrEmpty(config.Rfc))
+            return BadRequest(new { error = "El RFC no está configurado. Completa los datos fiscales primero." });
+
+        if (string.IsNullOrEmpty(config.CertificadoSat) || string.IsNullOrEmpty(config.LlavePrivada) || string.IsNullOrEmpty(config.PasswordCertificado))
+            return BadRequest(new { error = "Falta el CSD. Sube los archivos .cer y .key con el password primero." });
+
+        byte[]? keyBytes = null;
+        byte[]? passwordBytes = null;
+        try
+        {
+            // Descifrar CSD almacenado
+            var cerBytes = Convert.FromBase64String(config.CertificadoSat);
+            var encryptedKeyBytes = Convert.FromBase64String(config.LlavePrivada);
+            keyBytes = await _encryptionService.DecryptAsync(tenantId, encryptedKeyBytes, config.EncryptedDek, config.EncryptionVersion);
+            var encryptedPwdBytes = Convert.FromBase64String(config.PasswordCertificado);
+            passwordBytes = await _encryptionService.DecryptAsync(tenantId, encryptedPwdBytes, config.EncryptedDek, config.EncryptionVersion);
+            var password = Encoding.UTF8.GetString(passwordBytes);
+
+            var typeUser = config.FinkokTypeUser ?? 'P';
+
+            // Si nunca se registró → add. Si está registrado pero suspendido o fallido prior → edit (reactiva).
+            var regResult = !config.FinkokEmisorRegistrado
+                ? await _registrationService.RegisterEmitterAsync(
+                    new DTOs.RegisterEmitterRequest(config.Rfc, cerBytes, keyBytes, password, typeUser))
+                : await _registrationService.UpdateEmitterAsync(
+                    new DTOs.UpdateEmitterRequest(config.Rfc, "active", cerBytes, keyBytes, password));
+
+            if (regResult.Success)
+            {
+                config.FinkokEmisorRegistrado = true;
+                config.FinkokRegistradoEn = config.FinkokRegistradoEn ?? DateTime.UtcNow;
+                config.FinkokStatus = "active";
+                config.FinkokTypeUser = typeUser;
+                config.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("FINKOK_RETRY_AUDIT: Emisor {Rfc} registrado tras retry (typeUser={Type})", config.Rfc, typeUser);
+                _ = NotifyAdminsFinkokSuccess(tenantId, config.Rfc, config.RazonSocial, typeUser);
+                return Ok(new { message = "RFC habilitado para facturar en Finkok.", finkokRegistrado = true });
+            }
+
+            if (regResult.AlreadyExists)
+            {
+                // RFC ya existe pero no estaba marcado en nuestra BD — intentar edit para sincronizar.
+                var editResult = await _registrationService.UpdateEmitterAsync(
+                    new DTOs.UpdateEmitterRequest(config.Rfc, "active", cerBytes, keyBytes, password));
+                if (editResult.Success)
+                {
+                    config.FinkokEmisorRegistrado = true;
+                    config.FinkokRegistradoEn = config.FinkokRegistradoEn ?? DateTime.UtcNow;
+                    config.FinkokStatus = "active";
+                    config.FinkokTypeUser = typeUser;
+                    config.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    _ = NotifyAdminsFinkokSuccess(tenantId, config.Rfc, config.RazonSocial, typeUser);
+                    return Ok(new { message = "RFC reactivado en Finkok.", finkokRegistrado = true });
+                }
+            }
+
+            // Falló: log + email + 400 con detalle
+            _logger.LogWarning("FINKOK_RETRY_AUDIT: Finkok rechazó retry para {Rfc}: {Message}", config.Rfc, regResult.Message);
+            _ = NotifyAdminsFinkokFailure(tenantId, config.Rfc, regResult.Message ?? "Error desconocido");
+
+            return BadRequest(new
+            {
+                error = regResult.Message ?? "Finkok rechazó el registro",
+                finkokRegistrado = false,
+                finkokError = regResult.Message,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "FINKOK_RETRY_AUDIT: Error en retry de Finkok para tenant {Tenant}", tenantId);
+            return StatusCode(500, new { error = "Error al reintentar registro en Finkok." });
+        }
+        finally
+        {
+            if (keyBytes != null) Array.Clear(keyBytes);
+            if (passwordBytes != null) Array.Clear(passwordBytes);
+        }
+    }
+
     [HttpGet("numeracion")]
     public async Task<ActionResult<IEnumerable<NumeracionDocumento>>> GetNumeracion([FromQuery] bool incluirInactivos = false)
     {

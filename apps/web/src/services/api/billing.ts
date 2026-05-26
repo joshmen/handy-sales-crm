@@ -239,6 +239,17 @@ export async function uploadCertificado(configId: number, formData: FormData): P
   return data;
 }
 
+/**
+ * BILL-1 retry: reintenta el registro Finkok reusando CSD ya guardado.
+ * Útil cuando el upload inicial guardó CSD pero Finkok rechazó (red caída, etc.)
+ */
+export async function retryFinkokRegistration(configId: number): Promise<UploadCertificadoResult> {
+  const { data } = await billingApi.post<UploadCertificadoResult>(
+    `/api/catalogos/configuracion-fiscal/${configId}/retry-finkok-registration`,
+  );
+  return data;
+}
+
 // ─── Numeración / Series ───
 
 export async function getNumeraciones(incluirInactivos = false): Promise<NumeracionDocumento[]> {
