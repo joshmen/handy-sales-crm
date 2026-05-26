@@ -123,8 +123,21 @@ export default function BillingSettingsPage() {
       formData.append('Certificado', cerFile);
       formData.append('LlavePrivada', keyFile);
       formData.append('Password', certPassword);
-      await uploadCertificado(config.id, formData);
-      toast({ title: t('uploadCertsSuccess') });
+      const result = await uploadCertificado(config.id, formData);
+
+      // BILL-1: el endpoint reporta el resultado del registro en Finkok
+      if (result.finkokRegistrado === true) {
+        toast({ title: 'Certificado cargado y RFC habilitado para facturar en Finkok.' });
+      } else if (result.finkokRegistrado === false) {
+        toast({
+          title: 'Certificado guardado, pero Finkok rechazó el registro',
+          description: result.finkokError || 'Revisa el CSD o contacta soporte. Recibirás un email con detalles.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: result.message || t('uploadCertsSuccess') });
+      }
+
       const updated = await getConfigFiscal();
       setConfig(updated);
       setCerFile(null);
@@ -351,6 +364,41 @@ export default function BillingSettingsPage() {
                 </div>
               )}
             </div>
+
+            {/* BILL-1: badge de status Finkok */}
+            {hasCertificates && (
+              <div className="mb-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Finkok</span>
+                    {config.finkokEmisorRegistrado ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300">
+                        <CheckCircle className="w-3 h-3" />
+                        Habilitado para facturar ({config.finkokStatus || 'active'})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        <AlertCircle className="w-3 h-3" />
+                        Pendiente de registrar en Finkok
+                      </span>
+                    )}
+                  </div>
+                  {config.finkokTypeUser && (
+                    <span className="text-xs text-muted-foreground">
+                      Modalidad: <strong className="text-foreground">{config.finkokTypeUser === 'O' ? 'Ilimitado' : 'Prepago'}</strong>
+                      {config.finkokTypeUser === 'P' && config.finkokCreditosRestantes != null && (
+                        <span className="ml-2">• Créditos restantes: <strong className="text-foreground">{config.finkokCreditosRestantes.toLocaleString('es-MX')}</strong></span>
+                      )}
+                    </span>
+                  )}
+                </div>
+                {!config.finkokEmisorRegistrado && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Tu CSD está guardado pero Finkok aún no lo tiene registrado bajo nuestra cuenta partner. El timbrado fallará hasta que se complete el registro. Re-sube el CSD para intentar de nuevo.
+                  </p>
+                )}
+              </div>
+            )}
 
             {config.id ? (
               <div className="space-y-4">

@@ -19,17 +19,26 @@ public class CatalogosController : ControllerBase
     private readonly ILogger<CatalogosController> _logger;
     private readonly IConfiguration _configuration;
     private readonly ITenantEncryptionService _encryptionService;
+    private readonly IRegistrationService _registrationService;
+    private readonly ITenantInfoService _tenantInfo;
+    private readonly IBillingEmailService _emailService;
 
     public CatalogosController(
         BillingDbContext context,
         ILogger<CatalogosController> logger,
         IConfiguration configuration,
-        ITenantEncryptionService encryptionService)
+        ITenantEncryptionService encryptionService,
+        IRegistrationService registrationService,
+        ITenantInfoService tenantInfo,
+        IBillingEmailService emailService)
     {
         _context = context;
         _logger = logger;
         _configuration = configuration;
         _encryptionService = encryptionService;
+        _registrationService = registrationService;
+        _tenantInfo = tenantInfo;
+        _emailService = emailService;
     }
 
     private string GetTenantId() => User.FindFirst("tenant_id")?.Value
@@ -117,6 +126,12 @@ public class CatalogosController : ControllerBase
                 HasCertificado = c.CertificadoSat != null,
                 HasLlavePrivada = c.LlavePrivada != null,
                 HasPassword = c.PasswordCertificado != null,
+                // BILL-1: status del registro en Finkok como emisor
+                c.FinkokEmisorRegistrado,
+                c.FinkokRegistradoEn,
+                c.FinkokStatus,
+                c.FinkokTypeUser,
+                c.FinkokCreditosRestantes,
                 c.CreatedAt,
                 c.UpdatedAt
             })
@@ -289,6 +304,66 @@ public class CatalogosController : ControllerBase
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             _logger.LogInformation("CSD_AUDIT: Certificate uploaded for tenant {TenantId} by user {UserId}", tenantId, userId);
 
+            // ─── BILL-1 (2026-05-26): Registrar RFC en Finkok como emisor ─────────
+            // Antes solo guardábamos CSD local. Sin este paso, Finkok rechaza el
+            // timbrado porque no reconoce el RFC bajo nuestra cuenta partner.
+            //
+            // Política de cobro: por defecto prepago ("P"). Ilimitado ("O") se
+            // activa manualmente en BD para tenants de plan PRO/BUSINESS.
+            // Decision: mixto según plan no se implementa aquí (sin acceso a
+            // PlanCodigo cross-API en este request); se queda para follow-up.
+            if (!string.IsNullOrEmpty(config.Rfc))
+            {
+                var typeUser = config.FinkokTypeUser ?? 'P';
+                var regResult = !config.FinkokEmisorRegistrado
+                    ? await _registrationService.RegisterEmitterAsync(
+                        new DTOs.RegisterEmitterRequest(config.Rfc, cerBytes, keyBytes, request.Password, typeUser))
+                    : await _registrationService.UpdateEmitterAsync(
+                        new DTOs.UpdateEmitterRequest(config.Rfc, "active", cerBytes, keyBytes, request.Password));
+
+                if (regResult.Success)
+                {
+                    config.FinkokEmisorRegistrado = true;
+                    config.FinkokRegistradoEn = config.FinkokRegistradoEn ?? DateTime.UtcNow;
+                    config.FinkokStatus = "active";
+                    config.FinkokTypeUser = typeUser;
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("FINKOK_AUDIT: Emisor {Rfc} registrado/actualizado en Finkok (typeUser={Type})", config.Rfc, typeUser);
+
+                    // Email best-effort a TODOS los admins del tenant — fire-and-forget
+                    _ = NotifyAdminsFinkokSuccess(tenantId, config.Rfc, config.RazonSocial, typeUser);
+
+                    return Ok(new { message = "Certificado cargado y RFC habilitado para facturar.", finkokRegistrado = true });
+                }
+                else if (regResult.AlreadyExists)
+                {
+                    // RFC ya está en Finkok bajo otra config — intentar edit
+                    var editResult = await _registrationService.UpdateEmitterAsync(
+                        new DTOs.UpdateEmitterRequest(config.Rfc, "active", cerBytes, keyBytes, request.Password));
+                    if (editResult.Success)
+                    {
+                        config.FinkokEmisorRegistrado = true;
+                        config.FinkokRegistradoEn = config.FinkokRegistradoEn ?? DateTime.UtcNow;
+                        config.FinkokStatus = "active";
+                        config.FinkokTypeUser = typeUser;
+                        await _context.SaveChangesAsync();
+                        _ = NotifyAdminsFinkokSuccess(tenantId, config.Rfc, config.RazonSocial, typeUser);
+                        return Ok(new { message = "Certificado actualizado y RFC reactivado en Finkok.", finkokRegistrado = true });
+                    }
+                }
+
+                // Finkok rechazó: CSD se queda guardado local pero NO se marca como activo en Finkok
+                _logger.LogWarning("FINKOK_AUDIT: Finkok rechazó registro de {Rfc}: {Message}", config.Rfc, regResult.Message);
+                _ = NotifyAdminsFinkokFailure(tenantId, config.Rfc, regResult.Message ?? "Error desconocido");
+
+                return Ok(new
+                {
+                    message = "Certificado guardado, pero no se pudo registrar el RFC en Finkok.",
+                    finkokRegistrado = false,
+                    finkokError = regResult.Message,
+                });
+            }
+
             return Ok(new { message = "Certificado cargado exitosamente" });
         }
         catch (Exception ex)
@@ -394,6 +469,45 @@ public class CatalogosController : ControllerBase
     }
 
     // Legacy EncryptPassword/DecryptPassword removed — use ICertificateEncryptionService
+
+    // ─── BILL-1 (2026-05-26): notificación email a admins del tenant ──────────
+    // Fire-and-forget: si SMTP/SendGrid falla, queda log Serilog pero NO bloquea
+    // el flujo de upload CSD. Email es canal secundario, el toast UI + el campo
+    // FinkokEmisorRegistrado en BD son los canales primarios de feedback.
+
+    private async Task NotifyAdminsFinkokSuccess(string tenantId, string rfc, string? razonSocial, char typeUser)
+    {
+        if (!int.TryParse(tenantId, out var tenantIdInt)) return;
+        try
+        {
+            var emails = await _tenantInfo.GetAdminEmailsAsync(tenantIdInt);
+            foreach (var email in emails)
+            {
+                _ = _emailService.SendFinkokRegistrationSuccessAsync(email, rfc, razonSocial, typeUser, lang: "es");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "FINKOK_EMAIL_AUDIT: Error enviando notificación success a admins de tenant {Tenant}", tenantId);
+        }
+    }
+
+    private async Task NotifyAdminsFinkokFailure(string tenantId, string rfc, string finkokErrorMessage)
+    {
+        if (!int.TryParse(tenantId, out var tenantIdInt)) return;
+        try
+        {
+            var emails = await _tenantInfo.GetAdminEmailsAsync(tenantIdInt);
+            foreach (var email in emails)
+            {
+                _ = _emailService.SendFinkokRegistrationFailureAsync(email, rfc, finkokErrorMessage, lang: "es");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "FINKOK_EMAIL_AUDIT: Error enviando notificación failure a admins de tenant {Tenant}", tenantId);
+        }
+    }
 }
 
 // DTOs para Catálogos

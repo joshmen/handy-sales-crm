@@ -82,4 +82,60 @@ public class BillingEmailService : IBillingEmailService
             return false;
         }
     }
+
+    public Task<bool> SendFinkokRegistrationSuccessAsync(string toEmail, string rfc, string? razonSocial, char typeUser, string lang = "es")
+    {
+        var subject = lang == "en"
+            ? $"✅ SAT billing enabled for {rfc}"
+            : $"✅ Facturación SAT habilitada para {rfc}";
+        var html = BillingEmailTemplates.FinkokRegistrationSuccess(rfc, razonSocial, typeUser, lang);
+        return SendSimpleAsync(toEmail, subject, html);
+    }
+
+    public Task<bool> SendFinkokRegistrationFailureAsync(string toEmail, string rfc, string finkokErrorMessage, string lang = "es")
+    {
+        var subject = lang == "en"
+            ? "⚠️ We couldn't enable your SAT billing"
+            : "⚠️ No pudimos habilitar tu facturación SAT";
+        var html = BillingEmailTemplates.FinkokRegistrationFailure(rfc, finkokErrorMessage, lang);
+        return SendSimpleAsync(toEmail, subject, html);
+    }
+
+    /// <summary>
+    /// Envío simple sin attachments. Reutilizado por las notificaciones Finkok.
+    /// Mismo dry-run pattern que SendFacturaAsync cuando SENDGRID_API_KEY no está configurada.
+    /// </summary>
+    private async Task<bool> SendSimpleAsync(string toEmail, string subject, string htmlBody)
+    {
+        if (string.IsNullOrEmpty(_apiKey))
+        {
+            _logger.LogWarning(
+                "SENDGRID_API_KEY not configured. Dry run — email to {Email} with subject '{Subject}' would be sent.",
+                toEmail, subject);
+            return true;
+        }
+
+        try
+        {
+            var client = new SendGridClient(_apiKey);
+            var from = new EmailAddress(_fromEmail, _fromName);
+            var to = new EmailAddress(toEmail);
+            var msg = MailHelper.CreateSingleEmail(from, to, subject, null, htmlBody);
+
+            var response = await client.SendEmailAsync(msg);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Email sent to {Email}: {Subject}", toEmail, subject);
+                return true;
+            }
+            var body = await response.Body.ReadAsStringAsync();
+            _logger.LogError("SendGrid error {StatusCode}: {Body}", response.StatusCode, body);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email to {Email}", toEmail);
+            return false;
+        }
+    }
 }
