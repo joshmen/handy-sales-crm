@@ -126,6 +126,12 @@ public class CatalogosController : ControllerBase
                 HasCertificado = c.CertificadoSat != null,
                 HasLlavePrivada = c.LlavePrivada != null,
                 HasPassword = c.PasswordCertificado != null,
+                // BILL-1: status del registro en Finkok como emisor
+                c.FinkokEmisorRegistrado,
+                c.FinkokRegistradoEn,
+                c.FinkokStatus,
+                c.FinkokTypeUser,
+                c.FinkokCreditosRestantes,
                 c.CreatedAt,
                 c.UpdatedAt
             })
