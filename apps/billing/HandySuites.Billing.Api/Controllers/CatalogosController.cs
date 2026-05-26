@@ -19,17 +19,20 @@ public class CatalogosController : ControllerBase
     private readonly ILogger<CatalogosController> _logger;
     private readonly IConfiguration _configuration;
     private readonly ITenantEncryptionService _encryptionService;
+    private readonly IRegistrationService _registrationService;
 
     public CatalogosController(
         BillingDbContext context,
         ILogger<CatalogosController> logger,
         IConfiguration configuration,
-        ITenantEncryptionService encryptionService)
+        ITenantEncryptionService encryptionService,
+        IRegistrationService registrationService)
     {
         _context = context;
         _logger = logger;
         _configuration = configuration;
         _encryptionService = encryptionService;
+        _registrationService = registrationService;
     }
 
     private string GetTenantId() => User.FindFirst("tenant_id")?.Value
@@ -288,6 +291,59 @@ public class CatalogosController : ControllerBase
 
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             _logger.LogInformation("CSD_AUDIT: Certificate uploaded for tenant {TenantId} by user {UserId}", tenantId, userId);
+
+            // ─── BILL-1 (2026-05-26): Registrar RFC en Finkok como emisor ─────────
+            // Antes solo guardábamos CSD local. Sin este paso, Finkok rechaza el
+            // timbrado porque no reconoce el RFC bajo nuestra cuenta partner.
+            //
+            // Política de cobro: por defecto prepago ("P"). Ilimitado ("O") se
+            // activa manualmente en BD para tenants de plan PRO/BUSINESS.
+            // Decision: mixto según plan no se implementa aquí (sin acceso a
+            // PlanCodigo cross-API en este request); se queda para follow-up.
+            if (!string.IsNullOrEmpty(config.Rfc))
+            {
+                var typeUser = config.FinkokTypeUser ?? 'P';
+                var regResult = !config.FinkokEmisorRegistrado
+                    ? await _registrationService.RegisterEmitterAsync(
+                        new DTOs.RegisterEmitterRequest(config.Rfc, cerBytes, keyBytes, request.Password, typeUser))
+                    : await _registrationService.UpdateEmitterAsync(
+                        new DTOs.UpdateEmitterRequest(config.Rfc, "active", cerBytes, keyBytes, request.Password));
+
+                if (regResult.Success)
+                {
+                    config.FinkokEmisorRegistrado = true;
+                    config.FinkokRegistradoEn = config.FinkokRegistradoEn ?? DateTime.UtcNow;
+                    config.FinkokStatus = "active";
+                    config.FinkokTypeUser = typeUser;
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("FINKOK_AUDIT: Emisor {Rfc} registrado/actualizado en Finkok (typeUser={Type})", config.Rfc, typeUser);
+                    return Ok(new { message = "Certificado cargado y RFC habilitado para facturar.", finkokRegistrado = true });
+                }
+                else if (regResult.AlreadyExists)
+                {
+                    // RFC ya está en Finkok bajo otra config — intentar edit
+                    var editResult = await _registrationService.UpdateEmitterAsync(
+                        new DTOs.UpdateEmitterRequest(config.Rfc, "active", cerBytes, keyBytes, request.Password));
+                    if (editResult.Success)
+                    {
+                        config.FinkokEmisorRegistrado = true;
+                        config.FinkokRegistradoEn = config.FinkokRegistradoEn ?? DateTime.UtcNow;
+                        config.FinkokStatus = "active";
+                        config.FinkokTypeUser = typeUser;
+                        await _context.SaveChangesAsync();
+                        return Ok(new { message = "Certificado actualizado y RFC reactivado en Finkok.", finkokRegistrado = true });
+                    }
+                }
+
+                // Finkok rechazó: CSD se queda guardado local pero NO se marca como activo en Finkok
+                _logger.LogWarning("FINKOK_AUDIT: Finkok rechazó registro de {Rfc}: {Message}", config.Rfc, regResult.Message);
+                return Ok(new
+                {
+                    message = "Certificado guardado, pero no se pudo registrar el RFC en Finkok.",
+                    finkokRegistrado = false,
+                    finkokError = regResult.Message,
+                });
+            }
 
             return Ok(new { message = "Certificado cargado exitosamente" });
         }
