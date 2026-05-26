@@ -147,6 +147,11 @@ else
 builder.Services.AddSingleton<ICfdiXmlBuilder, CfdiXmlBuilder>();
 builder.Services.AddSingleton<ICfdiSigner, CfdiSigner>();
 builder.Services.AddHttpClient<IPacService, FinkokPacService>();
+// Finkok registration service (alta de tenants como emisores bajo cuenta partner — BILL-1)
+builder.Services.AddHttpClient<IRegistrationService, FinkokRegistrationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30); // SOAP add con CSD puede tardar
+});
 
 // PDF generation service
 builder.Services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
