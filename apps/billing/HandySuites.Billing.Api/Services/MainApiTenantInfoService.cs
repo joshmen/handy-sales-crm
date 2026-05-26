@@ -11,23 +11,41 @@ public class MainApiTenantInfoService : ITenantInfoService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<MainApiTenantInfoService> _logger;
-    private readonly string _apiKey;
+    private readonly string? _apiKey;
+    private readonly string? _baseUrl;
 
     public MainApiTenantInfoService(HttpClient httpClient, IConfiguration config, ILogger<MainApiTenantInfoService> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _apiKey = config["InternalApiKey"]
-            ?? throw new InvalidOperationException("InternalApiKey no configurado en Billing API");
 
-        // Main API URL desde configuration. En docker-compose el service name es "api_main".
-        var baseUrl = config["MainApiBaseUrl"] ?? "http://api_main:1050";
-        _httpClient.BaseAddress = new Uri(baseUrl);
-        _httpClient.DefaultRequestHeaders.Add("X-Internal-Api-Key", _apiKey);
+        // Resiliente: si faltan env vars NO tiramos en el constructor (rompería el DI del
+        // CatalogosController entero, afectando endpoints sin relación con emails).
+        // Email es best-effort: si no se puede resolver admin emails, los logs lo reportan
+        // y el flujo principal de alta Finkok sigue.
+        _apiKey = config["INTERNAL_API_KEY"] ?? config["InternalApiKey"];
+        _baseUrl = config["MainApiBaseUrl"] ?? config["MAIN_API_URL"];
+
+        if (!string.IsNullOrEmpty(_baseUrl))
+        {
+            _httpClient.BaseAddress = new Uri(_baseUrl);
+        }
+        if (!string.IsNullOrEmpty(_apiKey))
+        {
+            _httpClient.DefaultRequestHeaders.Add("X-Internal-Api-Key", _apiKey);
+        }
     }
 
     public async Task<IReadOnlyList<string>> GetAdminEmailsAsync(int tenantId, CancellationToken ct = default)
     {
+        if (string.IsNullOrEmpty(_apiKey) || string.IsNullOrEmpty(_baseUrl))
+        {
+            _logger.LogWarning(
+                "GetAdminEmails: faltan env vars (INTERNAL_API_KEY o MainApiBaseUrl/MAIN_API_URL) en Billing API. " +
+                "Notificación email a admins del tenant {Tenant} se omite.", tenantId);
+            return Array.Empty<string>();
+        }
+
         try
         {
             var response = await _httpClient.GetAsync($"/api/internal/tenants/{tenantId}/admin-emails", ct);
