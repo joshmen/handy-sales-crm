@@ -153,6 +153,12 @@ builder.Services.AddHttpClient<IRegistrationService, FinkokRegistrationService>(
     client.Timeout = TimeSpan.FromSeconds(30); // SOAP add con CSD puede tardar
 });
 
+// Cross-API client a Main API para resolver emails de admins del tenant (BILL-1)
+builder.Services.AddHttpClient<ITenantInfoService, MainApiTenantInfoService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
 // PDF generation service
 builder.Services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
 

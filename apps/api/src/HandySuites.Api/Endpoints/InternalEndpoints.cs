@@ -128,6 +128,40 @@ public static class InternalEndpoints
 
             return Results.Ok(new { success = true });
         });
+
+        // BILL-1 (2026-05-26): Resolver emails de admins de un tenant. Llamado
+        // desde Billing API tras alta/fallo de registro Finkok para notificar
+        // a todos los admins del tenant.
+        group.MapGet("/tenants/{tenantId:int}/admin-emails", async (
+            int tenantId,
+            HandySuites.Infrastructure.Persistence.HandySuitesDbContext db,
+            IConfiguration configuration,
+            HttpContext context,
+            ILogger<Program> logger) =>
+        {
+            var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
+            var expectedKey = configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
+            if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
+            {
+                logger.LogWarning("admin-emails: Invalid or missing API key");
+                return Results.Unauthorized();
+            }
+
+            // RoleNames.Admin = "ADMIN", RoleNames.SuperAdmin = "SUPER_ADMIN"
+            var emails = await db.Usuarios
+                .IgnoreQueryFilters() // bypass tenant filter porque este endpoint es internal con tenantId explícito
+                .AsNoTracking()
+                .Where(u => u.TenantId == tenantId
+                         && u.Activo
+                         && u.EliminadoEn == null
+                         && (u.RolExplicito == HandySuites.Domain.Common.RoleNames.Admin
+                          || u.RolExplicito == HandySuites.Domain.Common.RoleNames.SuperAdmin))
+                .Select(u => u.Email)
+                .Where(e => !string.IsNullOrEmpty(e))
+                .ToListAsync();
+
+            return Results.Ok(new { tenantId, emails });
+        });
     }
 }
 
