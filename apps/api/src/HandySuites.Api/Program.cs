@@ -78,6 +78,25 @@ builder.Services.AddRateLimiter(options =>
         });
     });
 
+    // Batch mutations: bulk DELETE/UPDATE operations (batch-toggle, transferir-cartera,
+    // distribuir-cartera, batch-toggle de zonas/clientes/productos). Audit M-7
+    // (2026-05-25): si admin se compromete, podría togglear miles de usuarios en
+    // segundos. Cap a 10 batch ops/min/usuario — un admin legítimo nunca debería
+    // necesitar más; bots/scripts maliciosos se topan con 429.
+    options.AddPolicy("batch-mutations", context =>
+    {
+        var userId = context.User?.FindFirst("sub")?.Value
+                     ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? context.Connection.RemoteIpAddress?.ToString()
+                     ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+
     // Global fallback: by IP — catches anything not tagged with a specific policy
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetFixedWindowLimiter(

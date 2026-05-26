@@ -22,7 +22,6 @@ import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { exportToCsv } from '@/services/api/importExport';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Plus,
   Download,
@@ -51,25 +50,8 @@ import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
 const MAPS_LIBRARIES: ('places')[] = ['places'];
 
-// Zod schema for zone form validation
-const zoneFormSchema = z.object({
-  name: z.string().min(1, 'nameRequired'),
-  description: z.string().optional(),
-  color: z.string().min(1, 'colorRequired'),
-  isEnabled: z.boolean(),
-  centroLatitud: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
-  centroLongitud: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
-  radioKm: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
-}).refine(
-  (data) => {
-    const hasLat = data.centroLatitud !== undefined;
-    const hasLng = data.centroLongitud !== undefined;
-    return hasLat === hasLng;
-  },
-  { message: 'coordinatesBothRequired', path: ['centroLongitud'] }
-);
-
-type ZoneFormData = z.infer<typeof zoneFormSchema>;
+// Audit M-8: schema externalizado a lib/validations/zone.ts
+import { zoneFormSchema, type ZoneFormData } from '@/lib/validations/zone';
 
 export default function ZonesPage() {
   const t = useTranslations('zones');

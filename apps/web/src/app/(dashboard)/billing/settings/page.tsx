@@ -211,6 +211,15 @@ export default function BillingSettingsPage() {
         )
       }
     >
+      {/* Audit M-1: cross-link a settings para que admin encuentre fácil
+          configuración de empresa no fiscal (nombre, logo, colores, perfil). */}
+      <div className="mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 text-sm text-blue-900 dark:text-blue-200">
+        ¿Buscas configuración general (logo, nombre, colores)? Está en{' '}
+        <a href="/settings" className="font-medium underline hover:no-underline">
+          Configuración general
+        </a>.
+      </div>
+
       {/* ─── Tabs ─── */}
       <div role="tablist" aria-label={t('title')} className="flex items-center gap-1 mb-6 border-b border-border">
         <button

@@ -69,7 +69,8 @@ public static class UsuarioEndpoints
         usuarios.MapPatch("/batch-toggle", BatchToggleUsuarios)
             .WithName("BatchToggleUsuarios")
             .WithSummary("Activar/desactivar múltiples usuarios")
-            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"))
+            .RequireRateLimiting("batch-mutations");
 
         usuarios.MapGet("/ubicaciones", GetUbicaciones)
             .WithName("GetUbicaciones")

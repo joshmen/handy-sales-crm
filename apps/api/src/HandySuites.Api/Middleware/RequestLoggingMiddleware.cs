@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using HandySuites.Api.Configuration;
 
 namespace HandySuites.Api.Middleware;
 
@@ -49,7 +50,7 @@ public class RequestLoggingMiddleware
             ["RequestId"] = requestId,
             ["Method"] = context.Request.Method,
             ["Path"] = context.Request.Path,
-            ["QueryString"] = context.Request.QueryString.ToString()
+            ["QueryString"] = QueryStringRedactor.Redact(context.Request.QueryString.ToString())
         }))
         {
             // "Starting request" was duplicating ingestion volume. Only log completion.
