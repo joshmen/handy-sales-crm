@@ -77,3 +77,23 @@ public record AssignCreditsResult
 
     public string? Message { get; init; }
 }
+
+/// <summary>
+/// Resultado de listar todos los emisores bajo la cuenta partner (operación `customers`).
+/// Finkok pagina los resultados — caller puede iterar pasando `page` incremental.
+/// </summary>
+public record EmittersListResult
+{
+    public bool Success { get; init; }
+    public IReadOnlyList<EmitterSummary> Items { get; init; } = Array.Empty<EmitterSummary>();
+    public string? Message { get; init; }
+}
+
+/// <summary>Resumen de un emisor — versión liviana para listados.</summary>
+public record EmitterSummary(
+    string Rfc,
+    string? RazonSocial,
+    string? Status,
+    char? TypeUser,
+    int? CreditsRemaining,
+    DateTime? RegisteredAt);
