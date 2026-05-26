@@ -135,6 +135,12 @@ internal class StubRegistrationService : HandySuites.Billing.Api.Services.IRegis
 
     public Task<HandySuites.Billing.Api.DTOs.AssignCreditsResult> AssignCreditsAsync(string rfc, int credits, CancellationToken ct = default)
         => Task.FromResult(new HandySuites.Billing.Api.DTOs.AssignCreditsResult { Success = true, CreditsTotal = credits });
+
+    public Task<HandySuites.Billing.Api.DTOs.EmittersListResult> ListEmittersAsync(int page = 1, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.EmittersListResult { Success = true });
+
+    public Task<HandySuites.Billing.Api.DTOs.RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.RegisterEmitterResult { Success = true });
 }
 
 internal class StubTenantInfoService : HandySuites.Billing.Api.Services.ITenantInfoService

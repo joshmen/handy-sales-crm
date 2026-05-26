@@ -37,4 +37,16 @@ public interface IRegistrationService
     /// Caller debe verificar que el emisor está en modo prepago antes de llamar.
     /// </summary>
     Task<AssignCreditsResult> AssignCreditsAsync(string rfc, int credits, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lista todos los emisores registrados bajo la cuenta partner (paginado).
+    /// Usado por panel SuperAdmin HandySales para ver todos los tenants.
+    /// </summary>
+    Task<EmittersListResult> ListEmittersAsync(int page = 1, CancellationToken ct = default);
+
+    /// <summary>
+    /// Cambia la modalidad del emisor entre 'P' (prepago) y 'O' (ilimitado).
+    /// Decisión comercial — solo SuperAdmin HandySales.
+    /// </summary>
+    Task<RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default);
 }

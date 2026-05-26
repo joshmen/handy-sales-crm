@@ -146,6 +146,70 @@ public class FinkokRegistrationServiceTests
     }
 
     [Fact]
+    public async Task ListEmittersAsync_DeberiaParsearMultiplesResellerUsers()
+    {
+        var soapResponse = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <customersResponse>
+      <ResellerUser>
+        <taxpayer_id>EKU9003173C9</taxpayer_id>
+        <name>Jeyma SA</name>
+        <status>active</status>
+        <type_user>P</type_user>
+        <credit>500</credit>
+      </ResellerUser>
+      <ResellerUser>
+        <taxpayer_id>XAXX010101000</taxpayer_id>
+        <name>Otra Empresa</name>
+        <status>suspended</status>
+        <type_user>O</type_user>
+      </ResellerUser>
+    </customersResponse>
+  </S:Body>
+</S:Envelope>";
+        var service = CreateService(soapResponse);
+
+        var result = await service.ListEmittersAsync(page: 1);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.Items.Count);
+        Assert.Equal("EKU9003173C9", result.Items[0].Rfc);
+        Assert.Equal("active", result.Items[0].Status);
+        Assert.Equal('P', result.Items[0].TypeUser);
+        Assert.Equal(500, result.Items[0].CreditsRemaining);
+        Assert.Equal("XAXX010101000", result.Items[1].Rfc);
+        Assert.Equal('O', result.Items[1].TypeUser);
+    }
+
+    [Fact]
+    public async Task SwitchTypeUserAsync_DeberiaRechazarTypeUserInvalido()
+    {
+        var service = CreateService("<unused/>");
+
+        var result = await service.SwitchTypeUserAsync("EKU9003173C9", 'X');
+
+        Assert.False(result.Success);
+        Assert.Equal("INVALID_TYPE", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task SwitchTypeUserAsync_DeberiaAceptarPyO()
+    {
+        var soapResponse = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body><switchResponse><return><success>true</success><message>Switched</message></return></switchResponse></S:Body>
+</S:Envelope>";
+        var service = CreateService(soapResponse);
+
+        var pResult = await service.SwitchTypeUserAsync("EKU9003173C9", 'P');
+        var oResult = await service.SwitchTypeUserAsync("EKU9003173C9", 'O');
+
+        Assert.True(pResult.Success);
+        Assert.True(oResult.Success);
+    }
+
+    [Fact]
     public async Task UpdateEmitterAsync_DeberiaConstruirEnvelopeConCsdVacioSiNoSeProvee()
     {
         // Just verify no crash + result parses

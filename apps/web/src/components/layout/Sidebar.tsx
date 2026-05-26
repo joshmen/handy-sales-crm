@@ -417,6 +417,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/subscription-plans',
   },
   {
+    id: 'sa-finkok',
+    label: 'Integración Finkok',
+    icon: SbBilling,
+    href: '/admin/finkok',
+  },
+  {
     id: 'sa-cupones',
     label: 'Cupones',
     icon: SbDiscounts,

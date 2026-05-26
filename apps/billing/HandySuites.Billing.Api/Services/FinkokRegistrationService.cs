@@ -181,6 +181,81 @@ public class FinkokRegistrationService : IRegistrationService
         }
     }
 
+    public async Task<EmittersListResult> ListEmittersAsync(int page = 1, CancellationToken ct = default)
+    {
+        if (!CredentialsConfigured)
+            return new EmittersListResult { Success = false, Message = "Credenciales Finkok no configuradas" };
+        if (page < 1) page = 1;
+
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:apps=""{Namespace}"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <apps:customers>
+      <apps:username>{EscapeXml(_resellerUsername!)}</apps:username>
+      <apps:password>{EscapeXml(_resellerPassword!)}</apps:password>
+      <apps:page>{page}</apps:page>
+    </apps:customers>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(soapBody, "customers", ct);
+            return ParseCustomersResponse(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al listar emisores en Finkok (page {Page})", page);
+            return new EmittersListResult { Success = false, Message = SanitizeErrorMessage(ex.Message) };
+        }
+    }
+
+    public async Task<RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default)
+    {
+        if (!CredentialsConfigured) return MissingCredentialsResult();
+        if (newTypeUser != 'P' && newTypeUser != 'O')
+        {
+            return new RegisterEmitterResult
+            {
+                Success = false,
+                ErrorCode = "INVALID_TYPE",
+                Message = "type_user debe ser 'P' (prepago) u 'O' (ilimitado)",
+            };
+        }
+
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:apps=""{Namespace}"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <apps:switch>
+      <apps:username>{EscapeXml(_resellerUsername!)}</apps:username>
+      <apps:password>{EscapeXml(_resellerPassword!)}</apps:password>
+      <apps:taxpayer_id>{EscapeXml(rfc)}</apps:taxpayer_id>
+      <apps:type_user>{newTypeUser}</apps:type_user>
+    </apps:switch>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(soapBody, "switch", ct);
+            return ParseRegistrationResponse(response, operation: "switch");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al cambiar type_user para {Rfc}", rfc);
+            return new RegisterEmitterResult
+            {
+                Success = false,
+                ErrorCode = "PAC_ERROR",
+                Message = SanitizeErrorMessage(ex.Message),
+            };
+        }
+    }
+
     public async Task<AssignCreditsResult> AssignCreditsAsync(string rfc, int credits, CancellationToken ct = default)
     {
         if (!CredentialsConfigured)
@@ -320,6 +395,54 @@ public class FinkokRegistrationService : IRegistrationService
             _logger.LogError(ex, "Error parseando respuesta Finkok registration.get");
             return new EmitterInfoResult { Success = false, Message = ex.Message };
         }
+    }
+
+    private EmittersListResult ParseCustomersResponse(string soapResponse)
+    {
+        try
+        {
+            if (LooksLikeHtml(soapResponse))
+                return new EmittersListResult { Success = false, Message = "Servicio Finkok no disponible" };
+
+            var doc = XDocument.Parse(soapResponse);
+
+            // El response trae múltiples <ResellerUser> elements. Parseamos cada uno.
+            var items = doc.Descendants()
+                .Where(e => e.Name.LocalName.Equals("ResellerUser", StringComparison.OrdinalIgnoreCase))
+                .Select(node =>
+                {
+                    var rfc = ChildValue(node, "taxpayer_id") ?? ChildValue(node, "rfc") ?? "";
+                    var razonSocial = ChildValue(node, "name") ?? ChildValue(node, "razon_social");
+                    var status = ChildValue(node, "status");
+                    var typeUserStr = ChildValue(node, "type_user") ?? ChildValue(node, "TypeUser");
+                    var credit = ChildValue(node, "credit") ?? ChildValue(node, "credits");
+                    var registeredAtStr = ChildValue(node, "added") ?? ChildValue(node, "registered_at") ?? ChildValue(node, "created_at");
+
+                    return new EmitterSummary(
+                        Rfc: rfc,
+                        RazonSocial: razonSocial,
+                        Status: status,
+                        TypeUser: typeUserStr?.Length > 0 ? typeUserStr[0] : (char?)null,
+                        CreditsRemaining: int.TryParse(credit, out var c) ? c : null,
+                        RegisteredAt: DateTime.TryParse(registeredAtStr, out var dt) ? dt : null);
+                })
+                .Where(e => !string.IsNullOrEmpty(e.Rfc))
+                .ToList();
+
+            return new EmittersListResult { Success = true, Items = items };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error parseando respuesta Finkok registration.customers");
+            return new EmittersListResult { Success = false, Message = ex.Message };
+        }
+    }
+
+    private static string? ChildValue(XElement parent, string localName)
+    {
+        return parent.Descendants()
+            .FirstOrDefault(e => e.Name.LocalName.Equals(localName, StringComparison.OrdinalIgnoreCase))?
+            .Value;
     }
 
     private AssignCreditsResult ParseAssignResponse(string soapResponse)

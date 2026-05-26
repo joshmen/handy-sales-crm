@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink } from 'lucide-react';
+import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { toast } from '@/hooks/useToast';
-import { getConfigFiscal, saveConfigFiscal, uploadCertificado, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
+import { getConfigFiscal, saveConfigFiscal, uploadCertificado, retryFinkokRegistration, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
 import type { ConfiguracionFiscal, NumeracionDocumento } from '@/types/billing';
 
 type SettingsTab = 'datos' | 'series';
@@ -24,6 +24,7 @@ export default function BillingSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [retryingFinkok, setRetryingFinkok] = useState(false);
 
   // CSD upload state
   const [cerFile, setCerFile] = useState<File | null>(null);
@@ -151,6 +152,32 @@ export default function BillingSettingsPage() {
       toast({ title: msg, variant: 'destructive' });
     } finally {
       setUploading(false);
+    }
+  };
+
+  // BILL-1: retry de registro Finkok reusando CSD ya guardado
+  const handleRetryFinkok = async () => {
+    if (!config.id) return;
+    setRetryingFinkok(true);
+    try {
+      const result = await retryFinkokRegistration(config.id);
+      if (result.finkokRegistrado) {
+        toast({ title: 'RFC habilitado para facturar en Finkok.' });
+      } else {
+        toast({
+          title: 'Finkok rechazó el registro',
+          description: result.finkokError || 'Revisa el CSD o contacta soporte.',
+          variant: 'destructive',
+        });
+      }
+      const updated = await getConfigFiscal();
+      setConfig(updated);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        || 'Error al reintentar registro en Finkok';
+      toast({ title: msg, variant: 'destructive' });
+    } finally {
+      setRetryingFinkok(false);
     }
   };
 
@@ -393,9 +420,21 @@ export default function BillingSettingsPage() {
                   )}
                 </div>
                 {!config.finkokEmisorRegistrado && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Tu CSD está guardado pero Finkok aún no lo tiene registrado bajo nuestra cuenta partner. El timbrado fallará hasta que se complete el registro. Re-sube el CSD para intentar de nuevo.
-                  </p>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Tu CSD está guardado pero Finkok aún no lo tiene registrado bajo nuestra cuenta partner. El timbrado fallará hasta que se complete el registro.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRetryFinkok}
+                      disabled={retryingFinkok}
+                      data-testid="retry-finkok-btn"
+                    >
+                      {retryingFinkok ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <RefreshCw className="w-3.5 h-3.5 mr-2" />}
+                      {retryingFinkok ? 'Reintentando...' : 'Reintentar registro en Finkok'}
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
