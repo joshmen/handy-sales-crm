@@ -32,9 +32,9 @@ public class FinkokRegistrationServiceTests
 
         var configDict = new Dictionary<string, string?>
         {
-            ["Finkok:ResellerUsername"] = "test-reseller",
-            ["Finkok:ResellerPassword"] = "test-password",
-            ["Finkok:Ambiente"] = "sandbox",
+            ["FINKOK_USUARIO"] = "test-reseller",
+            ["FINKOK_PASSWORD"] = "test-password",
+            ["FINKOK_AMBIENTE"] = "sandbox",
         };
         var config = new ConfigurationBuilder().AddInMemoryCollection(configDict).Build();
 

@@ -11,10 +11,11 @@ namespace HandySuites.Billing.Api.Services;
 /// WSDL: https://[demo-]facturacion.finkok.com/servicios/soap/registration.wsdl
 /// Operations envueltas: add, edit, get, assign.
 ///
-/// Credenciales reseller (NO per-tenant) leídas de:
-///   Finkok:ResellerUsername  (env var: FINKOK_RESELLER_USERNAME)
-///   Finkok:ResellerPassword  (env var: FINKOK_RESELLER_PASSWORD)
-///   Finkok:Ambiente          (env var: FINKOK_AMBIENTE)  = "sandbox" | "production"
+/// Credenciales partner Finkok leídas de env vars (las MISMAS que se usan
+/// para timbrado/cancelación — es la misma cuenta Finkok):
+///   FINKOK_USUARIO   — username partner
+///   FINKOK_PASSWORD  — password partner
+///   FINKOK_AMBIENTE  — "sandbox" | "production"
 ///
 /// Estas credenciales identifican a HandySales como partner Finkok. Cada tenant
 /// de HandySales se registra bajo esta cuenta como un emisor (taxpayer_id).
@@ -35,11 +36,13 @@ public class FinkokRegistrationService : IRegistrationService
     {
         _httpClient = httpClient;
         _logger = logger;
-        _resellerUsername = config["Finkok:ResellerUsername"]
-            ?? throw new InvalidOperationException("Finkok:ResellerUsername no configurado (env FINKOK_RESELLER_USERNAME)");
-        _resellerPassword = config["Finkok:ResellerPassword"]
-            ?? throw new InvalidOperationException("Finkok:ResellerPassword no configurado (env FINKOK_RESELLER_PASSWORD)");
-        var ambiente = config["Finkok:Ambiente"]?.ToLowerInvariant() ?? "sandbox";
+        // Reutilizar las mismas env vars que FacturasController usa para timbrado.
+        // Es la misma cuenta partner Finkok — no hay razón para duplicar credenciales.
+        _resellerUsername = config["FINKOK_USUARIO"]
+            ?? throw new InvalidOperationException("FINKOK_USUARIO no configurado en env vars");
+        _resellerPassword = config["FINKOK_PASSWORD"]
+            ?? throw new InvalidOperationException("FINKOK_PASSWORD no configurado en env vars");
+        var ambiente = config["FINKOK_AMBIENTE"]?.ToLowerInvariant() ?? "sandbox";
         _isProduction = ambiente == "production";
     }
 
