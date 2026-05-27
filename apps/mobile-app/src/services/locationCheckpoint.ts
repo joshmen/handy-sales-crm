@@ -111,7 +111,13 @@ export async function recordPing(
       if (enHorario) {
         const { useJornadaStore } = await import('@/stores/jornadaStore');
         const jornada = useJornadaStore.getState();
-        if (!jornada.activa) {
+        // PRIVACY: si el vendedor cerró jornada explícitamente (motivoStop='manual'),
+        // no la reactivamos automáticamente por una Venta/Cobro/Visita. Respetamos
+        // la decisión del vendedor. La venta/cobro/visita se persiste igual, sólo
+        // que sin tracking GPS continuo hasta que el vendedor inicie manualmente
+        // otra jornada (botón "Reanudar" en JornadaCard).
+        // Reportado prod 2026-05-26 — Rodrigo: tras cerrar jornada el GPS seguía.
+        if (!jornada.activa && jornada.motivoStop !== 'manual') {
           await jornada.iniciarJornada('manual');
           // Toast informativo — el vendedor ve por qué arrancó el indicador
           // "Tracking activo" en home.
