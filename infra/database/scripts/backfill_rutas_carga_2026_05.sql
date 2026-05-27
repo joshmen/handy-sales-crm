@@ -42,7 +42,10 @@ INNER JOIN "Pedidos" p
     AND p.tipo_venta = 1          -- TipoVenta.VentaDirecta
     AND DATE(p.fecha_pedido) = DATE(rv.fecha)
 WHERE rv.activo = true
-    AND rv.estado >= 5            -- CargaAceptada(5), Cerrada(6), EnProgreso(1), Completada(2) — todas tienen carga
+    -- Estados con carga aceptada o consumida (no por orden numerico):
+    -- EnProgreso(1), Completada(2), CargaAceptada(5), Cerrada(6).
+    -- Excluimos Planificada(0), Cancelada(3), PendienteAceptar(4).
+    AND rv.estado IN (1, 2, 5, 6)
     AND NOT EXISTS (
         SELECT 1 FROM "RutasPedidos" rp
         WHERE rp.pedido_id = p.id AND rp.activo = true
