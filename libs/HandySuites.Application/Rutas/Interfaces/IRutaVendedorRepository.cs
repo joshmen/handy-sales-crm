@@ -23,6 +23,16 @@ public interface IRutaVendedorRepository
     Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales);
     Task<bool> CancelarRutaAsync(int id, string? motivo);
 
+    /// <summary>
+    /// Vincula a una ruta los pedidos VentaDirecta+Entregado del mismo usuario y
+    /// día (DATE(fecha_pedido)=DATE(ruta.fecha)) que aún no tengan link en
+    /// RutasPedidos. Idempotente — segundo run no duplica. Incrementa
+    /// RutasCarga.CantidadVendida por producto. Retorna conteo + unidades para
+    /// feedback al caller. Caso de uso: vendedor empieza a vender pre-ruta y
+    /// admin le asigna ruta después (escenario reportado prod 2026-05-26).
+    /// </summary>
+    Task<VinculacionHuerfanosResult> VincularPedidosHuerfanosAsync(int rutaId, int tenantId);
+
     /// <summary>Reemplaza las zonas de una ruta por la lista dada (delete-then-insert idempotente).</summary>
     Task ReemplazarZonasAsync(int rutaId, List<int> zonaIds, int tenantId);
 
