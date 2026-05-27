@@ -1,6 +1,7 @@
 using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Tracking.DTOs;
 using HandySuites.Application.Tracking.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Shared.Multitenancy;
 
@@ -127,7 +128,37 @@ public class UbicacionVendedorService
                 utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc),
                 tenantTzInfo));
 
-        var entidades = accepted
+        // Dedup semántica: rechazar InicioRuta/InicioJornada cuando ya hay una
+        // sesión "abierta" (Inicio previo sin Fin correspondiente). Mantiene la
+        // legitimidad de "cerré y reanudé" porque si hubo un FinRuta/FinJornada
+        // entre el Inicio previo y el nuevo, la sesión está cerrada y el nuevo
+        // Inicio sí entra. Solo aplicable a InicioRuta + InicioJornada — otros
+        // tipos (Checkpoint/Venta/Visita/etc) NO se filtran.
+        // Reportado prod 2026-05-26 — Rodrigo: pings InicioRuta #88 y #89.
+        var sessionDuplicates = 0;
+        var afterSessionFilter = new List<UbicacionPingDto>();
+        foreach (var p in accepted)
+        {
+            if (p.Tipo == TipoPingUbicacion.InicioRuta || p.Tipo == TipoPingUbicacion.InicioJornada)
+            {
+                var endTipo = p.Tipo == TipoPingUbicacion.InicioRuta
+                    ? TipoPingUbicacion.FinRuta : TipoPingUbicacion.FinJornada;
+                var dia = DiaServicioParaUtc(p.CapturadoEn);
+                var yaAbierta = await _repo.ExisteSessionAbiertaAsync(
+                    _tenant.TenantId, usuarioIdInt, p.Tipo, endTipo, dia, p.CapturadoEn);
+                if (yaAbierta)
+                {
+                    sessionDuplicates++;
+                    continue;
+                }
+            }
+            afterSessionFilter.Add(p);
+        }
+
+        if (afterSessionFilter.Count == 0)
+            return new UbicacionBatchResultDto { Aceptados = 0, Duplicados = request.Pings.Count };
+
+        var entidades = afterSessionFilter
             .Select(p => new UbicacionVendedor
             {
                 TenantId = _tenant.TenantId,
@@ -146,7 +177,7 @@ public class UbicacionVendedorService
             .ToList();
 
         var (inserted, skipped) = await _repo.InsertBatchAsync(_tenant.TenantId, entidades);
-        var totalRejected = (request.Pings.Count - validPings.Count) + velocityRejected + skipped;
+        var totalRejected = (request.Pings.Count - validPings.Count) + velocityRejected + sessionDuplicates + skipped;
         return new UbicacionBatchResultDto { Aceptados = inserted, Duplicados = totalRejected };
     }
 

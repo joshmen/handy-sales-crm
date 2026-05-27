@@ -499,10 +499,72 @@ public class PedidoRepository : IPedidoRepository
         if (nuevoEstado == EstadoPedido.Entregado)
         {
             pedido.FechaEntregaReal = DateTime.UtcNow;
+
+            // BR-RUTA-CARGA: incrementar RutasCarga.CantidadVendida (VentaDirecta) o
+            // CantidadEntregada (Preventa) por cada detalle del pedido. Replica el
+            // mismo comportamiento que tienen los endpoints mobile directos
+            // (MobileVentaDirectaEndpoints, MobilePedidoEndpoints) y el path de
+            // sync push (SyncRepository.UpsertPedidoAsync). Sin esto, cuando un
+            // admin o supervisor marca un pedido como Entregado desde web, la
+            // barra "Productos (vendidos + entregados)" en mobile se queda en 0
+            // (reportado prod 2026-05-26 — Rodrigo). Idempotente porque
+            // EsTransicionValida solo permite EnRuta→Entregado.
+            await IncrementarRutaCargaPorPedidoEntregadoAsync(pedido, tenantId);
         }
 
         await _db.SaveChangesAsync();
         return new CambiarEstadoOutcome(CambiarEstadoStatus.Ok, nuevoEstado);
+    }
+
+    /// <summary>
+    /// Suma las cantidades de los detalles del pedido al RutasCarga correspondiente
+    /// del producto en la ruta donde el pedido viaja. Si el pedido no está ligado a
+    /// una ruta y no es VentaDirecta, no-op (no debería pasar para Entregado válido).
+    /// </summary>
+    private async Task IncrementarRutaCargaPorPedidoEntregadoAsync(Pedido pedido, int tenantId)
+    {
+        var detalles = await _db.DetallePedidos.AsNoTracking()
+            .Where(d => d.PedidoId == pedido.Id && d.Activo)
+            .Select(d => new { d.ProductoId, d.Cantidad })
+            .ToListAsync();
+        if (detalles.Count == 0) return;
+
+        // Caso 1: Pedido con RutasPedidos pre-link (preventa o venta directa asignada a ruta)
+        var rutaId = await _db.RutasPedidos.AsNoTracking()
+            .Where(rp => rp.PedidoId == pedido.Id && rp.TenantId == tenantId && rp.Activo)
+            .Select(rp => (int?)rp.RutaId)
+            .FirstOrDefaultAsync();
+
+        // Caso 2: VentaDirecta sin pre-link — buscar ruta activa del vendedor
+        // (mismo filtro que MobileVentaDirectaEndpoints y SyncRepository).
+        if (!rutaId.HasValue && pedido.TipoVenta == TipoVenta.VentaDirecta)
+        {
+            rutaId = await _db.RutasVendedor.AsNoTracking()
+                .Where(r => r.UsuarioId == pedido.UsuarioId
+                         && r.TenantId == tenantId
+                         && r.Activo
+                         && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
+                .Select(r => (int?)r.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        if (!rutaId.HasValue) return;
+
+        foreach (var det in detalles)
+        {
+            var carga = await _db.RutasCarga
+                .FirstOrDefaultAsync(c => c.RutaId == rutaId.Value
+                    && c.ProductoId == det.ProductoId
+                    && c.TenantId == tenantId
+                    && c.Activo);
+            if (carga == null) continue;
+
+            if (pedido.TipoVenta == TipoVenta.VentaDirecta)
+                carga.CantidadVendida += (int)det.Cantidad;
+            else
+                carga.CantidadEntregada += (int)det.Cantidad;
+            carga.ActualizadoEn = DateTime.UtcNow;
+        }
     }
 
     public async Task<bool> EliminarAsync(int id, int tenantId)

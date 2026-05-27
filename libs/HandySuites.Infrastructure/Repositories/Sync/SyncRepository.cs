@@ -552,14 +552,25 @@ public class SyncRepository : ISyncRepository
                     }
                     else if (pedido.TipoVenta == TipoVenta.VentaDirecta)
                     {
-                        // Caso 2: VentaDirecta sin pre-link — buscar ruta activa del vendedor.
-                        // Mismo filtro que MobileVentaDirectaEndpoints.cs:213-219.
+                        // Caso 2: VentaDirecta sin pre-link — buscar la ruta del DÍA DEL PEDIDO
+                        // (no "ruta activa now"). Antes este filtro decía "EnProgreso/CargaAceptada"
+                        // sin acotar por fecha, lo cual causaba cross-contamination cuando el sync
+                        // push llegaba después de cerrar la ruta original y abrir una nueva el mismo
+                        // día (caso Rodrigo 2026-05-26 — 816 unidades terminaron en ruta 20 cuando
+                        // pertenecían a ruta 19). Si el pedido es de un día anterior y la ruta
+                        // correspondiente ya está Completada, el sweep en aceptar/iniciar ruta
+                        // (VincularPedidosHuerfanosAsync) lo captura cuando se crea/acepta la
+                        // siguiente ruta del día.
+                        var fechaInicio = pedido.FechaPedido.Date;
+                        var fechaFin = fechaInicio.AddDays(1);
                         rutaId = await _db.RutasVendedor
                             .AsNoTracking()
                             .Where(r => r.UsuarioId == usuarioId
                                      && r.TenantId == tenantId
                                      && r.Activo
+                                     && r.Fecha >= fechaInicio && r.Fecha < fechaFin
                                      && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
+                            .OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
                             .Select(r => (int?)r.Id)
                             .FirstOrDefaultAsync();
                     }

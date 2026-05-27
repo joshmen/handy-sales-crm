@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink } from 'lucide-react';
+import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { toast } from '@/hooks/useToast';
-import { getConfigFiscal, saveConfigFiscal, uploadCertificado, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
+import { getConfigFiscal, saveConfigFiscal, uploadCertificado, retryFinkokRegistration, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
 import type { ConfiguracionFiscal, NumeracionDocumento } from '@/types/billing';
 
 type SettingsTab = 'datos' | 'series';
@@ -24,6 +24,7 @@ export default function BillingSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [retryingFinkok, setRetryingFinkok] = useState(false);
 
   // CSD upload state
   const [cerFile, setCerFile] = useState<File | null>(null);
@@ -123,8 +124,21 @@ export default function BillingSettingsPage() {
       formData.append('Certificado', cerFile);
       formData.append('LlavePrivada', keyFile);
       formData.append('Password', certPassword);
-      await uploadCertificado(config.id, formData);
-      toast({ title: t('uploadCertsSuccess') });
+      const result = await uploadCertificado(config.id, formData);
+
+      // BILL-1: el endpoint reporta el resultado del registro en Finkok
+      if (result.finkokRegistrado === true) {
+        toast({ title: 'Certificado cargado y RFC habilitado para facturar en Finkok.' });
+      } else if (result.finkokRegistrado === false) {
+        toast({
+          title: 'Certificado guardado, pero Finkok rechazó el registro',
+          description: result.finkokError || 'Revisa el CSD o contacta soporte. Recibirás un email con detalles.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: result.message || t('uploadCertsSuccess') });
+      }
+
       const updated = await getConfigFiscal();
       setConfig(updated);
       setCerFile(null);
@@ -138,6 +152,32 @@ export default function BillingSettingsPage() {
       toast({ title: msg, variant: 'destructive' });
     } finally {
       setUploading(false);
+    }
+  };
+
+  // BILL-1: retry de registro Finkok reusando CSD ya guardado
+  const handleRetryFinkok = async () => {
+    if (!config.id) return;
+    setRetryingFinkok(true);
+    try {
+      const result = await retryFinkokRegistration(config.id);
+      if (result.finkokRegistrado) {
+        toast({ title: 'RFC habilitado para facturar en Finkok.' });
+      } else {
+        toast({
+          title: 'Finkok rechazó el registro',
+          description: result.finkokError || 'Revisa el CSD o contacta soporte.',
+          variant: 'destructive',
+        });
+      }
+      const updated = await getConfigFiscal();
+      setConfig(updated);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        || 'Error al reintentar registro en Finkok';
+      toast({ title: msg, variant: 'destructive' });
+    } finally {
+      setRetryingFinkok(false);
     }
   };
 
@@ -351,6 +391,53 @@ export default function BillingSettingsPage() {
                 </div>
               )}
             </div>
+
+            {/* BILL-1: badge de status Finkok */}
+            {hasCertificates && (
+              <div className="mb-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Finkok</span>
+                    {config.finkokEmisorRegistrado ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300">
+                        <CheckCircle className="w-3 h-3" />
+                        Habilitado para facturar ({config.finkokStatus || 'active'})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        <AlertCircle className="w-3 h-3" />
+                        Pendiente de registrar en Finkok
+                      </span>
+                    )}
+                  </div>
+                  {config.finkokTypeUser && (
+                    <span className="text-xs text-muted-foreground">
+                      Modalidad: <strong className="text-foreground">{config.finkokTypeUser === 'O' ? 'Ilimitado' : 'Prepago'}</strong>
+                      {config.finkokTypeUser === 'P' && config.finkokCreditosRestantes != null && (
+                        <span className="ml-2">• Créditos restantes: <strong className="text-foreground">{config.finkokCreditosRestantes.toLocaleString('es-MX')}</strong></span>
+                      )}
+                    </span>
+                  )}
+                </div>
+                {!config.finkokEmisorRegistrado && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Tu CSD está guardado pero Finkok aún no lo tiene registrado bajo nuestra cuenta partner. El timbrado fallará hasta que se complete el registro.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRetryFinkok}
+                      disabled={retryingFinkok}
+                      data-testid="retry-finkok-btn"
+                    >
+                      {retryingFinkok ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <RefreshCw className="w-3.5 h-3.5 mr-2" />}
+                      {retryingFinkok ? 'Reintentando...' : 'Reintentar registro en Finkok'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {config.id ? (
               <div className="space-y-4">

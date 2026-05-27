@@ -275,6 +275,86 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return await _db.SaveChangesAsync() > 0;
     }
 
+    public async Task<VinculacionHuerfanosResult> VincularPedidosHuerfanosAsync(int rutaId, int tenantId)
+    {
+        // Carga ruta para obtener usuario_id + fecha (acotamos el sweep al día).
+        var ruta = await _db.RutasVendedor.AsNoTracking()
+            .Where(r => r.Id == rutaId && r.TenantId == tenantId && r.Activo)
+            .Select(r => new { r.Id, r.UsuarioId, r.Fecha })
+            .FirstOrDefaultAsync();
+        if (ruta == null || !ruta.UsuarioId.HasValue)
+            return new VinculacionHuerfanosResult(0, 0);
+
+        var fechaInicio = ruta.Fecha.Date;
+        var fechaFin = fechaInicio.AddDays(1);
+
+        // Huérfanos: VentaDirecta+Entregado del usuario en la fecha de la ruta
+        // que no tengan link activo en RutasPedidos (a ninguna ruta).
+        var huerfanos = await (
+            from p in _db.Pedidos.AsNoTracking()
+            where p.TenantId == tenantId
+                && p.UsuarioId == ruta.UsuarioId.Value
+                && p.Activo
+                && p.Estado == EstadoPedido.Entregado
+                && p.TipoVenta == TipoVenta.VentaDirecta
+                && p.FechaPedido >= fechaInicio
+                && p.FechaPedido < fechaFin
+                && !_db.RutasPedidos.Any(rp => rp.PedidoId == p.Id && rp.Activo)
+            select p.Id).ToListAsync();
+
+        if (huerfanos.Count == 0)
+            return new VinculacionHuerfanosResult(0, 0);
+
+        // Cargar carga de la ruta (productos a actualizar) y detalles de los huérfanos en una sola pasada.
+        var cargas = await _db.RutasCarga
+            .Where(c => c.RutaId == rutaId && c.TenantId == tenantId && c.Activo)
+            .ToListAsync();
+        var cargaPorProducto = cargas.ToDictionary(c => c.ProductoId);
+
+        var detalles = await _db.DetallePedidos.AsNoTracking()
+            .Where(d => huerfanos.Contains(d.PedidoId) && d.Activo)
+            .Select(d => new { d.PedidoId, d.ProductoId, d.Cantidad })
+            .ToListAsync();
+
+        // Agrupar detalles por producto para incrementar RutasCarga
+        var sumaPorProducto = detalles
+            .GroupBy(d => d.ProductoId)
+            .ToDictionary(g => g.Key, g => g.Sum(d => (int)d.Cantidad));
+
+        var ahora = DateTime.UtcNow;
+        var totalUnidades = 0;
+        foreach (var (productoId, suma) in sumaPorProducto)
+        {
+            if (cargaPorProducto.TryGetValue(productoId, out var carga))
+            {
+                carga.CantidadVendida += suma;
+                carga.ActualizadoEn = ahora;
+                totalUnidades += suma;
+            }
+            // Si el producto vendido no estaba en RutasCarga, no creamos row nuevo
+            // (la carga debe haber sido planificada por admin). El overage se verá
+            // en cierre de ruta como diferencia para que se reconcilie ahí.
+        }
+
+        // Crear links RutasPedidos para idempotencia + audit. Marcamos como
+        // Entregado (estado=1) porque el pedido ya pasó por ese estado.
+        foreach (var pedidoId in huerfanos)
+        {
+            _db.RutasPedidos.Add(new RutaPedido
+            {
+                RutaId = rutaId,
+                PedidoId = pedidoId,
+                TenantId = tenantId,
+                Estado = EstadoPedidoRuta.Entregado,
+                Activo = true,
+                CreadoEn = ahora,
+            });
+        }
+
+        await _db.SaveChangesAsync();
+        return new VinculacionHuerfanosResult(huerfanos.Count, totalUnidades);
+    }
+
     public async Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales)
     {
         var ruta = await _db.RutasVendedor.FindAsync(id);

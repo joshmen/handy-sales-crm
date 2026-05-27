@@ -93,4 +93,118 @@ public static class BillingEmailTemplates
 </body>
 </html>";
     }
+
+    // ─── BILL-1 (2026-05-26): Notificaciones de alta Finkok ─────────────────────
+
+    public static string FinkokRegistrationSuccess(string rfc, string? razonSocial, char typeUser, string lang)
+    {
+        var modalidad = typeUser == 'O'
+            ? (lang == "en" ? "unlimited" : "ilimitado")
+            : (lang == "en" ? "prepaid" : "prepago");
+
+        var (title, intro, body, ctaText) = lang == "en"
+            ? (
+                "Your SAT billing is now active",
+                $"We've successfully registered RFC <strong>{rfc}</strong> in our Finkok partner account.",
+                $"You can now issue CFDI invoices from HandySales. Billing mode: <strong>{modalidad}</strong>.",
+                "Go to Billing")
+            : (
+                "Tu facturación SAT está habilitada",
+                $"Registramos exitosamente el RFC <strong>{rfc}</strong> bajo nuestra cuenta partner de Finkok.",
+                $"Ya puedes emitir facturas CFDI desde HandySales. Modalidad: <strong>{modalidad}</strong>.",
+                "Ir a Facturación");
+
+        var razonSocialLine = !string.IsNullOrEmpty(razonSocial)
+            ? $"<p style=\"margin:0 0 8px;color:#64748B;font-size:13px;\">Razón social: <strong style=\"color:#0f172a;\">{razonSocial}</strong></p>"
+            : "";
+
+        return $@"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f7;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#f4f4f7;padding:24px 0;"">
+    <tr><td align=""center"">
+      <table width=""580"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#ffffff;border-radius:8px;overflow:hidden;"">
+        <tr>
+          <td style=""background: linear-gradient(135deg, #16A34A, #15803D); padding:24px 32px;"">
+            <h1 style=""margin:0;color:#ffffff;font-size:20px;font-weight:600;"">✓ {title}</h1>
+            <p style=""margin:4px 0 0;color:#DCFCE7;font-size:13px;"">Handy Suites — Facturación Electrónica</p>
+          </td>
+        </tr>
+        <tr>
+          <td style=""padding:32px;"">
+            <p style=""margin:0 0 16px;font-size:15px;color:#333;line-height:1.5;"">{intro}</p>
+            {razonSocialLine}
+            <p style=""margin:16px 0 24px;font-size:14px;color:#555;line-height:1.6;"">{body}</p>
+            <table cellpadding=""0"" cellspacing=""0""><tr><td style=""background-color:#16A34A;border-radius:6px;"">
+              <a href=""https://www.handysuites.com/billing"" style=""display:inline-block;padding:12px 24px;color:#fff;text-decoration:none;font-weight:600;font-size:14px;"">{ctaText}</a>
+            </td></tr></table>
+          </td>
+        </tr>
+        <tr><td style=""padding:16px 32px;background-color:#F8FAFC;border-top:1px solid #E2E8F0;"">
+          <p style=""margin:0;font-size:11px;color:#94A3B8;text-align:center;"">Handy Suites — handysuites.com</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+    }
+
+    public static string FinkokRegistrationFailure(string rfc, string finkokErrorMessage, string lang)
+    {
+        var (title, intro, causasLabel, causas, accion, ctaText) = lang == "en"
+            ? (
+                "We couldn't enable your SAT billing",
+                $"We received your CSD for RFC <strong>{rfc}</strong>, but Finkok rejected the registration with this message:",
+                "Common causes:",
+                new[] { "Expired CSD certificate", "RFC in SAT blacklist", "FIEL/e.firma file uploaded instead of CSD", "Wrong password for .key file" },
+                "Review your CSD in Billing → Settings, or contact support.",
+                "Contact support")
+            : (
+                "No pudimos habilitar tu facturación SAT",
+                $"Recibimos tu CSD para el RFC <strong>{rfc}</strong>, pero Finkok rechazó el registro con este mensaje:",
+                "Causas comunes:",
+                new[] { "Certificado CSD caducado", "RFC en lista negra del SAT", "Subiste archivos de FIEL/e.firma en lugar de CSD", "Password incorrecto del archivo .key" },
+                "Revisa tu CSD en Facturación → Configuración, o contacta soporte.",
+                "Contactar soporte");
+
+        var causasHtml = string.Join("", causas.Select(c => $"<li style=\"margin:4px 0;\">{c}</li>"));
+
+        return $@"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f7;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#f4f4f7;padding:24px 0;"">
+    <tr><td align=""center"">
+      <table width=""580"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#ffffff;border-radius:8px;overflow:hidden;"">
+        <tr>
+          <td style=""background: linear-gradient(135deg, #DC2626, #B91C1C); padding:24px 32px;"">
+            <h1 style=""margin:0;color:#ffffff;font-size:20px;font-weight:600;"">⚠ {title}</h1>
+            <p style=""margin:4px 0 0;color:#FEE2E2;font-size:13px;"">Handy Suites — Facturación Electrónica</p>
+          </td>
+        </tr>
+        <tr>
+          <td style=""padding:32px;"">
+            <p style=""margin:0 0 16px;font-size:15px;color:#333;line-height:1.5;"">{intro}</p>
+            <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#FEF2F2;border:1px solid #FECACA;border-radius:6px;margin-bottom:16px;"">
+              <tr><td style=""padding:12px 16px;""><code style=""font-size:13px;color:#991B1B;font-family:monospace;"">{finkokErrorMessage}</code></td></tr>
+            </table>
+            <p style=""margin:16px 0 8px;font-size:14px;color:#555;""><strong>{causasLabel}</strong></p>
+            <ul style=""margin:0 0 24px;padding-left:24px;font-size:13px;color:#555;line-height:1.6;"">{causasHtml}</ul>
+            <p style=""margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;"">{accion}</p>
+            <table cellpadding=""0"" cellspacing=""0""><tr><td style=""background-color:#DC2626;border-radius:6px;"">
+              <a href=""mailto:soporte@handysuites.com"" style=""display:inline-block;padding:12px 24px;color:#fff;text-decoration:none;font-weight:600;font-size:14px;"">{ctaText}</a>
+            </td></tr></table>
+          </td>
+        </tr>
+        <tr><td style=""padding:16px 32px;background-color:#F8FAFC;border-top:1px solid #E2E8F0;"">
+          <p style=""margin:0;font-size:11px;color:#94A3B8;text-align:center;"">Handy Suites — handysuites.com</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+    }
 }

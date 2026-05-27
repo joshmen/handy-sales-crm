@@ -152,4 +152,74 @@ public class UbicacionVendedorServiceTests
 
         _repo.Verify(r => r.ObtenerUltimasAsync(Tenant, ids), Times.Once);
     }
+
+    // ─── Dedup semántico InicioRuta / InicioJornada (Bug 1 — prod 2026-05-26) ───
+
+    [Fact]
+    public async Task GuardarBatch_InicioRutaConSessionAbierta_SeDescarta()
+    {
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        // Repo dice que hay una InicioRuta abierta (sin FinRuta posterior) → debe rechazar.
+        _repo.Setup(r => r.ExisteSessionAbiertaAsync(Tenant, 42,
+            TipoPingUbicacion.InicioRuta, TipoPingUbicacion.FinRuta,
+            It.IsAny<DateOnly>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(true);
+
+        var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4m, Longitud = -99.1m, Tipo = TipoPingUbicacion.InicioRuta, CapturadoEn = DateTime.UtcNow.AddMinutes(-5) },
+            }
+        });
+
+        result.Aceptados.Should().Be(0);
+        result.Duplicados.Should().Be(1);
+        // InsertBatchAsync no debe llamarse cuando todo el batch quedó filtrado.
+        _repo.Verify(r => r.InsertBatchAsync(It.IsAny<int>(), It.IsAny<IEnumerable<UbicacionVendedor>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GuardarBatch_InicioRutaSinSessionAbierta_SeAcepta()
+    {
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        _repo.Setup(r => r.ExisteSessionAbiertaAsync(Tenant, 42,
+            TipoPingUbicacion.InicioRuta, TipoPingUbicacion.FinRuta,
+            It.IsAny<DateOnly>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(false);
+        _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
+            .ReturnsAsync((1, 0));
+
+        var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4m, Longitud = -99.1m, Tipo = TipoPingUbicacion.InicioRuta, CapturadoEn = DateTime.UtcNow.AddMinutes(-5) },
+            }
+        });
+
+        result.Aceptados.Should().Be(1);
+        result.Duplicados.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GuardarBatch_TiposNoSesion_NoLlamaExisteSessionAbierta()
+    {
+        // Checkpoint/Venta/Cobro/Visita NO deben gatillar el chequeo de session abierta.
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
+            .ReturnsAsync((1, 0));
+
+        await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4m, Longitud = -99.1m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = DateTime.UtcNow.AddMinutes(-5) },
+            }
+        });
+
+        _repo.Verify(r => r.ExisteSessionAbiertaAsync(It.IsAny<int>(), It.IsAny<int>(),
+            It.IsAny<TipoPingUbicacion>(), It.IsAny<TipoPingUbicacion>(),
+            It.IsAny<DateOnly>(), It.IsAny<DateTime>()), Times.Never);
+    }
 }

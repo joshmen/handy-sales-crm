@@ -1,4 +1,5 @@
 using HandySuites.Application.Tracking.DTOs;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 
 namespace HandySuites.Application.Tracking.Interfaces;
@@ -11,6 +12,16 @@ public interface IUbicacionVendedorRepository
     /// Devuelve (insertados, duplicados omitidos).
     /// </summary>
     Task<(int Inserted, int Skipped)> InsertBatchAsync(int tenantId, IEnumerable<UbicacionVendedor> pings);
+
+    /// <summary>
+    /// Devuelve true si existe un ping de inicio (<paramref name="startTipo"/>) del usuario
+    /// en ese día de servicio anterior a <paramref name="beforeCapturadoEn"/> que NO tenga
+    /// un ping de fin (<paramref name="endTipo"/>) entre ambos. Sirve para rechazar pings
+    /// duplicados de Inicio*Sesión cuando la sesión previa sigue "abierta".
+    /// </summary>
+    Task<bool> ExisteSessionAbiertaAsync(int tenantId, int usuarioId,
+        TipoPingUbicacion startTipo, TipoPingUbicacion endTipo,
+        DateOnly diaServicio, DateTime beforeCapturadoEn);
 
     /// <summary>
     /// Última ubicación de cada vendedor con `usuarioIds` indicado. Usa

@@ -219,8 +219,35 @@ export async function saveConfigFiscal(config: Partial<ConfiguracionFiscal>): Pr
   return data;
 }
 
-export async function uploadCertificado(configId: number, formData: FormData): Promise<void> {
-  await billingApi.post(`/api/catalogos/configuracion-fiscal/${configId}/certificado`, formData);
+/**
+ * BILL-1: el endpoint ahora devuelve el resultado del registro en Finkok
+ * además del guardado local del CSD.
+ * - `finkokRegistrado: true` → RFC habilitado para timbrar
+ * - `finkokRegistrado: false` + `finkokError` → CSD guardado pero Finkok rechazó
+ */
+export interface UploadCertificadoResult {
+  message: string;
+  finkokRegistrado?: boolean;
+  finkokError?: string;
+}
+
+export async function uploadCertificado(configId: number, formData: FormData): Promise<UploadCertificadoResult> {
+  const { data } = await billingApi.post<UploadCertificadoResult>(
+    `/api/catalogos/configuracion-fiscal/${configId}/certificado`,
+    formData,
+  );
+  return data;
+}
+
+/**
+ * BILL-1 retry: reintenta el registro Finkok reusando CSD ya guardado.
+ * Útil cuando el upload inicial guardó CSD pero Finkok rechazó (red caída, etc.)
+ */
+export async function retryFinkokRegistration(configId: number): Promise<UploadCertificadoResult> {
+  const { data } = await billingApi.post<UploadCertificadoResult>(
+    `/api/catalogos/configuracion-fiscal/${configId}/retry-finkok-registration`,
+  );
+  return data;
 }
 
 // ─── Numeración / Series ───

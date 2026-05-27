@@ -121,6 +121,47 @@ internal class StubTenantEncryptionService : ITenantEncryptionService
         => Task.FromResult(ciphertext);
 }
 
+// BILL-1 stubs — no llaman Finkok real ni SendGrid, retornan success siempre.
+internal class StubRegistrationService : HandySuites.Billing.Api.Services.IRegistrationService
+{
+    public Task<HandySuites.Billing.Api.DTOs.RegisterEmitterResult> RegisterEmitterAsync(HandySuites.Billing.Api.DTOs.RegisterEmitterRequest request, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.RegisterEmitterResult { Success = true, Message = "stub-success" });
+
+    public Task<HandySuites.Billing.Api.DTOs.RegisterEmitterResult> UpdateEmitterAsync(HandySuites.Billing.Api.DTOs.UpdateEmitterRequest request, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.RegisterEmitterResult { Success = true });
+
+    public Task<HandySuites.Billing.Api.DTOs.EmitterInfoResult> GetEmitterInfoAsync(string rfc, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.EmitterInfoResult { Success = true, Status = "active" });
+
+    public Task<HandySuites.Billing.Api.DTOs.AssignCreditsResult> AssignCreditsAsync(string rfc, int credits, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.AssignCreditsResult { Success = true, CreditsTotal = credits });
+
+    public Task<HandySuites.Billing.Api.DTOs.EmittersListResult> ListEmittersAsync(int page = 1, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.EmittersListResult { Success = true });
+
+    public Task<HandySuites.Billing.Api.DTOs.RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.RegisterEmitterResult { Success = true });
+}
+
+internal class StubTenantInfoService : HandySuites.Billing.Api.Services.ITenantInfoService
+{
+    public Task<IReadOnlyList<string>> GetAdminEmailsAsync(int tenantId, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+}
+
+internal class StubBillingEmailService : HandySuites.Billing.Api.Services.IBillingEmailService
+{
+    public Task<bool> SendFacturaAsync(string toEmail, string subject, string htmlBody,
+        byte[]? pdfBytes = null, string? pdfFileName = null,
+        string? xmlContent = null, string? xmlFileName = null) => Task.FromResult(true);
+
+    public Task<bool> SendFinkokRegistrationSuccessAsync(string toEmail, string rfc, string? razonSocial, char typeUser, string lang = "es")
+        => Task.FromResult(true);
+
+    public Task<bool> SendFinkokRegistrationFailureAsync(string toEmail, string rfc, string finkokErrorMessage, string lang = "es")
+        => Task.FromResult(true);
+}
+
 public class FacturasControllerTests : IDisposable
 {
     private readonly BillingDbContext _context;

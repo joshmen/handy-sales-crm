@@ -395,3 +395,26 @@ public class RetornoItemRequest
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
 }
+
+// === DTOs para vinculación de pedidos huérfanos ===
+
+/// <summary>
+/// Resultado del sweep que vincula pedidos VentaDirecta+Entregado del día
+/// del vendedor sin RutasPedidos link, al transicionar ruta a CargaAceptada
+/// o EnProgreso. Caso reportado prod 2026-05-26: vendedor empieza a vender
+/// antes de que admin le asigne ruta cargada.
+/// </summary>
+public record VinculacionHuerfanosResult(int PedidosVinculados, int UnidadesTotales);
+
+/// <summary>
+/// Respuesta de los endpoints aceptar/iniciar ruta. Incluye info opcional sobre
+/// pedidos huérfanos vinculados retroactivamente para que mobile pueda mostrar
+/// un toast informativo al vendedor.
+/// </summary>
+public class CambiarEstadoRutaResult
+{
+    public bool Success { get; set; }
+    public string? Message { get; set; }
+    /// <summary>Null si no se ejecutó sweep o no hubo huérfanos.</summary>
+    public VinculacionHuerfanosResult? PedidosHuerfanosVinculados { get; set; }
+}

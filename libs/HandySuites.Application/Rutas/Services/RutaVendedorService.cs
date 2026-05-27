@@ -304,10 +304,11 @@ public class RutaVendedorService
     }
 
     // Gestión de estado de ruta
-    public async Task<bool> IniciarRutaAsync(int id, IniciarRutaDto? dto = null)
+    public async Task<CambiarEstadoRutaResult> IniciarRutaAsync(int id, IniciarRutaDto? dto = null)
     {
         var ruta = await _repo.ObtenerEntidadAsync(id);
-        if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            return new CambiarEstadoRutaResult { Success = false, Message = "Ruta no encontrada" };
 
         // Validar que es el vendedor asignado
         var usuarioId = int.Parse(_tenant.UserId);
@@ -329,19 +330,60 @@ public class RutaVendedorService
             throw new InvalidOperationException(
                 $"No se puede iniciar la ruta: faltan {string.Join(", ", faltantes)}.");
 
-        return await _repo.IniciarRutaAsync(id, DateTime.UtcNow);
+        var ok = await _repo.IniciarRutaAsync(id, DateTime.UtcNow);
+        var vinculacion = ok ? await TryVincularHuerfanosAsync(id) : null;
+        return new CambiarEstadoRutaResult
+        {
+            Success = ok,
+            PedidosHuerfanosVinculados = vinculacion,
+        };
     }
 
-    public async Task<bool> AceptarRutaAsync(int id)
+    public async Task<CambiarEstadoRutaResult> AceptarRutaAsync(int id)
     {
         var ruta = await _repo.ObtenerEntidadAsync(id);
-        if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
+        if (ruta == null || ruta.TenantId != _tenant.TenantId)
+            return new CambiarEstadoRutaResult { Success = false, Message = "Ruta no encontrada" };
 
         var usuarioId = int.Parse(_tenant.UserId);
         if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
             throw new UnauthorizedAccessException("Solo el vendedor asignado puede aceptar esta ruta");
 
-        return await _repo.AceptarRutaAsync(id, DateTime.UtcNow);
+        var ok = await _repo.AceptarRutaAsync(id, DateTime.UtcNow);
+        var vinculacion = ok ? await TryVincularHuerfanosAsync(id) : null;
+        return new CambiarEstadoRutaResult
+        {
+            Success = ok,
+            PedidosHuerfanosVinculados = vinculacion,
+        };
+    }
+
+    /// <summary>
+    /// Best-effort: ejecuta sweep de pedidos huérfanos al transicionar ruta.
+    /// Si falla, log + retorna null — no romper la transición de estado por esto.
+    /// Caso de uso reportado prod 2026-05-26: vendedor empieza a vender pre-ruta.
+    /// </summary>
+    private async Task<VinculacionHuerfanosResult?> TryVincularHuerfanosAsync(int rutaId)
+    {
+        try
+        {
+            var result = await _repo.VincularPedidosHuerfanosAsync(rutaId, _tenant.TenantId);
+            if (result.PedidosVinculados > 0)
+            {
+                _logger?.LogInformation(
+                    "VINCULAR_HUERFANOS_AUDIT: ruta {RutaId} -> {Pedidos} pedidos / {Unidades} unidades",
+                    rutaId, result.PedidosVinculados, result.UnidadesTotales);
+            }
+            return result.PedidosVinculados > 0 ? result : null;
+        }
+        catch (Exception ex)
+        {
+            // Best-effort: la transición de estado ya se hizo. Si el sweep falla,
+            // log y seguir — los huérfanos se quedan en BD y se podrán reconciliar
+            // con el backfill SQL o un retry manual.
+            _logger?.LogError(ex, "VINCULAR_HUERFANOS_ERROR: ruta {RutaId}", rutaId);
+            return null;
+        }
     }
 
     public async Task<bool> CompletarRutaAsync(int id, double? kilometrosReales = null)

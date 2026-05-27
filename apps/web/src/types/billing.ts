@@ -271,6 +271,15 @@ export interface ConfiguracionFiscal {
   pacUsuario: string | null;
   pacPassword: string | null;
   pacAmbiente: 'sandbox' | 'production';
+
+  // BILL-1: tracking del registro en Finkok como emisor
+  finkokEmisorRegistrado?: boolean;
+  finkokRegistradoEn?: string | null;
+  finkokStatus?: 'active' | 'suspended' | 'frozen' | null;
+  /** 'P' = prepago, 'O' = ilimitado */
+  finkokTypeUser?: string | null;
+  finkokCreditosRestantes?: number | null;
+
   activo: boolean;
   createdAt: string;
   updatedAt: string;

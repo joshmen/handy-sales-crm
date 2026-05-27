@@ -395,6 +395,26 @@ export default function CloseRoutePage() {
           </div>
         </div>
 
+        {/* Overage banner — al menos un producto con vendidos+entregados > cantidadInicial.
+            Reportado prod 2026-05-26: vendedor empieza a vender pre-ruta y al sumar las
+            ventas previas a la ruta la cantidad consumida puede exceder lo cargado. Esto
+            no es error: significa que hubo stock externo (carga extra durante el día,
+            vehículo con inventario previo, etc.). El usuario lo reconcilia con los
+            steppers Mermas / Rec. almacén / Carga vehículo de la tabla. */}
+        {!loading && retorno.some(r => (r.vendidos + r.entregados) > r.cantidadInicial) && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-900 dark:text-amber-200">
+              <p className="font-semibold mb-1">Hay productos con más unidades vendidas que las cargadas inicialmente.</p>
+              <p className="text-xs leading-relaxed">
+                Esto suele ocurrir cuando el vendedor empezó a vender antes de aceptar la ruta, o cuando hubo recarga
+                externa durante el día. Revisa cada fila marcada y ajusta con los steppers de Mermas, Rec. almacén
+                o Carga vehículo según corresponda para cuadrar el cierre.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Inventario de retorno */}
         <div data-tour="routes-close-inventory" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -485,20 +505,34 @@ export default function CloseRoutePage() {
                           disabled={isReadonly}
                         />
                       </td>
-                      {/* Diferencia badge */}
+                      {/* Diferencia badge — si vendidos+entregados > inicial, marca overage explícito */}
                       <td className="py-2 px-2 text-center">
-                        <span
-                          className={`inline-flex min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full ${
-                            item.diferencia > 0
-                              ? 'bg-red-100 text-red-700'
-                              : item.diferencia < 0
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}
-                         
-                        >
-                          {item.diferencia}
-                        </span>
+                        {(() => {
+                          const excedente = item.vendidos + item.entregados - item.cantidadInicial;
+                          if (excedente > 0) {
+                            return (
+                              <span
+                                title={`Vendido ${excedente} unidades más de lo cargado. Ajusta con Mermas o Carga vehículo si aplica.`}
+                                className="inline-flex items-center gap-1 min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700"
+                              >
+                                {item.diferencia}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span
+                              className={`inline-flex min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full ${
+                                item.diferencia > 0
+                                  ? 'bg-red-100 text-red-700'
+                                  : item.diferencia < 0
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-green-100 text-green-700'
+                              }`}
+                            >
+                              {item.diferencia}
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}

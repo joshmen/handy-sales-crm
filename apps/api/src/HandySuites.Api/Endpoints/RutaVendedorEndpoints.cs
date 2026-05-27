@@ -441,9 +441,13 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio) =>
         {
             var resultado = await servicio.IniciarRutaAsync(id, dto);
-            return resultado
-                ? Results.Ok(new { mensaje = "Ruta iniciada" })
-                : Results.BadRequest(new { error = "No se pudo iniciar la ruta" });
+            if (!resultado.Success)
+                return Results.BadRequest(new { error = resultado.Message ?? "No se pudo iniciar la ruta" });
+            return Results.Ok(new
+            {
+                mensaje = "Ruta iniciada",
+                pedidosHuerfanosVinculados = resultado.PedidosHuerfanosVinculados,
+            });
         });
 
         group.MapPost("/{id:int}/completar", async (

@@ -244,9 +244,13 @@ export default function RutaScreen() {
                   }
                   // Backend: /aceptar (captura timestamp + transiciona 0|4 → 5) — best-effort.
                   let backendOk = false;
+                  let huerfanosVinculados: { pedidosVinculados: number; unidadesTotales: number } | null = null;
                   try {
-                    await rutasApi.aceptar(serverId);
+                    const acepRes = await rutasApi.aceptar(serverId);
                     backendOk = true;
+                    if (acepRes.pedidosHuerfanosVinculados && acepRes.pedidosHuerfanosVinculados.pedidosVinculados > 0) {
+                      huerfanosVinculados = acepRes.pedidosHuerfanosVinculados;
+                    }
                   } catch (e) {
                     if (__DEV__) console.warn('[Ruta] aceptar backend failed (continuando):', e);
                   }
@@ -268,6 +272,19 @@ export default function RutaScreen() {
                   // Toast: si AL MENOS local OK → success. Si todo falla → error explícito.
                   if (localOk) {
                     Toast.show({ type: 'success', text1: 'Ruta aceptada' });
+                    // Segundo toast informativo si el backend vinculó ventas previas
+                    // (vendedor empezó a vender antes de que le asignaran ruta — caso
+                    // reportado prod 2026-05-26). El sweep retroactivo ya las sumó a
+                    // RutasCarga; el toast es para que el vendedor lo sepa.
+                    if (huerfanosVinculados) {
+                      const { pedidosVinculados, unidadesTotales } = huerfanosVinculados;
+                      Toast.show({
+                        type: 'info',
+                        text1: `${pedidosVinculados} ventas previas vinculadas`,
+                        text2: `${unidadesTotales} unidades sumadas al inventario de esta ruta.`,
+                        visibilityTime: 6000,
+                      });
+                    }
                   } else if (!backendOk) {
                     Toast.show({ type: 'error', text1: 'No se pudo aceptar la ruta', text2: 'Verifica tu conexión' });
                   }

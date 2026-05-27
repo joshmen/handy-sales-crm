@@ -69,6 +69,27 @@ public class ConfiguracionFiscal
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // ─── Finkok registration tracking (BILL-1, 2026-05-26) ────────────────────
+    // Cuando el tenant sube CSD, además de guardarlo localmente lo registramos
+    // en Finkok via registration.add. Estas columnas reflejan el resultado.
+
+    /// <summary>True si registration.add a Finkok fue exitoso. Si false → timbrado
+    /// fallará porque Finkok no reconoce el RFC bajo nuestra cuenta partner.</summary>
+    public bool FinkokEmisorRegistrado { get; set; }
+
+    public DateTime? FinkokRegistradoEn { get; set; }
+
+    /// <summary>"active" | "suspended" | "frozen" según Finkok. Null si nunca se registró.</summary>
+    [MaxLength(20)]
+    public string? FinkokStatus { get; set; }
+
+    /// <summary>'P' = prepago (créditos asignados via assign), 'O' = ilimitado (tarifa mensual).</summary>
+    public char? FinkokTypeUser { get; set; }
+
+    /// <summary>Créditos prepago restantes. Sincronizado periódicamente via FinkokStatusSyncJob.
+    /// Null si TypeUser=O (ilimitado) o nunca se consultó.</summary>
+    public int? FinkokCreditosRestantes { get; set; }
 }
 
 public class TipoComprobante
