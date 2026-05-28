@@ -142,11 +142,53 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
     if (!acquired) return;
     await persist({ activa: false, iniciadaEn: null, terminadaEn: ahora, motivoStop: motivo });
 
+    // Si el vendedor cerró jornada MANUALMENTE y hay una ruta `EnProgreso`,
+    // también la completamos en backend + emitimos ping FinRuta. La intención
+    // implícita de "Cerrar jornada" es terminar todo el flujo del día.
+    // Reportado prod 2026-05-26 (Rodrigo): ruta quedaba EnProgreso huérfana.
+    let rutaCerradaServerId: number | null = null;
+    if (motivo === 'manual') {
+      try {
+        const { Q } = await import('@nozbe/watermelondb');
+        const { database } = await import('@/db/database');
+        const { default: Ruta } = await import('@/db/models/Ruta');
+        const { useAuthStore } = await import('./authStore');
+        const userId = Number(useAuthStore.getState().user?.id ?? 0);
+        if (userId) {
+          // estado = 1 (EnProgreso). server_id puede ser null si la ruta
+          // todavía no se sincronizó — en ese caso saltamos completar.
+          const rutas = await database.get<any>('rutas')
+            .query(
+              Q.where('usuario_id', userId),
+              Q.where('activo', true),
+              Q.where('estado', 1),
+            )
+            .fetch();
+          const ruta = rutas[0];
+          if (ruta?.serverId) {
+            rutaCerradaServerId = Number(ruta.serverId);
+            const { rutasApi } = await import('@/api/routes');
+            await rutasApi.completar(rutaCerradaServerId).catch(() => {
+              // Best-effort: si red caída, el ping FinRuta abajo deja
+              // rastro y un cron de reconciliación backend podría cerrar
+              // la ruta orfana (follow-up).
+              rutaCerradaServerId = null;
+            });
+          }
+        }
+      } catch {
+        // ignore — no romper el cierre de jornada por error en cerrar ruta
+      }
+    }
+
     try {
       const mod = await import('@/services/locationCheckpoint');
-      // 'horario' e 'inactividad' ambos son auto-stops del sistema —
-      // mismo ping `StopAutomatico`. El motivoStop local distingue para el
-      // banner / toast en mobile.
+      // Si motivo='manual' y cerramos una ruta arriba, emitimos AMBOS pings:
+      // FinRuta (cierre de ruta) + FinJornada (cierre de jornada del vendedor).
+      // Para motivos automáticos seguimos el mapeo original.
+      if (motivo === 'manual' && rutaCerradaServerId != null) {
+        await mod.recordPing(mod.TipoPing.FinRuta, rutaCerradaServerId);
+      }
       const tipo =
         motivo === 'ruta' ? mod.TipoPing.FinRuta
         : motivo === 'horario' || motivo === 'inactividad' ? mod.TipoPing.StopAutomatico

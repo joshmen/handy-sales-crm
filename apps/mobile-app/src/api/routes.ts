@@ -68,8 +68,8 @@ class MobileRutasApi {
     return validated.data;
   }
 
-  async aceptar(id: number): Promise<{ success: boolean; message: string }> {
-    const response = await api.post<{ success: boolean; message: string }>(
+  async aceptar(id: number): Promise<AceptarRutaResponse> {
+    const response = await api.post<AceptarRutaResponse>(
       `${this.basePath}/${id}/aceptar`
     );
     return response.data;
@@ -172,6 +172,23 @@ class MobileRutasApi {
     );
     return validated.data;
   }
+}
+
+/**
+ * Respuesta del endpoint POST /api/mobile/rutas/{id}/aceptar.
+ * `pedidosHuerfanosVinculados` aparece cuando el sweep retroactivo encontró
+ * pedidos VentaDirecta del día sin ruta asignada — caso del vendedor que
+ * empieza a vender antes de que admin le asigne la ruta cargada.
+ */
+export interface PedidosHuerfanosVinculados {
+  pedidosVinculados: number;
+  unidadesTotales: number;
+}
+
+export interface AceptarRutaResponse {
+  success: boolean;
+  message: string;
+  pedidosHuerfanosVinculados?: PedidosHuerfanosVinculados | null;
 }
 
 export const rutasApi = new MobileRutasApi();

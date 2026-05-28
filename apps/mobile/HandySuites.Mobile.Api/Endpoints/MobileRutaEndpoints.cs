@@ -75,10 +75,15 @@ public static class MobileRutaEndpoints
             try
             {
                 var resultado = await servicio.IniciarRutaAsync(id);
-                if (!resultado)
-                    return Results.BadRequest(new { success = false, message = "No se pudo iniciar la ruta" });
+                if (!resultado.Success)
+                    return Results.BadRequest(new { success = false, message = resultado.Message ?? "No se pudo iniciar la ruta" });
 
-                return Results.Ok(new { success = true, message = "Ruta iniciada" });
+                return Results.Ok(new
+                {
+                    success = true,
+                    message = "Ruta iniciada",
+                    pedidosHuerfanosVinculados = resultado.PedidosHuerfanosVinculados,
+                });
             }
             catch (UnauthorizedAccessException)
             {
@@ -101,10 +106,15 @@ public static class MobileRutaEndpoints
             try
             {
                 var resultado = await servicio.AceptarRutaAsync(id);
-                if (!resultado)
-                    return Results.Conflict(new { success = false, message = "Estado inválido para aceptar la ruta" });
+                if (!resultado.Success)
+                    return Results.Conflict(new { success = false, message = resultado.Message ?? "Estado inválido para aceptar la ruta" });
 
-                return Results.Ok(new { success = true, message = "Ruta aceptada" });
+                return Results.Ok(new
+                {
+                    success = true,
+                    message = "Ruta aceptada",
+                    pedidosHuerfanosVinculados = resultado.PedidosHuerfanosVinculados,
+                });
             }
             catch (UnauthorizedAccessException)
             {

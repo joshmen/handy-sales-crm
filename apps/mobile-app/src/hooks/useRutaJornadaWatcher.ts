@@ -23,6 +23,7 @@ const ESTADO_COMPLETADA = 2;
 export function useRutaJornadaWatcher() {
   const rutas = useOfflineRutaHoy();
   const jornadaActiva = useJornadaStore(s => s.activa);
+  const hidratada = useJornadaStore(s => s.hidratada);
   const iniciarJornada = useJornadaStore(s => s.iniciarJornada);
   const finalizarJornada = useJornadaStore(s => s.finalizarJornada);
 
@@ -31,6 +32,14 @@ export function useRutaJornadaWatcher() {
   const lastEstadoRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // HYDRATION GUARD: si el store de jornada aún no terminó de hidratar de
+    // AsyncStorage, `jornadaActiva` puede ser su default `false` aunque en
+    // disco ya esté `true`. Saltar la evaluación hasta que hidratemos evita
+    // que el watcher dispare `iniciarJornada('ruta')` un segundo InicioRuta
+    // duplicado en el mismo día (reportado prod 2026-05-26 — Rodrigo, pings
+    // #88 y #89 a 5:21pm y 5:27pm).
+    if (!hidratada) return;
+
     const ruta = rutas?.data?.[0];
     if (!ruta) {
       lastEstadoRef.current = null;
@@ -49,5 +58,5 @@ export function useRutaJornadaWatcher() {
     } else if (estadoActual === ESTADO_COMPLETADA && jornadaActiva) {
       finalizarJornada('ruta');
     }
-  }, [rutas, jornadaActiva, iniciarJornada, finalizarJornada]);
+  }, [rutas, jornadaActiva, hidratada, iniciarJornada, finalizarJornada]);
 }

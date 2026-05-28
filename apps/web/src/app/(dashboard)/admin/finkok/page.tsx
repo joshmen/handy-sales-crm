@@ -10,8 +10,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, RefreshCw, CheckCircle, AlertCircle, Pause, Play, Coins, ArrowLeftRight } from 'lucide-react';
+import { Loader2, RefreshCw, CheckCircle, AlertCircle, AlertTriangle, Pause, Play, Coins, ArrowLeftRight } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Modal } from '@/components/ui/Modal';
 import { toast } from '@/hooks/useToast';
 import {
   listEmitters,
@@ -306,13 +307,12 @@ export default function FinkokAdminPage() {
       </div>
 
       {/* Modal: asignar créditos */}
-      {creditsModalRfc && (
-        <Modal onClose={() => setCreditsModalRfc(null)}>
-          <h3 className="text-base font-semibold mb-2">Asignar créditos</h3>
+      <Modal isOpen={!!creditsModalRfc} onClose={() => setCreditsModalRfc(null)} title="Asignar créditos" size="sm">
+        <div className="p-6">
           <p className="text-sm text-muted-foreground mb-4">
-            RFC: <span className="font-mono">{creditsModalRfc}</span>
+            RFC: <span className="font-mono text-foreground">{creditsModalRfc}</span>
           </p>
-          <label className="block text-xs font-medium text-foreground/80 mb-1">Cantidad</label>
+          <label className="block text-xs font-medium text-foreground/80 mb-1">Cantidad de créditos a agregar</label>
           <input
             type="number"
             min="1"
@@ -320,54 +320,69 @@ export default function FinkokAdminPage() {
             onChange={(e) => setCreditsInput(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-border-default rounded-lg bg-background mb-4"
             data-testid="credits-input"
+            autoFocus
           />
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setCreditsModalRfc(null)} className="px-4 py-2 text-sm">Cancelar</button>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+            <button
+              onClick={() => setCreditsModalRfc(null)}
+              disabled={actionLoadingRfc === creditsModalRfc}
+              className="px-4 py-2 text-sm font-medium text-foreground/80 bg-white border border-border-default hover:bg-surface-1 rounded-lg disabled:opacity-50"
+            >
+              Cancelar
+            </button>
             <button
               onClick={handleAssignCredits}
               disabled={!creditsInput || actionLoadingRfc === creditsModalRfc}
-              className="px-4 py-2 text-sm bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
               data-testid="confirm-assign-credits"
             >
+              {actionLoadingRfc === creditsModalRfc && <Loader2 className="w-4 h-4 animate-spin" />}
               Asignar
             </button>
           </div>
-        </Modal>
-      )}
+        </div>
+      </Modal>
 
       {/* Modal: switch modalidad */}
-      {switchModalRfc && (
-        <Modal onClose={() => setSwitchModalRfc(null)}>
-          <h3 className="text-base font-semibold mb-2">Cambiar modalidad</h3>
+      <Modal isOpen={!!switchModalRfc} onClose={() => setSwitchModalRfc(null)} title="Cambiar modalidad" size="sm">
+        <div className="p-6">
           <p className="text-sm text-muted-foreground mb-4">
-            RFC: <span className="font-mono">{switchModalRfc}</span>
+            RFC: <span className="font-mono text-foreground">{switchModalRfc}</span>
           </p>
-          <div className="space-y-2 mb-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+          <div className="space-y-3 mb-4">
+            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-surface-1">
               <input type="radio" name="mode" value="P" checked={switchNewMode === 'P'} onChange={() => setSwitchNewMode('P')} />
-              <span className="text-sm">Prepago — asignación manual de créditos</span>
+              <span className="text-sm"><strong>Prepago</strong>: asignas créditos manualmente</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-surface-1">
               <input type="radio" name="mode" value="O" checked={switchNewMode === 'O'} onChange={() => setSwitchNewMode('O')} />
-              <span className="text-sm">Ilimitado — tarifa mensual</span>
+              <span className="text-sm"><strong>Ilimitado</strong>: tarifa mensual fija</span>
             </label>
           </div>
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 mb-4">
-            ⚠️ Cambia el modelo de cobro Finkok para este emisor. Confirma con tu cuenta partner antes.
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3 text-xs text-amber-900 dark:text-amber-200 mb-4 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <span>Esto cambia cómo Finkok te cobra por este emisor. Confírmalo con tu cuenta partner antes de aplicar.</span>
           </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setSwitchModalRfc(null)} className="px-4 py-2 text-sm">Cancelar</button>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+            <button
+              onClick={() => setSwitchModalRfc(null)}
+              disabled={actionLoadingRfc === switchModalRfc}
+              className="px-4 py-2 text-sm font-medium text-foreground/80 bg-white border border-border-default hover:bg-surface-1 rounded-lg disabled:opacity-50"
+            >
+              Cancelar
+            </button>
             <button
               onClick={handleSwitchMode}
               disabled={actionLoadingRfc === switchModalRfc}
-              className="px-4 py-2 text-sm bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
               data-testid="confirm-switch-mode"
             >
+              {actionLoadingRfc === switchModalRfc && <Loader2 className="w-4 h-4 animate-spin" />}
               Cambiar
             </button>
           </div>
-        </Modal>
-      )}
+        </div>
+      </Modal>
     </PageHeader>
   );
 }
@@ -409,12 +424,3 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-}

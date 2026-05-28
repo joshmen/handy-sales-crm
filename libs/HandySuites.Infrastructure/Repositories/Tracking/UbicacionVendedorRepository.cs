@@ -1,5 +1,6 @@
 using HandySuites.Application.Tracking.DTOs;
 using HandySuites.Application.Tracking.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -88,6 +89,32 @@ public class UbicacionVendedorRepository : IUbicacionVendedorRepository
     // Postgres SqlQueryRaw requiere POCO con propiedades exactamente igual al column alias.
     // Mapeo a UltimaUbicacionDto se hace en C# después del query.
     private record UltimaUbicacionRaw(int usuario_id, decimal latitud, decimal longitud, int tipo, DateTime capturado_en);
+
+    public async Task<bool> ExisteSessionAbiertaAsync(int tenantId, int usuarioId,
+        TipoPingUbicacion startTipo, TipoPingUbicacion endTipo,
+        DateOnly diaServicio, DateTime beforeCapturadoEn)
+    {
+        // Una sesión está "abierta" si existe un start anterior a beforeCapturadoEn
+        // que no tenga un end entre ambos timestamps. Esto rechaza pings
+        // duplicados de InicioRuta/InicioJornada cuando el vendedor ya tiene
+        // una sesión activa que no fue cerrada (escenario que causaba que
+        // pings #88 y #89 InicioRuta apareciesen 6min apart en prod
+        // 2026-05-26 — Rodrigo).
+        var startInt = (int)startTipo;
+        var endInt = (int)endTipo;
+        return await _db.UbicacionesVendedor.AsNoTracking()
+            .Where(u => u.TenantId == tenantId
+                     && u.UsuarioId == usuarioId
+                     && u.DiaServicio == diaServicio
+                     && (int)u.Tipo == startInt
+                     && u.CapturadoEn < beforeCapturadoEn)
+            .AnyAsync(u => !_db.UbicacionesVendedor.AsNoTracking().Any(u2 =>
+                u2.TenantId == u.TenantId
+                && u2.UsuarioId == u.UsuarioId
+                && (int)u2.Tipo == endInt
+                && u2.CapturadoEn > u.CapturadoEn
+                && u2.CapturadoEn <= beforeCapturadoEn));
+    }
 
     public Task<List<UbicacionVendedorDto>> ObtenerRecorridoEntreAsync(
         int tenantId, int usuarioId, DateTime inicioUtc, DateTime finUtc)
