@@ -60,6 +60,9 @@ public class HandySuitesDbContext : DbContext
     public DbSet<RutaRetornoInventario> RutasRetornoInventario => Set<RutaRetornoInventario>();
     public DbSet<NotificationHistory> NotificationHistory => Set<NotificationHistory>();
     public DbSet<Cobro> Cobros => Set<Cobro>();
+    public DbSet<Gasto> Gastos => Set<Gasto>();
+    public DbSet<DevolucionPedido> DevolucionesPedido => Set<DevolucionPedido>();
+    public DbSet<DetalleDevolucion> DetalleDevoluciones => Set<DetalleDevolucion>();
     public DbSet<TwoFactorRecoveryCode> TwoFactorRecoveryCodes => Set<TwoFactorRecoveryCode>();
 
     public DbSet<ScheduledAction> ScheduledActions => Set<ScheduledAction>();
@@ -761,6 +764,112 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(c => new { c.TenantId, c.FechaCobro });
         });
 
+        // Configure Gasto entity (gastos del vendedor con foto opcional)
+        modelBuilder.Entity<Gasto>(entity =>
+        {
+            entity.ToTable("Gastos");
+            entity.HasKey(g => g.Id);
+
+            entity.HasOne(g => g.Tenant)
+                  .WithMany()
+                  .HasForeignKey(g => g.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(g => g.Ruta)
+                  .WithMany()
+                  .HasForeignKey(g => g.RutaId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(g => g.Usuario)
+                  .WithMany()
+                  .HasForeignKey(g => g.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(g => g.Monto).HasPrecision(14, 2);
+            entity.Property(g => g.Concepto).HasMaxLength(200);
+            entity.Property(g => g.Moneda).HasMaxLength(3).HasDefaultValue("MXN");
+
+            // Indices
+            entity.HasIndex(g => new { g.TenantId, g.FechaGasto });
+            entity.HasIndex(g => new { g.TenantId, g.UsuarioId, g.FechaGasto });
+            entity.HasIndex(g => new { g.TenantId, g.RutaId });
+            entity.HasIndex(g => new { g.TenantId, g.MobileRecordId });
+        });
+
+        // Configure DevolucionPedido entity (devolucion de cliente, ligada a un Pedido)
+        modelBuilder.Entity<DevolucionPedido>(entity =>
+        {
+            entity.ToTable("DevolucionesPedido");
+            entity.HasKey(d => d.Id);
+
+            entity.HasOne(d => d.Tenant)
+                  .WithMany()
+                  .HasForeignKey(d => d.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Pedido)
+                  .WithMany()
+                  .HasForeignKey(d => d.PedidoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Cliente)
+                  .WithMany()
+                  .HasForeignKey(d => d.ClienteId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Usuario)
+                  .WithMany()
+                  .HasForeignKey(d => d.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Ruta)
+                  .WithMany()
+                  .HasForeignKey(d => d.RutaId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(d => d.Detalles)
+                  .WithOne(dd => dd.Devolucion)
+                  .HasForeignKey(dd => dd.DevolucionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(d => d.MontoTotal).HasPrecision(14, 2);
+
+            entity.HasIndex(d => new { d.TenantId, d.PedidoId });
+            entity.HasIndex(d => new { d.TenantId, d.ClienteId, d.FechaDevolucion });
+            entity.HasIndex(d => new { d.TenantId, d.RutaId });
+            entity.HasIndex(d => new { d.TenantId, d.UsuarioId, d.FechaDevolucion });
+            entity.HasIndex(d => new { d.TenantId, d.MobileRecordId });
+        });
+
+        // Configure DetalleDevolucion entity (lineas individuales de una DevolucionPedido)
+        modelBuilder.Entity<DetalleDevolucion>(entity =>
+        {
+            entity.ToTable("DetalleDevoluciones");
+            entity.HasKey(dd => dd.Id);
+
+            entity.HasOne(dd => dd.DetallePedido)
+                  .WithMany()
+                  .HasForeignKey(dd => dd.DetallePedidoId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(dd => dd.Producto)
+                  .WithMany()
+                  .HasForeignKey(dd => dd.ProductoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(dd => dd.Cantidad).HasPrecision(14, 4);
+            entity.Property(dd => dd.PrecioUnitario).HasPrecision(14, 4);
+            entity.Property(dd => dd.Subtotal).HasPrecision(14, 2);
+            entity.Property(dd => dd.Impuesto).HasPrecision(14, 2);
+            entity.Property(dd => dd.Total).HasPrecision(14, 2);
+
+            entity.HasIndex(dd => dd.DevolucionId);
+            entity.HasIndex(dd => dd.ProductoId);
+        });
+
         // Configure TwoFactorRecoveryCode entity
         modelBuilder.Entity<TwoFactorRecoveryCode>(entity =>
         {
@@ -1004,6 +1113,16 @@ public class HandySuitesDbContext : DbContext
 
         modelBuilder.Entity<Cobro>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        modelBuilder.Entity<Gasto>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        modelBuilder.Entity<DevolucionPedido>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        // DetalleDevolucion: child entity (no TenantId direct) — solo soft delete filter
+        modelBuilder.Entity<DetalleDevolucion>()
+            .HasQueryFilter(e => e.EliminadoEn == null);
 
         // Company: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<Company>()

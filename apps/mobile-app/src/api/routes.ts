@@ -185,10 +185,21 @@ export interface PedidosHuerfanosVinculados {
   unidadesTotales: number;
 }
 
+/**
+ * Sweep de Gastos huerfanos (v23, 2026-05-29). Vendedor registro gastos
+ * (gasolina, peajes) antes de aceptar la ruta del dia. Al aceptar/iniciar
+ * se imputan a la ruta para que entren al aRecibir del cierre.
+ */
+export interface GastosHuerfanosVinculados {
+  gastosVinculados: number;
+  montoTotal: number;
+}
+
 export interface AceptarRutaResponse {
   success: boolean;
   message: string;
   pedidosHuerfanosVinculados?: PedidosHuerfanosVinculados | null;
+  gastosHuerfanosVinculados?: GastosHuerfanosVinculados | null;
 }
 
 export const rutasApi = new MobileRutasApi();

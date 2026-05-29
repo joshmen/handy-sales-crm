@@ -17,6 +17,10 @@ export default function RutaLayout() {
       <Stack.Screen name="parada/[detalleId]" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="visita-activa" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="resumen" options={{ headerShown: false, gestureEnabled: false }} />
+      {/* v23 (2026-05-29): Gastos del vendedor — viven en Ruta porque son intrínsecos a la ruta del día */}
+      <Stack.Screen name="gastos/index" options={{ headerShown: false }} />
+      <Stack.Screen name="gastos/nuevo" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="gastos/[gastoId]" options={{ headerShown: false }} />
     </Stack>
     </ErrorBoundary>
   );

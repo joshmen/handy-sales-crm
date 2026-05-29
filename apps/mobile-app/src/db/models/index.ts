@@ -8,6 +8,9 @@ import RutaPedido from './RutaPedido';
 import RutaCarga from './RutaCarga';
 import Visita from './Visita';
 import Cobro from './Cobro';
+import Gasto from './Gasto';
+import DevolucionPedido from './DevolucionPedido';
+import DetalleDevolucion from './DetalleDevolucion';
 import Attachment from './Attachment';
 import PrecioPorProducto from './PrecioPorProducto';
 import Descuento from './Descuento';
@@ -33,6 +36,9 @@ export {
   RutaCarga,
   Visita,
   Cobro,
+  Gasto,
+  DevolucionPedido,
+  DetalleDevolucion,
   Attachment,
   PrecioPorProducto,
   Descuento,
@@ -59,6 +65,9 @@ export const modelClasses = [
   RutaCarga,
   Visita,
   Cobro,
+  Gasto,
+  DevolucionPedido,
+  DetalleDevolucion,
   Attachment,
   PrecioPorProducto,
   Descuento,

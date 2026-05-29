@@ -535,15 +535,22 @@ public class PedidoRepository : IPedidoRepository
             .Select(rp => (int?)rp.RutaId)
             .FirstOrDefaultAsync();
 
-        // Caso 2: VentaDirecta sin pre-link — buscar ruta activa del vendedor
-        // (mismo filtro que MobileVentaDirectaEndpoints y SyncRepository).
+        // Caso 2: VentaDirecta sin pre-link — buscar ruta activa del vendedor del MISMO DÍA
+        // del pedido. Antes (pre-fix bug Rodrigo 27/5/2026) la búsqueda no acotaba por fecha,
+        // por lo que pedidos del día X entregados tarde podían imputarse a la ruta del día Y
+        // que estuviera activa en ese momento — cross-contamination silencioso entre rutas.
+        // Mismo filtro que `SyncRepository.UpsertPedidoAsync` post-fix 0d9a4e13.
         if (!rutaId.HasValue && pedido.TipoVenta == TipoVenta.VentaDirecta)
         {
+            var fechaInicio = pedido.FechaPedido.Date;
+            var fechaFin = fechaInicio.AddDays(1);
             rutaId = await _db.RutasVendedor.AsNoTracking()
                 .Where(r => r.UsuarioId == pedido.UsuarioId
                          && r.TenantId == tenantId
                          && r.Activo
+                         && r.Fecha >= fechaInicio && r.Fecha < fechaFin
                          && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
+                .OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
                 .Select(r => (int?)r.Id)
                 .FirstOrDefaultAsync();
         }

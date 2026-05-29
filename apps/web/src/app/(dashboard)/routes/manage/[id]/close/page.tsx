@@ -320,25 +320,29 @@ export default function CloseRoutePage() {
                 <span className="text-muted-foreground">{t('presaleOrders')} ({resumen.pedidosPreventaCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
               </div>
-              {/* Bug #5 (audit 2026-05-07): label clarificado +
-                  tooltip informativo. El campo lo poblará el flujo
-                  de devolución que captura mobile durante la entrega.
-                  Hoy siempre llega 0 porque ese flujo aún no captura
-                  monetariamente — solo cantidad física en el inventario
-                  de retorno. Este label evita la confusión "¿dónde
-                  pongo las devoluciones?". */}
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground inline-flex items-center gap-1">
-                  {t('returnsRegistered')} ({resumen.devolucionesCount})
-                  <Info
-                    className="w-3 h-3 text-muted-foreground/60 cursor-help"
-                    aria-label={t('returnsTooltip')}
-                  >
-                    <title>{t('returnsTooltip')}</title>
-                  </Info>
-                </span>
-                <span className="font-medium text-red-600">{formatCurrency(resumen.devoluciones)}</span>
-              </div>
+              {/* v23 (2026-05-29): Devoluciones a saldo a favor (informativo, no resta de aRecibir) */}
+              {(resumen.devolucionesSaldoFavorCount ?? 0) > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground inline-flex items-center gap-1">
+                    Devoluciones a saldo favor ({resumen.devolucionesSaldoFavorCount})
+                  </span>
+                  <span className="font-medium text-foreground/70">{formatCurrency(resumen.devolucionesSaldoFavor ?? 0)}</span>
+                </div>
+              )}
+              {/* v23: Devoluciones efectivo (restan de aRecibir) */}
+              {(resumen.devolucionesEfectivoCount ?? 0) > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Devoluciones en efectivo ({resumen.devolucionesEfectivoCount})</span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.devolucionesEfectivo ?? 0)}</span>
+                </div>
+              )}
+              {/* v23: Gastos del vendedor imputados a la ruta (restan de aRecibir) */}
+              {(resumen.gastosCount ?? 0) > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Gastos de ruta ({resumen.gastosCount})</span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

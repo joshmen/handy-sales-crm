@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 22,
+  version: 23,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -269,6 +269,81 @@ export const schema = appSchema({
         { name: 'activo', type: 'boolean', isIndexed: true },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number', isIndexed: true },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Gastos (v23, 2026-05-29) ──────────────────────────
+    // Gasto del vendedor durante jornada/ruta. Foto del ticket opcional (via attachments).
+    // ComprobanteUrl es stampeado server-side post-upload via MobileAttachmentEndpoints.
+    tableSchema({
+      name: 'gastos',
+      columns: [
+        { name: 'server_id', type: 'number', isOptional: true },
+        { name: 'ruta_id', type: 'string', isOptional: true, isIndexed: true }, // WDB local id
+        { name: 'ruta_server_id', type: 'number', isOptional: true }, // server id if ruta already synced
+        { name: 'usuario_id', type: 'number' },
+        { name: 'fecha_gasto', type: 'number', isIndexed: true },
+        { name: 'monto', type: 'number' },
+        { name: 'tipo_gasto', type: 'number' }, // enum: 0=Combustible..99=Otro
+        { name: 'concepto', type: 'string' },
+        { name: 'notas', type: 'string', isOptional: true },
+        { name: 'comprobante_url', type: 'string', isOptional: true },
+        { name: 'moneda', type: 'string' }, // ISO-4217, default MXN
+        { name: 'estado', type: 'number' }, // 0=Activo, 1=Invalidado
+        { name: 'activo', type: 'boolean', isIndexed: true },
+        { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number', isIndexed: true },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── DevolucionesPedido (v23, 2026-05-29) ──────────────
+    // Parent. Devolucion ligada a un Pedido entregado. Tipo reembolso decide si afecta corte caja.
+    tableSchema({
+      name: 'devoluciones_pedido',
+      columns: [
+        { name: 'server_id', type: 'number', isOptional: true },
+        { name: 'pedido_id', type: 'string', isIndexed: true }, // WDB local id
+        { name: 'pedido_server_id', type: 'number', isOptional: true },
+        { name: 'cliente_id', type: 'string', isIndexed: true },
+        { name: 'cliente_server_id', type: 'number', isOptional: true },
+        { name: 'usuario_id', type: 'number' },
+        { name: 'ruta_id', type: 'string', isOptional: true },
+        { name: 'ruta_server_id', type: 'number', isOptional: true },
+        { name: 'fecha_devolucion', type: 'number', isIndexed: true },
+        { name: 'motivo', type: 'number' }, // enum
+        { name: 'notas', type: 'string', isOptional: true },
+        { name: 'tipo_reembolso', type: 'number' }, // 0=SaldoFavor, 1=Efectivo
+        { name: 'monto_total', type: 'number' },
+        { name: 'foto_evidencia_url', type: 'string', isOptional: true },
+        { name: 'estado', type: 'number' }, // 0=Activa, 1=Anulada
+        { name: 'activo', type: 'boolean', isIndexed: true },
+        { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number', isIndexed: true },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── DetalleDevoluciones (v23, 2026-05-29) ─────────────
+    // Children de DevolucionPedido. Cantidad y precio congelados al momento de devolucion.
+    tableSchema({
+      name: 'detalle_devoluciones',
+      columns: [
+        { name: 'server_id', type: 'number', isOptional: true },
+        { name: 'devolucion_id', type: 'string', isIndexed: true }, // WDB parent id
+        { name: 'devolucion_server_id', type: 'number', isOptional: true },
+        { name: 'detalle_pedido_id', type: 'string', isOptional: true }, // WDB original line id
+        { name: 'detalle_pedido_server_id', type: 'number', isOptional: true },
+        { name: 'producto_id', type: 'string', isIndexed: true },
+        { name: 'producto_server_id', type: 'number', isOptional: true },
+        { name: 'cantidad', type: 'number' },
+        { name: 'precio_unitario', type: 'number' },
+        { name: 'subtotal', type: 'number' },
+        { name: 'impuesto', type: 'number' },
+        { name: 'total', type: 'number' },
+        { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
     }),
