@@ -93,6 +93,13 @@ const sidebarItems: SidebarItem[] = [
     href: '/cobranza',
     permission: 'view_orders',
   },
+  {
+    id: 'gastos',
+    label: 'Gastos',
+    icon: SbPayments,
+    href: '/gastos',
+    permission: 'view_orders',
+  },
 
   // — CATÁLOGO —
   {

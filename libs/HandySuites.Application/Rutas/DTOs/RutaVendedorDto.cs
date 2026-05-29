@@ -429,6 +429,13 @@ public class RetornoItemRequest
 public record VinculacionHuerfanosResult(int PedidosVinculados, int UnidadesTotales);
 
 /// <summary>
+/// Resultado del sweep de Gastos huerfanos (gastos del vendedor con ruta_id=NULL
+/// del mismo dia que la ruta aceptada). Mirror del patron VinculacionHuerfanosResult
+/// pero para gastos del vendedor. Agregado v23 (2026-05-29).
+/// </summary>
+public record VinculacionGastosHuerfanosResult(int GastosVinculados, decimal MontoTotal);
+
+/// <summary>
 /// Respuesta de los endpoints aceptar/iniciar ruta. Incluye info opcional sobre
 /// pedidos huérfanos vinculados retroactivamente para que mobile pueda mostrar
 /// un toast informativo al vendedor.
@@ -439,4 +446,6 @@ public class CambiarEstadoRutaResult
     public string? Message { get; set; }
     /// <summary>Null si no se ejecutó sweep o no hubo huérfanos.</summary>
     public VinculacionHuerfanosResult? PedidosHuerfanosVinculados { get; set; }
+    /// <summary>Null si no hubo gastos sin ruta del dia. Sweep agregado v23.</summary>
+    public VinculacionGastosHuerfanosResult? GastosHuerfanosVinculados { get; set; }
 }

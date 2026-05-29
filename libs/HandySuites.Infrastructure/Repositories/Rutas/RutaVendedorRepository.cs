@@ -394,6 +394,46 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return new VinculacionHuerfanosResult(huerfanos.Count, totalUnidades);
     }
 
+    public async Task<VinculacionGastosHuerfanosResult> VincularGastosHuerfanosAsync(int rutaId, int tenantId)
+    {
+        // Cargar ruta para extraer usuario_id + fecha (sweep acotado al dia).
+        var ruta = await _db.RutasVendedor.AsNoTracking()
+            .Where(r => r.Id == rutaId && r.TenantId == tenantId && r.Activo)
+            .Select(r => new { r.Id, r.UsuarioId, r.Fecha })
+            .FirstOrDefaultAsync();
+        if (ruta == null || !ruta.UsuarioId.HasValue)
+            return new VinculacionGastosHuerfanosResult(0, 0);
+
+        var fechaInicio = ruta.Fecha.Date;
+        var fechaFin = fechaInicio.AddDays(1);
+
+        // Gastos huerfanos: usuario, dia, activos, estado=Activo, sin ruta_id.
+        var huerfanos = await _db.Gastos
+            .Where(g => g.TenantId == tenantId
+                        && g.UsuarioId == ruta.UsuarioId.Value
+                        && g.Activo
+                        && g.Estado == EstadoGasto.Activo
+                        && g.RutaId == null
+                        && g.FechaGasto >= fechaInicio
+                        && g.FechaGasto < fechaFin)
+            .ToListAsync();
+
+        if (huerfanos.Count == 0)
+            return new VinculacionGastosHuerfanosResult(0, 0);
+
+        var ahora = DateTime.UtcNow;
+        foreach (var g in huerfanos)
+        {
+            g.RutaId = rutaId;
+            g.ActualizadoEn = ahora;
+            g.Version++;
+        }
+
+        await _db.SaveChangesAsync();
+        var montoTotal = huerfanos.Sum(g => g.Monto);
+        return new VinculacionGastosHuerfanosResult(huerfanos.Count, montoTotal);
+    }
+
     public async Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales)
     {
         var ruta = await _db.RutasVendedor.FindAsync(id);

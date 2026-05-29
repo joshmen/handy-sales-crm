@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity, Image, StyleSheet,
   KeyboardAvoidingView, Platform,
@@ -56,7 +56,14 @@ function NuevoGastoScreen() {
   const [rutaActivaCodigo, setRutaActivaCodigo] = useState<string | null>(null);
   const [rutaActivaId, setRutaActivaId] = useState<string | null>(null);
   const [attachRuta, setAttachRuta] = useState(true);
+  const [diasAtras, setDiasAtras] = useState<number>(0); // 0=Hoy, 1=Ayer, ..., 7=Max
   const [saving, setSaving] = useState(false);
+
+  const fechaGastoComputed = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - diasAtras);
+    return d;
+  }, [diasAtras]);
 
   // Detectar ruta activa del dia
   useEffect(() => {
@@ -113,6 +120,7 @@ function NuevoGastoScreen() {
         concepto: concepto.trim(),
         notas: notas.trim() || undefined,
         rutaLocalId: attachRuta ? rutaActivaId : null,
+        fechaGasto: fechaGastoComputed,
       });
 
       // Si hay foto, guardar attachment record (sync lo subira)
@@ -211,6 +219,31 @@ function NuevoGastoScreen() {
             testID="input-concepto"
           />
 
+          {/* Fecha del gasto — chip selector ultimos 7 dias */}
+          <Text style={styles.label}>¿Cuando fue?</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dateRow}
+          >
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => {
+              const targetDate = new Date();
+              targetDate.setDate(targetDate.getDate() - d);
+              const label = d === 0 ? 'Hoy' : d === 1 ? 'Ayer' : targetDate.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' });
+              const active = diasAtras === d;
+              return (
+                <TouchableOpacity
+                  key={d}
+                  onPress={() => setDiasAtras(d)}
+                  style={[styles.datePill, active && styles.datePillActive]}
+                  testID={`date-${d}`}
+                >
+                  <Text style={[styles.dateLabel, active && styles.dateLabelActive]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           {/* Foto comprobante */}
           <Text style={styles.label}>Comprobante (opcional)</Text>
           <Text style={styles.hint}>Sin foto, el supervisor puede pedirla manualmente.</Text>
@@ -288,6 +321,14 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', color: COLORS.foreground, marginTop: 16, marginBottom: 8 },
   hint: { fontSize: 12, color: '#6b7280', marginBottom: 8 },
   tipoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  dateRow: { gap: 8, paddingVertical: 4 },
+  datePill: {
+    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999,
+    borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#fff',
+  },
+  datePillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  dateLabel: { fontSize: 13, fontWeight: '600', color: COLORS.foreground },
+  dateLabelActive: { color: '#fff' },
   tipoPill: {
     flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12,
     borderRadius: 999, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#fff',
