@@ -202,6 +202,15 @@ export default function RoutesPage() {
   // Column definitions for routes
   const routeColumns = useMemo<DataGridColumn<RouteListItem>[]>(() => [
     {
+      key: 'codigo',
+      label: 'Código',
+      sortable: true,
+      width: 150,
+      cellRenderer: (route) => (
+        <span className="text-[12px] font-mono text-foreground/70 truncate block">{route.codigo || '-'}</span>
+      ),
+    },
+    {
       key: 'nombre',
       label: t('columns.name'),
       sortable: true,
@@ -566,6 +575,9 @@ export default function RoutesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-foreground truncate">{route.nombre}</div>
+                      {route.codigo && (
+                        <div className="text-[10px] font-mono text-foreground/60 truncate">{route.codigo}</div>
+                      )}
                       <div className="text-xs text-muted-foreground truncate">{route.zonaNombre || t('noZone')}</div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>

@@ -495,6 +495,13 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(rv => new { rv.TenantId, rv.Fecha });
             entity.HasIndex(rv => new { rv.TenantId, rv.Estado });
             entity.HasIndex(rv => new { rv.TenantId, rv.ZonaId });
+            // Unique per tenant — el codigo se auto-genera al crear y no debe
+            // duplicarse. NULL/empty no permitido por seed/backfill posterior.
+            entity.HasIndex(rv => new { rv.TenantId, rv.Codigo }).IsUnique();
+
+            entity.Property(rv => rv.Codigo)
+                  .HasMaxLength(30)
+                  .HasDefaultValue(string.Empty);
         });
 
         // Configure RutaDetalle entity

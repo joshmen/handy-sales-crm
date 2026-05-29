@@ -33,6 +33,15 @@ public interface IRutaVendedorRepository
     /// </summary>
     Task<VinculacionHuerfanosResult> VincularPedidosHuerfanosAsync(int rutaId, int tenantId);
 
+    /// <summary>
+    /// Genera un codigo unico para una ruta. Formato:
+    /// - Ruta normal: "RT-YYYYMMDD-NNNN" — secuencia por (tenant, dia).
+    /// - Template:    "TPL-NNNN"        — secuencia por tenant (sin fecha).
+    /// La secuencia es next-available basada en max(codigo) del prefijo correspondiente.
+    /// Idempotente bajo retry: el caller debe atrapar 23505 (unique violation) y reintentar.
+    /// </summary>
+    Task<string> GenerarCodigoRutaAsync(int tenantId, DateTime fecha, bool esTemplate);
+
     /// <summary>Reemplaza las zonas de una ruta por la lista dada (delete-then-insert idempotente).</summary>
     Task ReemplazarZonasAsync(int rutaId, List<int> zonaIds, int tenantId);
 
