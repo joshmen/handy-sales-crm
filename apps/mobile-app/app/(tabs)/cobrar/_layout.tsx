@@ -18,6 +18,10 @@ export default function CobrarLayout() {
       <Stack.Screen name="historial" options={{ headerShown: false }} />
       <Stack.Screen name="detalle-cobro/[cobroId]" options={{ headerShown: false }} />
       <Stack.Screen name="recibo" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
+      {/* v23 (2026-05-29): Gastos del vendedor */}
+      <Stack.Screen name="gastos/index" options={{ headerShown: false }} />
+      <Stack.Screen name="gastos/nuevo" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="gastos/[gastoId]" options={{ headerShown: false }} />
     </Stack>
     </ErrorBoundary>
   );
