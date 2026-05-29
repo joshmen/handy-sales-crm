@@ -370,6 +370,34 @@ export default function RutaScreen() {
               emptyCaption="Esta ruta no tiene productos cargados"
             />
 
+            {/* v23 (2026-05-29): Gastos del vendedor — visible solo si la ruta
+                ya fue aceptada/iniciada (no en Planificada/PendienteAceptar).
+                Los gastos restan del aRecibir al cierre. */}
+            {(route.estado === 1 || route.estado === 5) && (
+              <View style={styles.gastosBar}>
+                <TouchableOpacity
+                  style={styles.gastosBtn}
+                  onPress={() => router.push('/(tabs)/ruta/gastos/nuevo' as any)}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Registrar gasto"
+                  accessibilityRole="button"
+                  testID="btn-registrar-gasto"
+                >
+                  <Text style={styles.gastosBtnText}>+ Registrar gasto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.gastosBtnOutline}
+                  onPress={() => router.push('/(tabs)/ruta/gastos' as any)}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Ver mis gastos"
+                  accessibilityRole="button"
+                  testID="btn-ver-gastos"
+                >
+                  <Text style={styles.gastosBtnOutlineText}>Ver mis gastos</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
           </View>
         </Animated.View>
 
@@ -542,6 +570,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+
+  // Gastos bar — debajo de ProgressCards, solo si ruta aceptada/iniciada
+  gastosBar: {
+    flexDirection: 'row', gap: 8, marginTop: 12,
+  },
+  gastosBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  gastosBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+  gastosBtnOutline: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  gastosBtnOutlineText: { fontSize: 14, fontWeight: '600', color: COLORS.foreground },
 
   // Progress section — white background
   progressSection: {

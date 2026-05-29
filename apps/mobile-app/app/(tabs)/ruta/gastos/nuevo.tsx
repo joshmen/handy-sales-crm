@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
 import {
   Fuel, Receipt, Coffee, Bed, Wrench, ParkingSquare, FileQuestion,
-  Camera, Image as ImageIcon, X, Check, ChevronLeft,
+  Camera, Image as ImageIcon, X, ChevronLeft, AlertTriangle, MapPin,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores';
 import { database } from '@/db/database';
@@ -55,7 +55,7 @@ function NuevoGastoScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [rutaActivaCodigo, setRutaActivaCodigo] = useState<string | null>(null);
   const [rutaActivaId, setRutaActivaId] = useState<string | null>(null);
-  const [attachRuta, setAttachRuta] = useState(true);
+  const [rutaLoading, setRutaLoading] = useState(true);
   const [diasAtras, setDiasAtras] = useState<number>(0); // 0=Hoy, 1=Ayer, ..., 7=Max
   const [saving, setSaving] = useState(false);
 
@@ -65,10 +65,10 @@ function NuevoGastoScreen() {
     return d;
   }, [diasAtras]);
 
-  // Detectar ruta activa del dia
+  // Detectar ruta activa del dia. Si no hay, no se permite crear gasto.
   useEffect(() => {
     (async () => {
-      if (!user) return;
+      if (!user) { setRutaLoading(false); return; }
       try {
         const userIdNum = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
         const todayMs = new Date(); todayMs.setHours(0, 0, 0, 0);
@@ -86,6 +86,7 @@ function NuevoGastoScreen() {
           setRutaActivaCodigo((rutas[0] as any).codigo ?? rutas[0].nombre);
         }
       } catch {}
+      finally { setRutaLoading(false); }
     })();
   }, [user]);
 
@@ -97,7 +98,9 @@ function NuevoGastoScreen() {
   }, [tipoGasto]); // eslint-disable-line
 
   const montoNum = parseFloat(montoTxt.replace(',', '.')) || 0;
-  const canSave = montoNum > 0 && concepto.trim().length > 0 && !saving;
+  // Foto del comprobante OBLIGATORIA — el supervisor exige evidencia de cada gasto.
+  // Ruta activa OBLIGATORIA — sin ruta el gasto no se puede imputar al corte del dia.
+  const canSave = montoNum > 0 && concepto.trim().length > 0 && !!photoUri && !!rutaActivaId && !saving;
 
   const handleTakePhoto = async () => {
     const uri = await capturePhoto();
@@ -119,7 +122,7 @@ function NuevoGastoScreen() {
         tipoGasto,
         concepto: concepto.trim(),
         notas: notas.trim() || undefined,
-        rutaLocalId: attachRuta ? rutaActivaId : null,
+        rutaLocalId: rutaActivaId, // siempre attached (ruta obligatoria)
         fechaGasto: fechaGastoComputed,
       });
 
@@ -152,6 +155,37 @@ function NuevoGastoScreen() {
       setSaving(false);
     }
   };
+
+  // Empty state: no hay ruta activa → no se puede registrar gasto.
+  if (!rutaLoading && !rutaActivaId) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+            <ChevronLeft size={24} color={COLORS.foreground} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Nuevo gasto</Text>
+          <View style={styles.headerBtn} />
+        </View>
+        <View style={styles.noRutaWrap}>
+          <View style={styles.noRutaIcon}><AlertTriangle size={32} color="#d97706" /></View>
+          <Text style={styles.noRutaTitle}>No tienes ruta activa</Text>
+          <Text style={styles.noRutaText}>
+            Los gastos deben imputarse a una ruta del dia.{'\n'}
+            Acepta tu ruta antes de registrar gastos.
+          </Text>
+          <TouchableOpacity
+            style={styles.noRutaBtn}
+            onPress={() => router.replace('/(tabs)/ruta' as any)}
+            testID="btn-ir-ruta"
+          >
+            <MapPin size={18} color="#fff" />
+            <Text style={styles.noRutaBtnText}>Ir a Ruta del dia</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -244,9 +278,9 @@ function NuevoGastoScreen() {
             })}
           </ScrollView>
 
-          {/* Foto comprobante */}
-          <Text style={styles.label}>Comprobante (opcional)</Text>
-          <Text style={styles.hint}>Sin foto, el supervisor puede pedirla manualmente.</Text>
+          {/* Foto comprobante — OBLIGATORIA */}
+          <Text style={styles.labelRequired}>Comprobante (obligatorio)</Text>
+          <Text style={styles.hint}>Toma foto del ticket o factura para auditoria del supervisor.</Text>
           {photoUri ? (
             <View style={styles.photoBox}>
               <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
@@ -256,11 +290,11 @@ function NuevoGastoScreen() {
             </View>
           ) : (
             <View style={styles.photoButtonsRow}>
-              <TouchableOpacity onPress={handleTakePhoto} style={styles.photoBtn} testID="btn-camera">
+              <TouchableOpacity onPress={handleTakePhoto} style={[styles.photoBtn, styles.photoBtnRequired]} testID="btn-camera">
                 <Camera size={20} color={COLORS.primary} />
                 <Text style={styles.photoBtnLabel}>Camara</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handlePickPhoto} style={styles.photoBtn} testID="btn-gallery">
+              <TouchableOpacity onPress={handlePickPhoto} style={[styles.photoBtn, styles.photoBtnRequired]} testID="btn-gallery">
                 <ImageIcon size={20} color={COLORS.primary} />
                 <Text style={styles.photoBtnLabel}>Galeria</Text>
               </TouchableOpacity>
@@ -279,17 +313,14 @@ function NuevoGastoScreen() {
             testID="input-notas"
           />
 
-          {/* Auto-attach ruta */}
+          {/* Ruta del dia (siempre attached) */}
           {rutaActivaCodigo && (
-            <TouchableOpacity
-              style={styles.rutaChip}
-              onPress={() => setAttachRuta(!attachRuta)}
-            >
-              <Check size={16} color={attachRuta ? COLORS.success : '#9ca3af'} />
-              <Text style={[styles.rutaChipText, !attachRuta && { color: '#9ca3af' }]}>
-                Imputar a ruta {rutaActivaCodigo}
+            <View style={styles.rutaChip}>
+              <MapPin size={16} color={COLORS.success} />
+              <Text style={styles.rutaChipText}>
+                Se imputa a {rutaActivaCodigo}
               </Text>
-            </TouchableOpacity>
+            </View>
           )}
         </ScrollView>
 
@@ -319,7 +350,15 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: COLORS.foreground },
   scroll: { padding: 16, gap: 4 },
   label: { fontSize: 13, fontWeight: '600', color: COLORS.foreground, marginTop: 16, marginBottom: 8 },
+  labelRequired: { fontSize: 13, fontWeight: '700', color: '#b45309', marginTop: 16, marginBottom: 8 },
   hint: { fontSize: 12, color: '#6b7280', marginBottom: 8 },
+  // Empty state no-ruta
+  noRutaWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
+  noRutaIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center' },
+  noRutaTitle: { fontSize: 18, fontWeight: '700', color: COLORS.foreground, textAlign: 'center' },
+  noRutaText: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
+  noRutaBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, backgroundColor: COLORS.primary, marginTop: 8 },
+  noRutaBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   tipoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dateRow: { gap: 8, paddingVertical: 4 },
   datePill: {
@@ -351,6 +390,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary, backgroundColor: '#fff',
   },
   photoBtnLabel: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+  photoBtnRequired: { borderStyle: 'dashed', borderWidth: 2 },
   photoBox: { position: 'relative', borderRadius: 12, overflow: 'hidden', aspectRatio: 4 / 3 },
   photo: { width: '100%', height: '100%' },
   photoRemove: {

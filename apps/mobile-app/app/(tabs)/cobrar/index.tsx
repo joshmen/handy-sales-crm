@@ -219,16 +219,6 @@ function CobrarVendedorContent() {
           >
             <Text style={[styles.actionButtonText, { color: COLORS.foreground }]}>Historial</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            testID="btn-mis-gastos"
-            style={[styles.actionButton, styles.actionButtonOutline]}
-            onPress={() => router.push('/(tabs)/cobrar/gastos' as any)}
-            activeOpacity={0.8}
-            accessibilityLabel="Mis gastos"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.actionButtonText, { color: COLORS.foreground }]}>Mis gastos</Text>
-          </TouchableOpacity>
         </Animated.View>
 
         {/* Period Filter Chips */}

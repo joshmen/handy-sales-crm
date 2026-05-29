@@ -517,6 +517,16 @@ export async function createGastoOffline(params: {
       } catch {
         // Sin ruta activa: gasto queda standalone (rutaId=null)
       }
+    } else {
+      // Caller pasó rutaLocalId explícito (e.g. desde nuevo.tsx con auto-detection en useEffect).
+      // Buscar el serverId correspondiente para que el push lleve int RutaId y no string RutaLocalId,
+      // ya que el server no resuelve RutaLocalId para RutaVendedor (no tiene MobileRecordId).
+      try {
+        const ruta = await database.get<Ruta>('rutas').find(rutaLocalId);
+        rutaServerId = (ruta as any).serverId ?? null;
+      } catch {
+        // ruta no encontrada localmente — dejar serverId null, gasto va sin ruta
+      }
     }
 
     const gasto = await database.get<Gasto>('gastos').create((record: any) => {

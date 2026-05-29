@@ -51,7 +51,7 @@ function GastosListScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mis gastos</Text>
         <TouchableOpacity
-          onPress={() => router.push('/(tabs)/cobrar/gastos/nuevo' as any)}
+          onPress={() => router.push('/(tabs)/ruta/gastos/nuevo' as any)}
           style={styles.headerBtn}
           testID="btn-nuevo-gasto"
         >
@@ -75,7 +75,7 @@ function GastosListScreen() {
             <Receipt size={48} color="#d1d5db" />
             <Text style={styles.emptyText}>No has registrado gastos</Text>
             <TouchableOpacity
-              onPress={() => router.push('/(tabs)/cobrar/gastos/nuevo' as any)}
+              onPress={() => router.push('/(tabs)/ruta/gastos/nuevo' as any)}
               style={styles.emptyBtn}
             >
               <Text style={styles.emptyBtnText}>Registrar uno</Text>
@@ -90,7 +90,7 @@ function GastosListScreen() {
               <TouchableOpacity
                 key={g.id}
                 style={[styles.card, isInvalidado && { opacity: 0.5 }]}
-                onPress={() => router.push(`/(tabs)/cobrar/gastos/${g.id}` as any)}
+                onPress={() => router.push(`/(tabs)/ruta/gastos/${g.id}` as any)}
                 testID={`gasto-${g.id}`}
               >
                 <View style={[styles.cardIcon, { backgroundColor: `${meta.color}20` }]}>
