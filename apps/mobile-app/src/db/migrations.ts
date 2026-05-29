@@ -516,20 +516,5 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
-    {
-      // v22 (2026-05-28): codigo unico auto-generado en `rutas`. Backend lo
-      // setea al crear; mobile lo recibe via pull sync y lo muestra en lista
-      // para diferenciar rutas con mismo nombre. Read-only en mobile.
-      // Formato: RT-YYYYMMDD-NNNN (rutas normales), TPL-NNNN (templates).
-      toVersion: 22,
-      steps: [
-        addColumns({
-          table: 'rutas',
-          columns: [
-            { name: 'codigo', type: 'string', isOptional: true },
-          ],
-        }),
-      ],
-    },
   ],
 });

@@ -336,7 +336,7 @@ export default function RouteDetailPage() {
           items={[
             { label: tc('home'), href: '/dashboard' },
             { label: t('title'), href: '/routes' },
-            { label: route.codigo || route.nombre },
+            { label: route.nombre },
           ]}
         />
 
@@ -348,12 +348,7 @@ export default function RouteDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-foreground">{route.nombre}</h1>
-              {route.codigo && (
-                <span className="text-xs font-mono text-foreground/60 mt-0.5">{route.codigo}</span>
-              )}
-            </div>
+            <h1 className="text-2xl font-bold text-foreground">{route.nombre}</h1>
             <span
               className={`inline-flex px-2.5 py-0.5 text-[11px] font-medium rounded-full ${badge.cls}`}
             >

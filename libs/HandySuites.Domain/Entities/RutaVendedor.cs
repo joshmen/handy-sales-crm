@@ -39,16 +39,6 @@ public class RutaVendedor : AuditableEntity
     [Column("nombre")]
     public string Nombre { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Codigo unico auto-generado al crear la ruta. Formato:
-    /// "RT-YYYYMMDD-NNNN" (rutas normales) o "TPL-NNNN" (templates).
-    /// Permite distinguir rutas con el mismo `Nombre` (ej. multiples "Lunes")
-    /// y facilita busqueda por codigo en listados/URL. Inmutable post-creacion.
-    /// Patron alineado con Pedido.NumeroPedido. Agregado 2026-05-28.
-    /// </summary>
-    [Column("codigo")]
-    public string Codigo { get; set; } = string.Empty;
-
     [Column("descripcion")]
     public string? Descripcion { get; set; }
 

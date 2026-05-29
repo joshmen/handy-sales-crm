@@ -9,10 +9,6 @@ export default class Ruta extends Model {
   };
 
   @field('server_id') serverId!: number | null;
-  /// v22 (2026-05-28): codigo unico auto-generado por backend (RT-YYYYMMDD-NNNN
-  /// o TPL-NNNN). Read-only en mobile; usado en listas para diferenciar
-  /// rutas con mismo nombre.
-  @text('codigo') codigo!: string | null;
   @text('nombre') nombre!: string;
   @date('fecha') fecha!: Date;
   @field('usuario_id') usuarioId!: number;

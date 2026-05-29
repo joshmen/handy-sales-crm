@@ -9,8 +9,6 @@ export interface ZonaResumenDto {
 export interface RutaListaDto {
   id: number;
   usuarioId: number;
-  /** Codigo unico auto-generado (RT-YYYYMMDD-NNNN o TPL-NNNN). */
-  codigo?: string;
   nombre: string;
   usuarioNombre: string;
   /** Legacy: nombre de la primera zona. Listas que muestran todas usan `zonas`. */
@@ -37,8 +35,6 @@ export interface RutasPaginadasResponse {
 export interface RouteListItem {
   id: number;
   usuarioId: number;
-  /** Codigo unico auto-generado (RT-YYYYMMDD-NNNN o TPL-NNNN). */
-  codigo: string;
   nombre: string;
   usuarioNombre: string;
   zonaNombre: string;
@@ -76,7 +72,6 @@ function mapRutaToRouteItem(dto: RutaListaDto): RouteListItem {
   return {
     id: dto.id,
     usuarioId: dto.usuarioId,
-    codigo: dto.codigo ?? '',
     nombre: dto.nombre,
     usuarioNombre: dto.usuarioNombre,
     zonaNombre: dto.zonaNombre || '',
@@ -442,8 +437,6 @@ export interface RouteDetail {
   zonaNombre?: string;
   /** Multi-zona: lista completa de zonas que cubre la ruta. */
   zonas?: ZonaResumenDto[];
-  /** Codigo unico auto-generado (RT-YYYYMMDD-NNNN o TPL-NNNN). */
-  codigo?: string;
   nombre: string;
   descripcion?: string;
   fecha: string;

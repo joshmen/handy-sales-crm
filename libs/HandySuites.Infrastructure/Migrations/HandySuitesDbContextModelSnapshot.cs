@@ -753,65 +753,6 @@ namespace HandySuites.Infrastructure.Migrations
                     b.ToTable("AutomationExecutions");
                 });
 
-            modelBuilder.Entity("HandySuites.Domain.Entities.AutomationSchedule", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("Attempt")
-                        .HasColumnType("integer")
-                        .HasColumnName("attempt");
-
-                    b.Property<int>("AutomationId")
-                        .HasColumnType("integer")
-                        .HasColumnName("automation_id");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("error_message");
-
-                    b.Property<DateTime?>("PickedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("picked_at");
-
-                    b.Property<DateTime>("ScheduledAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("scheduled_at");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<string>("TemplateSlug")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("template_slug");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AutomationId");
-
-                    b.ToTable("AutomationSchedules");
-                });
-
             modelBuilder.Entity("HandySuites.Domain.Entities.AutomationTemplate", b =>
                 {
                     b.Property<int>("Id")
@@ -4310,14 +4251,6 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("cerrado_por");
 
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasDefaultValue("")
-                        .HasColumnName("codigo");
-
                     b.Property<string>("ComentariosCarga")
                         .HasColumnType("text")
                         .HasColumnName("comentarios_carga");
@@ -4417,9 +4350,6 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.HasIndex("ZonaId");
-
-                    b.HasIndex("TenantId", "Codigo")
-                        .IsUnique();
 
                     b.HasIndex("TenantId", "Estado");
 
@@ -5621,17 +5551,6 @@ namespace HandySuites.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.AutomationExecution", b =>
-                {
-                    b.HasOne("HandySuites.Domain.Entities.TenantAutomation", "Automation")
-                        .WithMany()
-                        .HasForeignKey("AutomationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Automation");
-                });
-
-            modelBuilder.Entity("HandySuites.Domain.Entities.AutomationSchedule", b =>
                 {
                     b.HasOne("HandySuites.Domain.Entities.TenantAutomation", "Automation")
                         .WithMany()

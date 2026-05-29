@@ -13,11 +13,6 @@ public class RutaVendedorDto
     public string? ZonaNombre { get; set; }
     /// <summary>Multi-zona: lista completa de zonas que cubre la ruta. Source of truth nuevo.</summary>
     public List<ZonaResumenDto> Zonas { get; set; } = new();
-    /// <summary>
-    /// Codigo unico auto-generado (RT-YYYYMMDD-NNNN o TPL-NNNN). Inmutable.
-    /// Para distinguir rutas con mismo Nombre en listados.
-    /// </summary>
-    public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
@@ -128,8 +123,6 @@ public class RutaListaDto
 {
     public int Id { get; set; }
     public int UsuarioId { get; set; }
-    /// <summary>Codigo unico (RT-YYYYMMDD-NNNN o TPL-NNNN).</summary>
-    public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
     public string UsuarioNombre { get; set; } = string.Empty;
     /// <summary>Legacy: primera zona. Listas que muestran todas usan <see cref="Zonas"/>.</summary>
@@ -156,8 +149,6 @@ public record RutaBatchToggleRequest(List<int> Ids, bool Activo);
 public class RutaTemplateListaDto
 {
     public int Id { get; set; }
-    /// <summary>Codigo unico (TPL-NNNN).</summary>
-    public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public string? ZonaNombre { get; set; }

@@ -69,45 +69,13 @@ export const useJornadaStore = create<JornadaState>((set, get) => ({
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed: PersistedState = JSON.parse(raw);
-
-        // Day-rollover guard: si jornada quedó "activa" pero su iniciadaEn es
-        // de un día anterior, la consideramos huérfana y la reseteamos. Caso:
-        // el vendedor cerró la app sin presionar "Cerrar jornada" (los
-        // watchers de horario/inactividad solo corren con la app abierta), la
-        // jornada quedó como activa=true en AsyncStorage. Al día siguiente,
-        // la primera Venta no auto-inicia porque el guard `!jornada.activa`
-        // ve activa=true, y por tanto no emite InicioJornada para el nuevo día.
-        // motivoStop='horario' (no 'manual') para que la auto-start de
-        // locationCheckpoint.recordPing SÍ pueda reactivar la jornada con la
-        // primera Venta/Cobro/Visita del nuevo día. Reportado prod 2026-05-28.
-        let activa = !!parsed.activa;
-        let iniciadaEn = parsed.iniciadaEn ?? null;
-        let terminadaEn = parsed.terminadaEn ?? null;
-        let motivoStop = parsed.motivoStop ?? null;
-        if (activa && iniciadaEn) {
-          const inicioDay = new Date(iniciadaEn).toDateString();
-          const hoyDay = new Date().toDateString();
-          if (inicioDay !== hoyDay) {
-            activa = false;
-            terminadaEn = iniciadaEn;
-            iniciadaEn = null;
-            motivoStop = 'horario';
-          }
-        }
-
         set({
-          activa,
-          iniciadaEn,
-          terminadaEn,
-          motivoStop,
+          activa: !!parsed.activa,
+          iniciadaEn: parsed.iniciadaEn ?? null,
+          terminadaEn: parsed.terminadaEn ?? null,
+          motivoStop: parsed.motivoStop ?? null,
           hidratada: true,
         });
-
-        // Persist the day-rollover reset so el siguiente lanzamiento no repita
-        // la operación. Best-effort — si falla, hidratada=true ya está aplicado.
-        if (activa !== !!parsed.activa) {
-          await persist({ activa, iniciadaEn, terminadaEn, motivoStop });
-        }
         return;
       }
     } catch { /* ignore */ }
