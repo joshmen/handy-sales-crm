@@ -3,7 +3,7 @@ import { database } from '@/db/database';
 import { api } from '@/api/client';
 import { syncCursors } from './cursors';
 import { mapPullToWatermelon, mapPushFromWatermelon } from './mappers';
-import { uploadPendingAttachments, cleanUploadedFiles } from '@/services/evidenceManager';
+import { uploadPendingAttachments, cleanUploadedFiles, recoverOrphanAttachmentStamps } from '@/services/evidenceManager';
 import { crashReporter } from '@/services/crashReporter';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -185,6 +185,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       }
     } catch (attachmentError) {
       if (__DEV__) console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
+    }
+
+    // Phase 3.5: Recovery sweep — para attachments uploaded cuya URL no quedo en
+    // el parent (gasto/devolucion) por race/stamp fallido. Stampea localmente,
+    // marca dirty, y el proximo sync push lleva la URL al server. Bug prod 29/5.
+    try {
+      const recovered = await recoverOrphanAttachmentStamps();
+      if (recovered > 0 && __DEV__) console.log(`[Sync] Recovered ${recovered} orphan attachment stamps`);
+    } catch (recoveryError) {
+      if (__DEV__) console.warn('[Sync] Orphan stamp recovery failed (non-fatal):', recoveryError);
     }
 
     // Phase 4: Flush pending crash reports (deferred from offline)
