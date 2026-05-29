@@ -66,19 +66,25 @@ function NuevoGastoScreen() {
   }, [diasAtras]);
 
   // Detectar ruta activa del dia. Si no hay, no se permite crear gasto.
+  // FIX bug 29/5: backend guarda ruta.fecha como UTC midnight del calendar date
+  // (ej. "2026-05-29 00:00:00Z"). Si comparamos con `setHours(0,0,0,0)` (local TZ),
+  // en CDMX (UTC-6) eso es "2026-05-29 06:00 UTC" → ruta queda ANTES del rango y la
+  // query no la encuentra. Solucion: usar Date.UTC(year, month, day) del calendar
+  // date local — produce el mismo UTC midnight que el backend guarda.
   useEffect(() => {
     (async () => {
       if (!user) { setRutaLoading(false); return; }
       try {
         const userIdNum = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
-        const todayMs = new Date(); todayMs.setHours(0, 0, 0, 0);
-        const tomorrowMs = todayMs.getTime() + 24 * 3600 * 1000;
+        const now = new Date();
+        const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrowMs = todayMs + 24 * 3600 * 1000;
         const rutas = await database.get<Ruta>('rutas')
           .query(
             Q.where('usuario_id', userIdNum),
             Q.where('activo', true),
             Q.where('estado', Q.oneOf([1, 5])),
-            Q.where('fecha', Q.gte(todayMs.getTime())),
+            Q.where('fecha', Q.gte(todayMs)),
             Q.where('fecha', Q.lt(tomorrowMs)),
           ).fetch();
         if (rutas.length > 0) {
