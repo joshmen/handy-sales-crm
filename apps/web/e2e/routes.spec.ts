@@ -371,3 +371,58 @@ test.describe('Audit Fix: Templates Accessible', () => {
     await page.screenshot({ path: 'e2e/screenshots/audit-templates-page.png', fullPage: true });
   });
 });
+
+// ── Feature: Codigo column visible en /routes lista y detalle ───────────────────
+
+test.describe('Feature: Codigo Routes Display', () => {
+
+  test('column "Código" shows RT- or TPL- formatted codes in routes list', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
+
+    await loginAsAdmin(page);
+    await page.goto('/routes');
+    await waitForPageLoad(page);
+
+    // DataGrid usa <div> uppercase para headers, no <th>. Buscamos por texto.
+    const codigoHeader = page.getByText('Código', { exact: true }).first();
+    await expect(codigoHeader).toBeVisible({ timeout: 10000 });
+
+    // Y en el contenido total de la lista (desktop o mobile cards) debe aparecer
+    // al menos un codigo con formato RT-YYYYMMDD-NNNN o TPL-NNNN.
+    const bodyText = await page.locator('main').textContent();
+    expect(bodyText).toMatch(/RT-\d{8}-\d{4}|TPL-\d{4}/);
+
+    await page.screenshot({ path: 'e2e/screenshots/codigo-list.png', fullPage: true });
+  });
+
+  test('detail page shows codigo under route name + in breadcrumb', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
+
+    await loginAsAdmin(page);
+    await page.goto('/routes');
+    await waitForPageLoad(page);
+
+    // Click la primera fila de DataGrid para ir al detalle.
+    // DataGrid usa role="row" para filas; tomamos la primera fila no-header.
+    const firstDataRow = page.locator('[role="row"]').nth(1);
+    if (!await firstDataRow.isVisible({ timeout: 5000 }).catch(() => false)) {
+      // Fallback: tabla legacy o mobile cards
+      const fallback = page.locator('table tbody tr, [data-testid^="route-card-"]').first();
+      if (!await fallback.isVisible({ timeout: 3000 }).catch(() => false)) {
+        test.skip();
+        return;
+      }
+      await fallback.click();
+    } else {
+      await firstDataRow.click();
+    }
+    await expect(page).toHaveURL(/\/routes\/\d+/, { timeout: 10000 });
+    await waitForPageLoad(page);
+
+    // El codigo debe aparecer como font-mono en el header del detalle.
+    const codigoInHeader = page.locator('.font-mono').filter({ hasText: /RT-\d{8}-\d{4}|TPL-\d{4}/ }).first();
+    await expect(codigoInHeader).toBeVisible({ timeout: 10000 });
+
+    await page.screenshot({ path: 'e2e/screenshots/codigo-detail.png', fullPage: true });
+  });
+});

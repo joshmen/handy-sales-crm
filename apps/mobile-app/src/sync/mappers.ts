@@ -321,6 +321,7 @@ function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
   return {
     id: rutaMap.get(r.id) || String(r.id),
     server_id: r.id,
+    codigo: r.codigo ?? null,
     nombre: r.nombre || '',
     fecha: toTimestamp(r.fecha),
     usuario_id: r.usuarioId ?? 0,
