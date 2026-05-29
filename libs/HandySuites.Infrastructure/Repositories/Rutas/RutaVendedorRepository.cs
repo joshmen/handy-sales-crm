@@ -155,6 +155,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             {
                 Id = r.Id,
                 UsuarioId = r.UsuarioId ?? 0,
+                Codigo = r.Codigo,
                 Nombre = r.Nombre,
                 UsuarioNombre = r.Usuario != null ? r.Usuario.Nombre : "",
                 ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,
@@ -273,6 +274,44 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         ruta.ActualizadoEn = DateTime.UtcNow;
 
         return await _db.SaveChangesAsync() > 0;
+    }
+
+    public async Task<string> GenerarCodigoRutaAsync(int tenantId, DateTime fecha, bool esTemplate)
+    {
+        // Patron alineado con PedidoRepository.GenerarNumeroPedidoAsync.
+        // IgnoreQueryFilters: el unique index incluye rutas soft-deleted; debemos
+        // contarlas tambien para evitar colision al regenerar codigo.
+        string prefijo;
+        if (esTemplate)
+        {
+            prefijo = "TPL-";
+        }
+        else
+        {
+            prefijo = $"RT-{fecha:yyyyMMdd}-";
+        }
+
+        var ultimoCodigo = await _db.RutasVendedor
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(r => r.TenantId == tenantId && r.Codigo.StartsWith(prefijo))
+            .OrderByDescending(r => r.Codigo)
+            .Select(r => r.Codigo)
+            .FirstOrDefaultAsync();
+
+        int secuencia = 1;
+        if (!string.IsNullOrEmpty(ultimoCodigo))
+        {
+            // Codigo tiene "PREFIJO-####" (templates) o "RT-YYYYMMDD-####" (rutas).
+            // El sufijo numerico es el ultimo segmento tras el ultimo "-".
+            var partes = ultimoCodigo.Split('-');
+            if (partes.Length > 0 && int.TryParse(partes[^1], out var num))
+            {
+                secuencia = num + 1;
+            }
+        }
+
+        return $"{prefijo}{secuencia:D4}";
     }
 
     public async Task<VinculacionHuerfanosResult> VincularPedidosHuerfanosAsync(int rutaId, int tenantId)
@@ -1269,6 +1308,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Select(r => new RutaTemplateListaDto
             {
                 Id = r.Id,
+                Codigo = r.Codigo,
                 Nombre = r.Nombre,
                 Descripcion = r.Descripcion,
                 ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,
@@ -1309,6 +1349,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             ZonaId = ruta.ZonaId,
             ZonaNombre = ruta.Zona?.Nombre,
             Zonas = zonasResumen,
+            Codigo = ruta.Codigo,
             Nombre = ruta.Nombre,
             Descripcion = ruta.Descripcion,
             Fecha = ruta.Fecha,

@@ -1,3 +1,4 @@
+import { Q } from '@nozbe/watermelondb';
 import { database } from './database';
 import Pedido from './models/Pedido';
 import DetallePedido from './models/DetallePedido';
@@ -6,6 +7,8 @@ import Visita from './models/Visita';
 import Cliente from './models/Cliente';
 import Producto from './models/Producto';
 import RutaDetalle from './models/RutaDetalle';
+import Ruta from './models/Ruta';
+import RutaCarga from './models/RutaCarga';
 import { round2 } from '@/utils/money';
 import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
 import { captureOrderLocation } from '@/services/captureOrderLocation';
@@ -377,6 +380,48 @@ export async function createVentaDirectaOffline(
         // de venta requiere seleccionarlo del catálogo). Si pasa, dejamos que el
         // sync delta del server traiga la verdad — no rompemos la venta.
       }
+    }
+
+    // Incrementar localmente ruta_carga.cantidad_vendida para que la barra
+    // "Productos (vendidos + entregados)" refleje la venta inmediatamente,
+    // sin esperar al siguiente sync pull. El backend también incrementa
+    // (vía sync push + MobileVentaDirectaEndpoints), pero ese counter solo
+    // llega de vuelta al mobile tras el próximo pull → el delay generaba
+    // que el vendedor viera 40 cuando ya iban 50. Reportado prod 2026-05-28.
+    // Idempotencia: cuando el pull pose-sync traiga el counter actualizado,
+    // el sync delta lo REEMPLAZA con la verdad del server (no acumula).
+    try {
+      const todayMs = new Date(); todayMs.setHours(0, 0, 0, 0);
+      const tomorrowMs = todayMs.getTime() + 24 * 3600 * 1000;
+      const rutasActivas = await database.get<Ruta>('rutas')
+        .query(
+          Q.where('usuario_id', usuarioId),
+          Q.where('activo', true),
+          Q.where('estado', Q.oneOf([1, 5])), // EnProgreso | CargaAceptada
+          Q.where('fecha', Q.gte(todayMs.getTime())),
+          Q.where('fecha', Q.lt(tomorrowMs)),
+        )
+        .fetch();
+      if (rutasActivas.length > 0) {
+        const rutaLocalId = rutasActivas[0].id;
+        for (const item of items) {
+          const cargas = await database.get<RutaCarga>('ruta_carga')
+            .query(
+              Q.where('ruta_id', rutaLocalId),
+              Q.where('producto_id', item.productoId),
+              Q.where('activo', true),
+            )
+            .fetch();
+          if (cargas.length > 0) {
+            await cargas[0].update((record: any) => {
+              record.cantidadVendida = (record.cantidadVendida ?? 0) + item.cantidad;
+            });
+          }
+        }
+      }
+    } catch {
+      // Best-effort: si falla, el server-side increment + pull sync corrigen
+      // el counter en la próxima sync. No bloquear la venta.
     }
 
     // Atomicidad con la parada: si viene de ruta, se marca como Completada
