@@ -1017,7 +1017,15 @@ public class SyncRepository : ISyncRepository
                 existing.Concepto = dto.Concepto;
                 existing.Notas = dto.Notas;
                 existing.FechaGasto = dto.FechaGasto != default ? dto.FechaGasto : existing.FechaGasto;
-                // ComprobanteUrl es stampeado por MobileAttachmentEndpoints; no se sobrescribe desde mobile push
+                // ComprobanteUrl: server-side stamp tiene preferencia (MobileAttachmentEndpoints).
+                // Solo aceptamos URL desde mobile push si existing.ComprobanteUrl es null — esto
+                // resuelve race condition cuando el stamp fallo y mobile stampeo localmente la URL.
+                // Bug prod 29/5: foto subio OK pero server no stampea (causa no clara — posibles:
+                // race, scope DbContext, etc.). Mobile re-pushea con URL como fallback de hardening.
+                if (string.IsNullOrEmpty(existing.ComprobanteUrl) && !string.IsNullOrEmpty(dto.ComprobanteUrl))
+                {
+                    existing.ComprobanteUrl = dto.ComprobanteUrl;
+                }
                 existing.Moneda = string.IsNullOrEmpty(dto.Moneda) ? existing.Moneda : dto.Moneda;
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
