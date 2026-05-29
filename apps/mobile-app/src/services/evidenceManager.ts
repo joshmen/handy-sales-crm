@@ -154,6 +154,36 @@ export async function uploadPendingAttachments(): Promise<number> {
   return uploaded;
 }
 
+/**
+ * Sweep recovery: para cada attachment uploaded con remoteUrl, verifica que el
+ * parent (gasto/devolucion) tiene la URL stampeada. Si no, la stampea localmente
+ * y marca dirty. Recupera el caso del bug 29/5 donde el upload subio OK pero el
+ * stamp server-side fallo silenciosamente — el gasto en server sigue sin URL,
+ * pero el siguiente sync push (con la URL ahora en WDB) lo arregla.
+ */
+export async function recoverOrphanAttachmentStamps(): Promise<number> {
+  const collection = database.get<Attachment>('attachments');
+  const uploaded = await collection
+    .query(
+      Q.where('upload_status', 'uploaded'),
+      Q.where('event_type', Q.oneOf(['gasto', 'devolucion'])),
+    )
+    .fetch();
+
+  let recovered = 0;
+  for (const att of uploaded) {
+    const remote = (att as any).remoteUrl;
+    if (!remote) continue;
+    try {
+      const stamped = await stampParentEntityWithUrl(att.eventType, att.eventLocalId, remote);
+      if (stamped) recovered++;
+    } catch {
+      // best-effort
+    }
+  }
+  return recovered;
+}
+
 export async function getPendingCount(): Promise<number> {
   const collection = database.get<Attachment>('attachments');
   // Usar Q.fetchCount para evitar materializar records solo para contar.
@@ -175,30 +205,33 @@ async function stampParentEntityWithUrl(
   eventType: string,
   eventLocalId: string,
   remoteUrl: string,
-): Promise<void> {
+): Promise<boolean> {
   if (eventType === 'gasto') {
     const collection = database.get<Gasto>('gastos');
     const records = await collection.query(Q.where('id', eventLocalId)).fetch();
-    if (records.length === 0) return;
+    if (records.length === 0) return false;
     const gasto = records[0];
-    if ((gasto as any).comprobanteUrl) return; // ya stampeado, no-op
+    if ((gasto as any).comprobanteUrl) return false; // ya stampeado, no-op
     await database.write(async () => {
       await gasto.update((g: any) => {
         g.comprobanteUrl = remoteUrl;
       });
     });
+    return true;
   } else if (eventType === 'devolucion') {
     const collection = database.get<DevolucionPedido>('devoluciones_pedido');
     const records = await collection.query(Q.where('id', eventLocalId)).fetch();
-    if (records.length === 0) return;
+    if (records.length === 0) return false;
     const dev = records[0];
-    if ((dev as any).fotoEvidenciaUrl) return;
+    if ((dev as any).fotoEvidenciaUrl) return false;
     await database.write(async () => {
       await dev.update((d: any) => {
         d.fotoEvidenciaUrl = remoteUrl;
       });
     });
+    return true;
   }
+  return false;
 }
 
 export async function cleanUploadedFiles(): Promise<void> {
