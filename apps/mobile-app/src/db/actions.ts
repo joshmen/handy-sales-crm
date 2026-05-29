@@ -499,14 +499,17 @@ export async function createGastoOffline(params: {
     let rutaServerId: number | null = null;
     if (rutaLocalId === null) {
       try {
-        const todayMs = new Date(); todayMs.setHours(0, 0, 0, 0);
-        const tomorrowMs = todayMs.getTime() + 24 * 3600 * 1000;
+        // FIX bug 29/5: ver nuevo.tsx — backend guarda fecha como UTC midnight del
+        // calendar date. Usar Date.UTC del calendar date local para que match exacto.
+        const now = new Date();
+        const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrowMs = todayMs + 24 * 3600 * 1000;
         const rutas = await database.get<Ruta>('rutas')
           .query(
             Q.where('usuario_id', params.usuarioId),
             Q.where('activo', true),
             Q.where('estado', Q.oneOf([1, 5])),
-            Q.where('fecha', Q.gte(todayMs.getTime())),
+            Q.where('fecha', Q.gte(todayMs)),
             Q.where('fecha', Q.lt(tomorrowMs)),
           )
           .fetch();
