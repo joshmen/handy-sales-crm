@@ -34,6 +34,15 @@ public interface IRutaVendedorRepository
     Task<VinculacionHuerfanosResult> VincularPedidosHuerfanosAsync(int rutaId, int tenantId);
 
     /// <summary>
+    /// Vincula a una ruta los Gastos del mismo vendedor y dia
+    /// (DATE(fecha_gasto)=DATE(ruta.fecha)) con ruta_id=NULL. Idempotente.
+    /// Caso de uso: vendedor registra gastos antes de aceptar la ruta (ej.
+    /// gasolina en la manana antes de pasar al almacen por la carga).
+    /// Sin esto el gasto queda "huerfano" sin imputarse al cierre. Agregado v23.
+    /// </summary>
+    Task<VinculacionGastosHuerfanosResult> VincularGastosHuerfanosAsync(int rutaId, int tenantId);
+
+    /// <summary>
     /// Genera un codigo unico para una ruta. Formato:
     /// - Ruta normal: "RT-YYYYMMDD-NNNN" — secuencia por (tenant, dia).
     /// - Template:    "TPL-NNNN"        — secuencia por tenant (sin fecha).

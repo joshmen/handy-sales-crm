@@ -32,6 +32,14 @@ public interface ISyncRepository
     Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<(Cobro entity, bool wasConflict)> UpsertCobroAsync(int tenantId, int usuarioId, SyncCobroDto dto, string userId);
 
+    // Pull/Push - Gastos (vendedor expenses con foto opcional)
+    Task<List<Gasto>> GetGastosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
+    Task<(Gasto entity, bool wasConflict)> UpsertGastoAsync(int tenantId, int usuarioId, SyncGastoDto dto, string userId);
+
+    // Pull/Push - DevolucionesPedido (devolucion de cliente ligada a Pedido entregado, con children)
+    Task<List<DevolucionPedido>> GetDevolucionesModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
+    Task<(DevolucionPedido entity, bool wasConflict)> UpsertDevolucionAsync(int tenantId, int usuarioId, SyncDevolucionPedidoDto dto, string userId);
+
     // Pull - Stock levels
     Task<Dictionary<int, (decimal cantidad, decimal minimo)>> GetStockMapAsync(int tenantId);
 

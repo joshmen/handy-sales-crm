@@ -607,8 +607,18 @@ export interface CierreResumen {
   entregasContadoSaldoFavorCount: number;
   pedidosPreventa: number;
   pedidosPreventaCount: number;
+  /** Total monetario de DevolucionesPedido = SaldoFavor + Efectivo. */
   devoluciones: number;
   devolucionesCount: number;
+  /** v23 (2026-05-29): subset de Devoluciones con TipoReembolso=Efectivo (restan de aRecibir). */
+  devolucionesEfectivo?: number;
+  devolucionesEfectivoCount?: number;
+  /** v23: subset con TipoReembolso=SaldoFavor (informativo, no restan). */
+  devolucionesSaldoFavor?: number;
+  devolucionesSaldoFavorCount?: number;
+  /** v23: Gastos del vendedor imputados a la ruta (restan de aRecibir). */
+  gastos?: number;
+  gastosCount?: number;
   valorRuta: number;
   efectivoInicial: number;
   aRecibir: number;

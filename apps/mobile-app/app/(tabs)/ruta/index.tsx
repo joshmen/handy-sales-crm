@@ -245,11 +245,15 @@ export default function RutaScreen() {
                   // Backend: /aceptar (captura timestamp + transiciona 0|4 → 5) — best-effort.
                   let backendOk = false;
                   let huerfanosVinculados: { pedidosVinculados: number; unidadesTotales: number } | null = null;
+                  let gastosVinc: { gastosVinculados: number; montoTotal: number } | null = null;
                   try {
                     const acepRes = await rutasApi.aceptar(serverId);
                     backendOk = true;
                     if (acepRes.pedidosHuerfanosVinculados && acepRes.pedidosHuerfanosVinculados.pedidosVinculados > 0) {
                       huerfanosVinculados = acepRes.pedidosHuerfanosVinculados;
+                    }
+                    if (acepRes.gastosHuerfanosVinculados && acepRes.gastosHuerfanosVinculados.gastosVinculados > 0) {
+                      gastosVinc = acepRes.gastosHuerfanosVinculados;
                     }
                   } catch (e) {
                     if (__DEV__) console.warn('[Ruta] aceptar backend failed (continuando):', e);
@@ -282,6 +286,18 @@ export default function RutaScreen() {
                         type: 'info',
                         text1: `${pedidosVinculados} ventas previas vinculadas`,
                         text2: `${unidadesTotales} unidades sumadas al inventario de esta ruta.`,
+                        visibilityTime: 6000,
+                      });
+                    }
+                    // Toast adicional si tambien se vincularon gastos huerfanos (gastos
+                    // pre-ruta como gasolina, peajes) que ahora entran al aRecibir.
+                    if (gastosVinc) {
+                      const { gastosVinculados, montoTotal } = gastosVinc;
+                      const montoFmt = montoTotal.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+                      Toast.show({
+                        type: 'info',
+                        text1: `${gastosVinculados} gastos imputados a la ruta`,
+                        text2: `${montoFmt} se descontaran del corte de caja.`,
                         visibilityTime: 6000,
                       });
                     }
@@ -353,6 +369,34 @@ export default function RutaScreen() {
               color="#d97706"
               emptyCaption="Esta ruta no tiene productos cargados"
             />
+
+            {/* v23 (2026-05-29): Gastos del vendedor — visible solo si la ruta
+                ya fue aceptada/iniciada (no en Planificada/PendienteAceptar).
+                Los gastos restan del aRecibir al cierre. */}
+            {(route.estado === 1 || route.estado === 5) && (
+              <View style={styles.gastosBar}>
+                <TouchableOpacity
+                  style={styles.gastosBtn}
+                  onPress={() => router.push('/(tabs)/ruta/gastos/nuevo' as any)}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Registrar gasto"
+                  accessibilityRole="button"
+                  testID="btn-registrar-gasto"
+                >
+                  <Text style={styles.gastosBtnText}>+ Registrar gasto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.gastosBtnOutline}
+                  onPress={() => router.push('/(tabs)/ruta/gastos' as any)}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Ver mis gastos"
+                  accessibilityRole="button"
+                  testID="btn-ver-gastos"
+                >
+                  <Text style={styles.gastosBtnOutlineText}>Ver mis gastos</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
           </View>
         </Animated.View>
@@ -526,6 +570,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+
+  // Gastos bar — debajo de ProgressCards, solo si ruta aceptada/iniciada
+  gastosBar: {
+    flexDirection: 'row', gap: 8, marginTop: 12,
+  },
+  gastosBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  gastosBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+  gastosBtnOutline: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  gastosBtnOutlineText: { fontSize: 14, fontWeight: '600', color: COLORS.foreground },
 
   // Progress section — white background
   progressSection: {
