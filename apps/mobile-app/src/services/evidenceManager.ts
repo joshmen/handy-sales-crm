@@ -11,6 +11,8 @@ import {
 import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Attachment from '@/db/models/Attachment';
+import Gasto from '@/db/models/Gasto';
+import DevolucionPedido from '@/db/models/DevolucionPedido';
 import { API_CONFIG } from '@/utils/constants';
 import { getAccessToken } from '@/api/client';
 
@@ -120,6 +122,18 @@ export async function uploadPendingAttachments(): Promise<number> {
         const body = JSON.parse(response.body);
         const remoteUrl = body.url || body.data?.url || '';
         await attachment.markUploaded(remoteUrl);
+        // Resolve race: si la entidad parent (gasto/devolucion) ya esta en WDB,
+        // stampar la URL localmente y marcarla dirty para que el proximo sync push
+        // la lleve al server. Asi, si el upload corrio antes del sync push del gasto,
+        // o si el server stamp fallo (bug intermitente), la URL eventualmente llega.
+        // Bug reportado prod 29/5 (Rodrigo): foto subio OK pero gasto en DB sin URL.
+        if (remoteUrl && (attachment.eventType === 'gasto' || attachment.eventType === 'devolucion')) {
+          try {
+            await stampParentEntityWithUrl(attachment.eventType, attachment.eventLocalId, remoteUrl);
+          } catch (e) {
+            if (__DEV__) console.warn('[Evidence] failed to stamp parent entity locally:', e);
+          }
+        }
         uploaded++;
       } else if (response.status === 401) {
         // Token expirado/inválido: NO contar como retry porque el problema no es
@@ -146,6 +160,45 @@ export async function getPendingCount(): Promise<number> {
   return await collection
     .query(Q.where('upload_status', Q.oneOf(['pending', 'failed'])))
     .fetchCount();
+}
+
+/**
+ * Stampea localmente comprobante_url / foto_evidencia_url en la entidad parent
+ * (gasto / devolucion) tras un upload exitoso. Marca el record como dirty para
+ * que el proximo sync push lleve la URL al server. Resuelve race con el stamp
+ * server-side cuando el upload corre antes del UpsertGastoAsync.
+ *
+ * `eventLocalId` puede ser el WDB local id (string UUID) — buscamos por record.id.
+ * Si la entidad aun no existe localmente (caso raro), no-op.
+ */
+async function stampParentEntityWithUrl(
+  eventType: string,
+  eventLocalId: string,
+  remoteUrl: string,
+): Promise<void> {
+  if (eventType === 'gasto') {
+    const collection = database.get<Gasto>('gastos');
+    const records = await collection.query(Q.where('id', eventLocalId)).fetch();
+    if (records.length === 0) return;
+    const gasto = records[0];
+    if ((gasto as any).comprobanteUrl) return; // ya stampeado, no-op
+    await database.write(async () => {
+      await gasto.update((g: any) => {
+        g.comprobanteUrl = remoteUrl;
+      });
+    });
+  } else if (eventType === 'devolucion') {
+    const collection = database.get<DevolucionPedido>('devoluciones_pedido');
+    const records = await collection.query(Q.where('id', eventLocalId)).fetch();
+    if (records.length === 0) return;
+    const dev = records[0];
+    if ((dev as any).fotoEvidenciaUrl) return;
+    await database.write(async () => {
+      await dev.update((d: any) => {
+        d.fotoEvidenciaUrl = remoteUrl;
+      });
+    });
+  }
 }
 
 export async function cleanUploadedFiles(): Promise<void> {
