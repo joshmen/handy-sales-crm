@@ -302,6 +302,9 @@ export default function RutaScreen() {
         <Animated.View entering={FadeInDown.duration(400).delay(100)}>
           <View style={styles.progressSection}>
             <Text style={styles.routeName}>{route.nombre}</Text>
+            {route.codigo ? (
+              <Text style={styles.routeCodigo}>{route.codigo}</Text>
+            ) : null}
 
             {/* Zonas que cubre la ruta — chips. Multi-zona alineado con SFA/CPG
                 industria (Handy.la, SAP, Salesforce). Reportado 2026-04-27. */}
@@ -534,6 +537,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   routeName: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  routeCodigo: { fontSize: 11, fontWeight: '500', color: COLORS.textTertiary, marginTop: 2, fontFamily: 'monospace' },
   zonasRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
   zonaChip: {
     backgroundColor: '#dbeafe',

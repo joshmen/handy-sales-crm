@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 21,
+  version: 22,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -137,6 +137,10 @@ export const schema = appSchema({
       name: 'rutas',
       columns: [
         { name: 'server_id', type: 'number', isOptional: true },
+        // v22 (2026-05-28): codigo unico auto-generado (RT-YYYYMMDD-NNNN o
+        // TPL-NNNN). Permite distinguir rutas con mismo nombre. Read-only en
+        // mobile (server lo genera al crear).
+        { name: 'codigo', type: 'string', isOptional: true },
         { name: 'nombre', type: 'string' },
         { name: 'fecha', type: 'number', isIndexed: true },
         { name: 'usuario_id', type: 'number', isIndexed: true },
