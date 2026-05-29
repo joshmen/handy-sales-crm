@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Fuel, Receipt, Coffee, Bed, Wrench, ParkingSquare, FileQuestion, FileText } from 'lucide-react';
+import { Fuel, Receipt, Coffee, Bed, Wrench, ParkingSquare, FileQuestion, FileText, type LucideIcon } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { gastosService, type GastoListItem, TIPO_GASTO_LABEL } from '@/services/api/gastos';
 import { toast } from '@/hooks/useToast';
 
-const TIPO_ICON: Record<number, any> = {
+const TIPO_ICON: Record<number, LucideIcon> = {
   0: Fuel, 1: Receipt, 2: Coffee, 3: Bed, 4: Wrench, 5: ParkingSquare, 6: FileText, 99: FileQuestion,
 };
 
@@ -40,8 +40,9 @@ export default function GastosPage() {
       setItems(data.items);
       setTotalCount(data.totalCount);
       setKpi(data.kpi);
-    } catch (err: any) {
-      toast({ title: 'Error cargando gastos', description: err?.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      toast({ title: 'Error cargando gastos', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -57,8 +58,9 @@ export default function GastosPage() {
       await gastosService.invalidar(gasto.id, motivo || undefined);
       toast({ title: 'Gasto invalidado' });
       await fetchData();
-    } catch (err: any) {
-      toast({ title: 'Error al invalidar', description: err?.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      toast({ title: 'Error al invalidar', description: message, variant: 'destructive' });
     } finally {
       setInvalidatingId(null);
     }
