@@ -354,8 +354,21 @@ public class CierreRutaResumenDto
     // Otros movimientos
     public double PedidosPreventa { get; set; }
     public int PedidosPreventaCount { get; set; }
+    /// <summary>
+    /// Total de DevolucionesPedido (clientes que devuelven productos de un pedido entregado).
+    /// Suma DevolucionesEfectivo + DevolucionesSaldoFavor.
+    /// </summary>
     public double Devoluciones { get; set; }
     public int DevolucionesCount { get; set; }
+    /// <summary>Devoluciones con TipoReembolso=Efectivo — RESTAN de aRecibir.</summary>
+    public double DevolucionesEfectivo { get; set; }
+    public int DevolucionesEfectivoCount { get; set; }
+    /// <summary>Devoluciones con TipoReembolso=SaldoFavor — NO restan de aRecibir (queda a favor del cliente).</summary>
+    public double DevolucionesSaldoFavor { get; set; }
+    public int DevolucionesSaldoFavorCount { get; set; }
+    /// <summary>Gastos del vendedor imputados a esta ruta (combustible, peajes, etc) — RESTAN de aRecibir.</summary>
+    public double Gastos { get; set; }
+    public int GastosCount { get; set; }
 
     // Al inicio
     public double ValorRuta { get; set; }

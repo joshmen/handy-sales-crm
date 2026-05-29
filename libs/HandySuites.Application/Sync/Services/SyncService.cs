@@ -292,6 +292,107 @@ public class SyncService
             }
         }
 
+        // Push Gastos (vendor expenses, auto-approved)
+        if (clientChanges.Gastos?.Any() == true)
+        {
+            foreach (var dto in clientChanges.Gastos)
+            {
+                try
+                {
+                    var (entity, wasConflict) = await _repo.UpsertGastoAsync(tenantId, usuarioId, dto, userId);
+                    if (wasConflict)
+                    {
+                        response.Conflicts.Add(new SyncConflictDto
+                        {
+                            EntityType = "Gasto",
+                            EntityId = dto.Id,
+                            ClientModified = dto.ActualizadoEn ?? DateTime.UtcNow,
+                            ServerModified = entity.ActualizadoEn ?? entity.CreadoEn,
+                            Resolution = "server_wins"
+                        });
+                        response.Summary.ConflictsFound++;
+                    }
+                    else
+                    {
+                        response.Summary.GastosPushed++;
+                        if (!string.IsNullOrEmpty(dto.LocalId) && dto.Id == 0)
+                        {
+                            response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "gastos", LocalId = dto.LocalId, ServerId = entity.Id });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    response.Errors.Add(new SyncErrorDto
+                    {
+                        EntityType = "Gasto",
+                        EntityId = dto.Id > 0 ? dto.Id : null,
+                        Operation = dto.Operation.ToString(),
+                        Message = ex.Message
+                    });
+                    response.Summary.ErrorsFound++;
+                }
+            }
+        }
+
+        // Push DevolucionesPedido (con children atomico)
+        if (clientChanges.DevolucionesPedido?.Any() == true)
+        {
+            foreach (var dto in clientChanges.DevolucionesPedido)
+            {
+                try
+                {
+                    var (entity, wasConflict) = await _repo.UpsertDevolucionAsync(tenantId, usuarioId, dto, userId);
+                    if (wasConflict)
+                    {
+                        response.Conflicts.Add(new SyncConflictDto
+                        {
+                            EntityType = "DevolucionPedido",
+                            EntityId = dto.Id,
+                            ClientModified = dto.ActualizadoEn ?? DateTime.UtcNow,
+                            ServerModified = entity.ActualizadoEn ?? entity.CreadoEn,
+                            Resolution = "server_wins"
+                        });
+                        response.Summary.ConflictsFound++;
+                    }
+                    else
+                    {
+                        response.Summary.DevolucionesPushed++;
+                        if (!string.IsNullOrEmpty(dto.LocalId) && dto.Id == 0)
+                        {
+                            response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "devoluciones_pedido", LocalId = dto.LocalId, ServerId = entity.Id });
+                        }
+                        // Map children created IDs por LocalId
+                        for (int i = 0; i < dto.Detalles.Count && i < entity.Detalles.Count; i++)
+                        {
+                            var childDto = dto.Detalles[i];
+                            var childEntity = entity.Detalles.ElementAt(i);
+                            if (!string.IsNullOrEmpty(childDto.LocalId) && childDto.Id == 0 && childEntity.Id > 0)
+                            {
+                                response.CreatedIdMappings.Add(new IdMappingDto
+                                {
+                                    EntityType = "detalle_devoluciones",
+                                    LocalId = childDto.LocalId,
+                                    ServerId = childEntity.Id,
+                                });
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    response.Errors.Add(new SyncErrorDto
+                    {
+                        EntityType = "DevolucionPedido",
+                        EntityId = dto.Id > 0 ? dto.Id : null,
+                        Operation = dto.Operation.ToString(),
+                        Message = ex.Message
+                    });
+                    response.Summary.ErrorsFound++;
+                }
+            }
+        }
+
         // Push RutaDetalles (updates only — detalles are created by admin)
         if (clientChanges.RutaDetalles?.Any() == true)
         {
@@ -611,6 +712,69 @@ public class SyncService
                 IsDeleted = !c.Activo
             }).ToList();
             response.Summary.CobrosPulled = cobros.Count;
+        }
+
+        // Pull Gastos for this user
+        if (syncAll || entityTypes.Contains("gastos", StringComparer.OrdinalIgnoreCase))
+        {
+            var gastos = await _repo.GetGastosModifiedSinceAsync(tenantId, usuarioId, since);
+            response.ServerChanges.Gastos = gastos.Select(g => new SyncGastoDto
+            {
+                Id = g.Id,
+                LocalId = g.MobileRecordId,
+                RutaId = g.RutaId,
+                FechaGasto = g.FechaGasto,
+                Monto = g.Monto,
+                TipoGasto = (int)g.TipoGasto,
+                Concepto = g.Concepto,
+                Notas = g.Notas,
+                ComprobanteUrl = g.ComprobanteUrl,
+                Moneda = g.Moneda,
+                Estado = (int)g.Estado,
+                Activo = g.Activo,
+                Version = g.Version,
+                ActualizadoEn = g.ActualizadoEn,
+                IsDeleted = !g.Activo,
+            }).ToList();
+            response.Summary.GastosPulled = gastos.Count;
+        }
+
+        // Pull DevolucionesPedido (con children)
+        if (syncAll || entityTypes.Contains("devoluciones_pedido", StringComparer.OrdinalIgnoreCase))
+        {
+            var devs = await _repo.GetDevolucionesModifiedSinceAsync(tenantId, usuarioId, since);
+            response.ServerChanges.DevolucionesPedido = devs.Select(d => new SyncDevolucionPedidoDto
+            {
+                Id = d.Id,
+                LocalId = d.MobileRecordId,
+                PedidoId = d.PedidoId,
+                ClienteId = d.ClienteId,
+                RutaId = d.RutaId,
+                FechaDevolucion = d.FechaDevolucion,
+                Motivo = (int)d.Motivo,
+                Notas = d.Notas,
+                TipoReembolso = (int)d.TipoReembolso,
+                MontoTotal = d.MontoTotal,
+                FotoEvidenciaUrl = d.FotoEvidenciaUrl,
+                Estado = (int)d.Estado,
+                Activo = d.Activo,
+                Version = d.Version,
+                ActualizadoEn = d.ActualizadoEn,
+                IsDeleted = !d.Activo,
+                Detalles = d.Detalles.Select(dd => new SyncDetalleDevolucionDto
+                {
+                    Id = dd.Id,
+                    LocalId = dd.MobileRecordId,
+                    DetallePedidoId = dd.DetallePedidoId,
+                    ProductoId = dd.ProductoId,
+                    Cantidad = dd.Cantidad,
+                    PrecioUnitario = dd.PrecioUnitario,
+                    Subtotal = dd.Subtotal,
+                    Impuesto = dd.Impuesto,
+                    Total = dd.Total,
+                }).ToList(),
+            }).ToList();
+            response.Summary.DevolucionesPulled = devs.Count;
         }
 
         // Pull pricing catalogs (read-only on mobile)
