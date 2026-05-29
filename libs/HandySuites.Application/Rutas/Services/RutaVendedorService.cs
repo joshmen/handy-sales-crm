@@ -69,14 +69,21 @@ public class RutaVendedorService
         // completa.
         var legacyZonaId = zonaIds.FirstOrDefault();
 
+        var fechaRuta = dto.EsTemplate ? DateTime.UtcNow.Date : dto.Fecha.Date;
+        // Codigo auto-generado: "RT-YYYYMMDD-NNNN" o "TPL-NNNN". Permite
+        // distinguir rutas con mismo Nombre en listados/URL/busqueda.
+        // Patron alineado con Pedido.NumeroPedido. Agregado 2026-05-28.
+        var codigo = await _repo.GenerarCodigoRutaAsync(_tenant.TenantId, fechaRuta, dto.EsTemplate);
+
         var ruta = new RutaVendedor
         {
             TenantId = _tenant.TenantId,
             UsuarioId = dto.EsTemplate ? null : dto.UsuarioId,
             ZonaId = legacyZonaId == 0 ? null : legacyZonaId,
+            Codigo = codigo,
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
-            Fecha = dto.EsTemplate ? DateTime.UtcNow.Date : dto.Fecha.Date,
+            Fecha = fechaRuta,
             HoraInicioEstimada = dto.HoraInicioEstimada,
             HoraFinEstimada = dto.HoraFinEstimada,
             Notas = dto.Notas,
@@ -670,11 +677,15 @@ public class RutaVendedorService
         if (!await _repo.ExisteUsuarioEnTenantAsync(dto.UsuarioId, _tenant.TenantId))
             throw new InvalidOperationException("El vendedor seleccionado no existe o no pertenece a tu empresa.");
 
+        // Codigo auto-generado para la instancia (no se hereda del template).
+        var codigoInstancia = await _repo.GenerarCodigoRutaAsync(_tenant.TenantId, dto.Fecha.Date, esTemplate: false);
+
         var ruta = new RutaVendedor
         {
             TenantId = _tenant.TenantId,
             UsuarioId = dto.UsuarioId,
             ZonaId = template.ZonaId,
+            Codigo = codigoInstancia,
             Nombre = template.Nombre,
             Descripcion = template.Descripcion,
             Fecha = dto.Fecha.Date,
@@ -721,10 +732,13 @@ public class RutaVendedorService
         if (template == null)
             throw new InvalidOperationException("Template no encontrado");
 
+        var codigoCopia = await _repo.GenerarCodigoRutaAsync(_tenant.TenantId, DateTime.UtcNow.Date, esTemplate: true);
+
         var copia = new RutaVendedor
         {
             TenantId = _tenant.TenantId,
             ZonaId = template.ZonaId,
+            Codigo = codigoCopia,
             Nombre = $"{template.Nombre} (Copia)",
             Descripcion = template.Descripcion,
             HoraInicioEstimada = template.HoraInicioEstimada,
