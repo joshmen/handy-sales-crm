@@ -2,7 +2,7 @@
   "expo": {
     "name": "Handy Suites",
     "slug": "handy-suites",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "handysuites",
@@ -30,7 +30,7 @@
         "backgroundColor": "#2563eb"
       },
       "package": "com.handysuites.app",
-      "versionCode": 6
+      "versionCode": 7
     },
     "web": {
       "favicon": "./assets/favicon.png"

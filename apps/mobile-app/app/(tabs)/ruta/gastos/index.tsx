@@ -1,12 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Q } from '@nozbe/watermelondb';
 import {
   Fuel, Receipt, Coffee, Bed, Wrench, ParkingSquare, FileQuestion,
-  ChevronLeft, Plus, CheckCircle2, Circle,
+  ChevronLeft, Plus, CheckCircle2, Circle, CloudOff,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores';
 import { useOfflineGastos } from '@/hooks/useOfflineGastos';
@@ -14,7 +15,9 @@ import { performSync } from '@/sync/syncEngine';
 import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { useTenantLocale } from '@/hooks';
 import { COLORS } from '@/theme/colors';
+import { database } from '@/db/database';
 import type Gasto from '@/db/models/Gasto';
+import type Attachment from '@/db/models/Attachment';
 
 const TIPO_META: Record<number, { label: string; icon: any; color: string }> = {
   0: { label: 'Combustible', icon: Fuel, color: '#f97316' },
@@ -35,6 +38,28 @@ function GastosListScreen() {
 
   const { data: gastosRaw } = useOfflineGastos(userIdNum);
   const gastos: Gasto[] = useMemo(() => gastosRaw ?? [], [gastosRaw]);
+
+  // Map gasto_local_id -> attachment status para badge offline-aware:
+  // - 'uploaded' o 'pending' o 'failed': hay foto local (badge "Foto" o "Por subir")
+  // - undefined: no hay attachment local (puede tener URL remota stampeada igual)
+  const [attachmentByGasto, setAttachmentByGasto] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const collection = database.get<Attachment>('attachments');
+        const records = await collection
+          .query(Q.where('event_type', 'gasto'))
+          .fetch();
+        const map: Record<string, string> = {};
+        for (const a of records) {
+          map[a.eventLocalId] = a.uploadStatus;
+        }
+        if (!cancelled) setAttachmentByGasto(map);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [gastos.length]);
 
   const totalHoy = useMemo(() => {
     const todayMs = new Date(); todayMs.setHours(0, 0, 0, 0);
@@ -104,17 +129,35 @@ function GastosListScreen() {
                 </View>
                 <View style={styles.cardRight}>
                   <Text style={styles.cardMonto}>{formatCurrency(g.monto)}</Text>
-                  {g.comprobanteUrl ? (
-                    <View style={styles.chipOk}>
-                      <CheckCircle2 size={11} color="#10b981" />
-                      <Text style={styles.chipText}>Foto</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.chipNo}>
-                      <Circle size={11} color="#f59e0b" />
-                      <Text style={styles.chipTextWarn}>Sin foto</Text>
-                    </View>
-                  )}
+                  {(() => {
+                    // Badge offline-aware: prioridad URL remota > attachment local > nada
+                    const attachStatus = attachmentByGasto[g.id];
+                    const hasRemote = !!g.comprobanteUrl;
+                    const hasLocalPending = attachStatus === 'pending' || attachStatus === 'failed' || attachStatus === 'uploading';
+                    const hasUploaded = attachStatus === 'uploaded';
+                    if (hasRemote || hasUploaded) {
+                      return (
+                        <View style={styles.chipOk}>
+                          <CheckCircle2 size={11} color="#10b981" />
+                          <Text style={styles.chipText}>Foto</Text>
+                        </View>
+                      );
+                    }
+                    if (hasLocalPending) {
+                      return (
+                        <View style={styles.chipPending}>
+                          <CloudOff size={11} color="#3b82f6" />
+                          <Text style={styles.chipTextPending}>Por subir</Text>
+                        </View>
+                      );
+                    }
+                    return (
+                      <View style={styles.chipNo}>
+                        <Circle size={11} color="#f59e0b" />
+                        <Text style={styles.chipTextWarn}>Sin foto</Text>
+                      </View>
+                    );
+                  })()}
                 </View>
               </TouchableOpacity>
             );
@@ -149,8 +192,10 @@ const styles = StyleSheet.create({
   cardMonto: { fontSize: 15, fontWeight: '700', color: COLORS.foreground },
   chipOk: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4, backgroundColor: '#dcfce7' },
   chipNo: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4, backgroundColor: '#fef3c7' },
+  chipPending: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4, backgroundColor: '#dbeafe' },
   chipText: { fontSize: 10, color: '#10b981', fontWeight: '600' },
   chipTextWarn: { fontSize: 10, color: '#f59e0b', fontWeight: '600' },
+  chipTextPending: { fontSize: 10, color: '#3b82f6', fontWeight: '600' },
 });
 
 export default withErrorBoundary(GastosListScreen, 'GastosList');
