@@ -18,7 +18,11 @@ import {
   X,
   Package,
   Info,
+  ChevronDown,
+  ChevronUp,
+  Image as ImageIcon,
 } from 'lucide-react';
+import { gastosService, type GastoListItem, TIPO_GASTO_LABEL } from '@/services/api/gastos';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
@@ -46,6 +50,28 @@ export default function CloseRoutePage() {
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [montoRecibido, setMontoRecibido] = useState<string>('');
+
+  // Expansible inline para ver detalle + foto de gastos imputados a esta ruta.
+  const [gastosExpanded, setGastosExpanded] = useState(false);
+  const [rutaGastos, setRutaGastos] = useState<GastoListItem[]>([]);
+  const [loadingGastos, setLoadingGastos] = useState(false);
+  const [photoLightbox, setPhotoLightbox] = useState<string | null>(null);
+
+  const toggleGastosExpanded = useCallback(async () => {
+    const next = !gastosExpanded;
+    setGastosExpanded(next);
+    if (next && rutaGastos.length === 0 && !loadingGastos) {
+      setLoadingGastos(true);
+      try {
+        const data = await gastosService.list({ rutaId, pagina: 1, tamanoPagina: 50, soloActivos: false });
+        setRutaGastos(data.items);
+      } catch (err) {
+        showApiError(err, 'No se pudieron cargar los gastos');
+      } finally {
+        setLoadingGastos(false);
+      }
+    }
+  }, [gastosExpanded, rutaGastos.length, loadingGastos, rutaId, showApiError]);
 
   const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
 
@@ -336,16 +362,109 @@ export default function CloseRoutePage() {
                   <span className="font-medium text-red-600">-{formatCurrency(resumen.devolucionesEfectivo ?? 0)}</span>
                 </div>
               )}
-              {/* v23: Gastos del vendedor imputados a la ruta (restan de aRecibir) */}
+              {/* v23: Gastos del vendedor imputados a la ruta (restan de aRecibir).
+                  Click expande mini-tabla con concepto + thumbnail clickeable. */}
               {(resumen.gastosCount ?? 0) > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Gastos de ruta ({resumen.gastosCount})</span>
-                  <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
+                <div>
+                  <button
+                    type="button"
+                    onClick={toggleGastosExpanded}
+                    className="w-full flex justify-between items-center text-xs hover:bg-surface-3 -mx-2 px-2 py-1 rounded transition-colors"
+                  >
+                    <span className="text-muted-foreground inline-flex items-center gap-1">
+                      {gastosExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      Gastos de ruta ({resumen.gastosCount})
+                    </span>
+                    <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
+                  </button>
+                  {gastosExpanded && (
+                    <div className="mt-2 rounded-lg border border-border-subtle bg-surface-1 overflow-hidden">
+                      {loadingGastos ? (
+                        <div className="p-3 text-center text-xs text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin inline-block mr-1.5" />
+                          Cargando gastos...
+                        </div>
+                      ) : rutaGastos.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-muted-foreground">Sin gastos para mostrar</div>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead className="bg-surface-2">
+                            <tr>
+                              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Tipo</th>
+                              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Concepto</th>
+                              <th className="px-2 py-1.5 text-center font-medium text-muted-foreground">Comprobante</th>
+                              <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Monto</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rutaGastos.map(g => {
+                              const isInvalidado = g.estado === 1;
+                              return (
+                                <tr key={g.id} className={`border-t border-border-subtle ${isInvalidado ? 'opacity-40 line-through' : ''}`}>
+                                  <td className="px-2 py-1.5 text-foreground/80">{TIPO_GASTO_LABEL[g.tipoGasto] ?? 'Otro'}</td>
+                                  <td className="px-2 py-1.5 text-foreground">{g.concepto}</td>
+                                  <td className="px-2 py-1.5 text-center">
+                                    {g.comprobanteUrl ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setPhotoLightbox(g.comprobanteUrl)}
+                                        className="inline-block hover:opacity-80 transition-opacity"
+                                        title="Ver foto"
+                                      >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={g.comprobanteUrl}
+                                          alt={`Comprobante ${g.concepto}`}
+                                          className="w-8 h-8 object-cover rounded border border-border-subtle"
+                                        />
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-amber-600">
+                                        <ImageIcon className="w-3 h-3" />
+                                        Sin foto
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-1.5 text-right font-medium text-red-600">
+                                    -{formatCurrency(g.monto)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* Lightbox foto comprobante */}
+        {photoLightbox && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out"
+            onClick={() => setPhotoLightbox(null)}
+          >
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setPhotoLightbox(null); }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
+              aria-label="Cerrar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoLightbox}
+              alt="Comprobante gasto"
+              className="max-w-full max-h-full object-contain rounded"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
 
         {/* Al inicio vs Al cierre */}
         <div className="grid grid-cols-2 gap-4">
