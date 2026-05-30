@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
   onSave,
 }, ref) => {
   const tc = useTranslations('common');
+  const titleId = useId();
   const [showUnsaved, setShowUnsaved] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -127,6 +128,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
         data-drawer-panel
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
         className={cn(
           'relative w-full flex flex-col bg-surface-4 shadow-elevation-3 transition-transform duration-300 ease-out',
           entered ? 'translate-x-0' : 'translate-x-full',
@@ -138,7 +140,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
           <div className="flex items-center justify-between h-16 px-6 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-3">
               {icon}
-              <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+              <h2 id={titleId} className="text-lg font-semibold text-foreground">{title}</h2>
             </div>
             <button
               onClick={handleRequestClose}

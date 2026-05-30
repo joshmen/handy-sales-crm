@@ -18,11 +18,9 @@ import {
   X,
   Package,
   Info,
-  ChevronDown,
-  ChevronUp,
-  Image as ImageIcon,
+  Receipt,
 } from 'lucide-react';
-import { gastosService, type GastoListItem, TIPO_GASTO_LABEL, TIPO_GASTO_ICON, TIPO_GASTO_COLOR } from '@/services/api/gastos';
+import { RutaGastosDrawer } from '@/components/gastos/RutaGastosDrawer';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
@@ -51,37 +49,10 @@ export default function CloseRoutePage() {
   const [closing, setClosing] = useState(false);
   const [montoRecibido, setMontoRecibido] = useState<string>('');
 
-  // Expansible inline para ver detalle + foto de gastos imputados a esta ruta.
-  const [gastosExpanded, setGastosExpanded] = useState(false);
-  const [rutaGastos, setRutaGastos] = useState<GastoListItem[]>([]);
-  const [loadingGastos, setLoadingGastos] = useState(false);
-  const [photoLightbox, setPhotoLightbox] = useState<string | null>(null);
-
-  const toggleGastosExpanded = useCallback(async () => {
-    const next = !gastosExpanded;
-    setGastosExpanded(next);
-    if (next && rutaGastos.length === 0 && !loadingGastos) {
-      setLoadingGastos(true);
-      try {
-        const data = await gastosService.list({ rutaId, pagina: 1, tamanoPagina: 50, soloActivos: false });
-        setRutaGastos(data.items);
-      } catch (err) {
-        showApiError(err, 'No se pudieron cargar los gastos');
-      } finally {
-        setLoadingGastos(false);
-      }
-    }
-  }, [gastosExpanded, rutaGastos.length, loadingGastos, rutaId, showApiError]);
-
-  // ESC cierra el lightbox del comprobante.
-  useEffect(() => {
-    if (!photoLightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPhotoLightbox(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [photoLightbox]);
+  // Drawer de gastos: trigger desde la linea "Ver gastos" en card Otros movimientos.
+  // El Drawer maneja su propio fetch + lightbox de fotos. Refresca el resumen del
+  // close screen cuando se invalida un gasto para que aRecibir y el count se actualicen.
+  const [gastosDrawerOpen, setGastosDrawerOpen] = useState(false);
 
   const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
 
@@ -372,126 +343,37 @@ export default function CloseRoutePage() {
                   <span className="font-medium text-red-600">-{formatCurrency(resumen.devolucionesEfectivo ?? 0)}</span>
                 </div>
               )}
-              {/* v23: Gastos del vendedor imputados a la ruta (restan de aRecibir).
-                  Click expande mini-tabla con concepto + thumbnail clickeable.
-                  Sizing tuneado post feedback usuario 30/5 (gastos se veian pequeños):
-                  text-sm + thumbnail w-14 + icono Tipo + overflow scroll. */}
+              {/* v23 + redesign 30/5: Gastos del vendedor — boton abre Drawer con
+                  detalle completo (foto grande, invalidar, audit). Antes era una
+                  mini-tabla inline dentro del card de 1/3 width que el usuario
+                  reporto demasiado pequena para leer tickets. */}
               {(resumen.gastosCount ?? 0) > 0 && (
-                <div>
-                  <button
-                    type="button"
-                    onClick={toggleGastosExpanded}
-                    aria-expanded={gastosExpanded}
-                    aria-controls="gastos-detalle-cierre"
-                    className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <span className="text-muted-foreground inline-flex items-center gap-1">
-                      {gastosExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      Gastos de ruta ({resumen.gastosCount})
-                    </span>
-                    <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
-                  </button>
-                  {gastosExpanded && (
-                    <div id="gastos-detalle-cierre" className="mt-2 rounded-lg border border-border-subtle bg-surface-1 overflow-hidden">
-                      {loadingGastos ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          <Loader2 className="w-4 h-4 animate-spin inline-block mr-1.5" />
-                          Cargando gastos...
-                        </div>
-                      ) : rutaGastos.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">Sin gastos para mostrar</div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm min-w-[420px]">
-                            <thead className="bg-surface-2">
-                              <tr>
-                                <th className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">Tipo</th>
-                                <th className="px-3 py-2 text-left font-medium text-muted-foreground">Concepto</th>
-                                <th className="px-3 py-2 text-center font-medium text-muted-foreground" style={{ minWidth: 72 }}>Comprobante</th>
-                                <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">Monto</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {rutaGastos.map(g => {
-                                const isInvalidado = g.estado === 1;
-                                const Icon = TIPO_GASTO_ICON[g.tipoGasto] ?? TIPO_GASTO_ICON[99];
-                                const tipoColor = TIPO_GASTO_COLOR[g.tipoGasto] ?? TIPO_GASTO_COLOR[99];
-                                return (
-                                  <tr key={g.id} className={`border-t border-border-subtle ${isInvalidado ? 'opacity-40 line-through' : ''}`}>
-                                    <td className="px-3 py-2 text-foreground/80">
-                                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                        <Icon className={`w-4 h-4 ${tipoColor}`} />
-                                        {TIPO_GASTO_LABEL[g.tipoGasto] ?? 'Otro'}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-2 text-foreground">{g.concepto}</td>
-                                    <td className="px-3 py-2 text-center">
-                                      {g.comprobanteUrl ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => setPhotoLightbox(g.comprobanteUrl)}
-                                          className="inline-block hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded transition-opacity"
-                                          title="Ver foto"
-                                          aria-label={`Ver foto de ${g.concepto}`}
-                                        >
-                                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                                          <img
-                                            src={g.comprobanteUrl}
-                                            alt={`Comprobante ${g.concepto}`}
-                                            className="w-14 h-14 object-cover rounded border border-border-subtle"
-                                          />
-                                        </button>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 text-amber-600">
-                                          <ImageIcon className="w-4 h-4" />
-                                          Sin foto
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="px-3 py-2 text-right font-medium text-red-600 whitespace-nowrap">
-                                      -{formatCurrency(g.monto)}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setGastosDrawerOpen(true)}
+                  className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Ver gastos de la ruta (${resumen.gastosCount})`}
+                >
+                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5" />
+                    Ver gastos ({resumen.gastosCount})
+                  </span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
+                </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* Lightbox foto comprobante — fade-in, ESC para cerrar, focus ring en X */}
-        {photoLightbox && (
-          <div
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-150"
-            onClick={() => setPhotoLightbox(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Visor de comprobante"
-          >
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setPhotoLightbox(null); }}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white text-white"
-              aria-label="Cerrar"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photoLightbox}
-              alt="Comprobante gasto"
-              className="max-w-full max-h-full object-contain rounded"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
+        {/* Drawer compartido — abre con detalle + lightbox interno. Refetch del resumen
+            si se invalida un gasto para que aRecibir y count se actualicen. */}
+        <RutaGastosDrawer
+          isOpen={gastosDrawerOpen}
+          onClose={() => setGastosDrawerOpen(false)}
+          rutaId={rutaId}
+          rutaCodigo={ruta?.codigo}
+          onGastoInvalidated={() => fetchData()}
+        />
 
         {/* Al inicio vs Al cierre */}
         <div className="grid grid-cols-2 gap-4">
