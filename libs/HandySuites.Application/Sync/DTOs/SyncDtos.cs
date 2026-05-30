@@ -531,6 +531,11 @@ public class SyncGastoDto
 {
     public int Id { get; set; }
     public string? LocalId { get; set; }
+    /// <summary>UsuarioId del vendedor que creo el gasto. Critico para que mobile
+    /// pueda mapear correctamente el gasto al usuario actual y mostrarlo en lista.
+    /// Bug 30/5: faltaba en pull -> mobile asignaba usuario_id=0 -> gastos
+    /// desaparecian de la lista al hacer pull sync.</summary>
+    public int UsuarioId { get; set; }
     public int? RutaId { get; set; }
     /// <summary>Mobile WDB id de la ruta cuando aún no tiene ServerId (offline create).</summary>
     public string? RutaLocalId { get; set; }
