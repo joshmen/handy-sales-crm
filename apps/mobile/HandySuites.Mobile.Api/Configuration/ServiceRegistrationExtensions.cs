@@ -204,6 +204,14 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ICobroRepository, CobroRepository>();
         services.AddScoped<CobroService>();
 
+        // Cloudinary — upload de fotos para profile + comprobantes de gastos/devoluciones.
+        // BUG prod 29/5: estaba ausente en Mobile API; MobileAttachmentEndpoints retornaba
+        // 501 silencioso porque sp.GetService<ICloudinaryService>() devolvia null. Mobile
+        // markFailed -> retry 3x -> abandona, foto nunca llega. Comprobantes quedaban NULL.
+        // Requiere env var Cloudinary:Url (Railway: Cloudinary__Url) en el servicio Mobile.
+        services.AddScoped<HandySuites.Application.CompanySettings.Interfaces.ICloudinaryService,
+                            HandySuites.Infrastructure.Services.CloudinaryService>();
+
         // Tracking GPS de vendedores (Fase B)
         services.AddScoped<HandySuites.Application.Tracking.Interfaces.IUbicacionVendedorRepository, HandySuites.Infrastructure.Repositories.Tracking.UbicacionVendedorRepository>();
         services.AddScoped<HandySuites.Application.Tracking.Interfaces.ISubscriptionFeatureGuard, HandySuites.Infrastructure.Subscriptions.SubscriptionFeatureGuard>();

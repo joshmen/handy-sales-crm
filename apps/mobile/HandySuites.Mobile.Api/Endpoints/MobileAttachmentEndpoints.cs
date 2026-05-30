@@ -1,4 +1,4 @@
-using HandySuites.Application.Common.Interfaces;
+using HandySuites.Application.CompanySettings.Interfaces;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -74,12 +74,24 @@ public static class MobileAttachmentEndpoints
             {
                 string? resultUrl = null;
 
-                // Try Cloudinary first (required in production)
+                // Try Cloudinary first (required in production). Usa la interfaz de
+                // CompanySettings (la que tiene implementacion en infra). BUG previo: se
+                // usaba HandySuites.Application.Common.Interfaces.ICloudinaryService que
+                // no tiene implementacion registrada -> retornaba 501 silencioso en prod.
                 var cloudinary = sp.GetService<ICloudinaryService>();
                 if (cloudinary != null)
                 {
-                    resultUrl = await cloudinary.UploadImageAsync(file, $"evidence/{eventType}");
-                    logger.LogInformation("Attachment uploaded to Cloudinary: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, resultUrl);
+                    var cloudResult = await cloudinary.UploadImageAsync(file, $"evidence/{eventType}");
+                    if (cloudResult.IsSuccess)
+                    {
+                        resultUrl = cloudResult.SecureUrl;
+                        logger.LogInformation("Attachment uploaded to Cloudinary: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, resultUrl);
+                    }
+                    else
+                    {
+                        logger.LogError("Cloudinary upload failed for {EventType}/{EventLocalId}: {Error}", eventType, eventLocalId, cloudResult.ErrorMessage);
+                        return Results.StatusCode(500);
+                    }
                 }
                 else
                 {
