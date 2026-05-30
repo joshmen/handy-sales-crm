@@ -722,6 +722,7 @@ public class SyncService
             {
                 Id = g.Id,
                 LocalId = g.MobileRecordId,
+                UsuarioId = g.UsuarioId, // Bug fix 30/5: faltaba -> mobile mapeaba usuario_id=0
                 RutaId = g.RutaId,
                 FechaGasto = g.FechaGasto,
                 Monto = g.Monto,
