@@ -1,19 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Fuel, Receipt, Coffee, Bed, Wrench, ParkingSquare, FileQuestion, FileText, type LucideIcon } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { gastosService, type GastoListItem, TIPO_GASTO_LABEL } from '@/services/api/gastos';
+import { gastosService, type GastoListItem, TIPO_GASTO_LABEL, TIPO_GASTO_ICON, TIPO_GASTO_COLOR } from '@/services/api/gastos';
 import { toast } from '@/hooks/useToast';
 
-const TIPO_ICON: Record<number, LucideIcon> = {
-  0: Fuel, 1: Receipt, 2: Coffee, 3: Bed, 4: Wrench, 5: ParkingSquare, 6: FileText, 99: FileQuestion,
-};
-
-const TIPO_COLOR: Record<number, string> = {
-  0: 'text-orange-600', 1: 'text-blue-600', 2: 'text-yellow-600', 3: 'text-purple-600',
-  4: 'text-gray-600', 5: 'text-green-600', 6: 'text-slate-600', 99: 'text-slate-400',
-};
+const TIPO_ICON = TIPO_GASTO_ICON;
+const TIPO_COLOR = TIPO_GASTO_COLOR;
 
 export default function GastosPage() {
   const [items, setItems] = useState<GastoListItem[]>([]);
@@ -161,7 +154,7 @@ export default function GastosPage() {
                 </thead>
                 <tbody>
                   {items.map((g) => {
-                    const Icon = TIPO_ICON[g.tipoGasto] ?? FileQuestion;
+                    const Icon = TIPO_ICON[g.tipoGasto] ?? TIPO_ICON[99];
                     const colorClass = TIPO_COLOR[g.tipoGasto] ?? 'text-slate-400';
                     const isInvalid = g.estado === 1;
                     return (

@@ -22,7 +22,7 @@ import {
   ChevronUp,
   Image as ImageIcon,
 } from 'lucide-react';
-import { gastosService, type GastoListItem, TIPO_GASTO_LABEL } from '@/services/api/gastos';
+import { gastosService, type GastoListItem, TIPO_GASTO_LABEL, TIPO_GASTO_ICON, TIPO_GASTO_COLOR } from '@/services/api/gastos';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
@@ -72,6 +72,16 @@ export default function CloseRoutePage() {
       }
     }
   }, [gastosExpanded, rutaGastos.length, loadingGastos, rutaId, showApiError]);
+
+  // ESC cierra el lightbox del comprobante.
+  useEffect(() => {
+    if (!photoLightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPhotoLightbox(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [photoLightbox]);
 
   const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
 
@@ -363,76 +373,90 @@ export default function CloseRoutePage() {
                 </div>
               )}
               {/* v23: Gastos del vendedor imputados a la ruta (restan de aRecibir).
-                  Click expande mini-tabla con concepto + thumbnail clickeable. */}
+                  Click expande mini-tabla con concepto + thumbnail clickeable.
+                  Sizing tuneado post feedback usuario 30/5 (gastos se veian pequeños):
+                  text-sm + thumbnail w-14 + icono Tipo + overflow scroll. */}
               {(resumen.gastosCount ?? 0) > 0 && (
                 <div>
                   <button
                     type="button"
                     onClick={toggleGastosExpanded}
-                    className="w-full flex justify-between items-center text-xs hover:bg-surface-3 -mx-2 px-2 py-1 rounded transition-colors"
+                    aria-expanded={gastosExpanded}
+                    aria-controls="gastos-detalle-cierre"
+                    className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className="text-muted-foreground inline-flex items-center gap-1">
-                      {gastosExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      {gastosExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       Gastos de ruta ({resumen.gastosCount})
                     </span>
                     <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
                   </button>
                   {gastosExpanded && (
-                    <div className="mt-2 rounded-lg border border-border-subtle bg-surface-1 overflow-hidden">
+                    <div id="gastos-detalle-cierre" className="mt-2 rounded-lg border border-border-subtle bg-surface-1 overflow-hidden">
                       {loadingGastos ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
+                        <div className="p-4 text-center text-sm text-muted-foreground">
                           <Loader2 className="w-4 h-4 animate-spin inline-block mr-1.5" />
                           Cargando gastos...
                         </div>
                       ) : rutaGastos.length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">Sin gastos para mostrar</div>
+                        <div className="p-4 text-center text-sm text-muted-foreground">Sin gastos para mostrar</div>
                       ) : (
-                        <table className="w-full text-xs">
-                          <thead className="bg-surface-2">
-                            <tr>
-                              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Tipo</th>
-                              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">Concepto</th>
-                              <th className="px-2 py-1.5 text-center font-medium text-muted-foreground">Comprobante</th>
-                              <th className="px-2 py-1.5 text-right font-medium text-muted-foreground">Monto</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rutaGastos.map(g => {
-                              const isInvalidado = g.estado === 1;
-                              return (
-                                <tr key={g.id} className={`border-t border-border-subtle ${isInvalidado ? 'opacity-40 line-through' : ''}`}>
-                                  <td className="px-2 py-1.5 text-foreground/80">{TIPO_GASTO_LABEL[g.tipoGasto] ?? 'Otro'}</td>
-                                  <td className="px-2 py-1.5 text-foreground">{g.concepto}</td>
-                                  <td className="px-2 py-1.5 text-center">
-                                    {g.comprobanteUrl ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setPhotoLightbox(g.comprobanteUrl)}
-                                        className="inline-block hover:opacity-80 transition-opacity"
-                                        title="Ver foto"
-                                      >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={g.comprobanteUrl}
-                                          alt={`Comprobante ${g.concepto}`}
-                                          className="w-8 h-8 object-cover rounded border border-border-subtle"
-                                        />
-                                      </button>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 text-amber-600">
-                                        <ImageIcon className="w-3 h-3" />
-                                        Sin foto
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm min-w-[420px]">
+                            <thead className="bg-surface-2">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">Tipo</th>
+                                <th className="px-3 py-2 text-left font-medium text-muted-foreground">Concepto</th>
+                                <th className="px-3 py-2 text-center font-medium text-muted-foreground" style={{ minWidth: 72 }}>Comprobante</th>
+                                <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">Monto</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rutaGastos.map(g => {
+                                const isInvalidado = g.estado === 1;
+                                const Icon = TIPO_GASTO_ICON[g.tipoGasto] ?? TIPO_GASTO_ICON[99];
+                                const tipoColor = TIPO_GASTO_COLOR[g.tipoGasto] ?? TIPO_GASTO_COLOR[99];
+                                return (
+                                  <tr key={g.id} className={`border-t border-border-subtle ${isInvalidado ? 'opacity-40 line-through' : ''}`}>
+                                    <td className="px-3 py-2 text-foreground/80">
+                                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                                        <Icon className={`w-4 h-4 ${tipoColor}`} />
+                                        {TIPO_GASTO_LABEL[g.tipoGasto] ?? 'Otro'}
                                       </span>
-                                    )}
-                                  </td>
-                                  <td className="px-2 py-1.5 text-right font-medium text-red-600">
-                                    -{formatCurrency(g.monto)}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                                    </td>
+                                    <td className="px-3 py-2 text-foreground">{g.concepto}</td>
+                                    <td className="px-3 py-2 text-center">
+                                      {g.comprobanteUrl ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setPhotoLightbox(g.comprobanteUrl)}
+                                          className="inline-block hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded transition-opacity"
+                                          title="Ver foto"
+                                          aria-label={`Ver foto de ${g.concepto}`}
+                                        >
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={g.comprobanteUrl}
+                                            alt={`Comprobante ${g.concepto}`}
+                                            className="w-14 h-14 object-cover rounded border border-border-subtle"
+                                          />
+                                        </button>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-amber-600">
+                                          <ImageIcon className="w-4 h-4" />
+                                          Sin foto
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2 text-right font-medium text-red-600 whitespace-nowrap">
+                                      -{formatCurrency(g.monto)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
                   )}
@@ -442,16 +466,19 @@ export default function CloseRoutePage() {
           </div>
         </div>
 
-        {/* Lightbox foto comprobante */}
+        {/* Lightbox foto comprobante — fade-in, ESC para cerrar, focus ring en X */}
         {photoLightbox && (
           <div
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out"
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-150"
             onClick={() => setPhotoLightbox(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Visor de comprobante"
           >
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setPhotoLightbox(null); }}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white text-white"
               aria-label="Cerrar"
             >
               <X className="w-5 h-5" />

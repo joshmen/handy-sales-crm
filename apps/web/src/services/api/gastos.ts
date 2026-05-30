@@ -1,4 +1,5 @@
 import { api, handleApiError } from '@/lib/api';
+import { Fuel, Receipt, Coffee, Bed, Wrench, ParkingSquare, FileQuestion, FileText, type LucideIcon } from 'lucide-react';
 
 export interface GastoListItem {
   id: number;
@@ -55,6 +56,16 @@ export const TIPO_GASTO_LABEL: Record<number, string> = {
   5: 'Estacionamiento',
   6: 'Papeleria',
   99: 'Otro',
+};
+
+// Iconos y colores compartidos entre /gastos page y close screen — single source of truth.
+export const TIPO_GASTO_ICON: Record<number, LucideIcon> = {
+  0: Fuel, 1: Receipt, 2: Coffee, 3: Bed, 4: Wrench, 5: ParkingSquare, 6: FileText, 99: FileQuestion,
+};
+
+export const TIPO_GASTO_COLOR: Record<number, string> = {
+  0: 'text-orange-600', 1: 'text-blue-600', 2: 'text-yellow-600', 3: 'text-purple-600',
+  4: 'text-gray-600', 5: 'text-green-600', 6: 'text-slate-600', 99: 'text-slate-400',
 };
 
 class GastosService {
