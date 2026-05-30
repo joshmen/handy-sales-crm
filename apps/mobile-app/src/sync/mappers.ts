@@ -539,7 +539,10 @@ function mapGastoToRaw(g: any, gastoMap: Map<number, string>, rutaMap: Map<numbe
     server_id: g.id,
     ruta_id: g.rutaId ? (rutaMap.get(g.rutaId) || String(g.rutaId)) : null,
     ruta_server_id: g.rutaId ?? null,
-    usuario_id: 0,
+    // Bug 30/5: antes hardcodeado a 0 -> gastos desaparecian de "Mis gastos" al pull
+    // porque useOfflineGastos filtra por usuario_id == userIdNum. Server ahora envia
+    // usuarioId en SyncGastoDto; fallback a 0 si por alguna razon no llega.
+    usuario_id: g.usuarioId ?? 0,
     fecha_gasto: toTimestamp(g.fechaGasto ?? g.actualizadoEn),
     monto: g.monto ?? 0,
     tipo_gasto: g.tipoGasto ?? 99,
