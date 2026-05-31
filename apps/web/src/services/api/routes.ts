@@ -360,7 +360,7 @@ class RouteService {
     }
   }
 
-  async updateRetorno(rutaId: number, productoId: number, data: { mermas: number; recAlmacen: number; cargaVehiculo: number }): Promise<void> {
+  async updateRetorno(rutaId: number, productoId: number, data: { mermas: number; recAlmacen: number; cargaVehiculo: number; recargaExterna: number }): Promise<void> {
     try {
       await api.patch(`${this.basePath}/${rutaId}/cierre/retorno/${productoId}`, data);
     } catch (error) {
@@ -639,6 +639,8 @@ export interface RetornoItem {
   mermas: number;
   recAlmacen: number;
   cargaVehiculo: number;
+  /** Recarga durante la ruta — SUMA al inicial efectivo para cuadrar overage. */
+  recargaExterna: number;
   diferencia: number;
 }
 
@@ -649,6 +651,7 @@ export interface CerrarRutaRequest {
     mermas: number;
     recAlmacen: number;
     cargaVehiculo: number;
+    recargaExterna: number;
   }[];
 }
 
