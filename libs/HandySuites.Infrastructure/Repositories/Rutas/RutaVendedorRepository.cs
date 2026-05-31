@@ -1324,7 +1324,10 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Mermas = x.Retorno.Mermas,
                 RecAlmacen = x.Retorno.RecAlmacen,
                 CargaVehiculo = x.Retorno.CargaVehiculo,
-                Diferencia = x.Retorno.CantidadInicial
+                RecargaExterna = x.Retorno.RecargaExterna,
+                // Diferencia = (Inicial + Recarga) - Vendidos - Entregados - Devueltos - Mermas - RecAlmacen - CargaVehiculo
+                // RecargaExterna SUMA al inicial efectivo (vendedor regresó al almacén a recargar).
+                Diferencia = x.Retorno.CantidadInicial + x.Retorno.RecargaExterna
                            - (x.Carga != null ? x.Carga.CantidadVendida : x.Retorno.Vendidos)
                            - (x.Carga != null ? x.Carga.CantidadEntregada : x.Retorno.Entregados)
                            - x.Retorno.Devueltos - x.Retorno.Mermas - x.Retorno.RecAlmacen - x.Retorno.CargaVehiculo
@@ -1332,7 +1335,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .ToListAsync();
     }
 
-    public async Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int tenantId)
+    public async Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int recargaExterna, int tenantId)
     {
         var retorno = await _db.RutasRetornoInventario
             .FirstOrDefaultAsync(r => r.RutaId == rutaId && r.ProductoId == productoId && r.TenantId == tenantId && r.Activo);
@@ -1350,7 +1353,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             retorno.Mermas = mermas;
             retorno.RecAlmacen = recAlmacen;
             retorno.CargaVehiculo = cargaVehiculo;
-            retorno.Diferencia = retorno.CantidadInicial - vendidos - entregados - retorno.Devueltos - mermas - recAlmacen - cargaVehiculo;
+            retorno.RecargaExterna = recargaExterna;
+            // Recarga SUMA al inicial efectivo (resto de ajustes restan).
+            retorno.Diferencia = retorno.CantidadInicial + recargaExterna - vendidos - entregados - retorno.Devueltos - mermas - recAlmacen - cargaVehiculo;
             retorno.ActualizadoEn = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }

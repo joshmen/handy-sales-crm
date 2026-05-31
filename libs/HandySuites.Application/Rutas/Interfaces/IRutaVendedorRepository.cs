@@ -92,7 +92,7 @@ public interface IRutaVendedorRepository
     // === Cierre de ruta ===
     Task<CierreRutaResumenDto> ObtenerResumenCierreAsync(int rutaId, int tenantId);
     Task<List<RutaRetornoItemDto>> ObtenerRetornoInventarioAsync(int rutaId, int tenantId);
-    Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int tenantId);
+    Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int recargaExterna, int tenantId);
     Task CerrarRutaAsync(int rutaId, double montoRecibido, string cerradoPor, int tenantId);
 
     // === Existence checks ===

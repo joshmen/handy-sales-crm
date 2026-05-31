@@ -394,6 +394,11 @@ public class RutaRetornoItemDto
     public int Mermas { get; set; }
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
+    /// <summary>
+    /// Recarga durante la ruta. SUMA al inicial efectivo para cuadrar overage
+    /// (Vendidos > Inicial cuando vendedor recargó del almacén a mitad del día).
+    /// </summary>
+    public int RecargaExterna { get; set; }
     public int Diferencia { get; set; }
 }
 
@@ -402,6 +407,7 @@ public class ActualizarRetornoRequest
     public int Mermas { get; set; }
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
+    public int RecargaExterna { get; set; }
 }
 
 public class CerrarRutaRequest
@@ -416,6 +422,7 @@ public class RetornoItemRequest
     public int Mermas { get; set; }
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
+    public int RecargaExterna { get; set; }
 }
 
 // === DTOs para vinculación de pedidos huérfanos ===

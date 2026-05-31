@@ -1076,7 +1076,7 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
-        await _repo.ActualizarRetornoAsync(rutaId, productoId, dto.Mermas, dto.RecAlmacen, dto.CargaVehiculo, _tenant.TenantId);
+        await _repo.ActualizarRetornoAsync(rutaId, productoId, dto.Mermas, dto.RecAlmacen, dto.CargaVehiculo, dto.RecargaExterna, _tenant.TenantId);
     }
 
     public async Task CerrarRutaAsync(int rutaId, CerrarRutaRequest dto)
@@ -1095,7 +1095,7 @@ public class RutaVendedorService
         {
             foreach (var retorno in dto.Retornos)
             {
-                await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, _tenant.TenantId);
+                await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, retorno.RecargaExterna, _tenant.TenantId);
             }
         }
 
