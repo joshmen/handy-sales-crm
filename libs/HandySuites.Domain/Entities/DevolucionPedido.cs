@@ -92,6 +92,10 @@ public class DevolucionPedido : AuditableEntity
     [Column("anulada_en")]
     public DateTime? AnuladaEn { get; set; }
 
+    /// <summary>Motivo de la anulacion (mirror de Gasto.MotivoInvalidacion). Capturado por supervisor.</summary>
+    [Column("motivo_anulacion")]
+    public string? MotivoAnulacion { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Pedido Pedido { get; set; } = null!;
