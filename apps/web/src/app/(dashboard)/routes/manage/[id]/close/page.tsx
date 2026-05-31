@@ -80,7 +80,7 @@ export default function CloseRoutePage() {
     fetchData();
   }, [fetchData]);
 
-  const handleRetornoChange = async (productoId: number, field: 'mermas' | 'recAlmacen' | 'cargaVehiculo', delta: number) => {
+  const handleRetornoChange = async (productoId: number, field: 'mermas' | 'recAlmacen' | 'cargaVehiculo' | 'recargaExterna', delta: number) => {
     const item = retorno.find(r => r.productoId === productoId);
     if (!item || isReadonly) return;
 
@@ -90,10 +90,12 @@ export default function CloseRoutePage() {
         ? {
             ...r,
             [field]: newValue,
-            diferencia: r.cantidadInicial - r.vendidos - r.entregados - r.devueltos -
-              (field === 'mermas' ? newValue : r.mermas) -
-              (field === 'recAlmacen' ? newValue : r.recAlmacen) -
-              (field === 'cargaVehiculo' ? newValue : r.cargaVehiculo),
+            // Recarga SUMA al inicial efectivo; resto de campos restan.
+            diferencia: r.cantidadInicial + (field === 'recargaExterna' ? newValue : r.recargaExterna)
+              - r.vendidos - r.entregados - r.devueltos
+              - (field === 'mermas' ? newValue : r.mermas)
+              - (field === 'recAlmacen' ? newValue : r.recAlmacen)
+              - (field === 'cargaVehiculo' ? newValue : r.cargaVehiculo),
           }
         : r
     );
@@ -105,6 +107,7 @@ export default function CloseRoutePage() {
         mermas: updatedItem.mermas,
         recAlmacen: updatedItem.recAlmacen,
         cargaVehiculo: updatedItem.cargaVehiculo,
+        recargaExterna: updatedItem.recargaExterna,
       });
     } catch (err) {
       showApiError(err, t('errorUpdatingReturn'));
@@ -112,26 +115,35 @@ export default function CloseRoutePage() {
     }
   };
 
-  const handleSetAllDiferencia = (target: 'recAlmacen' | 'cargaVehiculo') => {
+  /**
+   * Quick-action que cuadra todas las filas pendientes:
+   * - Sobrante (Diferencia > 0): asigna el sobrante a recAlmacen/cargaVehiculo (resta del inicial).
+   * - Overage (Diferencia < 0): asigna |diferencia| a recargaExterna (SUMA al inicial). Esto resuelve
+   *   el caso del vendedor que vendió más de lo cargado porque recargó del almacén mid-ruta.
+   */
+  const handleSetAllDiferencia = (target: 'recAlmacen' | 'cargaVehiculo' | 'recargaExterna') => {
     if (isReadonly) return;
     const updated = retorno.map(r => {
+      // Recarga aplica solo a overage; los otros dos aplican solo a sobrante.
+      if (target === 'recargaExterna') {
+        if (r.diferencia >= 0) return r;
+        const newVal = r.recargaExterna + Math.abs(r.diferencia);
+        return { ...r, recargaExterna: newVal, diferencia: 0 };
+      }
       if (r.diferencia <= 0) return r;
       const newVal = r[target] + r.diferencia;
-      return {
-        ...r,
-        [target]: newVal,
-        diferencia: 0,
-      };
+      return { ...r, [target]: newVal, diferencia: 0 };
     });
     setRetorno(updated);
 
-    // Batch update
+    // Batch update — solo filas modificadas
     Promise.all(
       updated.map((item) =>
         routeService.updateRetorno(rutaId, item.productoId, {
           mermas: item.mermas,
           recAlmacen: item.recAlmacen,
           cargaVehiculo: item.cargaVehiculo,
+          recargaExterna: item.recargaExterna,
         }).catch(() => { /* silent */ })
       )
     );
@@ -158,6 +170,7 @@ export default function CloseRoutePage() {
           mermas: r.mermas,
           recAlmacen: r.recAlmacen,
           cargaVehiculo: r.cargaVehiculo,
+          recargaExterna: r.recargaExterna,
         })),
       });
       toast.success(t('closedSuccess'));
@@ -433,17 +446,26 @@ export default function CloseRoutePage() {
             no es error: significa que hubo stock externo (carga extra durante el día,
             vehículo con inventario previo, etc.). El usuario lo reconcilia con los
             steppers Mermas / Rec. almacén / Carga vehículo de la tabla. */}
-        {!loading && retorno.some(r => (r.vendidos + r.entregados) > r.cantidadInicial) && (
+        {!loading && retorno.some(r => (r.vendidos + r.entregados) > (r.cantidadInicial + r.recargaExterna)) && (
           <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-900 dark:text-amber-200">
+            <div className="text-sm text-amber-900 dark:text-amber-200 flex-1">
               <p className="font-semibold mb-1">Hay productos con más unidades vendidas que las cargadas inicialmente.</p>
               <p className="text-xs leading-relaxed">
-                Esto suele ocurrir cuando el vendedor empezó a vender antes de aceptar la ruta, o cuando hubo recarga
-                externa durante el día. Revisa cada fila marcada y ajusta con los steppers de Mermas, Rec. almacén
-                o Carga vehículo según corresponda para cuadrar el cierre.
+                Si el vendedor regresó al almacén a recargar durante la ruta, usa el stepper <strong>Recarga</strong> (o el botón
+                rápido <strong>&rarr; Recarga</strong>) para registrar las unidades adicionales. También puedes ajustar con Mermas,
+                Rec. almacén o Carga vehículo si aplica.
               </p>
             </div>
+            {!isReadonly && (
+              <button
+                onClick={() => handleSetAllDiferencia('recargaExterna')}
+                className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded transition-colors"
+                title="Asigna automáticamente las unidades faltantes al stepper Recarga"
+              >
+                &rarr; Recarga
+              </button>
+            )}
           </div>
         )}
 
@@ -486,6 +508,12 @@ export default function CloseRoutePage() {
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Mermas</th>
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Rec. almacén</th>
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Carga veh.</th>
+                    <th
+                      className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70"
+                      title="Unidades que el vendedor recargó del almacén durante la ruta — SUMA al inicial efectivo."
+                    >
+                      Recarga
+                    </th>
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Dif.</th>
                   </tr>
                 </thead>
@@ -537,14 +565,24 @@ export default function CloseRoutePage() {
                           disabled={isReadonly}
                         />
                       </td>
-                      {/* Diferencia badge — si vendidos+entregados > inicial, marca overage explícito */}
+                      {/* Recarga externa stepper — SUMA al inicial efectivo (overage). */}
+                      <td className="py-1 px-1 text-center">
+                        <Stepper
+                          value={item.recargaExterna}
+                          onDecrement={() => handleRetornoChange(item.productoId, 'recargaExterna', -1)}
+                          onIncrement={() => handleRetornoChange(item.productoId, 'recargaExterna', 1)}
+                          disabled={isReadonly}
+                        />
+                      </td>
+                      {/* Diferencia badge — overage explícito cuando vendidos+entregados > inicial+recarga */}
                       <td className="py-2 px-2 text-center">
                         {(() => {
-                          const excedente = item.vendidos + item.entregados - item.cantidadInicial;
+                          const inicialEfectivo = item.cantidadInicial + item.recargaExterna;
+                          const excedente = item.vendidos + item.entregados - inicialEfectivo;
                           if (excedente > 0) {
                             return (
                               <span
-                                title={`Vendido ${excedente} unidades más de lo cargado. Ajusta con Mermas o Carga vehículo si aplica.`}
+                                title={`Vendido ${excedente} unidades más del inicial efectivo (inicial ${item.cantidadInicial} + recarga ${item.recargaExterna}). Sube Recarga si el vendedor regresó al almacén.`}
                                 className="inline-flex items-center gap-1 min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700"
                               >
                                 {item.diferencia}
