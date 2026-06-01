@@ -265,6 +265,8 @@ app.MapImportExportEndpoints();
 app.MapReportEndpoints();
 app.MapGeoEndpoints();
 app.MapCobroEndpoints();
+app.MapGastosEndpoints();
+app.MapDevolucionesEndpoints();
 app.MapTwoFactorEndpoints();
 app.MapAnnouncementEndpoints();
 app.MapSubscriptionEndpoints();

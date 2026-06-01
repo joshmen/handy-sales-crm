@@ -18,7 +18,11 @@ import {
   X,
   Package,
   Info,
+  Receipt,
+  RotateCcw,
 } from 'lucide-react';
+import { RutaGastosDrawer } from '@/components/gastos/RutaGastosDrawer';
+import { RutaDevolucionesDrawer } from '@/components/devoluciones/RutaDevolucionesDrawer';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
@@ -47,6 +51,14 @@ export default function CloseRoutePage() {
   const [closing, setClosing] = useState(false);
   const [montoRecibido, setMontoRecibido] = useState<string>('');
 
+  // Drawer de gastos: trigger desde la linea "Ver gastos" en card Otros movimientos.
+  // El Drawer maneja su propio fetch + lightbox de fotos. Refresca el resumen del
+  // close screen cuando se invalida un gasto para que aRecibir y el count se actualicen.
+  const [gastosDrawerOpen, setGastosDrawerOpen] = useState(false);
+  // Drawer de devoluciones: igual patron que gastos. Anular devolucion refresca
+  // resumen (aRecibir cambia si Efectivo, cliente.saldo cambia si SaldoFavor).
+  const [devolucionesDrawerOpen, setDevolucionesDrawerOpen] = useState(false);
+
   const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
 
   const fetchData = useCallback(async () => {
@@ -73,7 +85,7 @@ export default function CloseRoutePage() {
     fetchData();
   }, [fetchData]);
 
-  const handleRetornoChange = async (productoId: number, field: 'mermas' | 'recAlmacen' | 'cargaVehiculo', delta: number) => {
+  const handleRetornoChange = async (productoId: number, field: 'mermas' | 'recAlmacen' | 'cargaVehiculo' | 'recargaExterna', delta: number) => {
     const item = retorno.find(r => r.productoId === productoId);
     if (!item || isReadonly) return;
 
@@ -83,10 +95,12 @@ export default function CloseRoutePage() {
         ? {
             ...r,
             [field]: newValue,
-            diferencia: r.cantidadInicial - r.vendidos - r.entregados - r.devueltos -
-              (field === 'mermas' ? newValue : r.mermas) -
-              (field === 'recAlmacen' ? newValue : r.recAlmacen) -
-              (field === 'cargaVehiculo' ? newValue : r.cargaVehiculo),
+            // Recarga SUMA al inicial efectivo; resto de campos restan.
+            diferencia: r.cantidadInicial + (field === 'recargaExterna' ? newValue : r.recargaExterna)
+              - r.vendidos - r.entregados - r.devueltos
+              - (field === 'mermas' ? newValue : r.mermas)
+              - (field === 'recAlmacen' ? newValue : r.recAlmacen)
+              - (field === 'cargaVehiculo' ? newValue : r.cargaVehiculo),
           }
         : r
     );
@@ -98,6 +112,7 @@ export default function CloseRoutePage() {
         mermas: updatedItem.mermas,
         recAlmacen: updatedItem.recAlmacen,
         cargaVehiculo: updatedItem.cargaVehiculo,
+        recargaExterna: updatedItem.recargaExterna,
       });
     } catch (err) {
       showApiError(err, t('errorUpdatingReturn'));
@@ -105,26 +120,35 @@ export default function CloseRoutePage() {
     }
   };
 
-  const handleSetAllDiferencia = (target: 'recAlmacen' | 'cargaVehiculo') => {
+  /**
+   * Quick-action que cuadra todas las filas pendientes:
+   * - Sobrante (Diferencia > 0): asigna el sobrante a recAlmacen/cargaVehiculo (resta del inicial).
+   * - Overage (Diferencia < 0): asigna |diferencia| a recargaExterna (SUMA al inicial). Esto resuelve
+   *   el caso del vendedor que vendió más de lo cargado porque recargó del almacén mid-ruta.
+   */
+  const handleSetAllDiferencia = (target: 'recAlmacen' | 'cargaVehiculo' | 'recargaExterna') => {
     if (isReadonly) return;
     const updated = retorno.map(r => {
+      // Recarga aplica solo a overage; los otros dos aplican solo a sobrante.
+      if (target === 'recargaExterna') {
+        if (r.diferencia >= 0) return r;
+        const newVal = r.recargaExterna + Math.abs(r.diferencia);
+        return { ...r, recargaExterna: newVal, diferencia: 0 };
+      }
       if (r.diferencia <= 0) return r;
       const newVal = r[target] + r.diferencia;
-      return {
-        ...r,
-        [target]: newVal,
-        diferencia: 0,
-      };
+      return { ...r, [target]: newVal, diferencia: 0 };
     });
     setRetorno(updated);
 
-    // Batch update
+    // Batch update — solo filas modificadas
     Promise.all(
       updated.map((item) =>
         routeService.updateRetorno(rutaId, item.productoId, {
           mermas: item.mermas,
           recAlmacen: item.recAlmacen,
           cargaVehiculo: item.cargaVehiculo,
+          recargaExterna: item.recargaExterna,
         }).catch(() => { /* silent */ })
       )
     );
@@ -151,6 +175,7 @@ export default function CloseRoutePage() {
           mermas: r.mermas,
           recAlmacen: r.recAlmacen,
           cargaVehiculo: r.cargaVehiculo,
+          recargaExterna: r.recargaExterna,
         })),
       });
       toast.success(t('closedSuccess'));
@@ -320,28 +345,80 @@ export default function CloseRoutePage() {
                 <span className="text-muted-foreground">{t('presaleOrders')} ({resumen.pedidosPreventaCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
               </div>
-              {/* Bug #5 (audit 2026-05-07): label clarificado +
-                  tooltip informativo. El campo lo poblará el flujo
-                  de devolución que captura mobile durante la entrega.
-                  Hoy siempre llega 0 porque ese flujo aún no captura
-                  monetariamente — solo cantidad física en el inventario
-                  de retorno. Este label evita la confusión "¿dónde
-                  pongo las devoluciones?". */}
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground inline-flex items-center gap-1">
-                  {t('returnsRegistered')} ({resumen.devolucionesCount})
-                  <Info
-                    className="w-3 h-3 text-muted-foreground/60 cursor-help"
-                    aria-label={t('returnsTooltip')}
-                  >
-                    <title>{t('returnsTooltip')}</title>
-                  </Info>
-                </span>
-                <span className="font-medium text-red-600">{formatCurrency(resumen.devoluciones)}</span>
-              </div>
+              {/* v23 (2026-05-29): Devoluciones a saldo a favor (informativo, no resta de aRecibir) */}
+              {(resumen.devolucionesSaldoFavorCount ?? 0) > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground inline-flex items-center gap-1">
+                    Devoluciones a saldo favor ({resumen.devolucionesSaldoFavorCount})
+                  </span>
+                  <span className="font-medium text-foreground/70">{formatCurrency(resumen.devolucionesSaldoFavor ?? 0)}</span>
+                </div>
+              )}
+              {/* v23: Devoluciones efectivo (restan de aRecibir) */}
+              {(resumen.devolucionesEfectivoCount ?? 0) > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Devoluciones en efectivo ({resumen.devolucionesEfectivoCount})</span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.devolucionesEfectivo ?? 0)}</span>
+                </div>
+              )}
+              {/* v23 + redesign 30/5: Gastos del vendedor — boton abre Drawer con
+                  detalle completo (foto grande, invalidar, audit). Antes era una
+                  mini-tabla inline dentro del card de 1/3 width que el usuario
+                  reporto demasiado pequena para leer tickets. */}
+              {(resumen.gastosCount ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setGastosDrawerOpen(true)}
+                  className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Ver gastos de la ruta (${resumen.gastosCount})`}
+                >
+                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5" />
+                    Ver gastos ({resumen.gastosCount})
+                  </span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
+                </button>
+              )}
+              {/* v24 (2026-05-31): Devoluciones — boton abre Drawer con detalle por
+                  cliente + foto grande + anular. Las lineas de arriba muestran el
+                  resumen monetario (Efectivo vs SaldoFavor); el Drawer da audit completo. */}
+              {(resumen.devolucionesCount ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDevolucionesDrawerOpen(true)}
+                  className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Ver devoluciones de la ruta (${resumen.devolucionesCount})`}
+                >
+                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Ver devoluciones ({resumen.devolucionesCount})
+                  </span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.devoluciones ?? 0)}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Drawer compartido — abre con detalle + lightbox interno. Refetch del resumen
+            si se invalida un gasto para que aRecibir y count se actualicen. */}
+        <RutaGastosDrawer
+          isOpen={gastosDrawerOpen}
+          onClose={() => setGastosDrawerOpen(false)}
+          rutaId={rutaId}
+          rutaCodigo={ruta?.codigo}
+          onGastoInvalidated={() => fetchData()}
+        />
+
+        {/* Drawer de devoluciones — mirror del de gastos. Refetch si se anula porque
+            aRecibir (Efectivo) o cliente.saldo (SaldoFavor) cambian. */}
+        <RutaDevolucionesDrawer
+          isOpen={devolucionesDrawerOpen}
+          onClose={() => setDevolucionesDrawerOpen(false)}
+          rutaId={rutaId}
+          rutaCodigo={ruta?.codigo}
+          onDevolucionAnulada={() => fetchData()}
+        />
 
         {/* Al inicio vs Al cierre */}
         <div className="grid grid-cols-2 gap-4">
@@ -401,17 +478,26 @@ export default function CloseRoutePage() {
             no es error: significa que hubo stock externo (carga extra durante el día,
             vehículo con inventario previo, etc.). El usuario lo reconcilia con los
             steppers Mermas / Rec. almacén / Carga vehículo de la tabla. */}
-        {!loading && retorno.some(r => (r.vendidos + r.entregados) > r.cantidadInicial) && (
+        {!loading && retorno.some(r => (r.vendidos + r.entregados) > (r.cantidadInicial + r.recargaExterna)) && (
           <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-900 dark:text-amber-200">
+            <div className="text-sm text-amber-900 dark:text-amber-200 flex-1">
               <p className="font-semibold mb-1">Hay productos con más unidades vendidas que las cargadas inicialmente.</p>
               <p className="text-xs leading-relaxed">
-                Esto suele ocurrir cuando el vendedor empezó a vender antes de aceptar la ruta, o cuando hubo recarga
-                externa durante el día. Revisa cada fila marcada y ajusta con los steppers de Mermas, Rec. almacén
-                o Carga vehículo según corresponda para cuadrar el cierre.
+                Si el vendedor regresó al almacén a recargar durante la ruta, usa el stepper <strong>Recarga</strong> (o el botón
+                rápido <strong>&rarr; Recarga</strong>) para registrar las unidades adicionales. También puedes ajustar con Mermas,
+                Rec. almacén o Carga vehículo si aplica.
               </p>
             </div>
+            {!isReadonly && (
+              <button
+                onClick={() => handleSetAllDiferencia('recargaExterna')}
+                className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded transition-colors"
+                title="Asigna automáticamente las unidades faltantes al stepper Recarga"
+              >
+                &rarr; Recarga
+              </button>
+            )}
           </div>
         )}
 
@@ -454,6 +540,12 @@ export default function CloseRoutePage() {
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Mermas</th>
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Rec. almacén</th>
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Carga veh.</th>
+                    <th
+                      className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70"
+                      title="Unidades que el vendedor recargó del almacén durante la ruta — SUMA al inicial efectivo."
+                    >
+                      Recarga
+                    </th>
                     <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Dif.</th>
                   </tr>
                 </thead>
@@ -505,14 +597,24 @@ export default function CloseRoutePage() {
                           disabled={isReadonly}
                         />
                       </td>
-                      {/* Diferencia badge — si vendidos+entregados > inicial, marca overage explícito */}
+                      {/* Recarga externa stepper — SUMA al inicial efectivo (overage). */}
+                      <td className="py-1 px-1 text-center">
+                        <Stepper
+                          value={item.recargaExterna}
+                          onDecrement={() => handleRetornoChange(item.productoId, 'recargaExterna', -1)}
+                          onIncrement={() => handleRetornoChange(item.productoId, 'recargaExterna', 1)}
+                          disabled={isReadonly}
+                        />
+                      </td>
+                      {/* Diferencia badge — overage explícito cuando vendidos+entregados > inicial+recarga */}
                       <td className="py-2 px-2 text-center">
                         {(() => {
-                          const excedente = item.vendidos + item.entregados - item.cantidadInicial;
+                          const inicialEfectivo = item.cantidadInicial + item.recargaExterna;
+                          const excedente = item.vendidos + item.entregados - inicialEfectivo;
                           if (excedente > 0) {
                             return (
                               <span
-                                title={`Vendido ${excedente} unidades más de lo cargado. Ajusta con Mermas o Carga vehículo si aplica.`}
+                                title={`Vendido ${excedente} unidades más del inicial efectivo (inicial ${item.cantidadInicial} + recarga ${item.recargaExterna}). Sube Recarga si el vendedor regresó al almacén.`}
                                 className="inline-flex items-center gap-1 min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700"
                               >
                                 {item.diferencia}

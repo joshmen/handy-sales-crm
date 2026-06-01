@@ -339,10 +339,12 @@ public class RutaVendedorService
 
         var ok = await _repo.IniciarRutaAsync(id, DateTime.UtcNow);
         var vinculacion = ok ? await TryVincularHuerfanosAsync(id) : null;
+        var gastosVinc = ok ? await TryVincularGastosHuerfanosAsync(id) : null;
         return new CambiarEstadoRutaResult
         {
             Success = ok,
             PedidosHuerfanosVinculados = vinculacion,
+            GastosHuerfanosVinculados = gastosVinc,
         };
     }
 
@@ -358,10 +360,12 @@ public class RutaVendedorService
 
         var ok = await _repo.AceptarRutaAsync(id, DateTime.UtcNow);
         var vinculacion = ok ? await TryVincularHuerfanosAsync(id) : null;
+        var gastosVinc = ok ? await TryVincularGastosHuerfanosAsync(id) : null;
         return new CambiarEstadoRutaResult
         {
             Success = ok,
             PedidosHuerfanosVinculados = vinculacion,
+            GastosHuerfanosVinculados = gastosVinc,
         };
     }
 
@@ -389,6 +393,31 @@ public class RutaVendedorService
             // log y seguir — los huérfanos se quedan en BD y se podrán reconciliar
             // con el backfill SQL o un retry manual.
             _logger?.LogError(ex, "VINCULAR_HUERFANOS_ERROR: ruta {RutaId}", rutaId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Best-effort sweep de Gastos huerfanos del dia. Mismo patron que
+    /// TryVincularHuerfanosAsync pero para gastos del vendedor (gasolina, peajes,
+    /// etc registrados antes de aceptar la ruta). Si falla, log + retorna null.
+    /// </summary>
+    private async Task<VinculacionGastosHuerfanosResult?> TryVincularGastosHuerfanosAsync(int rutaId)
+    {
+        try
+        {
+            var result = await _repo.VincularGastosHuerfanosAsync(rutaId, _tenant.TenantId);
+            if (result.GastosVinculados > 0)
+            {
+                _logger?.LogInformation(
+                    "VINCULAR_GASTOS_HUERFANOS_AUDIT: ruta {RutaId} -> {Gastos} gastos / {Monto} monto",
+                    rutaId, result.GastosVinculados, result.MontoTotal);
+            }
+            return result.GastosVinculados > 0 ? result : null;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "VINCULAR_GASTOS_HUERFANOS_ERROR: ruta {RutaId}", rutaId);
             return null;
         }
     }
@@ -1047,7 +1076,7 @@ public class RutaVendedorService
 
         EnsureRutaOperable(ruta);
 
-        await _repo.ActualizarRetornoAsync(rutaId, productoId, dto.Mermas, dto.RecAlmacen, dto.CargaVehiculo, _tenant.TenantId);
+        await _repo.ActualizarRetornoAsync(rutaId, productoId, dto.Mermas, dto.RecAlmacen, dto.CargaVehiculo, dto.RecargaExterna, _tenant.TenantId);
     }
 
     public async Task CerrarRutaAsync(int rutaId, CerrarRutaRequest dto)
@@ -1066,7 +1095,7 @@ public class RutaVendedorService
         {
             foreach (var retorno in dto.Retornos)
             {
-                await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, _tenant.TenantId);
+                await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, retorno.RecargaExterna, _tenant.TenantId);
             }
         }
 

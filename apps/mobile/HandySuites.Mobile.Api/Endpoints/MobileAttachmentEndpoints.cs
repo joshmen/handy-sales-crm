@@ -1,5 +1,9 @@
-using HandySuites.Application.Common.Interfaces;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace HandySuites.Mobile.Api.Endpoints;
 
@@ -11,11 +15,18 @@ public static class MobileAttachmentEndpoints
             .RequireAuthorization()
             .WithTags("Mobile Attachments");
 
+        // Allowlist de eventType para prevenir abuso (hardening v23).
+        var allowedEventTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "pedido", "visita", "cobro", "gasto", "devolucion"
+        };
+
         group.MapPost("/upload", async (
             HttpRequest request,
             IWebHostEnvironment env,
             ILogger<Program> logger,
-            IServiceProvider sp) =>
+            IServiceProvider sp,
+            ClaimsPrincipal userClaims) =>
         {
             if (!request.HasFormContentType)
             {
@@ -39,6 +50,12 @@ public static class MobileAttachmentEndpoints
                 return Results.BadRequest(new { success = false, message = "eventType, eventLocalId, and tipo are required" });
             }
 
+            // Hardening: rechazar eventTypes desconocidos.
+            if (!allowedEventTypes.Contains(eventType))
+            {
+                return Results.BadRequest(new { success = false, message = $"Invalid eventType '{eventType}'. Allowed: {string.Join(",", allowedEventTypes)}" });
+            }
+
             // Validate file type
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -55,40 +72,99 @@ public static class MobileAttachmentEndpoints
 
             try
             {
-                // Try Cloudinary first (required in production)
+                string? resultUrl = null;
+
+                // Try Cloudinary first (required in production). Usa la interfaz de
+                // CompanySettings (la que tiene implementacion en infra). BUG previo: se
+                // usaba HandySuites.Application.Common.Interfaces.ICloudinaryService que
+                // no tiene implementacion registrada -> retornaba 501 silencioso en prod.
                 var cloudinary = sp.GetService<ICloudinaryService>();
                 if (cloudinary != null)
                 {
-                    var url = await cloudinary.UploadImageAsync(file, $"evidence/{eventType}");
-                    logger.LogInformation("Attachment uploaded to Cloudinary: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, url);
-                    return Results.Ok(new { success = true, data = new { url } });
+                    var cloudResult = await cloudinary.UploadImageAsync(file, $"evidence/{eventType}");
+                    if (cloudResult.IsSuccess)
+                    {
+                        resultUrl = cloudResult.SecureUrl;
+                        logger.LogInformation("Attachment uploaded to Cloudinary: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, resultUrl);
+                    }
+                    else
+                    {
+                        logger.LogError("Cloudinary upload failed for {EventType}/{EventLocalId}: {Error}", eventType, eventLocalId, cloudResult.ErrorMessage);
+                        return Results.StatusCode(500);
+                    }
+                }
+                else
+                {
+                    // Local storage fallback (development only)
+                    if (!env.IsDevelopment())
+                    {
+                        return Results.StatusCode(501);
+                    }
+
+                    var uploadsDir = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "uploads", "evidence");
+                    Directory.CreateDirectory(uploadsDir);
+
+                    var filename = $"{Guid.NewGuid()}{extension}";
+                    var filePath = Path.Combine(uploadsDir, filename);
+
+                    await using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    resultUrl = $"/uploads/evidence/{filename}";
+                    logger.LogInformation("Attachment uploaded locally: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, resultUrl);
                 }
 
-                // Local storage fallback (development only)
-                // TODO: Migrate to Cloudinary for production file storage
-                if (!env.IsDevelopment())
+                // Stamp post-upload: si eventType es 'gasto' o 'devolucion', buscar la
+                // entidad por MobileRecordId y stampar la URL para que aparezca el
+                // comprobante en web admin sin esperar al proximo sync push. v23 (2026-05-29).
+                if (eventType.Equals("gasto", StringComparison.OrdinalIgnoreCase)
+                    || eventType.Equals("devolucion", StringComparison.OrdinalIgnoreCase))
                 {
-                    return Results.StatusCode(501);
+                    try
+                    {
+                        var dbContext = sp.GetService<HandySuitesDbContext>();
+                        if (dbContext != null && !string.IsNullOrEmpty(resultUrl))
+                        {
+                            var tenantClaim = userClaims.FindFirst("tenantId")?.Value ?? userClaims.FindFirst("tenant_id")?.Value;
+                            if (int.TryParse(tenantClaim, out var tenantId))
+                            {
+                                if (eventType.Equals("gasto", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var gasto = await dbContext.Gastos.IgnoreQueryFilters()
+                                        .FirstOrDefaultAsync(g => g.TenantId == tenantId && g.MobileRecordId == eventLocalId);
+                                    if (gasto != null)
+                                    {
+                                        gasto.ComprobanteUrl = resultUrl;
+                                        gasto.ActualizadoEn = DateTime.UtcNow;
+                                        gasto.Version++;
+                                        await dbContext.SaveChangesAsync();
+                                    }
+                                }
+                                else // devolucion
+                                {
+                                    var dev = await dbContext.DevolucionesPedido.IgnoreQueryFilters()
+                                        .FirstOrDefaultAsync(d => d.TenantId == tenantId && d.MobileRecordId == eventLocalId);
+                                    if (dev != null)
+                                    {
+                                        dev.FotoEvidenciaUrl = resultUrl;
+                                        dev.ActualizadoEn = DateTime.UtcNow;
+                                        dev.Version++;
+                                        await dbContext.SaveChangesAsync();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception stampEx)
+                    {
+                        // No fallar el upload por error de stamping. Si el gasto/devolucion
+                        // aun no se ha sincronizado, el siguiente UpsertGastoAsync podra
+                        // hacer lookup orphan (futuro). Por ahora log y seguir.
+                        logger.LogWarning(stampEx, "Failed to stamp URL on {EventType}/{EventLocalId} (entity not yet synced?)", eventType, eventLocalId);
+                    }
                 }
 
-                var uploadsDir = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "uploads", "evidence");
-                Directory.CreateDirectory(uploadsDir);
-
-                var filename = $"{Guid.NewGuid()}{extension}";
-                var filePath = Path.Combine(uploadsDir, filename);
-
-                await using var stream = new FileStream(filePath, FileMode.Create);
-                await file.CopyToAsync(stream);
-
-                var localUrl = $"/uploads/evidence/{filename}";
-
-                logger.LogInformation("Attachment uploaded locally: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, localUrl);
-
-                return Results.Ok(new
-                {
-                    success = true,
-                    data = new { url = localUrl }
-                });
+                return Results.Ok(new { success = true, data = new { url = resultUrl } });
             }
             catch (Exception ex)
             {

@@ -93,6 +93,8 @@ const sidebarItems: SidebarItem[] = [
     href: '/cobranza',
     permission: 'view_orders',
   },
+  // Gastos eliminados del sidebar (redesign 30/5): se reportan desde mobile y
+  // se auditan ahora desde el tab "Gastos" del detalle de ruta + Drawer en close.
 
   // — CATÁLOGO —
   {

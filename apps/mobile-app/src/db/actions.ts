@@ -9,6 +9,9 @@ import Producto from './models/Producto';
 import RutaDetalle from './models/RutaDetalle';
 import Ruta from './models/Ruta';
 import RutaCarga from './models/RutaCarga';
+import Gasto from './models/Gasto';
+import DevolucionPedido from './models/DevolucionPedido';
+import DetalleDevolucion from './models/DetalleDevolucion';
 import { round2 } from '@/utils/money';
 import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
 import { captureOrderLocation } from '@/services/captureOrderLocation';
@@ -467,6 +470,181 @@ export async function createCobroOffline(
       record.version = 1;
       record.updatedAt = new Date();
     });
+  });
+}
+
+/**
+ * Crea un Gasto offline (gasolina, peajes, comida, etc).
+ * Auto-aprobado al crearse. Foto del ticket opcional — se sube via attachments
+ * (event_type='gasto', event_local_id=gasto.id). ComprobanteUrl se stampea
+ * server-side post-upload.
+ *
+ * Si hay una ruta activa hoy (EnProgreso | CargaAceptada) del usuario y no se
+ * pasa rutaLocalId explicito, intentamos auto-attach a esa ruta para que el
+ * gasto entre en aRecibir del cierre.
+ */
+export async function createGastoOffline(params: {
+  usuarioId: number;
+  monto: number;
+  tipoGasto: number; // TipoGasto enum
+  concepto: string;
+  notas?: string;
+  rutaLocalId?: string | null; // WDB id de la ruta, opcional
+  fechaGasto?: Date;
+  moneda?: string;
+}): Promise<Gasto> {
+  return database.write(async () => {
+    // Auto-attach a ruta activa del dia si no se provee explicito
+    let rutaLocalId = params.rutaLocalId ?? null;
+    let rutaServerId: number | null = null;
+    if (rutaLocalId === null) {
+      try {
+        // FIX bug 29/5: ver nuevo.tsx — backend guarda fecha como UTC midnight del
+        // calendar date. Usar Date.UTC del calendar date local para que match exacto.
+        const now = new Date();
+        const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrowMs = todayMs + 24 * 3600 * 1000;
+        const rutas = await database.get<Ruta>('rutas')
+          .query(
+            Q.where('usuario_id', params.usuarioId),
+            Q.where('activo', true),
+            Q.where('estado', Q.oneOf([1, 5])),
+            Q.where('fecha', Q.gte(todayMs)),
+            Q.where('fecha', Q.lt(tomorrowMs)),
+          )
+          .fetch();
+        if (rutas.length > 0) {
+          rutaLocalId = rutas[0].id;
+          rutaServerId = (rutas[0] as any).serverId ?? null;
+        }
+      } catch {
+        // Sin ruta activa: gasto queda standalone (rutaId=null)
+      }
+    } else {
+      // Caller pasó rutaLocalId explícito (e.g. desde nuevo.tsx con auto-detection en useEffect).
+      // Buscar el serverId correspondiente para que el push lleve int RutaId y no string RutaLocalId,
+      // ya que el server no resuelve RutaLocalId para RutaVendedor (no tiene MobileRecordId).
+      try {
+        const ruta = await database.get<Ruta>('rutas').find(rutaLocalId);
+        rutaServerId = (ruta as any).serverId ?? null;
+      } catch {
+        // ruta no encontrada localmente — dejar serverId null, gasto va sin ruta
+      }
+    }
+
+    const gasto = await database.get<Gasto>('gastos').create((record: any) => {
+      record.serverId = null;
+      record.rutaId = rutaLocalId;
+      record.rutaServerId = rutaServerId;
+      record.usuarioId = params.usuarioId;
+      record.fechaGasto = params.fechaGasto ?? new Date();
+      record.monto = params.monto;
+      record.tipoGasto = params.tipoGasto;
+      record.concepto = params.concepto;
+      record.notas = params.notas ?? null;
+      record.comprobanteUrl = null;
+      record.moneda = params.moneda ?? 'MXN';
+      record.estado = 0; // Activo
+      record.activo = true;
+      record.version = 1;
+      record.updatedAt = new Date();
+    });
+
+    return gasto;
+  });
+}
+
+/**
+ * Crea una DevolucionPedido offline con sus lineas (children) atomico.
+ * Solo permitida si pedido.estado=Entregado. Validacion de over-return server-side
+ * (mobile pre-valida en UI pero server hace el check definitivo).
+ *
+ * Side-effect local: si tipoReembolso=SaldoFavor (0), decrementa cliente.saldo
+ * para reflejar el credito inmediato. Si server rechaza el sync, mobile debe revertir.
+ */
+export async function createDevolucionOffline(params: {
+  pedidoLocalId: string;
+  pedidoServerId: number | null;
+  clienteLocalId: string;
+  clienteServerId: number | null;
+  usuarioId: number;
+  rutaLocalId?: string | null;
+  motivo: number; // MotivoDevolucion enum
+  tipoReembolso: number; // 0=SaldoFavor, 1=Efectivo
+  notas?: string;
+  items: Array<{
+    detallePedidoLocalId?: string | null;
+    detallePedidoServerId?: number | null;
+    productoLocalId: string;
+    productoServerId: number | null;
+    cantidad: number;
+    precioUnitario: number;
+    subtotal: number;
+    impuesto: number;
+    total: number;
+  }>;
+}): Promise<DevolucionPedido> {
+  if (params.items.length === 0) {
+    throw new Error('La devolucion debe incluir al menos una linea de producto.');
+  }
+
+  const montoTotal = params.items.reduce((sum, it) => sum + it.total, 0);
+
+  return database.write(async () => {
+    const devolucion = await database.get<DevolucionPedido>('devoluciones_pedido').create((record: any) => {
+      record.serverId = null;
+      record.pedidoId = params.pedidoLocalId;
+      record.pedidoServerId = params.pedidoServerId;
+      record.clienteId = params.clienteLocalId;
+      record.clienteServerId = params.clienteServerId;
+      record.usuarioId = params.usuarioId;
+      record.rutaId = params.rutaLocalId ?? null;
+      record.rutaServerId = null;
+      record.fechaDevolucion = new Date();
+      record.motivo = params.motivo;
+      record.notas = params.notas ?? null;
+      record.tipoReembolso = params.tipoReembolso;
+      record.montoTotal = montoTotal;
+      record.fotoEvidenciaUrl = null;
+      record.estado = 0; // Activa
+      record.activo = true;
+      record.version = 1;
+      record.updatedAt = new Date();
+    });
+
+    for (const item of params.items) {
+      await database.get<DetalleDevolucion>('detalle_devoluciones').create((record: any) => {
+        record.serverId = null;
+        record.devolucionId = devolucion.id;
+        record.devolucionServerId = null;
+        record.detallePedidoId = item.detallePedidoLocalId ?? null;
+        record.detallePedidoServerId = item.detallePedidoServerId ?? null;
+        record.productoId = item.productoLocalId;
+        record.productoServerId = item.productoServerId;
+        record.cantidad = item.cantidad;
+        record.precioUnitario = item.precioUnitario;
+        record.subtotal = item.subtotal;
+        record.impuesto = item.impuesto;
+        record.total = item.total;
+        record.version = 1;
+        record.updatedAt = new Date();
+      });
+    }
+
+    // Side-effect local: SaldoFavor decrementa cliente.saldo. Si server rechaza
+    // (over-return etc), mobile debe revertir manualmente o esperar el pull sync.
+    if (params.tipoReembolso === 0) {
+      try {
+        const cliente = await database.get<Cliente>('clientes').find(params.clienteLocalId);
+        await cliente.update((record: any) => {
+          record.saldo = Math.max(0, (record.saldo ?? 0) - montoTotal);
+        });
+      } catch {
+        // Cliente no encontrado en WDB local (raro). Server-side igual aplica el side-effect.
+      }
+    }
+
+    return devolucion;
   });
 }
 

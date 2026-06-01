@@ -49,6 +49,8 @@ import { ResumenTab } from './components/ResumenTab';
 import { ParadasTab } from './components/ParadasTab';
 import { PedidosTab } from './components/PedidosTab';
 import { CargaTab } from './components/CargaTab';
+import { GastosTab } from './components/GastosTab';
+import { DevolucionesTab } from './components/DevolucionesTab';
 import type { ZoneOption, UsuarioOption } from './components/types';
 
 const editRouteSchema = z.object({
@@ -63,8 +65,8 @@ const editRouteSchema = z.object({
 });
 type EditRouteFormData = z.infer<typeof editRouteSchema>;
 
-type TabKey = 'resumen' | 'paradas' | 'pedidos' | 'carga';
-const VALID_TABS: TabKey[] = ['resumen', 'paradas', 'pedidos', 'carga'];
+type TabKey = 'resumen' | 'paradas' | 'pedidos' | 'carga' | 'gastos' | 'devoluciones';
+const VALID_TABS: TabKey[] = ['resumen', 'paradas', 'pedidos', 'carga', 'gastos', 'devoluciones'];
 
 export default function RouteDetailPage() {
   const t = useTranslations('routes');
@@ -457,6 +459,8 @@ export default function RouteDetailPage() {
                 <span className="ml-1.5 text-[10px] text-muted-foreground">({carga.length})</span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="gastos">{tt('gastos')}</TabsTrigger>
+            <TabsTrigger value="devoluciones">{tt('devoluciones')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="resumen" className="mt-6">
@@ -493,6 +497,14 @@ export default function RouteDetailPage() {
               carga={carga}
               setCarga={setCarga}
             />
+          </TabsContent>
+
+          <TabsContent value="gastos" className="mt-6">
+            <GastosTab route={route} isEditable={isEditable} onRefetch={fetchAll} />
+          </TabsContent>
+
+          <TabsContent value="devoluciones" className="mt-6">
+            <DevolucionesTab route={route} isEditable={isEditable} onRefetch={fetchAll} />
           </TabsContent>
         </Tabs>
       </div>

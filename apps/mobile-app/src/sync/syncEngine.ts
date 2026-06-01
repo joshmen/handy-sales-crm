@@ -3,9 +3,10 @@ import { database } from '@/db/database';
 import { api } from '@/api/client';
 import { syncCursors } from './cursors';
 import { mapPullToWatermelon, mapPushFromWatermelon } from './mappers';
-import { uploadPendingAttachments, cleanUploadedFiles } from '@/services/evidenceManager';
+import { uploadPendingAttachments, cleanUploadedFiles, recoverOrphanAttachmentStamps } from '@/services/evidenceManager';
 import { crashReporter } from '@/services/crashReporter';
 import { useAuthStore } from '@/stores/authStore';
+import { withRetry } from './retry';
 
 /**
  * Strips records whose tenantId doesn't match the authenticated user's tenant.
@@ -77,10 +78,12 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
           : null;
 
         if (__DEV__) console.log('[Sync] Pull lastSync:', lastSync);
-        const response = await api.post('/api/mobile/sync/pull', {
+        // Reliability Fase 2: retry exponencial ante 5xx/network. Sin esto un
+        // 503 transitorio dejaba la sync en estado error hasta el proximo trigger.
+        const response = await withRetry('pull', () => api.post('/api/mobile/sync/pull', {
           lastSyncTimestamp: lastSync,
           entityTypes: null,
-        });
+        }));
 
         // Defensive parse: pull endpoint puede devolver `{data: {...}}` o
         // directamente `{...}` legado. Si body es null/undefined (network falla
@@ -150,7 +153,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
         const hasChanges = pushCount > 0;
         if (!hasChanges) return;
 
-        const response = await api.post('/api/mobile/sync/push', payload);
+        // Reliability Fase 2: retry exponencial. Backend 503/timeout transitorio
+        // no debe dejar datos locales en limbo — el siguiente intent recupera.
+        const response = await withRetry('push', () => api.post('/api/mobile/sync/push', payload));
         const body = response.data as any;
 
         // Count conflicts from server response
@@ -185,6 +190,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       }
     } catch (attachmentError) {
       if (__DEV__) console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
+    }
+
+    // Phase 3.5: Recovery sweep — para attachments uploaded cuya URL no quedo en
+    // el parent (gasto/devolucion) por race/stamp fallido. Stampea localmente,
+    // marca dirty, y el proximo sync push lleva la URL al server. Bug prod 29/5.
+    try {
+      const recovered = await recoverOrphanAttachmentStamps();
+      if (recovered > 0 && __DEV__) console.log(`[Sync] Recovered ${recovered} orphan attachment stamps`);
+    } catch (recoveryError) {
+      if (__DEV__) console.warn('[Sync] Orphan stamp recovery failed (non-fatal):', recoveryError);
     }
 
     // Phase 4: Flush pending crash reports (deferred from offline)
@@ -227,6 +242,13 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     if (__DEV__) {
       if (isNetworkError) console.warn('[Sync] Network unavailable:', err.message);
       else console.warn('[Sync] Failed:', err.message);
+    }
+    // Reliability Fase 2: telemetry — solo reportar errores NO-red (los de red
+    // son normales offline-first y harian ruido). El crashReporter ya tiene
+    // PII redaction + offline queue, asi que esto integra al pipeline de Sentry
+    // si esta configurado, o queda en queue local para next flush.
+    if (!isNetworkError) {
+      crashReporter.reportCrash(err, 'SyncEngine', 'WARNING').catch(() => { /* never block sync */ });
     }
     options?.onError?.(err);
     throw err;

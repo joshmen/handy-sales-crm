@@ -394,6 +394,46 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         return new VinculacionHuerfanosResult(huerfanos.Count, totalUnidades);
     }
 
+    public async Task<VinculacionGastosHuerfanosResult> VincularGastosHuerfanosAsync(int rutaId, int tenantId)
+    {
+        // Cargar ruta para extraer usuario_id + fecha (sweep acotado al dia).
+        var ruta = await _db.RutasVendedor.AsNoTracking()
+            .Where(r => r.Id == rutaId && r.TenantId == tenantId && r.Activo)
+            .Select(r => new { r.Id, r.UsuarioId, r.Fecha })
+            .FirstOrDefaultAsync();
+        if (ruta == null || !ruta.UsuarioId.HasValue)
+            return new VinculacionGastosHuerfanosResult(0, 0);
+
+        var fechaInicio = ruta.Fecha.Date;
+        var fechaFin = fechaInicio.AddDays(1);
+
+        // Gastos huerfanos: usuario, dia, activos, estado=Activo, sin ruta_id.
+        var huerfanos = await _db.Gastos
+            .Where(g => g.TenantId == tenantId
+                        && g.UsuarioId == ruta.UsuarioId.Value
+                        && g.Activo
+                        && g.Estado == EstadoGasto.Activo
+                        && g.RutaId == null
+                        && g.FechaGasto >= fechaInicio
+                        && g.FechaGasto < fechaFin)
+            .ToListAsync();
+
+        if (huerfanos.Count == 0)
+            return new VinculacionGastosHuerfanosResult(0, 0);
+
+        var ahora = DateTime.UtcNow;
+        foreach (var g in huerfanos)
+        {
+            g.RutaId = rutaId;
+            g.ActualizadoEn = ahora;
+            g.Version++;
+        }
+
+        await _db.SaveChangesAsync();
+        var montoTotal = huerfanos.Sum(g => g.Monto);
+        return new VinculacionGastosHuerfanosResult(huerfanos.Count, montoTotal);
+    }
+
     public async Task<bool> CompletarRutaAsync(int id, DateTime horaFin, double? kilometrosReales)
     {
         var ruta = await _db.RutasVendedor.FindAsync(id);
@@ -1152,9 +1192,40 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         double pedidosPreventaTotal = pedidosPreventaActivos.Sum(p => (double)p.Total);
         int pedidosPreventaCount = pedidosPreventaActivos.Count;
 
-        // Devoluciones registradas
-        double devolucionesMonto = devoluciones.Sum(d => (double)(d.Devueltos * d.PrecioUnitario));
-        int devolucionesCount = devoluciones.Count;
+        // Devoluciones registradas via retorno fisico (legacy — calculo desde RutaRetornoInventario)
+        // Mantenido para compat con UI vieja, pero NO entra en aRecibir.
+        double retornoFisicoMonto = devoluciones.Sum(d => (double)(d.Devueltos * d.PrecioUnitario));
+
+        // === Gastos y DevolucionesPedido (entidades nuevas, 2026-05-29) ===
+        // Gastos: activos, imputados a esta ruta. Excluye Estado=Invalidado.
+        var gastosActivos = await _db.Gastos.AsNoTracking()
+            .Where(g => g.TenantId == tenantId && g.RutaId == rutaId
+                        && g.Activo && g.Estado == EstadoGasto.Activo)
+            .Select(g => g.Monto)
+            .ToListAsync();
+        double gastosMonto = (double)gastosActivos.Sum();
+        int gastosCount = gastosActivos.Count;
+
+        // DevolucionesPedido: split por TipoReembolso. Solo TipoReembolso=Efectivo afecta aRecibir.
+        var devolucionesPedido = await _db.DevolucionesPedido.AsNoTracking()
+            .Where(d => d.TenantId == tenantId && d.RutaId == rutaId
+                        && d.Activo && d.Estado == EstadoDevolucion.Activa)
+            .Select(d => new { d.MontoTotal, d.TipoReembolso })
+            .ToListAsync();
+        double devolucionesEfectivo = (double)devolucionesPedido
+            .Where(d => d.TipoReembolso == TipoReembolso.Efectivo).Sum(d => d.MontoTotal);
+        int devolucionesEfectivoCount = devolucionesPedido.Count(d => d.TipoReembolso == TipoReembolso.Efectivo);
+        double devolucionesSaldoFavor = (double)devolucionesPedido
+            .Where(d => d.TipoReembolso == TipoReembolso.SaldoFavor).Sum(d => d.MontoTotal);
+        int devolucionesSaldoFavorCount = devolucionesPedido.Count(d => d.TipoReembolso == TipoReembolso.SaldoFavor);
+        // ReposicionProducto: producto repuesto sin movimiento de dinero. No suma a aRecibir.
+        // Solo se cuenta para auditoria; el inventario se ajusta manualmente en el cierre.
+        double devolucionesReposicion = (double)devolucionesPedido
+            .Where(d => d.TipoReembolso == TipoReembolso.ReposicionProducto).Sum(d => d.MontoTotal);
+        int devolucionesReposicionCount = devolucionesPedido.Count(d => d.TipoReembolso == TipoReembolso.ReposicionProducto);
+        // Total general — incluye ReposicionProducto en el conteo pero NO en el monto que afecta corte.
+        double devolucionesMontoTotal = devolucionesEfectivo + devolucionesSaldoFavor;
+        int devolucionesCountTotal = devolucionesPedido.Count;
 
         var resumen = new CierreRutaResumenDto
         {
@@ -1179,12 +1250,26 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             // Otros movimientos
             PedidosPreventa = pedidosPreventaTotal,
             PedidosPreventaCount = pedidosPreventaCount,
-            Devoluciones = devolucionesMonto,
-            DevolucionesCount = devolucionesCount,
+            // Devoluciones (nuevas, desde entidad DevolucionPedido — total monetario)
+            Devoluciones = devolucionesMontoTotal,
+            DevolucionesCount = devolucionesCountTotal,
+            DevolucionesEfectivo = devolucionesEfectivo,
+            DevolucionesEfectivoCount = devolucionesEfectivoCount,
+            DevolucionesSaldoFavor = devolucionesSaldoFavor,
+            DevolucionesSaldoFavorCount = devolucionesSaldoFavorCount,
+            DevolucionesReposicion = devolucionesReposicion,
+            DevolucionesReposicionCount = devolucionesReposicionCount,
+            // Gastos del vendedor imputados a la ruta
+            Gastos = gastosMonto,
+            GastosCount = gastosCount,
         };
 
-        // A recibir = efectivo entrante + efectivo inicial
-        resumen.ARecibir = resumen.VentasContado + resumen.EntregasCobradas + resumen.CobranzaAdeudos + resumen.EfectivoInicial;
+        // A recibir = efectivo entrante + efectivo inicial - gastos - devoluciones efectivo
+        // (devoluciones a saldo favor no restan porque queda como credito al cliente, no salio efectivo)
+        resumen.ARecibir = resumen.VentasContado + resumen.EntregasCobradas + resumen.CobranzaAdeudos
+                         + resumen.EfectivoInicial
+                         - resumen.Gastos
+                         - resumen.DevolucionesEfectivo;
         resumen.Diferencia = resumen.Recibido.HasValue ? resumen.Recibido.Value - resumen.ARecibir : null;
 
         return resumen;
@@ -1247,7 +1332,10 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Mermas = x.Retorno.Mermas,
                 RecAlmacen = x.Retorno.RecAlmacen,
                 CargaVehiculo = x.Retorno.CargaVehiculo,
-                Diferencia = x.Retorno.CantidadInicial
+                RecargaExterna = x.Retorno.RecargaExterna,
+                // Diferencia = (Inicial + Recarga) - Vendidos - Entregados - Devueltos - Mermas - RecAlmacen - CargaVehiculo
+                // RecargaExterna SUMA al inicial efectivo (vendedor regresó al almacén a recargar).
+                Diferencia = x.Retorno.CantidadInicial + x.Retorno.RecargaExterna
                            - (x.Carga != null ? x.Carga.CantidadVendida : x.Retorno.Vendidos)
                            - (x.Carga != null ? x.Carga.CantidadEntregada : x.Retorno.Entregados)
                            - x.Retorno.Devueltos - x.Retorno.Mermas - x.Retorno.RecAlmacen - x.Retorno.CargaVehiculo
@@ -1255,7 +1343,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .ToListAsync();
     }
 
-    public async Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int tenantId)
+    public async Task ActualizarRetornoAsync(int rutaId, int productoId, int mermas, int recAlmacen, int cargaVehiculo, int recargaExterna, int tenantId)
     {
         var retorno = await _db.RutasRetornoInventario
             .FirstOrDefaultAsync(r => r.RutaId == rutaId && r.ProductoId == productoId && r.TenantId == tenantId && r.Activo);
@@ -1273,7 +1361,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             retorno.Mermas = mermas;
             retorno.RecAlmacen = recAlmacen;
             retorno.CargaVehiculo = cargaVehiculo;
-            retorno.Diferencia = retorno.CantidadInicial - vendidos - entregados - retorno.Devueltos - mermas - recAlmacen - cargaVehiculo;
+            retorno.RecargaExterna = recargaExterna;
+            // Recarga SUMA al inicial efectivo (resto de ajustes restan).
+            retorno.Diferencia = retorno.CantidadInicial + recargaExterna - vendidos - entregados - retorno.Devueltos - mermas - recAlmacen - cargaVehiculo;
             retorno.ActualizadoEn = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }

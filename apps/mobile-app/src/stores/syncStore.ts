@@ -1,10 +1,15 @@
 import { create } from 'zustand';
+import Toast from 'react-native-toast-message';
 import { performSync } from '@/sync/syncEngine';
 import { syncCursors } from '@/sync/cursors';
 import type { SyncSummary } from '@/sync/syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 let _statusTimeout: ReturnType<typeof setTimeout> | null = null;
+// Reliability Fase 2: rastrear ultima transicion para Toast pasivo.
+// Solo mostrar Toast cuando hay un cambio real (failure -> success o tras
+// retries exhaustos). Sin esto, cada sync exitoso lanzaria Toast spammy.
+let _lastShownStatus: SyncStatus | null = null;
 
 interface SyncState {
   status: SyncStatus;
@@ -33,6 +38,18 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         onFinish: (summary) => {
           const now = Date.now();
           set({ status: 'success', lastSyncAt: now, lastSummary: summary, error: null });
+          // Reliability Fase 2: Toast pasivo solo en transicion error → success.
+          // No spam en cada sync.
+          if (_lastShownStatus === 'error' && summary.pushed + summary.pulled > 0) {
+            Toast.show({
+              type: 'success',
+              text1: 'Datos sincronizados',
+              text2: 'Los pendientes ya estan en el servidor.',
+              visibilityTime: 2500,
+              position: 'bottom',
+            });
+          }
+          _lastShownStatus = 'success';
           if (_statusTimeout) clearTimeout(_statusTimeout);
           _statusTimeout = setTimeout(() => {
             _statusTimeout = null;
@@ -41,6 +58,20 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         },
         onError: (err) => {
           set({ status: 'error', error: err.message });
+          // Reliability Fase 2: Toast solo en transicion (no spam si ya estaba en error).
+          if (_lastShownStatus !== 'error') {
+            const isNetworkError = /network|timeout|fetch|abort|ECONN/i.test(err.message);
+            Toast.show({
+              type: isNetworkError ? 'info' : 'error',
+              text1: isNetworkError ? 'Sin conexion' : 'Sincronizacion fallida',
+              text2: isNetworkError
+                ? 'Tus datos se mantienen localmente. Sincronizaremos al recuperar la red.'
+                : 'Reintentaremos en breve. Tus datos siguen seguros localmente.',
+              visibilityTime: 3500,
+              position: 'bottom',
+            });
+          }
+          _lastShownStatus = 'error';
         },
       });
     } catch (err) {

@@ -1,0 +1,52 @@
+appId: host.exp.exponent
+name: "GPS background toggle visible y funcional"
+---
+
+# Reliability Sprint Fase 3 — Maestro E2E del toggle GPS background.
+#
+# PRE-REQUISITOS:
+# - Vendedor logged in (dashboard "Hoy" visible)
+# - Plan tenant incluye_tracking_vendedor=true (vendedor1@jeyma — plan Pro+)
+# - Backend serializa trackingGpsEnabled=true en GET /api/mobile/empresa
+#
+# LIMITACIONES Expo Go:
+# - expo-task-manager + foreground service NO funcionan en Expo Go SDK 54.
+# - Este test valida UI del toggle + permission flow + persist preference.
+# - La validacion REAL de background streaming (con `adb emu geo fix`) requiere
+#   dev build APK (no Expo Go) — ver script post-merge.
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# Tab Mas → Configuracion
+- tapOn: "Mas"
+- waitForAnimationToEnd
+
+- tapOn: "Configuración"
+- waitForAnimationToEnd
+
+# Verificar header
+- assertVisible: "Configuración"
+
+# Scroll para encontrar la seccion Privacidad
+- swipe:
+    direction: UP
+
+- takeScreenshot: pre-toggle
+
+# Toggle visible solo si plan incluye tracking_vendedor.
+- assertVisible: "Tracking GPS en segundo plano"
+
+# Tap en el switch
+- tapOn:
+    text: "Tracking GPS en segundo plano"
+- waitForAnimationToEnd
+
+- takeScreenshot: post-tap
+
+# No kicked out a login
+- assertNotVisible:
+    id: "login-button"
+
+- takeScreenshot: post-toggle

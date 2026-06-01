@@ -61,6 +61,8 @@ export function useAutoSync() {
     return () => subscription.remove();
   }, []);
 
-  // Initial sync on mount
-  useEffect(() => { sync(); }, []);
+  // Initial sync on mount — Reliability Fase 2: gated por NetInfo. Antes
+  // disparaba sync() siempre que el (tabs) layout montara, incluyendo offline,
+  // generando un error state silencioso. Ahora respeta conexion.
+  useEffect(() => { syncIfOnline(); }, []);
 }

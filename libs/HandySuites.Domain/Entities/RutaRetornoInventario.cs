@@ -38,6 +38,14 @@ public class RutaRetornoInventario
     [Column("carga_vehiculo")]
     public int CargaVehiculo { get; set; }
 
+    /// <summary>
+    /// Unidades que el vendedor recargó del almacén durante la ruta.
+    /// SUMA al CantidadInicial efectivo (caso: vendió 744 con Inicial=480 porque
+    /// recargó 264 a mitad del día). Único ajuste que aumenta el inventario disponible.
+    /// </summary>
+    [Column("recarga_externa")]
+    public int RecargaExterna { get; set; }
+
     [Column("diferencia")]
     public int Diferencia { get; set; }
 

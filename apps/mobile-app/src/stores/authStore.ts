@@ -54,7 +54,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const prevUser = get().user;
     const isDifferentUser = !!prevUser && prevUser.id !== user.id;
 
-    setAccessToken(token);
+    // Reliability Fase 1: persistir a SecureStore PRIMERO. Si OEM Android mata
+    // el proceso entre setAccessToken (in-memory) y el await Promise.all (disk),
+    // el token queda en memoria pero perdido al next boot → restoreSession ve
+    // null → /login. Por eso: disk first, memory second.
     await Promise.all([
       secureStorage.set(STORAGE_KEYS.ACCESS_TOKEN, token),
       secureStorage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
@@ -94,6 +97,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
 
+    // setAccessToken al final: disk persistido + cross-user reset hechos.
+    setAccessToken(token);
     // Clear sessionExpired flag al hacer login fresh.
     set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false, sessionExpired: false });
   },

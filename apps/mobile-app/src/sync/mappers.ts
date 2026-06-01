@@ -16,6 +16,9 @@ interface ServerChanges {
   visitas?: any[];
   rutas?: any[];
   cobros?: any[];
+  // v23 (2026-05-29): Gastos + DevolucionesPedido (con detalles embebidos)
+  gastos?: any[];
+  devolucionesPedido?: any[];
   preciosPorProducto?: any[];
   descuentos?: any[];
   promociones?: any[];
@@ -81,6 +84,9 @@ export async function mapPullToWatermelon(
     rutaDetalleMap,
     rutaPedidoMap,
     rutaCargaMap,
+    gastoMap,
+    devolucionMap,
+    detalleDevolucionMap,
   ] = await Promise.all([
     buildServerIdMap('pedidos'),
     buildServerIdMap('detalle_pedidos'),
@@ -92,6 +98,9 @@ export async function mapPullToWatermelon(
     buildServerIdMap('ruta_detalles'),
     buildServerIdMap('ruta_pedidos'),
     buildServerIdMap('ruta_carga'),
+    buildServerIdMap('gastos'),
+    buildServerIdMap('devoluciones_pedido'),
+    buildServerIdMap('detalle_devoluciones'),
   ]);
 
   return {
@@ -105,6 +114,11 @@ export async function mapPullToWatermelon(
     ruta_carga: extractRutaCarga(server.rutas, rutaCargaMap, rutaMap, productoMap),
     visitas: splitByOperation(server.visitas, isFirstSync, (v) => mapVisitaToRaw(v, visitaMap, clienteMap), visitaMap),
     cobros: splitByOperation(server.cobros, isFirstSync, (c) => mapCobroToRaw(c, cobroMap, clienteMap, pedidoMap), cobroMap),
+    gastos: splitByOperation(server.gastos, isFirstSync, (g) => mapGastoToRaw(g, gastoMap, rutaMap), gastoMap),
+    devoluciones_pedido: splitByOperation(server.devolucionesPedido, isFirstSync, (d) =>
+      mapDevolucionToRaw(d, devolucionMap, pedidoMap, clienteMap, rutaMap), devolucionMap),
+    detalle_devoluciones: extractDetallesDevolucion(server.devolucionesPedido, isFirstSync,
+      detalleDevolucionMap, devolucionMap, productoMap, detalleMap),
     precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
     descuentos: splitByOperation(server.descuentos, isFirstSync, mapDescuentoToRaw),
     promociones: splitByOperation(server.promociones, isFirstSync, mapPromocionToRaw),
@@ -517,6 +531,106 @@ function mapCobroToRaw(c: any, cobroMap: Map<number, string>, clienteMap: Map<nu
   };
 }
 
+// ── Gastos mapper (server → WDB) ──
+
+function mapGastoToRaw(g: any, gastoMap: Map<number, string>, rutaMap: Map<number, string>): DirtyRaw {
+  return {
+    id: g.localId || gastoMap.get(g.id) || String(g.id),
+    server_id: g.id,
+    ruta_id: g.rutaId ? (rutaMap.get(g.rutaId) || String(g.rutaId)) : null,
+    ruta_server_id: g.rutaId ?? null,
+    // Bug 30/5: antes hardcodeado a 0 -> gastos desaparecian de "Mis gastos" al pull
+    // porque useOfflineGastos filtra por usuario_id == userIdNum. Server ahora envia
+    // usuarioId en SyncGastoDto; fallback a 0 si por alguna razon no llega.
+    usuario_id: g.usuarioId ?? 0,
+    fecha_gasto: toTimestamp(g.fechaGasto ?? g.actualizadoEn),
+    monto: g.monto ?? 0,
+    tipo_gasto: g.tipoGasto ?? 99,
+    concepto: g.concepto ?? '',
+    notas: g.notas ?? null,
+    comprobante_url: g.comprobanteUrl ?? null,
+    moneda: g.moneda ?? 'MXN',
+    estado: g.estado ?? 0,
+    activo: g.activo ?? true,
+    version: g.version ?? 1,
+    created_at: toTimestamp(g.fechaGasto ?? g.actualizadoEn),
+    updated_at: toTimestamp(g.actualizadoEn),
+  };
+}
+
+// ── DevolucionPedido mapper (server → WDB) ──
+
+function mapDevolucionToRaw(d: any, devMap: Map<number, string>, pedidoMap: Map<number, string>,
+  clienteMap: Map<number, string>, rutaMap: Map<number, string>): DirtyRaw {
+  return {
+    id: d.localId || devMap.get(d.id) || String(d.id),
+    server_id: d.id,
+    pedido_id: pedidoMap.get(d.pedidoId) || String(d.pedidoId),
+    pedido_server_id: d.pedidoId,
+    cliente_id: clienteMap.get(d.clienteId) || String(d.clienteId),
+    cliente_server_id: d.clienteId,
+    usuario_id: 0,
+    ruta_id: d.rutaId ? (rutaMap.get(d.rutaId) || String(d.rutaId)) : null,
+    ruta_server_id: d.rutaId ?? null,
+    fecha_devolucion: toTimestamp(d.fechaDevolucion ?? d.actualizadoEn),
+    motivo: d.motivo ?? 99,
+    notas: d.notas ?? null,
+    tipo_reembolso: d.tipoReembolso ?? 0,
+    monto_total: d.montoTotal ?? 0,
+    foto_evidencia_url: d.fotoEvidenciaUrl ?? null,
+    estado: d.estado ?? 0,
+    activo: d.activo ?? true,
+    version: d.version ?? 1,
+    created_at: toTimestamp(d.fechaDevolucion ?? d.actualizadoEn),
+    updated_at: toTimestamp(d.actualizadoEn),
+  };
+}
+
+// Extrae los detalles embebidos en cada devolucion server payload y los mapea como tabla aparte.
+function extractDetallesDevolucion(devs: any[] | undefined, isFirstSync: boolean,
+  detalleDevMap: Map<number, string>, devMap: Map<number, string>,
+  productoMap: Map<number, string>, detallePedidoMap: Map<number, string>): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
+  const created: DirtyRaw[] = [];
+  const updated: DirtyRaw[] = [];
+  const deleted: string[] = [];
+  if (!devs?.length) return { created, updated, deleted };
+
+  for (const dev of devs) {
+    const detalles = dev.detalles || [];
+    for (const dd of detalles) {
+      const raw = mapDetalleDevolucionToRaw(dd, detalleDevMap, devMap, productoMap, detallePedidoMap, dev.id);
+      if (isFirstSync || (!dd.id && !detalleDevMap.has(dd.id))) {
+        created.push(raw);
+      } else {
+        updated.push(raw);
+      }
+    }
+  }
+  return { created, updated, deleted };
+}
+
+function mapDetalleDevolucionToRaw(dd: any, detalleDevMap: Map<number, string>, devMap: Map<number, string>,
+  productoMap: Map<number, string>, detallePedidoMap: Map<number, string>, devolucionServerId: number): DirtyRaw {
+  return {
+    id: dd.localId || detalleDevMap.get(dd.id) || String(dd.id),
+    server_id: dd.id,
+    devolucion_id: devMap.get(devolucionServerId) || String(devolucionServerId),
+    devolucion_server_id: devolucionServerId,
+    detalle_pedido_id: dd.detallePedidoId ? (detallePedidoMap.get(dd.detallePedidoId) || String(dd.detallePedidoId)) : null,
+    detalle_pedido_server_id: dd.detallePedidoId ?? null,
+    producto_id: productoMap.get(dd.productoId) || String(dd.productoId),
+    producto_server_id: dd.productoId,
+    cantidad: dd.cantidad ?? 0,
+    precio_unitario: dd.precioUnitario ?? 0,
+    subtotal: dd.subtotal ?? 0,
+    impuesto: dd.impuesto ?? 0,
+    total: dd.total ?? 0,
+    version: dd.version ?? 1,
+    created_at: toTimestamp(new Date().toISOString()),
+    updated_at: toTimestamp(new Date().toISOString()),
+  };
+}
+
 // ── Pricing catalog mappers (read-only) ──
 
 function mapPrecioPorProductoToRaw(p: any): DirtyRaw {
@@ -673,6 +787,9 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
   const co = (changes as any).cobros;
   const r = (changes as any).rutas;
   const rd = (changes as any).ruta_detalles;
+  const g = (changes as any).gastos;
+  const dev = (changes as any).devoluciones_pedido;
+  const dd = (changes as any).detalle_devoluciones;
 
   // Build pedidos with their detalles included
   const pedidos = [
@@ -732,6 +849,12 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
       ...mapPushEntities(co?.updated, 1, rawToCobroDto),
       ...mapDeleteIds(co?.deleted),
     ],
+    gastos: [
+      ...mapPushEntities(g?.created, 0, rawToGastoDto),
+      ...mapPushEntities(g?.updated, 1, rawToGastoDto),
+      ...mapDeleteIds(g?.deleted),
+    ],
+    devolucionesPedido: buildDevolucionesPush(dev, dd),
     rutas: [
       ...mapPushEntities(r?.updated, 1, rawToRutaDto),
     ],
@@ -879,6 +1002,99 @@ function rawToRutaDetalleDto(raw: DirtyRaw, operation: number): any {
     notas: raw.notas,
     version: raw.version ?? 1,
     operation,
+  };
+}
+
+function rawToGastoDto(raw: DirtyRaw, operation: number): any {
+  return {
+    id: raw.server_id ?? 0,
+    localId: raw.id,
+    rutaId: raw.ruta_server_id ?? null,
+    rutaLocalId: raw.ruta_id && !/^\d+$/.test(String(raw.ruta_id)) ? String(raw.ruta_id) : null,
+    fechaGasto: new Date(raw.fecha_gasto ?? raw.created_at).toISOString(),
+    monto: raw.monto ?? 0,
+    tipoGasto: raw.tipo_gasto ?? 99,
+    concepto: raw.concepto ?? '',
+    notas: raw.notas,
+    comprobanteUrl: raw.comprobante_url,
+    moneda: raw.moneda ?? 'MXN',
+    estado: raw.estado ?? 0,
+    activo: raw.activo ?? true,
+    version: raw.version ?? 1,
+    operation,
+  };
+}
+
+/**
+ * Construye la lista de devolucionesPedido para push, embebiendo las lineas
+ * children que pertenecen a cada parent. Sigue el patron de pedidos+detalle_pedidos.
+ */
+function buildDevolucionesPush(dev: any, dd: any): any[] {
+  const devolucionesOut: any[] = [];
+
+  // Created devoluciones
+  for (const raw of (dev?.created ?? [])) {
+    const dto = rawToDevolucionDto(raw, 0);
+    dto.detalles = [];
+    // Asociar children created cuyo devolucion_id matchea esta parent (por WDB id)
+    for (const childRaw of (dd?.created ?? [])) {
+      if (childRaw.devolucion_id === raw.id) {
+        dto.detalles.push(rawToDetalleDevolucionDto(childRaw));
+      }
+    }
+    devolucionesOut.push(dto);
+  }
+
+  // Updated devoluciones (sin children — solo metadata change)
+  for (const raw of (dev?.updated ?? [])) {
+    const dto = rawToDevolucionDto(raw, 1);
+    dto.detalles = [];
+    devolucionesOut.push(dto);
+  }
+
+  // Deleted devoluciones
+  for (const id of (dev?.deleted ?? [])) {
+    devolucionesOut.push({ id, operation: 2, detalles: [] });
+  }
+
+  return devolucionesOut;
+}
+
+function rawToDevolucionDto(raw: DirtyRaw, operation: number): any {
+  return {
+    id: raw.server_id ?? 0,
+    localId: raw.id,
+    pedidoId: raw.pedido_server_id ?? 0,
+    pedidoLocalId: raw.pedido_id && !/^\d+$/.test(String(raw.pedido_id)) ? String(raw.pedido_id) : null,
+    clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
+    rutaId: raw.ruta_server_id ?? null,
+    rutaLocalId: raw.ruta_id && !/^\d+$/.test(String(raw.ruta_id)) ? String(raw.ruta_id) : null,
+    fechaDevolucion: new Date(raw.fecha_devolucion ?? raw.created_at).toISOString(),
+    motivo: raw.motivo ?? 99,
+    notas: raw.notas,
+    tipoReembolso: raw.tipo_reembolso ?? 0,
+    montoTotal: raw.monto_total ?? 0,
+    fotoEvidenciaUrl: raw.foto_evidencia_url,
+    estado: raw.estado ?? 0,
+    activo: raw.activo ?? true,
+    version: raw.version ?? 1,
+    operation,
+  };
+}
+
+function rawToDetalleDevolucionDto(raw: DirtyRaw): any {
+  return {
+    id: raw.server_id ?? 0,
+    localId: raw.id,
+    detallePedidoId: raw.detalle_pedido_server_id ?? null,
+    detallePedidoLocalId: raw.detalle_pedido_id && !/^\d+$/.test(String(raw.detalle_pedido_id))
+      ? String(raw.detalle_pedido_id) : null,
+    productoId: raw.producto_server_id ?? (parseInt(String(raw.producto_id), 10) || 0),
+    cantidad: raw.cantidad ?? 0,
+    precioUnitario: raw.precio_unitario ?? 0,
+    subtotal: raw.subtotal ?? 0,
+    impuesto: raw.impuesto ?? 0,
+    total: raw.total ?? 0,
   };
 }
 

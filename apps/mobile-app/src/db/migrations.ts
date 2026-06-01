@@ -531,5 +531,82 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v23 (2026-05-29): Gastos + DevolucionesPedido + DetalleDevoluciones.
+      // Gastos: vendedor reporta gasolina/peajes/comida con foto opcional.
+      // DevolucionPedido: cliente devuelve productos de un Pedido entregado;
+      // TipoReembolso=SaldoFavor genera credito al cliente, =Efectivo sale del
+      // corte de caja del vendedor. Children DetalleDevoluciones.
+      // Sync push hacia backend SyncRepository.Upsert* con localId echo.
+      // Foto del ticket usa tabla attachments (event_type='gasto' o 'devolucion').
+      toVersion: 23,
+      steps: [
+        createTable({
+          name: 'gastos',
+          columns: [
+            { name: 'server_id', type: 'number', isOptional: true },
+            { name: 'ruta_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'ruta_server_id', type: 'number', isOptional: true },
+            { name: 'usuario_id', type: 'number' },
+            { name: 'fecha_gasto', type: 'number', isIndexed: true },
+            { name: 'monto', type: 'number' },
+            { name: 'tipo_gasto', type: 'number' },
+            { name: 'concepto', type: 'string' },
+            { name: 'notas', type: 'string', isOptional: true },
+            { name: 'comprobante_url', type: 'string', isOptional: true },
+            { name: 'moneda', type: 'string' },
+            { name: 'estado', type: 'number' },
+            { name: 'activo', type: 'boolean', isIndexed: true },
+            { name: 'version', type: 'number' },
+            { name: 'created_at', type: 'number', isIndexed: true },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'devoluciones_pedido',
+          columns: [
+            { name: 'server_id', type: 'number', isOptional: true },
+            { name: 'pedido_id', type: 'string', isIndexed: true },
+            { name: 'pedido_server_id', type: 'number', isOptional: true },
+            { name: 'cliente_id', type: 'string', isIndexed: true },
+            { name: 'cliente_server_id', type: 'number', isOptional: true },
+            { name: 'usuario_id', type: 'number' },
+            { name: 'ruta_id', type: 'string', isOptional: true },
+            { name: 'ruta_server_id', type: 'number', isOptional: true },
+            { name: 'fecha_devolucion', type: 'number', isIndexed: true },
+            { name: 'motivo', type: 'number' },
+            { name: 'notas', type: 'string', isOptional: true },
+            { name: 'tipo_reembolso', type: 'number' },
+            { name: 'monto_total', type: 'number' },
+            { name: 'foto_evidencia_url', type: 'string', isOptional: true },
+            { name: 'estado', type: 'number' },
+            { name: 'activo', type: 'boolean', isIndexed: true },
+            { name: 'version', type: 'number' },
+            { name: 'created_at', type: 'number', isIndexed: true },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'detalle_devoluciones',
+          columns: [
+            { name: 'server_id', type: 'number', isOptional: true },
+            { name: 'devolucion_id', type: 'string', isIndexed: true },
+            { name: 'devolucion_server_id', type: 'number', isOptional: true },
+            { name: 'detalle_pedido_id', type: 'string', isOptional: true },
+            { name: 'detalle_pedido_server_id', type: 'number', isOptional: true },
+            { name: 'producto_id', type: 'string', isIndexed: true },
+            { name: 'producto_server_id', type: 'number', isOptional: true },
+            { name: 'cantidad', type: 'number' },
+            { name: 'precio_unitario', type: 'number' },
+            { name: 'subtotal', type: 'number' },
+            { name: 'impuesto', type: 'number' },
+            { name: 'total', type: 'number' },
+            { name: 'version', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

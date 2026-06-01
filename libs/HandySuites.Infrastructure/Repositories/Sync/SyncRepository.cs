@@ -966,6 +966,438 @@ public class SyncRepository : ISyncRepository
         return (cobro, wasConflict);
     }
 
+    // === Gastos ===
+
+    public async Task<List<Gasto>> GetGastosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
+    {
+        var query = _db.Gastos
+            .AsNoTracking()
+            .Where(g => g.TenantId == tenantId && g.UsuarioId == usuarioId);
+
+        if (since.HasValue)
+        {
+            query = query.Where(g => g.ActualizadoEn > since || g.CreadoEn > since);
+        }
+
+        return await query.OrderBy(g => g.Id).ToListAsync();
+    }
+
+    public async Task<(Gasto entity, bool wasConflict)> UpsertGastoAsync(int tenantId, int usuarioId, SyncGastoDto dto, string userId)
+    {
+        bool wasConflict = false;
+
+        if (dto.Operation == SyncOperation.Delete)
+        {
+            var existing = await _db.Gastos.FindAsync(dto.Id);
+            if (existing == null || existing.TenantId != tenantId)
+                throw new InvalidOperationException($"Gasto with id {dto.Id} not found or unauthorized");
+            existing.Activo = false;
+            existing.ActualizadoEn = DateTime.UtcNow;
+            existing.ActualizadoPor = userId;
+            existing.Version++;
+            return (existing, wasConflict);
+        }
+
+        if (dto.Id > 0)
+        {
+            var existing = await _db.Gastos.FindAsync(dto.Id);
+            if (existing != null && existing.TenantId == tenantId)
+            {
+                if (existing.Version != dto.Version)
+                {
+                    wasConflict = true;
+                    return (existing, wasConflict);
+                }
+
+                if (dto.Monto <= 0)
+                    throw new InvalidOperationException("El monto del gasto debe ser mayor a cero.");
+
+                existing.Monto = dto.Monto;
+                existing.TipoGasto = (TipoGasto)dto.TipoGasto;
+                existing.Concepto = dto.Concepto;
+                existing.Notas = dto.Notas;
+                existing.FechaGasto = dto.FechaGasto != default ? dto.FechaGasto : existing.FechaGasto;
+                // ComprobanteUrl: server-side stamp tiene preferencia (MobileAttachmentEndpoints).
+                // Solo aceptamos URL desde mobile push si existing.ComprobanteUrl es null — esto
+                // resuelve race condition cuando el stamp fallo y mobile stampeo localmente la URL.
+                // Bug prod 29/5: foto subio OK pero server no stampea (causa no clara — posibles:
+                // race, scope DbContext, etc.). Mobile re-pushea con URL como fallback de hardening.
+                if (string.IsNullOrEmpty(existing.ComprobanteUrl) && !string.IsNullOrEmpty(dto.ComprobanteUrl))
+                {
+                    existing.ComprobanteUrl = dto.ComprobanteUrl;
+                }
+                existing.Moneda = string.IsNullOrEmpty(dto.Moneda) ? existing.Moneda : dto.Moneda;
+                existing.Activo = dto.Activo;
+                existing.ActualizadoEn = DateTime.UtcNow;
+                existing.ActualizadoPor = userId;
+                existing.Version++;
+                return (existing, wasConflict);
+            }
+        }
+
+        // Idempotency dedupe por MobileRecordId antes de insertar
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var dupe = await _db.Gastos.FirstOrDefaultAsync(g =>
+                g.TenantId == tenantId && g.MobileRecordId == dto.LocalId);
+            if (dupe != null) return (dupe, wasConflict);
+        }
+
+        if (dto.Monto <= 0)
+            throw new InvalidOperationException("El monto del gasto debe ser mayor a cero.");
+        if (string.IsNullOrWhiteSpace(dto.Concepto))
+            throw new InvalidOperationException("El concepto del gasto es obligatorio.");
+
+        // Resolver RutaLocalId → RutaId si ruta fue creada offline en mismo batch
+        int? resolvedRutaId = dto.RutaId;
+        if ((!resolvedRutaId.HasValue || resolvedRutaId.Value <= 0) && !string.IsNullOrEmpty(dto.RutaLocalId))
+        {
+            // RutaVendedor no tiene MobileRecordId actualmente (rutas son creadas server-side
+            // por admin); este path solo aplicaria si mobile genera rutas en futuro.
+            // Por ahora dejamos como NULL si no se puede resolver — gasto queda sin ruta.
+            resolvedRutaId = null;
+        }
+
+        // Photo orphan resolution: si attachment con event_type='gasto', event_local_id=LocalId
+        // ya fue subido antes del sync push del gasto, recuperamos su remote_url aqui.
+        string? comprobanteUrl = dto.ComprobanteUrl;
+        if (string.IsNullOrEmpty(comprobanteUrl) && !string.IsNullOrEmpty(dto.LocalId))
+        {
+            // El mobile attachment endpoint stampea ComprobanteUrl directamente despues
+            // del UpsertGastoAsync, asi que el orphan lookup queda como hardening futuro
+            // si decidimos persistir attachment metadata server-side.
+        }
+
+        var gasto = new Gasto
+        {
+            TenantId = tenantId,
+            MobileRecordId = dto.LocalId,
+            UsuarioId = usuarioId,
+            RutaId = resolvedRutaId,
+            FechaGasto = dto.FechaGasto != default ? dto.FechaGasto : DateTime.UtcNow,
+            Monto = dto.Monto,
+            TipoGasto = (TipoGasto)dto.TipoGasto,
+            Concepto = dto.Concepto,
+            Notas = dto.Notas,
+            ComprobanteUrl = comprobanteUrl,
+            Moneda = string.IsNullOrEmpty(dto.Moneda) ? "MXN" : dto.Moneda,
+            Estado = EstadoGasto.Activo,
+            Activo = dto.Activo,
+            CreadoEn = DateTime.UtcNow,
+            CreadoPor = userId,
+            Version = 1,
+        };
+
+        _db.Gastos.Add(gasto);
+        return (gasto, wasConflict);
+    }
+
+    // === DevolucionesPedido ===
+
+    public async Task<List<DevolucionPedido>> GetDevolucionesModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
+    {
+        var query = _db.DevolucionesPedido
+            .AsNoTracking()
+            .Include(d => d.Detalles)
+            .Where(d => d.TenantId == tenantId && d.UsuarioId == usuarioId);
+
+        if (since.HasValue)
+        {
+            query = query.Where(d => d.ActualizadoEn > since || d.CreadoEn > since);
+        }
+
+        return await query.OrderBy(d => d.Id).ToListAsync();
+    }
+
+    public async Task<(DevolucionPedido entity, bool wasConflict)> UpsertDevolucionAsync(int tenantId, int usuarioId, SyncDevolucionPedidoDto dto, string userId)
+    {
+        bool wasConflict = false;
+
+        if (dto.Operation == SyncOperation.Delete)
+        {
+            var existing = await _db.DevolucionesPedido.Include(d => d.Detalles)
+                .FirstOrDefaultAsync(d => d.Id == dto.Id);
+            if (existing == null || existing.TenantId != tenantId)
+                throw new InvalidOperationException($"Devolucion with id {dto.Id} not found or unauthorized");
+            existing.Activo = false;
+            existing.Estado = EstadoDevolucion.Anulada;
+            existing.AnuladaEn = DateTime.UtcNow;
+            existing.AnuladaPor = userId;
+            existing.ActualizadoEn = DateTime.UtcNow;
+            existing.ActualizadoPor = userId;
+            existing.Version++;
+            // Revertir saldo cliente si era SaldoFavor.
+            if (existing.TipoReembolso == TipoReembolso.SaldoFavor)
+            {
+                var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == existing.ClienteId && c.TenantId == tenantId);
+                if (cliente != null) cliente.Saldo += existing.MontoTotal;
+            }
+            // Revertir side-effects de inventario si era ReposicionProducto.
+            // Math.Max(0, ...) protege contra ediciones manuales del admin que ya bajaron
+            // Mermas/CantidadVendida desde el cierre — preferimos under-revert silencioso
+            // a valor negativo (evita estados invalidos en el balance del cierre).
+            if (existing.TipoReembolso == TipoReembolso.ReposicionProducto && existing.RutaId.HasValue)
+            {
+                await ApplyReposicionInventorySideEffectsAsync(existing, tenantId, userId, isRevert: true);
+            }
+            return (existing, wasConflict);
+        }
+
+        if (dto.Id > 0)
+        {
+            var existing = await _db.DevolucionesPedido.Include(d => d.Detalles)
+                .FirstOrDefaultAsync(d => d.Id == dto.Id);
+            if (existing != null && existing.TenantId == tenantId)
+            {
+                if (existing.Version != dto.Version)
+                {
+                    wasConflict = true;
+                    return (existing, wasConflict);
+                }
+                // Update metadata-only (lineas son immutables post-creacion)
+                existing.Notas = dto.Notas;
+                existing.Motivo = (MotivoDevolucion)dto.Motivo;
+                existing.Activo = dto.Activo;
+                existing.ActualizadoEn = DateTime.UtcNow;
+                existing.ActualizadoPor = userId;
+                existing.Version++;
+                return (existing, wasConflict);
+            }
+        }
+
+        // Idempotency dedupe por MobileRecordId
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var dupe = await _db.DevolucionesPedido.Include(d => d.Detalles)
+                .FirstOrDefaultAsync(d => d.TenantId == tenantId && d.MobileRecordId == dto.LocalId);
+            if (dupe != null) return (dupe, wasConflict);
+        }
+
+        // Resolver PedidoLocalId → PedidoId
+        int resolvedPedidoId = dto.PedidoId;
+        if (resolvedPedidoId <= 0 && !string.IsNullOrEmpty(dto.PedidoLocalId))
+        {
+            var parent = await _db.Pedidos.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.PedidoLocalId);
+            if (parent != null) resolvedPedidoId = parent.Id;
+        }
+        if (resolvedPedidoId <= 0)
+            throw new InvalidOperationException("Devolucion requiere un PedidoId valido (no resolvable).");
+
+        // Resolver RutaLocalId → RutaId (mobile crea devoluciones offline con rutaServerId=null;
+        // resolvemos via MobileRecordId/Codigo para que side-effects de ReposicionProducto
+        // puedan localizar la RutaCarga y RutaRetornoInventario correctas).
+        int? resolvedRutaId = dto.RutaId;
+        if (!resolvedRutaId.HasValue && !string.IsNullOrEmpty(dto.RutaLocalId))
+        {
+            // Las rutas no tienen MobileRecordId (se crean en backend, fluyen al mobile via sync pull).
+            // El RutaLocalId que envia mobile suele ser el Codigo de ruta (RT-YYYYMMDD-NNNN) o el id WDB.
+            // Intentar primero por id WDB convertido a int (legacy), luego por Codigo.
+            if (int.TryParse(dto.RutaLocalId, out var maybeId))
+            {
+                var ruta = await _db.RutasVendedor.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Id == maybeId && r.TenantId == tenantId);
+                if (ruta != null) resolvedRutaId = ruta.Id;
+            }
+            else
+            {
+                var ruta = await _db.RutasVendedor.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Codigo == dto.RutaLocalId && r.TenantId == tenantId);
+                if (ruta != null) resolvedRutaId = ruta.Id;
+            }
+            // Fallback: ruta del dia del vendedor (devolucion siempre ocurre en el contexto
+            // de la ruta activa; usamos la ruta del usuario del dia de la devolucion).
+            if (!resolvedRutaId.HasValue)
+            {
+                var fechaDev = dto.FechaDevolucion != default ? dto.FechaDevolucion : DateTime.UtcNow;
+                var inicioDia = fechaDev.Date.AddHours(-12); // ventana amplia para cubrir TZ
+                var finDia = fechaDev.Date.AddHours(36);
+                var ruta = await _db.RutasVendedor.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.TenantId == tenantId
+                                              && r.UsuarioId == usuarioId
+                                              && r.Activo && !r.EsTemplate
+                                              && r.Fecha >= inicioDia && r.Fecha < finDia);
+                if (ruta != null) resolvedRutaId = ruta.Id;
+            }
+        }
+
+        // Validar pedido entregado
+        var pedido = await _db.Pedidos.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == resolvedPedidoId && p.TenantId == tenantId);
+        if (pedido == null)
+            throw new InvalidOperationException($"Pedido {resolvedPedidoId} no encontrado o no pertenece al tenant.");
+        if (pedido.Estado != EstadoPedido.Entregado)
+            throw new InvalidOperationException($"Solo se pueden devolver productos de pedidos entregados (estado actual: {pedido.Estado}).");
+
+        // Validar montos > 0
+        if (dto.MontoTotal < 0)
+            throw new InvalidOperationException("MontoTotal de la devolucion no puede ser negativo.");
+        if (dto.Detalles == null || dto.Detalles.Count == 0)
+            throw new InvalidOperationException("La devolucion debe incluir al menos una linea de producto.");
+
+        // Validar over-return por linea: sum(cantidad devuelta previa) + cantidad nueva <= cantidad original
+        // Solo si DetallePedidoId esta presente; sino skip (devolucion sin link a linea original).
+        var detalleIds = dto.Detalles.Where(d => d.DetallePedidoId.HasValue).Select(d => d.DetallePedidoId!.Value).ToList();
+        if (detalleIds.Count > 0)
+        {
+            var originalLines = await _db.DetallePedidos.AsNoTracking()
+                .Where(dp => detalleIds.Contains(dp.Id) && dp.PedidoId == resolvedPedidoId)
+                .ToDictionaryAsync(dp => dp.Id, dp => dp.Cantidad);
+
+            var prevReturnedQty = await _db.DetalleDevoluciones.AsNoTracking()
+                .Where(dd => dd.DetallePedidoId.HasValue && detalleIds.Contains(dd.DetallePedidoId.Value)
+                             && dd.Devolucion.TenantId == tenantId && dd.Devolucion.Estado == EstadoDevolucion.Activa)
+                .GroupBy(dd => dd.DetallePedidoId!.Value)
+                .Select(g => new { DetallePedidoId = g.Key, Total = g.Sum(x => x.Cantidad) })
+                .ToDictionaryAsync(x => x.DetallePedidoId, x => x.Total);
+
+            foreach (var line in dto.Detalles.Where(d => d.DetallePedidoId.HasValue))
+            {
+                var origQty = originalLines.GetValueOrDefault(line.DetallePedidoId!.Value);
+                var prevQty = prevReturnedQty.GetValueOrDefault(line.DetallePedidoId!.Value);
+                if (line.Cantidad + prevQty > origQty)
+                {
+                    throw new InvalidOperationException(
+                        $"Cantidad a devolver ({line.Cantidad}) + ya devuelto ({prevQty}) excede cantidad original ({origQty}) en linea {line.DetallePedidoId}.");
+                }
+            }
+        }
+
+        var devolucion = new DevolucionPedido
+        {
+            TenantId = tenantId,
+            MobileRecordId = dto.LocalId,
+            PedidoId = resolvedPedidoId,
+            ClienteId = dto.ClienteId > 0 ? dto.ClienteId : pedido.ClienteId,
+            UsuarioId = usuarioId,
+            RutaId = resolvedRutaId,
+            FechaDevolucion = dto.FechaDevolucion != default ? dto.FechaDevolucion : DateTime.UtcNow,
+            Motivo = (MotivoDevolucion)dto.Motivo,
+            Notas = dto.Notas,
+            TipoReembolso = (TipoReembolso)dto.TipoReembolso,
+            MontoTotal = dto.MontoTotal,
+            FotoEvidenciaUrl = dto.FotoEvidenciaUrl,
+            Estado = EstadoDevolucion.Activa,
+            Activo = dto.Activo,
+            CreadoEn = DateTime.UtcNow,
+            CreadoPor = userId,
+            Version = 1,
+        };
+
+        foreach (var ldto in dto.Detalles)
+        {
+            devolucion.Detalles.Add(new DetalleDevolucion
+            {
+                MobileRecordId = ldto.LocalId,
+                DetallePedidoId = ldto.DetallePedidoId,
+                ProductoId = ldto.ProductoId,
+                Cantidad = ldto.Cantidad,
+                PrecioUnitario = ldto.PrecioUnitario,
+                Subtotal = ldto.Subtotal,
+                Impuesto = ldto.Impuesto,
+                Total = ldto.Total,
+                Activo = true,
+                CreadoEn = DateTime.UtcNow,
+                CreadoPor = userId,
+                Version = 1,
+            });
+        }
+
+        _db.DevolucionesPedido.Add(devolucion);
+
+        // Side-effect monetario: SaldoFavor decrementa saldo del cliente.
+        if (devolucion.TipoReembolso == TipoReembolso.SaldoFavor && devolucion.MontoTotal > 0)
+        {
+            var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId);
+            if (cliente != null) cliente.Saldo -= devolucion.MontoTotal;
+        }
+
+        // Side-effect inventario: ReposicionProducto ajusta automaticamente las
+        // metricas del cierre de ruta. El vendedor entrego un producto NUEVO al
+        // cliente (sale del stock del vehiculo) y recibio el DANADO/CADUCADO de
+        // vuelta (entra al vehiculo como merma fisica no usable).
+        //
+        // Por cada item del DetalleDevolucion:
+        //   RutaCarga.CantidadVendida += cantidad  (consumo extra del stock)
+        //   RutaRetornoInventario.Mermas += cantidad (entro de regreso pero no sirve)
+        //
+        // Esto preserva el balance de masa del cierre:
+        //   Inicial(2000) - Vendidos(200=100orig+100rep) - Mermas(100rep) - ... = sobrante sano
+        //   Vendedor cuenta fisicamente: 1700 sanas + 100 danadas en el camion al cierre.
+        if (devolucion.TipoReembolso == TipoReembolso.ReposicionProducto && devolucion.RutaId.HasValue)
+        {
+            await ApplyReposicionInventorySideEffectsAsync(devolucion, tenantId, userId, isRevert: false);
+        }
+
+        return (devolucion, wasConflict);
+    }
+
+    /// <summary>
+    /// Aplica o revierte los efectos en inventario (RutaCarga.CantidadVendida +
+    /// RutaRetornoInventario.Mermas) cuando una devolucion es TipoReembolso=ReposicionProducto.
+    /// Idempotente per-instance: anular y crear son simetricos via isRevert flag.
+    /// Math.Max(0, ...) protege contra ediciones manuales del admin entre create y anular.
+    /// </summary>
+    private async Task ApplyReposicionInventorySideEffectsAsync(
+        DevolucionPedido devolucion, int tenantId, string userId, bool isRevert)
+    {
+        if (!devolucion.RutaId.HasValue) return;
+        var rutaId = devolucion.RutaId.Value;
+
+        foreach (var det in devolucion.Detalles)
+        {
+            int cantidad = (int)det.Cantidad;
+            if (cantidad <= 0) continue;
+            int delta = isRevert ? -cantidad : +cantidad;
+
+            // 1. RutaCarga.CantidadVendida — solo si el vendedor llevaba ese producto.
+            // Si la carga no existe (cliente devolvio producto que vendedor no cargo,
+            // ej. entregado por otro vendedor en pedido preventa cross-ruta), skip silencioso.
+            var carga = await _db.RutasCarga.FirstOrDefaultAsync(c =>
+                c.RutaId == rutaId && c.ProductoId == det.ProductoId
+                && c.TenantId == tenantId && c.Activo);
+            if (carga != null)
+            {
+                carga.CantidadVendida = Math.Max(0, carga.CantidadVendida + delta);
+                carga.ActualizadoEn = DateTime.UtcNow;
+                carga.ActualizadoPor = userId;
+            }
+
+            // 2. RutaRetornoInventario.Mermas — auto-create si no existe (mirror lazy-init
+            // de ObtenerRetornoInventarioAsync). Las unidades danadas siempre regresan
+            // al vehiculo aunque RutaCarga no exista para ese producto.
+            var retorno = await _db.RutasRetornoInventario.FirstOrDefaultAsync(r =>
+                r.RutaId == rutaId && r.ProductoId == det.ProductoId
+                && r.TenantId == tenantId && r.Activo);
+            if (retorno == null && !isRevert)
+            {
+                retorno = new RutaRetornoInventario
+                {
+                    RutaId = rutaId,
+                    ProductoId = det.ProductoId,
+                    TenantId = tenantId,
+                    CantidadInicial = carga?.CantidadTotal ?? 0,
+                    Mermas = 0,
+                    Activo = true,
+                    CreadoEn = DateTime.UtcNow,
+                };
+                _db.RutasRetornoInventario.Add(retorno);
+            }
+            if (retorno != null)
+            {
+                retorno.Mermas = Math.Max(0, retorno.Mermas + delta);
+                // Recompute Diferencia con la formula del PR Recarga.
+                // Lee Vendidos/Entregados en vivo desde carga (source of truth post-sync).
+                int vendidos = carga?.CantidadVendida ?? retorno.Vendidos;
+                int entregados = carga?.CantidadEntregada ?? retorno.Entregados;
+                retorno.Diferencia = retorno.CantidadInicial + retorno.RecargaExterna
+                                   - vendidos - entregados - retorno.Devueltos
+                                   - retorno.Mermas - retorno.RecAlmacen - retorno.CargaVehiculo;
+                retorno.ActualizadoEn = DateTime.UtcNow;
+            }
+        }
+    }
+
     public async Task<int> SaveChangesAsync()
     {
         return await _db.SaveChangesAsync();

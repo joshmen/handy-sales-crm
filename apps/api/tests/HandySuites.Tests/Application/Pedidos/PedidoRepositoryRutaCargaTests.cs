@@ -175,6 +175,30 @@ public class PedidoRepositoryRutaCargaTests : IDisposable
         carga.CantidadEntregada.Should().Be(0);
     }
 
+    [Fact]
+    public async Task CambiarAEntregado_VentaDirectaDeAyer_NoImputaARutaDeHoy()
+    {
+        // Reproduce el bug Rodrigo 27/5/2026 (cross-contamination entre rutas de días distintos).
+        // ANTES del fix: un pedido de ayer entregado hoy buscaba CUALQUIER ruta activa sin
+        // acotar por fecha → se imputaba a la ruta de hoy, inflando su CantidadVendida.
+        // POST-fix: la búsqueda acota por p.FechaPedido.Date == r.Fecha.Date — no encuentra
+        // ruta para el pedido de ayer, no incrementa nada.
+
+        // Arrange — pedido VentaDirecta con FechaPedido=ayer; ruta del día es de hoy.
+        var pedido = CreatePedidoEnRuta(id: 1004, TipoVenta.VentaDirecta, cantidad: 9);
+        pedido.FechaPedido = DateTime.UtcNow.Date.AddDays(-1).AddHours(15); // ayer 3pm UTC
+        await _db.SaveChangesAsync();
+
+        // Act
+        var outcome = await _sut.CambiarEstadoDetalladoAsync(1004, EstadoPedido.Entregado, null, TenantId);
+
+        // Assert — pedido entregado OK pero no impacta ruta de hoy
+        outcome.Status.Should().Be(CambiarEstadoStatus.Ok);
+        var carga = await _db.RutasCarga.AsNoTracking().FirstAsync(c => c.RutaId == RutaId);
+        carga.CantidadVendida.Should().Be(0);
+        carga.CantidadEntregada.Should().Be(0);
+    }
+
     public void Dispose()
     {
         _db.Dispose();

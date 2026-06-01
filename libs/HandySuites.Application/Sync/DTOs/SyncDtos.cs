@@ -32,6 +32,8 @@ public class SyncChangesDto
     public List<SyncRutaDto>? Rutas { get; set; }
     public List<SyncProductoDto>? Productos { get; set; }
     public List<SyncCobroDto>? Cobros { get; set; }
+    public List<SyncGastoDto>? Gastos { get; set; }
+    public List<SyncDevolucionPedidoDto>? DevolucionesPedido { get; set; }
     public List<SyncRutaDetalleDto>? RutaDetalles { get; set; }
     public List<SyncPrecioPorProductoDto>? PreciosPorProducto { get; set; }
     public List<SyncDescuentoDto>? Descuentos { get; set; }
@@ -104,6 +106,10 @@ public class SyncSummaryDto
     public int ProductosPulled { get; set; }
     public int CobrosPulled { get; set; }
     public int CobrosPushed { get; set; }
+    public int GastosPulled { get; set; }
+    public int GastosPushed { get; set; }
+    public int DevolucionesPulled { get; set; }
+    public int DevolucionesPushed { get; set; }
     public int RutaDetallesPushed { get; set; }
     public int ConflictsFound { get; set; }
     public int ErrorsFound { get; set; }
@@ -514,6 +520,86 @@ public class SyncCobroDto
     public DateTime? ActualizadoEn { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Create;
     public bool IsDeleted { get; set; }
+}
+
+/// <summary>
+/// Sync DTO para Gasto del vendedor. Auto-aprobado al crearse.
+/// Comprobante (foto del ticket) se sube via attachments endpoint separado,
+/// no en este DTO. Servidor stampa ComprobanteUrl tras upload.
+/// </summary>
+public class SyncGastoDto
+{
+    public int Id { get; set; }
+    public string? LocalId { get; set; }
+    /// <summary>UsuarioId del vendedor que creo el gasto. Critico para que mobile
+    /// pueda mapear correctamente el gasto al usuario actual y mostrarlo en lista.
+    /// Bug 30/5: faltaba en pull -> mobile asignaba usuario_id=0 -> gastos
+    /// desaparecian de la lista al hacer pull sync.</summary>
+    public int UsuarioId { get; set; }
+    public int? RutaId { get; set; }
+    /// <summary>Mobile WDB id de la ruta cuando aún no tiene ServerId (offline create).</summary>
+    public string? RutaLocalId { get; set; }
+    public DateTime FechaGasto { get; set; }
+    public decimal Monto { get; set; }
+    public int TipoGasto { get; set; }
+    public string Concepto { get; set; } = string.Empty;
+    public string? Notas { get; set; }
+    public string? ComprobanteUrl { get; set; }
+    public string Moneda { get; set; } = "MXN";
+    public int Estado { get; set; }
+    public bool Activo { get; set; } = true;
+    public long Version { get; set; }
+    public DateTime? ActualizadoEn { get; set; }
+    public SyncOperation Operation { get; set; } = SyncOperation.Create;
+    public bool IsDeleted { get; set; }
+}
+
+/// <summary>
+/// Sync DTO para DevolucionPedido (parent). Embebe lista de detalles para
+/// upsert atomico parent+children en una sola transaction. Mirror del patron
+/// SyncPedidoDto + SyncDetallePedidoDto.
+/// </summary>
+public class SyncDevolucionPedidoDto
+{
+    public int Id { get; set; }
+    public string? LocalId { get; set; }
+    public int PedidoId { get; set; }
+    /// <summary>Mobile WDB id del pedido padre si fue creado offline en mismo batch.</summary>
+    public string? PedidoLocalId { get; set; }
+    public int ClienteId { get; set; }
+    public int? RutaId { get; set; }
+    public string? RutaLocalId { get; set; }
+    public DateTime FechaDevolucion { get; set; }
+    public int Motivo { get; set; }
+    public string? Notas { get; set; }
+    public int TipoReembolso { get; set; }
+    public decimal MontoTotal { get; set; }
+    public string? FotoEvidenciaUrl { get; set; }
+    public int Estado { get; set; }
+    public bool Activo { get; set; } = true;
+    public long Version { get; set; }
+    public DateTime? ActualizadoEn { get; set; }
+    public SyncOperation Operation { get; set; } = SyncOperation.Create;
+    public bool IsDeleted { get; set; }
+    public List<SyncDetalleDevolucionDto> Detalles { get; set; } = new();
+}
+
+/// <summary>
+/// Sync DTO para linea individual de devolucion. Children-only — siempre via parent.
+/// </summary>
+public class SyncDetalleDevolucionDto
+{
+    public int Id { get; set; }
+    public string? LocalId { get; set; }
+    public int? DetallePedidoId { get; set; }
+    /// <summary>Mobile WDB id del DetallePedido padre si la linea original no tiene ServerId.</summary>
+    public string? DetallePedidoLocalId { get; set; }
+    public int ProductoId { get; set; }
+    public decimal Cantidad { get; set; }
+    public decimal PrecioUnitario { get; set; }
+    public decimal Subtotal { get; set; }
+    public decimal Impuesto { get; set; }
+    public decimal Total { get; set; }
 }
 
 public class IdMappingDto

@@ -67,13 +67,20 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (visible) {
       document.body.style.overflow = "hidden";
+      // capture: true + stopImmediatePropagation para que un Modal anidado dentro
+      // de Drawer (caso lightbox de fotos en gastos drawer) cierre SOLO el Modal
+      // sin cerrar el Drawer padre. Sin esto ambos listeners corren y los dos
+      // cierran al mismo tiempo. Bug UX reportado 30/5.
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape") handleClose();
+        if (e.key === "Escape") {
+          e.stopImmediatePropagation();
+          handleClose();
+        }
       };
-      document.addEventListener("keydown", handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown, true);
       return () => {
         document.body.style.overflow = "unset";
-        document.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("keydown", handleKeyDown, true);
       };
     } else {
       document.body.style.overflow = "unset";

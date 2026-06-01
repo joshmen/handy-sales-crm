@@ -354,8 +354,24 @@ public class CierreRutaResumenDto
     // Otros movimientos
     public double PedidosPreventa { get; set; }
     public int PedidosPreventaCount { get; set; }
+    /// <summary>
+    /// Total de DevolucionesPedido (clientes que devuelven productos de un pedido entregado).
+    /// Suma DevolucionesEfectivo + DevolucionesSaldoFavor.
+    /// </summary>
     public double Devoluciones { get; set; }
     public int DevolucionesCount { get; set; }
+    /// <summary>Devoluciones con TipoReembolso=Efectivo — RESTAN de aRecibir.</summary>
+    public double DevolucionesEfectivo { get; set; }
+    public int DevolucionesEfectivoCount { get; set; }
+    /// <summary>Devoluciones con TipoReembolso=SaldoFavor — NO restan de aRecibir (queda a favor del cliente).</summary>
+    public double DevolucionesSaldoFavor { get; set; }
+    public int DevolucionesSaldoFavorCount { get; set; }
+    /// <summary>Devoluciones con TipoReembolso=ReposicionProducto — vendedor repuso producto sin movimiento dinero. NO afecta aRecibir.</summary>
+    public double DevolucionesReposicion { get; set; }
+    public int DevolucionesReposicionCount { get; set; }
+    /// <summary>Gastos del vendedor imputados a esta ruta (combustible, peajes, etc) — RESTAN de aRecibir.</summary>
+    public double Gastos { get; set; }
+    public int GastosCount { get; set; }
 
     // Al inicio
     public double ValorRuta { get; set; }
@@ -381,6 +397,11 @@ public class RutaRetornoItemDto
     public int Mermas { get; set; }
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
+    /// <summary>
+    /// Recarga durante la ruta. SUMA al inicial efectivo para cuadrar overage
+    /// (Vendidos > Inicial cuando vendedor recargó del almacén a mitad del día).
+    /// </summary>
+    public int RecargaExterna { get; set; }
     public int Diferencia { get; set; }
 }
 
@@ -389,6 +410,7 @@ public class ActualizarRetornoRequest
     public int Mermas { get; set; }
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
+    public int RecargaExterna { get; set; }
 }
 
 public class CerrarRutaRequest
@@ -403,6 +425,7 @@ public class RetornoItemRequest
     public int Mermas { get; set; }
     public int RecAlmacen { get; set; }
     public int CargaVehiculo { get; set; }
+    public int RecargaExterna { get; set; }
 }
 
 // === DTOs para vinculación de pedidos huérfanos ===
@@ -416,6 +439,13 @@ public class RetornoItemRequest
 public record VinculacionHuerfanosResult(int PedidosVinculados, int UnidadesTotales);
 
 /// <summary>
+/// Resultado del sweep de Gastos huerfanos (gastos del vendedor con ruta_id=NULL
+/// del mismo dia que la ruta aceptada). Mirror del patron VinculacionHuerfanosResult
+/// pero para gastos del vendedor. Agregado v23 (2026-05-29).
+/// </summary>
+public record VinculacionGastosHuerfanosResult(int GastosVinculados, decimal MontoTotal);
+
+/// <summary>
 /// Respuesta de los endpoints aceptar/iniciar ruta. Incluye info opcional sobre
 /// pedidos huérfanos vinculados retroactivamente para que mobile pueda mostrar
 /// un toast informativo al vendedor.
@@ -426,4 +456,6 @@ public class CambiarEstadoRutaResult
     public string? Message { get; set; }
     /// <summary>Null si no se ejecutó sweep o no hubo huérfanos.</summary>
     public VinculacionHuerfanosResult? PedidosHuerfanosVinculados { get; set; }
+    /// <summary>Null si no hubo gastos sin ruta del dia. Sweep agregado v23.</summary>
+    public VinculacionGastosHuerfanosResult? GastosHuerfanosVinculados { get; set; }
 }

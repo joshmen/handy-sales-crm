@@ -2,7 +2,7 @@
   "expo": {
     "name": "Handy Suites",
     "slug": "handy-suites",
-    "version": "1.0.2",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "handysuites",
@@ -22,7 +22,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.handysuites.app"
+      "bundleIdentifier": "com.handysuites.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "fetch"],
+        "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para registrar visitas, ventas y mostrar tu ruta del día.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "El supervisor necesita ver tu ubicación durante toda la jornada laboral aunque la app esté cerrada, para auditar tu ruta.",
+        "NSLocationAlwaysUsageDescription": "Tracking GPS continuo durante la jornada laboral."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +36,16 @@
         "backgroundColor": "#2563eb"
       },
       "package": "com.handysuites.app",
-      "versionCode": 3
+      "versionCode": 9,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,6 +62,15 @@
           "defaultChannel": "default"
         }
       ],
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "El supervisor necesita ver tu ubicación durante toda la jornada laboral."
+        }
+      ],
+      "expo-task-manager",
       [
         "expo-build-properties",
         {

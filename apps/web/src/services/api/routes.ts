@@ -360,7 +360,7 @@ class RouteService {
     }
   }
 
-  async updateRetorno(rutaId: number, productoId: number, data: { mermas: number; recAlmacen: number; cargaVehiculo: number }): Promise<void> {
+  async updateRetorno(rutaId: number, productoId: number, data: { mermas: number; recAlmacen: number; cargaVehiculo: number; recargaExterna: number }): Promise<void> {
     try {
       await api.patch(`${this.basePath}/${rutaId}/cierre/retorno/${productoId}`, data);
     } catch (error) {
@@ -607,8 +607,18 @@ export interface CierreResumen {
   entregasContadoSaldoFavorCount: number;
   pedidosPreventa: number;
   pedidosPreventaCount: number;
+  /** Total monetario de DevolucionesPedido = SaldoFavor + Efectivo. */
   devoluciones: number;
   devolucionesCount: number;
+  /** v23 (2026-05-29): subset de Devoluciones con TipoReembolso=Efectivo (restan de aRecibir). */
+  devolucionesEfectivo?: number;
+  devolucionesEfectivoCount?: number;
+  /** v23: subset con TipoReembolso=SaldoFavor (informativo, no restan). */
+  devolucionesSaldoFavor?: number;
+  devolucionesSaldoFavorCount?: number;
+  /** v23: Gastos del vendedor imputados a la ruta (restan de aRecibir). */
+  gastos?: number;
+  gastosCount?: number;
   valorRuta: number;
   efectivoInicial: number;
   aRecibir: number;
@@ -629,6 +639,8 @@ export interface RetornoItem {
   mermas: number;
   recAlmacen: number;
   cargaVehiculo: number;
+  /** Recarga durante la ruta — SUMA al inicial efectivo para cuadrar overage. */
+  recargaExterna: number;
   diferencia: number;
 }
 
@@ -639,6 +651,7 @@ export interface CerrarRutaRequest {
     mermas: number;
     recAlmacen: number;
     cargaVehiculo: number;
+    recargaExterna: number;
   }[];
 }
 
