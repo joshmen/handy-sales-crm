@@ -1,0 +1,19 @@
+appId: host.exp.exponent
+name: "Session revoked: banner + tap Iniciar sesion lleva a login funcional"
+---
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+- assertNotVisible: "Tu sesión necesita renovarse"
+# Simular revocacion server-side: el setup previo al test debe correr el UPDATE SQL.
+# El test asume que el ambiente ya tiene el access_token persistido pero la DeviceSession revocada.
+- extendedWaitUntil:
+    visible: "Tu sesión necesita renovarse"
+    timeout: 15000
+- tapOn: "Iniciar sesión"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Correo"
+  optional: true
+- assertVisible:
+    text: "Contraseña"

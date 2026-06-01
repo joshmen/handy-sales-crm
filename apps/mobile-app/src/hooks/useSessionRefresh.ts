@@ -23,10 +23,15 @@ const LAST_ACTIVITY_KEY = '@auth/lastActivityAt';
  */
 export function useSessionRefresh() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  // Audit 2026-06-01 (v4) — si la sesión está marcada expired (soft), NO
+  // disparar silent refresh: el server ya rechazó la sesión y un nuevo
+  // refresh fallaría con SESSION_REVOKED, agregando ruido al log y un
+  // emit('sessionRevoked') redundante. El user verá el banner y re-logueará.
+  const sessionExpired = useAuthStore(s => s.sessionExpired);
   const lastRefreshAt = useRef<number>(0);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || sessionExpired) return;
 
     const REFRESH_THROTTLE_MS = 5 * 60 * 1000; // 5 min — no spam refresh
 
@@ -63,5 +68,5 @@ export function useSessionRefresh() {
     trySilentRefresh();
 
     return () => sub.remove();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, sessionExpired]);
 }
