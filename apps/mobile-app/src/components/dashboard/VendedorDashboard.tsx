@@ -23,6 +23,7 @@ import { api } from '@/api/client';
 import { Target } from 'lucide-react-native';
 import { JornadaCard } from './JornadaCard';
 import { useCreateOrderFlow } from '@/hooks/useCreateOrderFlow';
+import { PendingDataBanner } from '@/components/shared/PendingDataBanner';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
@@ -203,6 +204,9 @@ export function VendedorDashboard() {
           />
         </View>
       </View>
+
+      {/* Reliability Fase 2: banner alert si datos sin subir >24h */}
+      <PendingDataBanner />
 
       {/* KPI Cards — white bg, no pastel, no icon circles */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)}>
