@@ -1127,11 +1127,18 @@ public class SyncRepository : ISyncRepository
             existing.ActualizadoPor = userId;
             existing.Version++;
             // Revertir saldo cliente si era SaldoFavor.
-            // ReposicionProducto NO toco saldo, asi que tampoco hay que revertir nada al anular.
             if (existing.TipoReembolso == TipoReembolso.SaldoFavor)
             {
                 var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == existing.ClienteId && c.TenantId == tenantId);
                 if (cliente != null) cliente.Saldo += existing.MontoTotal;
+            }
+            // Revertir side-effects de inventario si era ReposicionProducto.
+            // Math.Max(0, ...) protege contra ediciones manuales del admin que ya bajaron
+            // Mermas/CantidadVendida desde el cierre — preferimos under-revert silencioso
+            // a valor negativo (evita estados invalidos en el balance del cierre).
+            if (existing.TipoReembolso == TipoReembolso.ReposicionProducto && existing.RutaId.HasValue)
+            {
+                await ApplyReposicionInventorySideEffectsAsync(existing, tenantId, userId, isRevert: true);
             }
             return (existing, wasConflict);
         }
@@ -1176,6 +1183,43 @@ public class SyncRepository : ISyncRepository
         }
         if (resolvedPedidoId <= 0)
             throw new InvalidOperationException("Devolucion requiere un PedidoId valido (no resolvable).");
+
+        // Resolver RutaLocalId → RutaId (mobile crea devoluciones offline con rutaServerId=null;
+        // resolvemos via MobileRecordId/Codigo para que side-effects de ReposicionProducto
+        // puedan localizar la RutaCarga y RutaRetornoInventario correctas).
+        int? resolvedRutaId = dto.RutaId;
+        if (!resolvedRutaId.HasValue && !string.IsNullOrEmpty(dto.RutaLocalId))
+        {
+            // Las rutas no tienen MobileRecordId (se crean en backend, fluyen al mobile via sync pull).
+            // El RutaLocalId que envia mobile suele ser el Codigo de ruta (RT-YYYYMMDD-NNNN) o el id WDB.
+            // Intentar primero por id WDB convertido a int (legacy), luego por Codigo.
+            if (int.TryParse(dto.RutaLocalId, out var maybeId))
+            {
+                var ruta = await _db.RutasVendedor.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Id == maybeId && r.TenantId == tenantId);
+                if (ruta != null) resolvedRutaId = ruta.Id;
+            }
+            else
+            {
+                var ruta = await _db.RutasVendedor.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Codigo == dto.RutaLocalId && r.TenantId == tenantId);
+                if (ruta != null) resolvedRutaId = ruta.Id;
+            }
+            // Fallback: ruta del dia del vendedor (devolucion siempre ocurre en el contexto
+            // de la ruta activa; usamos la ruta del usuario del dia de la devolucion).
+            if (!resolvedRutaId.HasValue)
+            {
+                var fechaDev = dto.FechaDevolucion != default ? dto.FechaDevolucion : DateTime.UtcNow;
+                var inicioDia = fechaDev.Date.AddHours(-12); // ventana amplia para cubrir TZ
+                var finDia = fechaDev.Date.AddHours(36);
+                var ruta = await _db.RutasVendedor.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.TenantId == tenantId
+                                              && r.UsuarioId == usuarioId
+                                              && r.Activo && !r.EsTemplate
+                                              && r.Fecha >= inicioDia && r.Fecha < finDia);
+                if (ruta != null) resolvedRutaId = ruta.Id;
+            }
+        }
 
         // Validar pedido entregado
         var pedido = await _db.Pedidos.AsNoTracking()
@@ -1226,7 +1270,7 @@ public class SyncRepository : ISyncRepository
             PedidoId = resolvedPedidoId,
             ClienteId = dto.ClienteId > 0 ? dto.ClienteId : pedido.ClienteId,
             UsuarioId = usuarioId,
-            RutaId = dto.RutaId,
+            RutaId = resolvedRutaId,
             FechaDevolucion = dto.FechaDevolucion != default ? dto.FechaDevolucion : DateTime.UtcNow,
             Motivo = (MotivoDevolucion)dto.Motivo,
             Notas = dto.Notas,
@@ -1262,15 +1306,96 @@ public class SyncRepository : ISyncRepository
         _db.DevolucionesPedido.Add(devolucion);
 
         // Side-effect monetario: SaldoFavor decrementa saldo del cliente.
-        // ReposicionProducto NO afecta cliente.Saldo ni el corte de efectivo —
-        // el vendedor entrega un producto nuevo y absorbe el danado/caducado en su inventario.
         if (devolucion.TipoReembolso == TipoReembolso.SaldoFavor && devolucion.MontoTotal > 0)
         {
             var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId);
             if (cliente != null) cliente.Saldo -= devolucion.MontoTotal;
         }
 
+        // Side-effect inventario: ReposicionProducto ajusta automaticamente las
+        // metricas del cierre de ruta. El vendedor entrego un producto NUEVO al
+        // cliente (sale del stock del vehiculo) y recibio el DANADO/CADUCADO de
+        // vuelta (entra al vehiculo como merma fisica no usable).
+        //
+        // Por cada item del DetalleDevolucion:
+        //   RutaCarga.CantidadVendida += cantidad  (consumo extra del stock)
+        //   RutaRetornoInventario.Mermas += cantidad (entro de regreso pero no sirve)
+        //
+        // Esto preserva el balance de masa del cierre:
+        //   Inicial(2000) - Vendidos(200=100orig+100rep) - Mermas(100rep) - ... = sobrante sano
+        //   Vendedor cuenta fisicamente: 1700 sanas + 100 danadas en el camion al cierre.
+        if (devolucion.TipoReembolso == TipoReembolso.ReposicionProducto && devolucion.RutaId.HasValue)
+        {
+            await ApplyReposicionInventorySideEffectsAsync(devolucion, tenantId, userId, isRevert: false);
+        }
+
         return (devolucion, wasConflict);
+    }
+
+    /// <summary>
+    /// Aplica o revierte los efectos en inventario (RutaCarga.CantidadVendida +
+    /// RutaRetornoInventario.Mermas) cuando una devolucion es TipoReembolso=ReposicionProducto.
+    /// Idempotente per-instance: anular y crear son simetricos via isRevert flag.
+    /// Math.Max(0, ...) protege contra ediciones manuales del admin entre create y anular.
+    /// </summary>
+    private async Task ApplyReposicionInventorySideEffectsAsync(
+        DevolucionPedido devolucion, int tenantId, string userId, bool isRevert)
+    {
+        if (!devolucion.RutaId.HasValue) return;
+        var rutaId = devolucion.RutaId.Value;
+
+        foreach (var det in devolucion.Detalles)
+        {
+            int cantidad = (int)det.Cantidad;
+            if (cantidad <= 0) continue;
+            int delta = isRevert ? -cantidad : +cantidad;
+
+            // 1. RutaCarga.CantidadVendida — solo si el vendedor llevaba ese producto.
+            // Si la carga no existe (cliente devolvio producto que vendedor no cargo,
+            // ej. entregado por otro vendedor en pedido preventa cross-ruta), skip silencioso.
+            var carga = await _db.RutasCarga.FirstOrDefaultAsync(c =>
+                c.RutaId == rutaId && c.ProductoId == det.ProductoId
+                && c.TenantId == tenantId && c.Activo);
+            if (carga != null)
+            {
+                carga.CantidadVendida = Math.Max(0, carga.CantidadVendida + delta);
+                carga.ActualizadoEn = DateTime.UtcNow;
+                carga.ActualizadoPor = userId;
+            }
+
+            // 2. RutaRetornoInventario.Mermas — auto-create si no existe (mirror lazy-init
+            // de ObtenerRetornoInventarioAsync). Las unidades danadas siempre regresan
+            // al vehiculo aunque RutaCarga no exista para ese producto.
+            var retorno = await _db.RutasRetornoInventario.FirstOrDefaultAsync(r =>
+                r.RutaId == rutaId && r.ProductoId == det.ProductoId
+                && r.TenantId == tenantId && r.Activo);
+            if (retorno == null && !isRevert)
+            {
+                retorno = new RutaRetornoInventario
+                {
+                    RutaId = rutaId,
+                    ProductoId = det.ProductoId,
+                    TenantId = tenantId,
+                    CantidadInicial = carga?.CantidadTotal ?? 0,
+                    Mermas = 0,
+                    Activo = true,
+                    CreadoEn = DateTime.UtcNow,
+                };
+                _db.RutasRetornoInventario.Add(retorno);
+            }
+            if (retorno != null)
+            {
+                retorno.Mermas = Math.Max(0, retorno.Mermas + delta);
+                // Recompute Diferencia con la formula del PR Recarga.
+                // Lee Vendidos/Entregados en vivo desde carga (source of truth post-sync).
+                int vendidos = carga?.CantidadVendida ?? retorno.Vendidos;
+                int entregados = carga?.CantidadEntregada ?? retorno.Entregados;
+                retorno.Diferencia = retorno.CantidadInicial + retorno.RecargaExterna
+                                   - vendidos - entregados - retorno.Devueltos
+                                   - retorno.Mermas - retorno.RecAlmacen - retorno.CargaVehiculo;
+                retorno.ActualizadoEn = DateTime.UtcNow;
+            }
+        }
     }
 
     public async Task<int> SaveChangesAsync()

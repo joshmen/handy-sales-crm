@@ -138,11 +138,42 @@ public static class DevolucionesEndpoints
                 var cliente = await db.Clientes.FirstOrDefaultAsync(c => c.Id == devolucion.ClienteId);
                 if (cliente != null) cliente.Saldo += devolucion.MontoTotal;
             }
-            // Para TipoReembolso=Efectivo, el cierre de ruta recomputa aRecibir dinamicamente
+            // Revertir side-effects de inventario para ReposicionProducto:
+            // restar CantidadVendida que se sumo al crear + restar Mermas del retorno.
+            // Math.Max(0, ...) protege contra ediciones manuales del admin.
+            if (devolucion.TipoReembolso == TipoReembolso.ReposicionProducto && devolucion.RutaId.HasValue)
+            {
+                var detalles = await db.DetalleDevoluciones
+                    .Where(dd => dd.DevolucionId == devolucion.Id && dd.Activo)
+                    .ToListAsync();
+                var rutaId = devolucion.RutaId.Value;
+                foreach (var det in detalles)
+                {
+                    int cantidad = (int)det.Cantidad;
+                    if (cantidad <= 0) continue;
+                    var carga = await db.RutasCarga.FirstOrDefaultAsync(c =>
+                        c.RutaId == rutaId && c.ProductoId == det.ProductoId && c.Activo);
+                    if (carga != null)
+                    {
+                        carga.CantidadVendida = Math.Max(0, carga.CantidadVendida - cantidad);
+                        carga.ActualizadoEn = DateTime.UtcNow;
+                    }
+                    var retorno = await db.RutasRetornoInventario.FirstOrDefaultAsync(r =>
+                        r.RutaId == rutaId && r.ProductoId == det.ProductoId && r.Activo);
+                    if (retorno != null)
+                    {
+                        retorno.Mermas = Math.Max(0, retorno.Mermas - cantidad);
+                        int vendidos = carga?.CantidadVendida ?? retorno.Vendidos;
+                        int entregados = carga?.CantidadEntregada ?? retorno.Entregados;
+                        retorno.Diferencia = retorno.CantidadInicial + retorno.RecargaExterna
+                                           - vendidos - entregados - retorno.Devueltos
+                                           - retorno.Mermas - retorno.RecAlmacen - retorno.CargaVehiculo;
+                        retorno.ActualizadoEn = DateTime.UtcNow;
+                    }
+                }
+            }
+            // Para TipoReembolso=Efectivo, el cierre recomputa aRecibir dinamicamente
             // filtrando d.Estado == Activa, asi que basta con marcar Anulada.
-            // Para TipoReembolso=ReposicionProducto, no hubo movimiento de dinero — anular
-            // solo deshace el registro auditable (el producto repuesto queda en limbo;
-            // el supervisor debe ajustar inventario manualmente en el cierre si aplica).
 
             await db.SaveChangesAsync();
 

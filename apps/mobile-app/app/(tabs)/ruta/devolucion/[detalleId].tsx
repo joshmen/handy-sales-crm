@@ -402,7 +402,7 @@ function NuevaDevolucionScreen() {
 
           {/* Foto evidencia OBLIGATORIA — supervisor exige evidencia visual */}
           <Text style={styles.labelRequired}>Evidencia (obligatoria)</Text>
-          <Text style={styles.hint}>Toma foto del producto devuelto para auditoria. Se sube a Cloudinary en background.</Text>
+          <Text style={styles.hint}>Toma foto del producto devuelto. La foto es obligatoria para registrar la devolución.</Text>
           {photoUri ? (
             <View style={styles.photoBox}>
               <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
