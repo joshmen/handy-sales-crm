@@ -21,6 +21,15 @@ public enum TipoReembolso
 
     /// <summary>Vendedor reembolsa en efectivo: resta de su corte de caja.</summary>
     Efectivo = 1,
+
+    /// <summary>
+    /// Vendedor repone el producto en el momento (caso comun: producto caducado/danado).
+    /// NO afecta cliente.Saldo ni el corte de efectivo. Solo se registra como devolucion
+    /// auditable. El inventario del vehiculo del vendedor disminuye en la cantidad repuesta
+    /// (el producto repuesto sale del stock que llevaba en ruta), lo cual queda visible en
+    /// el cierre como diferencia entre Inicial y consumido.
+    /// </summary>
+    ReposicionProducto = 2,
 }
 
 public enum EstadoDevolucion
@@ -91,6 +100,10 @@ public class DevolucionPedido : AuditableEntity
 
     [Column("anulada_en")]
     public DateTime? AnuladaEn { get; set; }
+
+    /// <summary>Motivo de la anulacion (mirror de Gasto.MotivoInvalidacion). Capturado por supervisor.</summary>
+    [Column("motivo_anulacion")]
+    public string? MotivoAnulacion { get; set; }
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;

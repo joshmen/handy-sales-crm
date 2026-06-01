@@ -1218,6 +1218,12 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         double devolucionesSaldoFavor = (double)devolucionesPedido
             .Where(d => d.TipoReembolso == TipoReembolso.SaldoFavor).Sum(d => d.MontoTotal);
         int devolucionesSaldoFavorCount = devolucionesPedido.Count(d => d.TipoReembolso == TipoReembolso.SaldoFavor);
+        // ReposicionProducto: producto repuesto sin movimiento de dinero. No suma a aRecibir.
+        // Solo se cuenta para auditoria; el inventario se ajusta manualmente en el cierre.
+        double devolucionesReposicion = (double)devolucionesPedido
+            .Where(d => d.TipoReembolso == TipoReembolso.ReposicionProducto).Sum(d => d.MontoTotal);
+        int devolucionesReposicionCount = devolucionesPedido.Count(d => d.TipoReembolso == TipoReembolso.ReposicionProducto);
+        // Total general — incluye ReposicionProducto en el conteo pero NO en el monto que afecta corte.
         double devolucionesMontoTotal = devolucionesEfectivo + devolucionesSaldoFavor;
         int devolucionesCountTotal = devolucionesPedido.Count;
 
@@ -1251,6 +1257,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             DevolucionesEfectivoCount = devolucionesEfectivoCount,
             DevolucionesSaldoFavor = devolucionesSaldoFavor,
             DevolucionesSaldoFavorCount = devolucionesSaldoFavorCount,
+            DevolucionesReposicion = devolucionesReposicion,
+            DevolucionesReposicionCount = devolucionesReposicionCount,
             // Gastos del vendedor imputados a la ruta
             Gastos = gastosMonto,
             GastosCount = gastosCount,

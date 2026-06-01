@@ -19,8 +19,10 @@ import {
   Package,
   Info,
   Receipt,
+  RotateCcw,
 } from 'lucide-react';
 import { RutaGastosDrawer } from '@/components/gastos/RutaGastosDrawer';
+import { RutaDevolucionesDrawer } from '@/components/devoluciones/RutaDevolucionesDrawer';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
@@ -53,6 +55,9 @@ export default function CloseRoutePage() {
   // El Drawer maneja su propio fetch + lightbox de fotos. Refresca el resumen del
   // close screen cuando se invalida un gasto para que aRecibir y el count se actualicen.
   const [gastosDrawerOpen, setGastosDrawerOpen] = useState(false);
+  // Drawer de devoluciones: igual patron que gastos. Anular devolucion refresca
+  // resumen (aRecibir cambia si Efectivo, cliente.saldo cambia si SaldoFavor).
+  const [devolucionesDrawerOpen, setDevolucionesDrawerOpen] = useState(false);
 
   const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
 
@@ -374,6 +379,23 @@ export default function CloseRoutePage() {
                   <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
                 </button>
               )}
+              {/* v24 (2026-05-31): Devoluciones — boton abre Drawer con detalle por
+                  cliente + foto grande + anular. Las lineas de arriba muestran el
+                  resumen monetario (Efectivo vs SaldoFavor); el Drawer da audit completo. */}
+              {(resumen.devolucionesCount ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDevolucionesDrawerOpen(true)}
+                  className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Ver devoluciones de la ruta (${resumen.devolucionesCount})`}
+                >
+                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Ver devoluciones ({resumen.devolucionesCount})
+                  </span>
+                  <span className="font-medium text-red-600">-{formatCurrency(resumen.devoluciones ?? 0)}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -386,6 +408,16 @@ export default function CloseRoutePage() {
           rutaId={rutaId}
           rutaCodigo={ruta?.codigo}
           onGastoInvalidated={() => fetchData()}
+        />
+
+        {/* Drawer de devoluciones — mirror del de gastos. Refetch si se anula porque
+            aRecibir (Efectivo) o cliente.saldo (SaldoFavor) cambian. */}
+        <RutaDevolucionesDrawer
+          isOpen={devolucionesDrawerOpen}
+          onClose={() => setDevolucionesDrawerOpen(false)}
+          rutaId={rutaId}
+          rutaCodigo={ruta?.codigo}
+          onDevolucionAnulada={() => fetchData()}
         />
 
         {/* Al inicio vs Al cierre */}

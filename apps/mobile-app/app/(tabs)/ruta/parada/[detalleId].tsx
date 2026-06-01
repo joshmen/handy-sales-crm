@@ -35,6 +35,7 @@ import {
   CircleAlert,
   Phone,
   Navigation,
+  RotateCcw,
 } from 'lucide-react-native';
 import { SbRoute, SbWarning } from '@/components/icons/DashboardIcons';
 import { GpsMapModal } from '@/components/shared/GpsMapModal';
@@ -452,6 +453,28 @@ function ParadaDetailScreen() {
         </Animated.View>
       )}
 
+      {/* Post-Entrega: Registrar devolucion del cliente
+          CTA solo aparece si la parada esta Completada (estado=2) y es delivery stop.
+          El vendedor accede a esta accion al regresar a la parada despues de
+          confirmar entrega, cuando el cliente le regresa producto. */}
+      {isDeliveryStop && effectiveEstado === 2 && stop?.pedidoId && (
+        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
+          <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={styles.devolucionBtn}
+              onPress={() => router.push(`/(tabs)/ruta/devolucion/${detalleId}` as any)}
+              activeOpacity={0.7}
+              accessibilityLabel="Registrar devolucion"
+              accessibilityRole="button"
+              testID="btn-registrar-devolucion"
+            >
+              <RotateCcw size={16} color={COLORS.primary} />
+              <Text style={styles.devolucionBtnText}>Registrar devolucion</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
+
       {/* Delivery Action Buttons */}
       {isDeliveryStop && (isPendiente || isEnProgreso) && (
         <Animated.View entering={FadeInDown.duration(400).delay(500)}>
@@ -836,6 +859,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#E11D48',
+  },
+
+  // Devolucion post-entrega — outline color primary, mas suave que "No se entrego"
+  devolucionBtn: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  devolucionBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 
   outlineButtonGray: {

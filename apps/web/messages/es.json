@@ -1810,7 +1810,8 @@
       "paradas": "Paradas",
       "pedidos": "Pedidos",
       "carga": "Carga",
-      "gastos": "Gastos"
+      "gastos": "Gastos",
+      "devoluciones": "Devoluciones"
     },
     "detail": {
       "lifecyclePending": "Pendiente",
