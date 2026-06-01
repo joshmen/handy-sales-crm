@@ -20,6 +20,9 @@ export interface DatosEmpresa {
   logoUrl: string | null;
   country: string | null;
   billingEnabled: boolean;
+  /** Reliability Sprint Fase 3: true si subscription.incluye_tracking_vendedor.
+   *  Gateia el toggle "Tracking GPS background" en configuracion.tsx. */
+  trackingGpsEnabled?: boolean;
   timezone: string;           // IANA tz, ej "America/Mexico_City"
   currency: string;           // ej "MXN"
   language: string;           // ej "es"
