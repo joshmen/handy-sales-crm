@@ -1,8 +1,12 @@
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import UbicacionVendedor from '@/db/models/UbicacionVendedor';
 import { api } from '@/api/client';
+// Importar el task service registra TaskManager.defineTask (modulo top-level).
+// CRITICO: debe importarse antes de Location.startLocationUpdatesAsync.
+import { LOCATION_TASK_NAME } from './locationBackgroundTask';
 
 /**
  * Tracking GPS continuo del vendedor (Fase B). NO inicia automático;
@@ -36,36 +40,126 @@ export type TipoPingValue = typeof TipoPing[keyof typeof TipoPing];
 const CHECKPOINT_INTERVAL_MS = 15 * 60 * 1000; // 15 min
 const FLUSH_BATCH_LIMIT = 100; // máx pings por POST
 
-let timerHandle: ReturnType<typeof setInterval> | null = null;
 let lastPingAt: number = 0;
 let currentUsuarioId: number | null = null;
 let trackingDisabled = false;
+let backgroundActive = false;
 
 /**
- * Empieza el timer de checkpoint. Llamar al login post-auth si el tenant
+ * Empieza el tracking de checkpoint. Llamar al login post-auth si el tenant
  * tiene la feature. No-op si ya está activo o si trackingDisabled.
+ *
+ * Reliability Sprint Fase 3: ahora usa Location.startLocationUpdatesAsync
+ * (background-capable via foreground service) en lugar del setInterval JS
+ * viejo que morí­a al cerrar app. El task handler vive en
+ * locationBackgroundTask.ts y persiste como tipo=Checkpoint.
  */
 export function startCheckpointTimer(usuarioId: number): void {
   if (trackingDisabled) return;
-  if (timerHandle) return; // ya corriendo
   currentUsuarioId = usuarioId;
   lastPingAt = 0;
 
-  timerHandle = setInterval(() => {
-    const sinceLast = Date.now() - lastPingAt;
-    if (sinceLast >= CHECKPOINT_INTERVAL_MS) {
-      // Fire-and-forget; un fallo de GPS no debe romper el timer
-      recordPing(TipoPing.Checkpoint).catch(() => {});
-    }
-  }, 60 * 1000); // chequea cada 1min, dispara cuando pasaron >=15
+  // Best-effort — si fallan permisos o config Expo Go (no soporta foreground
+  // service nativo), no rompemos el resto del flujo. recordPing() por event
+  // sigue funcionando como fallback.
+  startBackgroundLocationUpdates(usuarioId).catch((err) => {
+    if (__DEV__) console.warn('[locationCheckpoint] startBackground failed (fallback to foreground-only):', err);
+  });
 }
 
 export function stopCheckpointTimer(): void {
-  if (timerHandle) {
-    clearInterval(timerHandle);
-    timerHandle = null;
-  }
+  stopBackgroundLocationUpdates().catch(() => { /* swallow */ });
   currentUsuarioId = null;
+}
+
+/**
+ * Verifica + solicita permisos foreground primero, luego background (Android
+ * 10+ requiere prompt SEPARADO para "Permitir todo el tiempo"). Returns true
+ * solo si ambos granted. Si user elige "Solo mientras uso la app", retorna
+ * false — caller debe avisar y dejar tracking foreground-only.
+ */
+export async function ensureBackgroundLocationPermission(): Promise<boolean> {
+  try {
+    let { status: fg } = await Location.getForegroundPermissionsAsync();
+    if (fg !== 'granted') {
+      const req = await Location.requestForegroundPermissionsAsync();
+      fg = req.status;
+    }
+    if (fg !== 'granted') return false;
+
+    let { status: bg } = await Location.getBackgroundPermissionsAsync();
+    if (bg !== 'granted') {
+      const req = await Location.requestBackgroundPermissionsAsync();
+      bg = req.status;
+    }
+    return bg === 'granted';
+  } catch (err) {
+    if (__DEV__) console.warn('[locationCheckpoint] permission flow error:', err);
+    return false;
+  }
+}
+
+/**
+ * Arranca el foreground service de location updates. El task headless
+ * locationBackgroundTask.ts persiste cada batch a WDB como tipo=Checkpoint.
+ *
+ * Config:
+ * - Accuracy.Balanced — ~10-100m, mejor balance bateria vs cobertura
+ * - timeInterval 15min: heartbeat aunque vendedor este quieto
+ * - distanceInterval 0: solo respetar timeInterval (no spam por movimiento)
+ * - foregroundService: notif persistente (Android obliga)
+ * - showsBackgroundLocationIndicator: iOS, indica al user que app trackea
+ */
+export async function startBackgroundLocationUpdates(usuarioId: number): Promise<void> {
+  if (trackingDisabled) return;
+  if (backgroundActive) return;
+  currentUsuarioId = usuarioId;
+
+  const granted = await ensureBackgroundLocationPermission();
+  if (!granted) {
+    if (__DEV__) console.warn('[locationCheckpoint] background permission denied — staying foreground-only');
+    return;
+  }
+
+  // Idempotente: si por algun motivo ya estaba started, stopear primero.
+  const alreadyStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+  if (alreadyStarted) {
+    await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => {});
+  }
+
+  await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+    accuracy: Location.Accuracy.Balanced,
+    timeInterval: CHECKPOINT_INTERVAL_MS,
+    distanceInterval: 0,
+    pausesUpdatesAutomatically: false,
+    showsBackgroundLocationIndicator: true, // iOS only
+    foregroundService: {
+      notificationTitle: 'HandySuites · jornada activa',
+      notificationBody: 'Tu ubicacion se comparte con el supervisor mientras trabajas.',
+      notificationColor: '#2563eb',
+    },
+  });
+  backgroundActive = true;
+  if (__DEV__) console.log('[locationCheckpoint] background updates started');
+}
+
+export async function stopBackgroundLocationUpdates(): Promise<void> {
+  if (!backgroundActive) return;
+  try {
+    const isStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+    if (isStarted) {
+      await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+    }
+  } catch (err) {
+    if (__DEV__) console.warn('[locationCheckpoint] stop background failed:', err);
+  } finally {
+    backgroundActive = false;
+  }
+}
+
+/** Returns true if foreground service de location esta corriendo. */
+export function isBackgroundTrackingActive(): boolean {
+  return backgroundActive;
 }
 
 /**
@@ -247,7 +341,7 @@ export async function flushPendingAsync(): Promise<{ pushed: number; disabled: b
  */
 async function disableTracking(): Promise<void> {
   trackingDisabled = true;
-  stopCheckpointTimer();
+  await stopBackgroundLocationUpdates().catch(() => {});
   try {
     const collection = database.get<UbicacionVendedor>('ubicaciones_vendedor');
     const all = await collection.query().fetch();
@@ -264,6 +358,6 @@ async function disableTracking(): Promise<void> {
 /** Reset (para tests o re-habilitar tras re-login). */
 export function _resetForTests(): void {
   trackingDisabled = false;
-  stopCheckpointTimer();
+  stopBackgroundLocationUpdates().catch(() => {});
   lastPingAt = 0;
 }
