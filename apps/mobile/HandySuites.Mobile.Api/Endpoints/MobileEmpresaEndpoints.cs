@@ -1,3 +1,4 @@
+using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Billing;
 using HandySuites.Shared.Multitenancy;
@@ -17,7 +18,8 @@ public static class MobileEmpresaEndpoints
 
         group.MapGet("/", async (
             ICurrentTenant tenant,
-            HandySuitesDbContext db) =>
+            HandySuitesDbContext db,
+            ISubscriptionFeatureGuard featureGuard) =>
         {
             var tenantId = tenant.TenantId;
 
@@ -33,6 +35,10 @@ public static class MobileEmpresaEndpoints
                 return Results.NotFound(new { success = false, message = "Datos de empresa no configurados" });
 
             var country = settings?.Country ?? "MX";
+            // Reliability Fase 3 GPS background: el mobile gating del toggle "Tracking GPS"
+            // depende de este flag. HasFeatureAsync no-throw + per-request cache.
+            // Returns false sin SubscriptionPlanId (tenant en free trial sin plan).
+            var trackingGpsEnabled = await featureGuard.HasFeatureAsync(tenantId, "tracking_vendedor");
 
             return Results.Ok(new
             {
@@ -55,6 +61,7 @@ public static class MobileEmpresaEndpoints
                     logoUrl = settings?.LogoUrl,
                     country,
                     billingEnabled = BillingCountrySupport.IsSupported(country),
+                    trackingGpsEnabled,
                     timezone = settings?.Timezone ?? "America/Mexico_City",
                     currency = settings?.Currency ?? "MXN",
                     language = settings?.Language ?? "es",
