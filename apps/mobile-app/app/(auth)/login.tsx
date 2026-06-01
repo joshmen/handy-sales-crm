@@ -18,8 +18,6 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Mail, Lock, KeyRound } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { COLORS } from '@/theme/colors';
-import { secureStorage } from '@/utils/storage';
-import { STORAGE_KEYS } from '@/utils/constants';
 import * as Application from 'expo-application';
 
 // Audit 2026-05-20: pantalla de login muestra version del APK debajo del
@@ -35,12 +33,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; totpCode?: string }>({});
   const [showDeviceBoundModal, setShowDeviceBoundModal] = useState(false);
-  // Audit 2026-05-08: cuando llegamos aquí desde un takeover automático
-  // (interceptor recibió 403 DEVICE_BOUND mid-session), el authStore
-  // listener guarda el email del user previo en PENDING_TAKEOVER_EMAIL.
-  // Pre-rellenamos email + mostramos hint para que sepa qué pasa, en vez
-  // de aparentar un "te cerró sesión sin razón".
-  const [takeoverHintEmail, setTakeoverHintEmail] = useState<string | null>(null);
   // TOTP step: cuando el backend retorna TOTP_REQUIRED, mostramos un input
   // para el código y reintentamos el login con totpCode. VULN-M03 fix.
   const [totpRequired, setTotpRequired] = useState(false);
@@ -51,19 +43,15 @@ export default function LoginScreen() {
   const loginMutation = useLogin();
   const forceLoginMutation = useForceLogin();
 
-  // Audit 2026-05-08: leer pending takeover email al montar la pantalla.
-  // Setteado por el listener `deviceTakeoverRequired` en authStore cuando
-  // el interceptor recibe 403 DEVICE_BOUND mid-session.
-  useEffect(() => {
-    (async () => {
-      const pending = await secureStorage.get(STORAGE_KEYS.PENDING_TAKEOVER_EMAIL);
-      if (pending) {
-        setEmail(pending);
-        setTakeoverHintEmail(pending);
-        await secureStorage.remove(STORAGE_KEYS.PENDING_TAKEOVER_EMAIL);
-      }
-    })();
-  }, []);
+  // Audit 2026-06-01 (rev 3) — el useEffect clear-on-mount fue removido.
+  // Causaba bounce loop invertido (v1): sessionExpired=false + isAuthenticated
+  // true (tokens en SecureStore + restoreSession ya corrió) hacía que AuthGate
+  // redirigiera a /(tabs) apenas el user llegaba al login. Ahora el flag se
+  // limpia en login() exitoso (authStore L61). El banner no se ve en esta
+  // pantalla porque su mount-point es (tabs)/_layout — el user está en
+  // (auth)/login, fuera del subtree. La ruta a login viene del tap del banner
+  // (router.replace) — `isAuthenticated` PERMANECE true (diseño soft-logout)
+  // y el guard `!sessionExpired` en AuthGate evita el re-redirect a (tabs).
 
   useEffect(() => {
     if (!loginMutation.isError) return;
@@ -216,15 +204,10 @@ export default function LoginScreen() {
           </View>
           <Text style={styles.formTitle}>{totpRequired ? 'Verificación 2FA' : 'Iniciar Sesión'}</Text>
 
-          {/* Audit 2026-05-08: hint cuando llegamos aquí desde takeover */}
-          {takeoverHintEmail && !totpRequired && (
-            <View style={styles.takeoverHint}>
-              <Text style={styles.takeoverHintText}>
-                Tu sesión está activa en otro dispositivo. Ingresa tu contraseña
-                para continuar aquí.
-              </Text>
-            </View>
-          )}
+          {/* Audit 2026-06-01: bloque takeoverHint eliminado junto con el
+              listener `deviceTakeoverRequired` (dead path). El PAC ya no
+              setea PENDING_TAKEOVER_EMAIL — el flow Netflix-style maneja
+              sesiones simultáneas en /(auth)/session-limit. */}
 
           {!totpRequired && (
             <>
@@ -406,19 +389,6 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textAlign: 'center',
     marginTop: 6,
-  },
-  takeoverHint: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: '#d97706',
-  },
-  takeoverHintText: {
-    fontSize: 13,
-    color: '#78350f',
-    lineHeight: 18,
   },
   footer: {
     alignItems: 'center',

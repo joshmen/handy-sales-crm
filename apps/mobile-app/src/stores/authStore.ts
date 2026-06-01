@@ -34,7 +34,7 @@ interface AuthState {
   setUser: (partial: Partial<AuthUser>) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -42,10 +42,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   sessionExpired: false,
 
   login: async (user, token, refreshToken) => {
+    // Audit 2026-06-01 (v4) — cross-user leak guard. Si el login() entra con un
+    // user.id distinto al previo (caso: sesión soft-revoked → user tappea
+    // banner → login pantalla → ingresa credenciales de OTRO usuario, posibly
+    // de otro tenant), el WatermelonDB local todavía contiene clientes /
+    // pedidos / catálogos del user A. Sin reset, el nuevo user B vería el
+    // pull diferencial encima de datos ajenos hasta que el server invalide.
+    // Es un leak multi-tenant CRÍTICO. Soft-logout normal (mismo user
+    // re-loguea) NO entra a esta rama: prevUser.id === user.id → skip reset
+    // y conservamos pending offline data como manda el diseño Netflix-style.
+    const prevUser = get().user;
+    const isDifferentUser = !!prevUser && prevUser.id !== user.id;
+
     // Reliability Fase 1: persistir a SecureStore PRIMERO. Si OEM Android mata
     // el proceso entre setAccessToken (in-memory) y el await Promise.all (disk),
     // el token queda en memoria pero perdido al next boot → restoreSession ve
-    // null → /login. Invertir orden: disk first, memory second.
+    // null → /login. Por eso: disk first, memory second.
     await Promise.all([
       secureStorage.set(STORAGE_KEYS.ACCESS_TOKEN, token),
       secureStorage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
@@ -60,6 +72,32 @@ export const useAuthStore = create<AuthState>((set) => ({
         mustChangePassword: user.mustChangePassword ?? false,
       })),
     ]);
+
+    // Persistir SESSION_EXPIRED=false (login fresh limpia el flag persistido).
+    secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'false').catch(() => {});
+
+    if (isDifferentUser) {
+      // Full reset: query cache, sync cursors y WDB local. El nuevo user
+      // pulleará desde cero al primer sync. Las exceptions silenciosas son
+      // intencionales — no queremos bloquear el set() del nuevo user si
+      // alguno de los clears falla; preferimos sesión válida con stale cache
+      // antes que loop de error que deje al user fuera.
+      try { await queryClient.cancelQueries(); queryClient.clear(); } catch {}
+      try { syncCursors.clear(); } catch {}
+      try {
+        const { database } = await import('@/db/database');
+        await database.write(async () => {
+          await database.unsafeResetDatabase();
+        });
+      } catch (e) {
+        // Si el reset falla, loggeamos pero NO abortamos el login —
+        // siguiente sync server-side filtrará por tenant. Stale cache
+        // ≪ que dejar al user sin poder entrar.
+        if (__DEV__) console.warn('[authStore] WDB reset failed:', e);
+      }
+    }
+
+    // setAccessToken al final: disk persistido + cross-user reset hechos.
     setAccessToken(token);
     // Clear sessionExpired flag al hacer login fresh.
     set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false, sessionExpired: false });
@@ -84,17 +122,69 @@ export const useAuthStore = create<AuthState>((set) => ({
       STORAGE_KEYS.REFRESH_TOKEN,
       STORAGE_KEYS.USER_DATA,
     ]);
-    set({ user: null, isAuthenticated: false, isLoading: false });
+    // Audit 2026-06-01 (v4) — limpiar también el flag persistido. Si quedaba
+    // SESSION_EXPIRED='true' de una soft-revoke previa, el siguiente cold-start
+    // entraría a login (correcto), pero al loguear se sentaba el flag en false
+    // por la persistencia de login(); de todas formas escribimos explícitamente
+    // aquí como defense-in-depth para el hard logout path.
+    secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'false').catch(() => {});
+    // Audit 2026-06-01 (v5) — SEC CRIT: replicar el patrón de B1 del v4 (login()).
+    // logout() es la otra vía por la que un device puede cambiar de user (caso:
+    // admin desvincula device → Alert → logout(); o user tappea "Cerrar sesión"
+    // y entra otro user al mismo device). Sin reset del WDB local, los datos
+    // (clientes, pedidos, catálogos) del user anterior quedan accesibles para
+    // el siguiente login → cross-user/cross-tenant leak idéntico al de B1.
+    // Dynamic import para evitar circular (database → stores → authStore);
+    // try/catch silencioso para no abortar el logout si el reset falla
+    // (preferimos sesión cerrada con stale WDB que loop de error que deje al
+    // user con sesión abierta).
+    try {
+      const { database } = await import('@/db/database');
+      await database.write(async () => { await database.unsafeResetDatabase(); });
+    } catch (e) {
+      if (__DEV__) console.warn('[authStore] WDB reset on logout failed:', e);
+    }
+    // Audit 2026-06-01 — incluir sessionExpired: false en el reset. Sin esto,
+    // si el user llegó a login screen vía banner (sessionExpired=true) y
+    // ejecuta logout() manual desde un endpoint duro, el flag se quedaba
+    // pegado y el siguiente login fresh lo arrastraba (banner aparecía mid-
+    // sesión nueva). login() también lo resetea, pero defense-in-depth.
+    set({ user: null, isAuthenticated: false, isLoading: false, sessionExpired: false });
   },
 
   restoreSession: async () => {
     try {
-      const [token, userData] = await Promise.all([
+      const [token, userData, sessionExpiredFlag] = await Promise.all([
         secureStorage.get(STORAGE_KEYS.ACCESS_TOKEN),
         secureStorage.get(STORAGE_KEYS.USER_DATA),
+        secureStorage.get(STORAGE_KEYS.SESSION_EXPIRED),
       ]);
+      // Audit 2026-06-01 (v4) — persistencia de sessionExpired entre cold-starts.
+      // Si la última corrida marcó la sesión como revocada (soft) y el user
+      // mató la app antes de re-loguear, NO debemos volver a montar (tabs) al
+      // siguiente launch: tokens locales pueden seguir presentes en SecureStore
+      // (por diseño soft-logout), pero el server ya los rechaza. Mostrar tabs
+      // = flash + 401-storm + bounce. Forzar al user al login screen
+      // directamente (isAuthenticated=false). El flag se limpia en login()
+      // o logout().
+      // (v5) — la const `sessionExpired` ahora se declara dentro del if/else
+      // para gatear setAccessToken (ver fix C1 abajo); ambos branches la
+      // re-derivan del mismo `sessionExpiredFlag`.
+
       if (token && userData) {
-        setAccessToken(token);
+        // Audit 2026-06-01 (v5) — CODE C1: no cachear el token in-memory si el
+        // flag persistido marca la sesión como revocada. setAccessToken()
+        // pondría un token ya rechazado por el server en el cache que usan
+        // useRealtime/useSessionRefresh/cualquier request que dispare antes
+        // del re-login → 401 storm + bounce. El token sigue en SecureStore
+        // (no lo borramos: el diseño soft-logout lo conserva); simplemente
+        // no lo cargamos a memoria. Al hacer login fresh, ese flow llamará
+        // setAccessToken() con el nuevo token y el cache se inicializa
+        // limpio.
+        const sessionExpired = sessionExpiredFlag === 'true';
+        if (!sessionExpired) {
+          setAccessToken(token);
+        }
         const parsed = JSON.parse(userData);
         // Ensure restored user has at minimum the essential fields
         const user: AuthUser = {
@@ -109,11 +199,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         };
         set({
           user,
-          isAuthenticated: true,
+          // Si el flag persistido dice expired, mantener al user fuera de (tabs)
+          // hasta que complete su re-login. Sin isAuthenticated=true ni
+          // (tabs) montado evitamos el flash y el 401-storm en cold-start.
+          isAuthenticated: !sessionExpired,
+          sessionExpired,
           isLoading: false,
         });
       } else {
-        set({ isLoading: false });
+        set({ isLoading: false, sessionExpired: sessionExpiredFlag === 'true' });
       }
     } catch {
       set({ isLoading: false });
@@ -144,12 +238,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
-// Listen for force logout from API interceptor
-authEventEmitter.on('forceLogout', () => {
-  useAuthStore.getState().logout();
-});
+// Audit 2026-06-01 — el listener 'forceLogout' que hacía logout() (hard:
+// limpiar tokens, queryClient.clear(), syncCursors.clear()) fue eliminado.
+// Quedaba un duplicado más abajo que solo seteaba sessionExpired=true (soft).
+// Mantener AMBOS handlers para el MISMO evento dispara los dos: primero
+// el hard logout destruía pending data en WDB y luego el soft no servía.
+// El comportamiento canónico desde el redesign Netflix-style (audit
+// 2026-05-18) es SOFT — preservar WDB pending data. Ver listener
+// 'sessionRevoked' abajo y el listener 'forceLogout' (soft) que ya
+// existía como backward-compat.
+//
+// Audit 2026-06-01 (v4) — los códigos 'SESSION_REVOKED' y 'DEVICE_REVOKED'
+// ahora se separan en el interceptor:
+//   - SESSION_REVOKED → emit('sessionRevoked')   → soft (banner, WDB intacto)
+//   - DEVICE_REVOKED  → emit('deviceRevoked')    → hard (Alert + logout())
+// DEVICE_REVOKED es un admin action irreversible: el dispositivo fue desvinculado
+// y el user NO debe seguir trabajando offline. Por eso este listener SÍ hace
+// logout() completo (clear tokens, cancel queries, clear WDB cursors).
 
-// Listen for device revocation by admin
+// Listen for device revocation by admin — HARD logout (irreversible admin action).
 authEventEmitter.on('deviceRevoked', () => {
   Alert.alert(
     'Dispositivo Desvinculado',
@@ -171,15 +278,41 @@ authEventEmitter.on('deviceRevoked', () => {
 // 3. No race conditions durante mutations en flight
 // 4. Si vuelve la sesión válida (race con otra app session activa),
 //    el siguiente request natural sucede sin interrupciones
+//
+// Audit 2026-06-01 (rev 3) — MINIMAL fix preservando el diseño soft-logout
+// original. La rev 2 bajaba `isAuthenticated=false` para "arreglar" el
+// bounce loop, pero eso rompía el contrato del rediseño 2026-05-18:
+//   - (tabs) se desmontaba → SessionExpiredBanner (mount-point dentro
+//     de (tabs)/_layout) nunca llegaba a verse
+//   - GPS checkpoint timer, SignalR, jornada watchers, React Query active
+//     queries y draft state de Zustand se cancelaban abruptamente
+//   - incident vendedor@jeyma 2026-05-19 (12 pedidos pendientes con flag
+//     activa) reaparecería: el user nunca ve el banner, sale al login
+//     forzado y pierde contexto
+// En rev 3 SOLO levantamos `sessionExpired=true`. `isAuthenticated`
+// permanece intacto → (tabs) sigue montado → banner visible → user
+// sigue trabajando offline (WDB + queries cache) hasta que decida
+// tappear "Iniciar sesión". El bounce loop se resuelve en AuthGate
+// gateando el redirect-to-tabs con `&& !sessionExpired`.
 authEventEmitter.on('sessionRevoked', () => {
-  useAuthStore.getState().setSessionExpired(true);
+  useAuthStore.setState({ sessionExpired: true });
+  // Audit 2026-06-01 (v4) — persistir el flag para que cold-start respete el
+  // estado revocado y no monte (tabs) con tokens stale (ver restoreSession).
+  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'true').catch(() => {});
 });
 
-// Backward-compat listeners: handlers viejos siguen disparando si el bundle
-// recibe eventos legacy. Mismo comportamiento soft (no clear tokens).
+// Backward-compat: handler legacy 'forceLogout' redirige a soft signal
+// (no clear de tokens). Mantiene compatibilidad con cualquier callsite que
+// todavía emita el evento viejo — debería tratarse igual que sessionRevoked.
+//
+// Audit 2026-06-01 — listener 'deviceTakeoverRequired' eliminado: dead path.
+// Nadie lo emite desde el rediseño 2026-05-18 (interceptor solo emite
+// 'sessionRevoked' / 'deviceRevoked'). El key PENDING_TAKEOVER_EMAIL y su
+// useEffect en login.tsx también fueron removidos en el mismo PR.
+//
+// Audit 2026-06-01 (rev 3) — alineado con `sessionRevoked` minimal: solo
+// `sessionExpired=true`, NO tocamos `isAuthenticated` (preservamos soft).
 authEventEmitter.on('forceLogout', () => {
-  useAuthStore.getState().setSessionExpired(true);
-});
-authEventEmitter.on('deviceTakeoverRequired', () => {
-  useAuthStore.getState().setSessionExpired(true);
+  useAuthStore.setState({ sessionExpired: true });
+  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'true').catch(() => {});
 });
