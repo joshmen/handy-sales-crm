@@ -1126,7 +1126,8 @@ public class SyncRepository : ISyncRepository
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
             existing.Version++;
-            // Revertir saldo cliente si era SaldoFavor
+            // Revertir saldo cliente si era SaldoFavor.
+            // ReposicionProducto NO toco saldo, asi que tampoco hay que revertir nada al anular.
             if (existing.TipoReembolso == TipoReembolso.SaldoFavor)
             {
                 var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == existing.ClienteId && c.TenantId == tenantId);
@@ -1260,7 +1261,9 @@ public class SyncRepository : ISyncRepository
 
         _db.DevolucionesPedido.Add(devolucion);
 
-        // Side-effect: SaldoFavor decrementa saldo del cliente
+        // Side-effect monetario: SaldoFavor decrementa saldo del cliente.
+        // ReposicionProducto NO afecta cliente.Saldo ni el corte de efectivo —
+        // el vendedor entrega un producto nuevo y absorbe el danado/caducado en su inventario.
         if (devolucion.TipoReembolso == TipoReembolso.SaldoFavor && devolucion.MontoTotal > 0)
         {
             var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId);

@@ -140,6 +140,9 @@ public static class DevolucionesEndpoints
             }
             // Para TipoReembolso=Efectivo, el cierre de ruta recomputa aRecibir dinamicamente
             // filtrando d.Estado == Activa, asi que basta con marcar Anulada.
+            // Para TipoReembolso=ReposicionProducto, no hubo movimiento de dinero — anular
+            // solo deshace el registro auditable (el producto repuesto queda en limbo;
+            // el supervisor debe ajustar inventario manualmente en el cierre si aplica).
 
             await db.SaveChangesAsync();
 

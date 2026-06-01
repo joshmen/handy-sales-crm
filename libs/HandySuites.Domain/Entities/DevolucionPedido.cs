@@ -21,6 +21,15 @@ public enum TipoReembolso
 
     /// <summary>Vendedor reembolsa en efectivo: resta de su corte de caja.</summary>
     Efectivo = 1,
+
+    /// <summary>
+    /// Vendedor repone el producto en el momento (caso comun: producto caducado/danado).
+    /// NO afecta cliente.Saldo ni el corte de efectivo. Solo se registra como devolucion
+    /// auditable. El inventario del vehiculo del vendedor disminuye en la cantidad repuesta
+    /// (el producto repuesto sale del stock que llevaba en ruta), lo cual queda visible en
+    /// el cierre como diferencia entre Inicial y consumido.
+    /// </summary>
+    ReposicionProducto = 2,
 }
 
 public enum EstadoDevolucion

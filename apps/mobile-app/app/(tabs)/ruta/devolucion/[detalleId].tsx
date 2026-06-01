@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
 import {
   PackageX, AlertTriangle, CalendarX, ClipboardX, UserX, Replace, FileQuestion,
-  Camera, Image as ImageIcon, X, ChevronLeft, RotateCcw, Wallet, Receipt as ReceiptIcon, Minus, Plus,
+  Camera, Image as ImageIcon, X, ChevronLeft, RotateCcw, Wallet, Receipt as ReceiptIcon, Minus, Plus, PackagePlus,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores';
 import { database } from '@/db/database';
@@ -36,8 +36,12 @@ const MOTIVOS_DEVOLUCION = [
   { value: 99, label: 'Otro', icon: FileQuestion, color: '#64748b' },
 ] as const;
 
-// TipoReembolso — 0=SaldoFavor (default, no entrega efectivo ahora), 1=Efectivo (vendedor saca billete)
+// TipoReembolso mirror del backend enum:
+// 0=SaldoFavor (credito al cliente), 1=Efectivo (vendedor saca billete),
+// 2=ReposicionProducto (vendedor entrega producto nuevo en lugar del danado/caducado — sin movimiento dinero).
+// Reposicion es el flujo mas comun en campo segun usuario 2026-05-31.
 const TIPOS_REEMBOLSO = [
+  { value: 2, label: 'Reposición', desc: 'Entrego producto nuevo', icon: PackagePlus, color: '#16a34a' },
   { value: 0, label: 'Saldo a favor', desc: 'Se acredita al cliente', icon: Wallet, color: '#2563eb' },
   { value: 1, label: 'Efectivo', desc: 'Vendedor reembolsa ahora', icon: ReceiptIcon, color: '#d97706' },
 ] as const;
@@ -68,7 +72,9 @@ function NuevaDevolucionScreen() {
   const [items, setItems] = useState<ItemDevolucionDraft[]>([]);
 
   const [motivo, setMotivo] = useState<number>(0);
-  const [tipoReembolso, setTipoReembolso] = useState<number>(0); // SaldoFavor default
+  // Default Reposicion (=2) por feedback usuario: es el flujo mas comun
+  // (caso producto caducado/danado: vendedor lo repone en el momento).
+  const [tipoReembolso, setTipoReembolso] = useState<number>(2);
   const [notas, setNotas] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -145,7 +151,8 @@ function NuevaDevolucionScreen() {
   }, [items]);
 
   const hayItemsSeleccionados = items.some((it) => (parseFloat(it.cantidadDevolverTxt.replace(',', '.')) || 0) > 0);
-  const canSave = hayItemsSeleccionados && totalDevolucion > 0 && !saving;
+  // Foto OBLIGATORIA (feedback usuario 2026-05-31: igual que gastos, supervisor exige evidencia).
+  const canSave = hayItemsSeleccionados && totalDevolucion > 0 && !!photoUri && !saving;
 
   const updateCantidad = (idx: number, txt: string) => {
     setItems((prev) => prev.map((it, i) => {
@@ -393,9 +400,9 @@ function NuevaDevolucionScreen() {
             })}
           </View>
 
-          {/* Foto evidencia (opcional) */}
-          <Text style={styles.label}>Evidencia (opcional)</Text>
-          <Text style={styles.hint}>Toma foto del producto devuelto para auditoria del supervisor.</Text>
+          {/* Foto evidencia OBLIGATORIA — supervisor exige evidencia visual */}
+          <Text style={styles.labelRequired}>Evidencia (obligatoria)</Text>
+          <Text style={styles.hint}>Toma foto del producto devuelto para auditoria. Se sube a Cloudinary en background.</Text>
           {photoUri ? (
             <View style={styles.photoBox}>
               <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
@@ -405,11 +412,11 @@ function NuevaDevolucionScreen() {
             </View>
           ) : (
             <View style={styles.photoButtonsRow}>
-              <TouchableOpacity onPress={handleTakePhoto} style={styles.photoBtn} testID="btn-camera">
+              <TouchableOpacity onPress={handleTakePhoto} style={[styles.photoBtn, styles.photoBtnRequired]} testID="btn-camera">
                 <Camera size={20} color={COLORS.primary} />
                 <Text style={styles.photoBtnLabel}>Camara</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handlePickPhoto} style={styles.photoBtn} testID="btn-gallery">
+              <TouchableOpacity onPress={handlePickPhoto} style={[styles.photoBtn, styles.photoBtnRequired]} testID="btn-gallery">
                 <ImageIcon size={20} color={COLORS.primary} />
                 <Text style={styles.photoBtnLabel}>Galeria</Text>
               </TouchableOpacity>
@@ -464,6 +471,7 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: COLORS.foreground },
   scroll: { padding: 16, gap: 4 },
   label: { fontSize: 13, fontWeight: '600', color: COLORS.foreground, marginTop: 16, marginBottom: 8 },
+  labelRequired: { fontSize: 13, fontWeight: '700', color: '#b45309', marginTop: 16, marginBottom: 8 },
   hint: { fontSize: 12, color: '#6b7280', marginBottom: 8 },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { fontSize: 14, color: '#6b7280' },
@@ -522,6 +530,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary, backgroundColor: '#fff',
   },
   photoBtnLabel: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+  photoBtnRequired: { borderStyle: 'dashed', borderWidth: 2 },
   photoBox: { position: 'relative', borderRadius: 12, overflow: 'hidden', aspectRatio: 4 / 3 },
   photo: { width: '100%', height: '100%' },
   photoRemove: {

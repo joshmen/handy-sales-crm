@@ -360,13 +360,19 @@ export function DevolucionCardList({
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-px" />
               <div className="text-xs text-amber-900">
                 <p className="font-medium">Esto revertirá los movimientos:</p>
-                {anularTarget.tipoReembolso === 0 ? (
+                {anularTarget.tipoReembolso === 0 && (
                   <p className="mt-1">
                     Regresará <strong>{formatCurrency(anularTarget.montoTotal)}</strong> al saldo del cliente (que actualmente tenía a su favor por esta devolución).
                   </p>
-                ) : (
+                )}
+                {anularTarget.tipoReembolso === 1 && (
                   <p className="mt-1">
                     El monto dejará de restar de <strong>aRecibir</strong> en el cierre de ruta. Verifica que cuadre el efectivo entregado por el vendedor.
+                  </p>
+                )}
+                {anularTarget.tipoReembolso === 2 && (
+                  <p className="mt-1">
+                    Sin movimiento monetario (fue reposición de producto). Solo se removerá del registro auditable de la ruta. El inventario del vendedor ya fue afectado en campo y debe reconciliarse manualmente en el cierre si aplica.
                   </p>
                 )}
               </div>

@@ -10,6 +10,14 @@ name: "Registrar devolucion cliente desde parada Completada"
 # 4. Abrir screen → marcar 1 producto cantidad 1 → motivo → tipo reembolso → guardar
 # 5. Verificar toast success + back a parada
 
+# Skip onboarding si está visible
+- runFlow:
+    when:
+      visible: "Omitir"
+    commands:
+      - tapOn: "Omitir"
+      - waitForAnimationToEnd
+
 # Login
 - extendedWaitUntil:
     visible:
@@ -19,7 +27,7 @@ name: "Registrar devolucion cliente desde parada Completada"
 - tapOn:
     id: "email-input"
 - eraseText: 50
-- inputText: "admin@jeyma.com"
+- inputText: "vendedor1@jeyma.com"
 - hideKeyboard
 
 - tapOn:

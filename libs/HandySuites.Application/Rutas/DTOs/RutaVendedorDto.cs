@@ -366,6 +366,9 @@ public class CierreRutaResumenDto
     /// <summary>Devoluciones con TipoReembolso=SaldoFavor — NO restan de aRecibir (queda a favor del cliente).</summary>
     public double DevolucionesSaldoFavor { get; set; }
     public int DevolucionesSaldoFavorCount { get; set; }
+    /// <summary>Devoluciones con TipoReembolso=ReposicionProducto — vendedor repuso producto sin movimiento dinero. NO afecta aRecibir.</summary>
+    public double DevolucionesReposicion { get; set; }
+    public int DevolucionesReposicionCount { get; set; }
     /// <summary>Gastos del vendedor imputados a esta ruta (combustible, peajes, etc) — RESTAN de aRecibir.</summary>
     public double Gastos { get; set; }
     public int GastosCount { get; set; }

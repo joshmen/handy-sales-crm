@@ -89,11 +89,13 @@ export const MOTIVO_DEVOLUCION_COLOR: Record<number, string> = {
 export const TIPO_REEMBOLSO_LABEL: Record<number, string> = {
   0: 'Saldo a favor',
   1: 'Efectivo',
+  2: 'Reposición producto',
 };
 
 export const TIPO_REEMBOLSO_COLOR: Record<number, string> = {
   0: 'bg-blue-100 text-blue-700 border-blue-200',
   1: 'bg-amber-100 text-amber-700 border-amber-200',
+  2: 'bg-green-100 text-green-700 border-green-200',
 };
 
 class DevolucionesService {
