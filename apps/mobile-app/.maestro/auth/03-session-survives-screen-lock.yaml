@@ -1,0 +1,52 @@
+appId: host.exp.exponent
+name: "Session survives screen lock + power button"
+---
+
+# Reliability Sprint Fase 1: validar que bloquear/desbloquear pantalla NO
+# kickea al vendedor a /login. Token persiste en SecureStore (hardware Keystore)
+# y restoreSession() rehidrata al cold start.
+#
+# PRE-REQUISITO: vendedor ya logged in (dashboard "Hoy" visible).
+# Si está logged out, hay que hacer login manual antes — el bug de Gboard
+# autocomplete en password rompe Maestro login automatico (ver
+# memory/emulator_metro_setup.md "Login automation Gboard autocomplete bypass").
+
+# Verificar estado inicial: vendedor en dashboard
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: pre-lock
+
+# Bloquear pantalla con power button
+- pressKey: Power
+
+# Esperar 30 segundos con pantalla bloqueada
+- waitForAnimationToEnd:
+    timeout: 30000
+
+# Desbloquear con power button
+- pressKey: Power
+
+# Despues del unlock, swipe up para dismiss el lockscreen (Android default)
+- swipe:
+    start: 50%, 90%
+    end: 50%, 10%
+    duration: 500
+
+# Verificar que la app sigue en su pantalla, no en /login
+- assertVisible: "Hoy"
+- assertNotVisible:
+    id: "login-button"
+
+- takeScreenshot: post-unlock
+
+# Hacer un tap en cualquier elemento para forzar request al backend.
+# Si el token estaba muerto, este tap dispara 401 → flow refresh → eventualmente
+# logged in. Si todo OK, navega sin issues.
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- assertNotVisible:
+    id: "login-button"
+
+- takeScreenshot: post-unlock-tap-ok
