@@ -1,12 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Text, StyleSheet, Animated } from 'react-native';
 import { WifiOff, Wifi } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 const BANNER_HEIGHT = 30;
+// El tab bar de (tabs)/_layout.tsx mide TAB_BAR_HEIGHT + insets.bottom.
+// En RN `position: absolute + bottom: X` mide desde el borde de la pantalla,
+// no desde el tab bar, asi que hay que sumar insets.bottom para sentarnos
+// justo arriba del tab bar (sino quedariamos detras del home indicator iOS
+// o de la gesture nav Android). Mismo fix aplicado en SessionExpiredBanner.
 const TAB_BAR_HEIGHT = 60;
 
 export function OfflineBanner() {
+  const insets = useSafeAreaInsets();
   const { isConnected } = useNetworkStatus();
   const [showReconnected, setShowReconnected] = useState(false);
   const [wasOffline, setWasOffline] = useState(false);
@@ -53,6 +60,7 @@ export function OfflineBanner() {
     <Animated.View
       style={[
         styles.banner,
+        { bottom: TAB_BAR_HEIGHT + insets.bottom },
         isOffline ? styles.offlineBanner : styles.reconnectedBanner,
         { transform: [{ translateY: slideAnim }] },
       ]}
@@ -74,7 +82,7 @@ export function OfflineBanner() {
 const styles = StyleSheet.create({
   banner: {
     position: 'absolute',
-    bottom: TAB_BAR_HEIGHT,
+    // bottom se sobrescribe inline con TAB_BAR_HEIGHT + insets.bottom
     left: 0,
     right: 0,
     zIndex: 999,
