@@ -64,10 +64,16 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   USER_DATA: 'user_data',
   DEVICE_ID: 'device_id',
-  // Audit 2026-05-08: persistido cuando el middleware backend devuelve
-  // 403 DEVICE_BOUND mid-session (fingerprint cambió o sesión huérfana).
-  // Login screen lee al montar y pre-rellena email + muestra hint.
-  PENDING_TAKEOVER_EMAIL: 'pending_takeover_email',
+  // Audit 2026-06-01 (v4) — persistencia del flag soft-logout. Si la sesión fue
+  // revocada server-side y el user cierra la app antes de tappear el banner,
+  // al re-abrirla restoreSession debe respetar el flag para evitar flash de
+  // (tabs) en cold-start: no setear isAuthenticated:true si SESSION_EXPIRED=
+  // 'true'. Login fresh y logout limpian este flag.
+  SESSION_EXPIRED: 'auth_session_expired',
+  // Audit 2026-06-01 — PENDING_TAKEOVER_EMAIL eliminado: dead code. Lo seteaba
+  // un listener `deviceTakeoverRequired` que el interceptor ya no emite desde
+  // el rediseño Netflix-style (audit 2026-05-18). Si vuelve a ser necesario,
+  // resucitar desde git history.
 } as const;
 
 export const USER_ROLES = {

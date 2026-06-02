@@ -209,6 +209,19 @@ const INITIAL_SYNC_KEY = 'initial_sync_complete';
 
 function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   const { isAuthenticated, isLoading, restoreSession, user } = useAuthStore();
+  // Audit 2026-06-01 (rev 3) — MINIMAL bounce loop fix preservando el
+  // diseño soft-logout (audit 2026-05-18). El listener 'sessionRevoked'
+  // ahora SOLO levanta `sessionExpired=true` (no toca `isAuthenticated`).
+  // Eso mantiene (tabs) montado → SessionExpiredBanner visible, GPS/SignalR/
+  // queries vivos, draft data intacta. Pero el effect de abajo seguía
+  // redirigiéndo a (tabs) cuando el user navegaba a /(auth)/login desde
+  // el banner (sessionExpired=true + isAuthenticated=true). El fix es
+  // simplemente gatear la rama de redirect-to-tabs con `!sessionExpired`:
+  // así el user puede llegar al login screen y re-loguear (login()
+  // resetea sessionExpired:false → AuthGate vuelve al flow normal).
+  // NO agregamos un redirect-to-login automático cuando sessionExpired
+  // se levanta — el contrato es que el banner pinte y el user decida.
+  const sessionExpired = useAuthStore(s => s.sessionExpired);
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const segments = useSegments();
   const router = useRouter();
@@ -259,17 +272,27 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
       } else {
         router.replace('/(auth)/login');
       }
-    } else if (isAuthenticated && user?.mustChangePassword && !onCambiarPasswordScreen) {
+    } else if (isAuthenticated && !sessionExpired && user?.mustChangePassword && !onCambiarPasswordScreen) {
       // Force-redirect a cambiar-password — el usuario fue creado con password
       // temporal por un admin (caso vendedor de campo MX sin email). No puede
       // navegar a otra pantalla hasta cambiarla. Backend MustChangePassword
       // flag = source of truth; sync local en setUser tras success.
+      // Audit 2026-06-01 (v4) — guard `!sessionExpired`: si el user llegó al
+      // banner soft-revoked, no queremos secuestrar el redirect a cambiar-
+      // password (server ya rechaza la sesión; primero que re-loguee).
       router.replace('/(auth)/cambiar-password' as any);
-    } else if (isAuthenticated && !user?.mustChangePassword && !inTabsGroup) {
-      // Navigate to tabs — splash overlay handles sync if needed
+    } else if (isAuthenticated && !sessionExpired && !user?.mustChangePassword && !inTabsGroup) {
+      // Navigate to tabs — splash overlay handles sync if needed.
+      // Audit 2026-06-01 (rev 3) — guard `!sessionExpired`: cuando el user
+      // tappea el banner desde (tabs), navega a /(auth)/login. Sin este
+      // guard, este effect lo veía con `isAuthenticated=true` (tokens
+      // intactos en SecureStore por diseño soft-logout) y lo re-redirigía
+      // a (tabs) → bounce loop. Con sessionExpired=true, dejamos que el
+      // user complete su re-login en paz. El login() resetea el flag al
+      // final → siguiente render entra a la rama normal.
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, onboardingDone, segments, user?.mustChangePassword]);
+  }, [isAuthenticated, sessionExpired, isLoading, onboardingDone, segments, user?.mustChangePassword]);
 
   // Handle cold-start deep links (e.g., from killed notification tap)
   useEffect(() => {

@@ -115,21 +115,28 @@ export function getAccessToken(): string | null {
 
 // --- Simple event emitter for force logout (avoids circular import with store) ---
 type Listener = () => void;
+// Audit 2026-06-01 (v4) — eventos canónicos:
+//   - 'sessionRevoked'  → SOFT signal (banner, WDB intacto). Backend codes:
+//                          SESSION_REVOKED, refresh exhausted.
+//   - 'deviceRevoked'   → HARD signal (Alert + logout()). Backend code:
+//                          DEVICE_REVOKED (admin unbinding device).
+//   - 'forceLogout'     → backward-compat (= sessionRevoked).
+type AuthEvent = 'sessionRevoked' | 'deviceRevoked' | 'forceLogout';
 
 class AuthEventEmitter {
   private listeners: Record<string, Listener[]> = {};
 
-  on(event: string, fn: Listener) {
+  on(event: AuthEvent, fn: Listener) {
     (this.listeners[event] ||= []).push(fn);
   }
 
-  off(event: string, fn: Listener) {
+  off(event: AuthEvent, fn: Listener) {
     this.listeners[event] = (this.listeners[event] || []).filter(
       (f) => f !== fn
     );
   }
 
-  emit(event: string) {
+  emit(event: AuthEvent) {
     (this.listeners[event] || []).forEach((fn) => fn());
   }
 }
@@ -210,7 +217,49 @@ apiInstance.interceptors.response.use(
     };
 
     const requestUrl = originalRequest?.url || '';
-    const isAuthEndpoint = requestUrl.includes('/api/mobile/auth/');
+    // Audit 2026-06-01 — antes era `requestUrl.includes('/api/mobile/auth/')`,
+    // que excluía TODA la familia /auth/ del banner. Eso ocultaba problemas
+    // reales como /me, /change-password, /logout, /device-token, /my-sessions,
+    // /revoke-session: si esos devolvían 401 SESSION_REVOKED el user quedaba
+    // confundido viendo el screen pero sin feedback. Solo los endpoints
+    // estrictamente de adquisición/renovación de token deben quedar exentos
+    // (sus callers ya manejan errores directo).
+    const AUTH_EXEMPT_PATHS = [
+      '/api/mobile/auth/login',
+      '/api/mobile/auth/force-login',
+      '/api/mobile/auth/revoke-and-login',
+      '/api/mobile/auth/refresh',
+      '/api/mobile/auth/ack-unbind',
+      // Audit 2026-06-01 — change-password: el caller (cambiar-password
+      // screen) maneja sus errores directamente con Toast/inline. Si el
+      // backend devuelve 401 SESSION_REVOKED mientras el user está mid-
+      // change-password, no debemos disparar el banner — la pantalla ya
+      // está en (auth) y el flujo natural es que el caller muestre el
+      // error y route al user a login si corresponde.
+      '/api/mobile/auth/change-password',
+    ];
+    // Audit 2026-06-01 (v4) — antes era `requestUrl.includes(p)`, demasiado
+    // laxo: `/api/mobile/auth/login` matchearía un hipotético endpoint
+    // `/api/mobile/auth/login-history` y lo dejaría exento del banner por
+    // accidente. Comparamos el pathname strict: igual, con query (`?…`), o
+    // con sub-segmento (`/…`). Si parsear la URL falla (URL relativa sin
+    // origen base), fallback a comparar el final del string contra el path
+    // (sin sufijos sospechosos). Hermes/RN 0.81 trae `URL` nativo.
+    const isAuthEndpoint = AUTH_EXEMPT_PATHS.some((p) => {
+      try {
+        const u = new URL(requestUrl, API_CONFIG.BASE_URL);
+        const path = u.pathname;
+        return path === p || path.startsWith(p + '?') || path.startsWith(p + '/');
+      } catch {
+        // Fallback: requestUrl no parseable como URL absoluta o relativa
+        // a BASE_URL. Hacer un match más estricto que `includes`: el path
+        // debe terminar exactamente en `p`, o seguirle `?` o `/`.
+        const re = new RegExp(
+          `(^|/)${p.replace(/^\//, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\?|$|/)`
+        );
+        return re.test(requestUrl);
+      }
+    });
 
     if (error.response?.status === 401) {
       const errorCode = error.response.data?.code;
@@ -224,12 +273,34 @@ apiInstance.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // SESSION_REVOKED: sesión específica revocada server-side (logout en
-      // otro device, admin revoke, expiración, etc.). Emit 'sessionRevoked'
-      // como SOFT signal. authStore NO hace clear de tokens — sólo marca
-      // state.sessionExpired = true. UI muestra banner persistente.
-      // Pending data en WDB intacta.
-      if (errorCode === 'SESSION_REVOKED' || errorCode === 'DEVICE_REVOKED') {
+      // Audit 2026-06-01 (v4) — separar SESSION_REVOKED (soft) de DEVICE_REVOKED
+      // (hard). Antes ambos códigos compartían el path soft; eso era un bug
+      // semántico: DEVICE_REVOKED es una acción admin irreversible que
+      // requiere logout completo + Alert (lo emite el backend cuando el admin
+      // desvincula el dispositivo). SESSION_REVOKED es transient (sesión
+      // específica revocada — otro device tomó la sesión, refresh expirado,
+      // etc.) y mantiene el flow soft con banner + WDB intacta.
+      //
+      // Audit 2026-06-01 (v5) — SEC MOD: DEVICE_REVOKED debe emitirse SIEMPRE,
+      // incluso si la request salió de un endpoint exempt (login/refresh/
+      // change-password). Antes el guard isAuthEndpoint silenciaba el evento
+      // y los tokens revocados se quedaban en SecureStore sin Alert ni
+      // logout: el user podía seguir en /change-password tipeando sin saber
+      // que el admin ya lo desvinculó. Stale-token guard se mantiene (no
+      // emitir si la request iba con un token superado por login fresh).
+      if (errorCode === 'DEVICE_REVOKED') {
+        if (tokenAtRequest && _cachedAccessToken && tokenAtRequest !== _cachedAccessToken) {
+          if (__DEV__) console.log('[API] 401 DEVICE_REVOKED on stale token — ignoring (user re-logged in)');
+          return Promise.reject(error);
+        }
+        if (__DEV__) console.log('[API] 401 DEVICE_REVOKED — emitting deviceRevoked (hard, bypassing exempt guard)');
+        authEventEmitter.emit('deviceRevoked');
+        return Promise.reject(error);
+      }
+
+      // SESSION_REVOKED es soft; los endpoints exempt (login/refresh/...)
+      // manejan sus 401s inline sin necesidad del banner global.
+      if (errorCode === 'SESSION_REVOKED') {
         if (tokenAtRequest && _cachedAccessToken && tokenAtRequest !== _cachedAccessToken) {
           if (__DEV__) console.log('[API] 401 SESSION_REVOKED on stale token — ignoring (user re-logged in)');
           return Promise.reject(error);
