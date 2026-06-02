@@ -1,4 +1,5 @@
 using HandySuites.Application.Common;
+using HandySuites.Application.Common.Time;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Application.Sync.Interfaces;
 using HandySuites.Domain.Entities;
@@ -461,7 +462,7 @@ public class SyncRepository : ISyncRepository
                 UsuarioId = usuarioId,
                 ClienteId = dto.ClienteId,
                 NumeroPedido = numeroPedido,
-                FechaPedido = dto.FechaPedido,
+                FechaPedido = DateTimeNormalization.EnsureUtc(dto.FechaPedido),
                 FechaEntregaEstimada = dto.FechaEntregaEstimada,
                 Estado = (EstadoPedido)dto.Estado,
                 TipoVenta = (TipoVenta)dto.TipoVenta,
@@ -1016,7 +1017,7 @@ public class SyncRepository : ISyncRepository
                 existing.TipoGasto = (TipoGasto)dto.TipoGasto;
                 existing.Concepto = dto.Concepto;
                 existing.Notas = dto.Notas;
-                existing.FechaGasto = dto.FechaGasto != default ? dto.FechaGasto : existing.FechaGasto;
+                existing.FechaGasto = dto.FechaGasto != default ? DateTimeNormalization.EnsureUtc(dto.FechaGasto) : existing.FechaGasto;
                 // ComprobanteUrl: server-side stamp tiene preferencia (MobileAttachmentEndpoints).
                 // Solo aceptamos URL desde mobile push si existing.ComprobanteUrl es null — esto
                 // resuelve race condition cuando el stamp fallo y mobile stampeo localmente la URL.
@@ -1074,7 +1075,7 @@ public class SyncRepository : ISyncRepository
             MobileRecordId = dto.LocalId,
             UsuarioId = usuarioId,
             RutaId = resolvedRutaId,
-            FechaGasto = dto.FechaGasto != default ? dto.FechaGasto : DateTime.UtcNow,
+            FechaGasto = dto.FechaGasto != default ? DateTimeNormalization.EnsureUtc(dto.FechaGasto) : DateTime.UtcNow,
             Monto = dto.Monto,
             TipoGasto = (TipoGasto)dto.TipoGasto,
             Concepto = dto.Concepto,
@@ -1271,7 +1272,7 @@ public class SyncRepository : ISyncRepository
             ClienteId = dto.ClienteId > 0 ? dto.ClienteId : pedido.ClienteId,
             UsuarioId = usuarioId,
             RutaId = resolvedRutaId,
-            FechaDevolucion = dto.FechaDevolucion != default ? dto.FechaDevolucion : DateTime.UtcNow,
+            FechaDevolucion = dto.FechaDevolucion != default ? DateTimeNormalization.EnsureUtc(dto.FechaDevolucion) : DateTime.UtcNow,
             Motivo = (MotivoDevolucion)dto.Motivo,
             Notas = dto.Notas,
             TipoReembolso = (TipoReembolso)dto.TipoReembolso,
