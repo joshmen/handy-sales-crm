@@ -2,6 +2,7 @@ import type { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
 import type { DirtyRaw } from '@nozbe/watermelondb/RawRecord';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
+import { dedupeChangeset } from './dedupeChangeset';
 
 // ────────────────────────────────────────────────────────────────
 // PULL: Server → WatermelonDB
@@ -161,7 +162,7 @@ function splitByOperation(
     }
   }
 
-  return { created: [], updated, deleted };
+  return dedupeChangeset({ created: [], updated, deleted });
 }
 
 // ── Entity Mappers (server DTO → WatermelonDB raw) ──
@@ -313,7 +314,7 @@ function extractDetallesPedido(
     }
   }
 
-  return { created, updated, deleted: [] };
+  return dedupeChangeset({ created, updated, deleted: [] });
 }
 
 function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
@@ -387,7 +388,7 @@ function extractRutaPedidos(
       });
     }
   }
-  return { created: [], updated, deleted: [] };
+  return dedupeChangeset({ created: [], updated, deleted: [] });
 }
 
 /**
@@ -427,7 +428,7 @@ function extractRutaCarga(
       });
     }
   }
-  return { created: [], updated, deleted: [] };
+  return dedupeChangeset({ created: [], updated, deleted: [] });
 }
 
 function extractDetallesRuta(
@@ -472,7 +473,7 @@ function extractDetallesRuta(
     }
   }
 
-  return { created, updated, deleted: [] };
+  return dedupeChangeset({ created, updated, deleted: [] });
 }
 
 function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<number, string>): DirtyRaw {
@@ -606,7 +607,7 @@ function extractDetallesDevolucion(devs: any[] | undefined, isFirstSync: boolean
       }
     }
   }
-  return { created, updated, deleted };
+  return dedupeChangeset({ created, updated, deleted });
 }
 
 function mapDetalleDevolucionToRaw(dd: any, detalleDevMap: Map<number, string>, devMap: Map<number, string>,
