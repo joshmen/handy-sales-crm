@@ -169,6 +169,20 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       },
 
       sendCreatedAsUpdated: true,
+
+      // Default explicito: per-column client-wins (lo que WDB hace por default
+      // pero ahora es visible).
+      //  - `resolved` ya viene calculado por WDB: remote prevalece EXCEPTO en
+      //    columnas que el cliente editó desde el ultimo sync (esas ganan).
+      //  - El record queda marcado _status='updated' si tenia cambios locales,
+      //    lo que garantiza que se pushean en el siguiente pushChanges sin
+      //    perder el trabajo offline del vendedor.
+      // Bug prod 2026-06-03: sin esto el pull podia abortar con
+      // `Cannot update a record with pending changes pedidos#qQyLko2m8rS8z4fb`
+      // — combinado con el dedupe en mappers.ts ese error queda resuelto.
+      conflictResolver: (_table, _local, _remote, resolved) => {
+        return resolved;
+      },
     });
 
     // Phase 2b: Server ID mappings — log only, don't modify records
