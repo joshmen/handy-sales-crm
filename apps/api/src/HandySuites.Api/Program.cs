@@ -230,6 +230,7 @@ app.MapClienteVisitaEndpoints();
 app.MapDeviceSessionEndpoints();
 app.MapRutaVendedorEndpoints();
 app.MapSyncEndpoints();
+app.MapAdminSyncHealthEndpoints();
 app.MapUsuarioEndpoints();
 app.MapTeamLocationEndpoints();
 app.MapProductoEndpoints();

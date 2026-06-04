@@ -1,0 +1,49 @@
+﻿appId: host.exp.exponent
+name: "Skip onboarding + login vendedor"
+---
+
+# Dismiss any dev menu first
+- tapOn:
+    text: "Continue"
+    optional: true
+
+# Skip onboarding via Omitir
+- tapOn:
+    text: "Omitir"
+    optional: true
+- waitForAnimationToEnd
+
+# Now login screen
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+- tapOn:
+    id: "login-button"
+
+# Handle session picker if present
+- tapOn:
+    text: "Dispositivo desconocido"
+    optional: true
+- tapOn:
+    text: "Desconectar y continuar"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "RESUMEN DEL"
+    timeout: 60000
+
+- takeScreenshot: "logged-in-success"

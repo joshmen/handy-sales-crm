@@ -31,6 +31,39 @@ public class PedidoService
         _transactions = transactions;
     }
 
+    /// <summary>
+    /// B.1 eager-save (fix prod 2026-06-04 post-incidente Rodrigo). Endpoint
+    /// idempotente para persistir el pedido como Estado=Borrador en el server
+    /// INMEDIATAMENTE después de que el vendedor toca "Finalizar" en mobile —
+    /// antes de que el sync push lo eventually mande. Garantiza durabilidad
+    /// aún si el SQLite local se borra (uninstall, factory reset, corruption).
+    ///
+    /// NO valida cliente activo / producto activo / stock — esas validaciones
+    /// suceden al promover Estado=Borrador → Confirmado/Entregado vía sync
+    /// push normal (UpsertPedidoAsync). Aquí solo importa la durabilidad.
+    /// </summary>
+    public async Task<PedidoEagerSaveResultDto> EagerSaveAsync(PedidoEagerSaveDto dto)
+    {
+        var usuarioId = int.Parse(_tenant.UserId);
+
+        if (string.IsNullOrWhiteSpace(dto.MobileRecordId))
+        {
+            throw new InvalidOperationException(
+                "MobileRecordId es requerido para eager-save (idempotency key).");
+        }
+
+        var outcome = await _repository.EagerSaveAsync(dto, usuarioId, _tenant.TenantId);
+
+        return new PedidoEagerSaveResultDto
+        {
+            ServerId = outcome.ServerId,
+            MobileRecordId = dto.MobileRecordId,
+            AckedAt = outcome.AckedAt,
+            Estado = (int)outcome.Estado,
+            Idempotent = outcome.Idempotent
+        };
+    }
+
     public async Task<int> CrearAsync(PedidoCreateDto dto)
     {
         var usuarioId = int.Parse(_tenant.UserId);

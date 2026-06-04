@@ -1,0 +1,147 @@
+appId: host.exp.exponent
+name: "Plan eager-drifting — desde dashboard (skip login)"
+---
+
+# Asume sesión iniciada — buscar "Pedidos hoy" (KPI card del Hoy)
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 15000
+
+- takeScreenshot: "00-dashboard-pre-test"
+
+# ═══════════════════════════════════════════
+# PASO 1: B.1 — crear pedido (dispara eager-save)
+# Usar shortcut "Nuevo Pedido" del Hoy screen directamente
+# ═══════════════════════════════════════════
+- tapOn:
+    text: "Nuevo Pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Selecciona el tipo de venta"
+    timeout: 10000
+
+- tapOn: "Preventa"
+- waitForAnimationToEnd
+
+# App pre-prompt de permiso de ubicación: tap "Ahora no" (test sin GPS)
+- tapOn:
+    text: "Ahora no"
+    optional: true
+- waitForAnimationToEnd
+
+# System permission dialog (si "Permitir" se eligió) — Maestro maneja system
+# permissions via "Don't allow" / "Allow only this time" — pero como elegimos
+# "Ahora no" arriba, este bloque queda como defensa.
+- tapOn:
+    text: "Don't allow"
+    optional: true
+- tapOn:
+    text: "Deny"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Seleccionar"
+    timeout: 10000
+
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 10000
+
+- tapOn: "Agregar"
+- waitForAnimationToEnd
+
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Subtotal"
+    timeout: 10000
+
+- takeScreenshot: "02-revisar-pedido"
+
+- tapOn: "Levantar Pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "ENVIAR"
+    timeout: 5000
+
+- tapOn: "ENVIAR"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedido Levantado"
+    timeout: 15000
+
+- takeScreenshot: "03-pedido-exito"
+
+- tapOn:
+    text: "Cerrar"
+    optional: true
+- back
+- waitForAnimationToEnd
+
+# ═══════════════════════════════════════════
+# PASO 2: B.3 — intentar logout
+# ═══════════════════════════════════════════
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cerrar Sesión"
+    timeout: 10000
+
+- tapOn: "Cerrar Sesión"
+- waitForAnimationToEnd
+
+- takeScreenshot: "04-logout-attempt"
+
+# Si aparece el modal "Datos sin sincronizar" (B.3 pendings block)
+- assertVisible:
+    text: "Datos sin sincronizar"
+    optional: true
+- tapOn:
+    text: "Cancelar"
+    optional: true
+# Si NO apareció el modal (sync ya terminó), aparece el modal de Cerrar Sesión normal
+- tapOn:
+    text: "Cancelar"
+    optional: true
+
+# ═══════════════════════════════════════════
+# PASO 3: C.2 — Restaurar desde servidor visible
+# ═══════════════════════════════════════════
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Sincronizaci"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Sincronizar Ahora"
+    timeout: 10000
+
+- takeScreenshot: "05-sync-screen"
+
+- scroll
+- scroll
+- takeScreenshot: "06-sync-scrolled"
+
+- assertVisible:
+    text: "Restaurar desde servidor"
+- assertVisible:
+    text: "EMERGENCIA"
+
+- takeScreenshot: "07-restore-button-visible"

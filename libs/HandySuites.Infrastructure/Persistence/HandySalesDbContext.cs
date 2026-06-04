@@ -52,6 +52,7 @@ public class HandySuitesDbContext : DbContext
     public DbSet<DetallePedido> DetallePedidos => Set<DetallePedido>();
     public DbSet<ClienteVisita> ClienteVisitas => Set<ClienteVisita>();
     public DbSet<DeviceSession> DeviceSessions => Set<DeviceSession>();
+    public DbSet<MobileSyncTelemetry> MobileSyncTelemetry => Set<MobileSyncTelemetry>();
     public DbSet<RutaVendedor> RutasVendedor => Set<RutaVendedor>();
     public DbSet<RutaDetalle> RutasDetalle => Set<RutaDetalle>();
     public DbSet<RutaCarga> RutasCarga => Set<RutaCarga>();
@@ -1103,6 +1104,22 @@ public class HandySuitesDbContext : DbContext
         // RutaPedido: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<RutaPedido>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // B.2 — MobileSyncTelemetry: no hereda AuditableEntity (high-volume +
+        // append-only + cleanup mensual físico). Solo filtro de tenant.
+        // Indexes:
+        //  - (tenant_id, usuario_id, received_at DESC): query del admin
+        //    dashboard "vendedores con backlog" — devuelve la última
+        //    telemetría por usuario rápido.
+        //  - received_at: cleanup job que purga rows > 60 días.
+        modelBuilder.Entity<MobileSyncTelemetry>(entity =>
+        {
+            entity.HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            entity.HasIndex(e => new { e.TenantId, e.UsuarioId, e.ReceivedAt })
+                .HasDatabaseName("ix_telemetry_tenant_user_received");
+            entity.HasIndex(e => e.ReceivedAt)
+                .HasDatabaseName("ix_telemetry_received_at");
+        });
 
         // RutaRetornoInventario: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<RutaRetornoInventario>()

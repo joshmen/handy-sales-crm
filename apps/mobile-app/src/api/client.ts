@@ -161,7 +161,7 @@ async function getPlatformDeviceId(): Promise<string> {
   return `${Device.modelName || 'device'}-${Platform.OS}`;
 }
 
-async function getDeviceId(): Promise<string> {
+export async function getDeviceId(): Promise<string> {
   if (_deviceId) return _deviceId;
   _deviceId = await getPlatformDeviceId();
   // Also persist to secure storage for backward compat

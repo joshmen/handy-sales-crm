@@ -40,12 +40,55 @@ public class MobileAuthService
     private readonly HandySuitesDbContext _db;
     private readonly JwtTokenGenerator _jwt;
     private readonly ITotpVerifier _totpVerifier;
+    private readonly IHttpClientFactory? _httpClientFactory;
+    private readonly IConfiguration? _config;
+    private readonly ILogger<MobileAuthService>? _logger;
 
-    public MobileAuthService(HandySuitesDbContext db, JwtTokenGenerator jwt, ITotpVerifier totpVerifier)
+    public MobileAuthService(
+        HandySuitesDbContext db,
+        JwtTokenGenerator jwt,
+        ITotpVerifier totpVerifier,
+        IHttpClientFactory? httpClientFactory = null,
+        IConfiguration? config = null,
+        ILogger<MobileAuthService>? logger = null)
     {
         _db = db;
         _jwt = jwt;
         _totpVerifier = totpVerifier;
+        _httpClientFactory = httpClientFactory;
+        _config = config;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// B.4 — Fire-and-forget broadcast al Main API para que SignalR notifique
+    /// al device viejo del usuario que su sesión fue reemplazada. El device
+    /// nuevo (que acaba de hacer login) NO se afecta porque el listener filtra
+    /// por newDeviceId. Si el broadcast falla por red, el device viejo se
+    /// entera de la revocación al hacer su próximo request HTTP (401
+    /// SESSION_REPLACED via SessionValidationMiddleware) — ese es el fallback.
+    /// </summary>
+    private async Task BroadcastSessionReplacedAsync(int userId, string? newDeviceId)
+    {
+        if (_httpClientFactory == null || _config == null) return;
+        try
+        {
+            var client = _httpClientFactory.CreateClient("MainApi");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/internal/session-replaced");
+            var internalKey = _config["InternalApiKey"];
+            if (string.IsNullOrEmpty(internalKey)) return;
+            request.Headers.Add("X-Internal-Api-Key", internalKey);
+            request.Content = System.Net.Http.Json.JsonContent.Create(new
+            {
+                userId,
+                newDeviceId
+            });
+            await client.SendAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Session replaced broadcast failed (fallback: 401 on next request)");
+        }
     }
 
     public async Task<LoginResult> LoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null, string? deviceName = null)
@@ -141,8 +184,12 @@ public class MobileAuthService
         // Revocar la sesión elegida + sus refresh tokens.
         await RevokeSessionInternalAsync(sessionToRevoke, reason: "limit_picker");
 
+        // B.4: SignalR push al device viejo (fire-and-forget). El device viejo
+        // se entera instantáneo en vez de esperar al próximo request HTTP 401.
+        _ = BroadcastSessionReplacedAsync(usuario!.Id, deviceId);
+
         // Reuso sesión existente del mismo device si la hay (post-revoke).
-        var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario!.Id, usuario.TenantId, deviceFingerprint, deviceId);
+        var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario.Id, usuario.TenantId, deviceFingerprint, deviceId);
 
         return await CreateSessionAndTokensAsync(usuario, existingSessionSameDevice, deviceId, deviceFingerprint, deviceName);
     }
@@ -771,6 +818,14 @@ public class MobileAuthService
         }
 
         await _db.SaveChangesAsync();
+
+        // B.4 broadcast SignalR: notificar al device VIEJO que se revocó su sesión.
+        // Fire-and-forget — si falla, el fallback es el 401 SESSION_REPLACED del
+        // SessionValidationMiddleware en el próximo request.
+        if (activeSessions.Count > 0)
+        {
+            _ = BroadcastSessionReplacedAsync(usuario.Id, deviceId);
+        }
 
         var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
         var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);

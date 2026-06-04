@@ -170,6 +170,7 @@ app.MapMobileVisitaEndpoints();
 app.MapMobileClienteEndpoints();
 app.MapMobileProductoEndpoints();
 app.MapMobileSyncEndpoints();
+app.MapMobileTelemetryEndpoints();
 app.MapMobileRutaEndpoints();
 app.MapMobileCobroEndpoints();
 app.MapMobileTrackingEndpoints();

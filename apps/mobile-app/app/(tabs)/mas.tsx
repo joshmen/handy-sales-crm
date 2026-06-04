@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
-import { useLogout, useFacturacionEnabled } from '@/hooks';
+import { useLogout, useFacturacionEnabled, usePendingCount } from '@/hooks';
+import { useSyncStore } from '@/stores';
 import Toast from 'react-native-toast-message';
 import { Badge, ConfirmModal } from '@/components/ui';
 import {
@@ -60,9 +61,21 @@ function MasScreenContent() {
   const router = useRouter();
   const logoutMutation = useLogout();
   const [showLogout, setShowLogout] = useState(false);
+  const [showPendingsBlock, setShowPendingsBlock] = useState(false);
+  // B.3 (fix prod 2026-06-03 post-incidente Rodrigo): si el vendedor tiene
+  // records sin sincronizar, NO permitir logout sin advertencia explícita.
+  // Antes el flow era "tocar Cerrar Sesión → confirm → mutate". El cierre
+  // por sí solo no borra WDB (solo elimina el token), pero la combinación
+  // logout + uninstall + reinstall sí. Si el vendedor tiene 32 pendings, el
+  // bloqueo de logout previene el escenario.
+  const { data: pendingCount = 0 } = usePendingCount();
 
   const handleLogout = () => {
-    setShowLogout(true);
+    if (pendingCount > 0) {
+      setShowPendingsBlock(true);
+    } else {
+      setShowLogout(true);
+    }
   };
 
   const role = user?.role;
@@ -272,6 +285,31 @@ function MasScreenContent() {
       destructive
       onConfirm={() => { setShowLogout(false); logoutMutation.mutate(); }}
       onCancel={() => setShowLogout(false)}
+    />
+    {/* B.3 (fix prod 2026-06-03 post-incidente Rodrigo): bloqueo explícito
+        si quedan pendings sin subir. El vendedor puede confirmar "Sincronizar
+        ahora" (dispara sync immediately) o "Cerrar de todos modos" (override
+        consciente, log+telemetry). NO usamos un confirm normal porque el caso
+        Rodrigo tuvo 32 pedidos perdidos y un user simplemente tocando
+        Confirmar en el modal estándar habría perdido toda la data. */}
+    <ConfirmModal
+      visible={showPendingsBlock}
+      title="Datos sin sincronizar"
+      message={'Tienes ' + pendingCount + (pendingCount !== 1 ? ' registros' : ' registro') + ' sin enviar al servidor. Si cierras sesión y desinstalas la app, se perderán. Te recomendamos sincronizar primero.'}
+      confirmText="Sincronizar ahora"
+      cancelText="Cerrar de todos modos"
+      destructive={false}
+      onConfirm={() => {
+        setShowPendingsBlock(false);
+        useSyncStore.getState().sync().catch(() => {
+          // Silent — el banner OfflineBanner ya muestra el estado de error.
+        });
+      }}
+      onCancel={() => {
+        setShowPendingsBlock(false);
+        // Permitir logout (override consciente). El user vio cuántos pendings tenía.
+        setShowLogout(true);
+      }}
     />
     </>
   );

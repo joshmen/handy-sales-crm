@@ -3,6 +3,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Map, Users, ShoppingBag, CreditCard, MoreHorizontal } from 'lucide-react-native';
 import { useAutoSync } from '@/hooks/useAutoSync';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUnreadNotificationCount } from '@/hooks/useNotificationCount';
 import { usePendingCount } from '@/hooks';
@@ -16,6 +17,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   useAutoSync();
+  useHeartbeat(); // B.2 — Reporta pendings al server cada 5 min (fix prod 2026-06-03)
   usePushNotifications();
   const { data: pendingCount = 0 } = usePendingCount();
   const { count: unreadNotifCount } = useUnreadNotificationCount();

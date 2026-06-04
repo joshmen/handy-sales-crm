@@ -153,9 +153,18 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
         const hasChanges = pushCount > 0;
         if (!hasChanges) return;
 
-        // Reliability Fase 2: retry exponencial. Backend 503/timeout transitorio
-        // no debe dejar datos locales en limbo — el siguiente intent recupera.
-        const response = await withRetry('push', () => api.post('/api/mobile/sync/push', payload));
+        // B.3 (fix prod 2026-06-03 post-incidente Rodrigo): retry exponencial
+        // AGRESIVO en push. Backend 503/timeout transitorio no debe dejar datos
+        // locales en limbo. Pre-incidente: default 2s/4s/8s (12s total).
+        // Post-incidente: 500ms/2s/5s (7.5s total + jitter) — más responsive
+        // mientras el vendedor está finalizando un pedido, esperar 12s es UX
+        // terrible. La diferencia entre 7.5s y 12s no afecta éxito de retry
+        // (transient errors típicamente se recuperan en 500ms-2s).
+        const response = await withRetry(
+          'push',
+          () => api.post('/api/mobile/sync/push', payload),
+          { maxAttempts: 3, baseDelayMs: 500, maxDelayMs: 5000 },
+        );
         const body = response.data as any;
 
         // Count conflicts from server response
@@ -170,17 +179,55 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
 
       sendCreatedAsUpdated: true,
 
-      // Default explicito: per-column client-wins (lo que WDB hace por default
-      // pero ahora es visible).
-      //  - `resolved` ya viene calculado por WDB: remote prevalece EXCEPTO en
-      //    columnas que el cliente editó desde el ultimo sync (esas ganan).
-      //  - El record queda marcado _status='updated' si tenia cambios locales,
-      //    lo que garantiza que se pushean en el siguiente pushChanges sin
-      //    perder el trabajo offline del vendedor.
-      // Bug prod 2026-06-03: sin esto el pull podia abortar con
-      // `Cannot update a record with pending changes pedidos#qQyLko2m8rS8z4fb`
+      // B.5 conflict resolver per-collection (fix prod 2026-06-03 post-incidente Rodrigo).
+      //
+      // Default WDB (`resolved`): per-column client-wins. Resuelve la mayoría de
+      // casos pero NO maneja transiciones de estado server-side:
+      //   - Pedido en `Estado=Cancelado` (admin canceló desde web) podía ser
+      //     "resucitado" por el cliente si tenía cambios locales en otra columna.
+      //   - Cobro modificado en 2 devices podía perder el más reciente.
+      //
+      // Reglas:
+      //   - `pedidos`: si server avanzó Estado (Borrador → Confirmado → Entregado
+      //     → Cancelado), el server SIEMPRE wins. El estado es one-way ratchet
+      //     server-side; el cliente no puede "regresar" un Pedido cancelado a
+      //     Borrador. Otras columnas (notas, detalles) usan per-column normal.
+      //   - `cobros`: last-write-wins por updated_at — si server tiene fecha
+      //     más reciente, server wins fully (no per-column).
+      //   - Otras: default WDB (per-column client-wins).
+      //
+      // Bug prod 2026-06-03: sin el conflictResolver explícito el pull podía
+      // abortar con `Cannot update a record with pending changes pedidos#qQyLko2m8rS8z4fb`
       // — combinado con el dedupe en mappers.ts ese error queda resuelto.
-      conflictResolver: (_table, _local, _remote, resolved) => {
+      conflictResolver: (table, local, remote, resolved) => {
+        // Pedido: server-wins en Estado si avanzó. El sentido es Borrador(0) →
+        // Confirmado(2) → EnRuta(3) → Entregado(5) → Cancelado(99). Si server
+        // tiene estado >= local, prevalece el remote (incluido el caso de
+        // Cancelado por admin desde web).
+        if (table === 'pedidos') {
+          const localEstado = typeof local?.estado === 'number' ? local.estado : 0;
+          const remoteEstado = typeof remote?.estado === 'number' ? remote.estado : 0;
+          if (remoteEstado >= localEstado && remoteEstado !== localEstado) {
+            // Server avanzó (o canceló) el Pedido — forzar el estado server.
+            // Resto de columnas siguen per-column.
+            return { ...resolved, estado: remoteEstado };
+          }
+          return resolved;
+        }
+
+        // Cobro: last-write-wins fully por updated_at. Caso típico: vendedor
+        // edita el cobro en device A (online) Y device B (offline). Cuando B
+        // sincroniza, su updated_at puede ser < A — entonces A wins.
+        if (table === 'cobros') {
+          const localTs = typeof local?.updated_at === 'number' ? local.updated_at : 0;
+          const remoteTs = typeof remote?.updated_at === 'number' ? remote.updated_at : 0;
+          if (remoteTs > localTs) {
+            return remote;
+          }
+          return resolved;
+        }
+
+        // Default: per-column client-wins (lo que WDB ya calcula).
         return resolved;
       },
     });
