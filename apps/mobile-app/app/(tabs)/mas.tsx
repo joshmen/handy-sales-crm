@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Package,
   FileText,
+  Trash2,
 } from 'lucide-react-native';
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
@@ -176,6 +177,19 @@ function MasScreenContent() {
     },
   ];
 
+  // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" en su propia
+  // seccion al final del menu Mas, NO inline en sync.tsx. Reduce visibilidad
+  // accidental durante uso diario. La sub-pantalla tiene blockers desglosados
+  // + TypeToConfirmModal con palabra "RESTAURAR" como friccion final.
+  const emergencyItems: MenuItem[] = [
+    {
+      label: 'Borrado de datos',
+      icon: <Trash2 size={20} color="#dc2626" />,
+      iconBg: '#fef2f2',
+      onPress: () => router.push('/(tabs)/restaurar-datos' as any),
+    },
+  ];
+
   const roleColor = ROLE_COLORS[user?.role || ''] || '#6b7280';
 
   return (
@@ -235,6 +249,29 @@ function MasScreenContent() {
       <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.section}>
         <Text style={styles.sectionTitle}>Cuenta</Text>
         {secondaryItems.map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            style={styles.menuItem}
+            onPress={item.onPress}
+            activeOpacity={0.7}
+            accessibilityLabel={item.label}
+            accessibilityRole="button"
+          >
+            <View style={[styles.menuIcon, { backgroundColor: item.iconBg }]}>
+              {item.icon}
+            </View>
+            <Text style={styles.menuLabel}>{item.label}</Text>
+            <ChevronRight size={18} color="#cbd5e1" />
+          </TouchableOpacity>
+        ))}
+      </Animated.View>
+
+      {/* C.2 — Emergencia (Borrado de datos). Separado intencionalmente al
+          final + iconografia destructiva para que solo se descubra cuando
+          se necesita y NO como atajo en scroll normal. */}
+      <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.section}>
+        <Text style={styles.sectionTitle}>Si algo esta mal</Text>
+        {emergencyItems.map((item) => (
           <TouchableOpacity
             key={item.label}
             style={styles.menuItem}

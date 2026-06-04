@@ -1,20 +1,16 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Card, Button, ConfirmModal } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   Wifi, WifiOff, RefreshCcw, CheckCircle, Clock,
   AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ImageIcon, ChevronLeft,
-  DownloadCloud,
 } from 'lucide-react-native';
-import Toast from 'react-native-toast-message';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { usePendingCount, usePendingAttachmentCount, useTenantLocale } from '@/hooks';
 import { useSyncStore } from '@/stores';
 import { COLORS } from '@/theme/colors';
-import { resetDatabase } from '@/db/database';
 
 function formatLastSync(timestamp: number | null, dateTimeFmt: (d: Date) => string): string {
   if (!timestamp) return 'Nunca';
@@ -63,40 +59,13 @@ export default function SyncScreen() {
   const { data: pendingCount = 0 } = usePendingCount();
   const { data: pendingAttachments = 0 } = usePendingAttachmentCount();
   const { dateTime: dateTimeFmt } = useTenantLocale();
-  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
 
   const isSyncing = status === 'syncing';
 
-  // C.2 (fix prod 2026-06-03 post-incidente Rodrigo): "Restaurar desde servidor"
-  // = wipe WDB local + full sync desde server. Caso uso: sospecha de corrupción
-  // WDB (sync stuck con error "Cannot update a record with pending changes",
-  // pedidos desaparecidos del UI sin motivo, etc.). Solo accesible si NO hay
-  // pendings (no destruir trabajo no sincronizado del vendedor).
-  const canRestore = isOnline && !isSyncing && pendingCount === 0 && pendingAttachments === 0;
-  const handleRestoreFromServer = async () => {
-    setShowRestoreConfirm(false);
-    setIsRestoring(true);
-    try {
-      await resetDatabase();
-      await useSyncStore.getState().sync();
-      Toast.show({
-        type: 'success',
-        text1: 'Datos restaurados',
-        text2: 'Los datos del servidor están actualizados en tu dispositivo.',
-        visibilityTime: 5000,
-      });
-    } catch (err: any) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error al restaurar',
-        text2: err?.message ?? 'Intenta de nuevo en un momento.',
-        visibilityTime: 6000,
-      });
-    } finally {
-      setIsRestoring(false);
-    }
-  };
+  // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" se MOVIO a su
+  // propia sub-pantalla bajo /(tabs)/restaurar-datos accesible desde el menu
+  // Mas en seccion "Si algo esta mal". Aqui en sync solo dejamos un link
+  // discreto al final para vendedores que llegaron buscando arreglar sync.
 
   return (
     <ScrollView
@@ -244,42 +213,22 @@ export default function SyncScreen() {
         </Text>
       )}
 
-      {/* C.2 (fix prod 2026-06-03 post-incidente Rodrigo): "Restaurar desde
-          servidor" — wipe WDB local + full sync. Solo para emergencias. */}
-      <View style={{ marginTop: 24, marginBottom: 8 }}>
-        <Text style={styles.sectionLabel}>EMERGENCIA</Text>
-        <TouchableOpacity
-          style={[styles.restoreButton, !canRestore && styles.restoreButtonDisabled]}
-          onPress={() => setShowRestoreConfirm(true)}
-          disabled={!canRestore || isRestoring}
-          activeOpacity={0.8}
-          accessibilityLabel="Restaurar desde servidor"
-          accessibilityRole="button"
-        >
-          <DownloadCloud size={18} color={canRestore ? '#dc2626' : '#9ca3af'} />
-          <Text style={[styles.restoreButtonText, !canRestore && styles.restoreButtonTextDisabled]}>
-            {isRestoring ? 'Restaurando...' : 'Restaurar desde servidor'}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.restoreHint}>
-          {pendingCount > 0 || pendingAttachments > 0
-            ? 'Sincroniza tus pendientes antes de restaurar.'
-            : !isOnline
-              ? 'Necesitas internet para restaurar.'
-              : 'Borra los datos locales y los descarga de nuevo del servidor. Úsalo solo si crees que algo está mal con tus datos.'}
+      {/* C.2 hardening — link discreto a la sub-pantalla dedicada de borrado.
+          NO duplicamos el boton aqui para evitar el tap accidental que
+          motivó el hardening. El usuario que tiene problemas con sus datos
+          encontrara la opcion en Mas > Si algo esta mal > Borrado de datos. */}
+      <TouchableOpacity
+        style={styles.troubleLink}
+        onPress={() => router.push('/(tabs)/restaurar-datos' as any)}
+        activeOpacity={0.7}
+        accessibilityLabel="Problemas con tus datos"
+        accessibilityRole="link"
+      >
+        <Text style={styles.troubleLinkText}>
+          Problemas con tus datos?
         </Text>
+      </TouchableOpacity>
       </View>
-      </View>
-      <ConfirmModal
-        visible={showRestoreConfirm}
-        title="Restaurar desde servidor"
-        message="Esto borrará todos los datos locales y los descargará nuevamente del servidor. Solo úsalo si crees que algo está corrupto. ¿Continuar?"
-        confirmText="Sí, restaurar"
-        cancelText="Cancelar"
-        destructive
-        onConfirm={handleRestoreFromServer}
-        onCancel={() => setShowRestoreConfirm(false)}
-      />
     </ScrollView>
   );
 }
@@ -374,27 +323,14 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     marginTop: 12,
   },
-  restoreButton: {
-    flexDirection: 'row',
+  troubleLink: {
+    marginTop: 32,
+    paddingVertical: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    paddingVertical: 14,
-    borderRadius: 12,
   },
-  restoreButtonDisabled: {
-    backgroundColor: '#f3f4f6',
-    borderColor: '#e5e7eb',
-  },
-  restoreButtonText: { fontSize: 15, fontWeight: '600', color: '#dc2626' },
-  restoreButtonTextDisabled: { color: '#9ca3af' },
-  restoreHint: {
-    fontSize: 12,
+  troubleLinkText: {
+    fontSize: 13,
     color: COLORS.textTertiary,
-    marginTop: 8,
-    lineHeight: 16,
+    textDecorationLine: 'underline',
   },
 });

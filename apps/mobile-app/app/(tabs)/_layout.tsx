@@ -138,6 +138,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="inventario" options={{ href: null }} />
       <Tabs.Screen name="historial-rutas" options={{ href: null }} />
       <Tabs.Screen name="facturas" options={{ href: null }} />
+      <Tabs.Screen name="restaurar-datos" options={{ href: null }} />
     </Tabs>
     <OfflineBanner />
     <SessionExpiredBanner />

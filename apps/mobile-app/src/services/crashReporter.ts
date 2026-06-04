@@ -50,6 +50,8 @@ interface CrashReportPayload {
   userId?: number;
 }
 
+export type CrashSeverity = 'CRASH' | 'ERROR' | 'WARNING' | 'INFO';
+
 /**
  * Envia un crash report al servidor.
  * Fire-and-forget — nunca lanza excepciones.
@@ -57,7 +59,7 @@ interface CrashReportPayload {
 async function reportCrash(
   error: Error | string,
   componentName?: string,
-  severity: 'CRASH' | 'ERROR' | 'WARNING' = 'ERROR'
+  severity: CrashSeverity = 'ERROR'
 ): Promise<void> {
   try {
     // user no se usa para tenantId/userId (server toma del JWT) — queda
@@ -174,7 +176,39 @@ async function flushPendingReports(): Promise<void> {
   }
 }
 
+/**
+ * Reporta un evento de telemetria (no crash). Pipea por el mismo pipeline
+ * que reportCrash con severity='INFO' para reutilizar:
+ *   - PII redaction (VULN-M01 fix)
+ *   - Offline queue 50 entries
+ *   - JWT-based tenant/user attribution
+ *   - Backend persiste a CrashReport table (filtrable por severity='INFO')
+ *
+ * Usar SOLO en transiciones discretas (no on-keystroke) para no saturar
+ * rate-limit 'crash-reports'. Eventos canónicos snake_case ASCII.
+ *
+ * Ej: await crashReporter.reportEvent('restore_database_initiated', {
+ *   pendingCount: 0, source: 'mas_menu',
+ * });
+ */
+async function reportEvent(
+  eventName: string,
+  props?: Record<string, string | number | boolean>
+): Promise<void> {
+  // Pipea como CrashReport con severity='INFO'. El backend distingue por
+  // severity y loguea a LogLevel.Information (no Error).
+  const propsJson = props ? JSON.stringify(props).substring(0, 10000) : undefined;
+  // Construir un Error fake para reusar el path tipico (stackTrace = propsJson).
+  // reportCrash trata error.message como errorMessage y error.stack como stackTrace.
+  const fakeError = new Error(eventName);
+  if (propsJson) {
+    fakeError.stack = propsJson;
+  }
+  await reportCrash(fakeError, 'event', 'INFO');
+}
+
 export const crashReporter = {
   reportCrash,
+  reportEvent,
   flushPendingReports,
 };
