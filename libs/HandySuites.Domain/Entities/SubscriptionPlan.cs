@@ -78,12 +78,30 @@ public class SubscriptionPlan
     /// Sesiones concurrentes permitidas por usuario en mobile (Netflix-style).
     /// Default 1 (mantiene compat con regla histórica "1 vendedor = 1 device").
     /// Plans más altos pueden permitir más (BUSINESS=10 ej.).
-    /// Cuando user intenta login y ya tiene N sesiones activas, el endpoint
-    /// devuelve SESSION_LIMIT_REACHED con lista — UI muestra picker para
-    /// revocar una y entrar.
+    /// Cuando user intenta login y ya tiene N sesiones activas, el comportamiento
+    /// depende de <see cref="ForceSingleSession"/>: con true bloquea el nuevo login
+    /// (409 SESSION_BLOCKED), con false abre picker para revocar (200 SESSION_LIMIT_REACHED).
     /// </summary>
     [Column("max_concurrent_sessions")]
     public int MaxConcurrentSessions { get; set; } = 1;
+
+    /// <summary>
+    /// Política estricta de sesión única. Cuando true (default), si el usuario
+    /// ya tiene <see cref="MaxConcurrentSessions"/> sesiones activas y intenta
+    /// loguearse en un device nuevo, el backend bloquea el nuevo login con
+    /// 409 SESSION_BLOCKED. El device existente NO se ve afectado — el usuario
+    /// debe cerrar sesión manualmente en él (o el admin via /dispositivos/admin)
+    /// antes de entrar en el nuevo.
+    ///
+    /// Cuando false, mantiene comportamiento Netflix-style (picker UI que
+    /// permite al usuario revocar una sesión existente desde el cliente nuevo).
+    ///
+    /// Fix prod 2026-06-03: el incidente del vendedor Rodrigo demostró que
+    /// permitir múltiples sesiones del mismo vendedor (admin se logueó como él
+    /// en otro device) genera confusión y data loss. Plans default true.
+    /// </summary>
+    [Column("force_single_session")]
+    public bool ForceSingleSession { get; set; } = true;
 
     // Navigation
     public virtual ICollection<Tenant> Tenants { get; set; } = new List<Tenant>();

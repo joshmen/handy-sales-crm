@@ -64,6 +64,17 @@ class MobileAuthApi {
         (err as any).code = 'SESSION_REVOKED';
         throw err;
       }
+      // Fix prod 2026-06-03 — política estricta single-session. El user ya
+      // tiene sesión activa en otro device y el plan no permite picker. Debe
+      // cerrar manualmente la otra sesión antes de entrar. NO auto-logout —
+      // este device no está logueado todavía.
+      if (status === 409 && code === 'SESSION_BLOCKED') {
+        const err = new Error(backendMessage || 'Ya tienes una sesión activa en otro dispositivo.');
+        (err as any).code = 'SESSION_BLOCKED';
+        (err as any).activeDevice = error.response?.data?.data?.activeDevice ?? null;
+        (err as any).activeSessions = error.response?.data?.data?.activeSessions ?? [];
+        throw err;
+      }
       if (status === 401) throw new Error('Correo o contraseña incorrectos');
       if (status === 400 && backendMessage) throw new Error(backendMessage);
       if (status === 429) throw new Error('Demasiados intentos. Espera un momento e intenta de nuevo.');

@@ -75,6 +75,26 @@ export default function LoginScreen() {
       return;
     }
 
+    // Fix prod 2026-06-03: política estricta single-session. El user ya tiene
+    // sesión activa en otro device y el plan no permite picker. Mostrar Toast
+    // claro con info del device activo. NO navegar a session-limit (no aplica).
+    if (err?.code === 'SESSION_BLOCKED') {
+      const dev = err.activeDevice;
+      const deviceLabel = dev?.deviceName || dev?.deviceType || 'otro dispositivo';
+      const lastSeen = dev?.lastActivity
+        ? new Date(dev.lastActivity).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
+        : null;
+      Toast.show({
+        type: 'error',
+        text1: 'Sesión activa en otro dispositivo',
+        text2: lastSeen
+          ? `Cierra la sesión de "${deviceLabel}" (activa desde ${lastSeen}) antes de entrar aquí, o contacta a tu administrador.`
+          : `Cierra la sesión de "${deviceLabel}" antes de entrar aquí, o contacta a tu administrador.`,
+        visibilityTime: 7000,
+      });
+      return;
+    }
+
     // Legacy fallback: DEVICE_BOUND viene solo de /force-login (deprecated).
     if (err?.code === 'DEVICE_BOUND') {
       setShowDeviceBoundModal(true);

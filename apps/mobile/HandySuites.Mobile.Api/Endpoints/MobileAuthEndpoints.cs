@@ -45,11 +45,24 @@ public static class MobileAuthEndpoints
                     }, statusCode: 401);
                 }
 
-                // Audit 2026-05-18: nuevo flow Netflix-style. Cuando user
-                // alcanza el límite del plan, devolver 200 con código
-                // SESSION_LIMIT_REACHED + lista de sesiones activas. UI
-                // muestra picker; user elige una para revocar via
-                // /revoke-and-login.
+                // Fix prod 2026-06-03: política estricta. Plan tiene
+                // ForceSingleSession=true (default) y user ya tiene sesión
+                // activa. Bloquear nuevo login con 409 — UI muestra info del
+                // device activo y "cierra esa sesión primero".
+                if (result.SessionBlocked)
+                {
+                    return Results.Json(new
+                    {
+                        success = false,
+                        code = "SESSION_BLOCKED",
+                        message = result.Message,
+                        data = result.Data
+                    }, statusCode: 409);
+                }
+
+                // Audit 2026-05-18: legacy Netflix-style. Solo cuando el plan
+                // tiene ForceSingleSession=false. UI muestra picker; user
+                // elige una sesión para revocar via /revoke-and-login.
                 if (result.SessionLimitReached)
                 {
                     return Results.Ok(new
@@ -95,10 +108,11 @@ public static class MobileAuthEndpoints
         })
         .RequireRateLimiting("mobile-auth")
         .WithSummary("Login de vendedor móvil")
-        .WithDescription("Autentica un vendedor y devuelve tokens JWT. Si tiene 2FA → 401 TOTP_REQUIRED. Si alcanzó límite de sesiones del plan → 200 SESSION_LIMIT_REACHED con lista de sesiones activas (UI debe mostrar picker).")
+        .WithDescription("Autentica un vendedor y devuelve tokens JWT. Si tiene 2FA → 401 TOTP_REQUIRED. Si su plan tiene ForceSingleSession=true (default) y ya tiene sesión activa → 409 SESSION_BLOCKED. Si plan permite multi-session y alcanzó el límite → 200 SESSION_LIMIT_REACHED con lista de sesiones (UI muestra picker).")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status403Forbidden);
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status409Conflict);
 
         // ──────────────────────────────────────────────────────────
         // POST /revoke-and-login (audit 2026-05-18)
