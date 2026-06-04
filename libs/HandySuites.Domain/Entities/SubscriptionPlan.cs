@@ -86,22 +86,23 @@ public class SubscriptionPlan
     public int MaxConcurrentSessions { get; set; } = 1;
 
     /// <summary>
-    /// Política estricta de sesión única. Cuando true (default), si el usuario
-    /// ya tiene <see cref="MaxConcurrentSessions"/> sesiones activas y intenta
-    /// loguearse en un device nuevo, el backend bloquea el nuevo login con
-    /// 409 SESSION_BLOCKED. El device existente NO se ve afectado — el usuario
-    /// debe cerrar sesión manualmente en él (o el admin via /dispositivos/admin)
-    /// antes de entrar en el nuevo.
+    /// Política estricta de sesión única. Cuando true, si el usuario ya tiene
+    /// <see cref="MaxConcurrentSessions"/> sesiones activas y intenta loguearse
+    /// en un device nuevo, el backend bloquea el nuevo login con 409
+    /// SESSION_BLOCKED — el device existente NO se ve afectado y el user debe
+    /// cerrar sesión manualmente en él (o el admin via /dispositivos/admin).
     ///
-    /// Cuando false, mantiene comportamiento Netflix-style (picker UI que
-    /// permite al usuario revocar una sesión existente desde el cliente nuevo).
+    /// Cuando false (default), mantiene comportamiento Netflix-style: backend
+    /// retorna 200 + SESSION_LIMIT_REACHED + lista de sesiones activas, mobile
+    /// muestra picker en /(auth)/session-limit donde el user elige cuál revocar
+    /// para entrar (atomic via /revoke-and-login).
     ///
-    /// Fix prod 2026-06-03: el incidente del vendedor Rodrigo demostró que
-    /// permitir múltiples sesiones del mismo vendedor (admin se logueó como él
-    /// en otro device) genera confusión y data loss. Plans default true.
+    /// Fix prod 2026-06-04: default false porque la UX Netflix-style permite al
+    /// vendedor genuino cambiar de cel sin fricción. El bloqueo estricto se
+    /// activa solo para plans que opten in (config en panel SuperAdmin).
     /// </summary>
     [Column("force_single_session")]
-    public bool ForceSingleSession { get; set; } = true;
+    public bool ForceSingleSession { get; set; } = false;
 
     // Navigation
     public virtual ICollection<Tenant> Tenants { get; set; } = new List<Tenant>();

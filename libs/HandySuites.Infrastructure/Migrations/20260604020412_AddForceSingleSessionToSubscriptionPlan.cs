@@ -10,22 +10,22 @@ namespace HandySuites.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Fix prod 2026-06-03: política estricta de sesión única.
-            // Default true para que los plans existentes la heredan automáticamente
-            // y el incidente Rodrigo (admin se logueó como vendedor en otro device)
-            // no se repita. Los plans nuevos también arrancan en true.
+            // Fix prod 2026-06-04: UX Netflix-style por default (picker en
+            // /(auth)/session-limit). El flag estricto SESSION_BLOCKED queda
+            // disponible para plans que opten in vía panel SuperAdmin (default
+            // false). El vendedor genuino que cambia de cel puede continuar
+            // sin fricción usando el picker.
             migrationBuilder.AddColumn<bool>(
                 name: "force_single_session",
                 table: "subscription_plans",
                 type: "boolean",
                 nullable: false,
-                defaultValue: true);
+                defaultValue: false);
 
             // Backfill defensivo: si por alguna razón ya hay filas (testing,
-            // restore parcial), garantizar que todas queden en true. El default
-            // solo aplica a inserts posteriores; UPDATE explícito cubre filas
-            // pre-existentes.
-            migrationBuilder.Sql(@"UPDATE subscription_plans SET force_single_session = true;");
+            // restore parcial donde el default no aplica a pre-existentes),
+            // garantizar false explícitamente.
+            migrationBuilder.Sql(@"UPDATE subscription_plans SET force_single_session = false;");
         }
 
         /// <inheritdoc />

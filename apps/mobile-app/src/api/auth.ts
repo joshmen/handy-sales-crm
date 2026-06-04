@@ -116,8 +116,23 @@ class MobileAuthApi {
       }
       return validated.data;
     } catch (error) {
-      // Re-throw si ya tiene code (SESSION_LIMIT_REACHED u otro propagado).
-      if (error instanceof Error && (error as any).code) throw error;
+      // Re-throw si ya viene un Error CUSTOM enriquecido en el try (ej:
+      // SESSION_LIMIT_REACHED que parseamos del body 200). Esos NO son
+      // AxiosError — son `new Error(...)` que hicimos manualmente.
+      //
+      // Fix prod 2026-06-04: ANTES la chequeo era `(error as any).code`,
+      // pero AxiosError también tiene `.code` (ej: "ERR_BAD_REQUEST" para 4xx).
+      // Eso hacía que respuestas 409 SESSION_BLOCKED se re-throwearan SIN pasar
+      // por sanitizeAuthError, terminando como Toast genérico "Request failed
+      // with status code 409" en lugar de "Sesión activa en otro dispositivo".
+      // Detectado por Maestro E2E flow session-blocked.yaml.
+      if (
+        error instanceof Error &&
+        !(error as any).isAxiosError &&
+        (error as any).code
+      ) {
+        throw error;
+      }
       this.sanitizeAuthError(error);
     }
   }
