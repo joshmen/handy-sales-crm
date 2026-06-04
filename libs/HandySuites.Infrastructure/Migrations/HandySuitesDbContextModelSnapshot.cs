@@ -3405,6 +3405,67 @@ namespace HandySuites.Infrastructure.Migrations
                     b.ToTable("MetasVendedor");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.MobileSyncTelemetry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AppVersion")
+                        .HasColumnType("text")
+                        .HasColumnName("app_version");
+
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("text")
+                        .HasColumnName("device_id");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text")
+                        .HasColumnName("ip_address");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("last_sync_at");
+
+                    b.Property<string>("PendingByTableJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("pending_by_table");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<int?>("SchemaVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("schema_version");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("TotalPendingCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_pending_count");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceivedAt")
+                        .HasDatabaseName("ix_telemetry_received_at");
+
+                    b.HasIndex("TenantId", "UsuarioId", "ReceivedAt")
+                        .HasDatabaseName("ix_telemetry_tenant_user_received");
+
+                    b.ToTable("MobileSyncTelemetry");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.MovimientoInventario", b =>
                 {
                     b.Property<int>("Id")
@@ -4911,6 +4972,10 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<decimal>("CostoExtraFacturaBloque")
                         .HasColumnType("numeric")
                         .HasColumnName("costo_extra_factura_bloque");
+
+                    b.Property<bool>("ForceSingleSession")
+                        .HasColumnType("boolean")
+                        .HasColumnName("force_single_session");
 
                     b.Property<bool>("IncluyeFacturacion")
                         .HasColumnType("boolean")

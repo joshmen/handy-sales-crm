@@ -21,10 +21,16 @@ public class LoginResult
     /// llamar a /verify-totp con el código antes de obtener tokens.</summary>
     public bool TotpRequired { get; init; }
     /// <summary>Audit 2026-05-18: true cuando el user alcanzó el límite de
-    /// sesiones concurrentes de su plan. En este caso Data incluye
-    /// `activeSessions` (lista para que UI muestre picker) y `maxSessions`.
-    /// User debe revocar una via /revoke-and-login para entrar.</summary>
+    /// sesiones concurrentes de su plan Y el plan permite picker (Netflix-style).
+    /// En este caso Data incluye `activeSessions` (lista para que UI muestre picker)
+    /// y `maxSessions`. User debe revocar una via /revoke-and-login para entrar.</summary>
     public bool SessionLimitReached { get; init; }
+    /// <summary>Fix prod 2026-06-03: true cuando el user alcanzó el límite Y el plan
+    /// tiene <c>ForceSingleSession=true</c> (default). El nuevo login se BLOQUEA con
+    /// 409 — el device existente NO se ve afectado, user debe cerrar sesión manualmente
+    /// allí. Data incluye `activeDevice` (info del device que tiene la sesión actual)
+    /// para que UI pueda mostrar "Ya tienes sesión activa en POCO X7 desde hace 2h".</summary>
+    public bool SessionBlocked { get; init; }
     public string? Message { get; init; }
     public object? Data { get; init; }
 }
@@ -34,12 +40,55 @@ public class MobileAuthService
     private readonly HandySuitesDbContext _db;
     private readonly JwtTokenGenerator _jwt;
     private readonly ITotpVerifier _totpVerifier;
+    private readonly IHttpClientFactory? _httpClientFactory;
+    private readonly IConfiguration? _config;
+    private readonly ILogger<MobileAuthService>? _logger;
 
-    public MobileAuthService(HandySuitesDbContext db, JwtTokenGenerator jwt, ITotpVerifier totpVerifier)
+    public MobileAuthService(
+        HandySuitesDbContext db,
+        JwtTokenGenerator jwt,
+        ITotpVerifier totpVerifier,
+        IHttpClientFactory? httpClientFactory = null,
+        IConfiguration? config = null,
+        ILogger<MobileAuthService>? logger = null)
     {
         _db = db;
         _jwt = jwt;
         _totpVerifier = totpVerifier;
+        _httpClientFactory = httpClientFactory;
+        _config = config;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// B.4 — Fire-and-forget broadcast al Main API para que SignalR notifique
+    /// al device viejo del usuario que su sesión fue reemplazada. El device
+    /// nuevo (que acaba de hacer login) NO se afecta porque el listener filtra
+    /// por newDeviceId. Si el broadcast falla por red, el device viejo se
+    /// entera de la revocación al hacer su próximo request HTTP (401
+    /// SESSION_REPLACED via SessionValidationMiddleware) — ese es el fallback.
+    /// </summary>
+    private async Task BroadcastSessionReplacedAsync(int userId, string? newDeviceId)
+    {
+        if (_httpClientFactory == null || _config == null) return;
+        try
+        {
+            var client = _httpClientFactory.CreateClient("MainApi");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/internal/session-replaced");
+            var internalKey = _config["InternalApiKey"];
+            if (string.IsNullOrEmpty(internalKey)) return;
+            request.Headers.Add("X-Internal-Api-Key", internalKey);
+            request.Content = System.Net.Http.Json.JsonContent.Create(new
+            {
+                userId,
+                newDeviceId
+            });
+            await client.SendAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Session replaced broadcast failed (fallback: 401 on next request)");
+        }
     }
 
     public async Task<LoginResult> LoginAsync(string email, string password, string? deviceId = null, string? deviceFingerprint = null, string? totpCode = null, string? deviceName = null)
@@ -55,14 +104,37 @@ public class MobileAuthService
         // el mismo device físico re-logging.
         var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario!.Id, usuario.TenantId, deviceFingerprint, deviceId);
 
-        var maxSessions = await GetMaxConcurrentSessionsAsync(usuario.TenantId);
+        var (maxSessions, forceSingleSession) = await GetSessionPolicyAsync(usuario.TenantId);
         var activeCount = await CountActiveSessionsAsync(usuario.Id, usuario.TenantId, excludeSessionId: existingSessionSameDevice?.Id);
 
         if (activeCount >= maxSessions)
         {
-            // SessionLimitReached: devolver lista de sesiones para que cliente
-            // muestre picker. NO crear sesión nueva ni emitir tokens.
             var activeSessions = await GetActiveSessionsDtoAsync(usuario.Id, usuario.TenantId);
+
+            if (forceSingleSession)
+            {
+                // Fix prod 2026-06-03: política estricta. Bloquear el nuevo login
+                // sin revocar la sesión existente. UI muestra error con info del
+                // device activo; user debe cerrar sesión allá manualmente (o admin
+                // via /dispositivos/admin) antes de entrar acá.
+                var activeDevice = activeSessions.FirstOrDefault();
+                return new LoginResult
+                {
+                    Success = false,
+                    SessionBlocked = true,
+                    Message = "Ya tienes una sesión activa en otro dispositivo. Cierra esa sesión primero o contacta a tu administrador.",
+                    Data = new
+                    {
+                        maxSessions,
+                        currentCount = activeCount,
+                        activeDevice,
+                        activeSessions
+                    }
+                };
+            }
+
+            // Netflix-style: devolver lista de sesiones para que cliente muestre picker.
+            // NO crear sesión nueva ni emitir tokens.
             return new LoginResult
             {
                 Success = false,
@@ -112,8 +184,12 @@ public class MobileAuthService
         // Revocar la sesión elegida + sus refresh tokens.
         await RevokeSessionInternalAsync(sessionToRevoke, reason: "limit_picker");
 
+        // B.4: SignalR push al device viejo (fire-and-forget). El device viejo
+        // se entera instantáneo en vez de esperar al próximo request HTTP 401.
+        _ = BroadcastSessionReplacedAsync(usuario!.Id, deviceId);
+
         // Reuso sesión existente del mismo device si la hay (post-revoke).
-        var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario!.Id, usuario.TenantId, deviceFingerprint, deviceId);
+        var existingSessionSameDevice = await FindExistingSessionForDeviceAsync(usuario.Id, usuario.TenantId, deviceFingerprint, deviceId);
 
         return await CreateSessionAndTokensAsync(usuario, existingSessionSameDevice, deviceId, deviceFingerprint, deviceName);
     }
@@ -185,18 +261,35 @@ public class MobileAuthService
 
     private async Task<int> GetMaxConcurrentSessionsAsync(int tenantId)
     {
-        // Cada Tenant tiene un SubscriptionPlanId; el plan define max sessions.
-        // Fallback a 1 si no hay plan asignado (defensa contra rows huérfanas).
-        var max = await _db.Tenants
+        // Compat wrapper alrededor de GetSessionPolicyAsync (callers viejos).
+        var (max, _) = await GetSessionPolicyAsync(tenantId);
+        return max;
+    }
+
+    /// <summary>
+    /// Política de sesiones del plan: (maxSessions, forceSingleSession).
+    /// Fix prod 2026-06-03: leer también ForceSingleSession para decidir entre
+    /// bloqueo estricto (default true) vs. picker Netflix-style (false legacy).
+    /// Fallback (1, true) si el tenant no tiene plan asignado — política
+    /// más conservadora.
+    /// </summary>
+    private async Task<(int MaxSessions, bool ForceSingleSession)> GetSessionPolicyAsync(int tenantId)
+    {
+        var policy = await _db.Tenants
             .AsNoTracking()
             .Where(t => t.Id == tenantId)
             .Join(_db.SubscriptionPlans.AsNoTracking(),
                   t => t.SubscriptionPlanId,
                   p => p.Id,
-                  (t, p) => p.MaxConcurrentSessions)
+                  (t, p) => new { p.MaxConcurrentSessions, p.ForceSingleSession })
             .FirstOrDefaultAsync();
 
-        return max > 0 ? max : 1;
+        if (policy == null)
+        {
+            return (1, true);
+        }
+        var max = policy.MaxConcurrentSessions > 0 ? policy.MaxConcurrentSessions : 1;
+        return (max, policy.ForceSingleSession);
     }
 
     private async Task<int> CountActiveSessionsAsync(int usuarioId, int tenantId, int? excludeSessionId = null)
@@ -725,6 +818,14 @@ public class MobileAuthService
         }
 
         await _db.SaveChangesAsync();
+
+        // B.4 broadcast SignalR: notificar al device VIEJO que se revocó su sesión.
+        // Fire-and-forget — si falla, el fallback es el 401 SESSION_REPLACED del
+        // SessionValidationMiddleware en el próximo request.
+        if (activeSessions.Count > 0)
+        {
+            _ = BroadcastSessionReplacedAsync(usuario.Id, deviceId);
+        }
 
         var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
         var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);

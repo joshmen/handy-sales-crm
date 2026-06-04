@@ -7,6 +7,12 @@ import { database } from '@/db/database';
 
 const SYNC_DEBOUNCE_MS = 2000; // 2 seconds — groups rapid writes into one sync
 
+// B.3 safety net (fix prod 2026-06-03 post-incidente Rodrigo).
+// Si por cualquier razón el sync no se dispara por evento (cambio WDB / network /
+// foreground), un timer cada 60s lo intenta. Es muy defensivo pero la última red
+// de seguridad antes de perder data del vendedor.
+const SAFETY_NET_INTERVAL_MS = 60_000;
+
 export function useAutoSync() {
   const { sync } = useSyncStore();
   const wasOffline = useRef(false);
@@ -65,4 +71,14 @@ export function useAutoSync() {
   // disparaba sync() siempre que el (tabs) layout montara, incluyendo offline,
   // generando un error state silencioso. Ahora respeta conexion.
   useEffect(() => { syncIfOnline(); }, []);
+
+  // B.3 safety net interval — última defensa contra pérdida de data. Si los
+  // triggers event-driven (WDB change subscription, NetInfo listener,
+  // AppState change) fallan o se desuscribieron por bug, este interval
+  // cada 60s recupera el sync. Se pausa naturalmente si no hay red
+  // (syncIfOnline lo guard).
+  useEffect(() => {
+    const id = setInterval(syncIfOnline, SAFETY_NET_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
 }

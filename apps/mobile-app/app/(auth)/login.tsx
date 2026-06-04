@@ -33,6 +33,14 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; totpCode?: string }>({});
   const [showDeviceBoundModal, setShowDeviceBoundModal] = useState(false);
+  // Fix prod 2026-06-04: SESSION_BLOCKED se muestra como banner persistente arriba
+  // del form, NO como Toast. El mensaje incluye device name + last activity, y un
+  // Toast truncaba el text2 a 1 sola línea (default lib react-native-toast-message).
+  // El banner persiste hasta que el user cambie email/password o entre a otra pantalla.
+  const [sessionBlocked, setSessionBlocked] = useState<{
+    deviceLabel: string;
+    lastSeen: string | null;
+  } | null>(null);
   // TOTP step: cuando el backend retorna TOTP_REQUIRED, mostramos un input
   // para el código y reintentamos el login con totpCode. VULN-M03 fix.
   const [totpRequired, setTotpRequired] = useState(false);
@@ -72,6 +80,20 @@ export default function LoginScreen() {
           maxSessions: String(err.maxSessions ?? 1),
         },
       });
+      return;
+    }
+
+    // Fix prod 2026-06-03: política estricta single-session. El user ya tiene
+    // sesión activa en otro device y el plan no permite picker. Mostrar banner
+    // persistente arriba del form (NO Toast — el text2 default de la lib trunca
+    // a 1 línea y el mensaje no cabía). Se limpia al cambiar email o password.
+    if (err?.code === 'SESSION_BLOCKED') {
+      const dev = err.activeDevice;
+      const deviceLabel = dev?.deviceName || dev?.deviceType || 'otro dispositivo';
+      const lastSeen = dev?.lastActivity
+        ? new Date(dev.lastActivity).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
+        : null;
+      setSessionBlocked({ deviceLabel, lastSeen });
       return;
     }
 
@@ -219,6 +241,7 @@ export default function LoginScreen() {
                 onChangeText={(text) => {
                   setEmail(text);
                   if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
+                  if (sessionBlocked) setSessionBlocked(null);
                 }}
                 error={errors.email}
                 keyboardType="email-address"
@@ -235,6 +258,7 @@ export default function LoginScreen() {
                   setPassword(text);
                   if (errors.password)
                     setErrors((e) => ({ ...e, password: undefined }));
+                  if (sessionBlocked) setSessionBlocked(null);
                 }}
                 error={errors.password}
                 secureTextEntry
@@ -305,6 +329,26 @@ export default function LoginScreen() {
         cancelText="Cancelar"
         onConfirm={handleConfirmForceLogin}
         onCancel={() => setShowDeviceBoundModal(false)}
+      />
+
+      {/* Fix prod 2026-06-04: política estricta single-session. A diferencia de
+          DEVICE_BOUND (Netflix-style con "Continuar aquí" que mata la otra sesión),
+          aquí el plan bloquea — el user no puede tomar la sesión remota, debe
+          cerrarla manualmente en el otro device. Modal single-button "Entendido". */}
+      <ConfirmModal
+        visible={sessionBlocked !== null}
+        title="Sesión activa en otro dispositivo"
+        message={
+          sessionBlocked
+            ? `Cierra la sesión de "${sessionBlocked.deviceLabel}"${
+                sessionBlocked.lastSeen ? ` (activa desde ${sessionBlocked.lastSeen})` : ''
+              } antes de entrar aquí, o contacta a tu administrador.`
+            : ''
+        }
+        confirmText="Entendido"
+        cancelText=""
+        onConfirm={() => setSessionBlocked(null)}
+        onCancel={() => setSessionBlocked(null)}
       />
     </ImageBackground>
   );

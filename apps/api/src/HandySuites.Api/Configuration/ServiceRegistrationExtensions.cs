@@ -304,6 +304,13 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ISyncRepository, SyncRepository>();
         services.AddScoped<SyncService>();
 
+        // B.2 — Telemetría sync (admin dashboard /sync-health expone backlog
+        // por vendedor para detección proactiva pre-incidente Rodrigo 2026-06-03)
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryRepository,
+                            HandySuites.Infrastructure.Repositories.SyncTelemetryRepository>();
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryService,
+                            HandySuites.Application.Telemetry.Services.SyncTelemetryService>();
+
         // Notification Services
         services.AddScoped<IFcmService, FcmService>();
         services.AddScoped<INotificationRepository, NotificationRepository>();

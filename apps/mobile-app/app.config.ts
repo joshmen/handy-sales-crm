@@ -3,11 +3,19 @@ import { ExpoConfig, ConfigContext } from "expo/config";
 const GOOGLE_MAPS_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
+// Fix 2026-06-03 (post-incidente Rodrigo): app.json es la fuente de verdad para
+// `version` y `android.versionCode`. Esto evita que EAS construya APKs con
+// version 1.0.0 / versionCode 1 hardcoded — root cause del incidente donde el
+// downgrade install requirió uninstall y se perdieron 32 pedidos en SQLite local.
+//
+// Patrón Expo: el `config` que llega via ConfigContext ya contiene el merge de
+// app.json. Hacemos `...config` para heredar version automáticamente y solo
+// declaramos los campos que QUEREMOS sobrescribir o agregar (Google Maps API
+// key dinámico, plugins extras, etc).
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Handy Suites",
   slug: "handy-suites",
-  version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme: "handysuites",
@@ -33,18 +41,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     translucent: false,
   },
   android: {
-    adaptiveIcon: {
-      foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#2563eb",
-    },
+    // Heredar versionCode + permissions + adaptiveIcon de app.json (sin esto,
+    // el spread los sobrescribiría con undefined y EAS construiría con
+    // versionCode 1 por default).
+    ...config.android,
     package: "com.handysuites.app",
     googleServicesFile:
       process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
-    permissions: [
-      "android.permission.ACCESS_FINE_LOCATION",
-      "android.permission.ACCESS_COARSE_LOCATION",
-    ],
     config: {
+      ...(config.android?.config ?? {}),
       googleMaps: {
         apiKey: GOOGLE_MAPS_API_KEY,
       },

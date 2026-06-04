@@ -264,6 +264,97 @@ public class MobileAuthEndpointsTests : IDisposable
         result.Should().BeNull();
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Fix prod 2026-06-03: política estricta de sesión única.
+    // Tests para SESSION_BLOCKED — bloqueo del segundo login del mismo
+    // user en un device distinto. NO debe revocar el device existente.
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoginAsync_ReturnsSessionBlocked_WhenSecondDeviceTriesAndForceSingleSessionEnabled()
+    {
+        // Arrange — plan con ForceSingleSession=true (default) + MaxConcurrentSessions=1
+        SeedSubscriptionPlanForTenant(tenantId: 1, maxSessions: 1, forceSingle: true);
+
+        // Login inicial desde "device A".
+        var first = await _authService.LoginAsync("vendedor@test.com", "Test123!", deviceId: "device-a", deviceFingerprint: "fp-a", deviceName: "POCO X7");
+        first.Success.Should().BeTrue("device A logueando primero debe entrar OK");
+
+        // Act — segundo login desde "device B" con MISMO usuario.
+        var second = await _authService.LoginAsync("vendedor@test.com", "Test123!", deviceId: "device-b", deviceFingerprint: "fp-b", deviceName: "S24 Ultra");
+
+        // Assert — debe bloquear, NO revocar el device A.
+        second.Success.Should().BeFalse();
+        second.SessionBlocked.Should().BeTrue("ForceSingleSession=true debe responder con SESSION_BLOCKED en lugar de picker");
+        second.SessionLimitReached.Should().BeFalse("no se usa picker en modo estricto");
+        second.Message.Should().Contain("otro dispositivo");
+
+        // El device A debe seguir Active.
+        var deviceASession = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.DeviceId == "device-a");
+        deviceASession.Should().NotBeNull();
+        deviceASession!.Status.Should().Be(SessionStatus.Active, "device A NO debe ser revocado por el intento de login del device B");
+
+        // Payload debe incluir activeDevice info para que UI muestre "cierra sesión en X".
+        var dataType = second.Data!.GetType();
+        dataType.GetProperty("activeDevice").Should().NotBeNull();
+        var activeDevice = dataType.GetProperty("activeDevice")!.GetValue(second.Data);
+        activeDevice.Should().NotBeNull("UI necesita info del device activo para mostrar al usuario");
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReturnsSessionLimitReached_WhenForceSingleSessionDisabled()
+    {
+        // Arrange — plan con ForceSingleSession=false (Netflix legacy) + MaxConcurrentSessions=1
+        SeedSubscriptionPlanForTenant(tenantId: 1, maxSessions: 1, forceSingle: false);
+
+        var first = await _authService.LoginAsync("vendedor@test.com", "Test123!", deviceId: "device-a", deviceFingerprint: "fp-a", deviceName: "POCO X7");
+        first.Success.Should().BeTrue();
+
+        // Act
+        var second = await _authService.LoginAsync("vendedor@test.com", "Test123!", deviceId: "device-b", deviceFingerprint: "fp-b", deviceName: "S24 Ultra");
+
+        // Assert — modo Netflix: picker, NO bloqueo
+        second.SessionLimitReached.Should().BeTrue();
+        second.SessionBlocked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReusesSameSession_WhenSameDeviceLogsAgain()
+    {
+        // Arrange — ForceSingleSession=true pero MISMO device → debe reutilizar, no bloquear
+        SeedSubscriptionPlanForTenant(tenantId: 1, maxSessions: 1, forceSingle: true);
+
+        var first = await _authService.LoginAsync("vendedor@test.com", "Test123!", deviceId: "device-a", deviceFingerprint: "fp-a", deviceName: "POCO X7");
+        first.Success.Should().BeTrue();
+
+        // Act — re-login MISMO device (mismo fingerprint)
+        var second = await _authService.LoginAsync("vendedor@test.com", "Test123!", deviceId: "device-a", deviceFingerprint: "fp-a", deviceName: "POCO X7");
+
+        // Assert
+        second.Success.Should().BeTrue("el mismo device físico re-logueando debe reutilizar su sesión, no contar como nueva");
+        second.SessionBlocked.Should().BeFalse();
+    }
+
+    private void SeedSubscriptionPlanForTenant(int tenantId, int maxSessions, bool forceSingle)
+    {
+        var plan = new SubscriptionPlan
+        {
+            Nombre = "Test Plan",
+            Codigo = "TEST",
+            MaxConcurrentSessions = maxSessions,
+            ForceSingleSession = forceSingle,
+            Activo = true
+        };
+        _db.SubscriptionPlans.Add(plan);
+        _db.SaveChanges();
+
+        var tenant = _db.Tenants.First(t => t.Id == tenantId);
+        tenant.SubscriptionPlanId = plan.Id;
+        _db.SaveChanges();
+    }
+
     public void Dispose()
     {
         _db.Dispose();

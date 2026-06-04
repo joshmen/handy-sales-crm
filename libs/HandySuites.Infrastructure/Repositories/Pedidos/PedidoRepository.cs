@@ -176,6 +176,196 @@ public class PedidoRepository : IPedidoRepository
         return pedido.Id;
     }
 
+    public async Task<PedidoEagerSaveOutcome> EagerSaveAsync(PedidoEagerSaveDto dto, int usuarioId, int tenantId)
+    {
+        // Idempotency: si ya existe Pedido con este (mobile_record_id, tenant_id),
+        // retornar el existente SIN tocar nada. Aplicable después de un retry del
+        // cliente o si la red drop entre push y ack.
+        if (!string.IsNullOrWhiteSpace(dto.MobileRecordId))
+        {
+            var existing = await _db.Pedidos
+                .AsNoTracking()
+                .Where(p => p.MobileRecordId == dto.MobileRecordId && p.TenantId == tenantId)
+                .Select(p => new { p.Id, p.Estado, p.CreadoEn })
+                .FirstOrDefaultAsync();
+
+            if (existing != null)
+            {
+                return new PedidoEagerSaveOutcome(
+                    ServerId: existing.Id,
+                    Estado: existing.Estado,
+                    AckedAt: existing.CreadoEn,
+                    Idempotent: true);
+            }
+        }
+
+        var ahora = DateTime.UtcNow;
+        // NumeroPedido es NOT NULL en el schema. Generamos uno real (mismo flow que
+        // CrearAsync) — el retry loop maneja race condition con UNIQUE constraint.
+        // Prefix "PED" porque eager-save siempre es Borrador (preventa style); el flow
+        // sync push posterior puede actualizar el número si es VentaDirecta.
+        string numeroPedido = string.Empty;
+        for (int numAttempt = 0; numAttempt < 3; numAttempt++)
+        {
+            try
+            {
+                numeroPedido = await GenerarNumeroPedidoAsync(tenantId, "PED");
+                break;
+            }
+            catch (DbUpdateException) when (numAttempt < 2)
+            {
+                // retry
+            }
+        }
+        if (string.IsNullOrEmpty(numeroPedido))
+        {
+            throw new InvalidOperationException("No se pudo generar NumeroPedido único después de 3 intentos");
+        }
+
+        var pedido = new Pedido
+        {
+            TenantId = tenantId,
+            ClienteId = dto.ClienteId,
+            UsuarioId = usuarioId,
+            NumeroPedido = numeroPedido,
+            FechaPedido = dto.FechaPedido != default ? dto.FechaPedido : ahora,
+            // SIEMPRE Borrador en eager-save. La promoción a Entregado/Confirmado
+            // (y el correspondiente decrement de inventario en VentaDirecta + el
+            // RutasCarga side-effect) pasa por el flow de sync push normal cuando
+            // el cliente finaliza el pedido.
+            Estado = EstadoPedido.Borrador,
+            TipoVenta = (TipoVenta)dto.TipoVenta,
+            Subtotal = dto.Subtotal,
+            Descuento = dto.Descuento,
+            Impuestos = dto.Impuesto,
+            Total = dto.Total,
+            Notas = dto.Notas,
+            Latitud = dto.Latitud,
+            Longitud = dto.Longitud,
+            MobileRecordId = dto.MobileRecordId,
+            Activo = true,
+            CreadoEn = ahora
+        };
+
+        _db.Pedidos.Add(pedido);
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
+        {
+            // Race condition: 2 requests concurrentes con el mismo mobile_record_id
+            // (cliente que reintenta antes de recibir ack). El primero gana, el
+            // segundo recupera el existente y retorna idempotente.
+            _db.Entry(pedido).State = EntityState.Detached;
+
+            var existing = await _db.Pedidos
+                .AsNoTracking()
+                .Where(p => p.MobileRecordId == dto.MobileRecordId && p.TenantId == tenantId)
+                .Select(p => new { p.Id, p.Estado, p.CreadoEn })
+                .FirstOrDefaultAsync();
+
+            if (existing != null)
+            {
+                return new PedidoEagerSaveOutcome(
+                    ServerId: existing.Id,
+                    Estado: existing.Estado,
+                    AckedAt: existing.CreadoEn,
+                    Idempotent: true);
+            }
+
+            throw;
+        }
+
+        // Insertar detalles (montos pre-calculados client-side, NO se recalcula BOGO).
+        foreach (var detalleDto in dto.Detalles)
+        {
+            _db.DetallePedidos.Add(new DetallePedido
+            {
+                PedidoId = pedido.Id,
+                ProductoId = detalleDto.ProductoId,
+                Cantidad = detalleDto.Cantidad,
+                PrecioUnitario = detalleDto.PrecioUnitario,
+                Descuento = detalleDto.Descuento,
+                PorcentajeDescuento = 0,
+                Subtotal = detalleDto.Subtotal,
+                Impuesto = detalleDto.Impuesto,
+                Total = detalleDto.Total,
+                CantidadBonificada = 0m,
+                Activo = true,
+                CreadoEn = ahora
+            });
+        }
+
+        if (dto.Detalles.Count > 0)
+        {
+            await _db.SaveChangesAsync();
+        }
+
+        return new PedidoEagerSaveOutcome(
+            ServerId: pedido.Id,
+            Estado: EstadoPedido.Borrador,
+            AckedAt: ahora,
+            Idempotent: false);
+    }
+
+    public async Task<List<OrphanDraftDto>> GetOrphanDraftsAsync(DateTime cutoffDate, int tenantId, int? usuarioId = null)
+    {
+        // C.1 — Drafts huérfanos: Pedidos en Estado=Borrador hace >= N min.
+        // Join con Usuarios + Clientes para devolver nombres legibles. Sin
+        // pagination — el dashboard típicamente muestra todos los huérfanos
+        // del tenant (raramente > 50 en estado normal).
+        var query = _db.Pedidos
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId
+                     && p.Estado == EstadoPedido.Borrador
+                     && p.CreadoEn <= cutoffDate
+                     && p.Activo);
+
+        if (usuarioId.HasValue)
+        {
+            query = query.Where(p => p.UsuarioId == usuarioId.Value);
+        }
+
+        var raw = await query
+            .Join(_db.Usuarios.IgnoreQueryFilters(),
+                p => p.UsuarioId, u => u.Id, (p, u) => new { p, u })
+            .Join(_db.Clientes.IgnoreQueryFilters(),
+                x => x.p.ClienteId, c => c.Id, (x, c) => new
+                {
+                    PedidoId = x.p.Id,
+                    NumeroPedido = x.p.NumeroPedido,
+                    MobileRecordId = x.p.MobileRecordId ?? string.Empty,
+                    UsuarioId = x.p.UsuarioId,
+                    UsuarioNombre = x.u.Nombre,
+                    ClienteId = x.p.ClienteId,
+                    ClienteNombre = c.Nombre,
+                    Total = x.p.Total,
+                    FechaPedido = x.p.FechaPedido,
+                    CreadoEn = x.p.CreadoEn,
+                    DetallesCount = _db.DetallePedidos.Count(d => d.PedidoId == x.p.Id),
+                })
+            .OrderByDescending(x => x.CreadoEn)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        return raw.Select(r => new OrphanDraftDto(
+            r.PedidoId,
+            r.NumeroPedido,
+            r.MobileRecordId,
+            r.UsuarioId,
+            r.UsuarioNombre,
+            r.ClienteId,
+            r.ClienteNombre,
+            r.Total,
+            r.FechaPedido,
+            r.CreadoEn,
+            MinutesSinceCreated: (int)(now - r.CreadoEn).TotalMinutes,
+            r.DetallesCount
+        )).ToList();
+    }
+
     public async Task<PedidoDto?> ObtenerPorIdAsync(int id, int tenantId)
     {
         return await _db.Pedidos

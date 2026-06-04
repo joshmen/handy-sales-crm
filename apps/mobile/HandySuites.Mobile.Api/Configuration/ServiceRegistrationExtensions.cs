@@ -175,6 +175,12 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ISyncRepository, SyncRepository>();
         services.AddScoped<SyncService>();
 
+        // B.2 — Telemetría heartbeat (post-incidente Rodrigo 2026-06-03)
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryRepository,
+                            HandySuites.Infrastructure.Repositories.SyncTelemetryRepository>();
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryService,
+                            HandySuites.Application.Telemetry.Services.SyncTelemetryService>();
+
         // Precios y Listas de Precios
         services.AddScoped<IListaPrecioRepository, ListaPrecioRepository>();
         services.AddScoped<ListaPrecioService>();

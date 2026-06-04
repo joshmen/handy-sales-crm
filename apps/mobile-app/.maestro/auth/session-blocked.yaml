@@ -1,0 +1,96 @@
+appId: host.exp.exponent
+name: "Session blocked: login con sesion activa en otro dispositivo muestra Toast y no navega a Hoy"
+---
+
+# ============================================================================
+# PRE-CONDICION (correr en PowerShell ANTES del flow):
+#
+# docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp -c "
+#   UPDATE subscription_plans SET force_single_session = true;
+#   INSERT INTO \"DeviceSessions\"
+#     (tenant_id, usuario_id, device_id, device_name, device_type, status,
+#      last_activity, logged_in_at, activo, creado_en)
+#   SELECT u.tenant_id, u.id,
+#          'fake-other-device-uuid-for-e2e-test',
+#          'POCO X7 (E2E test)',
+#          2, 0, NOW(), NOW(), true, NOW()
+#   FROM \"Usuarios\" u
+#   WHERE u.email = 'vendedor@jeyma.com';
+# "
+#
+# Esto fuerza single-session en TODOS los planes y registra una sesion activa
+# ficticia para vendedor@jeyma.com. El backend debe responder 409 SESSION_BLOCKED.
+#
+# CLEANUP (correr DESPUES del flow):
+#
+# docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp -c "
+#   DELETE FROM \"DeviceSessions\"
+#     WHERE device_id = 'fake-other-device-uuid-for-e2e-test';
+#   UPDATE subscription_plans SET force_single_session = false;
+# "
+# ============================================================================
+
+# Step 1: espera a que cargue la pantalla de login (por testID estable)
+#         Asume que el bundle de HandySales ya esta pre-cargado en Expo Go
+#         por la fase Setup (no usamos launchApp + clearState porque eso
+#         wipea el cache de Expo Go y aterriza en la pantalla de Projects).
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 90000
+
+- takeScreenshot: 01-login-screen-ready
+
+# Step 3: assert que estamos en login (boton "Iniciar Sesion" visible)
+- assertVisible:
+    id: "login-button"
+
+# Step 4: llenar email con patron eraseText + inputText + hideKeyboard
+#         (evita que Gboard concatene autocomplete al siguiente field)
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+# Step 5: llenar password
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+# Step 6: tap login - backend devolvera 409 SESSION_BLOCKED porque
+#         vendedor@jeyma.com ya tiene una DeviceSession activa
+- tapOn:
+    id: "login-button"
+
+# Step 7: esperar a que termine la animacion del POST + render del Toast
+- waitForAnimationToEnd
+
+- takeScreenshot: 02-after-login-attempt
+
+# Step 8: assert que el Toast principal aparece
+#         (texto exacto del handler SESSION_BLOCKED en login.tsx L89)
+- extendedWaitUntil:
+    visible: "Sesión activa en otro dispositivo"
+    timeout: 10000
+
+# Step 9: assert que el text2 del Toast menciona el device name
+#         (Toast.text2 = "Cierra la sesión de \"POCO X7 (E2E test)\"...")
+- assertVisible:
+    text: ".*POCO X7.*"
+
+- takeScreenshot: 03-toast-session-blocked-visible
+
+# Step 10: verificar que NO navegamos a la pantalla principal.
+#          Si el login hubiera tenido exito veriamos el tab "Hoy" del bottom nav.
+- assertNotVisible: "Hoy"
+
+# Step 11: confirmar que seguimos en la pantalla de login
+#          (el boton "Iniciar Sesion" debe seguir presente)
+- assertVisible:
+    id: "login-button"
+
+- takeScreenshot: 04-still-on-login-screen

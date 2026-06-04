@@ -1,0 +1,64 @@
+appId: host.exp.exponent
+name: "Hardening Restore: Mas > Borrado de datos > TypeToConfirmModal"
+---
+
+# Asume sesión ya logueada con vendedor1@jeyma.com en dashboard.
+# Si NO está logueado, este flow fallará en la primer aserción de Mas tab.
+
+# Step 1: Tap Mas tab (bottom right)
+- tapOn:
+    point: "90%, 95%"
+
+- extendedWaitUntil:
+    visible: "Si algo esta mal"
+    timeout: 15000
+
+- takeScreenshot: "01-mas-with-emergencia-section"
+
+# Step 2: Tap "Borrado de datos" item
+- tapOn: "Borrado de datos"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Borrado de datos"
+    timeout: 10000
+
+- takeScreenshot: "02-restaurar-datos-screen"
+
+# Verify hardening UI elements
+- assertVisible: "Borrar datos locales y volver a descargar"
+- assertVisible: "Ultimo recurso"
+
+# Si hay blockers (caso vendedor1 que sigue con cobros pending), debe mostrar
+# "NO PUEDES RESTAURAR AUN" + lista de blockers.
+- assertVisible:
+    text: "NO PUEDES RESTAURAR"
+    optional: true
+
+# Step 3: Tap el botón principal (puede estar disabled si hay blockers)
+- tapOn: "Borrar datos locales y volver a descargar"
+
+# Si el botón estaba disabled, no aparece modal — ese es el comportamiento
+# correcto. Si estaba enabled, debe aparecer TypeToConfirmModal.
+- assertVisible:
+    text: "Para continuar, escribe"
+    optional: true
+- assertVisible:
+    text: "RESTAURAR"
+    optional: true
+
+- takeScreenshot: "03-modal-or-blocked"
+
+# Step 4: Si el modal apareció, escribir "RESTAURAR" en el input
+- tapOn:
+    text: "RESTAURAR"
+    optional: true
+- inputText: "RESTAURAR"
+- takeScreenshot: "04-typed-restaurar"
+
+# Step 5: Confirmar (botón debería estar habilitado tras el match)
+- tapOn:
+    text: "Borrar y descargar"
+    optional: true
+
+- takeScreenshot: "05-restore-completed-or-cancelled"

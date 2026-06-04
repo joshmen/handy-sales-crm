@@ -71,10 +71,18 @@ public static class MobileCrashReportEndpoints
 
             await repo.CreateAsync(report);
 
-            // Log a Info (no Error) cuando es anon — un report sin auth no
-            // es de tu sistema necesariamente, podría ser ruido. Loguear a
-            // Error inflaba alertas y costos de Seq.
-            var logLevel = userId.HasValue ? LogLevel.Error : LogLevel.Information;
+            // Severity-aware logging:
+            //  - INFO: funnel events (restore_database_initiated, etc.). Loguear a
+            //    Information aunque haya userId. Antes inflaba metricas Error.
+            //  - WARNING: degradaciones no fatales. Loguear a Warning.
+            //  - ERROR/CRASH con auth: Error (urgent triage).
+            //  - ERROR/CRASH sin auth: Info (puede ser noise externo).
+            var logLevel = report.Severity switch
+            {
+                "INFO" => LogLevel.Information,
+                "WARNING" => LogLevel.Warning,
+                _ => userId.HasValue ? LogLevel.Error : LogLevel.Information,
+            };
             logger.Log(logLevel,
                 "MOBILE_CRASH [{Severity}] {DeviceName} ({AppVersion}/{OsVersion}) anon={Anon}: {ErrorMessage}",
                 report.Severity, report.DeviceName, report.AppVersion, report.OsVersion,

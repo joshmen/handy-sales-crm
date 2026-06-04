@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
-import { useLogout, useFacturacionEnabled } from '@/hooks';
+import { useLogout, useFacturacionEnabled, usePendingCount } from '@/hooks';
+import { useSyncStore } from '@/stores';
 import Toast from 'react-native-toast-message';
 import { Badge, ConfirmModal } from '@/components/ui';
 import {
@@ -26,6 +27,7 @@ import {
   TrendingUp,
   Package,
   FileText,
+  Trash2,
 } from 'lucide-react-native';
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
@@ -60,9 +62,21 @@ function MasScreenContent() {
   const router = useRouter();
   const logoutMutation = useLogout();
   const [showLogout, setShowLogout] = useState(false);
+  const [showPendingsBlock, setShowPendingsBlock] = useState(false);
+  // B.3 (fix prod 2026-06-03 post-incidente Rodrigo): si el vendedor tiene
+  // records sin sincronizar, NO permitir logout sin advertencia explícita.
+  // Antes el flow era "tocar Cerrar Sesión → confirm → mutate". El cierre
+  // por sí solo no borra WDB (solo elimina el token), pero la combinación
+  // logout + uninstall + reinstall sí. Si el vendedor tiene 32 pendings, el
+  // bloqueo de logout previene el escenario.
+  const { data: pendingCount = 0 } = usePendingCount();
 
   const handleLogout = () => {
-    setShowLogout(true);
+    if (pendingCount > 0) {
+      setShowPendingsBlock(true);
+    } else {
+      setShowLogout(true);
+    }
   };
 
   const role = user?.role;
@@ -163,6 +177,19 @@ function MasScreenContent() {
     },
   ];
 
+  // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" en su propia
+  // seccion al final del menu Mas, NO inline en sync.tsx. Reduce visibilidad
+  // accidental durante uso diario. La sub-pantalla tiene blockers desglosados
+  // + TypeToConfirmModal con palabra "RESTAURAR" como friccion final.
+  const emergencyItems: MenuItem[] = [
+    {
+      label: 'Borrado de datos',
+      icon: <Trash2 size={20} color="#dc2626" />,
+      iconBg: '#fef2f2',
+      onPress: () => router.push('/(tabs)/restaurar-datos' as any),
+    },
+  ];
+
   const roleColor = ROLE_COLORS[user?.role || ''] || '#6b7280';
 
   return (
@@ -239,6 +266,29 @@ function MasScreenContent() {
         ))}
       </Animated.View>
 
+      {/* C.2 — Emergencia (Borrado de datos). Separado intencionalmente al
+          final + iconografia destructiva para que solo se descubra cuando
+          se necesita y NO como atajo en scroll normal. */}
+      <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.section}>
+        <Text style={styles.sectionTitle}>Si algo esta mal</Text>
+        {emergencyItems.map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            style={styles.menuItem}
+            onPress={item.onPress}
+            activeOpacity={0.7}
+            accessibilityLabel={item.label}
+            accessibilityRole="button"
+          >
+            <View style={[styles.menuIcon, { backgroundColor: item.iconBg }]}>
+              {item.icon}
+            </View>
+            <Text style={styles.menuLabel}>{item.label}</Text>
+            <ChevronRight size={18} color="#cbd5e1" />
+          </TouchableOpacity>
+        ))}
+      </Animated.View>
+
 
       {/* Logout */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.section}>
@@ -272,6 +322,31 @@ function MasScreenContent() {
       destructive
       onConfirm={() => { setShowLogout(false); logoutMutation.mutate(); }}
       onCancel={() => setShowLogout(false)}
+    />
+    {/* B.3 (fix prod 2026-06-03 post-incidente Rodrigo): bloqueo explícito
+        si quedan pendings sin subir. El vendedor puede confirmar "Sincronizar
+        ahora" (dispara sync immediately) o "Cerrar de todos modos" (override
+        consciente, log+telemetry). NO usamos un confirm normal porque el caso
+        Rodrigo tuvo 32 pedidos perdidos y un user simplemente tocando
+        Confirmar en el modal estándar habría perdido toda la data. */}
+    <ConfirmModal
+      visible={showPendingsBlock}
+      title="Datos sin sincronizar"
+      message={'Tienes ' + pendingCount + (pendingCount !== 1 ? ' registros' : ' registro') + ' sin enviar al servidor. Si cierras sesión y desinstalas la app, se perderán. Te recomendamos sincronizar primero.'}
+      confirmText="Sincronizar ahora"
+      cancelText="Cerrar de todos modos"
+      destructive={false}
+      onConfirm={() => {
+        setShowPendingsBlock(false);
+        useSyncStore.getState().sync().catch(() => {
+          // Silent — el banner OfflineBanner ya muestra el estado de error.
+        });
+      }}
+      onCancel={() => {
+        setShowPendingsBlock(false);
+        // Permitir logout (override consciente). El user vio cuántos pendings tenía.
+        setShowLogout(true);
+      }}
     />
     </>
   );

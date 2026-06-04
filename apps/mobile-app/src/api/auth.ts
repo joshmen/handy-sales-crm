@@ -64,6 +64,17 @@ class MobileAuthApi {
         (err as any).code = 'SESSION_REVOKED';
         throw err;
       }
+      // Fix prod 2026-06-03 — política estricta single-session. El user ya
+      // tiene sesión activa en otro device y el plan no permite picker. Debe
+      // cerrar manualmente la otra sesión antes de entrar. NO auto-logout —
+      // este device no está logueado todavía.
+      if (status === 409 && code === 'SESSION_BLOCKED') {
+        const err = new Error(backendMessage || 'Ya tienes una sesión activa en otro dispositivo.');
+        (err as any).code = 'SESSION_BLOCKED';
+        (err as any).activeDevice = error.response?.data?.data?.activeDevice ?? null;
+        (err as any).activeSessions = error.response?.data?.data?.activeSessions ?? [];
+        throw err;
+      }
       if (status === 401) throw new Error('Correo o contraseña incorrectos');
       if (status === 400 && backendMessage) throw new Error(backendMessage);
       if (status === 429) throw new Error('Demasiados intentos. Espera un momento e intenta de nuevo.');
@@ -105,8 +116,23 @@ class MobileAuthApi {
       }
       return validated.data;
     } catch (error) {
-      // Re-throw si ya tiene code (SESSION_LIMIT_REACHED u otro propagado).
-      if (error instanceof Error && (error as any).code) throw error;
+      // Re-throw si ya viene un Error CUSTOM enriquecido en el try (ej:
+      // SESSION_LIMIT_REACHED que parseamos del body 200). Esos NO son
+      // AxiosError — son `new Error(...)` que hicimos manualmente.
+      //
+      // Fix prod 2026-06-04: ANTES la chequeo era `(error as any).code`,
+      // pero AxiosError también tiene `.code` (ej: "ERR_BAD_REQUEST" para 4xx).
+      // Eso hacía que respuestas 409 SESSION_BLOCKED se re-throwearan SIN pasar
+      // por sanitizeAuthError, terminando como Toast genérico "Request failed
+      // with status code 409" en lugar de "Sesión activa en otro dispositivo".
+      // Detectado por Maestro E2E flow session-blocked.yaml.
+      if (
+        error instanceof Error &&
+        !(error as any).isAxiosError &&
+        (error as any).code
+      ) {
+        throw error;
+      }
       this.sanitizeAuthError(error);
     }
   }

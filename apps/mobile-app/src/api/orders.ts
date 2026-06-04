@@ -158,6 +158,60 @@ class MobilePedidosApi {
   async removeProducto(pedidoId: number, detalleId: number): Promise<void> {
     await api.delete(`${this.basePath}/${pedidoId}/productos/${detalleId}`);
   }
+
+  /**
+   * B.1 eager-save (fix prod 2026-06-04). Dispara después de crear el pedido
+   * en WDB local. Idempotente vía mobileRecordId. NO bloquea UI — el caller
+   * debe usarlo con .catch(noop) en fire-and-forget. Si falla por red caída,
+   * el sync push normal eventualmente persistirá el pedido al server.
+   */
+  async eagerSave(payload: PedidoEagerSavePayload): Promise<PedidoEagerSaveResult> {
+    const response = await api.post<ApiResponse<PedidoEagerSaveResult>>(
+      `${this.basePath}/eager-save`,
+      payload,
+    );
+    const body = response.data;
+    if (!body || body.success === false || !body.data) {
+      throw new Error(body?.message || 'Eager-save fallo');
+    }
+    return body.data;
+  }
 }
 
 export const pedidosApi = new MobilePedidosApi();
+
+// B.1 eager-save payload shape — espejo de PedidoEagerSaveDto del backend.
+// Mantenido aquí (no en @/types) porque es exclusivo de la durabilidad path,
+// no del CRUD normal de pedidos.
+export interface PedidoEagerSaveDetallePayload {
+  productoId: number;
+  cantidad: number;
+  precioUnitario: number;
+  descuento: number;
+  subtotal: number;
+  impuesto: number;
+  total: number;
+}
+
+export interface PedidoEagerSavePayload {
+  mobileRecordId: string;
+  clienteId: number;
+  fechaPedido: string; // ISO UTC
+  tipoVenta: number;
+  subtotal: number;
+  descuento: number;
+  impuesto: number;
+  total: number;
+  notas?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  detalles: PedidoEagerSaveDetallePayload[];
+}
+
+export interface PedidoEagerSaveResult {
+  serverId: number;
+  mobileRecordId: string;
+  ackedAt: string; // ISO UTC
+  estado: number;
+  idempotent: boolean;
+}

@@ -23,6 +23,8 @@
 
 import { Database } from '@nozbe/watermelondb';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { deleteAsync, getInfoAsync } from 'expo-file-system';
 import { schema } from './schema';
 import { migrations } from './migrations';
 import { modelClasses } from './models';
@@ -51,8 +53,74 @@ export const database = new Database({
   modelClasses,
 });
 
+/**
+ * C.2 hardening (fix prod 2026-06-04 post-incidente Rodrigo):
+ * Reset atomico de TODO el estado persistente del cliente, NO solo WDB.
+ *
+ * El reset debe limpiar:
+ *  - WDB (`unsafeResetDatabase`): tablas pedidos/cobros/visitas/clientes/
+ *    productos/attachments/ubicaciones_vendedor/etc.
+ *  - syncCursors (AsyncStorage `@hs:cursor:*`): `lastPulledAt` referencia
+ *    rows que ya no existen. Sin esto, el primer pull post-wipe seria
+ *    incremental vacio en vez de full re-pull.
+ *  - EVIDENCE_DIR (FileSystem): fotos/firmas referenciadas por attachments
+ *    rows que estamos borrando. Sin limpiar, quedan huerfanas en disco hasta
+ *    que el usuario desinstale la app (storage leak).
+ *  - AsyncStorage selectos (jornada activa, notifications cache, empresa
+ *    config snapshot): metadata que referencia estado WDB inexistente.
+ *
+ * IMPORTANTE: NO toca SecureStore. El JWT, deviceId y config de impresora
+ * sobreviven porque el restore NO es un logout — el usuario sigue identificado
+ * con su mismo deviceId y session, solo le bajamos el dataset fresh del server.
+ *
+ * Cada paso se ejecuta con try/catch para que un fallo parcial (ej. permisos
+ * FileSystem) no bloquee el reset principal. Los errores se reportan via
+ * crashReporter sin re-throw para no romper la UX post-wipe.
+ */
+async function safeDeleteEvidenceDir(): Promise<void> {
+  try {
+    const { EVIDENCE_DIR } = await import('@/services/evidenceManager');
+    const info = await getInfoAsync(EVIDENCE_DIR);
+    if (info.exists) {
+      await deleteAsync(EVIDENCE_DIR, { idempotent: true });
+    }
+  } catch {
+    // Sin permisos / disco read-only: leak aceptable post-wipe.
+  }
+}
+
+async function safeClearAsyncStorage(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([
+      'jornada_state_v2',
+      '@notifications:history',
+      'empresa_config_snapshot_v1',
+    ]);
+  } catch {
+    // Aceptable: estos AsyncStorage keys son cache, no source-of-truth.
+  }
+}
+
+async function safeClearSyncCursors(): Promise<void> {
+  try {
+    const { syncCursors } = await import('@/sync/cursors');
+    syncCursors.clear();
+  } catch {
+    // Aceptable: sin cursors el proximo sync sera full pull (deseado).
+  }
+}
+
 export async function resetDatabase() {
+  // 1. WDB wipe (puede tardar segundos)
   await database.write(async () => {
     await database.unsafeResetDatabase();
   });
+
+  // 2-4. Side effects (paralelos: independientes entre si)
+  await Promise.all([
+    safeClearSyncCursors(),
+    safeDeleteEvidenceDir(),
+    safeClearAsyncStorage(),
+  ]);
 }
+

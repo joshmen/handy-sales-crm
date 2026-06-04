@@ -62,6 +62,11 @@ export default function SyncScreen() {
 
   const isSyncing = status === 'syncing';
 
+  // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" se MOVIO a su
+  // propia sub-pantalla bajo /(tabs)/restaurar-datos accesible desde el menu
+  // Mas en seccion "Si algo esta mal". Aqui en sync solo dejamos un link
+  // discreto al final para vendedores que llegaron buscando arreglar sync.
+
   return (
     <ScrollView
       style={styles.container}
@@ -207,6 +212,22 @@ export default function SyncScreen() {
           Conéctate a internet para sincronizar
         </Text>
       )}
+
+      {/* C.2 hardening — link discreto a la sub-pantalla dedicada de borrado.
+          NO duplicamos el boton aqui para evitar el tap accidental que
+          motivó el hardening. El usuario que tiene problemas con sus datos
+          encontrara la opcion en Mas > Si algo esta mal > Borrado de datos. */}
+      <TouchableOpacity
+        style={styles.troubleLink}
+        onPress={() => router.push('/(tabs)/restaurar-datos' as any)}
+        activeOpacity={0.7}
+        accessibilityLabel="Problemas con tus datos"
+        accessibilityRole="link"
+      >
+        <Text style={styles.troubleLinkText}>
+          Problemas con tus datos?
+        </Text>
+      </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -301,5 +322,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textTertiary,
     marginTop: 12,
+  },
+  troubleLink: {
+    marginTop: 32,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  troubleLinkText: {
+    fontSize: 13,
+    color: COLORS.textTertiary,
+    textDecorationLine: 'underline',
   },
 });

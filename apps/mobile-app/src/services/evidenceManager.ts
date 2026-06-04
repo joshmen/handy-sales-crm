@@ -16,7 +16,7 @@ import DevolucionPedido from '@/db/models/DevolucionPedido';
 import { API_CONFIG } from '@/utils/constants';
 import { getAccessToken } from '@/api/client';
 
-const EVIDENCE_DIR = `${documentDirectory}evidence/`;
+export const EVIDENCE_DIR = `${documentDirectory}evidence/`;
 
 async function ensureDir() {
   const info = await getInfoAsync(EVIDENCE_DIR);
