@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -39,9 +39,29 @@ export default function RestaurarDatosScreen() {
     isLoading,
     isOnline,
     isSyncing,
+    sessionExpired,
+    sessionExpiredBlocksDestructive,
   } = useCanResetSafely();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showForceConfirm, setShowForceConfirm] = useState(false);
   const [restoring, setRestoring] = useState(false);
+
+  // Fix prod 2026-06-05 (data-loss prevention): telemetria del pattern Rodrigo
+  // cuando el user llega a esta pantalla con sesion expirada. Se logueo en prod
+  // para cuantificar cuantas veces ocurre el escenario que detectamos en QA.
+  useEffect(() => {
+    if (sessionExpired) {
+      void crashReporter.reportEvent('restore_database_session_expired_view', {
+        hardBlockerCount: hardBlockers.length,
+        softWarningCount: softWarnings.length,
+      });
+    }
+  }, [sessionExpired, hardBlockers.length, softWarnings.length]);
+
+  const handleReLogin = () => {
+    void crashReporter.reportEvent('restore_database_session_expired_relogin_clicked');
+    router.replace('/(auth)/login' as any);
+  };
 
   const handleOpenConfirm = () => {
     void crashReporter.reportEvent('restore_database_modal_open', {
@@ -52,8 +72,23 @@ export default function RestaurarDatosScreen() {
   };
 
   const handleRestore = async () => {
+    // Guard final: si la sesion expiro entre el render y el tap, abortar
+    // ANTES de tocar resetDatabase() (data-loss prevention).
+    if (sessionExpired && hardBlockers.length > 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Sesion expirada',
+        text2: 'Inicia sesion antes de restaurar para no perder pendientes.',
+        visibilityTime: 5000,
+      });
+      setShowConfirm(false);
+      return;
+    }
     setRestoring(true);
-    void crashReporter.reportEvent('restore_database_confirmed');
+    void crashReporter.reportEvent('restore_database_confirmed', {
+      sessionExpired,
+      forceOverride: false,
+    });
     try {
       await resetDatabase();
       void crashReporter.reportEvent('restore_database_success');
@@ -88,16 +123,61 @@ export default function RestaurarDatosScreen() {
     }
   };
 
+  /**
+   * Override para casos extremos: sesion expirada + pendientes. El user acepta
+   * conscientemente perder los pendientes (sync push fallara 401) a cambio de
+   * limpiar el dispositivo y poder re-loguearse con dataset fresh.
+   *
+   * Caso real: vendedor cambio de tenant, fue dado de baja, o password reseteado
+   * - los pendientes son irrecuperables de todos modos. Mejor permitirle salir
+   * del limbo que dejarlo atrapado sin recovery posible.
+   */
+  const handleForceRestore = async () => {
+    setRestoring(true);
+    void crashReporter.reportEvent('restore_database_force_override', {
+      hardBlockerCount: hardBlockers.length,
+      sessionExpired: true,
+    });
+    try {
+      await resetDatabase();
+      // NO intentamos sync — sabemos que fallaria con 401. El user re-loguea despues.
+      setShowForceConfirm(false);
+      Toast.show({
+        type: 'success',
+        text1: 'Datos borrados',
+        text2: 'Inicia sesion para descargar de nuevo.',
+        visibilityTime: 5000,
+      });
+      router.replace('/(auth)/login' as any);
+    } catch (err: any) {
+      const message = err?.message ?? 'Intenta de nuevo en un momento.';
+      void crashReporter.reportEvent('restore_database_force_override_error', { message });
+      Toast.show({
+        type: 'error',
+        text1: 'Error al restaurar',
+        text2: message,
+        visibilityTime: 6000,
+      });
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   const handleSyncNow = () => {
+    // Defense-in-depth: si la sesion expiro, no dispares sync (fallara 401).
+    // Redirige directamente al re-login para evitar el loop visual del blocker.
+    if (sessionExpired) {
+      handleReLogin();
+      return;
+    }
     void useSyncStore.getState().sync().catch(() => {});
   };
 
-  // Estado para mostrar el boton:
-  //  - hardBlockers presentes: deshabilitado + hint claro de que sincronices
-  //  - !isOnline: deshabilitado + hint de conexion
-  //  - isSyncing: deshabilitado + hint
-  //  - todo OK: habilitado en rojo destructivo
-  const buttonDisabled = !canReset || restoring || isLoading;
+  // Boton principal deshabilitado tambien cuando sessionExpired+pendientes.
+  // En ese caso el override 'Restaurar de todos modos' vive dentro del
+  // SessionExpiredCard. Si sessionExpired sin pendientes -> sigue habilitado
+  // porque restore es safe (no hay nada que perder).
+  const buttonDisabled = !canReset || restoring || isLoading || sessionExpiredBlocksDestructive;
 
   return (
     <ScrollView
@@ -137,8 +217,62 @@ export default function RestaurarDatosScreen() {
           </View>
         </Animated.View>
 
-        {/* Pre-flight blockers */}
-        {!isLoading && hardBlockers.length > 0 && (
+        {/* Branch A: sesion expirada (fix prod 2026-06-05 data-loss prevention).
+            Cuando server revoco la sesion, el sync push falla 401 y el blocker
+            anterior creaba un loop visual sin CTA accionable. Mostramos card
+            amarilla con boton 'Iniciar sesion' (mismo handler que SessionExpiredBanner).
+            Si ademas hay pendientes, ofrecemos override 'Restaurar de todos
+            modos' con confirmation distinta ('PERDER PENDIENTES'). */}
+        {!isLoading && sessionExpired && (
+          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+            <Text style={styles.sessionExpiredTitle}>TU SESION EXPIRO</Text>
+            <View style={styles.sessionExpiredCard}>
+              <View style={styles.sessionExpiredHeader}>
+                <AlertCircle size={20} color="#d97706" />
+                <Text style={styles.sessionExpiredHeaderText}>Tu sesion expiro</Text>
+              </View>
+              <Text style={styles.sessionExpiredSubtitle}>
+                {hardBlockers.length > 0
+                  ? 'Inicia sesion para sincronizar tus pendientes y poder restaurar.'
+                  : 'Inicia sesion para descargar los datos del servidor.'}
+              </Text>
+              {hardBlockers.length > 0 && (
+                <View style={styles.blockerList}>
+                  {hardBlockers.map((b) => (
+                    <View key={b.table} style={styles.blockerRow}>
+                      <View style={[styles.blockerDot, { backgroundColor: '#d97706' }]} />
+                      <Text style={styles.blockerLabel}>{b.label}</Text>
+                      <Text style={[styles.blockerCount, { color: '#d97706' }]}>{b.count}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.reLoginButton}
+                onPress={handleReLogin}
+                activeOpacity={0.8}
+                accessibilityLabel="Iniciar sesion"
+                accessibilityRole="button"
+              >
+                <Text style={styles.reLoginButtonText}>Iniciar sesion</Text>
+              </TouchableOpacity>
+              {sessionExpiredBlocksDestructive && (
+                <TouchableOpacity
+                  style={styles.forceOverrideButton}
+                  onPress={() => setShowForceConfirm(true)}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Restaurar de todos modos perderas pendientes"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.forceOverrideText}>Restaurar de todos modos</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Branch B: pendientes SIN sesion expirada -> bloque rojo original */}
+        {!isLoading && !sessionExpired && hardBlockers.length > 0 && (
           <Animated.View entering={FadeInDown.delay(100).duration(400)}>
             <Text style={styles.sectionTitle}>NO PUEDES RESTAURAR AUN</Text>
             <View style={styles.blockerCard}>
@@ -204,8 +338,9 @@ export default function RestaurarDatosScreen() {
           </Animated.View>
         )}
 
-        {/* Green status si todo limpio */}
-        {!isLoading && hardBlockers.length === 0 && isOnline && (
+        {/* Green status si todo limpio Y sesion valida. Si sessionExpired,
+            el SessionExpiredCard amarillo arriba ya da el contexto correcto. */}
+        {!isLoading && !sessionExpired && hardBlockers.length === 0 && isOnline && (
           <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.okCard}>
             <CheckCircle size={20} color="#16a34a" />
             <Text style={styles.okText}>
@@ -260,6 +395,27 @@ export default function RestaurarDatosScreen() {
         onCancel={() => {
           if (!restoring) {
             setShowConfirm(false);
+          }
+        }}
+      />
+
+      {/* Override modal: solo se abre desde el SessionExpiredCard cuando hay
+          pendientes + sesion expirada. Palabra distinta a 'RESTAURAR' para
+          forzar consciencia del costo (perder pendientes irrecuperables). */}
+      <TypeToConfirmModal
+        visible={showForceConfirm}
+        title="Perderas pendientes"
+        message={`Tienes ${hardBlockers.reduce((s, b) => s + b.count, 0)} registros sin enviar al servidor. Como tu sesion expiro, NO se podran recuperar. Si continuas, se perderan para siempre.`}
+        requiredText="PERDER PENDIENTES"
+        autoCapitalize="characters"
+        confirmText="Si, borrar de todos modos"
+        cancelText="Cancelar"
+        destructive
+        loading={restoring}
+        onConfirm={handleForceRestore}
+        onCancel={() => {
+          if (!restoring) {
+            setShowForceConfirm(false);
           }
         }}
       />
@@ -510,5 +666,71 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: 12,
+  },
+  // SessionExpiredCard (fix prod 2026-06-05 data-loss prevention).
+  // Color amber (#d97706) consistente con SessionExpiredBanner que ya existe
+  // en (tabs)/_layout.tsx. NO uso rojo (#dc2626) para no confundirse con el
+  // bloque hard blockers "NO PUEDES RESTAURAR AUN" — son escenarios distintos.
+  sessionExpiredTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400e',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    marginTop: 12,
+  },
+  sessionExpiredCard: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sessionExpiredHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  sessionExpiredHeaderText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#92400e',
+    flex: 1,
+  },
+  sessionExpiredSubtitle: {
+    fontSize: 13,
+    color: '#78350f',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  reLoginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#d97706',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 8,
+  },
+  reLoginButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  forceOverrideButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  forceOverrideText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#991b1b',
   },
 });

@@ -5,6 +5,7 @@ import { database } from '@/db/database';
 import { useJornadaStore } from '@/stores';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSyncStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 
 /**
  * C.2 hardening (fix prod 2026-06-04 post-incidente Rodrigo):
@@ -69,6 +70,20 @@ export interface CanResetSafelyResult {
   isLoading: boolean;
   isOnline: boolean;
   isSyncing: boolean;
+  /**
+   * Fix prod 2026-06-05 (data-loss prevention):
+   * Soft-logout server-side. JWT local sigue pero el server rechaza requests
+   * con 401 SESSION_REVOKED. El SessionExpiredBanner ya consume este flag.
+   */
+  sessionExpired: boolean;
+  /**
+   * True cuando sessionExpired && hay pendientes que requieren auth para
+   * drenar. Si esto es true, el wipe destruiría data irrecuperable porque
+   * el sync push post-wipe fallaría con 401 → user con WDB vacío y sin
+   * posibilidad de recovery. La UI debe mostrar SessionExpiredCard y
+   * deshabilitar el botón principal de restore.
+   */
+  sessionExpiredBlocksDestructive: boolean;
 }
 
 export function useCanResetSafely(): CanResetSafelyResult {
@@ -77,6 +92,7 @@ export function useCanResetSafely(): CanResetSafelyResult {
   const status = useSyncStore((s) => s.status);
   const isSyncing = status === 'syncing';
   const jornadaActiva = useJornadaStore((s) => s.activa);
+  const sessionExpired = useAuthStore((s) => s.sessionExpired);
 
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -143,7 +159,13 @@ export function useCanResetSafely(): CanResetSafelyResult {
 
     const hardBlockers = blockers.filter((b) => b.severity === 'block');
     const softWarnings = blockers.filter((b) => b.severity === 'warn');
+    // canReset NO incluye sessionExpired: la pantalla decide override en
+    // sessionExpired + hardBlockers===0 (caso seguro). El gate destructivo
+    // real lo aplica restaurar-datos.tsx vía sessionExpiredBlocksDestructive.
     const canReset = isOnline && !isSyncing && hardBlockers.length === 0;
+    // Si la sesión expiró Y hay pendientes, ejecutar wipe = data loss
+    // garantizado (sync push post-wipe = 401 = WDB vacío sin recovery).
+    const sessionExpiredBlocksDestructive = sessionExpired && hardBlockers.length > 0;
 
     return {
       canReset,
@@ -153,8 +175,10 @@ export function useCanResetSafely(): CanResetSafelyResult {
       isLoading,
       isOnline,
       isSyncing,
+      sessionExpired,
+      sessionExpiredBlocksDestructive,
     };
-  }, [counts, isOnline, isSyncing, isLoading, jornadaActiva]);
+  }, [counts, isOnline, isSyncing, isLoading, jornadaActiva, sessionExpired]);
 
   return result;
 }
