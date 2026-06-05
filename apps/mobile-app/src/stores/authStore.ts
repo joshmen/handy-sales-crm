@@ -54,6 +54,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const prevUser = get().user;
     const isDifferentUser = !!prevUser && prevUser.id !== user.id;
 
+    // Hardening 2026-06-05 (cross-user data-loss prevention):
+    // Si el user que esta entrando es DISTINTO al que estaba, el codigo de
+    // abajo wipea el WDB completo para evitar cross-tenant leak. Pero ese
+    // wipe destruiria pedidos/cobros/clientes pendientes del user anterior
+    // que aun no han llegado al server (offline, o sync push fallando 401).
+    //
+    // Bloqueamos el login con un error tipado que el UI captura para
+    // mostrar pantalla explicativa. NO persistimos tokens nuevos: el flow
+    // queda exactamente como antes del intento de login (prev user sigue
+    // siendo el dueno del SecureStore + WDB). El user puede:
+    //  (a) Cerrar sesion del vendedor2 attempt, re-loguear como vendedor1,
+    //      drenar pendientes via sync, luego logout, luego login vendedor2.
+    //  (b) Contactar a soporte si vendedor1 no esta disponible.
+    if (isDifferentUser) {
+      const { getPendingRecordCount } = await import('@/db/database');
+      const pendingCount = await getPendingRecordCount();
+      if (pendingCount > 0) {
+        const err = new Error(
+          `PENDING_DATA_BLOCKS_USER_CHANGE: ${pendingCount} registros pendientes de ${prevUser!.email}`,
+        );
+        (err as any).code = 'PENDING_DATA_BLOCKS_USER_CHANGE';
+        (err as any).pendingCount = pendingCount;
+        (err as any).previousUserEmail = prevUser!.email;
+        (err as any).previousUserName = prevUser!.name;
+        throw err;
+      }
+    }
+
     // Reliability Fase 1: persistir a SecureStore PRIMERO. Si OEM Android mata
     // el proceso entre setAccessToken (in-memory) y el await Promise.all (disk),
     // el token queda en memoria pero perdido al next boot → restoreSession ve

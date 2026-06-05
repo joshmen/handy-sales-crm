@@ -41,6 +41,14 @@ export default function LoginScreen() {
     deviceLabel: string;
     lastSeen: string | null;
   } | null>(null);
+  // Hardening 2026-06-05 (cross-user data-loss prevention): cuando authStore.login()
+  // detecta intento de cambio de usuario CON pendientes del user anterior, throws
+  // PENDING_DATA_BLOCKS_USER_CHANGE. Mostramos modal explicativo bloqueante.
+  const [pendingDataBlock, setPendingDataBlock] = useState<{
+    pendingCount: number;
+    previousUserEmail: string;
+    previousUserName: string;
+  } | null>(null);
   // TOTP step: cuando el backend retorna TOTP_REQUIRED, mostramos un input
   // para el código y reintentamos el login con totpCode. VULN-M03 fix.
   const [totpRequired, setTotpRequired] = useState(false);
@@ -94,6 +102,20 @@ export default function LoginScreen() {
         ? new Date(dev.lastActivity).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
         : null;
       setSessionBlocked({ deviceLabel, lastSeen });
+      return;
+    }
+
+    // Hardening 2026-06-05 (cross-user data-loss prevention): el user que entro
+    // tiene credenciales validas server-side pero es un usuario DIFERENTE al
+    // que sigue siendo el dueno del WDB local con pedidos pendientes. authStore
+    // bloqueo el login para no destruir los pendientes en el cross-tenant
+    // leak guard wipe. Mostrar modal explicativo.
+    if (err?.code === 'PENDING_DATA_BLOCKS_USER_CHANGE') {
+      setPendingDataBlock({
+        pendingCount: err.pendingCount ?? 0,
+        previousUserEmail: err.previousUserEmail ?? '',
+        previousUserName: err.previousUserName ?? '',
+      });
       return;
     }
 
@@ -349,6 +371,24 @@ export default function LoginScreen() {
         cancelText=""
         onConfirm={() => setSessionBlocked(null)}
         onCancel={() => setSessionBlocked(null)}
+      />
+
+      {/* Hardening 2026-06-05 (cross-user data-loss prevention): bloqueo cuando
+          se intenta cambiar de usuario con pendientes del user anterior en WDB.
+          Single-button "Entendido" — la unica accion correcta es loguear como
+          el user anterior para drenar los pendientes via sync engine. */}
+      <ConfirmModal
+        visible={pendingDataBlock !== null}
+        title="Hay pedidos sin enviar"
+        message={
+          pendingDataBlock
+            ? `Este dispositivo tiene ${pendingDataBlock.pendingCount} registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}).\n\nPara no perder esos datos, inicia sesion con esa cuenta primero. Una vez sincronizados, podras entrar con esta cuenta.\n\nSi ${pendingDataBlock.previousUserName} no esta disponible, contacta a tu administrador.`
+            : ''
+        }
+        confirmText="Entendido"
+        cancelText=""
+        onConfirm={() => setPendingDataBlock(null)}
+        onCancel={() => setPendingDataBlock(null)}
       />
     </ImageBackground>
   );

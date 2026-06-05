@@ -21,7 +21,7 @@
 // Priority: CRITICAL — customer data (names, orders, prices) stored unencrypted
 // on device. Bloqueador hoy: requiere EAS build (sale del flow Expo Go).
 
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deleteAsync, getInfoAsync } from 'expo-file-system';
@@ -107,6 +107,44 @@ async function safeClearSyncCursors(): Promise<void> {
     syncCursors.clear();
   } catch {
     // Aceptable: sin cursors el proximo sync sera full pull (deseado).
+  }
+}
+
+/**
+ * Hardening 2026-06-05 (cross-user data-loss prevention):
+ * Cuenta TODOS los registros pendientes (sin sincronizar) en WDB que requieren
+ * auth del usuario actual para llegar al server. Usado por authStore.login()
+ * para BLOQUEAR cross-user logins que destruirian estos registros via
+ * unsafeResetDatabase (caso: vendedor1 con pendientes pierde sesion ->
+ * vendedor2 loguea en el mismo device -> cross-tenant leak guard wipea
+ * pedidos de vendedor1).
+ *
+ * Mismas tablas + filtros que useCanResetSafely (hardBlockers tier):
+ * clientes, pedidos, detalle_pedidos, visitas, cobros, attachments.
+ * NO incluye ubicaciones_vendedor (warn tier - GPS pings).
+ */
+const HARD_BLOCKER_TABLES: ReadonlyArray<{ table: string; filter: Q.Clause }> = [
+  { table: 'clientes', filter: Q.or(Q.where('_status', 'created'), Q.where('_status', 'updated')) },
+  { table: 'pedidos', filter: Q.or(Q.where('_status', 'created'), Q.where('_status', 'updated')) },
+  { table: 'detalle_pedidos', filter: Q.or(Q.where('_status', 'created'), Q.where('_status', 'updated')) },
+  { table: 'visitas', filter: Q.or(Q.where('_status', 'created'), Q.where('_status', 'updated')) },
+  { table: 'cobros', filter: Q.or(Q.where('_status', 'created'), Q.where('_status', 'updated')) },
+  { table: 'attachments', filter: Q.or(Q.where('upload_status', 'pending'), Q.where('upload_status', 'failed')) },
+];
+
+export async function getPendingRecordCount(): Promise<number> {
+  try {
+    const counts = await Promise.all(
+      HARD_BLOCKER_TABLES.map((def) =>
+        database.collections.get(def.table).query(def.filter).fetchCount(),
+      ),
+    );
+    return counts.reduce((sum, c) => sum + c, 0);
+  } catch (err) {
+    if (__DEV__) console.warn('[getPendingRecordCount] error:', err);
+    // Fallar safe: si no podemos contar, asumir 0 para no bloquear login.
+    // El caller debe tener fallback si esto es critico para su flow.
+    return 0;
   }
 }
 
