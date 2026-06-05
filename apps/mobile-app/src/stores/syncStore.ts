@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import Toast from 'react-native-toast-message';
-import { performSync } from '@/sync/syncEngine';
+import { performSync, type SyncProgress } from '@/sync/syncEngine';
 import { syncCursors } from '@/sync/cursors';
+import { classifyError, type SyncErrorType } from '@/sync/errorClassifier';
 import type { SyncSummary } from '@/sync/syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
@@ -16,6 +17,23 @@ interface SyncState {
   lastSyncAt: number | null;
   lastSummary: SyncSummary | null;
   error: string | null;
+  /**
+   * Sprint 1 audit code-quality: tipo clasificado del error actual.
+   * UI lo usa para diferenciar feedback (network -> reintento + countdown,
+   * auth -> CTA login, server -> wait, client -> contacta soporte).
+   */
+  errorType: SyncErrorType | null;
+  /**
+   * Sprint 1 audit code-quality: progreso de sync en curso. Emitido por
+   * syncEngine via onProgress callback. Permite mostrar "Enviando X de Y"
+   * en el SyncStatusCard. null cuando no hay sync activo.
+   */
+  progress: SyncProgress | null;
+  /**
+   * Sprint 1: timestamp del proximo retry programado (cuando esta clasificado
+   * como transient). UI lo usa para countdown visible.
+   */
+  retryingAtMs: number | null;
 
   sync: () => Promise<void>;
   reset: () => void;
@@ -26,18 +44,30 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   lastSyncAt: null,
   lastSummary: null,
   error: null,
+  errorType: null,
+  progress: null,
+  retryingAtMs: null,
 
   sync: async () => {
     if (get().status === 'syncing') return;
 
-    set({ status: 'syncing', error: null });
+    set({ status: 'syncing', error: null, errorType: null, progress: null, retryingAtMs: null });
 
     try {
       await performSync({
         onStart: () => set({ status: 'syncing' }),
+        onProgress: (p) => set({ progress: p }),
         onFinish: (summary) => {
           const now = Date.now();
-          set({ status: 'success', lastSyncAt: now, lastSummary: summary, error: null });
+          set({
+            status: 'success',
+            lastSyncAt: now,
+            lastSummary: summary,
+            error: null,
+            errorType: null,
+            progress: null,
+            retryingAtMs: null,
+          });
           // Reliability Fase 2: Toast pasivo solo en transicion error → success.
           // No spam en cada sync.
           if (_lastShownStatus === 'error' && summary.pushed + summary.pulled > 0) {
@@ -57,16 +87,26 @@ export const useSyncStore = create<SyncState>((set, get) => ({
           }, 3000);
         },
         onError: (err) => {
-          set({ status: 'error', error: err.message });
+          // Sprint 1 audit: classifyError es ahora la fuente unica de verdad.
+          // isOnline desde el net status no esta disponible aqui; clasificamos
+          // solo por el mensaje. UI tiene contexto de red para refinar si hace falta.
+          const classified = classifyError(err.message, true);
+          set({
+            status: 'error',
+            error: err.message,
+            errorType: classified.type,
+            progress: null,
+            retryingAtMs: classified.isTransient ? Date.now() + 30_000 : null,
+          });
           // Reliability Fase 2: Toast solo en transicion (no spam si ya estaba en error).
           if (_lastShownStatus !== 'error') {
-            const isNetworkError = /network|timeout|fetch|abort|ECONN/i.test(err.message);
             Toast.show({
-              type: isNetworkError ? 'info' : 'error',
-              text1: isNetworkError ? 'Sin conexion' : 'Sincronizacion fallida',
-              text2: isNetworkError
-                ? 'Tus datos se mantienen localmente. Sincronizaremos al recuperar la red.'
-                : 'Reintentaremos en breve. Tus datos siguen seguros localmente.',
+              type: classified.type === 'network' || classified.type === 'server' ? 'info' : 'error',
+              text1: classified.type === 'auth' ? 'Sesion expirada'
+                : classified.type === 'network' ? 'Sin conexion'
+                : classified.type === 'server' ? 'Servidor no disponible'
+                : 'Sincronizacion fallida',
+              text2: classified.userMessage,
               visibilityTime: 3500,
               position: 'bottom',
             });
@@ -76,13 +116,28 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error de sincronización';
-      set({ status: 'error', error: msg });
+      const classified = classifyError(msg, true);
+      set({
+        status: 'error',
+        error: msg,
+        errorType: classified.type,
+        progress: null,
+        retryingAtMs: classified.isTransient ? Date.now() + 30_000 : null,
+      });
     }
   },
 
   reset: () => {
     syncCursors.clear();
-    set({ status: 'idle', lastSyncAt: null, lastSummary: null, error: null });
+    set({
+      status: 'idle',
+      lastSyncAt: null,
+      lastSummary: null,
+      error: null,
+      errorType: null,
+      progress: null,
+      retryingAtMs: null,
+    });
   },
 }));
 
