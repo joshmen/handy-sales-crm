@@ -9,6 +9,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { TypeToConfirmModal } from '@/components/ui';
 import { useCanResetSafely } from '@/hooks/useCanResetSafely';
+import { useAuthStore } from '@/stores/authStore';
 import { useSyncStore } from '@/stores';
 import { resetDatabase } from '@/db/database';
 import { crashReporter } from '@/services/crashReporter';
@@ -72,13 +73,17 @@ export default function RestaurarDatosScreen() {
   };
 
   const handleRestore = async () => {
-    // Guard final: si la sesion expiro entre el render y el tap, abortar
-    // ANTES de tocar resetDatabase() (data-loss prevention).
-    if (sessionExpired && hardBlockers.length > 0) {
+    // Guard final hardening 2026-06-05: lectura FRESH del store (no closure)
+    // para cubrir el window entre tap del modal y este handler (otro device
+    // pudo revocar la sesion entre render y confirm). Si sessionExpired,
+    // abortar ANTES de tocar resetDatabase() INDEPENDIENTE de hardBlockers:
+    // sin auth, sync pull post-wipe falla 401 -> WDB en cero sin recovery.
+    const freshSessionExpired = useAuthStore.getState().sessionExpired;
+    if (freshSessionExpired) {
       Toast.show({
         type: 'error',
         text1: 'Sesion expirada',
-        text2: 'Inicia sesion antes de restaurar para no perder pendientes.',
+        text2: 'Inicia sesion antes de restaurar.',
         visibilityTime: 5000,
       });
       setShowConfirm(false);
@@ -173,10 +178,11 @@ export default function RestaurarDatosScreen() {
     void useSyncStore.getState().sync().catch(() => {});
   };
 
-  // Boton principal deshabilitado tambien cuando sessionExpired+pendientes.
-  // En ese caso el override 'Restaurar de todos modos' vive dentro del
-  // SessionExpiredCard. Si sessionExpired sin pendientes -> sigue habilitado
-  // porque restore es safe (no hay nada que perder).
+  // Boton principal deshabilitado SIEMPRE que sessionExpired (hardening
+  // 2026-06-05): sin auth, sync pull post-wipe falla 401 -> WDB en cero sin
+  // recovery + toast de exito miente. Forzar Iniciar sesion como CTA primario.
+  // El override 'Restaurar de todos modos' (dentro del SessionExpiredCard)
+  // solo aparece cuando hardBlockers > 0 (hay algo conscientemente que perder).
   const buttonDisabled = !canReset || restoring || isLoading || sessionExpiredBlocksDestructive;
 
   return (
@@ -256,7 +262,7 @@ export default function RestaurarDatosScreen() {
               >
                 <Text style={styles.reLoginButtonText}>Iniciar sesion</Text>
               </TouchableOpacity>
-              {sessionExpiredBlocksDestructive && (
+              {sessionExpired && hardBlockers.length > 0 && (
                 <TouchableOpacity
                   style={styles.forceOverrideButton}
                   onPress={() => setShowForceConfirm(true)}

@@ -77,11 +77,14 @@ export interface CanResetSafelyResult {
    */
   sessionExpired: boolean;
   /**
-   * True cuando sessionExpired && hay pendientes que requieren auth para
-   * drenar. Si esto es true, el wipe destruiría data irrecuperable porque
-   * el sync push post-wipe fallaría con 401 → user con WDB vacío y sin
-   * posibilidad de recovery. La UI debe mostrar SessionExpiredCard y
-   * deshabilitar el botón principal de restore.
+   * True cuando sessionExpired=true (independiente de hardBlockers).
+   * Hardening 2026-06-05: bloquea SIEMPRE el restore con sesion expirada, no
+   * solo cuando hay pendientes. Razon: aunque hardBlockers=0, el wipe deja
+   * WDB vacio y el sync pull post-wipe falla 401 -> usuario queda con app
+   * "en cero" sin recovery hasta re-login. El toast de "Datos restaurados"
+   * miente. La UI debe forzar Iniciar sesion antes de cualquier restore.
+   * El override 'Restaurar de todos modos' queda como escape solo cuando
+   * hardBlockers > 0 (hay algo conscientemente que perder).
    */
   sessionExpiredBlocksDestructive: boolean;
 }
@@ -159,13 +162,16 @@ export function useCanResetSafely(): CanResetSafelyResult {
 
     const hardBlockers = blockers.filter((b) => b.severity === 'block');
     const softWarnings = blockers.filter((b) => b.severity === 'warn');
-    // canReset NO incluye sessionExpired: la pantalla decide override en
-    // sessionExpired + hardBlockers===0 (caso seguro). El gate destructivo
-    // real lo aplica restaurar-datos.tsx vía sessionExpiredBlocksDestructive.
+    // canReset NO incluye sessionExpired: la pantalla aplica el gate
+    // destructivo via sessionExpiredBlocksDestructive en restaurar-datos.tsx.
     const canReset = isOnline && !isSyncing && hardBlockers.length === 0;
-    // Si la sesión expiró Y hay pendientes, ejecutar wipe = data loss
-    // garantizado (sync push post-wipe = 401 = WDB vacío sin recovery).
-    const sessionExpiredBlocksDestructive = sessionExpired && hardBlockers.length > 0;
+    // Hardening 2026-06-05: sessionExpired bloquea SIEMPRE el restore,
+    // independiente de hardBlockers. Si la sesion expiro:
+    //  - hardBlockers > 0: wipe + sync push = 401 = pendientes perdidos
+    //  - hardBlockers === 0: wipe + sync pull = 401 = WDB en cero sin
+    //    recovery hasta re-login. El toast de exito miente al usuario.
+    // Forzar 'Iniciar sesion' como CTA primario en ambos casos.
+    const sessionExpiredBlocksDestructive = sessionExpired;
 
     return {
       canReset,
