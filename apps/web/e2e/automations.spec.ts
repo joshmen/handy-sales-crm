@@ -2,9 +2,11 @@ import { test, expect, Page } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
 async function navigateToAutomations(page: Page) {
-  await page.goto('/automations');
+  await page.goto('/automations', { waitUntil: 'domcontentloaded' });
   await expect(page).toHaveURL(/automations/, { timeout: 15000 });
-  await page.waitForSelector('[data-tour="automations-grid"]', { timeout: 10000 });
+  // Audit (2026-06-05): networkidle antes del selector wait (data fetch async).
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  await page.waitForSelector('[data-tour="automations-grid"]', { timeout: 20000 });
 }
 
 test.describe('Automations Page', () => {

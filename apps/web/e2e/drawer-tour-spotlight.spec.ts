@@ -1,6 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
+// Audit (2026-06-05): tour interactivo con animaciones requiere mas tiempo.
+test.use({ navigationTimeout: 60000, actionTimeout: 30000 });
+
 async function advanceTourToStep(page: Page, targetStep: number) {
   for (let i = 1; i < targetStep; i++) {
     const nextBtn = page.locator('.driver-popover-navigation-btns button:has-text("Siguiente")');

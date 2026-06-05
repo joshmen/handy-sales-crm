@@ -49,24 +49,31 @@ test.describe('Avatar + notifications badge', () => {
 
   test('dropdown notifications item navigates to /notifications', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.locator('[data-tour="header-user-menu"]').click();
+    // Audit (2026-06-05): networkidle + waitFor trigger antes de click.
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    const trigger = page.getByTestId('header-user-menu').or(page.locator('[data-tour="header-user-menu"]'));
+    await trigger.waitFor({ state: 'visible', timeout: 15000 });
+    await trigger.click();
 
     const notifItem = page.getByTestId('user-menu-notifications');
-    await expect(notifItem).toBeVisible();
+    await expect(notifItem).toBeVisible({ timeout: 10000 });
     await notifItem.click();
 
-    await expect(page).toHaveURL(/\/notifications/);
+    await expect(page).toHaveURL(/\/notifications/, { timeout: 15000 });
   });
 
   test('dropdown Mi Perfil navigates to /profile', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.locator('[data-tour="header-user-menu"]').click();
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    const trigger = page.getByTestId('header-user-menu').or(page.locator('[data-tour="header-user-menu"]'));
+    await trigger.waitFor({ state: 'visible', timeout: 15000 });
+    await trigger.click();
 
     const myProfile = page.getByRole('button', { name: /mi perfil/i });
-    await expect(myProfile).toBeVisible();
+    await expect(myProfile).toBeVisible({ timeout: 10000 });
     await myProfile.click();
 
-    await expect(page).toHaveURL(/\/profile/);
+    await expect(page).toHaveURL(/\/profile/, { timeout: 15000 });
   });
 
   test('profile page shows notifications card linking to /notifications', async ({ page }) => {

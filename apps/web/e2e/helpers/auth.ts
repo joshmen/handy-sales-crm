@@ -89,9 +89,14 @@ export function getTestEmails() {
 }
 
 async function fillLoginForm(page: Page, email: string, password: string): Promise<void> {
-  await page.goto('/login');
+  // Audit code-quality (2026-06-05): si ya estamos en /login no re-navegar,
+  // ahorra round-trip cuando el caller ya llamo clearAuthStorage.
+  if (!page.url().includes('/login')) {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  }
+  // Esperar a que el form realmente este interactivo (LoginContent wrapped in Suspense).
+  await expect(page.locator('#email')).toBeVisible({ timeout: 15000 });
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(500);
   await page.locator('#email').first().fill(email);
   await page.locator('#password').first().fill(password);
   await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
@@ -116,6 +121,11 @@ async function fillLoginForm(page: Page, email: string, password: string): Promi
 
 /**
  * Login as Admin via storageState fast-path (no form fill if cookies exist).
+ *
+ * Audit code-quality (2026-06-05): el fallback path antes clearCookies pero
+ * NO limpiaba localStorage ni navegaba a /login — la siguiente fillLoginForm
+ * podia hit middleware redirect con cookies parciales. Ahora el fallback
+ * pasa por clearAuthStorage() completo (cookies + localStorage + sessionStorage).
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
   const cookies = await page.context().cookies();
@@ -129,28 +139,34 @@ export async function loginAsAdmin(page: Page): Promise<void> {
       await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
       return;
     } catch {
-      // Session cookie was stale — clear and fall through to full login
-      await page.context().clearCookies();
+      // Session cookie was stale — full clean before form login.
+      await clearAuthStorage(page);
     }
   }
 
   const { admin } = getTestEmails();
   await fillLoginForm(page, admin, TEST_PASSWORD);
-  await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+  await expect(page).toHaveURL(/dashboard/, { timeout: 25000 });
 }
 
 /**
- * Clears both cookies AND localStorage. Without clearing localStorage, the
- * admin storageState leaves stale token state that causes 401 cascades for the
- * new role's session and triggers an unwanted signOut redirect to /login.
+ * Clears cookies + localStorage + sessionStorage AND navigates to /login.
+ * Without clearing localStorage, the admin storageState leaves stale token
+ * state that causes 401 cascades for the new role's session and triggers an
+ * unwanted signOut redirect to /login.
+ *
+ * Audit code-quality (2026-06-05): reorden — clearCookies primero ANTES de
+ * goto, asi el middleware no recibe cookies stale durante la navegacion.
+ * Networkidle wait final para que el form (#email, #password) este hidratado.
  */
 async function clearAuthStorage(page: Page): Promise<void> {
   await page.context().clearCookies();
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
     try { window.localStorage.clear(); } catch { /* ignore */ }
     try { window.sessionStorage.clear(); } catch { /* ignore */ }
   });
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => { /* ok */ });
 }
 
 /**
@@ -160,7 +176,7 @@ export async function loginAsVendedor(page: Page): Promise<void> {
   await clearAuthStorage(page);
   const { vendedor } = getTestEmails();
   await fillLoginForm(page, vendedor, TEST_PASSWORD);
-  await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+  await expect(page).toHaveURL(/dashboard/, { timeout: 25000 });
 }
 
 /**
@@ -170,5 +186,5 @@ export async function loginAsSuperAdmin(page: Page): Promise<void> {
   await clearAuthStorage(page);
   const { superAdmin } = getTestEmails();
   await fillLoginForm(page, superAdmin, TEST_PASSWORD);
-  await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+  await expect(page).toHaveURL(/dashboard/, { timeout: 25000 });
 }

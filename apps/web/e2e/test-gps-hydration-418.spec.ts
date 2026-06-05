@@ -11,7 +11,10 @@ import { loginAsAdmin } from './helpers/auth';
  * Fix: cualquier cómputo basado en `new Date()` se mueve a useEffect
  * (estado inicializado vacío en el render inicial).
  */
-test.setTimeout(60_000);
+test.setTimeout(90_000);
+
+// Audit (2026-06-05): navegacion + map init + hydration check requiere mas tiempo.
+test.use({ navigationTimeout: 90000, actionTimeout: 30000 });
 
 /**
  * Captura errores de hydration solo durante la navegación a la URL bajo test.

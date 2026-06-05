@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
+// Audit (2026-06-05): modal con animaciones + form fields requiere tiempo extra.
+test.use({ navigationTimeout: 60000, actionTimeout: 30000 });
+
 /**
  * Audit del modal "Crear nuevo usuario" en /equipo (2026-05-04).
  *

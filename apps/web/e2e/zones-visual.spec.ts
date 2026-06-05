@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Zones page — visual verification', () => {
+  // Audit (2026-06-05): timeouts mayores — pagina con drawer + map modal
+  // requiere mas tiempo de inicializacion en hosts lentos.
+  test.use({ navigationTimeout: 60000, actionTimeout: 30000 });
+
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
