@@ -118,17 +118,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // antes que loop de error que deje al user fuera.
       try { await queryClient.cancelQueries(); queryClient.clear(); } catch {}
       try { syncCursors.clear(); } catch {}
-      try {
-        const { database } = await import('@/db/database');
-        await database.write(async () => {
-          await database.unsafeResetDatabase();
-        });
-      } catch (e) {
-        // Si el reset falla, loggeamos pero NO abortamos el login —
-        // siguiente sync server-side filtrará por tenant. Stale cache
-        // ≪ que dejar al user sin poder entrar.
-        if (__DEV__) console.warn('[authStore] WDB reset failed:', e);
-      }
+      // Sprint 3 audit: usar helper safeResetWDB centralizado (DRY con logout).
+      const { safeResetWDB } = await import('@/db/database');
+      await safeResetWDB('login_cross_user');
     }
 
     // setAccessToken al final: disk persistido + cross-user reset hechos.
@@ -168,16 +160,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // y entra otro user al mismo device). Sin reset del WDB local, los datos
     // (clientes, pedidos, catálogos) del user anterior quedan accesibles para
     // el siguiente login → cross-user/cross-tenant leak idéntico al de B1.
-    // Dynamic import para evitar circular (database → stores → authStore);
-    // try/catch silencioso para no abortar el logout si el reset falla
-    // (preferimos sesión cerrada con stale WDB que loop de error que deje al
-    // user con sesión abierta).
-    try {
-      const { database } = await import('@/db/database');
-      await database.write(async () => { await database.unsafeResetDatabase(); });
-    } catch (e) {
-      if (__DEV__) console.warn('[authStore] WDB reset on logout failed:', e);
-    }
+    // Sprint 3 audit: helper safeResetWDB centralizado (DRY con login cross-user).
+    const { safeResetWDB } = await import('@/db/database');
+    await safeResetWDB('logout');
     // Audit 2026-06-01 — incluir sessionExpired: false en el reset. Sin esto,
     // si el user llegó a login screen vía banner (sessionExpired=true) y
     // ejecuta logout() manual desde un endpoint duro, el flag se quedaba

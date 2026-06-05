@@ -153,6 +153,35 @@ export async function getPendingRecordCount(): Promise<number> {
   }
 }
 
+/**
+ * Sprint 3 audit code-quality: helper centralizado para WDB reset.
+ *
+ * Antes: authStore.login() y authStore.logout() tenian bloques duplicados
+ * de await database.write(async () => { await database.unsafeResetDatabase(); })
+ * con try/catch silencioso y comentarios duplicados.
+ *
+ * Ahora: una funcion compartida con telemetria diferenciada por reason.
+ * NO toca SecureStore ni AsyncStorage (a diferencia de resetDatabase()
+ * que es para el flow "Sincronizacion completa" del usuario). Solo wipea
+ * WDB para los flows de cambio de usuario (cross-user leak guard).
+ */
+export async function safeResetWDB(reason: 'login_cross_user' | 'logout'): Promise<void> {
+  try {
+    await database.write(async () => {
+      await database.unsafeResetDatabase();
+    });
+    // Sprint 3: telemetria minima — el caller (authStore) tipicamente ya
+    // logea sus eventos de auth. crashReporter es opcional aqui para evitar
+    // ciclos de import (database -> crashReporter -> stores -> database).
+    if (__DEV__) console.log(`[safeResetWDB] success (reason=${reason})`);
+  } catch (e: any) {
+    if (__DEV__) console.warn(`[safeResetWDB] failed (reason=${reason}):`, e?.message);
+    // No re-throw: el caller decide si bloquear o continuar con stale WDB.
+    // Para login_cross_user y logout, la decision actual es: preferir sesion
+    // activa con stale data que loop de error que deje al user atrapado.
+  }
+}
+
 export async function resetDatabase() {
   // 1. WDB wipe (puede tardar segundos)
   await database.write(async () => {

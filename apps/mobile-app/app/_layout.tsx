@@ -316,13 +316,11 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   // muestre los pickers con datos.
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Import dinámico para evitar ciclo de módulos en startup
+    // Sprint 3 audit: DRY con useAuth via helper compartido prefetchCatalogos.
+    // Import dinámico para evitar ciclo de módulos en startup.
     import('@/providers/QueryProvider').then(({ queryClient }) => {
-      import('@/api').then(({ catalogosApi }) => {
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'zonas'], queryFn: () => catalogosApi.getZonas() });
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-cliente'], queryFn: () => catalogosApi.getCategoriasCliente() });
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-producto'], queryFn: () => catalogosApi.getCategoriasProducto() });
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'familias-producto'], queryFn: () => catalogosApi.getFamiliasProducto() });
+      import('@/api/prefetchCatalogos').then(({ prefetchCatalogos }) => {
+        prefetchCatalogos(queryClient);
       });
     });
   }, [isAuthenticated]);

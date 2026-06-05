@@ -6,20 +6,14 @@ import { useOfflineCobros, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { useTenantLocale } from '@/hooks';
 import { METODO_PAGO } from '@/types/cobro';
-import { Receipt, Banknote, ArrowRightLeft, FileText, CreditCard, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Receipt } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cobro from '@/db/models/Cobro';
 import { COLORS } from '@/theme/colors';
+import { getPaymentIcon } from '@/constants/paymentIcons';
 
-const METODO_ICONS: Record<number, React.ReactNode> = {
-  0: <Banknote size={16} color="#6b7280" />,
-  1: <ArrowRightLeft size={16} color="#6b7280" />,
-  2: <FileText size={16} color="#6b7280" />,
-  3: <CreditCard size={16} color="#6b7280" />,
-  4: <CreditCard size={16} color="#6b7280" />,
-  5: <MoreHorizontal size={16} color="#6b7280" />,
-};
+// Sprint 3 audit: METODO_ICONS extraido a constants/paymentIcons.tsx (DRY).
 
 export default function HistorialCobrosScreen() {
   const insets = useSafeAreaInsets();
@@ -50,7 +44,7 @@ export default function HistorialCobrosScreen() {
         accessibilityRole="button"
       >
         <View style={styles.cobroIconWrap}>
-          {METODO_ICONS[item.metodoPago] || <Receipt size={16} color="#6b7280" />}
+          {getPaymentIcon(item.metodoPago, { size: 16 })}
         </View>
         <View style={styles.cobroContent}>
           <Text style={styles.cobroCliente} numberOfLines={1}>
