@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { SessionExpiredBanner } from '@/components/ui/SessionExpiredBanner';
+import { SyncStatusCard } from '@/components/sync/SyncStatusCard';
 import { COLORS } from '@/theme/colors';
 
 export default function TabsLayout() {
@@ -154,9 +155,29 @@ export default function TabsLayout() {
       <Tabs.Screen name="facturas" options={{ href: null }} />
       <Tabs.Screen name="restaurar-datos" options={{ href: null }} />
     </Tabs>
+    {/* Sprint 1 audit: mini-banner ambient para que el user sepa cuando hay
+        sync activa O error de sync visible desde CUALQUIER tab. Compact mode
+        no renderiza nada en idle/success/offline para no agregar ruido. */}
+    <View
+      style={[styles.syncMiniBannerWrap, { paddingTop: insets.top + 8 }]}
+      pointerEvents="box-none"
+    >
+      <SyncStatusCard compact />
+    </View>
     <OfflineBanner />
     <SessionExpiredBanner />
     </View>
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  syncMiniBannerWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 999,
+  },
+});

@@ -1,16 +1,15 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Card, Button } from '@/components/ui';
+import { Card } from '@/components/ui';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
-  Wifi, WifiOff, RefreshCcw, CheckCircle, Clock,
-  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ImageIcon, ChevronLeft,
+  Wifi, WifiOff, Clock, ImageIcon, ChevronLeft,
 } from 'lucide-react-native';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { usePendingCount, usePendingAttachmentCount, useTenantLocale } from '@/hooks';
 import { useSyncStore } from '@/stores';
-import { classifyError } from '@/sync/errorClassifier';
+import { SyncStatusCard } from '@/components/sync/SyncStatusCard';
 import { COLORS } from '@/theme/colors';
 
 function formatLastSync(timestamp: number | null, dateTimeFmt: (d: Date) => string): string {
@@ -30,12 +29,10 @@ export default function SyncScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isConnected: isOnline } = useNetworkStatus();
-  const { status, lastSyncAt, lastSummary, error, sync } = useSyncStore();
+  const { lastSyncAt, lastSummary } = useSyncStore();
   const { data: pendingCount = 0 } = usePendingCount();
   const { data: pendingAttachments = 0 } = usePendingAttachmentCount();
   const { dateTime: dateTimeFmt } = useTenantLocale();
-
-  const isSyncing = status === 'syncing';
 
   // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" se MOVIO a su
   // propia sub-pantalla bajo /(tabs)/restaurar-datos accesible desde el menu
@@ -74,42 +71,17 @@ export default function SyncScreen() {
         </View>
       </Animated.View>
 
-      {/* Error banner — audit 2026-05-19: traducir mensajes técnicos
-          (axios "Network Error" / "Request failed status 401") a algo
-          accionable para el vendedor en campo. */}
-      {status === 'error' && error && (
-        <View style={styles.errorBanner}>
-          <AlertTriangle size={18} color="#dc2626" />
-          <Text style={styles.errorText}>{classifyError(error, isOnline).userMessage}</Text>
-        </View>
-      )}
-
-      {/* Conflict banner */}
-      {lastSummary && lastSummary.conflicts > 0 && (
-        <View style={styles.conflictBanner}>
-          <AlertTriangle size={18} color="#d97706" />
-          <Text style={styles.conflictText}>
-            {lastSummary.conflicts} registro{lastSummary.conflicts !== 1 ? 's' : ''} actualizado{lastSummary.conflicts !== 1 ? 's' : ''} por el servidor
-          </Text>
-        </View>
-      )}
-
-      {/* Last Sync */}
-      <Text style={styles.sectionLabel}>DETALLES</Text>
-      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
-        <Card className="mb-4">
-          <View style={styles.syncRow}>
-            <CheckCircle size={18} color={lastSyncAt ? '#16a34a' : '#94a3b8'} style={{ marginRight: 12 }} />
-            <View style={styles.syncContent}>
-              <Text style={styles.syncLabel}>Última sincronización</Text>
-              <Text style={styles.syncValue}>{formatLastSync(lastSyncAt, dateTimeFmt)}</Text>
-            </View>
-          </View>
-        </Card>
+      {/* Sprint 1 audit: SyncStatusCard unificado reemplaza error banner +
+          boton sync separado + offline hint. Maneja los 7 estados (idle,
+          syncing pull/push/attachments, success, error transient/auth/client,
+          offline) con feedback claro al usuario. */}
+      <Animated.View entering={FadeInDown.duration(400).delay(150)} style={styles.statusCardWrap}>
+        <SyncStatusCard />
       </Animated.View>
 
-      {/* Pending */}
-      <Animated.View entering={FadeInDown.duration(400).delay(300)}>
+      {/* Detalles adicionales: pendientes desglosados (no duplica el card; informativo) */}
+      <Animated.View entering={FadeInDown.duration(400).delay(250)}>
+        <Text style={styles.sectionLabel}>DETALLES</Text>
         <Card className="mb-4">
           <View style={styles.syncRow}>
             <Clock size={18} color={pendingCount > 0 ? '#d97706' : '#94a3b8'} style={{ marginRight: 12 }} />
@@ -121,7 +93,6 @@ export default function SyncScreen() {
         </Card>
       </Animated.View>
 
-      {/* Pending Attachments */}
       {pendingAttachments > 0 && (
         <Card className="mb-4">
           <View style={styles.syncRow}>
@@ -134,64 +105,23 @@ export default function SyncScreen() {
         </Card>
       )}
 
-      {/* Last Sync Summary */}
-      {lastSummary && (lastSummary.pulled > 0 || lastSummary.pushed > 0) && (
-        <>
-        <Text style={styles.sectionLabel}>RESUMEN</Text>
+      {/* Ultima sync timestamp tradicional (complementa el card que muestra "hace X min" informal) */}
+      {lastSyncAt && (
         <Card className="mb-4">
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <ArrowDownToLine size={16} color={COLORS.primary} />
-              <Text style={styles.summaryValue}>{lastSummary.pulled}</Text>
-              <Text style={styles.summaryLabel}>recibidos</Text>
+          <View style={styles.syncRow}>
+            <Clock size={18} color="#94a3b8" style={{ marginRight: 12 }} />
+            <View style={styles.syncContent}>
+              <Text style={styles.syncLabel}>Última sincronización</Text>
+              <Text style={styles.syncValue}>{formatLastSync(lastSyncAt, dateTimeFmt)}</Text>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <ArrowUpFromLine size={16} color={COLORS.salesGreen} />
-              <Text style={styles.summaryValue}>{lastSummary.pushed}</Text>
-              <Text style={styles.summaryLabel}>enviados</Text>
-            </View>
-            {lastSummary.conflicts > 0 && (
-              <>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                  <AlertTriangle size={16} color="#d97706" />
-                  <Text style={styles.summaryValue}>{lastSummary.conflicts}</Text>
-                  <Text style={styles.summaryLabel}>conflictos</Text>
-                </View>
-              </>
-            )}
           </View>
         </Card>
-        </>
-      )}
-
-      {/* Sync Button — indigo */}
-      <TouchableOpacity
-        style={[styles.syncButton, !isOnline && styles.syncButtonDisabled]}
-        onPress={sync}
-        disabled={!isOnline || isSyncing}
-        activeOpacity={0.8}
-        accessibilityLabel="Sincronizar ahora"
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !isOnline || isSyncing, busy: isSyncing }}
-      >
-        <RefreshCcw size={18} color={COLORS.headerText} />
-        <Text style={styles.syncButtonText}>
-          {isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
-        </Text>
-      </TouchableOpacity>
-
-      {!isOnline && (
-        <Text style={styles.offlineHint}>
-          Conéctate a internet para sincronizar
-        </Text>
       )}
 
       {/* C.2 hardening — link discreto a la sub-pantalla dedicada de borrado.
           NO duplicamos el boton aqui para evitar el tap accidental que
           motivó el hardening. El usuario que tiene problemas con sus datos
-          encontrara la opcion en Mas > Si algo esta mal > Borrado de datos. */}
+          encontrara la opcion en Mas > Si algo esta mal > Sincronización completa. */}
       <TouchableOpacity
         style={styles.troubleLink}
         onPress={() => router.push('/(tabs)/restaurar-datos' as any)}
@@ -222,6 +152,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
   body: { paddingHorizontal: 16, paddingTop: 20 },
+  statusCardWrap: { marginBottom: 16 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
