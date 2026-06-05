@@ -14,12 +14,26 @@ import { test as setup, expect } from '@playwright/test';
  * (e2e-mobile-admin@jeyma.com), saving separate state files.
  */
 
-setup('authenticate as admin', async ({ page }, testInfo) => {
+setup('authenticate as admin', async ({ page, context }, testInfo) => {
   const isMobile = testInfo.project.name.includes('mobile');
   const email = isMobile ? 'e2e-mobile-admin@jeyma.com' : 'admin@jeyma.com';
   const statePath = isMobile ? 'e2e/.auth/admin-mobile.json' : 'e2e/.auth/admin-desktop.json';
 
-  await page.goto('/login');
+  // Audit code-quality (2026-06-05) — clear context state ANTES de cualquier
+  // navegacion para evitar que cookies de runs anteriores hagan redirect a
+  // landing/dashboard en lugar de mostrar el form. Bug detectado: error
+  // screenshot mostraba landing public ("Gestiona tu negocio desde cualquier
+  // lugar"), no el login form, porque cookies stale forzaban redirect.
+  await context.clearCookies();
+  await context.clearPermissions();
+
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+
+  // Si redirige a / o /dashboard a pesar de clear, forzar navegacion explicita
+  const currentUrl = page.url();
+  if (!currentUrl.includes('/login')) {
+    await page.goto('/login?force=true', { waitUntil: 'domcontentloaded' });
+  }
   await page.waitForTimeout(500);
 
   // Dismiss cookie consent banner if present

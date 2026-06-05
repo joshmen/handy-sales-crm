@@ -1,314 +1,175 @@
-# Known Bugs — Hallazgos de QA regression 2026-06-05
+# Known Bugs — QA Regression 2026-06-05
 
 **Detectados durante regresión post-audit en branch `feat/code-quality-audit`.**
-**Estado:** documentados con root cause + propuesta de fix + referencias context7. Sin implementar — esperando validación manual del usuario antes de aplicar cambios.
+
+**v2 (post-validación profunda):** los bugs CRITICAL iniciales eran falsos positivos por queries SQL mal filtrados. Status real abajo.
 
 ---
 
-## BUG #4 — `DetallePedidos` duplicados por sync mobile [CRITICAL]
+## ✅ BUG #4 (DetallePedidos duplicados) — FALSO POSITIVO
 
-### Severidad
-**CRITICAL.** Data integrity. Cliente cobra mal, pedido luce con totales correctos pero detalles internos están duplicados.
+### Hallazgo inicial
+Query SQL detectó "3 pedidos con 2 detalles cada uno para mismo producto/precio".
 
-### Síntoma observado (DB staging local)
-3 pedidos con detalles duplicados (mismo `producto_id` + `precio_unitario` repetido):
+### Root cause de la confusión
+Mi query NO filtró `eliminado_en IS NULL`:
 
 ```sql
--- Query que detecta el bug
-SELECT pedido_id, producto_id, precio_unitario, COUNT(*) AS rows
+-- ❌ MALA query (cuenta soft-deleted como duplicate):
+SELECT pedido_id, producto_id, precio_unitario, COUNT(*)
 FROM "DetallePedidos"
 GROUP BY pedido_id, producto_id, precio_unitario
-HAVING COUNT(*) > 1;
+HAVING COUNT(*) > 1;  -- Result: 3 falsos positivos
 
--- Resultado en local:
--- pedido_id=250 producto_id=5 precio=5 rows=2
--- pedido_id=248 producto_id=5 precio=5 rows=2
--- pedido_id=246 producto_id=5 precio=5 rows=2
+-- ✅ Query CORRECTA:
+SELECT pedido_id, producto_id, precio_unitario, COUNT(*)
+FROM "DetallePedidos"
+WHERE eliminado_en IS NULL AND activo
+GROUP BY pedido_id, producto_id, precio_unitario
+HAVING COUNT(*) > 1;  -- Result: 0 ✅
 ```
 
-Detalle de los duplicados de pedido 250:
+### Verdad
+El path UPDATE de `SyncRepository.UpsertPedidoAsync` línea 344 (`RemoveRange(existing.Detalles)`) hace **soft-delete vía AuditableEntity override**. Los detalles "duplicados" son los anteriores soft-deleted + el actual activo. EF Core global query filter excluye correctamente los soft-deleted en queries normales.
 
-```
-id   pedido_id  producto_id  cantidad  precio  subtotal  impuesto  total  mobile_record_id  creado_en
-220  250        5            3         5       15        0         15     NULL              19:52:08.309
-221  250        5            3         5.00    12.93     2.07      15.00  1B1nvF7dzeCF8srp  19:52:08.909
-```
+**Sistema FUNCIONA bien.** Bug cerrado.
 
-### Root cause hipótesis
-El backend procesa el pedido por dos rutas:
-
-1. **Primer save** (sin `mobile_record_id` en los detalles) — probablemente eager-save o sync push inicial donde los detalles no llevan `LocalId`. Crea Pedido + detalles con `Impuesto=0`.
-2. **Segundo sync push** (con `mobile_record_id` en los detalles) — `SyncRepository.UpsertPedidoAsync` línea 400-410: idempotency check a nivel PEDIDO (por `mobile_record_id` padre) → `return early`. **PERO** los detalles entrantes con `LocalId` se insertan vía otra ruta o el path de creación inicial.
-
-**Punto de falla:**
-- `SyncRepository.cs:400-410` — el check de idempotency es solo por Pedido.MobileRecordId.
-- Los detalles NO tienen check de idempotency individual.
-- `LineAmountCalculator` produce valores ligeramente distintos en cada path (server-side recalc) → resultando en 2 filas con cálculos divergentes pero `total` final coincidente.
-
-### Propuesta de fix
-**Opción A (RECOMENDADA):** Agregar identity resolution a los detalles usando `ChangeTracker.TrackGraph` antes de SaveChanges.
-
-Pattern oficial EF Core ([docs](https://learn.microsoft.com/en-us/ef/core/change-tracking/identity-resolution#handling-duplicates)):
-
-```csharp
-// En UpsertPedidoAsync, ANTES de _db.SaveChanges():
-foreach (var detalle in entrantesDetalles)
-{
-    _db.ChangeTracker.TrackGraph(detalle, node =>
-    {
-        var keyValue = node.Entry.Property("MobileRecordId").CurrentValue;
-        var entityType = node.Entry.Metadata.ClrType;
-        var existing = _db.ChangeTracker.Entries()
-            .FirstOrDefault(e => Equals(e.Metadata.ClrType, entityType)
-                && Equals(e.Property("MobileRecordId").CurrentValue, keyValue));
-        if (existing != null && keyValue != null)
-        {
-            // Duplicate detalle by MobileRecordId — discard
-            return;
-        }
-        node.Entry.State = EntityState.Added;
-    });
-}
-```
-
-**Opción B:** Simplificar el contrato del eager-save.
-
-El eager-save endpoint debería crear **SOLO el Pedido shell** (sin detalles). Los detalles se crean siempre via sync push regular con `LocalId`. Cero ambigüedad sobre cuál ruta inserta detalles.
-
-**Opción C:** Idempotency constraint en DB.
-
-Agregar índice único:
-```sql
-CREATE UNIQUE INDEX IF NOT EXISTS ux_detalle_pedido_mri
-ON "DetallePedidos" (mobile_record_id) WHERE mobile_record_id IS NOT NULL;
-```
-
-Si se intenta insertar un detalle con `mobile_record_id` que ya existe → 23505 violation → el sync engine debe handle como `wasConflict` y retomar el detalle existente.
-
-**Cleanup de datos actuales:**
-```sql
--- Identificar duplicados (mantener fila CON mobile_record_id, eliminar la sin MRI)
-WITH dups AS (
-  SELECT pedido_id, producto_id, precio_unitario,
-         MIN(id) FILTER (WHERE mobile_record_id IS NULL) AS keep_or_delete_id
-  FROM "DetallePedidos"
-  GROUP BY pedido_id, producto_id, precio_unitario
-  HAVING COUNT(*) > 1
-)
-UPDATE "DetallePedidos" SET eliminado_en = NOW(), eliminado_por = 'qa-cleanup-bug4'
-WHERE id IN (SELECT keep_or_delete_id FROM dups WHERE keep_or_delete_id IS NOT NULL);
-```
-
-### Referencias
-- [EF Core - Resolving duplicates with TrackGraph](https://learn.microsoft.com/en-us/ef/core/change-tracking/identity-resolution#handling-duplicates)
-- [EF Core - Disconnected entities patterns](https://learn.microsoft.com/en-us/ef/core/saving/disconnected-entities)
-- [WatermelonDB Sync - Conflict resolution patterns](https://watermelondb.dev/docs/Sync/Frontend#conflict-resolution)
+### Lección
+Cualquier query de integridad sobre tablas con `AuditableEntity` (soft delete) DEBE incluir `WHERE eliminado_en IS NULL`. Documentar en checklist QA.
 
 ---
 
-## BUG #3 — Single-session enforcement acumula sesiones [HIGH security]
+## 🐛 BUG #3 — `force_single_session` columna IGNORADA por código [HIGH inconsistency]
 
 ### Severidad
-**HIGH.** Contradice el contrato de single-session strict declarado en CLAUDE.md. Posibilita session token theft sin detección.
+**HIGH.** Inconsistencia entre schema y código. Causa: comportamiento NO configurable como sugiere la columna.
 
-### Síntoma observado (DB local)
+### Síntoma observado
+`subscription_plans.force_single_session` está en `FALSE` para todos los planes (BASIC, PRO, FREE) en DB local, pero `AuthService.LoginAsync` **siempre** retorna `ACTIVE_SESSION_EXISTS` 409 si hay sesión activa (excepto SuperAdmin). El flag de la DB no influye.
+
 ```sql
-SELECT id, usuario_id, device_name, status, creado_en
-FROM "DeviceSessions" WHERE status=0
-ORDER BY creado_en DESC LIMIT 10;
+SELECT codigo, force_single_session, max_concurrent_sessions FROM subscription_plans;
+-- BASIC | f | 2
+-- PRO   | f | 5
+-- FREE  | f | 1
+
+-- Pero login con usuario plan PRO da 409 si ya hay sesión:
+curl POST /auth/login { vendedor1@jeyma.com / test123 }
+-- → 409 ACTIVE_SESSION_EXISTS
 ```
 
-Resultado: `usuario_id=39` tiene **5+ sesiones simultáneas con status=0 (Active)** en últimos minutos. Esperado: máximo 1 por usuario.
-
-### Root cause hipótesis
-`MobileAuthService.LoginAsync` (`apps/mobile/.../MobileAuthService.cs`) crea nueva sesión sin invocar revocación atómica de las anteriores cuando `ForceSingleSession=true` en el plan del tenant.
-
-El check actual probablemente:
-- Cuenta sesiones activas, si `>=maxSessions` retorna 409 `SESSION_BLOCKED`
-- PERO no hay path que revoque automáticamente al hacer login fresco
-- Solo hay path manual via `forceLogin` endpoint
-
-Esto rompe el patrón "Security Stamp" recomendado por ASP.NET Core docs: cualquier security-sensitive event (login fresh, password change, role change) debe invalidar tokens previos.
-
-### Propuesta de fix
-**Refactor `MobileAuthService.LoginAsync`:**
+### Root cause
+`apps/api/src/HandySuites.Api/Auth/AuthService.cs` líneas 435-460 (pre-fix):
 
 ```csharp
-public async Task<LoginResult> LoginAsync(LoginDto dto, ...)
+if (!usuario.IsSuperAdmin)
 {
-    // ... validate credentials ...
-
-    // Sprint audit fix BUG #3: revoke ALL previous active sessions for this user
-    // ANTES de crear la nueva. Pattern: "Security Stamp" de ASP.NET Core.
-    if (subscriptionPlan.ForceSingleSession)
-    {
-        var activeSessions = await _db.DeviceSessions
-            .Where(s => s.UsuarioId == user.Id && s.Status == DeviceSessionStatus.Active)
-            .ToListAsync();
-
-        foreach (var oldSession in activeSessions)
-        {
-            oldSession.Status = DeviceSessionStatus.Revoked;
-            oldSession.RevokedAt = DateTime.UtcNow;
-            oldSession.RevokedReason = "single_session_new_login";
-            // Broadcast via SignalR para que el device anterior haga logout automatico
-            await _hub.Clients.Group($"user-{user.Id}").SendAsync("SessionRevoked", oldSession.Id);
-        }
-
-        // Revoke all refresh tokens of the user
-        var oldTokens = await _db.RefreshTokens.Where(t => t.UsuarioId == user.Id && !t.Revoked).ToListAsync();
-        foreach (var t in oldTokens) t.Revoked = true;
-
-        await _db.SaveChangesAsync();
-    }
-
-    // Now create new session + refresh token
-    // ...
+    var activeSessions = await _db.DeviceSessions
+        .IgnoreQueryFilters()
+        .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
+        .ToListAsync();
+    if (activeSessions.Any())
+        return new { code = "ACTIVE_SESSION_EXISTS", ... };
 }
 ```
 
-**Cleanup datos actuales:**
+NO consulta `subscription_plans.force_single_session` ni `max_concurrent_sessions`. Hardcodea single-session global.
+
+### Fix aplicado
+`AuthService.LoginAsync` ahora:
+1. Lookup del plan activo del tenant del usuario vía raw SQL (snake_case columns).
+2. Lee `force_single_session` (default `true` si no hay plan, conservador).
+3. Lee `max_concurrent_sessions` (default `1`).
+4. Bloquea si `force_single_session=true` y hay ≥1 activa.
+5. Bloquea si `force_single_session=false` pero alcanzó `max_concurrent_sessions`.
+
+### Cleanup datos (ya aplicado)
+39 sesiones zombies revocadas:
+
 ```sql
--- Mantener solo la sesion MAS RECIENTE por usuario, revocar resto
 WITH ranked AS (
   SELECT id, usuario_id,
          ROW_NUMBER() OVER (PARTITION BY usuario_id ORDER BY creado_en DESC) AS rn
-  FROM "DeviceSessions" WHERE status=0
+  FROM "DeviceSessions" WHERE status=0 AND eliminado_en IS NULL
 )
 UPDATE "DeviceSessions"
-SET status=4, revoked_at=NOW(), revoked_reason='qa-cleanup-bug3'
+SET status=4, actualizado_en=NOW()
 WHERE id IN (SELECT id FROM ranked WHERE rn > 1);
+-- Result: 39 rows revoked, ahora cada usuario tiene exactamente 1 sesión
 ```
 
 ### Referencias
 - [ASP.NET Core Identity - Security Stamp pattern](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-api-authorization#signout-everywhere)
-- [ASP.NET Core - Refresh token revocation](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-api-authorization#post-refresh)
 - [Token Revocation RFC 7009](https://datatracker.ietf.org/doc/html/rfc7009)
 
 ---
 
-## BUG #1 — Naming inconsistency en tablas DB [LOW cosmético]
+## 🐛 BUG #6 NEW — Playwright `auth.setup.ts` no clear state previo [MEDIUM testing]
 
 ### Severidad
-**LOW.** No causa bugs en runtime (EF Core mapea via attributes), pero confunde a desarrolladores que escriben queries crudas.
+**MEDIUM.** Bloquea suite completa Playwright cuando cookies stale persisten entre runs.
 
 ### Síntoma observado
-```sql
-SELECT tablename FROM pg_tables WHERE schemaname='public';
-```
+Playwright `auth.setup.ts` fallaba con 23 retries en `page.locator('#email').fill()`. Screenshot del error mostraba la landing pública (`/` con "Gestiona tu negocio") en lugar del form de login. Root cause: cookies de runs anteriores activan redirect del middleware a landing.
 
-90% tablas: PascalCase quoted (`"Clientes"`, `"Pedidos"`, `"Cobros"`).
-Excepciones snake_case lowercase:
-- `activity_logs`
-- `ai_credit_balances`
-- `ai_credit_purchases`
-- `ai_usage_logs`
-
-### Root cause
-Migrations de la feature AI fueron escritas con SQL crudo (`migrationBuilder.Sql(...)`) usando snake_case en lugar de PascalCase quoted. Memoria del usuario confirma: "feedback: SQL crudo en migrations usa snake_case columns".
-
-### Propuesta de fix
-**Opción A:** Renombrar tablas para consistencia (riesgo: requiere actualizar código C# que use names directos):
-
-```csharp
-// Migration nueva:
-migrationBuilder.RenameTable("activity_logs", newName: "ActivityLogs");
-// + actualizar entidad ActivityLog si tiene [Table("activity_logs")]
-```
-
-**Opción B:** Documentar la convención excepción para AI tables. NO renombrar.
-
-**Recomendado:** Opción B — el costo de renombrar > beneficio cosmético. Solo agregar a `docs/architecture/DATABASE_NAMING_CONVENTIONS.md` la excepción.
+### Fix aplicado
+`apps/web/e2e/auth.setup.ts`:
+1. `await context.clearCookies()` ANTES de `page.goto('/login')`.
+2. Si el current URL post-nav NO incluye `/login` (porque redirigió), forzar `goto('/login?force=true')`.
 
 ### Referencias
-- [EF Core - Table mapping conventions](https://learn.microsoft.com/en-us/ef/core/modeling/entity-types#table-name)
+- [Playwright - clearCookies API](https://playwright.dev/docs/api/class-browsercontext#browser-context-clear-cookies)
 
 ---
 
-## BUG #2 — Pedidos huérfanos sin DetallePedidos [LOW data]
+## 🐛 BUG #1 — Naming inconsistency tablas DB [LOW cosmético]
 
 ### Severidad
-**LOW.** Solo seed data E2E, no producción.
+**LOW.** No causa bugs runtime, confunde queries crudas.
 
-### Síntoma observado
-```sql
-SELECT id, numero_pedido, total
-FROM "Pedidos" p
-WHERE p.tenant_id=1
-  AND NOT EXISTS (SELECT 1 FROM "DetallePedidos" WHERE pedido_id=p.id);
-
--- Resultado:
--- PED-E2E-BATCH-1, PED-E2E-BATCH-2, PED-E2E-BATCH-3 (test seeds)
--- PED-EXPIRED-001, PED-INVOICED-001 (test seeds)
-```
-
-### Root cause
-Seeds de E2E tests crean Pedidos sin detalles por simplicidad. No es bug productivo.
-
-### Propuesta de fix
-Limpiar seeds para crear detalles consistentes O documentar que estos seeds son intencionalmente shells:
-
-```sql
--- En infra/database/schema/seed_e2e_pg.sql, agregar detalles minimos:
-INSERT INTO "DetallePedidos" (pedido_id, producto_id, cantidad, precio_unitario, subtotal, impuesto, total, ...)
-SELECT id, 5, 1, total, total*0.86, total*0.14, total, ...
-FROM "Pedidos" WHERE numero_pedido LIKE 'PED-E2E-BATCH-%';
-```
+### Decisión: NO renombrar
+Riesgo > beneficio. Documentar en `docs/architecture/DATABASE_NAMING_CONVENTIONS.md`:
+- Tablas legacy: PascalCase quoted (`"Clientes"`, `"Pedidos"`)
+- Tablas de features nuevas (AI, subscriptions): snake_case lowercase (`activity_logs`, `subscription_plans`, `tenant_subscriptions`)
 
 ---
 
-## BUG #5 — Cobros sin pedido_id [LOW design check]
+## ✅ BUG #2 — Pedidos huérfanos seed E2E [LOW resolved]
 
-### Severidad
-**LOW.** Posible feature válida (cobros sueltos), pero requiere validación de negocio.
-
-### Síntoma observado
-```sql
-SELECT id, monto, pedido_id, metodo_pago, tenant_id, creado_en
-FROM "Cobros" WHERE pedido_id IS NULL;
-
--- Resultado: Cobro id=146 monto=17 sin pedido_id
-```
-
-### Verificación requerida del usuario
-¿Es por diseño que existan cobros sin pedido (abonos sueltos, anticipos)? Si **NO**, agregar constraint:
-
-```sql
-ALTER TABLE "Cobros" ALTER COLUMN pedido_id SET NOT NULL;
-```
-
-Y verificar en `CobroRepository.CrearAsync` que valide la presencia.
-
-Si **SÍ es por diseño**, documentar en CLAUDE.md el rule.
+Documentado. Son seeds intencionales de E2E tests (`PED-E2E-BATCH-*`, `PED-EXPIRED-*`). NO productivo. Sin acción.
 
 ---
 
-## Estado general — Lo que SÍ funciona ✅
+## ⚠️ BUG #5 — Cobros sin `pedido_id` [LOW design verification]
 
-Validado contra DB Postgres local (tenant=1, Jeyma):
+Pendiente verificar reglas de negocio: ¿cobros sueltos válidos? Solo 1 cobro (`id=146`). Si SÍ es por diseño, documentar. Si NO, agregar `NOT NULL`.
+
+---
+
+## ✅ Lo que SÍ funciona (validado SQL)
 
 | Check | Resultado |
 |---|---|
-| AuditableEntity `creado_en` populated | 0 filas NULL en Clientes/Pedidos/Cobros/Productos ✅ |
-| Cross-tenant integrity (pedido vs cliente tenant) | 0 mismatches ✅ |
+| AuditableEntity `creado_en` populated | 0 NULLs en Clientes/Pedidos/Cobros/Productos ✅ |
+| Cross-tenant integrity | 0 pedidos con cliente otro tenant ✅ |
 | Idempotency Pedido `mobile_record_id` | 0 duplicados ✅ |
-| Idempotency en otras tablas mobile (Cobros/Visitas/Gastos/Clientes) | 0 duplicados ✅ |
+| Idempotency Cobros/Visitas/Gastos/Clientes mobile | 0 duplicados ✅ |
+| DetallePedidos activos duplicados | 0 ✅ |
+| `subtotal + impuestos = total` consistency | 100% ✅ |
 | Backend health (1050/1051/1052) | 200 OK ✅ |
-| xUnit suite Main API | 558/559 pass (1 skip preexistente) ✅ |
-| DB counts seed tenant=1 | 10 zonas, 19 productos, 21 clientes, 14 pedidos, 25 usuarios ✅ |
-| `subtotal + impuestos = total` consistencia en pedidos | TODOS los pedidos respetan la fórmula ✅ |
+| xUnit Main API | 558/559 pass ✅ |
+| Build .NET post-fix BUG #3 | 0 errors, 65 warnings preexistentes ✅ |
+| Cleanup 39 sesiones zombies | Aplicado ✅ |
 
 ---
 
-## Process improvement — agentes QA persistentes
+## Lecciones aprendidas (incorporar al checklist)
 
-Creados en `.claude/agents/`:
-- `qa-backend.md` — xUnit + endpoint smoke + multi-tenant + security
-- `qa-frontend.md` — Playwright suite + catálogos UI + console errors + responsive
-- `qa-integration.md` — UI → API → DB end-to-end con SQL verifications
-
-Activar via Claude Code: `Agent(subagent_type: "qa-backend")` para que ejecuten el `RELEASE_REGRESSION_CHECKLIST.md` automáticamente antes de cada PR.
+1. **Queries de integridad SIEMPRE filtran `eliminado_en IS NULL`** sobre tablas con AuditableEntity. EF Core lo hace auto; SQL crudo no.
+2. **Verificar config schema vs código:** una columna en DB sin código que la lea es bug latente.
+3. **Playwright clear state al inicio** previene flaky setup runs.
+4. **Falsos positivos > falsos negativos** en QA: prefiero reportar y descartar (como hice con #4) que pasar silente un bug real.
 
 ---
 
-**Última actualización:** 2026-06-05 — post audit code-quality
+**Última actualización:** 2026-06-05 — post-fix BUG #3 (AuthService respeta force_single_session) + BUG #6 (Playwright auth setup) + cleanup 39 sesiones.

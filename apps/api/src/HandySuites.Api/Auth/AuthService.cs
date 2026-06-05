@@ -432,17 +432,47 @@ public class AuthService
             };
         }
 
-        // Check for active sessions (single session enforcement)
-        // SuperAdmin is exempt from single session restriction
+        // Audit code-quality (2026-06-05) — BUG #3 fix: respetar el flag
+        // `force_single_session` del plan del tenant. Antes, AuthService hardcodeaba
+        // single-session enforcement (con SuperAdmin exempt), ignorando totalmente
+        // la columna `subscription_plans.force_single_session`. Resultado: la
+        // columna existia en DB pero nunca se leia -> config inconsistente.
+        //
+        // Nuevo comportamiento:
+        //  - SuperAdmin sigue exempt (cross-tenant gestion).
+        //  - Si el plan tiene force_single_session=true -> bloquear con
+        //    ACTIVE_SESSION_EXISTS como antes.
+        //  - Si force_single_session=false -> permitir multiple sesiones (hasta
+        //    max_concurrent_sessions del plan).
         if (!usuario.IsSuperAdmin)
         {
+            // Lookup del plan del tenant. Si no hay plan activo, default a single-session
+            // (conservador para no romper tenants sin suscripcion).
+            var planConfig = await _db.Database
+                .SqlQuery<PlanSessionConfig>(
+                    $@"SELECT sp.force_single_session AS ForceSingleSession,
+                              sp.max_concurrent_sessions AS MaxConcurrentSessions
+                       FROM subscription_plans sp
+                       JOIN tenant_subscriptions ts ON ts.plan_id = sp.id
+                       WHERE ts.tenant_id = {usuario.TenantId} AND ts.activo
+                       ORDER BY ts.id DESC LIMIT 1")
+                .FirstOrDefaultAsync();
+
+            var forceSingleSession = planConfig?.ForceSingleSession ?? true;
+            var maxConcurrent = planConfig?.MaxConcurrentSessions ?? 1;
+
             var activeSessions = await _db.DeviceSessions
                 .IgnoreQueryFilters()
                 .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
                 .OrderByDescending(ds => ds.LastActivity)
                 .ToListAsync();
 
-            if (activeSessions.Any())
+            // Bloquear si force_single_session=true Y hay >=1 sesion activa.
+            // Bloquear si force_single_session=false pero alcanzo max_concurrent_sessions.
+            var shouldBlock = (forceSingleSession && activeSessions.Count >= 1)
+                              || (!forceSingleSession && activeSessions.Count >= maxConcurrent);
+
+            if (shouldBlock && activeSessions.Any())
             {
                 var latestSession = activeSessions.First();
                 var deviceInfo = ParseDeviceInfo(latestSession.UserAgent ?? "");
@@ -460,6 +490,17 @@ public class AuthService
         }
 
         return await CompleteLogin(usuario);
+    }
+
+    /// <summary>
+    /// Result type for plan session config raw query.
+    /// Audit code-quality (2026-06-05): introduce el lookup del plan para
+    /// respetar force_single_session en lugar de hardcodear single-session.
+    /// </summary>
+    private class PlanSessionConfig
+    {
+        public bool ForceSingleSession { get; set; }
+        public int MaxConcurrentSessions { get; set; }
     }
 
     /// <summary>
