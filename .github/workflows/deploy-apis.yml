@@ -97,6 +97,19 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      # Sprint 5 audit code-quality: cache NuGet packages.
+      # Sin cache, cada CI run re-descargaba todos los packages (~3-5 min).
+      # Con cache, hit rate >90% en runs consecutivos -> ahorro 3-5 min/run.
+      # Key incluye hash de todos los .csproj para invalidar cuando cambien
+      # dependencias.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Run Main API Tests
         if: |
           needs.detect-changes.outputs.main-api == 'true' ||
@@ -141,6 +154,17 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      # Sprint 5 audit: cache NuGet + dotnet-ef global tool para acelerar
+      # el build del efbundle. ~2 min de ahorro por run de migration.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-migrate-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-migrate-
+            ${{ runner.os }}-nuget-
 
       - name: Install EF Core tools
         run: dotnet tool install --global dotnet-ef --version 8.0.11
