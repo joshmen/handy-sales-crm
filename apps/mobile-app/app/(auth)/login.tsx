@@ -385,8 +385,8 @@ export default function LoginScreen() {
         message={
           pendingDataBlock
             ? (pendingDataBlock.countUnknown
-              ? `Este dispositivo puede tener registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}). No pudimos confirmar el estado local.\n\nPor seguridad de la informacion, inicia sesion con esa cuenta primero para verificar y sincronizar. Si ${pendingDataBlock.previousUserName} no esta disponible, contacta a tu administrador.`
-              : `Este dispositivo tiene ${pendingDataBlock.pendingCount} registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}).\n\nPara no perder esos datos, inicia sesion con esa cuenta primero. Una vez sincronizados, podras entrar con esta cuenta.\n\nSi ${pendingDataBlock.previousUserName} no esta disponible, contacta a tu administrador.`)
+              ? `Este dispositivo puede tener registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}). No pudimos confirmar el estado local.\n\nPor seguridad de la información, inicia sesión con esa cuenta primero para verificar y sincronizar. Si ${pendingDataBlock.previousUserName} no está disponible, contacta a tu administrador.`
+              : `Este dispositivo tiene ${pendingDataBlock.pendingCount} registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}).\n\nPara no perder esos datos, inicia sesión con esa cuenta primero. Una vez sincronizados, podrás entrar con esta cuenta.\n\nSi ${pendingDataBlock.previousUserName} no está disponible, contacta a tu administrador.`)
             : ''
         }
         confirmText="Entendido"

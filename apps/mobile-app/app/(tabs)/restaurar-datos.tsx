@@ -82,8 +82,8 @@ export default function RestaurarDatosScreen() {
     if (freshSessionExpired) {
       Toast.show({
         type: 'error',
-        text1: 'Sesion expirada',
-        text2: 'Inicia sesion antes de restaurar.',
+        text1: 'Sesión expirada',
+        text2: 'Inicia sesión antes de resincronizar.',
         visibilityTime: 5000,
       });
       setShowConfirm(false);
@@ -107,8 +107,8 @@ export default function RestaurarDatosScreen() {
       setShowConfirm(false);
       Toast.show({
         type: 'success',
-        text1: 'Datos restaurados',
-        text2: 'Los datos del servidor estan actualizados en tu dispositivo.',
+        text1: 'Resincronización completa',
+        text2: 'Los datos del servidor están actualizados en tu dispositivo.',
         visibilityTime: 5000,
       });
       // Navegar a Hoy: el contexto de "Restaurar" ya termino, lo logico es
@@ -119,7 +119,7 @@ export default function RestaurarDatosScreen() {
       void crashReporter.reportEvent('restore_database_error', { message });
       Toast.show({
         type: 'error',
-        text1: 'Error al restaurar',
+        text1: 'Error al resincronizar',
         text2: message,
         visibilityTime: 6000,
       });
@@ -149,8 +149,8 @@ export default function RestaurarDatosScreen() {
       setShowForceConfirm(false);
       Toast.show({
         type: 'success',
-        text1: 'Datos borrados',
-        text2: 'Inicia sesion para descargar de nuevo.',
+        text1: 'Datos eliminados',
+        text2: 'Inicia sesión para descargar de nuevo.',
         visibilityTime: 5000,
       });
       router.replace('/(auth)/login' as any);
@@ -159,7 +159,7 @@ export default function RestaurarDatosScreen() {
       void crashReporter.reportEvent('restore_database_force_override_error', { message });
       Toast.show({
         type: 'error',
-        text1: 'Error al restaurar',
+        text1: 'Error al resincronizar',
         text2: message,
         visibilityTime: 6000,
       });
@@ -202,7 +202,7 @@ export default function RestaurarDatosScreen() {
         >
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
-        <Text style={styles.pageTitle}>Borrado de datos</Text>
+        <Text style={styles.pageTitle}>Sincronización completa</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -213,12 +213,12 @@ export default function RestaurarDatosScreen() {
             <View style={styles.introIcon}>
               <Trash2 size={28} color="#dc2626" />
             </View>
-            <Text style={styles.introTitle}>Borrar datos locales y volver a descargar</Text>
+            <Text style={styles.introTitle}>Resincronizar todo desde el servidor</Text>
             <Text style={styles.introBody}>
-              Esta accion BORRA toda la informacion guardada en tu dispositivo (clientes,
-              productos, pedidos, fotos) y la descarga de nuevo desde el servidor.
+              Esta acción reemplaza TODA la información guardada en tu dispositivo
+              (clientes, productos, pedidos, fotos) con una copia fresca del servidor.
               {'\n\n'}
-              Usala solo si crees que tus datos estan danados o no se ven correctamente.
+              Úsala solo si crees que tus datos están dañados o no se ven correctamente.
             </Text>
           </View>
         </Animated.View>
@@ -231,16 +231,16 @@ export default function RestaurarDatosScreen() {
             modos' con confirmation distinta ('PERDER PENDIENTES'). */}
         {!isLoading && sessionExpired && (
           <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-            <Text style={styles.sessionExpiredTitle}>TU SESION EXPIRO</Text>
+            <Text style={styles.sessionExpiredTitle}>TU SESIÓN EXPIRÓ</Text>
             <View style={styles.sessionExpiredCard}>
               <View style={styles.sessionExpiredHeader}>
                 <AlertCircle size={20} color="#d97706" />
-                <Text style={styles.sessionExpiredHeaderText}>Tu sesion expiro</Text>
+                <Text style={styles.sessionExpiredHeaderText}>Tu sesión expiró</Text>
               </View>
               <Text style={styles.sessionExpiredSubtitle}>
                 {hardBlockers.length > 0
-                  ? 'Inicia sesion para sincronizar tus pendientes y poder restaurar.'
-                  : 'Inicia sesion para descargar los datos del servidor.'}
+                  ? 'Inicia sesión para sincronizar tus pendientes y poder resincronizar.'
+                  : 'Inicia sesión para descargar los datos del servidor.'}
               </Text>
               {hardBlockers.length > 0 && (
                 <View style={styles.blockerList}>
@@ -257,20 +257,20 @@ export default function RestaurarDatosScreen() {
                 style={styles.reLoginButton}
                 onPress={handleReLogin}
                 activeOpacity={0.8}
-                accessibilityLabel="Iniciar sesion"
+                accessibilityLabel="Iniciar sesión"
                 accessibilityRole="button"
               >
-                <Text style={styles.reLoginButtonText}>Iniciar sesion</Text>
+                <Text style={styles.reLoginButtonText}>Iniciar sesión</Text>
               </TouchableOpacity>
               {sessionExpired && hardBlockers.length > 0 && (
                 <TouchableOpacity
                   style={styles.forceOverrideButton}
                   onPress={() => setShowForceConfirm(true)}
                   activeOpacity={0.7}
-                  accessibilityLabel="Restaurar de todos modos perderas pendientes"
+                  accessibilityLabel="Sincronizar de todos modos. Perderás pendientes."
                   accessibilityRole="button"
                 >
-                  <Text style={styles.forceOverrideText}>Restaurar de todos modos</Text>
+                  <Text style={styles.forceOverrideText}>Sincronizar de todos modos</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -280,16 +280,16 @@ export default function RestaurarDatosScreen() {
         {/* Branch B: pendientes SIN sesion expirada -> bloque rojo original */}
         {!isLoading && !sessionExpired && hardBlockers.length > 0 && (
           <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-            <Text style={styles.sectionTitle}>NO PUEDES RESTAURAR AUN</Text>
+            <Text style={styles.sectionTitle}>NO PUEDES SINCRONIZAR AÚN</Text>
             <View style={styles.blockerCard}>
               <View style={styles.blockerHeader}>
                 <AlertTriangle size={20} color="#dc2626" />
                 <Text style={styles.blockerHeaderText}>
-                  Tienes informacion sin enviar al servidor
+                  Tienes información sin enviar al servidor
                 </Text>
               </View>
               <Text style={styles.blockerSubtitle}>
-                Si restauras ahora se perdera para siempre. Sincroniza primero.
+                Si resincronizas ahora se perderá para siempre. Envía tus pendientes primero.
               </Text>
               <View style={styles.blockerList}>
                 {hardBlockers.map((b) => (
@@ -323,7 +323,7 @@ export default function RestaurarDatosScreen() {
             <View style={styles.warnCard}>
               <View style={styles.warnHeader}>
                 <AlertCircle size={18} color="#d97706" />
-                <Text style={styles.warnHeaderText}>Tambien perderas</Text>
+                <Text style={styles.warnHeaderText}>También perderás</Text>
               </View>
               <View style={styles.warnList}>
                 {softWarnings.map((b) => (
@@ -337,8 +337,8 @@ export default function RestaurarDatosScreen() {
                 ))}
               </View>
               <Text style={styles.warnFootnote}>
-                Esta informacion es operacional pero no es input directo tuyo. Puedes
-                continuar si entiendes que se perdera.
+                Esta información es operacional y no la capturas directamente. Puedes
+                continuar si entiendes que se perderá.
               </Text>
             </View>
           </Animated.View>
@@ -350,7 +350,7 @@ export default function RestaurarDatosScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.okCard}>
             <CheckCircle size={20} color="#16a34a" />
             <Text style={styles.okText}>
-              No tienes datos sin sincronizar. Puedes restaurar de forma segura.
+              No tienes datos sin sincronizar. Puedes resincronizar de forma segura.
             </Text>
           </Animated.View>
         )}
@@ -360,7 +360,7 @@ export default function RestaurarDatosScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.offlineCard}>
             <WifiOff size={20} color="#dc2626" />
             <Text style={styles.offlineText}>
-              Sin conexion. Necesitas internet para descargar los datos del servidor.
+              Sin conexión. Necesitas internet para descargar los datos del servidor.
             </Text>
           </Animated.View>
         )}
@@ -372,28 +372,28 @@ export default function RestaurarDatosScreen() {
             onPress={handleOpenConfirm}
             activeOpacity={0.8}
             disabled={buttonDisabled}
-            accessibilityLabel="Borrar datos locales y descargar de nuevo"
+            accessibilityLabel="Resincronizar todo desde el servidor"
             accessibilityRole="button"
             accessibilityState={{ disabled: buttonDisabled }}
           >
             <Trash2 size={18} color={buttonDisabled ? '#9ca3af' : '#ffffff'} />
             <Text style={[styles.restoreButtonText, buttonDisabled && styles.restoreButtonTextDisabled]}>
-              Borrar datos locales y volver a descargar
+              Resincronizar todo desde el servidor
             </Text>
           </TouchableOpacity>
           <Text style={styles.restoreHint}>
-            Ultimo recurso. Esta accion no se puede deshacer.
+            Último recurso. Esta acción no se puede deshacer.
           </Text>
         </Animated.View>
       </View>
 
       <TypeToConfirmModal
         visible={showConfirm}
-        title="Borrar datos locales"
-        message="Esto borrara toda la informacion guardada en tu dispositivo y la descargara de nuevo del servidor. Esta accion no se puede deshacer."
-        requiredText="RESTAURAR"
+        title="Resincronización completa"
+        message="Esto reemplazará TODA la información guardada en tu dispositivo con una copia fresca del servidor. Esta acción no se puede deshacer."
+        requiredText="SINCRONIZAR"
         autoCapitalize="characters"
-        confirmText="Borrar y descargar"
+        confirmText="Resincronizar todo"
         cancelText="Cancelar"
         destructive
         loading={restoring}
@@ -406,15 +406,15 @@ export default function RestaurarDatosScreen() {
       />
 
       {/* Override modal: solo se abre desde el SessionExpiredCard cuando hay
-          pendientes + sesion expirada. Palabra distinta a 'RESTAURAR' para
+          pendientes + sesion expirada. Palabra distinta a 'SINCRONIZAR' para
           forzar consciencia del costo (perder pendientes irrecuperables). */}
       <TypeToConfirmModal
         visible={showForceConfirm}
-        title="Perderas pendientes"
-        message={`Tienes ${hardBlockers.reduce((s, b) => s + b.count, 0)} registros sin enviar al servidor. Como tu sesion expiro, NO se podran recuperar. Si continuas, se perderan para siempre.`}
+        title="Perderás pendientes"
+        message={`Tienes ${hardBlockers.reduce((s, b) => s + b.count, 0)} registros sin enviar al servidor. Como tu sesión expiró, NO se podrán recuperar. Si continúas, se perderán para siempre.`}
         requiredText="PERDER PENDIENTES"
         autoCapitalize="characters"
-        confirmText="Si, borrar de todos modos"
+        confirmText="Sí, continuar de todos modos"
         cancelText="Cancelar"
         destructive
         loading={restoring}
