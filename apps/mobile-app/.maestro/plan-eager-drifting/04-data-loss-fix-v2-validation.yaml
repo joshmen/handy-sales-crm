@@ -1,0 +1,154 @@
+appId: com.handysuites.app
+name: "Fix v2 data-loss prevention: 5 state matrix validation"
+---
+
+# Pre-requisitos:
+#  - APK v2 (commit 1a4ee453) instalado
+#  - Login con vendedor1@jeyma.com NO ejecutado aun (este flow lo hace)
+#  - DB staging: usuario_id=6 con 0 pendientes server-side (clean state)
+
+# ============================================================
+# S1: Baseline (sessionExpired=false, hardBlockers=0)
+#     EXPECT: Green ok card + button ENABLED + NO amber + NO red
+# ============================================================
+- runFlow:
+    file: ../shared/login-vendedor1.yaml
+- takeScreenshot: "s1-01-after-login"
+
+- tapOn:
+    point: "90%, 95%"   # Mas tab
+- extendedWaitUntil:
+    visible: "Borrado de datos"
+    timeout: 10000
+
+- tapOn: "Borrado de datos"
+- extendedWaitUntil:
+    visible: "Borrar datos locales y volver a descargar"
+    timeout: 10000
+- takeScreenshot: "s1-02-restaurar-screen-clean"
+
+- assertVisible:
+    text: "No tienes datos sin sincronizar"
+- assertNotVisible:
+    text: "Tu sesion expiro"
+- assertNotVisible:
+    text: "NO PUEDES RESTAURAR"
+
+# Tap restore button to confirm it's enabled
+- tapOn: "Borrar datos locales y volver a descargar"
+- extendedWaitUntil:
+    visible: "RESTAURAR"
+    timeout: 5000
+- takeScreenshot: "s1-03-modal-open"
+
+# Cancel modal (don't actually wipe — we need data for next scenarios)
+- tapOn: "Cancelar"
+- assertNotVisible:
+    text: "Para continuar, escribe"
+
+# ============================================================
+# S4: Pendientes SIN sesion expirada (regression)
+#     EXPECT: Red blocker card + button DISABLED + Sincronizar ahora visible
+# ============================================================
+# NOTA: este test asume que el vendedor1 tiene >=1 pedido pendiente local.
+# Si tu DB esta limpia, crear pedido en autoventa primero via UI.
+# (Pendiente: este step requiere setup manual o crear pedido offline antes)
+
+- back
+- back
+- back
+
+# Crear pedido para tener pendiente local. ESTO es solo placeholder —
+# en el real test, ejecuta manualmente: crear cliente -> crear pedido en
+# autoventa (no presionar Finalizar para que quede en _status=created local).
+# O bien: cortar red, finalizar pedido, restaurar red.
+
+# ============================================================
+# S3: sessionExpired=true + hardBlockers=0 (NUEVA expectativa v2)
+#     EXPECT: SessionExpiredCard + button DISABLED + Iniciar sesion CTA
+#             + NO override button
+# ============================================================
+# Setup: revocar sesion APK via segundo login curl en otro terminal:
+#   curl POST /api/mobile/auth/login con device_id distinto
+# Esto dispara SignalR SESSION_REPLACED -> APK marca sessionExpired=true
+# (Requiere setup externo — se ejecuta manualmente desde otra terminal)
+
+# Asumiendo que la revocacion ya ocurrio externamente:
+- launchApp
+- extendedWaitUntil:
+    visible: "Tu sesion expiro"
+    timeout: 15000
+- takeScreenshot: "s3-01-session-revoked-banner"
+
+- tapOn:
+    point: "90%, 95%"
+- tapOn: "Borrado de datos"
+- extendedWaitUntil:
+    visible: "TU SESION EXPIRO"
+    timeout: 10000
+- takeScreenshot: "s3-02-session-expired-card"
+
+- assertVisible: "Tu sesion expiro"
+- assertVisible: "Inicia sesion"
+- assertNotVisible: "Restaurar de todos modos"   # hardBlockers=0 -> oculto
+- assertNotVisible: "NO PUEDES RESTAURAR"
+- assertVisible: "Iniciar sesion"
+
+# Verificar boton principal disabled — intentar tap NO debe abrir modal
+- tapOn: "Borrar datos locales y volver a descargar"
+- assertNotVisible:
+    text: "Para continuar, escribe"
+- takeScreenshot: "s3-03-main-button-disabled-no-modal"
+
+# Verificar Iniciar sesion CTA navega a login
+- tapOn: "Iniciar sesion"
+- extendedWaitUntil:
+    visible: "Iniciar sesion"   # login screen header
+    timeout: 5000
+- takeScreenshot: "s3-04-login-screen"
+
+# ============================================================
+# S2: sessionExpired=true + hardBlockers>0 (caso CRITICAL del fix v1)
+#     EXPECT: SessionExpiredCard + button DISABLED + Iniciar sesion CTA
+#             + Override button VISIBLE
+# ============================================================
+# Re-loguear, crear pedido offline, revocar sesion otra vez
+
+- runFlow:
+    file: ../shared/login-vendedor1.yaml
+
+# Crear pedido offline (manual: airplane mode + finalizar)
+# Re-revocar sesion (manual: segundo login curl)
+
+- tapOn:
+    point: "90%, 95%"
+- tapOn: "Borrado de datos"
+- extendedWaitUntil:
+    visible: "TU SESION EXPIRO"
+    timeout: 10000
+- takeScreenshot: "s2-01-session-expired-with-pendientes"
+
+- assertVisible: "Tu sesion expiro"
+- assertVisible: "Pedidos"      # blocker list muestra pedidos pending
+- assertVisible: "Iniciar sesion"
+- assertVisible: "Restaurar de todos modos"   # ahora SI debe aparecer
+- assertNotVisible: "NO PUEDES RESTAURAR"
+
+# Verificar override modal abre con palabra distinta
+- tapOn: "Restaurar de todos modos"
+- extendedWaitUntil:
+    visible: "Perderas pendientes"
+    timeout: 5000
+- takeScreenshot: "s2-02-override-modal"
+- assertVisible: "PERDER PENDIENTES"
+
+- tapOn: "Cancelar"
+- assertNotVisible:
+    text: "Perderas pendientes"
+
+# ============================================================
+# FIN — visualizar telemetria server-side manualmente:
+#   SELECT * FROM "CrashReports"
+#   WHERE error_message LIKE 'restore_database_session_expired%'
+#   ORDER BY creado_en DESC;
+# ============================================================
