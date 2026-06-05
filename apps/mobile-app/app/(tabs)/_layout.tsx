@@ -1,5 +1,5 @@
 import { Platform, View, StyleSheet } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
+import { Redirect, Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Map, Users, ShoppingBag, CreditCard, MoreHorizontal } from 'lucide-react-native';
 import { useAutoSync } from '@/hooks/useAutoSync';
@@ -16,12 +16,26 @@ import { COLORS } from '@/theme/colors';
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  // Hardening 2026-06-05 (fix data-loss critico): leer sessionExpired antes
+  // de cualquier hook condicional para respetar Rules of Hooks. El redirect
+  // se aplica al final, despues que todos los hooks corrieron.
+  const sessionExpired = useAuthStore(s => s.sessionExpired);
   useAutoSync();
   useHeartbeat(); // B.2 — Reporta pendings al server cada 5 min (fix prod 2026-06-03)
   usePushNotifications();
   const { data: pendingCount = 0 } = usePendingCount();
   const { count: unreadNotifCount } = useUnreadNotificationCount();
   const role = useAuthStore(s => s.user?.role);
+
+  // Hardening 2026-06-05: si la sesion expiro server-side, NO renderizar
+  // ningun route autenticado. Cualquier mutacion post-revocacion fallaria
+  // 401 silente y los pedidos/cobros locales nunca llegarian al server
+  // -> data loss si user wipea o desinstala. Forzar re-login antes de
+  // tocar nada. JWT y WDB se preservan; al re-loguear sessionExpired ->
+  // false y la app continua normal con sync engine drenando pendings.
+  if (sessionExpired) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   // Combine pending sync items + unread notifications for the Mas badge
   const masBadgeCount = pendingCount + unreadNotifCount;

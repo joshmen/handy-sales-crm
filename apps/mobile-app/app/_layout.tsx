@@ -209,18 +209,18 @@ const INITIAL_SYNC_KEY = 'initial_sync_complete';
 
 function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   const { isAuthenticated, isLoading, restoreSession, user } = useAuthStore();
-  // Audit 2026-06-01 (rev 3) — MINIMAL bounce loop fix preservando el
-  // diseño soft-logout (audit 2026-05-18). El listener 'sessionRevoked'
-  // ahora SOLO levanta `sessionExpired=true` (no toca `isAuthenticated`).
-  // Eso mantiene (tabs) montado → SessionExpiredBanner visible, GPS/SignalR/
-  // queries vivos, draft data intacta. Pero el effect de abajo seguía
-  // redirigiéndo a (tabs) cuando el user navegaba a /(auth)/login desde
-  // el banner (sessionExpired=true + isAuthenticated=true). El fix es
-  // simplemente gatear la rama de redirect-to-tabs con `!sessionExpired`:
-  // así el user puede llegar al login screen y re-loguear (login()
-  // resetea sessionExpired:false → AuthGate vuelve al flow normal).
-  // NO agregamos un redirect-to-login automático cuando sessionExpired
-  // se levanta — el contrato es que el banner pinte y el user decida.
+  // Hardening 2026-06-05 (fix data-loss critico reportado por usuario):
+  // Cambio de contrato vs audit 2026-06-01. Antes: "el banner pinta y el
+  // user decide". Resultado: app autenticado dejaba crear pedidos, llenar
+  // formularios y tap Finalizar, donde eager-save + sync push fallaban
+  // 401 silente -> pedidos quedaban en WDB local solo -> data loss si user
+  // wipea o desinstala.
+  //
+  // Nuevo contrato: sessionExpired=true + inTabsGroup -> redirect automatico
+  // a /(auth)/login. JWT preservado en SecureStore (soft-logout sigue),
+  // WDB intacto, pero el user NO puede tocar nada mutativo hasta re-login.
+  // login() resetea sessionExpired -> false y el sync engine drena
+  // automaticamente los pendings que quedaron en WDB.
   const sessionExpired = useAuthStore(s => s.sessionExpired);
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const segments = useSegments();
@@ -272,6 +272,11 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
       } else {
         router.replace('/(auth)/login');
       }
+    } else if (isAuthenticated && sessionExpired && inTabsGroup) {
+      // Hardening 2026-06-05: sesion revocada server-side. Forzar login
+      // antes de que el user pueda mutar nada. JWT y WDB preservados;
+      // login() reseteara sessionExpired -> sync engine drena pendings.
+      router.replace('/(auth)/login');
     } else if (isAuthenticated && !sessionExpired && user?.mustChangePassword && !onCambiarPasswordScreen) {
       // Force-redirect a cambiar-password — el usuario fue creado con password
       // temporal por un admin (caso vendedor de campo MX sin email). No puede
