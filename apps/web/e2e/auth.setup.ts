@@ -27,14 +27,15 @@ setup('authenticate as admin', async ({ page, context }, testInfo) => {
   await context.clearCookies();
   await context.clearPermissions();
 
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  // Audit code-quality (2026-06-05) — networkidle en lugar de domcontentloaded:
+  // la page de login es client-side React con LoginContent wrapped in Suspense.
+  // domcontentloaded retorna ANTES de que el form (#email, #password) este en
+  // el DOM. networkidle espera a que JS termine de hidratar el form.
+  await page.goto('/login', { waitUntil: 'networkidle' });
 
-  // Si redirige a / o /dashboard a pesar de clear, forzar navegacion explicita
-  const currentUrl = page.url();
-  if (!currentUrl.includes('/login')) {
-    await page.goto('/login?force=true', { waitUntil: 'domcontentloaded' });
+  if (!page.url().includes('/login')) {
+    await page.goto('/login?force=true', { waitUntil: 'networkidle' });
   }
-  await page.waitForTimeout(500);
 
   // Dismiss cookie consent banner if present
   const acceptCookies = page.getByRole('button', { name: /Aceptar/i });
@@ -43,27 +44,37 @@ setup('authenticate as admin', async ({ page, context }, testInfo) => {
     await page.waitForTimeout(300);
   }
 
-  await page.locator('#email').first().fill(email);
-  await page.waitForTimeout(200);
-  await page.locator('#password').first().click();
-  await page.locator('#password').first().fill('test123');
-  await page.waitForTimeout(200);
-  await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
+  // Esperar a que el form realmente este visible y interactivo antes de fill.
+  await expect(page.locator('#email')).toBeVisible({ timeout: 15000 });
+  await page.locator('#email').fill(email);
+  await expect(page.locator('#password')).toBeVisible();
+  await page.locator('#password').fill('test123');
+  await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click();
 
-  // Handle session conflict — click "Continuar aquí" or "Cerrar sesión anterior" if shown
+  // Handle session conflict — multiple flows possible:
+  //  1. Direct success -> /dashboard
+  //  2. "Continuar aquí" modal -> click for force-login
+  //  3. SESSION_BLOCKED banner -> requires manual session cleanup (lanzar warning)
   const continueBtn = page.getByRole('button', { name: /Continuar aqu[ií]|Cerrar sesi[oó]n anterior/i });
+  const sessionBlockedBanner = page.locator('text=/sesi[oó]n.*activa|active.*session/i').first();
+
   try {
     await Promise.race([
-      page.waitForURL(/dashboard/, { timeout: 15000 }),
-      continueBtn.waitFor({ state: 'visible', timeout: 15000 }),
+      page.waitForURL(/dashboard/, { timeout: 20000 }),
+      continueBtn.waitFor({ state: 'visible', timeout: 20000 }),
+      sessionBlockedBanner.waitFor({ state: 'visible', timeout: 20000 }),
     ]);
   } catch { /* continue */ }
 
   if (await continueBtn.isVisible().catch(() => false)) {
     await continueBtn.click();
+    // Esperar nuevamente al dashboard tras force-login
+    try {
+      await page.waitForURL(/dashboard/, { timeout: 15000 });
+    } catch { /* continue */ }
   }
 
-  await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+  await expect(page).toHaveURL(/dashboard/, { timeout: 30000 });
 
   // Save authenticated state for all workers in this project
   await page.context().storageState({ path: statePath });
