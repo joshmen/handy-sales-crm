@@ -46,6 +46,7 @@ export default function LoginScreen() {
   // PENDING_DATA_BLOCKS_USER_CHANGE. Mostramos modal explicativo bloqueante.
   const [pendingDataBlock, setPendingDataBlock] = useState<{
     pendingCount: number;
+    countUnknown: boolean;
     previousUserEmail: string;
     previousUserName: string;
   } | null>(null);
@@ -113,6 +114,7 @@ export default function LoginScreen() {
     if (err?.code === 'PENDING_DATA_BLOCKS_USER_CHANGE') {
       setPendingDataBlock({
         pendingCount: err.pendingCount ?? 0,
+        countUnknown: err.countUnknown ?? false,
         previousUserEmail: err.previousUserEmail ?? '',
         previousUserName: err.previousUserName ?? '',
       });
@@ -382,7 +384,9 @@ export default function LoginScreen() {
         title="Hay pedidos sin enviar"
         message={
           pendingDataBlock
-            ? `Este dispositivo tiene ${pendingDataBlock.pendingCount} registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}).\n\nPara no perder esos datos, inicia sesion con esa cuenta primero. Una vez sincronizados, podras entrar con esta cuenta.\n\nSi ${pendingDataBlock.previousUserName} no esta disponible, contacta a tu administrador.`
+            ? (pendingDataBlock.countUnknown
+              ? `Este dispositivo puede tener registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}). No pudimos confirmar el estado local.\n\nPor seguridad de la informacion, inicia sesion con esa cuenta primero para verificar y sincronizar. Si ${pendingDataBlock.previousUserName} no esta disponible, contacta a tu administrador.`
+              : `Este dispositivo tiene ${pendingDataBlock.pendingCount} registros sin enviar al servidor del usuario ${pendingDataBlock.previousUserName} (${pendingDataBlock.previousUserEmail}).\n\nPara no perder esos datos, inicia sesion con esa cuenta primero. Una vez sincronizados, podras entrar con esta cuenta.\n\nSi ${pendingDataBlock.previousUserName} no esta disponible, contacta a tu administrador.`)
             : ''
         }
         confirmText="Entendido"

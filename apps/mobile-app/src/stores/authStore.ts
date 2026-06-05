@@ -71,11 +71,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { getPendingRecordCount } = await import('@/db/database');
       const pendingCount = await getPendingRecordCount();
       if (pendingCount > 0) {
+        // count puede ser MAX_SAFE_INTEGER si WDB query fallo (fail-safe).
+        // Marcamos countUnknown=true para que el UI muestre mensaje generico
+        // en lugar de un numero absurdo.
+        const countUnknown = pendingCount === Number.MAX_SAFE_INTEGER;
+        const displayCount = countUnknown ? 0 : pendingCount;
         const err = new Error(
-          `PENDING_DATA_BLOCKS_USER_CHANGE: ${pendingCount} registros pendientes de ${prevUser!.email}`,
+          `PENDING_DATA_BLOCKS_USER_CHANGE: ${countUnknown ? 'estado WDB desconocido' : displayCount + ' registros pendientes'} de ${prevUser!.email}`,
         );
         (err as any).code = 'PENDING_DATA_BLOCKS_USER_CHANGE';
-        (err as any).pendingCount = pendingCount;
+        (err as any).pendingCount = displayCount;
+        (err as any).countUnknown = countUnknown;
         (err as any).previousUserEmail = prevUser!.email;
         (err as any).previousUserName = prevUser!.name;
         throw err;

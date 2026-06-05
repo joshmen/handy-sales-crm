@@ -142,9 +142,14 @@ export async function getPendingRecordCount(): Promise<number> {
     return counts.reduce((sum, c) => sum + c, 0);
   } catch (err) {
     if (__DEV__) console.warn('[getPendingRecordCount] error:', err);
-    // Fallar safe: si no podemos contar, asumir 0 para no bloquear login.
-    // El caller debe tener fallback si esto es critico para su flow.
-    return 0;
+    // Fail-safe HACIA bloquear data loss: si no podemos contar (WDB roto,
+    // adapter error), asumir que SI hay pendientes. Retornar MAX_SAFE_INTEGER
+    // hace que el caller (authStore.login) bloquee el cross-user login en
+    // lugar de destruir data potencialmente preservada. Trade-off: bloquear
+    // ocasionalmente login valido cuando DB esta en estado degradado, vs.
+    // perder data del user anterior. El primero es recoverable (reinicia
+    // app o contacta soporte), el segundo no.
+    return Number.MAX_SAFE_INTEGER;
   }
 }
 
