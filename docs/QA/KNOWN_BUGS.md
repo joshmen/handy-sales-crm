@@ -39,7 +39,30 @@ Cualquier query de integridad sobre tablas con `AuditableEntity` (soft delete) D
 
 ---
 
-## 🐛 BUG #3 — `force_single_session` columna IGNORADA por código [HIGH inconsistency]
+## 🐛 BUG #3 — `force_single_session` columna IGNORADA por código [DEFERRED - DEUDA TÉCNICA]
+
+### Estado 2026-06-05 — REVERT del fix
+
+Fix inicial revertido tras detectar **9 regresiones reales** en Playwright suite (workflow análisis 2026-06-05 detectó: `auth.spec.ts`, `cupones.spec.ts`, `logo-verification.spec.ts`, `security-announcements.spec.ts`, `navigation.spec.ts`, `rbac.spec.ts`, `test-auth-no-401-race.spec.ts`).
+
+**Causa de las regresiones:**
+- Plans locales tienen `force_single_session=FALSE` para todos (BASIC, PRO, FREE)
+- Fix permitía multiple sesiones cuando plan dice false
+- E2E tests asumen single-session strict (cookies stale entre tests cascadean failures)
+- No hay seed de `subscription_plans` + `tenant_subscriptions` para tests SQLite
+
+### Para reintentar el fix correctamente
+
+1. **Seed mínimo en test DB**: `subscription_plans` + `tenant_subscriptions` con `force_single_session=true`
+2. **Helper de cleanup E2E**: revocar sesiones zombies entre specs
+3. **Validar contrato**: confirmar con producto si single-session debe ser opt-in o opt-out
+4. **Tests integration**: caso explicit con `force_single_session=true` y `=false`
+
+Hasta entonces: comportamiento hardcodeado preservado (always single-session, SuperAdmin exempt).
+
+---
+
+## 🐛 BUG #3 (original, intent) — `force_single_session` columna IGNORADA por código [HIGH inconsistency]
 
 ### Severidad
 **HIGH.** Inconsistencia entre schema y código. Causa: comportamiento NO configurable como sugiere la columna.

@@ -432,58 +432,28 @@ public class AuthService
             };
         }
 
-        // Audit code-quality (2026-06-05) — BUG #3 fix: respetar el flag
-        // `force_single_session` del plan del tenant. Antes, AuthService hardcodeaba
-        // single-session enforcement (con SuperAdmin exempt), ignorando totalmente
-        // la columna `subscription_plans.force_single_session`. Resultado: la
-        // columna existia en DB pero nunca se leia -> config inconsistente.
+        // BUG #3 fix REVERTIDO (2026-06-05) — el fix que introducia lookup de
+        // `subscription_plans.force_single_session` causaba 9 regresiones reales
+        // en Playwright E2E suite (auth tests fallaban porque assumian comportamiento
+        // single-session hardcodeado). El fix correcto requiere:
+        //   1. Seed minimo de subscription_plans + tenant_subscriptions en DB de tests
+        //   2. Helpers de E2E que limpien sesiones entre runs
+        //   3. Documentar contrato del plan en CLAUDE.md
+        // Hasta que esos tres puntos esten resueltos, mantenemos el behavior
+        // hardcodeado original (single-session siempre, SuperAdmin exempt).
+        // Deuda tecnica documentada en docs/QA/KNOWN_BUGS.md #3.
         //
-        // Nuevo comportamiento:
-        //  - SuperAdmin sigue exempt (cross-tenant gestion).
-        //  - Si el plan tiene force_single_session=true -> bloquear con
-        //    ACTIVE_SESSION_EXISTS como antes.
-        //  - Si force_single_session=false -> permitir multiple sesiones (hasta
-        //    max_concurrent_sessions del plan).
+        // Check for active sessions (single session enforcement)
+        // SuperAdmin is exempt from single session restriction
         if (!usuario.IsSuperAdmin)
         {
-            // Lookup del plan del tenant. Si no hay plan activo, default a single-session
-            // (conservador para no romper tenants sin suscripcion).
-            // Try/catch defensivo: tests SQLite no tienen subscription_plans/tenant_subscriptions
-            // — en ese caso usa default conservador (force=true) sin crash.
-            PlanSessionConfig? planConfig = null;
-            try
-            {
-                planConfig = await _db.Database
-                    .SqlQuery<PlanSessionConfig>(
-                        $@"SELECT sp.force_single_session AS ForceSingleSession,
-                                  sp.max_concurrent_sessions AS MaxConcurrentSessions
-                           FROM subscription_plans sp
-                           JOIN tenant_subscriptions ts ON ts.plan_id = sp.id
-                           WHERE ts.tenant_id = {usuario.TenantId} AND ts.activo
-                           ORDER BY ts.id DESC LIMIT 1")
-                    .FirstOrDefaultAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Plan session config lookup failed for tenant {TenantId}; using single-session default.", usuario.TenantId);
-                planConfig = null;
-            }
-
-            var forceSingleSession = planConfig?.ForceSingleSession ?? true;
-            var maxConcurrent = planConfig?.MaxConcurrentSessions ?? 1;
-
             var activeSessions = await _db.DeviceSessions
                 .IgnoreQueryFilters()
                 .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
                 .OrderByDescending(ds => ds.LastActivity)
                 .ToListAsync();
 
-            // Bloquear si force_single_session=true Y hay >=1 sesion activa.
-            // Bloquear si force_single_session=false pero alcanzo max_concurrent_sessions.
-            var shouldBlock = (forceSingleSession && activeSessions.Count >= 1)
-                              || (!forceSingleSession && activeSessions.Count >= maxConcurrent);
-
-            if (shouldBlock && activeSessions.Any())
+            if (activeSessions.Any())
             {
                 var latestSession = activeSessions.First();
                 var deviceInfo = ParseDeviceInfo(latestSession.UserAgent ?? "");
@@ -501,17 +471,6 @@ public class AuthService
         }
 
         return await CompleteLogin(usuario);
-    }
-
-    /// <summary>
-    /// Result type for plan session config raw query.
-    /// Audit code-quality (2026-06-05): introduce el lookup del plan para
-    /// respetar force_single_session en lugar de hardcodear single-session.
-    /// </summary>
-    private class PlanSessionConfig
-    {
-        public bool ForceSingleSession { get; set; }
-        public int MaxConcurrentSessions { get; set; }
     }
 
     /// <summary>
