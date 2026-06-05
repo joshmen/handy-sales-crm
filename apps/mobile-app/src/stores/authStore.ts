@@ -7,6 +7,25 @@ import { setAccessToken, authEventEmitter } from '@/api/client';
 import { queryClient } from '@/providers/QueryProvider';
 import { syncCursors } from '@/sync/cursors';
 
+/**
+ * Sprint 6 audit code-quality: helper centralizado para persistir el flag
+ * SESSION_EXPIRED en SecureStore. Antes habia 4 instancias duplicadas:
+ *  - L111 (login fresh -> false)
+ *  - L156 (logout -> false)
+ *  - L320 (sessionRevoked emit -> true)
+ *  - L336 (forceLogout legacy -> true)
+ * Todas con .catch(() => {}) silencioso identico.
+ * Centralizar permite cambiar el handling (telemetria, retry) en un lugar.
+ */
+function persistSessionExpired(expired: boolean): void {
+  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, expired ? 'true' : 'false').catch((e) => {
+    // Silencioso: si SecureStore falla aqui, el flag in-memory sigue siendo
+    // correcto y restoreSession en next launch tomara default false (safe).
+    // No re-throw: nunca queremos bloquear auth flow por persistencia secundaria.
+    if (__DEV__) console.warn('[persistSessionExpired] secureStorage.set failed:', e);
+  });
+}
+
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
@@ -108,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     ]);
 
     // Persistir SESSION_EXPIRED=false (login fresh limpia el flag persistido).
-    secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'false').catch(() => {});
+    persistSessionExpired(false);
 
     if (isDifferentUser) {
       // Full reset: query cache, sync cursors y WDB local. El nuevo user
@@ -153,7 +172,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // entraría a login (correcto), pero al loguear se sentaba el flag en false
     // por la persistencia de login(); de todas formas escribimos explícitamente
     // aquí como defense-in-depth para el hard logout path.
-    secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'false').catch(() => {});
+    persistSessionExpired(false);
     // Audit 2026-06-01 (v5) — SEC CRIT: replicar el patrón de B1 del v4 (login()).
     // logout() es la otra vía por la que un device puede cambiar de user (caso:
     // admin desvincula device → Alert → logout(); o user tappea "Cerrar sesión"
@@ -317,7 +336,8 @@ authEventEmitter.on('sessionRevoked', () => {
   useAuthStore.setState({ sessionExpired: true });
   // Audit 2026-06-01 (v4) — persistir el flag para que cold-start respete el
   // estado revocado y no monte (tabs) con tokens stale (ver restoreSession).
-  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'true').catch(() => {});
+  // Sprint 6 audit: persistSessionExpired helper centralizado.
+  persistSessionExpired(true);
 });
 
 // Backward-compat: handler legacy 'forceLogout' redirige a soft signal
@@ -333,5 +353,5 @@ authEventEmitter.on('sessionRevoked', () => {
 // `sessionExpired=true`, NO tocamos `isAuthenticated` (preservamos soft).
 authEventEmitter.on('forceLogout', () => {
   useAuthStore.setState({ sessionExpired: true });
-  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'true').catch(() => {});
+  persistSessionExpired(true);
 });
