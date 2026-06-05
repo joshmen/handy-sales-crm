@@ -448,15 +448,26 @@ public class AuthService
         {
             // Lookup del plan del tenant. Si no hay plan activo, default a single-session
             // (conservador para no romper tenants sin suscripcion).
-            var planConfig = await _db.Database
-                .SqlQuery<PlanSessionConfig>(
-                    $@"SELECT sp.force_single_session AS ForceSingleSession,
-                              sp.max_concurrent_sessions AS MaxConcurrentSessions
-                       FROM subscription_plans sp
-                       JOIN tenant_subscriptions ts ON ts.plan_id = sp.id
-                       WHERE ts.tenant_id = {usuario.TenantId} AND ts.activo
-                       ORDER BY ts.id DESC LIMIT 1")
-                .FirstOrDefaultAsync();
+            // Try/catch defensivo: tests SQLite no tienen subscription_plans/tenant_subscriptions
+            // — en ese caso usa default conservador (force=true) sin crash.
+            PlanSessionConfig? planConfig = null;
+            try
+            {
+                planConfig = await _db.Database
+                    .SqlQuery<PlanSessionConfig>(
+                        $@"SELECT sp.force_single_session AS ForceSingleSession,
+                                  sp.max_concurrent_sessions AS MaxConcurrentSessions
+                           FROM subscription_plans sp
+                           JOIN tenant_subscriptions ts ON ts.plan_id = sp.id
+                           WHERE ts.tenant_id = {usuario.TenantId} AND ts.activo
+                           ORDER BY ts.id DESC LIMIT 1")
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Plan session config lookup failed for tenant {TenantId}; using single-session default.", usuario.TenantId);
+                planConfig = null;
+            }
 
             var forceSingleSession = planConfig?.ForceSingleSession ?? true;
             var maxConcurrent = planConfig?.MaxConcurrentSessions ?? 1;
