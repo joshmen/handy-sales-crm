@@ -157,7 +157,7 @@ public static class DashboardEndpoints
             {
                 // Super Admin ve toda la actividad
             }
-            else if (currentTenant.IsAdmin)
+            else if (currentTenant.IsAdminOrAbove)
             {
                 query = query.Where(a => a.TenantId == currentTenant.TenantId);
             }

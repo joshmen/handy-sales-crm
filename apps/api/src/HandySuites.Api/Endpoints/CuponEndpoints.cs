@@ -163,7 +163,7 @@ public static class CuponEndpoints
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] HandySuitesDbContext db)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var codigo = request.Codigo?.Trim().ToUpper();

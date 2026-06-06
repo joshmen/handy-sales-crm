@@ -181,7 +181,7 @@ public static class ImpersonationEndpoints
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10) =>
         {
-            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var filter = new ImpersonationHistoryFilter

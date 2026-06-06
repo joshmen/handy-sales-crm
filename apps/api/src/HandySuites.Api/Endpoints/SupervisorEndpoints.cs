@@ -71,7 +71,7 @@ public static class SupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsAdmin)
+            if (!tenant.IsAdminOrAbove)
                 return Results.Forbid();
 
             var vendedores = await db.Usuarios
@@ -102,7 +102,7 @@ public static class SupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsAdmin)
+            if (!tenant.IsAdminOrAbove)
                 return Results.Forbid();
 
             // Verify supervisor exists and belongs to tenant
@@ -140,7 +140,7 @@ public static class SupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsAdmin)
+            if (!tenant.IsAdminOrAbove)
                 return Results.Forbid();
 
             var vendedor = await db.Usuarios
@@ -237,7 +237,7 @@ public static class SupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsAdmin)
+            if (!tenant.IsAdminOrAbove)
                 return Results.Forbid();
 
             var vendedores = await db.Usuarios

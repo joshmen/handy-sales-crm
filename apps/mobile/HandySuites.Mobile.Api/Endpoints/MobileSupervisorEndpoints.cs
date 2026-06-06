@@ -21,7 +21,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -32,7 +32,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null);
 
-            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
             {
                 // Excluir a uno mismo y a otros admins; mostrar supervisores y vendedores
                 baseQuery = baseQuery.Where(u =>
@@ -94,7 +94,7 @@ public static class MobileSupervisorEndpoints
             ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -109,7 +109,7 @@ public static class MobileSupervisorEndpoints
             var mesEndUtc = await tenantTzSvc.ConvertTenantDateToUtcAsync(mesEnd);
 
             List<int> allIds;
-            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
             {
                 allIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null && u.Activo)
@@ -198,7 +198,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -261,7 +261,7 @@ public static class MobileSupervisorEndpoints
             ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -269,7 +269,7 @@ public static class MobileSupervisorEndpoints
             var (hoyStartUtc, hoyEndUtc) = await tenantTzSvc.GetTenantDayWindowUtcAsync();
 
             List<int> allIds;
-            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
             {
                 allIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null && u.Activo)
@@ -381,7 +381,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -416,7 +416,7 @@ public static class MobileSupervisorEndpoints
                 .Where(u => u.Id == id
                          && u.TenantId == tenant.TenantId
                          && u.EliminadoEn == null);
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 vendedorQuery = vendedorQuery.Where(u => u.SupervisorId == supervisorId);
 
             var vendedorBase = await vendedorQuery
@@ -657,7 +657,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             // Calcular ventana UTC del día local del tenant (TZ-aware).
@@ -750,7 +750,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -800,7 +800,7 @@ public static class MobileSupervisorEndpoints
                           && pe.FechaPedido >= startUtc && pe.FechaPedido < endUtc
                           && pe.Activo);
 
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
             {
                 var subordinadosIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)
@@ -851,7 +851,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -895,7 +895,7 @@ public static class MobileSupervisorEndpoints
                           && co.FechaCobro >= startUtc && co.FechaCobro < endUtc
                           && co.Activo);
 
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
             {
                 var subordinadosIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)

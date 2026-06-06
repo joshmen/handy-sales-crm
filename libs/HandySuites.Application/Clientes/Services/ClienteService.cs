@@ -35,7 +35,7 @@ public class ClienteService
         //   ADMIN/SUPER_ADMIN → acceso total
         //   SUPERVISOR        → su equipo (subordinados + sí mismo)
         //   VENDEDOR          → solo clientes asignados a él
-        if (_tenant.IsAdmin || _tenant.IsSuperAdmin) return cliente;
+        if (_tenant.IsAdminOrAbove || _tenant.IsSuperAdmin) return cliente;
 
         if (_tenant.IsSupervisor)
         {
@@ -128,7 +128,7 @@ public class ClienteService
             subordinadoIds.Add(supervisorId);
             filterByVendedorIds = subordinadoIds;
         }
-        else if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        else if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 filtro.VendedorId = vendedorId;

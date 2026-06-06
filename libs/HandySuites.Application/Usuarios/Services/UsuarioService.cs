@@ -86,7 +86,7 @@ public class UsuarioService
         // Authorization base: solo Admin/SuperAdmin/Supervisor pueden crear
         // usuarios. La jerarquía exacta de qué rol puede asignar qué la
         // resuelve RoleHierarchy.CanCreateRole abajo.
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor)
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor)
             throw new UnauthorizedAccessException("No tienes permisos para crear usuarios");
 
         var rolUpper = (dto.Rol ?? string.Empty).ToUpperInvariant();
@@ -194,7 +194,7 @@ public class UsuarioService
             usuarios = await _repo.ObtenerTodosAsync();
         }
         // Admin normal solo ve usuarios VENDEDOR de su tenant (no otros admins)
-        else if (_tenant.IsAdmin)
+        else if (_tenant.IsAdminOrAbove)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
             usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
@@ -240,7 +240,7 @@ public class UsuarioService
             usuarios = await _repo.ObtenerTodosAsync();
         }
         // Admin normal solo ve usuarios VENDEDOR de su tenant (no otros admins)
-        else if (_tenant.IsAdmin)
+        else if (_tenant.IsAdminOrAbove)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
             usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
@@ -288,7 +288,7 @@ public class UsuarioService
             return null;
 
         // Verificar permisos
-        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdmin || usuario.TenantId != _tenant.TenantId))
+        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdminOrAbove || usuario.TenantId != _tenant.TenantId))
         {
             throw new UnauthorizedAccessException("No tienes permisos para ver este usuario");
         }
@@ -312,7 +312,7 @@ public class UsuarioService
             return false;
 
         // Verificar permisos
-        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdmin || usuario.TenantId != _tenant.TenantId))
+        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdminOrAbove || usuario.TenantId != _tenant.TenantId))
         {
             throw new UnauthorizedAccessException("No tienes permisos para actualizar este usuario");
         }
@@ -391,7 +391,7 @@ public class UsuarioService
             return new EliminarUsuarioResult(false, Error: "Usuario no encontrado");
 
         // Validar permisos
-        if (!_tenant.IsSuperAdmin && !(_tenant.IsAdmin && usuario.TenantId == _tenant.TenantId))
+        if (!_tenant.IsSuperAdmin && !(_tenant.IsAdminOrAbove && usuario.TenantId == _tenant.TenantId))
             throw new UnauthorizedAccessException("No tienes permisos para eliminar este usuario");
 
         // Regla: no permitir borrar usuario con pedidos activos creados por él
@@ -420,7 +420,7 @@ public class UsuarioService
                 return null;
 
             // Verificar permisos - usuario solo puede cambiar su propio avatar
-            if (_tenant.UserId != usuarioId.ToString() && !_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+            if (_tenant.UserId != usuarioId.ToString() && !_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
             {
                 throw new UnauthorizedAccessException("Solo puedes cambiar tu propio avatar");
             }
@@ -465,7 +465,7 @@ public class UsuarioService
                 return false;
 
             // Verificar permisos
-            if (_tenant.UserId != usuarioId.ToString() && !_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+            if (_tenant.UserId != usuarioId.ToString() && !_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
             {
                 throw new UnauthorizedAccessException("Solo puedes eliminar tu propio avatar");
             }
@@ -496,7 +496,7 @@ public class UsuarioService
             return false;
 
         // Verificar permisos
-        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdmin || usuario.TenantId != _tenant.TenantId))
+        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdminOrAbove || usuario.TenantId != _tenant.TenantId))
         {
             throw new UnauthorizedAccessException("No tienes permisos para activar este usuario");
         }
@@ -513,7 +513,7 @@ public class UsuarioService
             return false;
 
         // Verificar permisos
-        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdmin || usuario.TenantId != _tenant.TenantId))
+        if (!_tenant.IsSuperAdmin && (!_tenant.IsAdminOrAbove || usuario.TenantId != _tenant.TenantId))
         {
             throw new UnauthorizedAccessException("No tienes permisos para desactivar este usuario");
         }
@@ -603,7 +603,7 @@ public class UsuarioService
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo)
     {
-        if (!_tenant.IsSuperAdmin && !_tenant.IsAdmin)
+        if (!_tenant.IsSuperAdmin && !_tenant.IsAdminOrAbove)
         {
             throw new UnauthorizedAccessException("No tienes permisos para cambiar estado de usuarios");
         }
@@ -616,7 +616,7 @@ public class UsuarioService
         // Apply tenant-based security filtering
         if (!_tenant.IsSuperAdmin)
         {
-            if (!_tenant.IsAdmin)
+            if (!_tenant.IsAdminOrAbove)
             {
                 throw new UnauthorizedAccessException("No tienes permisos para buscar usuarios");
             }
@@ -642,7 +642,7 @@ public class UsuarioService
 
     public async Task<List<UsuarioUbicacionDto>> ObtenerUbicacionesAsync()
     {
-        if (!_tenant.IsSuperAdmin && !_tenant.IsAdmin)
+        if (!_tenant.IsSuperAdmin && !_tenant.IsAdminOrAbove)
             throw new UnauthorizedAccessException("No tienes permisos para ver ubicaciones");
 
         return await _repo.ObtenerUbicacionesAsync(_tenant.TenantId);

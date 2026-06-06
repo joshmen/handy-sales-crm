@@ -177,7 +177,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         try
@@ -206,7 +206,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var tenant = await db.Tenants
@@ -233,7 +233,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         try
@@ -251,7 +251,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         try
@@ -270,7 +270,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         try
@@ -295,7 +295,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var tenant = await db.Tenants
@@ -322,7 +322,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var tenant = await db.Tenants
@@ -348,7 +348,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var tenant = await db.Tenants
@@ -374,7 +374,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ISubscriptionEnforcementService enforcement,
         [FromServices] HandySuitesDbContext db)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var result = await enforcement.CanUsarTimbreAsync(currentTenant.TenantId);
@@ -397,7 +397,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ISubscriptionEnforcementService enforcement)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         await enforcement.RegistrarTimbreUsadoAsync(currentTenant.TenantId);
@@ -410,7 +410,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] HandySuitesDbContext db,
         [FromServices] IConfiguration config)
     {
-        if (!currentTenant.IsAdmin)
+        if (!currentTenant.IsAdminOrAbove)
             return Results.Forbid();
 
         // Validate package from DB
@@ -484,7 +484,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] HandySuitesDbContext db)
     {
-        if (!currentTenant.IsAdmin)
+        if (!currentTenant.IsAdminOrAbove)
             return Results.Forbid();
 
         var purchases = await db.TimbrePurchases

@@ -22,7 +22,7 @@ public static class DatosEmpresaEndpoints
             [FromServices] IDatosEmpresaService service,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var result = await service.GetAsync();
@@ -44,7 +44,7 @@ public static class DatosEmpresaEndpoints
             [FromServices] IHubContext<NotificationHub> hubContext,
             CancellationToken ct) =>
         {
-            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var userIdClaim = context.User.FindFirst("userId")?.Value

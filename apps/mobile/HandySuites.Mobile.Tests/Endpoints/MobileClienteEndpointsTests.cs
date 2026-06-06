@@ -158,7 +158,7 @@ public class MobileClienteEndpointsTests
     public async Task ObtenerPorIdAsync_ReturnsClient_WhenExists()
     {
         // Arrange — admin tiene acceso a cualquier cliente
-        _tenantMock.Setup(t => t.IsAdmin).Returns(true);
+        _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(true);
         _repoMock.Setup(r => r.ObtenerPorIdAsync(1, 1))
             .ReturnsAsync(_testClientes.First());
 
@@ -175,7 +175,7 @@ public class MobileClienteEndpointsTests
     public async Task ObtenerPorIdAsync_ReturnsNull_WhenNotExists()
     {
         // Arrange
-        _tenantMock.Setup(t => t.IsAdmin).Returns(true);
+        _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(true);
         _repoMock.Setup(r => r.ObtenerPorIdAsync(999, 1))
             .ReturnsAsync((ClienteDto?)null);
 
@@ -197,7 +197,7 @@ public class MobileClienteEndpointsTests
             RFC = "XAXX010101000", Correo = "x@x.com",
             Telefono = "555", Direccion = "Calle 1", Activo = true
         };
-        _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+        _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(false);
         _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
         _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
         _tenantMock.Setup(t => t.UserId).Returns("42");
@@ -220,7 +220,7 @@ public class MobileClienteEndpointsTests
             RFC = "XAXX010101000", Correo = "x@x.com",
             Telefono = "555", Direccion = "Calle 1", Activo = true
         };
-        _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+        _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(false);
         _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
         _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
         _tenantMock.Setup(t => t.UserId).Returns("42");
@@ -289,7 +289,7 @@ public class MobileClienteEndpointsTests
     public async Task ObtenerClienteUbicacion_ReturnsLocationData()
     {
         // Arrange — admin tiene acceso a cualquier cliente
-        _tenantMock.Setup(t => t.IsAdmin).Returns(true);
+        _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(true);
         _repoMock.Setup(r => r.ObtenerPorIdAsync(1, 1))
             .ReturnsAsync(_testClientes.First());
 

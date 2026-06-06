@@ -28,7 +28,7 @@ public class CobroService
     public Task<List<CobroDto>> ObtenerCobrosAsync(int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
     {
         // RBAC: Vendedor solo ve sus cobros
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 usuarioId = vendedorId;

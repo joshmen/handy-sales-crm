@@ -37,7 +37,7 @@ public static class ActivityLogEndpoints
         [FromQuery] int? tenantId = null)
     {
         // Only Admin and SuperAdmin can see activity logs
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -109,7 +109,7 @@ public static class ActivityLogEndpoints
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var tenantId = currentTenant.TenantId;
