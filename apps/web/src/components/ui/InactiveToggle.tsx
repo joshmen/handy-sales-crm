@@ -20,6 +20,10 @@ export const InactiveToggle: React.FC<InactiveToggleProps> = ({
     <div className={`flex items-center gap-2 ${className ?? ''}`}>
       <span className="text-xs text-foreground/70">{resolvedLabel}</span>
       <button
+        type="button"
+        role="switch"
+        aria-checked={value}
+        aria-label={resolvedLabel}
         onClick={() => onChange(!value)}
         className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
           value ? 'bg-green-500' : 'bg-surface-3'
@@ -27,6 +31,7 @@ export const InactiveToggle: React.FC<InactiveToggleProps> = ({
         title={resolvedLabel}
       >
         <span
+          aria-hidden="true"
           className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ${
             value ? 'translate-x-4' : 'translate-x-0'
           }`}
