@@ -97,7 +97,13 @@ test.describe('Histórico GPS — página índice /team/gps', () => {
 test.describe('Histórico GPS — página detalle /team/[id]/gps', () => {
   test('carga mapa + lista + KPI bar para vendedor 5', async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/team/5/gps');
+    // Audit code-quality 2026-06-06: pasar `dia` explícito en TZ del tenant
+    // (Mazatlán, UTC-7). Sin esto, en madrugada UTC el page request inicial
+    // usa fallback Mexico_City y pide día equivocado → 0 eventos hasta que
+    // settings carga y re-fire del effect. La seed data está en Mazatlán
+    // today para ese test, así garantizamos coincidencia.
+    const mzToday = new Date(Date.now() - 7 * 3600_000).toISOString().slice(0, 10);
+    await page.goto(`/team/5/gps?dia=${mzToday}`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
 

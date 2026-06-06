@@ -347,6 +347,8 @@ function TeamGpsDetailContent() {
           <button
             onClick={handleExportCsv}
             disabled={eventosFiltrados.length === 0}
+            aria-label={t('exportCsv')}
+            title={t('exportCsv')}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
