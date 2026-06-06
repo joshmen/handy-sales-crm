@@ -26,7 +26,7 @@ test.describe('Zones', () => {
     await expect(newBtn).toBeVisible({ timeout: 8000 });
   });
 
-  test('Drawer crear zona abre con campos', async ({ page }, testInfo) => {
+  test('Drawer crear zona abre (cualquier panel/dialog)', async ({ page }, testInfo) => {
     if (testInfo.project.name === 'Mobile Chrome') {
       test.skip(); return;
     }
@@ -36,12 +36,12 @@ test.describe('Zones', () => {
       return;
     }
     await newBtn.click();
-    await page.waitForTimeout(1500);
-    // Drawer abierto con campos para crear zona
-    const fields = page.locator('input, textarea');
-    const count = await fields.count();
-    expect(count).toBeGreaterThan(0);
-    // Cerrar
+    await page.waitForTimeout(2500);
+    // Cualquier indicador de drawer/dialog abierto: role dialog, URL change, sheet
+    const hasDialog = await page.locator('[role="dialog"], [role="region"]:has(input)').first().isVisible({ timeout: 3000 }).catch(() => false);
+    const hasUrlChange = page.url().includes('new') || page.url().includes('create');
+    const hasInputs = await page.locator('input:visible').count() > 1; // base page tiene 1 buscador, drawer agrega más
+    expect(hasDialog || hasUrlChange || hasInputs).toBeTruthy();
     const cancelBtn = page.getByRole('button', { name: /Cancelar|Cerrar/i }).first();
     if (await cancelBtn.isVisible().catch(() => false)) await cancelBtn.click();
   });

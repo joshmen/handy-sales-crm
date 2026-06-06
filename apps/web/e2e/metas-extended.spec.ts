@@ -25,15 +25,15 @@ test.describe('Metas — vistas y filtros', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('Progreso de meta visualizado (barra o %)', async ({ page }) => {
-    // Buscar progress bar o porcentaje
-    const progressIndicators = page.locator('[role="progressbar"], text=/%/');
-    const count = await progressIndicators.count();
-    if (count === 0) {
+  test('Progreso de meta visualizado (cuando hay metas)', async ({ page }) => {
+    const progressIndicators = page.locator('[role="progressbar"]');
+    const percentText = page.locator('text=/%/').first();
+    const hasProgress = await progressIndicators.count() > 0 || await percentText.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!hasProgress) {
       test.skip();
       return;
     }
-    expect(count).toBeGreaterThan(0);
+    expect(hasProgress).toBeTruthy();
   });
 
   test('Filtro vendedor presente', async ({ page }) => {
