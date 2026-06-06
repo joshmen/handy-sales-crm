@@ -75,6 +75,21 @@ for (const cat of CATALOGOS) {
       await page.waitForTimeout(400);
     }
 
+    // Audit code-quality 2026-06-06 — Bug #14/#15: tras el fix UX de Bugs
+    // #9/#10, los catalogos con TODOS los items inactivos (caso seed jeyma:
+    // 9 listas-precios + 7 descuentos inactivos) renderean un empty state
+    // con CTA "Mostrar inactivas"/"Mostrar inactivos" en vez de la grid.
+    // Si esa CTA aparece, click para mostrar inactivos antes de buscar
+    // toggles (sin esto el test se queda en 0 toggles → timeout).
+    const showInactiveCTA = page.getByRole('button', {
+      name: /Mostrar inactiv[oa]s|Show inactive/i,
+    }).first();
+    if (await showInactiveCTA.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await showInactiveCTA.click().catch(() => {});
+      await page.waitForTimeout(800);
+      console.log(`[${cat.nombre}] CTA "Mostrar inactivos" clickeado — empty state resuelto`);
+    }
+
     // ActiveToggle renderiza title con "ctivar" — "Activar"/"Desactivar"
     // (default) o variantes i18n ("Desactivar producto", "Activar categoría").
     // Substring match cubre todos los casos.
