@@ -33,7 +33,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
-import { database } from '@/db/database';
+import { database, isDatabaseEncrypted, verifyDatabaseEncryption } from '@/db/database';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
@@ -345,6 +345,33 @@ export default function RootLayout() {
   // funcione en RN. Una sola registración por sesión de app.
   useEffect(() => {
     return setupTanStackFocusBridge();
+  }, []);
+
+  // Sprint pre-prod #7+#8 audit 2026-06-06: verificacion SQLCipher al boot.
+  //
+  // La passphrase ya se resolvio en database.ts via top-level await; aqui
+  // confirmamos que la WDB abre con la passphrase nueva (caso normal) o,
+  // si el archivo era plaintext de un build previo, ejecutamos el reset
+  // one-shot + full sync (migracion plaintext->encrypted).
+  //
+  // Reporta el estado de encryption via crashReporter para tracking de
+  // adoption en field — sin esto, no podemos confirmar que builds EAS
+  // tengan SQLCipher activo.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const ok = await verifyDatabaseEncryption();
+        crashReporter.reportEvent('db_encryption_status', {
+          encrypted: isDatabaseEncrypted,
+          reset_needed: !ok,
+        });
+        if (!ok && __DEV__) {
+          console.warn('[RootLayout] WDB reset por migracion plaintext->encrypted; full sync requerido en proximo login');
+        }
+      } catch (err: any) {
+        crashReporter.reportCrash(err, 'db_encryption_verify', 'ERROR');
+      }
+    })();
   }, []);
 
   const handleAppReady = useCallback((firstSync?: boolean) => {
