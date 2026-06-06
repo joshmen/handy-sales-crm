@@ -2268,6 +2268,8 @@
       },
       "noUsers": "No hay usuarios",
       "noUsersDesc": "Crea un nuevo usuario para comenzar",
+      "loadingUsers": "Cargando usuarios...",
+      "loadError": "Error al cargar usuarios",
       "newUser": "Nuevo usuario",
       "location": "Ubicacion",
       "distance": "Distancia",

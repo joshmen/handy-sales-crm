@@ -2315,6 +2315,8 @@
       "noSession": "No session",
       "noUsers": "No users",
       "createUserToStart": "Create a new user to get started",
+      "loadingUsers": "Loading users...",
+      "loadError": "Error loading users",
       "superAdmin": "Super Admin",
       "companyAdmin": "Company administrator",
       "supervisor": {

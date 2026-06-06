@@ -62,12 +62,17 @@ test.describe('Team — invite-link create user flow', () => {
 
   test('toggle sin-email muestra password + deshabilita email', async ({ page }) => {
     await page.getByRole('button', { name: /nuevo usuario/i }).first().click();
-    // Audit code-quality 2026-06-05: esperar a que el modal animado termine de abrir
-    // antes de buscar el checkbox.
+    // Esperar a que el heading del modal esté pintado: en Mobile Chrome el portal +
+    // backdrop-blur tarda y disparar .check() antes deja el onChange sin enlazar.
+    await expect(page.getByRole('heading', { name: /crear/i })).toBeVisible({ timeout: 10000 });
+
     const sinEmailCheckbox = page.getByTestId('create-user-sin-email');
-    await sinEmailCheckbox.waitFor({ state: 'visible', timeout: 10000 });
-    await sinEmailCheckbox.check({ force: true });
-    await page.waitForTimeout(500);
+    await expect(sinEmailCheckbox).toBeVisible();
+    // .click() en input native dispara onChange con e.target.checked=true de forma
+    // determinística. .check({force:true}) bypass actionability y en Mobile puede
+    // generar pointerdown+click que el handler stale ignora.
+    await sinEmailCheckbox.click();
+    await expect(sinEmailCheckbox).toBeChecked();
 
     // Password field debe aparecer
     const passwordField = page.getByTestId('create-user-password');
