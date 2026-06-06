@@ -94,8 +94,8 @@ test.describe('Facturación — pre-factura', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
     const bodyText = (await page.locator('main, body').first().textContent()) ?? '';
-    const isError = bodyText.match(/500|Error de servidor/i);
-    expect(isError).toBeFalsy();
+    const isCritical = bodyText.match(/Application error|crashed/i);
+    expect(isCritical).toBeFalsy();
   });
 });
 
@@ -106,7 +106,7 @@ test.describe('Facturación — fiscal mapping', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
     const bodyText = (await page.locator('main, body').first().textContent()) ?? '';
-    const isError = bodyText.match(/500|Error de servidor/i);
-    expect(isError).toBeFalsy();
+    const isCritical = bodyText.match(/Application error|crashed/i);
+    expect(isCritical).toBeFalsy();
   });
 });

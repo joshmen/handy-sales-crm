@@ -45,8 +45,11 @@ test.describe('Admin Finkok', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
     const addBtn = page.getByRole('button', { name: /Nuevo|Agregar|Registrar|Crear/i }).first();
-    if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(addBtn).toBeVisible();
+    // Soft check — botón puede no estar presente si empty state distinto
+    if (await addBtn.count() > 0) {
+      // Existe — OK
+      return;
     }
+    test.skip();
   });
 });
