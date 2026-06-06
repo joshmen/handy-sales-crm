@@ -37,15 +37,68 @@ test.describe('Reportes — index', () => {
     expect(linkCount > 0 || mainText.length > 500).toBeTruthy();
   });
 
+  test('Página /reports renderea los 16 cards esperados', async ({ page }) => {
+    // Bug #8: 4 reportes (efectividad-visitas, comisiones, rentabilidad-cliente,
+    // analisis-abc) estaban implementados pero no expuestos como cards UI.
+    // Este test bloquea cualquier regresión que vuelva a ocultarlos.
+    const expectedTitles = [
+      // General + Ventas (5)
+      /Dashboard Ejecutivo|Executive Dashboard/i,
+      /Ventas por Per[ií]odo|Sales by Period/i,
+      /Ventas por Vendedor|Sales by Vendor/i,
+      /Ventas por Producto|Sales by Product/i,
+      /Ventas por Zona|Sales by Zone/i,
+      // Clientes (2)
+      /Actividad de Clientes|Client Activity/i,
+      /Nuevos Clientes|New Clients/i,
+      // Inventario + Cobranza + Desempeño base (3)
+      /Inventario|Inventory/i,
+      /Cartera Vencida|Overdue/i,
+      /Cumplimiento de Metas|Goal Achievement/i,
+      // Análisis base (2)
+      /Comparativo|Comparative/i,
+      /Insights|Auto Insights/i,
+      // Los 4 nuevos (Bug #8)
+      /Efectividad de Visitas|Visit Effectiveness/i,
+      /Comisiones|Commissions/i,
+      /Rentabilidad por Cliente|Client Profitability/i,
+      /An[áa]lisis ABC|ABC Analysis/i,
+    ];
+
+    for (const titleRegex of expectedTitles) {
+      await expect(
+        page.getByRole('heading', { name: titleRegex, level: 3 }).first(),
+      ).toBeVisible({ timeout: 5000 });
+    }
+
+    // Verificar que el botón clickable existe para cada uno de los 4 nuevos
+    const newCardTitles = [
+      /Efectividad de Visitas|Visit Effectiveness/i,
+      /Comisiones|Commissions/i,
+      /Rentabilidad por Cliente|Client Profitability/i,
+      /An[áa]lisis ABC|ABC Analysis/i,
+    ];
+    for (const titleRegex of newCardTitles) {
+      const btn = page.locator('button', { has: page.getByRole('heading', { name: titleRegex, level: 3 }) }).first();
+      await expect(btn).toBeVisible();
+    }
+  });
+
   test('Premium gating UI (lock o badge) visible cuando aplica', async ({ page }) => {
-    // Soft check: si hay locks renderean correctamente, sino skip
-    const lockIcons = page.locator('[data-lock="true"], svg[aria-label*="lock" i], text=/Premium|Upgrade/i');
-    const count = await lockIcons.count();
+    // Audit code-quality 2026-06-06: Playwright NO acepta mezclar CSS selectors
+    // con engine selectors (text=...) en un mismo string comma-separated. Hay
+    // que sumar locators por separado y unirlos con .or().
+    const lockByData = page.locator('[data-lock="true"]');
+    const lockByAria = page.locator('svg[aria-label*="lock" i]');
+    const lockByText = page.getByText(/Premium|Upgrade/i);
+    const anyLock = lockByData.or(lockByAria).or(lockByText);
+    const count = await anyLock.count();
     if (count === 0) {
+      // Tenant no tiene gating activo en el seed actual — soft check
       test.skip();
       return;
     }
-    await expect(lockIcons.first()).toBeVisible();
+    await expect(anyLock.first()).toBeVisible();
   });
 });
 
