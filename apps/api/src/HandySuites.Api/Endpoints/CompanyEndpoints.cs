@@ -57,7 +57,7 @@ namespace HandySuites.Api.Endpoints
                 try
                 {
                     // Solo ADMIN y SUPER_ADMIN pueden modificar configuración de la empresa
-                    if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -102,7 +102,7 @@ namespace HandySuites.Api.Endpoints
                 try
                 {
                     // Solo ADMIN y SUPER_ADMIN pueden subir logo de la empresa
-                    if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -160,7 +160,7 @@ namespace HandySuites.Api.Endpoints
                 try
                 {
                     // Solo ADMIN y SUPER_ADMIN pueden eliminar logo de la empresa
-                    if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -216,7 +216,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // Solo Super Admin o Admin pueden inicializar carpetas
-                    if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -284,7 +284,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // Solo Super Admin o Admin pueden crear datos de facturación
-                    if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -323,7 +323,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // Solo Super Admin o Admin pueden actualizar datos de facturación
-                    if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -436,7 +436,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // ADMIN solo puede ver su propia empresa
-                    if (currentTenant.IsAdminOrAbove && company.TenantId == currentTenant.TenantId)
+                    if (currentTenant.IsStrictAdmin && company.TenantId == currentTenant.TenantId)
                     {
                         return Results.Ok(company);
                     }
@@ -525,7 +525,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // ADMIN solo puede actualizar su propia empresa
-                    if (currentTenant.IsAdminOrAbove && company.TenantId == currentTenant.TenantId)
+                    if (currentTenant.IsStrictAdmin && company.TenantId == currentTenant.TenantId)
                     {
                         var result = await companyService.UpdateAsync(id, userId, request);
                         return result != null

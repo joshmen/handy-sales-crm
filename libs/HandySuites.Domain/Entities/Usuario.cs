@@ -33,9 +33,15 @@ public class Usuario : AuditableEntity
     [NotMapped]
     public bool IsSuperAdmin => Rol == RoleNames.SuperAdmin;
 
-    /// <summary>True si <see cref="Rol"/> es ADMIN o SUPER_ADMIN.</summary>
+    /// <summary>
+    /// True si <see cref="Rol"/> es ADMIN o SUPER_ADMIN (NO incluye SUPERVISOR).
+    ///
+    /// Sprint pre-prod #11 audit 2026-06-06: renombrado desde IsAdmin para
+    /// distinguir de ICurrentTenant.IsAdminOrAbove que SI incluye SUPERVISOR.
+    /// Misma semantica que ICurrentTenant.IsStrictAdmin.
+    /// </summary>
     [NotMapped]
-    public bool IsAdminOrAbove => Rol == RoleNames.Admin || Rol == RoleNames.SuperAdmin;
+    public bool IsStrictAdmin => Rol == RoleNames.Admin || Rol == RoleNames.SuperAdmin;
 
     [Column("role_id")]
     public int? RoleId { get; set; }

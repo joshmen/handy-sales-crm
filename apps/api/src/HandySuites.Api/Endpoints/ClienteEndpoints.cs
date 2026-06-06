@@ -134,7 +134,7 @@ public static class ClienteEndpoints
             [FromServices] ClienteService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin && !currentTenant.IsSupervisor)
+            if (!currentTenant.IsStrictAdmin && !currentTenant.IsSupervisor)
                 return Results.Forbid();
 
             var aprobado = await servicio.AprobarProspectoAsync(id);
@@ -148,7 +148,7 @@ public static class ClienteEndpoints
             [FromServices] ClienteService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin && !currentTenant.IsSupervisor)
+            if (!currentTenant.IsStrictAdmin && !currentTenant.IsSupervisor)
                 return Results.Forbid();
 
             var rechazado = await servicio.RechazarProspectoAsync(id);
@@ -166,7 +166,7 @@ public static class ClienteEndpoints
             [FromServices] ClienteService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdminOrAbove && !currentTenant.IsSuperAdmin)
+            if (!currentTenant.IsStrictAdmin)
                 return Results.Forbid();
 
             if (dto.FromUsuarioId == dto.ToUsuarioId)

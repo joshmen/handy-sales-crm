@@ -197,7 +197,7 @@ public class UsuarioService
         else if (_tenant.IsAdminOrAbove)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
-            usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
+            usuarios = todosUsuarios.Where(u => !u.IsStrictAdmin).ToList();
         }
         // Usuarios normales no pueden ver otros usuarios
         else
@@ -243,7 +243,7 @@ public class UsuarioService
         else if (_tenant.IsAdminOrAbove)
         {
             var todosUsuarios = await _repo.ObtenerPorTenantAsync(_tenant.TenantId);
-            usuarios = todosUsuarios.Where(u => !u.IsAdminOrAbove).ToList();
+            usuarios = todosUsuarios.Where(u => !u.IsStrictAdmin).ToList();
         }
         // Usuarios normales no pueden ver otros usuarios
         else
@@ -322,7 +322,7 @@ public class UsuarioService
         // Previene que un admin bloquee a otro cambiando email/password.
         var currentUserId = int.TryParse(_tenant.UserId, out var cuid) ? cuid : 0;
         var isSelf = usuario.Id == currentUserId;
-        if (!_tenant.IsSuperAdmin && !isSelf && usuario.IsAdminOrAbove)
+        if (!_tenant.IsSuperAdmin && !isSelf && usuario.IsStrictAdmin)
         {
             throw new UnauthorizedAccessException("Solo el propio usuario o un SUPER_ADMIN puede modificar cuentas de administrador.");
         }

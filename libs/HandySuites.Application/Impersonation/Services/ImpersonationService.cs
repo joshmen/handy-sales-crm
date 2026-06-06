@@ -309,7 +309,7 @@ public class ImpersonationService : IImpersonationService
         {
             // Obtener admins activos del tenant target (sin filtro de tenant, ya que corremos en contexto SuperAdmin)
             var tenantUsers = await _usuarioRepository.ObtenerPorTenantSinFiltroAsync(session.TargetTenantId);
-            var admins = tenantUsers.Where(u => u.IsAdminOrAbove && u.Activo).ToList();
+            var admins = tenantUsers.Where(u => u.IsStrictAdmin && u.Activo).ToList();
 
             if (admins.Count == 0)
             {
