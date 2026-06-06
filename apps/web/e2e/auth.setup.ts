@@ -1,4 +1,35 @@
 import { test as setup, expect } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
+
+/**
+ * Audit code-quality (2026-06-05): cleanup sesiones zombies en la DB antes
+ * de cualquier setup. Single-session strict cascadea cuando sesiones de runs
+ * anteriores quedan activas. Esta funcion ejecuta SQL idempotente que mantiene
+ * solo la sesion mas reciente por usuario.
+ *
+ * Usa execFileSync con argument array (no shell interpolation) para evitar
+ * cualquier riesgo de command injection — el SQL es estatico pero seguimos
+ * la mejor practica documentada en security-guidance plugin.
+ */
+function cleanupZombieSessions(): void {
+  const sql = 'WITH ranked AS ('
+    + 'SELECT id, usuario_id, '
+    + 'ROW_NUMBER() OVER (PARTITION BY usuario_id ORDER BY creado_en DESC) AS rn '
+    + 'FROM "DeviceSessions" WHERE status=0 AND eliminado_en IS NULL'
+    + ') '
+    + 'UPDATE "DeviceSessions" SET status=4, actualizado_en=NOW() '
+    + 'WHERE id IN (SELECT id FROM ranked WHERE rn > 1);';
+  try {
+    execFileSync(
+      'docker',
+      ['exec', '-i', 'handysuites_postgres_dev', 'psql', '-U', 'handy_user', '-d', 'handy_erp', '-c', sql],
+      { stdio: 'pipe', timeout: 10000 },
+    );
+  } catch {
+    // No-op: si docker no esta o la query falla, continuamos con el setup.
+    // No queremos bloquear los tests por un cleanup opcional.
+  }
+}
 
 /**
  * Playwright Auth Setup — runs ONCE before all test projects.
@@ -18,6 +49,11 @@ setup('authenticate as admin', async ({ page, context }, testInfo) => {
   const isMobile = testInfo.project.name.includes('mobile');
   const email = isMobile ? 'e2e-mobile-admin@jeyma.com' : 'admin@jeyma.com';
   const statePath = isMobile ? 'e2e/.auth/admin-mobile.json' : 'e2e/.auth/admin-desktop.json';
+
+  // Audit code-quality (2026-06-05): cleanup automatico de sesiones zombies
+  // antes de cada setup. Sin esto, single-session strict bloquea login con
+  // ACTIVE_SESSION_EXISTS cuando hay sesiones de runs anteriores activas.
+  cleanupZombieSessions();
 
   // Audit code-quality (2026-06-05) — clear context state ANTES de cualquier
   // navegacion para evitar que cookies de runs anteriores hagan redirect a

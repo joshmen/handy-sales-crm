@@ -13,8 +13,16 @@ test('toggle promo desde UI admin', async ({ page }) => {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2500);
 
-  // ActiveToggle component renders <button title="Desactivar"> when active
-  const toggleButton = page.locator('button[title="Desactivar"]').first();
+  // Audit code-quality 2026-06-05: cerrar panel Ayuda si está abierto (mobile).
+  const closeAyuda = page.getByRole('button', { name: /cerrar panel de ayuda/i });
+  if (await closeAyuda.isVisible().catch(() => false)) {
+    await closeAyuda.click().catch(() => {});
+    await page.waitForTimeout(400);
+  }
+
+  // Audit code-quality 2026-06-05: filter :visible para mobile cards layout.
+  const toggleButton = page.locator('button[title="Desactivar"]:visible').first();
+  await toggleButton.scrollIntoViewIfNeeded().catch(() => {});
   const exists = await toggleButton.count();
   console.log(`Toggle activos visibles: ${exists}`);
 
@@ -29,7 +37,7 @@ test('toggle promo desde UI admin', async ({ page }) => {
     { timeout: 10_000 }
   );
 
-  await toggleButton.click();
+  await toggleButton.click({ force: true });
 
   const resp = await patchPromise;
   console.log(`PATCH ${resp.url()} → ${resp.status()}`);

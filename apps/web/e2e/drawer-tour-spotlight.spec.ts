@@ -36,7 +36,10 @@ async function setupTour(page: Page, path: string) {
   await fab.click({ force: true });
   await page.waitForTimeout(300);
 
-  const startBtn = page.getByRole('button', { name: 'Iniciar tour', exact: true });
+  // Tras click en FAB "Tour disponible" se abre modal popup con su propio botón
+  // "Iniciar tour interactivo". También hay otro botón con texto similar en el
+  // panel de ayuda lateral. Tomamos el último (modal aparece después).
+  const startBtn = page.getByRole('button', { name: /Iniciar tour( interactivo)?/i }).last();
   await startBtn.waitFor({ state: 'visible', timeout: 3000 });
   await startBtn.click();
   await page.waitForTimeout(500);

@@ -22,7 +22,7 @@ test.use({ navigationTimeout: 60000, actionTimeout: 30000 });
 test.describe('Team — invite-link create user flow', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/equipo');
+    await page.goto('/team');
   });
 
   test('opens modal sin campo password por default', async ({ page }) => {
@@ -62,8 +62,10 @@ test.describe('Team — invite-link create user flow', () => {
 
   test('toggle sin-email muestra password + deshabilita email', async ({ page }) => {
     await page.getByRole('button', { name: /nuevo usuario/i }).first().click();
-
+    // Audit code-quality 2026-06-05: esperar a que el modal animado termine de abrir
+    // antes de buscar testID adentro. checkbox aparece tras transición.
     const sinEmailCheckbox = page.getByTestId('create-user-sin-email');
+    await sinEmailCheckbox.waitFor({ state: 'visible', timeout: 10000 });
     await sinEmailCheckbox.check();
 
     // Password field debe aparecer
@@ -82,9 +84,18 @@ test.describe('Team — invite-link create user flow', () => {
     // loginAsAdmin → admin (no super_admin)
     await page.getByRole('button', { name: /nuevo usuario/i }).first().click();
 
-    // Tap dropdown rol — busca por placeholder "Seleccionar rol" o por label
-    const roleDropdown = page.locator('[role="combobox"]').first();
-    await roleDropdown.click();
+    // Audit code-quality 2026-06-05: esperar a que el modal termine de abrir.
+    // Dropdown rol vive dentro del modal — sin wait el .first() devuelve un
+    // combobox de filtros de la pagina y el dropdown abre vacio.
+    await page.getByRole('heading', { name: /crear nuevo usuario|crear usuario/i }).waitFor({ state: 'visible', timeout: 10000 });
+
+    // Tap dropdown rol DENTRO del modal. Localizar text label "Rol" + sibling
+    // combobox. El modal puede no ser role=dialog, usar scope amplio.
+    const rolLabel = page.getByText(/^Rol$/).last();
+    await rolLabel.scrollIntoViewIfNeeded().catch(() => {});
+    const roleDropdown = rolLabel.locator('xpath=following-sibling::*[1]//*[@role="combobox"] | following::*[@role="combobox"][1]').first();
+    await roleDropdown.click({ force: true });
+    await page.waitForTimeout(700);
 
     // ADMIN normal NO debe ver SUPER_ADMIN ni ADMIN como opciones
     // (filtro RoleHierarchy mirror del backend).

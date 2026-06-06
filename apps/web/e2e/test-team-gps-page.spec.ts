@@ -17,27 +17,37 @@ test.setTimeout(120_000);
  */
 
 test.describe('Histórico GPS — submenu Equipo', () => {
-  test('sidebar submenu Equipo expande con Miembros + Histórico GPS', async ({ page }) => {
+  test('sidebar submenu Equipo expande con Miembros + Histórico GPS', async ({ page }, testInfo) => {
     await loginAsAdmin(page);
     await page.goto('/team');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
 
-    // Click en Equipo del sidebar para expandir
-    const equipoBtn = page.locator('button').filter({ hasText: /^Equipo$/i }).first();
-    if (await equipoBtn.count() > 0) {
-      await equipoBtn.click().catch(() => {});
-      await page.waitForTimeout(500);
+    // Audit code-quality 2026-06-05: en Mobile el sidebar está colapsado por
+    // default. Abrir el menú hamburguesa antes de buscar Equipo.
+    if (testInfo.project.name === 'Mobile Chrome') {
+      const hamburger = page.getByRole('button', { name: /men[uú]|sidebar|navegaci[oó]n/i }).first();
+      if (await hamburger.isVisible().catch(() => false)) {
+        await hamburger.click().catch(() => {});
+        await page.waitForTimeout(500);
+      }
     }
 
-    // Verificar que aparecen los 2 subitems
-    const miembrosLink = page.locator('a[href="/team"]').filter({ hasText: /Miembros/i }).first();
+    // Audit code-quality 2026-06-05: cuando pathname=/team el submenu Equipo
+    // YA está expandido por default (initial state de Sidebar usa pathname).
+    // Click toggles → colapsa! Solo click si NO está ya visible.
     const gpsLink = page.locator('a[href="/team/gps"]').first();
-
-    await expect(gpsLink).toBeVisible({ timeout: 5000 });
+    const alreadyVisible = await gpsLink.isVisible({ timeout: 2000 }).catch(() => false);
+    if (!alreadyVisible) {
+      const equipoBtn = page.locator('aside button, nav button').filter({ hasText: /Equipo/i }).first();
+      if (await equipoBtn.count() > 0) {
+        await equipoBtn.scrollIntoViewIfNeeded().catch(() => {});
+        await equipoBtn.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(800);
+      }
+    }
+    await expect(gpsLink).toBeVisible({ timeout: 8000 });
     console.log('✅ Submenu Histórico GPS visible en sidebar');
-
-    await page.screenshot({ path: 'test-results/team-sidebar-submenu.png', fullPage: false });
   });
 });
 

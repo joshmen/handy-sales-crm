@@ -66,10 +66,22 @@ for (const cat of CATALOGOS) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2500);
 
+    // Audit code-quality 2026-06-05: en mobile el panel "Ayuda" abierto por default
+    // tapa la mitad inferior del viewport y los toggles quedan off-screen. Cerrar
+    // el panel si está abierto antes de buscar toggles.
+    const closeAyuda = page.getByRole('button', { name: /cerrar panel de ayuda/i });
+    if (await closeAyuda.isVisible().catch(() => false)) {
+      await closeAyuda.click().catch(() => {});
+      await page.waitForTimeout(400);
+    }
+
     // ActiveToggle renderiza title con "ctivar" — "Activar"/"Desactivar"
     // (default) o variantes i18n ("Desactivar producto", "Activar categoría").
     // Substring match cubre todos los casos.
-    const allToggles = page.locator('button[title*="ctivar"]');
+    // Audit code-quality 2026-06-05: on Mobile el catálogo se renderiza como cards.
+    // Filtrar a visible elements para esquivar duplicados hidden de la table layout.
+    const allToggles = page.locator('button[title*="ctivar"]:visible');
+    await allToggles.first().scrollIntoViewIfNeeded().catch(() => {});
     await allToggles.first().waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
     const total = await allToggles.count();
     console.log(`[${cat.nombre}] toggles visibles: ${total}`);
@@ -88,7 +100,7 @@ for (const cat of CATALOGOS) {
       { timeout: 10_000 }
     );
 
-    await allToggles.first().click();
+    await allToggles.first().click({ force: true });
     const resp = await patchPromise;
     const status = resp.status();
     console.log(`[${cat.nombre}] PATCH ${resp.url()} → ${status}`);
