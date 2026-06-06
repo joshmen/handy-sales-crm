@@ -46,7 +46,12 @@ async function setupTour(page: Page, path: string) {
 }
 
 test('Orders tour: drawer spotlight on steps 8-10', async ({ page }, testInfo) => {
-  // Tour no se renderiza en Mobile viewport por diseño (FAB oculto).
+  // El flujo via TourPrompt FAB existe en mobile pero la driver.js popover de
+  // ancho fijo (~360px) se sale del viewport Pixel 5 (393px) y los spotlights
+  // se encogen sobre los drawers que ya ocupan toda la pantalla, por lo que el
+  // test no aporta señal estable. Para validar tours en mobile se usa
+  // tour-mobile-via-help.spec.ts que ejerce el path canónico: Ayuda (siempre
+  // visible en header) → HelpPanel → "Empezar tour interactivo".
   if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
   await setupTour(page, '/orders');
 
@@ -76,7 +81,12 @@ test('Orders tour: drawer spotlight on steps 8-10', async ({ page }, testInfo) =
 });
 
 test('Cobranza tour: drawer spotlight on steps 4-6', async ({ page }, testInfo) => {
-  // Tour no se renderiza en Mobile viewport por diseño (FAB oculto).
+  // El flujo via TourPrompt FAB existe en mobile pero la driver.js popover de
+  // ancho fijo (~360px) se sale del viewport Pixel 5 (393px) y los spotlights
+  // se encogen sobre los drawers que ya ocupan toda la pantalla, por lo que el
+  // test no aporta señal estable. Para validar tours en mobile se usa
+  // tour-mobile-via-help.spec.ts que ejerce el path canónico: Ayuda (siempre
+  // visible en header) → HelpPanel → "Empezar tour interactivo".
   if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
   await setupTour(page, '/cobranza');
 
