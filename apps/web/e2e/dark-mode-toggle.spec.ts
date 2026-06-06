@@ -34,23 +34,31 @@ test.describe('Dark Mode toggle', () => {
     await loginAsAdmin(page);
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
-    const themeBtn = page.getByRole('button', { name: /Cambiar a modo (claro|oscuro)/i }).first();
-    if (!await themeBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      test.skip();
-      return;
-    }
-    await themeBtn.click();
-    await page.waitForTimeout(500);
-    const classBeforeReload = await page.locator('html').getAttribute('class').catch(() => '') ?? '';
-    const isDarkBeforeReload = classBeforeReload.includes('dark');
+    await page.waitForTimeout(1000);
+
+    // Audit code-quality 2026-06-06: test determinístico — set localStorage
+    // directo + reload. El test anterior dependía del click timing y la race
+    // entre React mount + HydrationProvider + click event causaba flake.
+    // El mecanismo a validar es: inline script en app/layout.tsx lee
+    // localStorage y aplica clase ANTES de hydratación React.
+    await page.evaluate(() => {
+      localStorage.setItem('handy-suites-theme', 'dark');
+    });
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
-    const classAfterReload = await page.locator('html').getAttribute('class').catch(() => '') ?? '';
-    const isDarkAfterReload = classAfterReload.includes('dark');
-    expect(isDarkAfterReload).toBe(isDarkBeforeReload);
-    // Restore tras test
-    await themeBtn.click().catch(() => {});
+    await page.waitForTimeout(500);
+    const classDark = (await page.locator('html').getAttribute('class')) ?? '';
+    expect(classDark).toContain('dark');
+
+    // Verificar reverso también: light persiste tras set + reload.
+    await page.evaluate(() => {
+      localStorage.setItem('handy-suites-theme', 'light');
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
+    const classLight = (await page.locator('html').getAttribute('class')) ?? '';
+    expect(classLight).toContain('light');
+    expect(classLight).not.toContain('dark');
   });
 });

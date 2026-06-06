@@ -94,8 +94,17 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         // Guardar en localStorage como respaldo
         localStorage.setItem('company_settings', JSON.stringify(response.data));
 
-        // Sync theme from DB to Zustand store (DB wins over localStorage)
-        if (response.data.theme === 'dark' || response.data.theme === 'light') {
+        // Audit code-quality 2026-06-06: localStorage WINS sobre DB para el
+        // theme. Antes "DB wins over localStorage" pero el toggle del header
+        // sólo escribe a localStorage, no a DB. Resultado: usuario toggle a
+        // light → localStorage='light' → reload → DB='dark' sobreescribe →
+        // siempre vuelve a dark. La preferencia DB sólo aplica si nunca se
+        // ha tocado localStorage (primera carga del tenant).
+        if (
+          (response.data.theme === 'dark' || response.data.theme === 'light')
+          && typeof window !== 'undefined'
+          && !localStorage.getItem('handy-suites-theme')
+        ) {
           useUIStore.getState().setTheme(response.data.theme);
         }
       } else {
