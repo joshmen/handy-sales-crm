@@ -1,5 +1,6 @@
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -112,13 +113,22 @@ public static class DevolucionesEndpoints
         // POST /devoluciones/{id}/anular — supervisor marca devolucion como anulada
         // y revierte side-effects (cliente.Saldo si TipoReembolso=SaldoFavor).
         // Mirror exacto del patron en SyncRepository.UpsertDevolucionAsync (delete branch).
+        //
+        // Sprint pre-prod #12.5 (security review 2026-06-06): role check agregado.
+        // Antes cualquier VENDEDOR del tenant podia anular CUALQUIER devolucion del
+        // mismo tenant — escalamiento horizontal de privilegios. El global query
+        // filter ya bloqueaba cross-tenant pero faltaba el role gate.
         group.MapPost("/{id:int}/anular", async (
             HandySuitesDbContext db,
             int id,
             [FromBody] AnularDevolucionRequest req,
-            HttpContext httpContext) =>
+            HttpContext httpContext,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
-            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+            if (!currentTenant.IsStrictAdmin && !currentTenant.IsSupervisor)
+                return Results.Forbid();
+
+            var userId = currentTenant.UserId;
             var devolucion = await db.DevolucionesPedido.FirstOrDefaultAsync(d => d.Id == id);
             if (devolucion == null) return Results.NotFound(new { error = "Devolucion no encontrada" });
             if (devolucion.Estado == EstadoDevolucion.Anulada)
