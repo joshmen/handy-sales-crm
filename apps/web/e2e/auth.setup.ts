@@ -115,3 +115,59 @@ setup('authenticate as admin', async ({ page, context }, testInfo) => {
   // Save authenticated state for all workers in this project
   await page.context().storageState({ path: statePath });
 });
+
+/**
+ * Audit code-quality (2026-06-06) — Bug #13: SA single-session causa que
+ * workers paralelos se bumpeen entre si cuando cada uno hace su propio
+ * loginAsSuperAdmin (xjoshmenx@gmail.com es el unico SA del sistema).
+ *
+ * Solucion: autenticar SA UNA sola vez aqui en el setup y guardar su
+ * storageState a sa-desktop.json / sa-mobile.json. Los specs SA cargan ese
+ * state via loginAsSuperAdmin fast-path → todos los workers comparten la
+ * MISMA sesion SA → cero session bumps cross-worker.
+ *
+ * Cleanup zombies + clearCookies ANTES del login para evitar
+ * ACTIVE_SESSION_EXISTS de runs anteriores.
+ */
+setup('authenticate as superAdmin', async ({ page, context }, testInfo) => {
+  const isMobile = testInfo.project.name.includes('mobile');
+  const statePath = isMobile ? 'e2e/.auth/sa-mobile.json' : 'e2e/.auth/sa-desktop.json';
+
+  cleanupZombieSessions();
+
+  await context.clearCookies();
+  await context.clearPermissions();
+
+  await page.goto('/login', { waitUntil: 'networkidle' });
+
+  const acceptCookies = page.getByRole('button', { name: /Aceptar/i });
+  if (await acceptCookies.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await acceptCookies.click();
+    await page.waitForTimeout(300);
+  }
+
+  await expect(page.locator('#email')).toBeVisible({ timeout: 15000 });
+  await page.locator('#email').fill('xjoshmenx@gmail.com');
+  await page.locator('#password').fill('test123');
+  await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click();
+
+  const continueBtn = page.getByRole('button', { name: /Continuar aqu[ií]|Cerrar sesi[oó]n anterior/i });
+
+  try {
+    await Promise.race([
+      page.waitForURL(/dashboard/, { timeout: 20000 }),
+      continueBtn.waitFor({ state: 'visible', timeout: 20000 }),
+    ]);
+  } catch { /* continue */ }
+
+  if (await continueBtn.isVisible().catch(() => false)) {
+    await continueBtn.click();
+    try {
+      await page.waitForURL(/dashboard/, { timeout: 15000 });
+    } catch { /* continue */ }
+  }
+
+  await expect(page).toHaveURL(/dashboard/, { timeout: 30000 });
+
+  await page.context().storageState({ path: statePath });
+});

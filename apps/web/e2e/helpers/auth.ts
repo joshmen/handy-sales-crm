@@ -1,4 +1,5 @@
 import { test, Page, expect } from '@playwright/test';
+import fs from 'node:fs';
 import path from 'path';
 
 /**
@@ -180,9 +181,65 @@ export async function loginAsVendedor(page: Page): Promise<void> {
 }
 
 /**
- * Login as SuperAdmin (per-file dedicated user). Clears admin storageState first.
+ * Login as SuperAdmin.
+ *
+ * Audit code-quality (2026-06-06) — Bug #13: xjoshmenx@gmail.com es el unico
+ * SA y single-session strict cascadea cuando workers paralelos hacen su
+ * propio login (cada uno bumpea al anterior → 401 SESSION_REPLACED).
+ *
+ * Solucion: auth.setup.ts autentica SA UNA vez y guarda storageState a
+ * sa-desktop.json / sa-mobile.json. Aqui hacemos fast-path: cargar cookies +
+ * localStorage del state y navegar directo a dashboard. Si el state no existe
+ * o esta corrupto, fallback al form login (slow path para CI fresh runs).
+ *
+ * NOTA: este fast-path NO bumpea session_version porque reusa las cookies
+ * del setup — es la MISMA sesion, solo replicada en cada worker context.
  */
 export async function loginAsSuperAdmin(page: Page): Promise<void> {
+  const isMobile = (() => {
+    try { return test.info().project.name === 'Mobile Chrome'; }
+    catch { return false; }
+  })();
+
+  const statePath = path.resolve(
+    process.cwd(),
+    isMobile ? 'e2e/.auth/sa-mobile.json' : 'e2e/.auth/sa-desktop.json',
+  );
+
+  if (fs.existsSync(statePath)) {
+    try {
+      const raw = fs.readFileSync(statePath, 'utf8');
+      type CookieEntry = Parameters<ReturnType<typeof page.context>['addCookies']>[0][number];
+      const state = JSON.parse(raw) as {
+        cookies?: CookieEntry[];
+        origins?: Array<{ origin: string; localStorage: Array<{ name: string; value: string }> }>;
+      };
+
+      await page.context().clearCookies();
+      if (state.cookies?.length) {
+        await page.context().addCookies(state.cookies);
+      }
+
+      const lsEntries = state.origins?.[0]?.localStorage ?? [];
+      if (lsEntries.length) {
+        // addInitScript corre antes de cualquier script del page → localStorage
+        // disponible cuando React monta y NextAuth lee tokens.
+        await page.addInitScript((entries: Array<{ name: string; value: string }>) => {
+          for (const e of entries) {
+            try { window.localStorage.setItem(e.name, e.value); } catch { /* ignore */ }
+          }
+        }, lsEntries);
+      }
+
+      await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+      return;
+    } catch {
+      // State corrupto o sesion expirada → fallback al form login.
+    }
+  }
+
+  // Slow path (CI fresh run o state ausente).
   await clearAuthStorage(page);
   const { superAdmin } = getTestEmails();
   await fillLoginForm(page, superAdmin, TEST_PASSWORD);
