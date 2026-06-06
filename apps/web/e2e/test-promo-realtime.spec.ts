@@ -47,11 +47,15 @@ test('toggle promo desde UI admin', async ({ page }) => {
   console.log('Esperando 8s para que mobile reciba SignalR event...');
   await page.waitForTimeout(8000);
 
-  // Restaurar estado: click otra vez
-  const restoreBtn = page.locator('button[title="Activar"]').first();
-  if (await restoreBtn.count() > 0) {
-    await restoreBtn.click().catch(() => {});
+  // Restaurar estado: click otra vez. Esperar hasta 5s a que el title del botón
+  // cambie a "Activar" tras el PATCH (puede tardar en re-renderear).
+  const restoreBtn = page.locator('button[title="Activar"]:visible').first();
+  await restoreBtn.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  if (await restoreBtn.isVisible().catch(() => false)) {
+    await restoreBtn.click({ force: true }).catch(() => {});
     await page.waitForTimeout(1500);
     console.log('Restored');
+  } else {
+    console.log('Restore skipped — botón "Activar" no apareció en 5s');
   }
 });

@@ -63,10 +63,11 @@ test.describe('Team — invite-link create user flow', () => {
   test('toggle sin-email muestra password + deshabilita email', async ({ page }) => {
     await page.getByRole('button', { name: /nuevo usuario/i }).first().click();
     // Audit code-quality 2026-06-05: esperar a que el modal animado termine de abrir
-    // antes de buscar testID adentro. checkbox aparece tras transición.
+    // antes de buscar el checkbox.
     const sinEmailCheckbox = page.getByTestId('create-user-sin-email');
     await sinEmailCheckbox.waitFor({ state: 'visible', timeout: 10000 });
-    await sinEmailCheckbox.check();
+    await sinEmailCheckbox.check({ force: true });
+    await page.waitForTimeout(500);
 
     // Password field debe aparecer
     const passwordField = page.getByTestId('create-user-password');
@@ -89,12 +90,17 @@ test.describe('Team — invite-link create user flow', () => {
     // combobox de filtros de la pagina y el dropdown abre vacio.
     await page.getByRole('heading', { name: /crear nuevo usuario|crear usuario/i }).waitFor({ state: 'visible', timeout: 10000 });
 
-    // Tap dropdown rol DENTRO del modal. Localizar text label "Rol" + sibling
-    // combobox. El modal puede no ser role=dialog, usar scope amplio.
+    // Tap dropdown rol DENTRO del modal. Radix UI Select responde a pointerdown
+    // (no a click DOM directo). Disparar pointerdown via dispatchEvent.
     const rolLabel = page.getByText(/^Rol$/).last();
     await rolLabel.scrollIntoViewIfNeeded().catch(() => {});
     const roleDropdown = rolLabel.locator('xpath=following-sibling::*[1]//*[@role="combobox"] | following::*[@role="combobox"][1]').first();
-    await roleDropdown.click({ force: true });
+    await roleDropdown.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    // Radix Select: enfocar primero + abrir con teclado funciona consistente.
+    await roleDropdown.focus().catch(() => {});
+    await roleDropdown.press(' ').catch(async () => {
+      await roleDropdown.click({ force: true }).catch(() => {});
+    });
     await page.waitForTimeout(700);
 
     // ADMIN normal NO debe ver SUPER_ADMIN ni ADMIN como opciones

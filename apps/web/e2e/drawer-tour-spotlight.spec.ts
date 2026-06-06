@@ -45,7 +45,9 @@ async function setupTour(page: Page, path: string) {
   await page.waitForTimeout(500);
 }
 
-test('Orders tour: drawer spotlight on steps 8-10', async ({ page }) => {
+test('Orders tour: drawer spotlight on steps 8-10', async ({ page }, testInfo) => {
+  // Tour no se renderiza en Mobile viewport por diseño (FAB oculto).
+  if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
   await setupTour(page, '/orders');
 
   // Advance to step 7 (create button, opens drawer)
@@ -73,7 +75,9 @@ test('Orders tour: drawer spotlight on steps 8-10', async ({ page }) => {
   await page.screenshot({ path: 'test-results/orders-spotlight-step10.png', fullPage: true });
 });
 
-test('Cobranza tour: drawer spotlight on steps 4-6', async ({ page }) => {
+test('Cobranza tour: drawer spotlight on steps 4-6', async ({ page }, testInfo) => {
+  // Tour no se renderiza en Mobile viewport por diseño (FAB oculto).
+  if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
   await setupTour(page, '/cobranza');
 
   // Advance to step 3 (new cobro button)

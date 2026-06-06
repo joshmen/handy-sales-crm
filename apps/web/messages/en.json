@@ -6868,7 +6868,7 @@
       "next": "Next",
       "prev": "Previous",
       "done": "Finish",
-      "progress": "{{current}} of {{total}}"
+      "progress": "'{'current'}' of '{'total'}'"
     },
     "dashboard-general": {
       "title": "General System Tour",

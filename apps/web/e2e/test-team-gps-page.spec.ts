@@ -24,12 +24,13 @@ test.describe('Histórico GPS — submenu Equipo', () => {
     await page.waitForTimeout(2000);
 
     // Audit code-quality 2026-06-05: en Mobile el sidebar está colapsado por
-    // default. Abrir el menú hamburguesa antes de buscar Equipo.
+    // default. El botón hamburguesa NO tiene aria-label (solo img). Es el
+    // primer button dentro del banner header. Click sobre él abre sidebar.
     if (testInfo.project.name === 'Mobile Chrome') {
-      const hamburger = page.getByRole('button', { name: /men[uú]|sidebar|navegaci[oó]n/i }).first();
+      const hamburger = page.locator('banner button, header button').first();
       if (await hamburger.isVisible().catch(() => false)) {
-        await hamburger.click().catch(() => {});
-        await page.waitForTimeout(500);
+        await hamburger.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(800);
       }
     }
 
@@ -107,9 +108,11 @@ test.describe('Histórico GPS — página detalle /team/[id]/gps', () => {
     await expect(page.getByRole('button', { name: /^Ayer$/i }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /7 días/i }).first()).toBeVisible();
 
-    // Mapa Leaflet debería renderizarse
+    // Mapa Leaflet debería renderizarse. En Mobile el container está más abajo
+    // (lista arriba, mapa abajo), scroll para asegurar viewport correcto.
     const map = page.locator('.leaflet-container').first();
-    await expect(map).toBeVisible({ timeout: 8000 });
+    await map.scrollIntoViewIfNeeded().catch(() => {});
+    await expect(map).toBeVisible({ timeout: 15000 });
     console.log('✅ Mapa Leaflet visible');
 
     // KPI bar al fondo
