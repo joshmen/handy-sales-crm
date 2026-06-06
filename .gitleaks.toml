@@ -1,0 +1,74 @@
+# Audit code-quality 2026-06-06 (sprint pre-prod #5): config gitleaks para
+# pre-commit + CI workflow .github/workflows/secret-scan.yml.
+#
+# Hereda los rules default + agrega/allowlist patrones especificos de HandySales:
+#  - Cloudinary URL (api_key:api_secret@cloud_name)
+#  - Stripe sk_live_*, pk_live_*
+#  - SendGrid SG.*
+#  - OpenAI sk-*
+#  - JWT secrets (debe estar via env, nunca commiteado)
+#
+# Uso local:
+#   curl -fsSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_x64.tar.gz | tar xz
+#   ./gitleaks detect --config=.gitleaks.toml --no-banner
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "cloudinary-url"
+description = "Cloudinary URL with embedded API key + secret"
+regex = '''cloudinary://[0-9]{15}:[A-Za-z0-9_\-]{20,}@[a-z0-9]+'''
+tags = ["secret", "cloudinary"]
+
+[[rules]]
+id = "stripe-secret-live"
+description = "Stripe live secret key"
+regex = '''sk_live_[0-9a-zA-Z]{24,}'''
+tags = ["secret", "stripe"]
+
+[[rules]]
+id = "stripe-restricted-live"
+description = "Stripe live restricted key"
+regex = '''rk_live_[0-9a-zA-Z]{24,}'''
+tags = ["secret", "stripe"]
+
+[[rules]]
+id = "sendgrid-key"
+description = "SendGrid API key"
+regex = '''SG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43}'''
+tags = ["secret", "sendgrid"]
+
+[[rules]]
+id = "openai-key"
+description = "OpenAI API key"
+regex = '''sk-(?:proj-)?[A-Za-z0-9_\-]{40,}'''
+tags = ["secret", "openai"]
+
+[[rules]]
+id = "jwt-secret-hardcoded"
+description = "JWT secret committed to config json"
+regex = '''"(?:Jwt|JWT)[:_]?(?:Secret|SecretKey)"\s*[:=]\s*"[^"$][^"]{15,}"'''
+tags = ["secret", "jwt"]
+
+# ── Allowlist global ────────────────────────────────────────────────────────────
+[allowlist]
+description = "Allowlist global — placeholders, mocks, fixtures"
+paths = [
+  '''(.*\.lock$)''',
+  '''(.*node_modules.*)''',
+  '''(.*\.git/.*)''',
+  '''(apps/web/e2e/\.auth/.*\.json)''',  # storageState (cookies firmadas)
+  '''(.*\.next/.*)''',
+  '''(bin/.*)''',
+  '''(obj/.*)''',
+]
+regexes = [
+  '''<REDACTED.*?>''',
+  '''<YOUR_.+?_HERE>''',
+  '''<ASK_USER>''',
+  '''DevelopmentSecretKeyThat.*''',  # dev placeholder en docker-compose dev
+  '''postgresql://handy_user:handy_pass@.*''',  # connstring local dev
+  '''postgresql://postgres:root123@.*''',  # connstring root local
+  '''cloudinary://APIKEY:APISECRET@.*''',  # placeholder template
+]
