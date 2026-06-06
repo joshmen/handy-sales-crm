@@ -126,12 +126,17 @@ export function ImpersonationBanner() {
   const isLowTime = minutesRemaining <= 10;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] h-10 bg-amber-500 text-amber-950 shadow-md">
+    <div
+      data-testid="impersonation-banner"
+      role="alert"
+      aria-live="polite"
+      className="fixed top-0 left-0 right-0 z-[60] h-10 bg-amber-500 text-amber-950 shadow-md"
+    >
       <div className="h-full max-w-screen-2xl mx-auto px-3 flex items-center justify-between gap-2">
         {/* Left: Badge + tenant */}
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center gap-1.5 bg-amber-600/30 px-2.5 py-0.5 rounded-full flex-shrink-0">
-            <AlertTriangle className="h-3.5 w-3.5" />
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="font-semibold text-xs hidden sm:inline">{ti('supportMode')}</span>
           </div>
 

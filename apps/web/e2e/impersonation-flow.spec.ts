@@ -37,18 +37,11 @@ test.describe('Impersonation', () => {
     }
   });
 
-  test('Banner impersonación visible cuando activo', async ({ page }) => {
-    await loginAsSuperAdmin(page);
-    await page.goto('/dashboard');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
-    // Si SA está impersonando, banner amarillo/azul debe estar visible
-    const banner = page.locator('text=/Impersonando|Sesión impersonada|Stop impersonating/i').first();
-    if (!await banner.isVisible({ timeout: 3000 }).catch(() => false)) {
-      // SA no está impersonando — esperado
-      test.skip();
-      return;
-    }
-    await expect(banner).toBeVisible();
-  });
+  // Audit code-quality 2026-06-06: el test "Banner impersonación visible" se
+  // eliminó porque `impersonation-sidebar.spec.ts:62` ("Sidebar shows ADMIN
+  // items during impersonation") YA ejecuta el flow UI completo de iniciar
+  // impersonation y verifica el banner. Replicarlo aquí causaba race conditions
+  // con session conflicts del SA (xjoshmenx único). En su lugar, mejoramos
+  // las aserciones del banner en aquel spec para que valide tambien
+  // data-testid + ARIA. Ver impersonation-sidebar.spec.ts L178-185.
 });
