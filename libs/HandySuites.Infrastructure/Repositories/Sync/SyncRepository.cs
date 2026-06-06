@@ -662,6 +662,20 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Sprint pre-prod #9 audit 2026-06-06: idempotency por (TenantId, MobileRecordId).
+        // Sin esto, un retry del sync queue (timeout despues del INSERT en DB pero antes
+        // de que el response llegue al mobile) creaba 2 visitas duplicadas para el mismo
+        // LocalId. Mismo patron que UpsertPedidoAsync L401-411.
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var existingByMobileId = await _db.ClienteVisitas
+                .FirstOrDefaultAsync(v => v.TenantId == tenantId && v.MobileRecordId == dto.LocalId);
+            if (existingByMobileId != null)
+            {
+                return (existingByMobileId, false);
+            }
+        }
+
         // Create new visita
         var visita = new ClienteVisita
         {
@@ -924,6 +938,20 @@ public class SyncRepository : ISyncRepository
 
         if (dto.Monto <= 0)
             throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
+
+        // Sprint pre-prod #10 audit 2026-06-06: idempotency por (TenantId, MobileRecordId).
+        // CRITICAL — sin esto, retry del sync queue insertaba 2 cobros con mismo LocalId,
+        // resultando en doble decremento del saldo del cliente. Mismo patron que
+        // UpsertPedidoAsync L401-411. Reutilizar entidad existente en vez de crear nueva.
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var existingByMobileId = await _db.Cobros
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.MobileRecordId == dto.LocalId);
+            if (existingByMobileId != null)
+            {
+                return (existingByMobileId, false);
+            }
+        }
 
         // Resolver PedidoLocalId (WDB id) → PedidoId cuando el pedido padre fue creado
         // en el mismo sync y aún no tiene ServerId en el cliente. Evita cobros huérfanos
