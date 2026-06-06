@@ -26,22 +26,29 @@ test.describe('Zones', () => {
     await expect(newBtn).toBeVisible({ timeout: 8000 });
   });
 
-  test('Drawer crear zona abre (cualquier panel/dialog)', async ({ page }, testInfo) => {
+  test('Drawer crear zona abre', async ({ page, context }, testInfo) => {
     if (testInfo.project.name === 'Mobile Chrome') {
       test.skip(); return;
     }
-    const newBtn = page.getByRole('button', { name: /Nueva zona/i }).first();
-    if (!await newBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      test.skip();
-      return;
-    }
-    await newBtn.click().catch(() => {});
-    await page.waitForTimeout(2500);
-    // Smoke: la página no crasheó después del click. Cualquier estado válido.
-    const bodyText = (await page.locator('body').textContent()) ?? '';
-    const crashed = bodyText.match(/Application error|crashed/i);
-    expect(crashed).toBeFalsy();
-    const cancelBtn = page.getByRole('button', { name: /Cancelar|Cerrar/i }).first();
-    if (await cancelBtn.isVisible().catch(() => false)) await cancelBtn.click();
+    // handleCreateZone pide geolocation con timeout 5s antes de abrir el drawer.
+    // Concedemos permiso y mockeamos coords para evitar el delay en CI.
+    await context.grantPermissions(['geolocation'], { origin: page.url().replace(/\/zones.*/, '') }).catch(() => {});
+    await context.setGeolocation({ latitude: 20.6736, longitude: -103.344 }).catch(() => {});
+
+    const newBtn = page.locator('[data-tour="zones-add-btn"]').first();
+    await expect(newBtn).toBeVisible({ timeout: 8000 });
+    await newBtn.click();
+
+    // Patrón canónico: [data-drawer-panel] del Drawer compartido (createPortal).
+    const drawer = page.locator('[data-drawer-panel]');
+    await expect(drawer).toBeVisible({ timeout: 8000 });
+    await expect(drawer.getByRole('heading', { name: /Nueva zona|Crear zona/i })).toBeVisible({ timeout: 5000 });
+
+    // Cierre: scope al drawer para no colisionar con HelpPanel "Cerrar".
+    await drawer.locator('button[aria-label="Cerrar"]').first().click();
+    // Si form dirty dispara UnsavedChangesDialog, descartar.
+    const discard = page.getByRole('button', { name: /Descartar cambios/i });
+    if (await discard.isVisible({ timeout: 1000 }).catch(() => false)) await discard.click();
+    await expect(drawer).not.toBeVisible({ timeout: 3000 });
   });
 });
