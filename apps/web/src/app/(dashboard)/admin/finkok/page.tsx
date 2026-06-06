@@ -214,8 +214,22 @@ export default function FinkokAdminPage() {
               <p className="text-sm text-muted-foreground">Cargando emisores desde Finkok...</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-sm text-muted-foreground">No hay emisores con esos filtros.</p>
+            <div className="py-16 text-center px-6">
+              {emitters.length === 0 ? (
+                <>
+                  <AlertCircle className="w-8 h-8 mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+                  <p className="text-sm font-medium text-muted-foreground mb-1">
+                    No hay emisores registrados aún
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 max-w-md mx-auto">
+                    Los emisores se registran cuando un tenant configura su CSD en
+                    {' '}<span className="font-mono text-[11px] bg-surface-3 px-1.5 py-0.5 rounded">Facturación → Configuración fiscal</span>.
+                    Esta vista refleja el padrón Finkok cuando exista al menos un alta.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No hay emisores con esos filtros.</p>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">

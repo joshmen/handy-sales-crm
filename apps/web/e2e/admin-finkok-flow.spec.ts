@@ -36,7 +36,13 @@ test.describe('Admin Finkok', () => {
     expect(isCritical).toBeFalsy();
   });
 
-  test('Botón registro/agregar emisor presente', async ({ page }, testInfo) => {
+  test('Acciones de admin emisores (Refrescar) visibles', async ({ page }, testInfo) => {
+    // Audit code-quality 2026-06-06: la página /admin/finkok es observacional
+    // (suspend/reactivate/credits/switch). El registro de emisores se hace
+    // tenant-side en Facturación → Configuración fiscal vía CatalogosController,
+    // NO desde SuperAdmin. Por eso aquí no hay botón "Registrar/Crear emisor".
+    // Validamos que el botón Refrescar SÍ está visible (siempre presente en
+    // el PageHeader del page).
     if (testInfo.project.name === 'Mobile Chrome') {
       test.skip(); return;
     }
@@ -44,12 +50,27 @@ test.describe('Admin Finkok', () => {
     await page.goto('/admin/finkok');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
-    const addBtn = page.getByRole('button', { name: /Nuevo|Agregar|Registrar|Crear/i }).first();
-    // Soft check — botón puede no estar presente si empty state distinto
-    if (await addBtn.count() > 0) {
-      // Existe — OK
-      return;
+    const refreshBtn = page.getByRole('button', { name: /Refrescar|Refresh/i }).first();
+    await expect(refreshBtn).toBeVisible({ timeout: 8000 });
+  });
+
+  test('Empty state informa flujo de registro tenant-side', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'Mobile Chrome') {
+      test.skip(); return;
     }
-    test.skip();
+    await loginAsSuperAdmin(page);
+    await page.goto('/admin/finkok');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(3000);
+    // Si hay 0 emisores totales debe mostrar mensaje informativo
+    // referenciando "Configuración fiscal" como origen del registro.
+    const emptyHint = page.getByText(/No hay emisores registrados|Configuración fiscal/i).first();
+    if (await emptyHint.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await expect(emptyHint).toBeVisible();
+    } else {
+      // Hay datos en Finkok — table presente, skip empty assertion
+      const table = page.locator('table').first();
+      await expect(table).toBeVisible({ timeout: 5000 });
+    }
   });
 });
