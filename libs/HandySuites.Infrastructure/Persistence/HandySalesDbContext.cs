@@ -376,6 +376,14 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(p => new { p.TenantId, p.UsuarioId });
             entity.HasIndex(p => new { p.TenantId, p.Estado });
             entity.HasIndex(p => new { p.TenantId, p.FechaPedido });
+            // Sprint pre-prod #13 audit 2026-06-06: UNIQUE parcial
+            // (TenantId, MobileRecordId) — defensa en DB contra retry race
+            // que el dedup application-layer (#9/#10) tiene una ventana
+            // microscopica. WHERE NOT NULL evita conflicto con pedidos
+            // creados via UI web (sin LocalId).
+            entity.HasIndex(p => new { p.TenantId, p.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure DetallePedido entity
@@ -398,6 +406,11 @@ public class HandySuitesDbContext : DbContext
 
             // Índices
             entity.HasIndex(dp => new { dp.PedidoId, dp.ProductoId });
+            // Sprint pre-prod #13: UNIQUE parcial (PedidoId, MobileRecordId)
+            // — dedup de detalles enviados via sync mobile.
+            entity.HasIndex(dp => new { dp.PedidoId, dp.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure ClienteVisita entity
@@ -435,6 +448,10 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(cv => new { cv.TenantId, cv.UsuarioId });
             entity.HasIndex(cv => new { cv.TenantId, cv.FechaProgramada });
             entity.HasIndex(cv => new { cv.TenantId, cv.FechaHoraInicio });
+            // Sprint pre-prod #13: UNIQUE parcial (TenantId, MobileRecordId).
+            entity.HasIndex(cv => new { cv.TenantId, cv.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
 
         });
 
@@ -763,6 +780,11 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(c => new { c.TenantId, c.PedidoId });
             entity.HasIndex(c => new { c.TenantId, c.UsuarioId });
             entity.HasIndex(c => new { c.TenantId, c.FechaCobro });
+            // Sprint pre-prod #13: UNIQUE parcial (TenantId, MobileRecordId)
+            // — CRITICAL doble cobro al retry sync queue.
+            entity.HasIndex(c => new { c.TenantId, c.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure Gasto entity (gastos del vendedor con foto opcional)
@@ -795,7 +817,11 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(g => new { g.TenantId, g.FechaGasto });
             entity.HasIndex(g => new { g.TenantId, g.UsuarioId, g.FechaGasto });
             entity.HasIndex(g => new { g.TenantId, g.RutaId });
-            entity.HasIndex(g => new { g.TenantId, g.MobileRecordId });
+            // Sprint pre-prod #13: el index existente (TenantId, MobileRecordId)
+            // ahora es UNIQUE parcial para evitar duplicados al retry sync.
+            entity.HasIndex(g => new { g.TenantId, g.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure DevolucionPedido entity (devolucion de cliente, ligada a un Pedido)
@@ -841,7 +867,10 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(d => new { d.TenantId, d.ClienteId, d.FechaDevolucion });
             entity.HasIndex(d => new { d.TenantId, d.RutaId });
             entity.HasIndex(d => new { d.TenantId, d.UsuarioId, d.FechaDevolucion });
-            entity.HasIndex(d => new { d.TenantId, d.MobileRecordId });
+            // Sprint pre-prod #13: UNIQUE parcial (TenantId, MobileRecordId).
+            entity.HasIndex(d => new { d.TenantId, d.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure DetalleDevolucion entity (lineas individuales de una DevolucionPedido)
@@ -979,6 +1008,20 @@ public class HandySuitesDbContext : DbContext
         // Entidades principales con TenantId + Soft Delete
         modelBuilder.Entity<Cliente>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        // Sprint pre-prod #13 audit 2026-06-06: UNIQUE parcial
+        // (TenantId, MobileRecordId) — defensa DB contra retry race del sync
+        // mobile. Igual patron que aplicado a Pedido/Cobro/Visita/Gasto.
+        modelBuilder.Entity<Cliente>()
+            .HasIndex(c => new { c.TenantId, c.MobileRecordId })
+            .IsUnique()
+            .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
+        // Preserva el single-col index que EF Core dropea automaticamente
+        // al ver el composite (TenantId, MobileRecordId). Sin esto, queries
+        // que filtran solo por tenant_id (multi-tenant scope) degradan.
+        modelBuilder.Entity<Cliente>()
+            .HasIndex(c => c.TenantId);
 
         modelBuilder.Entity<Producto>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
