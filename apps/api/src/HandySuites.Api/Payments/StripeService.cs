@@ -381,13 +381,25 @@ public class StripeService : IStripeService
                     if (conn.State != System.Data.ConnectionState.Open)
                         await conn.OpenAsync();
 
+                    // Audit code-quality 2026-06-06 (sprint pre-prod #2 — defense in depth):
+                    // antes interpolabamos {tenantId} en SET app.tenant_id y {cantidad}/
+                    // {purchaseTenantId} en el UPDATE. Aunque eran ints int.TryParse-validados
+                    // (no exploitable hoy), bastaba que un refactor cambiase el origen del
+                    // valor a string sin re-validar para volver a abrir la puerta. Pasamos
+                    // todo a set_config + parametros bind como hace TenantRlsInterceptor.
                     using var cmd = conn.CreateCommand();
-                    cmd.CommandText = $"SET app.tenant_id = '{tenantId}'; " +
-                        $"UPDATE \"TimbrePurchases\" SET estado = 'completado', " +
-                        $"stripe_payment_intent_id = @paymentIntent, " +
-                        $"completado_en = NOW() " +
-                        $"WHERE id = @purchaseId AND estado = 'pendiente' " +
-                        $"RETURNING cantidad, tenant_id;";
+                    cmd.CommandText =
+                        "SELECT set_config('app.tenant_id', @tenantId, false); " +
+                        "UPDATE \"TimbrePurchases\" SET estado = 'completado', " +
+                        "stripe_payment_intent_id = @paymentIntent, " +
+                        "completado_en = NOW() " +
+                        "WHERE id = @purchaseId AND estado = 'pendiente' " +
+                        "RETURNING cantidad, tenant_id;";
+
+                    var pTenant = cmd.CreateParameter();
+                    pTenant.ParameterName = "tenantId";
+                    pTenant.Value = tenantId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    cmd.Parameters.Add(pTenant);
 
                     var pPurchaseId = cmd.CreateParameter();
                     pPurchaseId.ParameterName = "purchaseId";
@@ -407,9 +419,19 @@ public class StripeService : IStripeService
                         // Close reader before next command
                         await reader.CloseAsync();
 
-                        // Add extras directly via SQL to bypass RLS
+                        // Add extras directly via SQL to bypass RLS — parametrizado.
                         using var addCmd = conn.CreateCommand();
-                        addCmd.CommandText = $"UPDATE \"Tenants\" SET timbres_extras = timbres_extras + {cantidad} WHERE id = {purchaseTenantId};";
+                        addCmd.CommandText =
+                            "UPDATE \"Tenants\" SET timbres_extras = timbres_extras + @cantidad " +
+                            "WHERE id = @purchaseTenantId;";
+                        var pCantidad = addCmd.CreateParameter();
+                        pCantidad.ParameterName = "cantidad";
+                        pCantidad.Value = cantidad;
+                        addCmd.Parameters.Add(pCantidad);
+                        var pTid = addCmd.CreateParameter();
+                        pTid.ParameterName = "purchaseTenantId";
+                        pTid.Value = purchaseTenantId;
+                        addCmd.Parameters.Add(pTid);
                         await addCmd.ExecuteNonQueryAsync();
 
                         _logger.LogInformation("Timbre purchase {PurchaseId} completed: {Cantidad} timbres added to tenant {TenantId}",
