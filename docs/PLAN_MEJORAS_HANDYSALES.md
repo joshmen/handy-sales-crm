@@ -134,16 +134,21 @@ Después de una evaluación exhaustiva del proyecto HandySuites, se identificaro
 
 ### 3.2 Secretos Expuestos (ROTAR INMEDIATAMENTE)
 
+> Audit code-quality 2026-06-06 (sprint pre-prod #4): los valores reales que
+> aparecian aqui ya fueron redactados. Si los rotaste en Cloudinary/Stripe/
+> NextAuth, esta seccion es solo historica. Si NO los rotaste, hazlo YA
+> antes de cualquier deploy publico — siguen en git history.
+
 ```json
-// appsettings.json - EXPUESTO EN GIT
-"Jwt:Secret": "HandySuitesSecretKeyForJWTTokenGeneration2024!"
-"Cloudinary:Url": "cloudinary://498195422846522:jkqaWAHx0O4b5lpr1-QSvzW_Wp0@dq0o1nbyh"
+// appsettings.json - EXPUESTO EN GIT (REDACTED, ver git log -p)
+"Jwt:Secret": "<REDACTED — rotar JWT secret>"
+"Cloudinary:Url": "<REDACTED — rotar API key+secret en Cloudinary dashboard>"
 
 // appsettings.Development.json
-"DefaultConnection": "...Password=handy_pass"
+"DefaultConnection": "...Password=<REDACTED>"
 
 // .env.local (frontend)
-"NEXTAUTH_SECRET": "super-secret-nextauth-key-development-only"
+"NEXTAUTH_SECRET": "<REDACTED — generar nuevo con `openssl rand -base64 32`>"
 ```
 
 ### 3.3 JWT Completamente Deshabilitado en Dev

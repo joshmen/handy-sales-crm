@@ -73,7 +73,10 @@ services:
       Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
-      Cloudinary__Url: "${CLOUDINARY_URL:-cloudinary://899432929937183:Pxxn5PaFCujbBMJ7ut38v4f2g78@dq0o1nbyh}"
+      # Audit code-quality 2026-06-06 (sprint pre-prod #3): el fallback hardcoded
+      # tenia un secret real commiteado a git. Ahora obliga al dev a definir
+      # CLOUDINARY_URL en .env local — fail-fast si esta vacio.
+      Cloudinary__Url: "${CLOUDINARY_URL:?CLOUDINARY_URL no esta definido. Copialo de Cloudinary dashboard a tu .env}"
       Seq__ServerUrl: "http://seq:5341"
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL}"
