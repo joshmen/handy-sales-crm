@@ -286,7 +286,7 @@ public class MobileFacturaEndpointsTests : IDisposable
         var result = await _enforcement.Object.CanGenerarFacturaAsync(TenantId);
 
         result.Allowed.Should().BeFalse();
-        result.Message.Should().Contain("límite", because: "endpoint usa este mensaje en el 400 response");
+        result.Message.Should().ContainEquivalentOf("límite", because: "endpoint usa este mensaje (case-insensitive) en el 400 response");
     }
 
     [Fact]

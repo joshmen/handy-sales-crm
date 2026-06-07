@@ -102,12 +102,25 @@ public class MobileLogLevelEndpointsTests : IDisposable
     [InlineData("Bogus")]
     [InlineData("Info")]      // Not a valid Serilog level (it's "Information")
     [InlineData("Warn")]      // Not a valid Serilog level (it's "Warning")
-    [InlineData("12345")]
     public void EnumTryParse_RejectsInvalidLevels(string input)
     {
         // The endpoint should return 400 BadRequest for these.
         var ok = Enum.TryParse<LogEventLevel>(input, ignoreCase: true, out _);
         ok.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("12345")]
+    [InlineData("999")]
+    public void EnumIsDefined_RejectsNumericValuesOutOfRange(string input)
+    {
+        // Enum.TryParse acepta cualquier int como ordinal (lo castea a
+        // (LogEventLevel)N). El endpoint debe usar Enum.IsDefined despues
+        // de TryParse para garantizar que el valor sea uno de los 6 niveles.
+        var parsed = Enum.TryParse<LogEventLevel>(input, ignoreCase: true, out var val);
+        parsed.Should().BeTrue("Enum.TryParse acepta int arbitrario");
+        Enum.IsDefined(typeof(LogEventLevel), val).Should().BeFalse(
+            "el endpoint debe rechazar con BadRequest si !Enum.IsDefined");
     }
 
     [Fact]

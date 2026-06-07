@@ -255,17 +255,16 @@ public class MobileCobroAdminScopeTests
 
         var clienteRepo = new Mock<IClienteRepository>();
         clienteRepo.Setup(r => r.ObtenerPorIdAsync(5, 1))
-            .ReturnsAsync(new ClienteDto { Id = 5, Nombre = "Cliente5" });
+            .ReturnsAsync(new ClienteDto { Id = 5, Nombre = "Cliente5" , RFC = "", Correo = "", Telefono = "", Direccion = "" });
 
         var pedidoRepo = new Mock<IPedidoRepository>();
         pedidoRepo.Setup(r => r.ObtenerPorIdAsync(20, 1))
-            .ReturnsAsync(new PedidoDto
-            {
+            .ReturnsAsync(new PedidoDto {
                 Id = 20,
                 ClienteId = 5,
                 Estado = EstadoPedido.Confirmado,
                 NumeroPedido = "P-001"
-            });
+            , ClienteNombre = "", UsuarioNombre = "" });
 
         var repo = new Mock<ICobroRepository>();
         repo.Setup(r => r.CrearAsync(It.IsAny<CobroCreateDto>(), 1, 10))
@@ -326,17 +325,16 @@ public class MobileCobroAdminScopeTests
 
         var clienteRepo = new Mock<IClienteRepository>();
         clienteRepo.Setup(r => r.ObtenerPorIdAsync(5, 1))
-            .ReturnsAsync(new ClienteDto { Id = 5, Nombre = "Cliente5" });
+            .ReturnsAsync(new ClienteDto { Id = 5, Nombre = "Cliente5" , RFC = "", Correo = "", Telefono = "", Direccion = "" });
 
         var pedidoRepo = new Mock<IPedidoRepository>();
         pedidoRepo.Setup(r => r.ObtenerPorIdAsync(20, 1))
-            .ReturnsAsync(new PedidoDto
-            {
+            .ReturnsAsync(new PedidoDto {
                 Id = 20,
                 ClienteId = 7, // pedido es de otro cliente
                 Estado = EstadoPedido.Confirmado,
                 NumeroPedido = "P-001"
-            });
+            , ClienteNombre = "", UsuarioNombre = "" });
 
         var repo = new Mock<ICobroRepository>();
         var service = new CobroService(repo.Object, tenant.Object, clienteRepo.Object, pedidoRepo.Object);
@@ -365,17 +363,16 @@ public class MobileCobroAdminScopeTests
 
         var clienteRepo = new Mock<IClienteRepository>();
         clienteRepo.Setup(r => r.ObtenerPorIdAsync(5, 1))
-            .ReturnsAsync(new ClienteDto { Id = 5, Nombre = "Cliente5" });
+            .ReturnsAsync(new ClienteDto { Id = 5, Nombre = "Cliente5" , RFC = "", Correo = "", Telefono = "", Direccion = "" });
 
         var pedidoRepo = new Mock<IPedidoRepository>();
         pedidoRepo.Setup(r => r.ObtenerPorIdAsync(20, 1))
-            .ReturnsAsync(new PedidoDto
-            {
+            .ReturnsAsync(new PedidoDto {
                 Id = 20,
                 ClienteId = 5,
                 Estado = EstadoPedido.Cancelado,
                 NumeroPedido = "P-001"
-            });
+            , ClienteNombre = "", UsuarioNombre = "" });
 
         var repo = new Mock<ICobroRepository>();
         var service = new CobroService(repo.Object, tenant.Object, clienteRepo.Object, pedidoRepo.Object);

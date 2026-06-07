@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff' },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: COLORS.foreground },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: COLORS.headerText },
   scroll: { padding: 16, gap: 4 },
   label: { fontSize: 13, fontWeight: '600', color: COLORS.foreground, marginTop: 16, marginBottom: 8 },
   labelRequired: { fontSize: 13, fontWeight: '700', color: '#b45309', marginTop: 16, marginBottom: 8 },

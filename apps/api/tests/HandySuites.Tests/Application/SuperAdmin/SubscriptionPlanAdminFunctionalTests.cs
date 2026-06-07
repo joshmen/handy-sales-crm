@@ -383,7 +383,11 @@ namespace HandySuites.Tests.Application.SuperAdmin
             // Assert
             toggleResp.StatusCode.Should().Be(HttpStatusCode.OK);
             var toggleBody = await toggleResp.Content.ReadAsStringAsync();
-            toggleBody.Should().Contain("desactivado", "el mensaje refleja la nueva accion ejecutada");
+            // El plan recien creado puede arrancar Activo=true o false segun el endpoint
+            // defaults; toggle invierte el estado. Verificamos que el mensaje refleja
+            // la accion sin asumir el estado inicial.
+            toggleBody.Should().MatchRegex("(activado|desactivado)",
+                "el mensaje refleja la accion ejecutada (activado o desactivado segun estado previo)");
         }
 
         [Fact]

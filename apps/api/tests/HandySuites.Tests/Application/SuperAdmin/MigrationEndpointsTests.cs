@@ -157,8 +157,7 @@ namespace HandySuites.Tests.Application.SuperAdmin
 
             var response = await client.GetAsync("/api/migration/tenants-status");
 
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden,
-                "endpoint con policy SUPER_ADMIN debe rechazar requests sin token");
+            response.StatusCode.Should().BeOneOf(new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden }, "endpoint con policy SUPER_ADMIN debe rechazar requests sin token");
         }
 
         [Fact]
@@ -168,8 +167,7 @@ namespace HandySuites.Tests.Application.SuperAdmin
 
             var response = await client.PostAsync("/api/migration/initialize-existing-tenants", null);
 
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden,
-                "endpoint con policy SUPER_ADMIN debe rechazar requests sin token");
+            response.StatusCode.Should().BeOneOf(new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden }, "endpoint con policy SUPER_ADMIN debe rechazar requests sin token");
         }
 
         // ============================================================

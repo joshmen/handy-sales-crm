@@ -134,8 +134,7 @@ namespace HandySuites.Tests.Application.SuperAdmin
         public async Task GetGlobalSettings_SinAuth_DevuelveUnauthorized()
         {
             var response = await _anonClient.GetAsync("/api/global-settings/");
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden,
-                "RequireAuthorization() debe rechazar request anonimo");
+            response.StatusCode.Should().BeOneOf(new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden }, "RequireAuthorization() debe rechazar request anonimo");
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -281,8 +280,7 @@ namespace HandySuites.Tests.Application.SuperAdmin
         {
             // El seeder no provee logo — endpoint debe responder 200 (limpia campos null igualmente)
             var response = await _superAdminClient.DeleteAsync("/api/global-settings/delete-logo");
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound,
-                "SA debe poder ejecutar delete-logo (200 OK o 404 si no hay logo)");
+            response.StatusCode.Should().BeOneOf(new[] { HttpStatusCode.OK, HttpStatusCode.NotFound }, "SA debe poder ejecutar delete-logo (200 OK o 404 si no hay logo)");
         }
 
         // ════════════════════════════════════════════════════════════════════

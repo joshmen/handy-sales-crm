@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#fff' },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: COLORS.foreground },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: COLORS.headerText },
   scroll: { padding: 16 },
   warningBanner: { padding: 12, marginBottom: 16, backgroundColor: '#fef3c7', borderRadius: 8 },
   warningText: { color: '#92400e', fontWeight: '600', textAlign: 'center' },

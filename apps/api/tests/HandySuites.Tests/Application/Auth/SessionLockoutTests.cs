@@ -142,7 +142,7 @@ namespace HandySuites.Tests.Application.Auth
 
             // Assert
             var refreshed = await ReloadAsync(user.Id);
-            refreshed.FailedLoginAttempts.Should().BeGreaterOrEqualTo(5);
+            refreshed.FailedLoginAttempts.Should().BeGreaterThanOrEqualTo(5);
             refreshed.LockedUntil.Should().NotBeNull();
             refreshed.LockedUntil!.Value.Should().BeAfter(DateTime.UtcNow.AddMinutes(10));
             refreshed.LockedUntil.Value.Should().BeBefore(DateTime.UtcNow.AddMinutes(20));
@@ -321,7 +321,7 @@ namespace HandySuites.Tests.Application.Auth
                     UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120",
                     IpAddress = "10.0.0.10",
                     Status = SessionStatus.Active,
-                    SessionStart = DateTime.UtcNow.AddMinutes(-5),
+                    LoggedInAt = DateTime.UtcNow.AddMinutes(-5),
                     LastActivity = DateTime.UtcNow.AddMinutes(-1)
                 });
                 await db.SaveChangesAsync();
@@ -359,7 +359,7 @@ namespace HandySuites.Tests.Application.Auth
                     UserAgent = "Mozilla/5.0 (Macintosh) Firefox/120",
                     IpAddress = "10.0.0.20",
                     Status = SessionStatus.Active,
-                    SessionStart = DateTime.UtcNow.AddMinutes(-5),
+                    LoggedInAt = DateTime.UtcNow.AddMinutes(-5),
                     LastActivity = DateTime.UtcNow.AddMinutes(-1)
                 });
                 await db.SaveChangesAsync();
@@ -402,7 +402,7 @@ namespace HandySuites.Tests.Application.Auth
                     UserAgent = "Mozilla/5.0",
                     IpAddress = "10.0.0.30",
                     Status = SessionStatus.Active,
-                    SessionStart = DateTime.UtcNow.AddMinutes(-30),
+                    LoggedInAt = DateTime.UtcNow.AddMinutes(-30),
                     LastActivity = DateTime.UtcNow.AddMinutes(-2)
                 };
                 db.DeviceSessions.Add(session);
@@ -487,7 +487,7 @@ namespace HandySuites.Tests.Application.Auth
                     UserAgent = "Mozilla/5.0",
                     IpAddress = "10.0.0.40",
                     Status = SessionStatus.Active,
-                    SessionStart = DateTime.UtcNow.AddMinutes(-10),
+                    LoggedInAt = DateTime.UtcNow.AddMinutes(-10),
                     LastActivity = DateTime.UtcNow.AddMinutes(-1)
                 });
                 await db.SaveChangesAsync();
