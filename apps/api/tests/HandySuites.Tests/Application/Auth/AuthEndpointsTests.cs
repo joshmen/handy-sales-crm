@@ -25,7 +25,7 @@ namespace HandySuites.Tests.Integration.Auth
             var dto = new UsuarioRegisterDto
             {
                 Email = $"user{Guid.NewGuid():N}@test.com",
-                Password = "Password123",
+                Password = "PasswordValid12",
                 Nombre = "Usuario Test",
                 NombreEmpresa = "Empresa Test",
                 IdentificadorFiscal = "XAXX010101000",
@@ -49,7 +49,7 @@ namespace HandySuites.Tests.Integration.Auth
             var dto = new UsuarioRegisterDto
             {
                 Email = email,
-                Password = "Password123",
+                Password = "PasswordValid12",
                 Nombre = "Usuario Test",
                 NombreEmpresa = "Empresa Test"
             };

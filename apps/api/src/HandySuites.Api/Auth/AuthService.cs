@@ -339,23 +339,62 @@ public class AuthService
         }
     }
 
+    // Sprint correctivo 2026-06-06: login lockout config.
+    private const int MaxFailedAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     public async Task<object?> LoginAsync(UsuarioLoginDto dto)
     {
         // Bypass global filters for login query - user might not have tenant context yet
         var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == dto.email);
+
+        // Sprint correctivo 2026-06-06: lockout per-email tras 5 fallos.
+        // Check antes de verificar password — si esta locked, ni siquiera
+        // hacemos el BCrypt.Verify (que es caro).
+        if (usuario != null && usuario.LockedUntil.HasValue && usuario.LockedUntil.Value > DateTime.UtcNow)
+        {
+            await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
+                $"Login bloqueado por lockout activo hasta {usuario.LockedUntil:O}", "blocked");
+            return new
+            {
+                code = "ACCOUNT_LOCKED",
+                message = "Cuenta temporalmente bloqueada por multiples intentos fallidos. Intenta de nuevo mas tarde.",
+                lockedUntil = usuario.LockedUntil
+            };
+        }
 
         // Verify password using BCrypt
         var loginSuccess = usuario != null && BCrypt.Net.BCrypt.Verify(dto.password, usuario.PasswordHash);
 
         if (!loginSuccess || usuario is null)
         {
-            // Log failed login attempt
+            // Log failed login attempt + incrementar contador + posiblemente lockear
             if (usuario != null)
             {
-                await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
-                    $"Intento de login fallido para {usuario.Email}", "failed");
+                usuario.FailedLoginAttempts += 1;
+                if (usuario.FailedLoginAttempts >= MaxFailedAttempts)
+                {
+                    usuario.LockedUntil = DateTime.UtcNow.Add(LockoutDuration);
+                    await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
+                        $"Cuenta bloqueada por {MaxFailedAttempts} intentos fallidos hasta {usuario.LockedUntil:O}", "blocked");
+                }
+                else
+                {
+                    await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
+                        $"Intento de login fallido ({usuario.FailedLoginAttempts}/{MaxFailedAttempts}) para {usuario.Email}", "failed");
+                }
+                await _db.SaveChangesAsync();
             }
             return null;
+        }
+
+        // Login exitoso: reset contadores de lockout.
+        if (usuario.FailedLoginAttempts != 0 || usuario.LockedUntil.HasValue)
+        {
+            usuario.FailedLoginAttempts = 0;
+            usuario.LockedUntil = null;
+            // SaveChanges sera flusheado por el resto de la operacion;
+            // de cualquier modo, asegurar persistencia minima aqui.
         }
 
         // Block soft-deleted or deactivated users

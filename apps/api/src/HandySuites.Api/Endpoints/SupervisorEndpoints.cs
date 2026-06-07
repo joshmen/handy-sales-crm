@@ -212,13 +212,21 @@ public static class SupervisorEndpoints
                          && c.EliminadoEn == null)
                 .CountAsync();
 
-            var ventasMes = await db.Pedidos
+            // Sprint correctivo 2026-06-06: SQLite no soporta Sum(decimal)
+            // server-side (NotSupportedException). PostgreSQL si. Workaround
+            // cross-DB: traer (Total) y agregar en memoria. Para queries
+            // del dashboard del supervisor el set tipicamente es <10k pedidos
+            // del mes, asi que el cost es negligible. Si crece, usar raw SQL
+            // o vista materializada.
+            var totalesMes = await db.Pedidos
                 .AsNoTracking()
                 .Where(p => allIds.Contains(p.UsuarioId)
                          && p.TenantId == tenant.TenantId
                          && p.FechaPedido >= mesStartUtc && p.FechaPedido < mesEndUtc
                          && p.Activo)
-                .SumAsync(p => (decimal?)p.Total) ?? 0;
+                .Select(p => p.Total)
+                .ToListAsync();
+            var ventasMes = totalesMes.Sum();
 
             return Results.Ok(new
             {

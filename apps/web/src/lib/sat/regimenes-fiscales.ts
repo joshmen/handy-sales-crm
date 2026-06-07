@@ -1,13 +1,35 @@
 /**
- * Sprint pre-prod #45 audit 2026-06-06: catalogo SAT centralizado.
+ * Sprint pre-prod #45 + correctivo 2026-06-06: catalogo SAT centralizado.
+ *
+ * Fuente verificada: SAT Anexo 20 v4.0 — catalogo c_RegimenFiscal.
+ *   URL oficial:
+ *   http://omawww.sat.gob.mx/tramitesyservicios/Paginas/anexo_20.htm
+ *   (descargar "Catálogos del Anexo 20 (xls)").
+ *
+ * Validacion del CFDI:
+ *   - El XML CFDI 4.0 transmite SOLO el `RegimenFiscalReceptor` codigo
+ *     (atributo de 3 digitos). La descripcion NO se envia — es solo
+ *     display al usuario.
+ *   - El PAC valida que el codigo este en c_RegimenFiscal vigente al
+ *     momento del timbrado. Los 19 codigos aqui estan vigentes en v4.0
+ *     (verificado 2026-06-06).
+ *
+ * Reglas adicionales del SAT (no enforced aqui, pero documento):
+ *   - PERSONA FISICA (RFC con 13 chars) NO puede usar regimen 601, 603,
+ *     620, 622, 623, 624 (son solo morales).
+ *   - PERSONA MORAL (RFC con 12 chars) NO puede usar regimen 605, 606,
+ *     607, 608, 611, 612, 614, 615, 616, 621, 625 (son solo fisicas).
+ *   - 610 y 626 aplican a ambos.
+ *   El frontend deberia filtrar el dropdown segun el tipo de RFC del
+ *   receptor (futuro: usar `applies` field). Por ahora mostramos todos.
+ *
+ * Mantenibilidad: si SAT publica un Anexo 20 v4.1 con nuevos codigos,
+ * actualizar este array. NO eliminar codigos viejos sin verificar que
+ * ningun tenant los tenga asignados (rompe re-timbrado).
  *
  * Antes vivian 20+ <option> hardcoded en billing/settings/page.tsx con
  * em-dash separador ("601 — General...") que viola la regla
- * feedback_no_em_dashes_no_pastels. Ademas, cualquier otra pagina (registro
- * fiscal, alta de cliente fiscal, etc.) duplicaba la lista.
- *
- * Fuente oficial: SAT - Catalogo c_RegimenFiscal del Anexo 20 v4.0.
- * Separador `: ` en lugar de em-dash.
+ * feedback_no_em_dashes_no_pastels. Separador `: ` en lugar de em-dash.
  */
 
 export interface RegimenFiscal {

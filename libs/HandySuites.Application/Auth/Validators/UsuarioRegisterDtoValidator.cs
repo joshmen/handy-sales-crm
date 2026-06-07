@@ -11,9 +11,18 @@ namespace HandySuites.Application.Usuarios.Validators
                 .NotEmpty().WithMessage("El correo electrónico es obligatorio.")
                 .EmailAddress().WithMessage("El formato del correo electrónico es inválido.");
 
+            // Sprint correctivo 2026-06-06: OWASP password complexity.
+            //   - 12+ chars (era 6, bruteforce GPU mata 8 chars de mixed case
+            //     en <1 dia).
+            //   - Al menos 1 minuscula, 1 mayuscula, 1 digito.
+            //   - Maximum 128 chars (DoS preventivo de BCrypt sobre input gigante).
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("La contraseña es obligatoria.")
-                .MinimumLength(6).WithMessage("La contraseña debe tener al menos 6 caracteres.");
+                .MinimumLength(12).WithMessage("La contraseña debe tener al menos 12 caracteres.")
+                .MaximumLength(128).WithMessage("La contraseña no debe exceder 128 caracteres.")
+                .Matches("[a-z]").WithMessage("La contraseña debe incluir al menos una letra minúscula.")
+                .Matches("[A-Z]").WithMessage("La contraseña debe incluir al menos una letra mayúscula.")
+                .Matches("[0-9]").WithMessage("La contraseña debe incluir al menos un dígito.");
 
             RuleFor(x => x.Nombre)
                 .NotEmpty().WithMessage("El nombre es obligatorio.");

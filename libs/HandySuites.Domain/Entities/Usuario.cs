@@ -18,6 +18,16 @@ public class Usuario : AuditableEntity
     [Column("nombre")]
     public string Nombre { get; set; } = string.Empty;
 
+    // Sprint correctivo 2026-06-06: login lockout per-email tras N fallos.
+    // FailedLoginAttempts cuenta tries consecutivos; LockedUntil cuando
+    // alcanza el threshold, bloquea hasta ese momento. Ambos se reset a 0/null
+    // tras un login exitoso.
+    [Column("failed_login_attempts")]
+    public int FailedLoginAttempts { get; set; }
+
+    [Column("locked_until")]
+    public DateTime? LockedUntil { get; set; }
+
     /// <summary>
     /// Rol explícito del usuario. Valores: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.
     /// Ver <see cref="RoleNames"/> para constantes.
