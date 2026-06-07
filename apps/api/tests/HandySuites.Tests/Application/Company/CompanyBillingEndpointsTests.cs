@@ -165,13 +165,10 @@ namespace HandySuites.Tests.Application.Company
         // Validacion — RFC con longitud invalida
         // ============================================================
 
-        // BUG PROD documentado sprint pre-prod #11 (2026-06-06):
-        // POST /api/company/billing acepta RFC con < 12 caracteres pese a
-        // [StringLength(13, MinimumLength=12)] en el DTO. Falta validacion explicita
-        // (ApiController + ModelState.IsValid o FluentValidation). Endpoint
-        // devuelve 201 Created con RFC invalido.
-        // TODO: agregar validacion y des-Skip este test.
-        [Fact(Skip = "PROD BUG: validacion RFC corto NO se aplica. Ver comentario arriba.")]
+        // Sprint pre-prod #11 audit 2026-06-07: fix aplicado en
+        // CompanyEndpoints.cs (POST/PUT billing) — Validator.TryValidateObject
+        // ejecuta los DataAnnotations del DTO antes de llamar al service.
+        [Fact]
         public async Task PostBilling_ConRFCDemasiadoCorto_DeberiaRetornar400()
         {
             var client = ClientAs("ADMIN");

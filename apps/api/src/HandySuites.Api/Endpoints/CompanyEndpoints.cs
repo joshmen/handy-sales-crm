@@ -289,6 +289,23 @@ namespace HandySuites.Api.Endpoints
                         return Results.Forbid();
                     }
 
+                    // Sprint pre-prod #11 audit 2026-06-07: Minimal API no ejecuta
+                    // DataAnnotations automaticamente. Validar manualmente todos los
+                    // [Required], [StringLength], [RegularExpression], [EmailAddress],
+                    // [Phone], [Url], [Range] del DTO. Antes se podia crear con
+                    // RFC corto, CodigoPostal no-numerico, RegimenFiscal cualquier
+                    // longitud, etc.
+                    var validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(request);
+                    var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+                    if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+                        request, validationContext, validationResults, validateAllProperties: true))
+                    {
+                        var errors = validationResults
+                            .GroupBy(r => r.MemberNames.FirstOrDefault() ?? "")
+                            .ToDictionary(g => g.Key, g => g.Select(r => r.ErrorMessage ?? "Validacion fallida").ToArray());
+                        return Results.ValidationProblem(errors);
+                    }
+
                     var result = await billingService.CreateAsync(tenantId, userId, request);
 
                     return result != null
@@ -326,6 +343,20 @@ namespace HandySuites.Api.Endpoints
                     if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
+                    }
+
+                    // Sprint pre-prod #11 audit 2026-06-07: validar DataAnnotations
+                    // del UpdateDatosFacturacionRequest (mismo patron que el POST
+                    // arriba — Minimal API no las ejecuta automaticamente).
+                    var validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(request);
+                    var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+                    if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+                        request, validationContext, validationResults, validateAllProperties: true))
+                    {
+                        var errors = validationResults
+                            .GroupBy(r => r.MemberNames.FirstOrDefault() ?? "")
+                            .ToDictionary(g => g.Key, g => g.Select(r => r.ErrorMessage ?? "Validacion fallida").ToArray());
+                        return Results.ValidationProblem(errors);
                     }
 
                     var result = await billingService.UpdateAsync(tenantId, userId, request);

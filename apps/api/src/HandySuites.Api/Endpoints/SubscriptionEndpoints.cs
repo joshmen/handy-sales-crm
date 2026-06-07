@@ -410,7 +410,10 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         [FromServices] HandySuitesDbContext db,
         [FromServices] IConfiguration config)
     {
-        if (!currentTenant.IsAdminOrAbove)
+        // Sprint pre-prod #11 audit 2026-06-07: comprar timbres mueve dinero
+        // (Stripe checkout). SUPERVISOR no debe firmar cargos de billing.
+        // Cambiado de IsAdminOrAbove a IsStrictAdmin.
+        if (!currentTenant.IsStrictAdmin)
             return Results.Forbid();
 
         // Validate package from DB
