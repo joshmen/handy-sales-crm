@@ -64,6 +64,13 @@ public class MobileWebApplicationFactory : WebApplicationFactory<Program>
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         Environment.SetEnvironmentVariable("RUN_MIGRATIONS", "false");
+        // Mobile API's Program.cs reads Jwt:Secret synchronously during AddJwtAuthentication
+        // (before ConfigureAppConfiguration callbacks apply). Setting via env var with __ separator
+        // ensures the value is present in builder.Configuration when .AddEnvironmentVariables() runs.
+        Environment.SetEnvironmentVariable("Jwt__Secret", "12345678901234567890123456789012");
+        Environment.SetEnvironmentVariable("Jwt__Issuer", "HandySuites.Test");
+        Environment.SetEnvironmentVariable("Jwt__Audience", "HandySuites.Test");
+        Environment.SetEnvironmentVariable("Jwt__ExpirationMinutes", "60");
         builder.UseEnvironment("Testing");
 
         builder.ConfigureAppConfiguration((_, config) =>
@@ -84,6 +91,16 @@ public class MobileWebApplicationFactory : WebApplicationFactory<Program>
             // SQLite in-memory (persistent during fixture lifetime)
             _connection = new SqliteConnection("DataSource=:memory:");
             _connection.Open();
+
+            // Disable FK enforcement to keep seeding minimal — the domain has many
+            // required FKs (IdZona, CategoriaClienteId, etc.) that are not relevant
+            // for HTTP-level endpoint coverage tests. Production uses PostgreSQL
+            // which loads full seed scripts with referenced rows present.
+            using (var pragma = _connection.CreateCommand())
+            {
+                pragma.CommandText = "PRAGMA foreign_keys = OFF;";
+                pragma.ExecuteNonQuery();
+            }
 
             services.RemoveAll<DbContextOptions<HandySuitesDbContext>>();
             services.AddDbContext<HandySuitesDbContext>(options =>
@@ -123,6 +140,14 @@ public class MobileWebApplicationFactory : WebApplicationFactory<Program>
             var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
+            // EF Core (and SQLite default) may have re-enabled FK enforcement after
+            // EnsureCreated. Re-apply to ensure the seed can insert with partial graphs
+            // (e.g. Cliente.IdZona/CategoriaClienteId without referenced rows).
+            using (var pragma2 = _connection.CreateCommand())
+            {
+                pragma2.CommandText = "PRAGMA foreign_keys = OFF;";
+                pragma2.ExecuteNonQuery();
+            }
             MobileTestSeeder.Seed(db);
         });
     }
