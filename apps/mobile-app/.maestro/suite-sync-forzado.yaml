@@ -61,7 +61,7 @@ name: sync-forzado
       notVisible: "Sincronización"
     commands:
       - tapOn:
-          text: "Mas"
+          text: "M�s"
           optional: true
 - extendedWaitUntil:
     visible: "Sincronización"

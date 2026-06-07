@@ -64,9 +64,9 @@ name: jornada-lifecycle
 # --- Paso 3: navegar a Configuracion y validar toggle GPS ---
 - runFlow:
     when:
-      visible: "Mas"
+      visible: "Más"
     commands:
-      - tapOn: "Mas"
+      - tapOn: "Más"
 
 - extendedWaitUntil:
     visible:

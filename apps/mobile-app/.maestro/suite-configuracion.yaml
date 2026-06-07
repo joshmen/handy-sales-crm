@@ -19,9 +19,9 @@ name: configuracion-accesos-completos
 
 # 2) Navegar al tab Mas (entry point para configuracion)
 - extendedWaitUntil:
-    visible: "Mas"
+    visible: "Más"
     timeout: 30000
-- tapOn: "Mas"
+- tapOn: "Más"
 
 # 3) Verificar hub Mas cargado
 - extendedWaitUntil:

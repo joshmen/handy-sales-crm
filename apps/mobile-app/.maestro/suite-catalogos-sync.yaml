@@ -165,9 +165,9 @@ name: catalogos-sync-validation
 
 - runFlow:
     when:
-      visible: "Mas"
+      visible: "Más"
     commands:
-      - tapOn: "Mas"
+      - tapOn: "Más"
 
 - extendedWaitUntil:
     visible:

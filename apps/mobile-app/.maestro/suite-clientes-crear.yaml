@@ -34,9 +34,9 @@ name: clientes-crear-offline-sync
 # Paso 1 - Navegar al tab Mas (donde vive Clientes en el menu)
 - runFlow:
     when:
-      visible: "Mas"
+      visible: "Más"
     commands:
-      - tapOn: "Mas"
+      - tapOn: "Más"
 - extendedWaitUntil:
     visible: "Clientes"
     timeout: 30000
@@ -262,9 +262,9 @@ name: clientes-crear-offline-sync
 # Paso 13 - Navegar a Sync para verificar pending count
 - runFlow:
     when:
-      visible: "Mas"
+      visible: "Más"
     commands:
-      - tapOn: "Mas"
+      - tapOn: "Más"
 - extendedWaitUntil:
     visible: "Sincronizacion"
     timeout: 30000

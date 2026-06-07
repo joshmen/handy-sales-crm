@@ -108,7 +108,7 @@ name: auth-flow-login-consent-dashboard-logout
 - assertVisible:
     text: "Cobrar"
 - assertVisible:
-    text: "Mas"
+    text: "Más"
 
 # ---- FASE 2: Smoke test de navegacion entre tabs principales ----
 
@@ -142,10 +142,10 @@ name: auth-flow-login-consent-dashboard-logout
 # ---- FASE 3: Force-logout desde Mas -> Configuracion ----
 
 - tapOn:
-    text: "Mas"
+    text: "Más"
 - extendedWaitUntil:
     visible:
-      text: "Mas"
+      text: "Más"
     timeout: 30000
 - takeScreenshot: 06-tab-mas
 
