@@ -126,6 +126,48 @@ namespace HandySuites.Tests.Application.Supervisores
         }
 
         // ============================================================
+        // IDOR fix sprint pre-prod #11 — SUPERVISOR S1 NO debe gestionar S2
+        // ============================================================
+
+        [Fact]
+        public async Task GetVendedoresDeOtroSupervisor_SupervisorS1_DeberiaRetornar403_AlMirarS2()
+        {
+            // Supervisor 200 (valido en seed) intenta ver vendedores del supervisor 201 (otro id)
+            var client = ClientAs("SUPERVISOR", userId: "200", tenantId: "1");
+            var response = await client.GetAsync("/api/supervisores/201/vendedores");
+            response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+                "Supervisor solo puede ver SUS PROPIOS vendedores (id == userId)");
+        }
+
+        [Fact]
+        public async Task GetVendedoresPropios_DeberiaPermitir_SupervisorViendoSuPropioId()
+        {
+            // Supervisor 200 viendo sus propios vendedores via /200/vendedores
+            var client = ClientAs("SUPERVISOR", userId: "200", tenantId: "1");
+            var response = await client.GetAsync("/api/supervisores/200/vendedores");
+            response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        }
+
+        [Fact]
+        public async Task AsignarVendedoresAOtroSupervisor_SupervisorS1_DeberiaRetornar403()
+        {
+            var client = ClientAs("SUPERVISOR", userId: "200", tenantId: "1");
+            var request = new { vendedorIds = new[] { 999 } };
+            var response = await client.PostAsJsonAsync("/api/supervisores/201/asignar", request);
+            response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+                "Supervisor no debe asignar vendedores a OTRO supervisor (IDOR fix)");
+        }
+
+        [Fact]
+        public async Task DesasignarVendedorDeOtroSupervisor_SupervisorS1_DeberiaRetornar403()
+        {
+            var client = ClientAs("SUPERVISOR", userId: "200", tenantId: "1");
+            var response = await client.DeleteAsync("/api/supervisores/201/vendedores/999");
+            response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+                "Supervisor no debe desasignar vendedores de OTRO supervisor (IDOR fix)");
+        }
+
+        // ============================================================
         // Cross-tenant IDOR — supervisor de tenant 1 no debe operar tenant 2
         // ============================================================
 

@@ -65,13 +65,19 @@ public static class SupervisorEndpoints
         .WithSummary("Mis vendedores")
         .WithDescription("Obtiene los vendedores asignados al supervisor autenticado.");
 
-        // GET /api/supervisores/{id}/vendedores (admin only)
+        // GET /api/supervisores/{id}/vendedores (admin: cualquier; supervisor: solo el suyo)
         group.MapGet("/{id:int}/vendedores", async (
             int id,
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdminOrAbove)
+                return Results.Forbid();
+
+            // IDOR fix sprint pre-prod #11 audit 2026-06-06: SUPERVISOR solo
+            // puede ver vendedores de SU PROPIO id (no de otros supervisores
+            // del mismo tenant). ADMIN/SuperAdmin pueden ver cualquiera.
+            if (tenant.IsSupervisor && int.Parse(tenant.UserId) != id)
                 return Results.Forbid();
 
             var vendedores = await db.Usuarios
@@ -103,6 +109,11 @@ public static class SupervisorEndpoints
             HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdminOrAbove)
+                return Results.Forbid();
+
+            // IDOR fix: SUPERVISOR solo puede gestionar su propia asignacion.
+            // ADMIN/SuperAdmin pueden gestionar cualquier supervisor del tenant.
+            if (tenant.IsSupervisor && int.Parse(tenant.UserId) != id)
                 return Results.Forbid();
 
             // Verify supervisor exists and belongs to tenant
@@ -141,6 +152,10 @@ public static class SupervisorEndpoints
             HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdminOrAbove)
+                return Results.Forbid();
+
+            // IDOR fix: SUPERVISOR solo puede desasignar de SU lista.
+            if (tenant.IsSupervisor && int.Parse(tenant.UserId) != id)
                 return Results.Forbid();
 
             var vendedor = await db.Usuarios
