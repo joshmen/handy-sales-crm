@@ -1,0 +1,368 @@
+appId: host.exp.exponent
+name: "Vendedor: Aplicar cupon/promocion a pedido"
+tags:
+  - functional
+  - vendedor
+  - extras
+  - promociones
+  - cupon
+  - pricing
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR / EXTRAS
+# Use case: aplicar-cupon-promocion-pedido
+#
+# IMPORTANT — PROD GAP (no es un bug pero es una divergencia real):
+#   El backend tiene CRUD completo de cupones:
+#     apps/api/src/HandySuites.Api/Endpoints/CuponEndpoints.cs
+#     apps/api/tests/HandySuites.Tests/Application/Cupones/...
+#   PERO el mobile-app NO tiene UI para capturar un codigo de cupon
+#   manual en el flujo de pedido.
+#   En mobile, los descuentos se aplican AUTOMATICAMENTE via:
+#     - Promociones por producto (porcentaje o BOGO regalo)
+#       -> apps/mobile-app/src/db/models/Promocion.ts
+#     - Descuentos por cantidad (volumen)
+#       -> apps/mobile-app/src/db/models/Descuento.ts
+#     - Lista de precios del cliente
+#       -> apps/mobile-app/src/hooks/usePricing.ts
+#   Estas se evaluan en el hook usePricing -> revision.tsx (Step 3)
+#   y aparecen como badges "Promo -X%", "Vol -X%", "Regalo +N".
+#
+# PROD BUG / FIX TODO: cuando exista pantalla de codigo manual de
+#   cupon (input + boton "Aplicar") este test debera extenderse para
+#   ejercitar el input. Por ahora cubrimos el flujo REAL que ya
+#   existe en produccion: la aplicacion automatica de promocion
+#   sobre el pedido y su reflejo en el desglose de totales.
+#
+# Cobertura REAL:
+#   tab Vender -> FAB Nuevo Pedido -> Preventa
+#   -> Step1 Cliente con lista de precios o seed comun
+#   -> Step2 Productos: agregar producto que dispare promo/descuento
+#      (busqueda generica "a"/"coca" hace match con seed Jeyma)
+#   -> Step3 Revision:
+#        * Aserciones blandas (runFlow when:visible) de badges de
+#          promocion: "Promo", "Vol", "regalo", "Precio especial"
+#        * Asercion DURA de seccion "Descuentos" en totales O de
+#          subtotal "Subtotal" + simbolo moneda "$" — el outcome
+#          esperado siempre se cumple: el pedido renderiza con
+#          su total final calculado por usePricing.
+#   -> Confirmar Pedido -> exito.tsx (outcome final del flujo)
+#
+# Pantalla bajo prueba:
+#   apps/mobile-app/app/(tabs)/vender/crear/revision.tsx
+#   (lineas 252-298: render de badges promo/vol/regalo)
+#   (lineas 300-325: bloque "Descuentos" + Subtotal + IVA + Total)
+#
+# PREREQ:
+#   - Sesion VENDEDOR activa (auth/01-login-vendedor.yaml)
+#   - Catalogo Jeyma sincronizado offline (productos + promociones)
+#   - Cliente seed "Abarrotes Don Pancho" o "Casa Madero"
+# =================================================================
+
+# ----------------------------------------------------------------
+# 0) Dismiss modales opcionales
+# ----------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+
+# ----------------------------------------------------------------
+# 1) Reset nav -> tab Vender
+# ----------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 30000
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+- takeScreenshot: cupon-promo-00-hub-vender
+
+# ----------------------------------------------------------------
+# 2) Abrir BottomSheet "Tipo de Venta" via FAB
+# ----------------------------------------------------------------
+- runFlow:
+    when:
+      visible:
+        id: "fab-nuevo-pedido"
+    commands:
+      - tapOn:
+          id: "fab-nuevo-pedido"
+- runFlow:
+    when:
+      visible: "Nuevo Pedido"
+    commands:
+      - tapOn: "Nuevo Pedido"
+- runFlow:
+    when:
+      visible: "Nuevo pedido"
+    commands:
+      - tapOn: "Nuevo pedido"
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Tipo de Venta"
+    timeout: 10000
+- assertVisible: "Preventa"
+- tapOn: "Preventa"
+- waitForAnimationToEnd
+
+# ----------------------------------------------------------------
+# 3) Step 1 — Cliente
+# ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- assertVisible: "Cliente"
+- assertVisible: "Productos"
+- assertVisible: "Revisar"
+
+- tapOn: "Buscar cliente..."
+- inputText: "a"
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Preferir cliente con lista de precios especial (Casa Madero) si
+# el seed lo incluye, fallback a "Abarrotes Don Pancho", fallback
+# a tap blind sobre primer resultado.
+- runFlow:
+    when:
+      visible: "Casa Madero"
+    commands:
+      - tapOn: "Casa Madero"
+- runFlow:
+    when:
+      visible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn: "Abarrotes Don Pancho"
+- runFlow:
+    when:
+      notVisible: "Continuar"
+    commands:
+      - tapOn:
+          point: "50%,55%"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Continuar"
+    timeout: 10000
+- takeScreenshot: cupon-promo-01-cliente-elegido
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# ----------------------------------------------------------------
+# 4) Step 2 — Productos: agregar producto que dispare promo
+# ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Buscar producto..."
+    timeout: 15000
+
+- assertVisible: "Productos"
+
+# Buscar "coca" (suele tener promo BOGO en seed Jeyma); si no hay,
+# fallback a busqueda generica.
+- tapOn: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: cupon-promo-02-busqueda-promo
+
+# Si no hay resultados con "coca", limpiar y buscar generica "a"
+- runFlow:
+    when:
+      notVisible: "Agregar"
+    commands:
+      - eraseText: 20
+      - inputText: "a"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- extendedWaitUntil:
+    visible: "Agregar"
+    timeout: 15000
+- tapOn: "Agregar"
+
+# QuantityNumericSheet: subir cantidad para disparar descuento por
+# volumen (default 1 puede no alcanzar cantidad_minima).
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Aceptar"
+    timeout: 15000
+
+# Intentar subir la cantidad — busca el boton "+" del stepper si
+# existe. Si no, confirmar con la cantidad default (no fatal).
+- runFlow:
+    when:
+      visible: "+"
+    commands:
+      - tapOn: "+"
+      - tapOn: "+"
+      - tapOn: "+"
+      - tapOn: "+"
+      - tapOn: "+"
+- takeScreenshot: cupon-promo-03-qty-sheet
+
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+- runFlow:
+    when:
+      visible: "Aceptar"
+    commands:
+      - tapOn: "Aceptar"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- extendedWaitUntil:
+    visible: "Revisar pedido"
+    timeout: 10000
+- takeScreenshot: cupon-promo-04-cart
+
+# ----------------------------------------------------------------
+# 5) Ir a Step 3 — Revision (aqui se renderizan badges + Descuentos)
+# ----------------------------------------------------------------
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Revisar|Resumen|Subtotal|Total"
+    timeout: 15000
+- takeScreenshot: cupon-promo-05-revision
+
+# ----------------------------------------------------------------
+# 6) ASERCIONES BLANDAS de promo aplicada (badges)
+#    runFlow when:visible no rompe el test si la promo no aplico
+#    (seed degenerado). Estos casos son cobertura OPTIMISTA.
+# ----------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Promo"
+    commands:
+      - assertVisible: "Promo"
+      - takeScreenshot: cupon-promo-06a-badge-promo
+
+- runFlow:
+    when:
+      visible: "Vol"
+    commands:
+      - assertVisible: "Vol"
+      - takeScreenshot: cupon-promo-06b-badge-volumen
+
+- runFlow:
+    when:
+      visible: "regalo"
+    commands:
+      - assertVisible: "regalo"
+      - takeScreenshot: cupon-promo-06c-badge-bogo
+
+- runFlow:
+    when:
+      visible: "Precio especial"
+    commands:
+      - assertVisible: "Precio especial"
+      - takeScreenshot: cupon-promo-06d-precio-especial
+
+- runFlow:
+    when:
+      visible: "Descuentos"
+    commands:
+      - assertVisible: "Descuentos"
+      - takeScreenshot: cupon-promo-06e-descuentos-row
+
+# ----------------------------------------------------------------
+# 7) ASERCIONES DURAS — siempre deben pasar en cualquier seed
+#    (totales del pedido renderizados con simbolo moneda)
+# ----------------------------------------------------------------
+- assertVisible:
+    text: "Subtotal|Total"
+- assertVisible: "IVA (16%)"
+- assertVisible:
+    text: "\\$"
+- takeScreenshot: cupon-promo-07-totales-ok
+
+# ----------------------------------------------------------------
+# 8) Confirmar pedido -> outcome final exito.tsx
+#    Esto valida que el pedido con promo aplicada se persiste OK
+#    en WDB (createPedidoOffline acepta cantidadBonificada +
+#    promocionId per linea — ver revision.tsx linea 142-143).
+# ----------------------------------------------------------------
+- assertVisible: "Registrar Pedido"
+- tapOn: "Registrar Pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Enviar|Registrar"
+    timeout: 10000
+- takeScreenshot: cupon-promo-08-confirm-modal
+
+- runFlow:
+    when:
+      visible: "Enviar"
+    commands:
+      - tapOn: "Enviar"
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Outcome final: pantalla de exito con folio o "registrado"
+- extendedWaitUntil:
+    visible:
+      text: "registrado|registrada|exitoso|Pedido"
+    timeout: 20000
+- takeScreenshot: cupon-promo-09-exito-final

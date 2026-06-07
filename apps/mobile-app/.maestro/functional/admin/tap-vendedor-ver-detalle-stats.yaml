@@ -1,0 +1,392 @@
+# =============================================================================
+# Maestro E2E - ADMIN: tap sobre vendedor del equipo y ver detalle + stats
+# -----------------------------------------------------------------------------
+# Use case: adm-tap-vendedor-stats
+# Role: ADMIN
+# Layer: mobile (React Native + Expo Go)
+#
+# Diferencia clave vs caso supervisor (sup-vendedor-resumen-7d):
+#   - ADMIN ve a TODOS los vendedores del tenant (no solo subordinados directos).
+#     Codigo: MobileSupervisorEndpoints.cs L37-44 -> baseQuery excluye admins
+#     y self, NO filtra por SupervisorId cuando IsAdminOrAbove.
+#   - ADMIN tambien ve la seccion "HOY EN TODA LA EMPRESA" en el tab Equipo
+#     (testID="admin-tenant-resumen") que SUPERVISOR no ve.
+#     Codigo: app/(tabs)/equipo/index.tsx L146-158 -> {isAdmin && resumenTenant && ...}
+#
+# Flujo cubierto:
+#   1. Login con admin@jeyma.com / test123 (seed canonico, role=ADMIN).
+#   2. Manejo de consents/permisos opcionales post-login.
+#   3. Validar dashboard ADMIN diferenciado (saludo "Administrador").
+#   4. Navegar al tab Equipo y verificar:
+#      - Header "Mi Equipo" + botones "Actividad" y "Ver mapa".
+#      - Seccion exclusiva admin "HOY EN TODA LA EMPRESA" con KPIs tenant.
+#      - Lista de vendedores con "Vendedor 1 Jeyma" visible (seed canonico).
+#      - Cross-tenant guard: NO debe aparecer Admin Huichol / Admin Centro.
+#   5. Tap sobre el vendedor -> screen Detalle Vendedor.
+#   6. Validar grid de stats default (preset "Hoy"):
+#      - sectionLabel "RESUMEN DEL DÍA" + testID "vendedor-stats".
+#      - Cards: Pedidos, Ventas, Visitas, Cobros, Clientes.
+#   7. Cambiar preset a "Ayer" -> refetch con ?fecha=YYYY-MM-DD.
+#      - sectionLabel cambia a "RESUMEN DE AYER".
+#      - Grid sigue presente (preset !== '7d').
+#   8. Cambiar preset a "7 días" -> refetch con ?rango=7d.
+#      - sectionLabel cambia a "ÚLTIMOS 7 DÍAS".
+#      - Grid desaparece, aparece diasList con chips "pedidos", "vis", "cob".
+#   9. Volver a "Hoy" y validar que el grid reaparece.
+#  10. Bloque "ÚLTIMA UBICACIÓN" siempre visible (no depende del preset).
+#  11. Volver al equipo y validar que seguimos en scope Jeyma.
+#  12. Logout limpio para no contaminar la suite siguiente.
+#
+# Backend hit:
+#   GET /api/mobile/supervisor/mis-vendedores                          (lista)
+#   GET /api/mobile/supervisor/resumen-tenant                          (admin-only)
+#   GET /api/mobile/supervisor/vendedor/{id}/resumen                    (hoy)
+#   GET /api/mobile/supervisor/vendedor/{id}/resumen?fecha=YYYY-MM-DD   (ayer)
+#   GET /api/mobile/supervisor/vendedor/{id}/resumen?rango=7d           (7 dias)
+#
+# Hooks frontend:
+#   useMisVendedores, useTenantResumen, useVendedorResumen
+#   (apps/mobile-app/src/hooks/useSupervisor.ts)
+#
+# Riesgo cubierto:
+#   - RBAC: que ADMIN pueda ver detalle de cualquier vendedor del tenant
+#     (no solo los que tenga asignados como SupervisorId).
+#   - Render condicional grid vs diasList (regresion preset 7d, hotfix sprint
+#     correctivo 2026-06).
+#   - Cross-tenant leak: ADMIN de Jeyma NO ve vendedores de Huichol/Centro.
+#   - Seccion "HOY EN TODA LA EMPRESA" solo visible a admin (no a supervisor).
+# =============================================================================
+appId: host.exp.exponent
+name: admin - tap vendedor ver detalle stats
+tags:
+  - admin
+  - equipo
+  - vendedor-detalle
+  - stats
+  - rbac
+  - mobile
+---
+
+- launchApp:
+    clearState: false
+
+# ---- Aviso de Privacidad opcional (primer launch tras clearState) ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ============================================================
+# FASE 1: Login ADMIN
+# ============================================================
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+
+- pressKey: "TAB"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: adm-vendedor-stats-01-login
+
+# ---- Consents / permisos post-login (no deterministas) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+
+# ============================================================
+# FASE 2: Aterrizaje dashboard ADMIN diferenciado
+# ============================================================
+
+- extendedWaitUntil:
+    visible:
+      text: "Administrador"
+    timeout: 30000
+
+- takeScreenshot: adm-vendedor-stats-02-dashboard
+
+# ============================================================
+# FASE 3: Navegar al tab Equipo
+# ============================================================
+
+- tapOn:
+    text: "Equipo"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# El header del tab Equipo es "Mi Equipo" (app/(tabs)/equipo/index.tsx L109)
+- extendedWaitUntil:
+    visible:
+      text: "Mi Equipo"
+    timeout: 15000
+
+# Botones del header (Actividad + Ver mapa)
+- assertVisible: "Actividad"
+- assertVisible: "Ver mapa"
+
+# Seccion exclusiva ADMIN — supervisor NO la ve.
+# Codigo: {isAdmin && resumenTenant && ...} en equipo/index.tsx L146
+- assertVisible:
+    text: "HOY EN TODA LA EMPRESA"
+
+# Section "VENDEDORES" siempre visible
+- assertVisible: "VENDEDORES"
+
+# Seed canonico Jeyma: admin@jeyma.com ve a vendedor1@jeyma.com como
+# "Vendedor 1 Jeyma" (infra/database/schema/seed_local_pg.sql L108).
+# ADMIN ve a TODOS los vendedores del tenant (no solo subordinados).
+- assertVisible: "Vendedor 1 Jeyma"
+
+# Cross-tenant guard — vendedores de otros tenants no deben filtrar
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- assertNotVisible: "Vendedor Rutas Norte"
+
+- takeScreenshot: adm-vendedor-stats-03-equipo-lista
+
+# ============================================================
+# FASE 4: Tap sobre la fila del vendedor -> Detalle Vendedor
+# ============================================================
+
+- tapOn: "Vendedor 1 Jeyma"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: "Detalle Vendedor"
+    timeout: 15000
+
+- assertVisible: "Vendedor 1 Jeyma"
+
+# Selector de presets (3 botones)
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 días"
+
+- takeScreenshot: adm-vendedor-stats-04-detalle-default-hoy
+
+# ============================================================
+# FASE 5: Validar preset por defecto = "Hoy" (grid de stats)
+# ============================================================
+
+# sectionLabel = 'RESUMEN DEL DÍA' (codigo L126)
+- assertVisible:
+    text: "RESUMEN DEL DÍA"
+
+# Grid con testID expuesto en codigo (vendedor-stats), L210
+- assertVisible:
+    id: "vendedor-stats"
+
+# 5 cards: Pedidos, Ventas, Visitas, Cobros, Clientes
+- assertVisible: "Pedidos"
+- assertVisible: "Ventas"
+- assertVisible: "Visitas"
+- assertVisible: "Cobros"
+- assertVisible: "Clientes"
+
+- takeScreenshot: adm-vendedor-stats-05-grid-stats-hoy
+
+# ============================================================
+# FASE 6: Cambiar preset a "Ayer" -> refetch con fecha=YYYY-MM-DD
+# ============================================================
+
+- tapOn: "Ayer"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# sectionLabel cambia a "RESUMEN DE AYER" (codigo L126)
+- extendedWaitUntil:
+    visible:
+      text: "RESUMEN DE AYER"
+    timeout: 15000
+
+# El grid sigue presente (preset !== '7d')
+- assertVisible:
+    id: "vendedor-stats"
+
+- takeScreenshot: adm-vendedor-stats-06-preset-ayer
+
+# ============================================================
+# FASE 7: Cambiar preset a "7 días" -> refetch con rango=7d
+# ============================================================
+
+- tapOn: "7 días"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# sectionLabel = "ÚLTIMOS 7 DÍAS" (codigo L126)
+- extendedWaitUntil:
+    visible:
+      text: "ÚLTIMOS 7 DÍAS"
+    timeout: 15000
+
+- takeScreenshot: adm-vendedor-stats-07-preset-7d-loaded
+
+# Render condicional: en 7d el grid desaparece, aparece diasList
+# Codigo: preset === '7d' && dias && dias.length > 0 ? diasList : statGrid (L187)
+- assertNotVisible:
+    id: "vendedor-stats"
+
+# Chips por fila (codigo L200-203): "{n} pedidos", "{n}/{m} vis", "{$} cob"
+- assertVisible:
+    text: "pedidos"
+- assertVisible:
+    text: "vis"
+- assertVisible:
+    text: "cob"
+
+- takeScreenshot: adm-vendedor-stats-08-lista-dias
+
+# Marca " · Hoy" en la fila del dia actual (codigo L196).
+# FIX TODO: el endpoint rellena 7 dias con totales en cero aunque no haya
+# actividad — la fila "Hoy" deberia existir siempre.
+- runFlow:
+    when:
+      visible:
+        text: "Hoy"
+    commands:
+      - assertVisible:
+          text: "Hoy"
+      - takeScreenshot: adm-vendedor-stats-09-fila-hoy-resaltada
+
+# ============================================================
+# FASE 8: Volver a "Hoy" -> grid reaparece
+# ============================================================
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      text: "RESUMEN DEL DÍA"
+    timeout: 15000
+
+- assertVisible:
+    id: "vendedor-stats"
+
+- takeScreenshot: adm-vendedor-stats-10-back-to-hoy
+
+# ============================================================
+# FASE 9: Bloque ULTIMA UBICACION (no depende del preset)
+# ============================================================
+
+- assertVisible:
+    text: "ÚLTIMA UBICACIÓN"
+
+- takeScreenshot: adm-vendedor-stats-11-ultima-ubicacion
+
+# ============================================================
+# FASE 10: Volver al equipo y validar scope Jeyma
+# ============================================================
+
+- tapOn:
+    text: "Volver"
+    optional: true
+
+# Fallback con back de SO si ChevronLeft no tiene label tappeable
+- runFlow:
+    when:
+      notVisible: "Mi Equipo"
+    commands:
+      - back
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 15000
+
+- assertVisible: "Vendedor 1 Jeyma"
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: adm-vendedor-stats-12-back-equipo
+
+# ============================================================
+# FASE 11: Logout limpio
+# ============================================================
+
+- tapOn:
+    text: "Más"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: adm-vendedor-stats-13-logout

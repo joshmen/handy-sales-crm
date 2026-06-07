@@ -1,0 +1,169 @@
+# =============================================================================
+# Maestro E2E — VENDEDOR: descargar PDF de factura desde mobile
+# -----------------------------------------------------------------------------
+# Use case: vend-descargar-pdf-factura
+# Role: VENDEDOR
+# Layer: mobile (React Native + Expo Go)
+#
+# RESUMEN DEL HALLAZGO (PROD BEHAVIOR / FIX TODO):
+#   - El menu "Facturas" en (tabs)/mas.tsx esta gated por:
+#       canSeeFacturas = facturacionEnabled
+#                        && (role === 'ADMIN' || 'SUPER_ADMIN' || 'SUPERVISOR')
+#     => El rol VENDEDOR NUNCA ve la opcion "Facturas" en el menu "Mas".
+#   - La pantalla de detalle (app/(tabs)/facturas/[id].tsx) NO expone un
+#     boton "Descargar PDF". Las unicas acciones son:
+#       * Vista previa Anexo 20  (router.push preview/[id])
+#       * Imprimir ticket 80mm   (Bluetooth nativo, requiere APK)
+#       * Enviar por correo      (POST enviar -> PAC envia PDF+XML)
+#     No existe descarga de PDF a archivo local desde el detalle.
+#
+#   PROD BUG / FIX TODO: Si el negocio requiere que VENDEDOR pueda descargar
+#   el PDF de las facturas que el mismo emitio en venta directa, hay que:
+#     (a) Incluir 'VENDEDOR' en canSeeFacturas en apps/mobile-app/app/(tabs)/mas.tsx
+#         (probablemente filtrado server-side por vendedor_id == currentUser)
+#     (b) Agregar boton "Descargar PDF" en facturas/[id].tsx que llame al
+#         endpoint mobile que devuelva el PDF (hoy solo existe enviar-por-correo).
+#
+# ESTRATEGIA DEL TEST (cobertura REAL del estado actual):
+#   1. Login VENDEDOR (subflow).
+#   2. Abrir tab "Mas".
+#   3. assertNotVisible "Facturas" => prueba la regla RBAC vigente.
+#   4. Scroll defensivo para confirmar que tampoco aparece mas abajo.
+#   5. Como contrato negativo del feature, el test PASA cuando confirma
+#      que VENDEDOR no tiene punto de entrada para descargar/imprimir
+#      facturas desde mobile.
+#
+# Cuando el bug se corrija (VENDEDOR pueda ver "Facturas" + boton "Descargar
+# PDF"), este test debera reescribirse al happy path:
+#   Mas -> Facturas -> primer item TIMBRADA -> "Descargar PDF" -> assert toast
+#   "PDF descargado" o assertVisible del share-sheet de Android.
+#
+# PREREQ:
+#   - Emulador Android con Expo Go en Metro :8081
+#   - Backend docker-compose up (seed Jeyma con vendedor1@jeyma.com)
+# =============================================================================
+appId: host.exp.exponent
+name: "Vendedor: descargar PDF de factura - RBAC negativo (Facturas oculto)"
+tags:
+  - vendedor
+  - facturas
+  - pdf
+  - rbac
+  - mobile
+---
+
+# -----------------------------------------------------------------------------
+# Paso 1 - Login VENDEDOR (subflow ya existente)
+# -----------------------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+- runFlow: ../../auth/01-login-vendedor.yaml
+
+# -----------------------------------------------------------------------------
+# Paso 2 - Dismiss de modales opcionales post-login
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar|Continuar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mientras uso la app"
+    commands:
+      - tapOn: "Mientras uso la app"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 3 - Dashboard del vendedor cargado
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: factura-pdf-vendedor-01-dashboard
+
+# -----------------------------------------------------------------------------
+# Paso 4 - Navegar a tab "Mas" (con tilde correcta)
+# -----------------------------------------------------------------------------
+- tapOn: "Mas"
+- waitForAnimationToEnd
+
+# El chip "Vendedor" confirma que el rol esta hidratado en (tabs)/mas.tsx
+- extendedWaitUntil:
+    visible: "Vendedor"
+    timeout: 15000
+
+- assertVisible: "Vendedor"
+
+- takeScreenshot: factura-pdf-vendedor-02-mas-menu
+
+# -----------------------------------------------------------------------------
+# Paso 5 - Verificar que items propios del vendedor SI aparecen
+# -----------------------------------------------------------------------------
+- assertVisible: "Clientes"
+- assertVisible: "Pedidos"
+- assertVisible: "Productos"
+
+# -----------------------------------------------------------------------------
+# Paso 6 - ASSERT RBAC: el item "Facturas" NO debe estar visible para VENDEDOR
+# -----------------------------------------------------------------------------
+# Este es el contrato actual: canSeeFacturas excluye VENDEDOR.
+# Si esto falla, significa que alguien expuso facturacion al vendedor sin
+# actualizar el test (revisar (tabs)/mas.tsx linea ~84).
+- assertNotVisible: "Facturas"
+
+# Scroll defensivo: verificar que tampoco aparece mas abajo en el menu
+- scroll
+- waitForAnimationToEnd
+
+- assertNotVisible: "Facturas"
+
+- takeScreenshot: factura-pdf-vendedor-03-sin-facturas
+
+# -----------------------------------------------------------------------------
+# Paso 7 - Confirmar que la unica via para PDF (Enviar por correo desde web)
+# no esta accesible desde mobile. El boton "Impresora" del menu Mas SI esta
+# disponible pero solo aplica a tickets de pedidos/cobros, no a facturas CFDI
+# para VENDEDOR.
+# -----------------------------------------------------------------------------
+- assertVisible: "Impresora"
+- assertVisible: "Mi Perfil"
+- assertVisible: "Configuracion"
+
+# -----------------------------------------------------------------------------
+# Paso 8 - Volver al dashboard para dejar el state limpio para flows downstream
+# -----------------------------------------------------------------------------
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 10000
+
+- takeScreenshot: factura-pdf-vendedor-04-back-dashboard

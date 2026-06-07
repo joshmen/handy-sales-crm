@@ -1,0 +1,352 @@
+appId: host.exp.exponent
+name: "Funcional VENDEDOR > Editar pedido BORRADOR (cantidades de lineas)"
+tags:
+  - functional
+  - vendedor
+  - vender
+  - borrador
+  - editar
+---
+
+# ══════════════════════════════════════════════════════════════════════
+# CASO DE USO: vend-editar-pedido-borrador
+# ROL: VENDEDOR  (vendedor1@jeyma.com / test123)
+# CAPA: mobile (apps/mobile-app — React Native / Expo / WatermelonDB)
+#
+# OBJETIVO:
+#   El vendedor logueado entra al tab "Vender", localiza un pedido en
+#   estado BORRADOR (estado=0, aun sin confirmar) y lo abre. El caso
+#   busca disparar la edicion de cantidad de una linea ya capturada
+#   ANTES de confirmar el pedido (mientras el estado lo permita).
+#
+# ENDPOINTS EJERCITADOS (esperados):
+#   - GET  /api/mobile/pedidos/{id}           -> 200 detalle del pedido
+#   - PUT  /api/mobile/pedidos/{id}/detalles  -> 200 actualiza cantidades
+#   - POST /api/mobile/sync/push              -> 200 sync delta WDB
+#
+# PROD BUG / FIX TODO:
+#   La pantalla apps/mobile-app/app/(tabs)/vender/[id].tsx renderiza el
+#   detalle del pedido en MODO LECTURA aunque el estado sea Borrador.
+#   No expone un boton "Editar", ni tap sobre la linea abre el
+#   QuantityNumericSheet de edicion. Las unicas acciones disponibles
+#   sobre un Borrador son "Confirmar Pedido" y "Cancelar Pedido".
+#
+#   Resultado: un vendedor que se equivoco en la cantidad de una linea
+#   tiene que cancelar el pedido y volver a capturarlo desde cero,
+#   perdiendo cliente + lineas + notas. Esto es regresion funcional vs
+#   el flujo web donde el admin si puede editar cantidades en Borrador.
+#
+#   Este flow documenta el gap haciendo:
+#     1. Setup: confirmar que existe un pedido en estado Borrador
+#     2. Abrir detalle del pedido
+#     3. Intentar abrir editor de cantidad (tap en linea de producto)
+#     4. Asserts negativos: NO existe boton "Editar" ni "Guardar"
+#     5. Asserts positivos: SI existen "Confirmar Pedido" y
+#        "Cancelar Pedido" (estado Borrador renderiza solo transiciones)
+#
+#   Cuando se implemente la feature, este flow debe MIGRARSE a:
+#     - tapear linea -> QuantityNumericSheet -> cambiar cantidad
+#     - confirmar y asserter total recalculado
+#     - assertVisible "Pedido actualizado" toast
+#
+# PRE-REQUISITOS:
+#   1) Ejecutar primero apps/mobile-app/.maestro/auth/01-login-vendedor.yaml
+#   2) Backend api_main + api_mobile up en docker-compose.dev.yml
+#   3) Seed Jeyma cargado (vendedor1@jeyma.com / test123)
+#   4) Al menos UN pedido sembrado en estado Borrador (estado=0) para
+#      vendedor1. Si no hay, este flow lo crea via tipo Preventa antes
+#      de intentar editar (no se confirma).
+#   5) Emulador Android con Expo Go (host.exp.exponent) + Metro 8081
+#   6) Cliente seed "Abarrotes Don Pancho" y producto seed con "coca"
+# ══════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────────────
+# 0. Dismiss banners y permisos opcionales que tapan controles.
+# ──────────────────────────────────────────────────────────────────────
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - runFlow:
+          when:
+            visible: "Aceptar"
+          commands:
+            - tapOn: "Aceptar"
+
+# ──────────────────────────────────────────────────────────────────────
+# 1. Reset navigation y entrar al tab "Vender" (lista de pedidos).
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 30000
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+- assertVisible: "Pedidos"
+- takeScreenshot: editar-borrador-00-tab-vender
+
+# ──────────────────────────────────────────────────────────────────────
+# 2. Filtro por estado Borrador para localizar un pedido editable.
+#    El chip "Borrador" corresponde a STATUS_FILTERS value=0 en index.tsx.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Borrador"
+    timeout: 10000
+- tapOn: "Borrador"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: editar-borrador-01-filtro-borrador
+
+# ──────────────────────────────────────────────────────────────────────
+# 3. Si NO hay pedidos Borrador, crear uno Preventa rapido (sin confirmar)
+#    para tener uno editable. Caso contrario, saltar este bloque.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Sin pedidos"
+    commands:
+      - takeScreenshot: editar-borrador-02-empty-state
+      # FAB para crear pedido nuevo
+      - runFlow:
+          when:
+            visible:
+              id: "fab-nuevo-pedido"
+          commands:
+            - tapOn:
+                id: "fab-nuevo-pedido"
+      - runFlow:
+          when:
+            visible: "Nuevo Pedido"
+          commands:
+            - tapOn: "Nuevo Pedido"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Tipo de Venta"
+          timeout: 10000
+      - tapOn: "Preventa"
+      - waitForAnimationToEnd
+      # Step 1 — Cliente
+      - extendedWaitUntil:
+          visible: "Buscar cliente..."
+          timeout: 15000
+      - tapOn: "Buscar cliente..."
+      - inputText: "a"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - eraseText
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - runFlow:
+          when:
+            visible: "Abarrotes Don Pancho"
+          commands:
+            - tapOn: "Abarrotes Don Pancho"
+      - runFlow:
+          when:
+            notVisible: "Abarrotes Don Pancho"
+          commands:
+            - tapOn:
+                point: "50%,55%"
+      - waitForAnimationToEnd
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+      # Step 2 — Producto
+      - extendedWaitUntil:
+          visible: "Buscar producto..."
+          timeout: 15000
+      - tapOn: "Buscar producto..."
+      - inputText: "coca"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - extendedWaitUntil:
+          visible: "Agregar"
+          timeout: 15000
+      - tapOn: "Agregar"
+      # Quantity sheet — confirmar con cantidad=1
+      - extendedWaitUntil:
+          visible:
+            text: "Confirmar|Aceptar"
+          timeout: 10000
+      - runFlow:
+          when:
+            visible: "Confirmar"
+          commands:
+            - tapOn: "Confirmar"
+      - runFlow:
+          when:
+            visible: "Aceptar"
+          commands:
+            - tapOn: "Aceptar"
+      - waitForAnimationToEnd
+      # Revision
+      - extendedWaitUntil:
+          visible: "Revisar pedido"
+          timeout: 15000
+      - tapOn: "Revisar pedido"
+      - waitForAnimationToEnd
+      # Levantar pedido -> queda en Borrador (sin confirmar transicion)
+      - runFlow:
+          when:
+            visible: "Levantar Pedido"
+          commands:
+            - tapOn: "Levantar Pedido"
+      - extendedWaitUntil:
+          visible:
+            text: "ENVIAR|Confirmar|Aceptar"
+          timeout: 10000
+      - runFlow:
+          when:
+            visible: "ENVIAR"
+          commands:
+            - tapOn: "ENVIAR"
+      - runFlow:
+          when:
+            visible: "Confirmar"
+          commands:
+            - tapOn: "Confirmar"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            text: "Pedido Levantado|Pedido enviado|Pedido creado|Listo"
+          timeout: 30000
+      - takeScreenshot: editar-borrador-03-pedido-creado
+      # Volver al tab Vender y re-aplicar filtro Borrador
+      - tapOn: "Vender"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Borrador"
+          timeout: 10000
+      - tapOn: "Borrador"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# ──────────────────────────────────────────────────────────────────────
+# 4. Abrir el primer pedido en estado Borrador de la lista.
+#    El FlatList renderiza Cards en mx-4 mb-3; el primer item cae
+#    aprox en 50%,30% bajo el header + filter chips.
+# ──────────────────────────────────────────────────────────────────────
+- assertVisible: "Pedidos"
+- takeScreenshot: editar-borrador-04-lista-filtrada
+
+- tapOn:
+    point: "50%,30%"
+- waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 5. Pantalla de detalle del pedido cargada.
+#    Validar que estamos en /vender/[id] mirando el badge "Borrador"
+#    y el stepper de 4 estados (Borrador, Confirmado, En Ruta, Entregado).
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Pedido|Productos|Subtotal"
+    timeout: 15000
+
+- assertVisible: "Productos"
+- assertVisible: "Subtotal"
+- assertVisible: "Total"
+- assertVisible: "Borrador"
+- assertVisible: "Confirmado"
+- assertVisible: "En Ruta"
+- assertVisible: "Entregado"
+- takeScreenshot: editar-borrador-05-detalle-borrador
+
+# ──────────────────────────────────────────────────────────────────────
+# 6. Tap sobre la primera linea de producto para intentar disparar
+#    el QuantityNumericSheet (feature esperada pero NO implementada).
+#    La productsCard arranca aprox en 45-55% del eje Y dependiendo de
+#    cuantos detalles tenga. Probamos en zona segura.
+# ──────────────────────────────────────────────────────────────────────
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: editar-borrador-06-post-tap-linea
+
+# ──────────────────────────────────────────────────────────────────────
+# 7. ASSERTS NEGATIVOS — gap funcional documentado.
+#    Ninguno de estos controles debe aparecer porque la feature de
+#    editar cantidad de Borrador NO existe en el codigo actual.
+#    Si en el futuro aparecen, ESTE TEST FALLA -> senal de migrar
+#    el flow a la version positiva (editar + guardar + assert total).
+# ──────────────────────────────────────────────────────────────────────
+- assertNotVisible: "Editar cantidad"
+- assertNotVisible: "Editar línea"
+- assertNotVisible: "Editar linea"
+- assertNotVisible: "Guardar cambios"
+- assertNotVisible: "Actualizar pedido"
+
+# ──────────────────────────────────────────────────────────────────────
+# 8. ASSERTS POSITIVOS — comportamiento actual del detalle Borrador.
+#    Estado=0 muestra el boton "Confirmar Pedido" (case 0 del switch
+#    renderActionButton) y el boton "Cancelar Pedido" (canCancel=true
+#    cuando isSynced && estado <= 4). El stepper sigue visible.
+# ──────────────────────────────────────────────────────────────────────
+- assertVisible:
+    text: "Confirmar Pedido|Cancelar Pedido"
+- takeScreenshot: editar-borrador-07-acciones-disponibles
+
+# ──────────────────────────────────────────────────────────────────────
+# 9. Salida limpia — volver atras al tab Vender sin tocar acciones
+#    destructivas (no confirmamos ni cancelamos el pedido). El emulador
+#    queda con el pedido intacto para tests downstream de la suite.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible:
+        id: "btn-back"
+    commands:
+      - tapOn:
+          id: "btn-back"
+- runFlow:
+    when:
+      notVisible:
+        id: "btn-back"
+    commands:
+      - back
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+- assertVisible: "Pedidos"
+- takeScreenshot: editar-borrador-08-back-to-lista

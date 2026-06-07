@@ -1,0 +1,245 @@
+appId: host.exp.exponent
+name: "Supervisor - Ver mapa del equipo con pins GPS de vendedores"
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCTIONAL TEST - SUPERVISOR
+# Use case: sup-mapa-pins-GPS
+#
+# Flujo: el supervisor inicia sesión, navega al tab Equipo, abre
+# el mapa del equipo (Ver mapa) y verifica que el mapa de Google
+# se renderice con los pins GPS de los vendedores (si hay
+# ubicaciones registradas). Si no hay ubicaciones, valida el
+# estado vacío "Sin ubicaciones" sin crashear.
+#
+# Cubre:
+#   - Login real con supervisor@jeyma.com
+#   - Navegación Hoy -> Equipo -> Mapa
+#   - Header "Mapa del Equipo" + back funcional
+#   - Renderizado del MapView (Google Maps) sin crash
+#   - Tap sobre marker -> bottom card con vendedor + tiempo
+#   - Estado vacío "Sin ubicaciones" como fallback elegante
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/equipo/mapa.tsx
+#   apps/mobile-app/app/(tabs)/equipo/index.tsx
+#   apps/mobile-app/src/hooks/useSupervisor.ts (useUbicacionesEquipo)
+#
+# Backend endpoint correspondiente:
+#   GET /api/team/ubicaciones-recientes
+#   (returns UbicacionVendedor[]: usuarioId, nombre, lat, lng,
+#    fechaUbicacion, clienteNombre?)
+# ════════════════════════════════════════════════════════════
+
+# NO clearState: mantiene sesión y caches si existen
+- launchApp:
+    clearState: false
+
+# 1. Saltar onboarding si aparece (primer arranque)
+- runFlow:
+    when:
+      visible: "Siguiente"
+    commands:
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+
+# 2. Login como supervisor si la pantalla de login está visible
+- runFlow:
+    when:
+      visible:
+        id: "login-button"
+    commands:
+      - tapOn:
+          id: "email-input"
+      - eraseText
+      - inputText: "supervisor@jeyma.com"
+      - tapOn:
+          id: "password-input"
+      - eraseText
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          id: "login-button"
+
+# 3. Esperar al dashboard "Hoy" hidratado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 60000
+
+# 4. Dismiss de modales opcionales (permisos, privacidad, sync)
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+          optional: true
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+# 5. Verificar que el banner "Mi Equipo" del dashboard supervisor existe
+#    (rol supervisor = tab Equipo presente)
+- assertVisible: "Mi Equipo"
+- assertVisible: "Equipo"
+
+- takeScreenshot: mapa-pins-01-dashboard-supervisor
+
+# ════════════════════════════════════════════════════════════
+# FASE A: NAVEGAR AL TAB EQUIPO
+# ════════════════════════════════════════════════════════════
+
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+# Esperar a que la pantalla Equipo cargue KPIs y la sección VENDEDORES
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 20000
+
+- assertVisible:
+    id: "supervisor-kpis"
+
+# El botón "Ver mapa" expone testID="ver-mapa" en equipo/index.tsx
+- assertVisible:
+    id: "ver-mapa"
+
+- takeScreenshot: mapa-pins-02-equipo-kpis
+
+# ════════════════════════════════════════════════════════════
+# FASE B: ABRIR MAPA DEL EQUIPO
+# ════════════════════════════════════════════════════════════
+
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd
+
+# El header de la pantalla mapa.tsx renderiza "Mapa del Equipo"
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 20000
+
+- takeScreenshot: mapa-pins-03-mapa-header
+
+# Verificar que NO crasheó: el ErrorBoundary mostraría un mensaje
+# de error en vez del header. Si "Mapa del Equipo" está visible
+# significa que MapaEquipoContent renderizó OK.
+- assertNotVisible:
+    text: "Algo salió mal"
+- assertNotVisible:
+    text: "Failed"
+
+# ════════════════════════════════════════════════════════════
+# FASE C: VERIFICAR PINS GPS O ESTADO VACÍO
+# ════════════════════════════════════════════════════════════
+
+# Caso A: HAY ubicaciones GPS - probar interacción con marker
+#   - El MapView tiene Markers con title=nombre del vendedor
+#   - Al tap sobre un marker, aparece bottomCard con nombre + tiempo
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - tapOn:
+          text: "Vendedor 1 Jeyma"
+          optional: true
+      - waitForAnimationToEnd
+      - takeScreenshot: mapa-pins-04a-marker-seleccionado
+
+# Caso B: NO HAY ubicaciones - estado vacío "Sin ubicaciones"
+#   El componente mapa.tsx renderiza un emptyOverlay con:
+#     "Sin ubicaciones"
+#     "Los vendedores apareceran aqui cuando registren visitas con GPS"
+- runFlow:
+    when:
+      visible: "Sin ubicaciones"
+    commands:
+      - assertVisible: "Sin ubicaciones"
+      - takeScreenshot: mapa-pins-04b-estado-vacio
+
+# Caso C: Google Maps NO configurada (build sin API key)
+#   El componente muestra "Mapas no disponibles en esta versión".
+#   Se acepta como camino válido en Expo Go sin API key.
+- runFlow:
+    when:
+      visible: "Mapas no disponibles en esta versión"
+    commands:
+      - assertVisible: "Mapas no disponibles en esta versión"
+      - takeScreenshot: mapa-pins-04c-sin-google-maps-key
+
+# ════════════════════════════════════════════════════════════
+# FASE D: VOLVER A EQUIPO (back funcional)
+# ════════════════════════════════════════════════════════════
+
+# El header tiene un ChevronLeft con accessibilityLabel="Volver"
+- tapOn:
+    text: "Volver"
+    optional: true
+
+# Fallback: gesture back nativo si el ChevronLeft no respondió
+- runFlow:
+    when:
+      visible: "Mapa del Equipo"
+    commands:
+      - back
+      - waitForAnimationToEnd
+
+# Confirmar regreso a la pantalla de Equipo
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 15000
+
+- assertVisible:
+    id: "supervisor-kpis"
+
+- takeScreenshot: mapa-pins-05-back-a-equipo
+
+# ════════════════════════════════════════════════════════════
+# FASE E: CONFIRMAR SESIÓN SUPERVISOR INTACTA
+# ════════════════════════════════════════════════════════════
+
+# El tab "Más" muestra el badge "Supervisor" cuando el rol es SUPERVISOR
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- assertVisible: "Supervisor"
+
+# Confirmar que no hubo logout silencioso (no debe verse "Iniciar sesión")
+- assertNotVisible:
+    text: "Iniciar sesión"
+
+- takeScreenshot: mapa-pins-06-mas-rol-supervisor
+
+# Volver al dashboard para dejar la app en estado neutro
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- assertVisible: "Mi Equipo"
+
+- takeScreenshot: mapa-pins-07-flow-completo

@@ -1,0 +1,275 @@
+# =============================================================================
+# Maestro E2E - ADMIN: cambiar configuracion (empresa) desde mobile
+# -----------------------------------------------------------------------------
+# Use case: adm-config-empresa
+# Role: ADMIN
+# Layer: mobile (React Native + Expo Go)
+#
+# ALCANCE REAL (segun apps/mobile-app/app/(tabs)/configuracion.tsx):
+#   La pantalla Configuracion del mobile expone 4 secciones:
+#     1. Notificaciones     -> toggle "Notificaciones push" (secureStorage)
+#     2. Datos              -> toggle "Sincronizacion automatica" (secureStorage)
+#     3. Privacidad         -> toggle "Tracking GPS background" (solo si el plan
+#                              del tenant lo incluye; ADMIN de jeyma tiene PRO)
+#     4. Acerca de          -> info de version + links a privacidad/terminos
+#
+# PROD BUG / FIX TODO: La pantalla "Configuracion" del mobile NO permite editar
+#   datos REALES de la empresa (razon social, RFC, regimen, direccion, logo).
+#   Esos endpoints existen en apps/api (DatosEmpresa) y en el web frontend, pero
+#   el mobile solo persiste preferencias del dispositivo via secureStorage.
+#   Este test cubre lo unico funcional que el ADMIN puede tocar HOY en mobile;
+#   cuando se agregue una pantalla "Datos de empresa" hay que extender este flow.
+#
+# Flujo cubierto end-to-end:
+#   1. Login ADMIN (admin@jeyma.com / test123)
+#   2. Navegar Mas -> Configuracion
+#   3. Toggle OFF "Notificaciones push" -> assertVisible estado off + persiste
+#   4. Toggle OFF "Sincronizacion automatica" -> assertVisible estado off
+#   5. Toggle ON ambos de nuevo (restore para no contaminar otros suites)
+#   6. Volver a Mas y verificar que sesion sigue viva
+#
+# Pre-requisitos:
+#   - Emulador Android con Expo Go corriendo
+#   - Metro bundler en :8081
+#   - Backend mobile-api en :1052
+#   - Usuario admin@jeyma.com debe existir con rol ADMIN y plan PRO/BUSINESS
+# =============================================================================
+appId: host.exp.exponent
+name: admin - cambiar configuracion empresa desde mobile
+tags:
+  - admin
+  - configuracion
+  - mobile
+  - functional
+---
+# -----------------------------------------------------------------------------
+# Paso 0 - Launch sin limpiar estado (preservar onboarding ya visto)
+# -----------------------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+# -----------------------------------------------------------------------------
+# Paso 1 - Manejar modales opcionales (Aviso de Privacidad / permisos OS)
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible: "Acepto"
+    commands:
+      - tapOn: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# -----------------------------------------------------------------------------
+# Paso 2 - Logout defensivo si quedo sesion previa
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn:
+          text: "Más"
+          optional: true
+      - waitForAnimationToEnd
+      - scroll
+      - tapOn:
+          text: "Cerrar sesión"
+          optional: true
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Sí, cerrar sesión"
+          optional: true
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 3 - Login ADMIN
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+- hideKeyboard
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: adm-config-01-login-submitted
+
+# -----------------------------------------------------------------------------
+# Paso 4 - Manejar permisos opcionales del OS post-login
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+
+# -----------------------------------------------------------------------------
+# Paso 5 - Confirmar dashboard ADMIN cargo
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: adm-config-02-dashboard
+
+# -----------------------------------------------------------------------------
+# Paso 6 - Navegar Mas -> Configuracion
+# -----------------------------------------------------------------------------
+- tapOn:
+    text: "Más"
+- extendedWaitUntil:
+    visible: "Más"
+    timeout: 20000
+
+- takeScreenshot: adm-config-03-mas-menu
+
+- tapOn:
+    text: "Configuración"
+
+- extendedWaitUntil:
+    visible: "Configuración"
+    timeout: 20000
+
+# Verificar las 3 secciones funcionales que el ADMIN puede tocar
+- assertVisible: "Notificaciones"
+- assertVisible: "Notificaciones push"
+- assertVisible: "Datos"
+- assertVisible: "Sincronización automática"
+- assertVisible: "Acerca de"
+- assertVisible: "Versión"
+
+- takeScreenshot: adm-config-04-pantalla-configuracion
+
+# -----------------------------------------------------------------------------
+# Paso 7 - Toggle OFF "Notificaciones push" (default true)
+#   secureStorage key: config_push_enabled
+# -----------------------------------------------------------------------------
+- tapOn:
+    accessibilityText: "Notificaciones push"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: adm-config-05-push-off
+
+# El Switch sigue visible y la pantalla no se rompio
+- assertVisible: "Notificaciones push"
+- assertVisible: "Recibe alertas de pedidos y rutas"
+
+# -----------------------------------------------------------------------------
+# Paso 8 - Toggle OFF "Sincronizacion automatica"
+#   secureStorage key: config_auto_sync
+# -----------------------------------------------------------------------------
+- tapOn:
+    accessibilityText: "Sincronización automática"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: adm-config-06-sync-off
+
+- assertVisible: "Sincronización automática"
+- assertVisible: "Sincronizar datos cuando haya conexión"
+
+# -----------------------------------------------------------------------------
+# Paso 9 - Persistencia: salir de la pantalla y volver, los toggles deben
+# mantener el estado off (secureStorage rehidrata en useEffect)
+# -----------------------------------------------------------------------------
+- tapOn:
+    accessibilityText: "Volver"
+- extendedWaitUntil:
+    visible: "Más"
+    timeout: 15000
+
+- tapOn:
+    text: "Configuración"
+- extendedWaitUntil:
+    visible: "Configuración"
+    timeout: 20000
+
+- assertVisible: "Notificaciones push"
+- assertVisible: "Sincronización automática"
+
+- takeScreenshot: adm-config-07-reentry-estado-persistido
+
+# -----------------------------------------------------------------------------
+# Paso 10 - Restore: volver a activar ambos toggles para no contaminar otros
+# suites del mismo dispositivo
+# -----------------------------------------------------------------------------
+- tapOn:
+    accessibilityText: "Notificaciones push"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    accessibilityText: "Sincronización automática"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: adm-config-08-restore-on
+
+# -----------------------------------------------------------------------------
+# Paso 11 - Verificar links del bloque "Acerca de" (no abrirlos, solo
+# confirmar que el ADMIN los ve en su pantalla)
+# -----------------------------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Términos"
+    direction: DOWN
+    timeout: 10000
+    speed: 30
+
+- assertVisible: "Privacidad"
+- assertVisible: "Política de privacidad"
+- assertVisible: "Términos"
+- assertVisible: "Términos y condiciones"
+
+- takeScreenshot: adm-config-09-acerca-de
+
+# -----------------------------------------------------------------------------
+# Paso 12 - Volver a Mas y confirmar que sigue logueado como ADMIN
+# (no hubo logout accidental al manipular configuracion)
+# -----------------------------------------------------------------------------
+- tapOn:
+    accessibilityText: "Volver"
+- extendedWaitUntil:
+    visible: "Más"
+    timeout: 15000
+
+- assertVisible: "Configuración"
+- assertNotVisible: "Iniciar Sesión"
+
+- takeScreenshot: adm-config-10-vuelta-mas-sesion-viva

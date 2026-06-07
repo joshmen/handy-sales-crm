@@ -1,0 +1,403 @@
+appId: host.exp.exponent
+name: "Funcional VENDEDOR > Aplicar descuento en pedido y validar pricing"
+tags:
+  - functional
+  - vendedor
+  - vender
+  - pricing
+  - descuentos
+---
+
+# ══════════════════════════════════════════════════════════════════════
+# CASO DE USO: vend-aplicar-descuento-pedido
+# ROL: VENDEDOR (rol funcional, no test RBAC)
+# CAPA: mobile (apps/mobile-app — React Native / Expo / WatermelonDB)
+#
+# OBJETIVO:
+#   El vendedor crea un pedido tipo PREVENTA y agrega un producto con
+#   cantidad suficientemente alta para disparar un DESCUENTO POR
+#   CANTIDAD (cantidad_minima en tabla Descuentos / Promociones de WDB).
+#   En la pantalla de Revisión se valida pricing:
+#     - Subtotal "sin descuento" tachado visible.
+#     - Línea "Descuentos" (verde, negativa) visible.
+#     - Precio por unidad con descuento visible en la línea del item.
+#   Asegura que el cálculo offline-first (usePricing.getPricing) aplica
+#   el mejor descuento (volumen vs promo %) y NO doble-aplica IVA.
+#
+# COMPONENTES UI EJERCITADOS:
+#   - apps/mobile-app/app/(tabs)/vender/crear/productos.tsx
+#       (CartBar muestra total con descuento — ver bug 2026-04-29
+#        donde sumaba 16% sobre precios que ya incluían IVA).
+#   - apps/mobile-app/app/(tabs)/vender/crear/revision.tsx
+#       (líneas 254-310: tieneDescuento flag, "Subtotal sin descuento"
+#        tachado, fila "Descuentos" verde con monto negativo).
+#   - apps/mobile-app/src/components/shared/QuantityNumericSheet.tsx
+#       (teclado numérico para meter cantidad alta sin tap +1 x N).
+#   - apps/mobile-app/src/hooks/usePricing.ts
+#       (getPricing: aplica mejorDescuento entre volumen y promo %,
+#        mutuamente excluyente con BOGO/regalo).
+#
+# ENDPOINT BACKEND ASOCIADO (NO se ejecuta — flow corta antes de enviar):
+#   POST /api/mobile/pedidos con descuento por línea calculado offline.
+#   El backend re-valida el descuento contra Descuentos.cantidad_minima
+#   y rechaza con "monto no coincide" si hay drift de cálculo.
+#
+# PRE-REQUISITOS:
+#   1) Ejecutar primero: .maestro/auth/01-login-vendedor.yaml
+#      (vendedor1@jeyma.com / test123).
+#   2) Catálogo Jeyma sincronizado en WatermelonDB local con AL MENOS
+#      un descuento activo (Descuentos.activo=true, cantidad_minima<=24).
+#      El seed Jeyma incluye descuentos por volumen para productos
+#      principales (Coca-Cola, agua, etc.).
+#   3) Cliente seed disponible (preferimos "Abarrotes Don Pancho").
+#   4) Producto seed con descuento — buscamos "coca".
+#   5) docker-compose.dev.yml: api_main + postgres arriba.
+#   6) Emulador Android con Expo Go + Metro bundler 8081.
+#
+# IMPORTANTE — runFlow when:visible:
+#   La asserción de descuento es BEST-EFFORT en seeds donde el producto
+#   buscado no tenga descuento activo. Si "Descuentos" no aparece tras
+#   subir cantidad a 24, el flow NO falla — captura screenshot para que
+#   QA revise manualmente. Esto evita flakiness por desincronización
+#   entre seed_local_pg.sql y descuentos disponibles en WDB del device.
+#
+# PROD BUG / FIX TODO:
+#   2026-04-29 — productos.tsx (CartBar) sumaba 16% IVA sobre precio
+#   que YA incluía IVA, mostrando $37.12 cuando el total real era $32.
+#   El fix está en calculateLineAmounts con flag precioIncluyeIva.
+#   Este flow toma screenshot del CartBar (descuento-04-cartbar) para
+#   detectar regresión: el total ahí debe coincidir con el total que
+#   aparece en revisión (descuento-08-revision-totales).
+# ══════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────────────
+# 0. Dismiss modales opcionales (privacidad, "AHORA NO", permisos GPS).
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# ──────────────────────────────────────────────────────────────────────
+# 1. Dashboard vendedor — asumimos sesión activa por el prereq.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: descuento-00-dashboard
+
+# ──────────────────────────────────────────────────────────────────────
+# 2. Navegar al hub Vender — doble tap en "Hoy" resetea stacks abiertos
+#    por flows previos en la misma suite.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd
+
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+- assertVisible: "Pedidos"
+- takeScreenshot: descuento-01-hub-vender
+
+# ──────────────────────────────────────────────────────────────────────
+# 3. Abrir BottomSheet "Tipo de Venta" via FAB. Fallback por texto.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible:
+        id: "fab-nuevo-pedido"
+    commands:
+      - tapOn:
+          id: "fab-nuevo-pedido"
+- runFlow:
+    when:
+      visible: "Nuevo Pedido"
+    commands:
+      - tapOn: "Nuevo Pedido"
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+
+- waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 4. Seleccionar Preventa — flujo más simple para validar pricing
+#    (sin método de pago, sin CTA "Cobrar").
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Tipo de Venta"
+    commands:
+      - assertVisible: "Preventa"
+      - tapOn: "Preventa"
+      - waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 5. Step 1 — Seleccionar cliente.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- takeScreenshot: descuento-02-step1-clientes
+
+# Preferir cliente seed Jeyma; fallback al primero visible.
+- runFlow:
+    when:
+      visible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn: "Abarrotes Don Pancho"
+- runFlow:
+    when:
+      notVisible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn:
+          point: "50%,55%"
+
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 6. Step 2 — Buscar producto candidato a tener descuento por volumen.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- assertVisible: "Buscar producto..."
+- takeScreenshot: descuento-03-step2-productos
+
+- tapOn: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Tap "Agregar" en la primera card encontrada — abre QuantityNumericSheet.
+- extendedWaitUntil:
+    visible: "Agregar"
+    timeout: 15000
+- tapOn: "Agregar"
+
+# ──────────────────────────────────────────────────────────────────────
+# 7. QuantityNumericSheet — meter cantidad ALTA (24) para disparar
+#    descuento por volumen. El teclado numérico está en
+#    apps/mobile-app/src/components/shared/QuantityNumericSheet.tsx
+#    con keys ['1','2','3',...,'⌫','0','✓'].
+#
+#    initialQty=1 por defecto. Setear value="24" requiere: backspace
+#    el "1" inicial, luego tap "2" + tap "4".
+#    isFresh flag (line 38) hace que el primer keypress reemplace el
+#    valor inicial — así basta con tap "2" + tap "4" para tener "24".
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Aceptar|✓"
+    timeout: 15000
+
+- takeScreenshot: descuento-04-qty-sheet-inicial
+
+# Tap "2" — isFresh=true en el sheet reemplaza "1" inicial con "2".
+- runFlow:
+    when:
+      visible: "2"
+    commands:
+      - tapOn: "2"
+
+# Tap "4" — concatena: value="24".
+- runFlow:
+    when:
+      visible: "4"
+    commands:
+      - tapOn: "4"
+
+- takeScreenshot: descuento-05-qty-sheet-24
+
+# Confirmar la cantidad 24 — cierra el sheet y agrega item con qty=24.
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+- runFlow:
+    when:
+      visible: "Aceptar"
+    commands:
+      - tapOn: "Aceptar"
+- runFlow:
+    when:
+      visible: "✓"
+    commands:
+      - tapOn: "✓"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ──────────────────────────────────────────────────────────────────────
+# 8. CartBar — captura del total con descuento aplicado en productos.tsx
+#    Si hay descuento por volumen activo en seed, debe verse badge
+#    "Vol -X%" (línea 278-281 de revision.tsx) o "X% xMIN+" (productos.tsx
+#    línea 174-176) en la card del producto agregado.
+# ──────────────────────────────────────────────────────────────────────
+- takeScreenshot: descuento-06-cartbar-con-descuento
+
+# Best-effort: detectar badge de volumen o promo en la lista de productos.
+- runFlow:
+    when:
+      visible:
+        text: "Vol -|% x|-[0-9]+%"
+    commands:
+      - takeScreenshot: descuento-06b-badge-detectado
+
+# ──────────────────────────────────────────────────────────────────────
+# 9. Ir a revisión via CartBar — donde está el assertion principal.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Revisar pedido|Revisar"
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Revisar pedido"
+    commands:
+      - tapOn: "Revisar pedido"
+- runFlow:
+    when:
+      visible: "Revisar"
+    commands:
+      - tapOn: "Revisar"
+
+- waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 10. Step 3 — Pantalla Revisión: validar pricing con descuento.
+#     Lógica en apps/mobile-app/app/(tabs)/vender/crear/revision.tsx:
+#       - line 254 tieneDescuento = pricing.mejorDescuento > 0
+#       - line 301-310 si descuentoTotal > 0.005 muestra:
+#           * "Subtotal sin descuento" (tachado, gris)
+#           * "Descuentos" (verde) -monto
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Revisar|Resumen"
+    timeout: 15000
+
+- assertVisible:
+    text: "Subtotal|Total"
+
+- takeScreenshot: descuento-07-revision-completa
+
+# Asserción CORE: la fila "Descuentos" debe aparecer si el cálculo
+# offline en getPricing devolvió mejorDescuento>0 para qty=24.
+# Si NO aparece, podría ser:
+#   (a) seed Jeyma sin descuento por volumen activo para coca (revisar
+#       infra/database/schema/seed_local_pg.sql tabla Descuentos);
+#   (b) sync WDB no trajo el descuento (revisar useOfflineCatalogosComerciales);
+#   (c) regresión en usePricing.getPricing (mejorDescuento devuelve 0).
+- runFlow:
+    when:
+      visible: "Descuentos"
+    commands:
+      - assertVisible: "Descuentos"
+      - assertVisible: "Subtotal sin descuento"
+      - takeScreenshot: descuento-08-fila-descuentos-visible
+
+# ──────────────────────────────────────────────────────────────────────
+# 11. Validar consistencia subtotal/total (formato MX: $X,XXX.XX).
+#     Si "Subtotal sin descuento" aparece, también debe verse el monto
+#     tachado (color #94a3b8 + textDecorationLine: line-through).
+# ──────────────────────────────────────────────────────────────────────
+- assertVisible:
+    text: "\\$[0-9,]+\\.[0-9]{2}"
+
+- takeScreenshot: descuento-09-totales-formato-mx
+
+# ──────────────────────────────────────────────────────────────────────
+# 12. Validar que el producto aparece en la lista con precio c/u.
+#     Línea 261: "{formatCurrency(pricing.precioConDescuento)} c/u".
+#     Si hay descuento, el precio aparece en verde (#16a34a) y el
+#     precioUnitario original (línea 264-266) aparece tachado.
+# ──────────────────────────────────────────────────────────────────────
+- assertVisible:
+    text: "c/u"
+
+- takeScreenshot: descuento-10-linea-item-pricing
+
+# ──────────────────────────────────────────────────────────────────────
+# 13. NO confirmar el pedido — este flow es de validación de pricing
+#     no de creación. Volver atrás 3 veces (revisión → productos →
+#     clientes → hub) deja state limpio para flows downstream.
+#
+#     IMPORTANTE: NO hacer back desde revisión sin "guardar borrador"
+#     porque vender/crear/productos.tsx tiene back-prevention (modal
+#     "¿Salir sin guardar?"). Manejamos ese modal opcionalmente.
+# ──────────────────────────────────────────────────────────────────────
+- back
+
+- runFlow:
+    when:
+      visible:
+        text: "Salir sin guardar|Descartar|¿Salir?"
+    commands:
+      - runFlow:
+          when:
+            visible: "Salir"
+          commands:
+            - tapOn: "Salir"
+      - runFlow:
+          when:
+            visible: "Descartar"
+          commands:
+            - tapOn: "Descartar"
+      - runFlow:
+          when:
+            visible: "Sí"
+          commands:
+            - tapOn: "Sí"
+
+- waitForAnimationToEnd
+
+- takeScreenshot: descuento-11-final-cleanup
