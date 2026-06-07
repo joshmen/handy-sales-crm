@@ -8,8 +8,8 @@ services:
       ACCEPT_EULA: "Y"
       SEQ_FIRSTRUN_ADMINPASSWORD: "admin123"
     ports:
-      - "1341:5341"   # Ingestion API
-      - "1082:80"     # Web UI
+      - "127.0.0.1:1341:5341"   # Ingestion API
+      - "127.0.0.1:1082:80"     # Web UI
     volumes:
       - seq_dev_data:/data
     networks:
@@ -28,7 +28,7 @@ services:
       POSTGRES_PASSWORD: handy_pass
       POSTGRES_DB: handy_erp
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
       # EF Core creates all 48 tables via migration on api_main startup.
@@ -92,7 +92,7 @@ services:
       BILLING_API_URL: "http://api_billing:1051"
       BILLING_INTERNAL_API_KEY: "dev-billing-sync-key-change-in-prod-0123456789"
     ports:
-      - "1050:1050"
+      - "127.0.0.1:1050:1050"
     depends_on:
       postgres:
         condition: service_healthy
@@ -144,7 +144,7 @@ services:
       BILLING_ENCRYPTION_KEY: "${BILLING_ENCRYPTION_KEY}"
       KMS_CMK_ARN: "${KMS_CMK_ARN}"
     ports:
-      - "1051:1051"
+      - "127.0.0.1:1051:1051"
     depends_on:
       postgres:
         condition: service_healthy
@@ -191,7 +191,7 @@ services:
       InternalApiKey: "DktQvBp0c01HyuVlNKGhbAPyNIpgvo-OO832AYqCSGQ"
       GOOGLE_MAPS_API_KEY: "${GOOGLE_MAPS_API_KEY}"
     ports:
-      - "1052:1052"
+      - "127.0.0.1:1052:1052"
     depends_on:
       postgres:
         condition: service_healthy
@@ -227,7 +227,7 @@ services:
       NEXTAUTH_URL: http://localhost:1083
       NEXTAUTH_SECRET: dev-secret-key-change-in-production
     ports:
-      - "1083:1083"
+      - "127.0.0.1:1083:1083"
     depends_on:
       - api_main
     volumes:
@@ -245,7 +245,7 @@ services:
     container_name: handysuites_nginx_dev
     restart: unless-stopped
     ports:
-      - "1080:80"
+      - "127.0.0.1:1080:80"
     volumes:
       - ./infra/nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -263,9 +263,9 @@ services:
     container_name: handysuites_azurite_dev
     restart: unless-stopped
     ports:
-      - "10000:10000"  # Blob service
-      - "10001:10001"  # Queue service
-      - "10002:10002"  # Table service
+      - "127.0.0.1:10000:10000"  # Blob service
+      - "127.0.0.1:10001:10001"  # Queue service
+      - "127.0.0.1:10002:10002"  # Table service
     volumes:
       - azurite_dev_data:/data
     command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 -l /data"
@@ -282,7 +282,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin123
       PGADMIN_LISTEN_PORT: 80
     ports:
-      - "1081:80"
+      - "127.0.0.1:1081:80"
     depends_on:
       postgres:
         condition: service_healthy

@@ -39,14 +39,19 @@ builder.Services.AddDbContext<BillingDbContext>((sp, options) =>
         .AddInterceptors(sp.GetRequiredService<HandySuites.Billing.Api.Services.BillingTenantRlsInterceptor>());
 });
 
-// CORS configuration
+// Sprint pre-prod #82 audit 2026-06-06: CORS permitia localhost en prod —
+// origin attacker corriendo en localhost:N podia hacer requests con
+// cookies/auth si la victima visitaba en mismo browser. Gate con
+// IsDevelopment para que localhost solo pase en dev/staging.
+var isDevelopment = builder.Environment.IsDevelopment();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BillingApiPolicy", policy =>
     {
         policy.SetIsOriginAllowed(origin =>
             {
-                if (origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:"))
+                // Localhost SOLO en dev (no prod).
+                if (isDevelopment && (origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:")))
                     return true;
                 if (origin == "https://handy-sales-crm.vercel.app") return true;
                 var uri = new Uri(origin);

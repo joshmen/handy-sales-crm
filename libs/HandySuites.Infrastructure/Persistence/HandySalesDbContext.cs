@@ -307,6 +307,12 @@ public class HandySuitesDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(u => u.SupervisorId);
+
+            // Sprint pre-prod #77 audit 2026-06-06: UNIQUE index Email.
+            // Hot path `WHERE Email = X` corria seq scan en cada login.
+            // Sin UNIQUE, ademas, un bug podia crear 2 usuarios con mismo
+            // email — guarantia de invariant a nivel DB.
+            entity.HasIndex(u => u.Email).IsUnique();
         });
         
         // Configure DatosFacturacion entity
