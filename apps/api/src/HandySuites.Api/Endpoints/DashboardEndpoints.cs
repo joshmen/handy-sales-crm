@@ -58,7 +58,8 @@ public static class DashboardEndpoints
     private static async Task<IResult> GetDashboardMetrics(
         [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] ITenantTimeZoneService tenantTz)
+        [FromServices] ITenantTimeZoneService tenantTz,
+        [FromServices] ILogger<HandySuitesDbContext> logger)
     {
         try
         {
@@ -116,9 +117,14 @@ public static class DashboardEndpoints
                     .Distinct()
                     .CountAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                // activity_logs table may not exist yet — return zeros
+                // Sprint pre-prod #64 audit 2026-06-06: catch silenciado escondia
+                // bugs reales. Si activity_logs FUNCIONA en general pero falla
+                // por timeout/conexion/permisos, antes el endpoint devolvia zeros
+                // como si fuera "tabla no existe" sin warning en logs. Ahora
+                // logueamos via Serilog para detectar el patron.
+                logger.LogWarning(ex, "Dashboard metrics activity_logs query failed for tenant {TenantId}", tenantId);
             }
 
             var metrics = new
