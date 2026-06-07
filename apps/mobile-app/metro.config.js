@@ -16,6 +16,15 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Sprint correctivo 2026-06-06: bloquear carpetas volatiles que crashean al
+// watcher si se borran mid-bundle (Playwright test-results, .next cache, etc).
+config.resolver.blockList = [
+  /apps[\\/]+web[\\/]+test-results[\\/].*/,
+  /apps[\\/]+web[\\/]+playwright-report[\\/].*/,
+  /apps[\\/]+web[\\/]+\.next[\\/].*/,
+  /\.git[\\/].*/,
+];
+
 // Audit 2026-05-20 — Stub css-tree y mdn-data SOLO con env var explícito.
 //
 // HOTFIX incident 2026-05-20: este stub se aplicaba a TODOS los bundles
