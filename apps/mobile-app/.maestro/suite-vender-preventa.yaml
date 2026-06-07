@@ -1,0 +1,213 @@
+appId: host.exp.exponent
+name: vender-preventa-e2e
+---
+# E2E: Nuevo Pedido > Preventa > Cliente > Productos > Revision > Guardar
+# Assume: sesion activa, dashboard accesible, catalogo sincronizado
+
+# 1. Cerrar modales opcionales (banners, anuncios, permisos)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+# 2. Navegar a tab Vender
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 30000
+- tapOn: "Vender"
+- extendedWaitUntil:
+    visible:
+      text: "Nuevo pedido|Nueva venta|Crear pedido"
+    timeout: 30000
+- takeScreenshot: vender-preventa-01-hub-vender
+
+# 3. Iniciar nuevo pedido
+- runFlow:
+    when:
+      visible: "Nuevo pedido"
+    commands:
+      - tapOn: "Nuevo pedido"
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+- runFlow:
+    when:
+      visible: "Crear pedido"
+    commands:
+      - tapOn: "Crear pedido"
+
+# 4. BottomSheet de tipo de venta: elegir PREVENTA
+- extendedWaitUntil:
+    visible:
+      text: "Preventa|Venta directa|Tipo de venta"
+    timeout: 30000
+- takeScreenshot: vender-preventa-02-sheet-tipo
+- tapOn:
+    text: "Preventa"
+
+# 5. Step 1 — Seleccionar Cliente (header azul + ProgressSteps)
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 30000
+- assertVisible: "Seleccionar Cliente"
+- assertVisible: "Cliente"
+- assertVisible: "Productos"
+- assertVisible: "Revisar"
+- assertVisible: "Buscar cliente..."
+- assertVisible: "Continuar"
+- takeScreenshot: vender-preventa-03-step1-clientes
+
+# 6. Buscar cliente (campo placeholder "Buscar cliente...")
+- tapOn: "Buscar cliente..."
+- inputText: "a"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: vender-preventa-04-busqueda-cliente
+
+# 7. Limpiar busqueda para ver lista completa y tap primer cliente
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "clientItem"
+    timeout: 15000
+    optional: true
+# Tap en el primer item de la lista (cualquier cliente visible)
+- tapOn:
+    point: "50%,55%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: vender-preventa-05-cliente-seleccionado
+
+# 8. Continuar al Step 2 (productos)
+- tapOn: "Continuar"
+
+# 9. Step 2 — Productos
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 30000
+- assertVisible: "Productos"
+- assertVisible: "Buscar producto..."
+- assertVisible: "Todos"
+- takeScreenshot: vender-preventa-06-step2-productos
+
+# 10. Buscar producto
+- tapOn: "Buscar producto..."
+- inputText: "a"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: vender-preventa-07-busqueda-producto
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 11. Tap en boton "Agregar" del primer producto disponible
+- extendedWaitUntil:
+    visible: "Agregar"
+    timeout: 15000
+- tapOn: "Agregar"
+
+# 12. QuantityNumericSheet abre — confirmar cantidad por defecto
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Aceptar|Agregar"
+    timeout: 15000
+- takeScreenshot: vender-preventa-08-qty-sheet
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+- runFlow:
+    when:
+      visible: "Aceptar"
+    commands:
+      - tapOn: "Aceptar"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 13. Verificar CartBar visible con item agregado
+- extendedWaitUntil:
+    visible: "Revisar pedido"
+    timeout: 15000
+- assertVisible: "Revisar pedido"
+- takeScreenshot: vender-preventa-09-producto-en-carrito
+
+# 14. Tap CartBar para ir a Revision
+- tapOn: "Revisar pedido"
+
+# 15. Step 3 — Revision
+- extendedWaitUntil:
+    visible:
+      text: "Revisar|Resumen|Subtotal|Total"
+    timeout: 30000
+- assertVisible: "Revisar"
+- takeScreenshot: vender-preventa-10-step3-revision
+
+# 16. Verificar elementos de revision (cliente, items, totales)
+- assertVisible:
+    text: "Cliente|Productos"
+- runFlow:
+    when:
+      visible: "Notas"
+    commands:
+      - tapOn: "Notas"
+      - inputText: "Pedido de prueba E2E Maestro"
+      - hideKeyboard
+- takeScreenshot: vender-preventa-11-revision-con-notas
+
+# 17. Tap Enviar / Guardar pedido
+- runFlow:
+    when:
+      visible: "Enviar pedido"
+    commands:
+      - tapOn: "Enviar pedido"
+- runFlow:
+    when:
+      visible: "Guardar pedido"
+    commands:
+      - tapOn: "Guardar pedido"
+- runFlow:
+    when:
+      visible: "Confirmar pedido"
+    commands:
+      - tapOn: "Confirmar pedido"
+
+# 18. ConfirmModal — aceptar confirmacion
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Aceptar|Si|Enviar"
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+
+# 19. Verificar pantalla de exito
+- extendedWaitUntil:
+    visible:
+      text: "exito|Pedido creado|Pedido enviado|Guardado|Listo"
+    timeout: 30000
+- takeScreenshot: vender-preventa-12-exito-final
+

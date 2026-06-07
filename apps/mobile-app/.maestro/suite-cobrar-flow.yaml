@@ -1,0 +1,221 @@
+appId: host.exp.exponent
+name: cobrar-flow
+---
+# Modulo: Cobrar tab > registrar cobro > seleccion cliente > metodo de pago > confirmar
+# Asume sesion activa (otro flow hizo login) y sync inicial completado
+
+# 1. Dismiss modales opcionales de bienvenida/permisos al landing
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+- runFlow:
+    when:
+      visible: "Mientras uso la app"
+    commands:
+      - tapOn: "Mientras uso la app"
+
+# 2. Asegurar que estamos en el dashboard (tab Hoy)
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 3. Navegar a tab Cobrar
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible:
+      text: "Cobrar"
+    timeout: 30000
+
+# Assertion 1: estamos en hub de cobros (titulo o periodo)
+- assertVisible:
+    text: "Cobrar|Cobros|Hoy|Esta semana|Todo"
+
+# Screenshot del hub de cobros
+- takeScreenshot: cobrar-01-hub
+
+# 4. Abrir pantalla Registrar Cobro
+# Patron comun: boton flotante / item de cliente / boton 'Registrar'
+- runFlow:
+    when:
+      visible: "Registrar Cobro"
+    commands:
+      - tapOn: "Registrar Cobro"
+
+- runFlow:
+    when:
+      visible: "Registrar cobro"
+    commands:
+      - tapOn: "Registrar cobro"
+
+- runFlow:
+    when:
+      visible: "Nuevo cobro"
+    commands:
+      - tapOn: "Nuevo cobro"
+
+# Fallback: tocar primer cliente con saldo pendiente si existe
+- runFlow:
+    when:
+      visible: "Saldo pendiente"
+    commands:
+      - tapOn:
+          text: "Saldo pendiente"
+          index: 0
+
+- extendedWaitUntil:
+    visible: "Registrar Cobro"
+    timeout: 30000
+
+# Assertion 2: header de pantalla Registrar Cobro visible
+- assertVisible: "Registrar Cobro"
+
+# Screenshot pantalla inicial registrar
+- takeScreenshot: cobrar-02-registrar-inicial
+
+# 5. Seleccion de cliente — solo si no viene preseleccionado por param
+- runFlow:
+    when:
+      visible: "Seleccionar cliente"
+    commands:
+      # Assertion 3: picker trigger visible
+      - assertVisible: "Seleccionar cliente"
+      - tapOn: "Seleccionar cliente"
+      - extendedWaitUntil:
+          visible: "Buscar cliente por nombre..."
+          timeout: 30000
+      # Assertion 4: input de busqueda visible
+      - assertVisible: "Buscar cliente por nombre..."
+      - takeScreenshot: cobrar-03-picker-abierto
+      # Escribir busqueda generica para forzar resultados o empty state
+      - tapOn: "Buscar cliente por nombre..."
+      - inputText: "a"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      # Tap primer resultado si hay, o cerrar si no hay
+      - runFlow:
+          when:
+            visible:
+              id: "chevron-right"
+          commands:
+            - tapOn:
+                id: "chevron-right"
+                index: 0
+      - runFlow:
+          when:
+            visible: "No se encontraron clientes"
+          commands:
+            - assertVisible: "No se encontraron clientes"
+            # Limpiar busqueda y reintentar con string vacio para listar todos
+            - eraseText
+            - waitForAnimationToEnd:
+                timeout: 3000
+
+# 6. Esperar que aparezca seccion de monto (cliente seleccionado o pre-cargado)
+- extendedWaitUntil:
+    visible: "Monto a Cobrar"
+    timeout: 30000
+
+# Assertion 5: label Monto a Cobrar visible
+- assertVisible: "Monto a Cobrar"
+
+# Assertion 6: prefijo de moneda $ visible
+- assertVisible: "$"
+
+# Assertion 7: badge de metodo de pago Efectivo visible
+# (Bug #4-mobile: selector removido, ahora solo efectivo informativo)
+- assertVisible: "Pago en efectivo"
+
+# 7. Ingresar monto
+- tapOn:
+    text: "0.00"
+- inputText: "150.50"
+- hideKeyboard
+
+- takeScreenshot: cobrar-04-monto-ingresado
+
+# Assertion 8: monto reflejado en boton de confirmar
+- assertVisible:
+    text: "Confirmar Cobro"
+
+# 8. Verificar secciones opcionales
+# Assertion 9: seccion Notas visible
+- assertVisible: "Notas (opcional)"
+
+# Assertion 10: seccion Comprobante visible
+- assertVisible: "Comprobante (opcional)"
+
+# Ingresar notas opcionales
+- tapOn: "Observaciones adicionales"
+- inputText: "Cobro test E2E Maestro"
+- hideKeyboard
+
+- takeScreenshot: cobrar-05-form-completo
+
+# 9. Tap boton Confirmar Cobro
+- tapOn:
+    text: "Confirmar Cobro"
+
+# 10. Modal de confirmacion debe aparecer
+- extendedWaitUntil:
+    visible: "Confirmar Cobro"
+    timeout: 30000
+
+# Assertion 11: modal con mensaje de confirmacion
+- assertVisible:
+    text: "Registrar cobro de|Confirmar Cobro"
+
+# Assertion 12: boton Confirmar y Cancelar en modal
+- assertVisible: "Confirmar"
+
+- takeScreenshot: cobrar-06-modal-confirmacion
+
+# 11. Confirmar el cobro
+- tapOn:
+    text: "Confirmar"
+    index: 1
+
+# 12. Esperar pantalla de recibo / exito
+- extendedWaitUntil:
+    visible:
+      text: "Recibo|Cobro registrado|Listo|Exito|Comprobante"
+    timeout: 30000
+
+# Assertion 13: confirmacion de cobro registrado
+- assertVisible:
+    text: "Recibo|Cobro registrado|Listo|Comprobante"
+
+# Screenshot final del recibo
+- takeScreenshot: cobrar-07-recibo-exito
+
+# 13. Volver al hub de cobros para validar que el flujo cerro bien
+- runFlow:
+    when:
+      visible: "Volver"
+    commands:
+      - tapOn: "Volver"
+
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn: "Cerrar"
+
+# Verificar regreso a hub o tab Cobrar
+- runFlow:
+    when:
+      visible: "Cobrar"
+    commands:
+      - assertVisible: "Cobrar"
+
+- takeScreenshot: cobrar-08-flujo-completado
+

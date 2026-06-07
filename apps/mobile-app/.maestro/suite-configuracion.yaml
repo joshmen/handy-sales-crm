@@ -1,0 +1,187 @@
+appId: host.exp.exponent
+name: configuracion-accesos-completos
+---
+# Modulo: Tab Configuracion > opciones (impresora, sync, jornada, perfil) > validar accesos
+# Asume: sesion activa, app en dashboard tras login externo
+
+# 1) Cerrar modal opcional de bienvenida/anuncio si esta visible
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn: "Cerrar"
+
+# 2) Navegar al tab Mas (entry point para configuracion)
+- extendedWaitUntil:
+    visible: "Mas"
+    timeout: 30000
+- tapOn: "Mas"
+
+# 3) Verificar hub Mas cargado
+- extendedWaitUntil:
+    visible:
+      text: "Configuracion"
+    timeout: 30000
+- takeScreenshot: configuracion-01-hub-mas
+
+# 4) Entrar a Configuracion desde Mas
+- tapOn:
+    text: "Configuracion"
+
+# 5) Verificar header Configuracion visible
+- extendedWaitUntil:
+    visible:
+      text: "Configuración"
+    timeout: 30000
+
+# 6) ASSERTION: Seccion Notificaciones visible
+- assertVisible:
+    text: "Notificaciones"
+- assertVisible:
+    text: "Notificaciones push"
+- assertVisible:
+    text: "Recibe alertas de pedidos y rutas"
+
+# 7) ASSERTION: Seccion Datos / Sincronizacion visible
+- assertVisible:
+    text: "Datos"
+- assertVisible:
+    text: "Sincronización automática"
+- assertVisible:
+    text: "Sincronizar datos cuando haya conexión"
+
+- takeScreenshot: configuracion-02-secciones-superiores
+
+# 8) Toggle Notificaciones push (apagar)
+- tapOn:
+    text: "Notificaciones push"
+- takeScreenshot: configuracion-03-push-toggled
+
+# 9) Re-toggle Notificaciones push (volver a prender)
+- tapOn:
+    text: "Notificaciones push"
+
+# 10) Toggle Sincronizacion automatica
+- tapOn:
+    text: "Sincronización automática"
+- takeScreenshot: configuracion-04-sync-toggled
+
+# 11) Re-toggle Sincronizacion automatica
+- tapOn:
+    text: "Sincronización automática"
+
+# 12) Scroll para ver seccion Privacidad (GPS tracking) y Acerca de
+- scroll
+
+# 13) Seccion Privacidad opcional (solo si plan incluye tracking_vendedor)
+- runFlow:
+    when:
+      visible: "Privacidad"
+    commands:
+      - assertVisible:
+          text: "Tracking GPS en segundo plano"
+      - takeScreenshot: configuracion-05-privacidad-gps-visible
+      # Intentar toggle GPS off (puede no requerir permisos al apagar)
+      - tapOn:
+          text: "Tracking GPS en segundo plano"
+      # Manejar Alert opcional de permiso incompleto
+      - runFlow:
+          when:
+            visible: "Permiso de ubicación incompleto"
+          commands:
+            - tapOn: "Mas tarde"
+      # Manejar toast/permission dialog Android opcional
+      - runFlow:
+          when:
+            visible: "While using the app"
+          commands:
+            - tapOn: "While using the app"
+      - runFlow:
+          when:
+            visible: "Allow"
+          commands:
+            - tapOn: "Allow"
+
+# 14) Scroll mas para ver Acerca de
+- scroll
+
+# 15) ASSERTION: Seccion Acerca de visible con Version, Privacidad, Terminos
+- extendedWaitUntil:
+    visible:
+      text: "Acerca de"
+    timeout: 30000
+- assertVisible:
+    text: "Versión"
+- assertVisible:
+    text: "Privacidad"
+- assertVisible:
+    text: "Términos"
+- assertVisible:
+    text: "Política de privacidad"
+- assertVisible:
+    text: "Términos y condiciones"
+
+- takeScreenshot: configuracion-06-acerca-de
+
+# 16) Volver al hub Mas via boton back del header
+- tapOn:
+    text: "Volver"
+
+# 17) Verificar regreso a hub Mas
+- extendedWaitUntil:
+    visible:
+      text: "Configuracion"
+    timeout: 30000
+
+# 18) Validar acceso a otras opciones del hub Mas (impresora, sync, perfil)
+# Acceso a Impresora
+- runFlow:
+    when:
+      visible: "Impresora"
+    commands:
+      - tapOn:
+          text: "Impresora"
+      - extendedWaitUntil:
+          visible:
+            text: "Impresora"
+          timeout: 30000
+      - takeScreenshot: configuracion-07-acceso-impresora
+      - back
+
+# Acceso a Sync
+- runFlow:
+    when:
+      visible: "Sincronizar"
+    commands:
+      - tapOn:
+          text: "Sincronizar"
+      - extendedWaitUntil:
+          visible:
+            text: "Sincronizar"
+          timeout: 30000
+      - takeScreenshot: configuracion-08-acceso-sync
+      - back
+
+# Acceso a Perfil
+- runFlow:
+    when:
+      visible: "Perfil"
+    commands:
+      - tapOn:
+          text: "Perfil"
+      - extendedWaitUntil:
+          visible:
+            text: "Perfil"
+          timeout: 30000
+      - takeScreenshot: configuracion-09-acceso-perfil
+      - back
+
+# 19) Screenshot final de validacion completa
+- takeScreenshot: configuracion-10-validacion-completa
+

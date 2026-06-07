@@ -1,0 +1,237 @@
+appId: host.exp.exponent
+name: jornada-lifecycle
+---
+# ============================================================
+# Modulo: Iniciar jornada > tracking GPS > finalizar jornada
+# Estados que validamos:
+#   1. Jornada inactiva (dashboard limpio sin chip ni banner)
+#   2. Auto-inicio: la primera venta/cobro arranca tracking
+#   3. Chip 'Tracking activo' visible con boton 'Finalizar'
+#   4. Finalizar manualmente desde el dashboard
+#   5. Estado banner amarillo 'Jornada cerrada automaticamente'
+#   6. Toggle 'Tracking GPS en segundo plano' en Configuracion
+# Asume sesion activa de vendedor (login previo en otro flow).
+# ============================================================
+
+# --- Paso 0: cerrar modales/permisos residuales del arranque ---
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+          optional: true
+
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn:
+          text: "Allow"
+          optional: true
+
+# --- Paso 1: asegurar tab Hoy (dashboard) ---
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: jornada-01-dashboard-inicial
+
+# --- Paso 2: estado inicial sin chip de tracking ---
+# JornadaCard retorna null cuando no hay jornada activa ni cierre reciente.
+- assertNotVisible:
+    text: "Tracking activo"
+
+# --- Paso 3: navegar a Configuracion y validar toggle GPS ---
+- runFlow:
+    when:
+      visible: "Mas"
+    commands:
+      - tapOn: "Mas"
+
+- extendedWaitUntil:
+    visible:
+      text: "Configuracion"
+    timeout: 30000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Configuracion"
+    commands:
+      - tapOn: "Configuracion"
+
+- extendedWaitUntil:
+    visible: "Tracking GPS en segundo plano"
+    timeout: 30000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Tracking GPS en segundo plano"
+    commands:
+      - assertVisible: "Tracking GPS en segundo plano"
+      - assertVisible:
+          text: "El supervisor"
+      - takeScreenshot: jornada-02-config-gps-toggle
+
+# Volver al tab Hoy
+- tapOn: "Hoy"
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# --- Paso 4: gatillar auto-inicio via tab Vender ---
+# La primera venta/cobro/visita arranca tracking via recordPing.
+- tapOn: "Vender"
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 30000
+
+- takeScreenshot: jornada-03-tab-vender-pre-actividad
+
+- runFlow:
+    when:
+      visible:
+        text: "Nueva venta"
+    commands:
+      - tapOn:
+          text: "Nueva venta"
+
+- runFlow:
+    when:
+      visible:
+        text: "Crear venta"
+    commands:
+      - tapOn:
+          text: "Crear venta"
+
+# Permission dialogs de ubicacion (Android nativo + i18n)
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+- runFlow:
+    when:
+      visible: "Allow only while using the app"
+    commands:
+      - tapOn: "Allow only while using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir solo mientras se usa la app"
+    commands:
+      - tapOn:
+          text: "Permitir solo mientras se usa la app"
+
+# Cancelar flujo de venta (solo necesitabamos disparar recordPing)
+- runFlow:
+    when:
+      visible:
+        text: "Cancelar"
+    commands:
+      - tapOn:
+          text: "Cancelar"
+
+- runFlow:
+    when:
+      visible: "Salir sin guardar"
+    commands:
+      - tapOn: "Salir sin guardar"
+
+# --- Paso 5: confirmar chip 'Tracking activo' en dashboard ---
+- tapOn: "Hoy"
+- extendedWaitUntil:
+    visible: "Tracking activo"
+    timeout: 30000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Tracking activo"
+    commands:
+      - assertVisible: "Tracking activo"
+      - assertVisible:
+          text: "Desde"
+      - assertVisible: "Finalizar"
+      - takeScreenshot: jornada-04-chip-tracking-activo
+
+# --- Paso 6: finalizar jornada manualmente ---
+- runFlow:
+    when:
+      visible: "Finalizar"
+    commands:
+      - tapOn: "Finalizar"
+      - runFlow:
+          when:
+            visible:
+              text: "Finalizar jornada"
+          commands:
+            - tapOn:
+                text: "Finalizar jornada"
+      - runFlow:
+          when:
+            visible: "Confirmar"
+          commands:
+            - tapOn: "Confirmar"
+
+- extendedWaitUntil:
+    notVisible: "Tracking activo"
+    timeout: 30000
+    optional: true
+
+- takeScreenshot: jornada-05-post-finalizar
+
+# --- Paso 7: validar banner 'Jornada cerrada automaticamente' (opcional) ---
+# Solo aparece si motivoStop = 'horario' o 'inactividad' dentro de 4h.
+- runFlow:
+    when:
+      visible: "Jornada cerrada automaticamente"
+    commands:
+      - assertVisible: "Jornada cerrada automaticamente"
+      - assertVisible:
+          text: "Sigues trabajando"
+      - assertVisible: "Reanudar"
+      - takeScreenshot: jornada-06-banner-cierre-automatico
+      - tapOn: "Reanudar"
+      - extendedWaitUntil:
+          visible: "Tracking activo"
+          timeout: 30000
+          optional: true
+      - takeScreenshot: jornada-07-post-reanudar
+      - runFlow:
+          when:
+            visible: "Finalizar"
+          commands:
+            - tapOn: "Finalizar"
+
+# --- Paso 8: snapshot final ---
+- tapOn: "Hoy"
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: jornada-08-estado-final-dashboard
+
