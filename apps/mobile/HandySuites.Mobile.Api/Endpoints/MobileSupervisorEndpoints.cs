@@ -468,12 +468,18 @@ public static class MobileSupervisorEndpoints
             }
 
             // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
+            // Sprint pre-prod #11 audit 2026-06-07: BUG fix detectado por
+            // MobileSupervisorSABranchTests.ResumenVendedor_Supervisor_NoVeVendedorAjeno.
+            // Antes: `!IsAdminOrAbove && !IsSuperAdmin` permitia al SUPERVISOR
+            // (que tiene IsAdminOrAbove=true) saltar el filtro de subordinado y
+            // ver datos de cualquier vendedor del tenant — IDOR cross-supervisor.
+            // Cambiado a `IsStrictAdmin` que es Admin/SA solamente (excluye SUPERVISOR).
             var vendedorQuery = db.Usuarios
                 .AsNoTracking()
                 .Where(u => u.Id == id
                          && u.TenantId == tenant.TenantId
                          && u.EliminadoEn == null);
-            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
+            if (!tenant.IsStrictAdmin && !tenant.IsSuperAdmin)
                 vendedorQuery = vendedorQuery.Where(u => u.SupervisorId == supervisorId);
 
             var vendedorBase = await vendedorQuery

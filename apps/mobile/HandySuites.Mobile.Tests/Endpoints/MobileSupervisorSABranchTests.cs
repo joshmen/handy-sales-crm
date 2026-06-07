@@ -1,4 +1,4 @@
-using HandySuites.Application.Tracking.DTOs;
+﻿using HandySuites.Application.Tracking.DTOs;
 using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
@@ -79,9 +79,10 @@ public class MobileSupervisorSABranchTests : IDisposable
         _db.CompanySettings.Add(new CompanySetting { TenantId = TenantA, Timezone = "America/Mexico_City" });
         _db.CompanySettings.Add(new CompanySetting { TenantId = TenantB, Timezone = "America/Mexico_City" });
 
-        // Cliente del tenant A para pedidos/cobros
-        var cliente = new Cliente { Id = 1000, TenantId = TenantA, Nombre = "Cliente A", VendedorId = Vendedor1Id };
-        var clienteB = new Cliente { Id = 1001, TenantId = TenantB, Nombre = "Cliente B" };
+        // Cliente del tenant A para pedidos/cobros — required members deben tener defaults
+        // para que EF Core InMemory provider no falle al InsertAsync (CS9035 runtime).
+        var cliente = new Cliente { Id = 1000, TenantId = TenantA, Nombre = "Cliente A", VendedorId = Vendedor1Id, RFC = "", Correo = "", Telefono = "", Direccion = "" };
+        var clienteB = new Cliente { Id = 1001, TenantId = TenantB, Nombre = "Cliente B", RFC = "", Correo = "", Telefono = "", Direccion = "" };
         _db.Clientes.Add(cliente);
         _db.Clientes.Add(clienteB);
 
@@ -131,7 +132,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /mis-vendedores — SA-branch ve todo el tenant excluyendo admins/self
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task MisVendedores_SuperAdmin_VeTodoElTenantExcluyendoAdminsYSelf()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -156,7 +157,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         ids.Should().NotContain(VendedorOtroTenantId, "RBAC: filtro TenantId previene IDOR cross-tenant");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task MisVendedores_Admin_VeMismaListaQueSuperAdmin()
     {
         var tenant = BuildTenantCtx(RoleNames.Admin, AdminUserId).Object;
@@ -175,7 +176,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         ids.Should().NotContain(SuperAdminUserId, "SA es admin-level y se excluye del listado");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task MisVendedores_Supervisor_NoEntraASABranch_SoloVeSubordinadosDirectos()
     {
         // Negative case: supervisor NO debe ver todo el tenant (rama else del endpoint).
@@ -194,7 +195,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         ids.Should().NotContain(Vendedor2Id, "Vendedor 2 no esta asignado a este supervisor");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public void MisVendedores_Vendedor_Forbid()
     {
         // RBAC negative: VENDEDOR no puede consumir el endpoint.
@@ -208,7 +209,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /resumen-tenant — SOLO IsAdminOrAbove || IsSuperAdmin (no supervisor)
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public void ResumenTenant_SuperAdmin_Permitido()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -216,7 +217,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         allowed.Should().BeTrue();
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public void ResumenTenant_Admin_Permitido()
     {
         var tenant = BuildTenantCtx(RoleNames.Admin, AdminUserId).Object;
@@ -224,7 +225,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         allowed.Should().BeTrue();
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public void ResumenTenant_Supervisor_Forbid()
     {
         // El endpoint /resumen-tenant es mas estricto que los demas: NO acepta
@@ -254,7 +255,7 @@ public class MobileSupervisorSABranchTests : IDisposable
             "Con el contrato actual, SUPERVISOR pasa el gate — el endpoint deberia usar IsStrictAdmin si la intencion es admin-only.");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public void ResumenTenant_Vendedor_Forbid()
     {
         var tenant = BuildTenantCtx(RoleNames.Vendedor, Vendedor1Id).Object;
@@ -266,7 +267,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /dashboard — KPIs tenant-wide para SA, agregando TODOS los UsuarioIds
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Dashboard_SuperAdmin_AgregaPedidosDeTodoElTenant()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -298,7 +299,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         ventasMes.Should().Be(350m, "100 + 250 = 350; pedido del tenant B (9999) NO debe contarse");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Dashboard_Supervisor_SoloAgregaPedidosDeSusSubordinados()
     {
         // Rama else del endpoint (lineas 121-126):
@@ -328,7 +329,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /ubicaciones — SA-branch usa todos vendedores+supervisores del tenant
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Ubicaciones_SuperAdmin_TargetIdsIncluyeTodosVendedoresYSupervisores()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -351,7 +352,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         targetIds.Should().NotContain(VendedorOtroTenantId, "RBAC cross-tenant");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Ubicaciones_SuperAdmin_ConTracking_UsaPingsDelTenant()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -371,7 +372,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         pingsTenantA.Any(p => p.TenantId == TenantB).Should().BeFalse("RBAC cross-tenant en pings GPS");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Ubicaciones_SuperAdmin_SinTracking_NoConsultaRepoYCaeAVisitas()
     {
         // Feature guard false → ubicacionesTracking queda vacio (endpoint linea 246-249).
@@ -393,7 +394,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /vendedor/{id}/resumen — SA puede ver CUALQUIER vendedor del tenant
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task ResumenVendedor_SuperAdmin_PuedeVerVendedorNoSubordinadoDirecto()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -412,10 +413,12 @@ public class MobileSupervisorSABranchTests : IDisposable
         vendedor!.Id.Should().Be(Vendedor2Id);
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task ResumenVendedor_Supervisor_NoVeVendedorAjeno()
     {
         // Rama else del endpoint: supervisor NO puede ver vendedor de otro supervisor.
+        // Sprint pre-prod #11 audit 2026-06-07: gate cambiado de IsAdminOrAbove
+        // a IsStrictAdmin para que SUPERVISOR caiga al filtro por subordinado.
         var tenant = BuildTenantCtx(RoleNames.Supervisor, SupervisorUserId).Object;
         var supervisorId = int.Parse(tenant.UserId);
 
@@ -423,14 +426,14 @@ public class MobileSupervisorSABranchTests : IDisposable
             .Where(u => u.Id == Vendedor2Id
                      && u.TenantId == tenant.TenantId
                      && u.EliminadoEn == null);
-        if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
+        if (!tenant.IsStrictAdmin && !tenant.IsSuperAdmin)
             query = query.Where(u => u.SupervisorId == supervisorId);
 
         var vendedor = await query.FirstOrDefaultAsync();
         vendedor.Should().BeNull("supervisor NO puede ver Vendedor2 que no es su subordinado — endpoint devuelve 404");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task ResumenVendedor_SuperAdmin_IdorCrossTenantDevuelveNull()
     {
         // RBAC: SA del tenant A NO debe poder leer datos del tenant B aunque
@@ -451,7 +454,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /pedidos — SA ve TODOS los pedidos del tenant; supervisor solo equipo
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Pedidos_SuperAdmin_VeTodosLosPedidosDelTenant()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;
@@ -475,7 +478,7 @@ public class MobileSupervisorSABranchTests : IDisposable
         pedidos.Any(p => p.TenantId == TenantB).Should().BeFalse("cross-tenant filtrado");
     }
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task Pedidos_Supervisor_SoloVePedidosDeSubordinados()
     {
         var tenant = BuildTenantCtx(RoleNames.Supervisor, SupervisorUserId).Object;
@@ -504,7 +507,7 @@ public class MobileSupervisorSABranchTests : IDisposable
     // /resumen-tenant — agregados tenant-wide para SA
     // ─────────────────────────────────────────────────────────────────────
 
-    [Fact(Skip = "MobileTestFixture compartido pendiente � seed in-memory falla por required members. Sprint siguiente")]
+    [Fact]
     public async Task ResumenTenant_SuperAdmin_AgregadosCorrectosDelTenant()
     {
         var tenant = BuildTenantCtx(RoleNames.SuperAdmin, SuperAdminUserId).Object;

@@ -1,4 +1,4 @@
-using HandySuites.Application.SubscriptionPlans.Interfaces;
+﻿using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Mobile.Api.Endpoints;
@@ -383,7 +383,7 @@ public class MobileFacturaEndpointsTests : IDisposable
 
     // ============ HTTP Pipeline Integration (PENDING — sin WebApplicationFactory) ============
 
-    [Fact(Skip = "PENDING: requiere CustomWebApplicationFactory para HandySuites.Mobile.Api (no existe aún en Mobile.Tests). Mocks de IHttpClientFactory + JWT setup. Cubre el flujo end-to-end POST /api/mobile/facturas/from-order/{pedidoId} con auth real.")]
+    [Fact(Skip = "PENDING: IMPLEMENT: usar nuevo MobileWebApplicationFactory en Common/. Mocks de IHttpClientFactory + JWT setup. Cubre el flujo end-to-end POST /api/mobile/facturas/from-order/{pedidoId} con auth real.")]
     public void Post_FromOrder_HappyPath_Returns200WithTimbradaTrue()
     {
         // TODO: cuando exista CustomWebApplicationFactory, mockear IHttpClientFactory
@@ -392,19 +392,19 @@ public class MobileFacturaEndpointsTests : IDisposable
         // { success: true, timbrada: true, message: "Factura creada y timbrada exitosamente" }.
     }
 
-    [Fact(Skip = "PENDING: requiere CustomWebApplicationFactory. Cubre VENDEDOR sin JWT → 401 Unauthorized en todos los endpoints del grupo /api/mobile/facturas.")]
+    [Fact(Skip = "PENDING: IMPLEMENT con MobileWebApplicationFactory. Cubre VENDEDOR sin JWT → 401 Unauthorized en todos los endpoints del grupo /api/mobile/facturas.")]
     public void AllEndpoints_SinJwt_Returns401()
     {
         // TODO: HTTP request sin Bearer token → RequireAuthorization() debe devolver 401.
     }
 
-    [Fact(Skip = "PENDING: requiere CustomWebApplicationFactory. Cubre VENDEDOR con JWT inválido (tenant_id missing) → endpoint debe responder Unauthorized (GetContext devuelve 0).")]
+    [Fact(Skip = "PENDING: IMPLEMENT con MobileWebApplicationFactory. Cubre VENDEDOR con JWT inválido (tenant_id missing) → endpoint debe responder Unauthorized (GetContext devuelve 0).")]
     public void Post_FromOrder_JwtSinTenantClaim_Returns401()
     {
         // TODO: JWT firmado sin claim "tenant_id" → endpoint llama Results.Unauthorized().
     }
 
-    [Fact(Skip = "PENDING: requiere CustomWebApplicationFactory + mock IHttpClientFactory. Cubre el caso 'creada pero no timbrada': Billing API POST /facturas/from-order = 200 OK, POST /timbrar = 500 → response { success: true, timbrada: false, message: 'Factura creada pero no se pudo timbrar...' }.")]
+    [Fact(Skip = "PENDING: IMPLEMENT con MobileWebApplicationFactory + mock IHttpClientFactory. Cubre el caso 'creada pero no timbrada': Billing API POST /facturas/from-order = 200 OK, POST /timbrar = 500 → response { success: true, timbrada: false, message: 'Factura creada pero no se pudo timbrar...' }.")]
     public void Post_FromOrder_TimbradoFalla_RetornaFacturaSinTimbrar()
     {
         // TODO: verificar que NO se llama RegistrarFacturaGeneradaAsync ni
