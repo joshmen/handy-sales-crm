@@ -410,9 +410,22 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Sprint pre-prod #16 audit 2026-06-06: bloquea IDOR cross-tenant.
+        // Antes asignabamos ClienteId/ProductoId directo del DTO sin verificar
+        // pertenencia. Vendedor del tenant A podia crear Pedido con cliente
+        // de tenant B y al timbrar CFDI saldria al RFC equivocado.
+        if (dto.ClienteId > 0)
+            await _db.EnsureClienteBelongsToTenantAsync(dto.ClienteId, tenantId);
+        if (dto.ListaPrecioId.HasValue && dto.ListaPrecioId.Value > 0)
+            await _db.EnsureListaPrecioBelongsToTenantAsync(dto.ListaPrecioId.Value, tenantId);
+
         // Create new pedido — look up server-side product info (precio + tasa + flag IVA)
         // para usar LineAmountCalculator que respeta el catálogo de impuestos.
         var newProductoIds = dto.Detalles?.Select(d => d.ProductoId).Distinct().ToList() ?? new List<int>();
+        // Batch ensure de los productos — 1 query en lugar de N. Throw si alguno
+        // no pertenece al tenant.
+        if (newProductoIds.Count > 0)
+            await _db.EnsureAllProductosBelongToTenantAsync(newProductoIds, tenantId);
         var newProductosInfo = await GetProductoPricingInfoAsync(newProductoIds, tenantId);
 
         // Build detalles with server-validated prices to compute correct totals
@@ -694,6 +707,13 @@ public class SyncRepository : ISyncRepository
                 return (existingByMobileId, false);
             }
         }
+
+        // Sprint pre-prod #17 audit 2026-06-06: bloquea IDOR cross-tenant.
+        // ClienteId y PedidoId opcional vienen directo del DTO mobile.
+        if (dto.ClienteId > 0)
+            await _db.EnsureClienteBelongsToTenantAsync(dto.ClienteId, tenantId);
+        if (dto.PedidoId.HasValue && dto.PedidoId.Value > 0)
+            await _db.EnsurePedidoBelongsToTenantAsync(dto.PedidoId.Value, tenantId);
 
         // Create new visita
         var visita = new ClienteVisita
@@ -991,6 +1011,11 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Sprint pre-prod #18 audit 2026-06-06: bloquea IDOR cross-tenant.
+        // Cobro referenciando cliente de otro tenant = saldo afectado en empresa equivocada.
+        if (dto.ClienteId > 0)
+            await _db.EnsureClienteBelongsToTenantAsync(dto.ClienteId, tenantId);
+
         // Resolver PedidoLocalId (WDB id) → PedidoId cuando el pedido padre fue creado
         // en el mismo sync y aún no tiene ServerId en el cliente. Evita cobros huérfanos
         // con pedido_id NULL en flujo VentaDirecta offline.
@@ -1000,6 +1025,15 @@ public class SyncRepository : ISyncRepository
             var parent = await _db.Pedidos.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.PedidoLocalId);
             if (parent != null) resolvedPedidoId = parent.Id;
+        }
+
+        // Sprint pre-prod #18 audit 2026-06-06: si el dto suministra PedidoId directo,
+        // validar que pertenece al tenant. El lookup por PedidoLocalId arriba YA filtra
+        // por tenant, pero el dto.PedidoId directo (cuando el mobile ya tiene ServerId)
+        // se asignaba sin ensure.
+        if (resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
+        {
+            await _db.EnsurePedidoBelongsToTenantAsync(resolvedPedidoId.Value, tenantId);
         }
 
         if (resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
