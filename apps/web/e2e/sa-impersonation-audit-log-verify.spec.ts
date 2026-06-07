@@ -319,7 +319,7 @@ test.describe('SA Impersonation Audit Log — Write/Read Verification', () => {
     // PROD BUG / FIX TODO: cualquier overlap entre paginas significa que
     // el ORDER BY no es estable o el OFFSET esta mal calculado en el writer
     // → datos de auditoria pueden duplicarse o perderse.
-    for (const id of idsP2) {
+    for (const id of Array.from(idsP2)) {
       expect(idsP1.has(id), `Session ${id} aparece en page 1 y page 2`).toBe(false);
     }
     expect(p1.page).toBe(1);

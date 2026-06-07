@@ -15,10 +15,10 @@ name: "Login Vendedor Jeyma - entrypoint hot-path VENDEDOR"
 # Screen: LoginScreen (apps/mobile-app/app/login.tsx).
 # ════════════════════════════════════════════════════════════
 
-# 1. Esperar la pantalla de login. Texto parcial evita issues de encoding
-#    en la tilde de "Sesión".
+# 1. Esperar la pantalla de login.
 - extendedWaitUntil:
-    visible: "Iniciar Sesi"
+    visible:
+      id: "email-input"
     timeout: 30000
 
 - takeScreenshot: login-vendedor-screen
@@ -50,6 +50,37 @@ name: "Login Vendedor Jeyma - entrypoint hot-path VENDEDOR"
     visible: "Hoy"
     timeout: 45000
 
+# 5b. Dismiss privacy consent modal si aparece (primer login)
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn: "Entendido"
+      - waitForAnimationToEnd
+
+# 5c. Dismiss permission dialog Android si aparece
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+# 5d. Dismiss announcement banner (AHORA NO)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
 - takeScreenshot: login-vendedor-dashboard
 
 # 6. Verificar que NO es admin: dashboard del vendedor muestra KPIs
@@ -59,11 +90,12 @@ name: "Login Vendedor Jeyma - entrypoint hot-path VENDEDOR"
     text: "Mi Rendimiento|Mis Ventas|Mis Pedidos|Mis Visitas|Mis Clientes"
     optional: true
 
-# 7. Verificar tab bar de vendedor — debe incluir Vender / Cobrar / Ruta /
-#    Más. Si alguna no aparece es regresión de menú por rol.
+# 7. Verificar tab bar de vendedor — debe incluir Vender / Cobrar / Mapa / Más.
+#    (Ruta NO es tab principal; vive bajo Mas o se navega via deeplink). Si
+#    alguna no aparece es regresión de menú por rol.
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Más"
 
 # 8. Ir a tab "Más" y validar el chip "Vendedor" — confirma que el rol
 #    se hidrató correctamente en (tabs)/mas.tsx.

@@ -55,7 +55,11 @@ test.describe('Reports — SPA flow (click card → render inline)', () => {
 
     await loginAsAdmin(page);
     await page.goto('/reports');
-    await page.waitForLoadState('networkidle');
+    // Audit 2026-06-07: networkidle timeouts en dev server con Apex Chart
+    // dynamic imports (inventario, nuevos-clientes mantienen network "busy"
+    // >60s). Esperar el grid de cards directamente es más confiable.
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('[data-tour="reports-cards"]')).toBeVisible({ timeout: 30000 });
   });
 
   for (const report of REPORTS) {
