@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+锘縜ppId: host.exp.exponent
 name: auth-flow-login-consent-dashboard-logout
 ---
 # ============================================================
@@ -108,7 +108,7 @@ name: auth-flow-login-consent-dashboard-logout
 - assertVisible:
     text: "Cobrar"
 - assertVisible:
-    text: "M醩"
+    text: "M锟絪"
 
 # ---- FASE 2: Smoke test de navegacion entre tabs principales ----
 
@@ -142,10 +142,10 @@ name: auth-flow-login-consent-dashboard-logout
 # ---- FASE 3: Force-logout desde Mas -> Configuracion ----
 
 - tapOn:
-    text: "M醩"
+    text: "M锟絪"
 - extendedWaitUntil:
     visible:
-      text: "M醩"
+      text: "M锟絪"
     timeout: 30000
 - takeScreenshot: 06-tab-mas
 
@@ -166,17 +166,17 @@ name: auth-flow-login-consent-dashboard-logout
 # Scroll para buscar boton Cerrar sesion
 - scrollUntilVisible:
     element:
-      text: "Cerrar sesion"
+      text: "Cerrar sesi贸n"
     direction: DOWN
     timeout: 15000
     speed: 40
 
 - assertVisible:
-    text: "Cerrar sesion"
+    text: "Cerrar sesi贸n"
 - takeScreenshot: 08-cerrar-sesion-visible
 
 - tapOn:
-    text: "Cerrar sesion"
+    text: "Cerrar sesi贸n"
 
 # Confirmacion de logout (si aparece modal)
 - runFlow:
@@ -191,10 +191,10 @@ name: auth-flow-login-consent-dashboard-logout
 - runFlow:
     when:
       visible:
-        text: "Si, cerrar sesion"
+        text: "Si, Cerrar sesi贸n"
     commands:
       - tapOn:
-          text: "Si, cerrar sesion"
+          text: "Si, Cerrar sesi贸n"
 
 - runFlow:
     when:

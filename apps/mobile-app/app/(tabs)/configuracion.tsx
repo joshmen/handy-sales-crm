@@ -64,7 +64,7 @@ export default function ConfiguracionScreen() {
             'Permiso de ubicación incompleto',
             'Para que el supervisor vea tu ruta aunque cierres la app, abre Ajustes y permite acceder a la ubicación "Todo el tiempo".',
             [
-              { text: 'Mas tarde', style: 'cancel' },
+              { text: 'Más tarde', style: 'cancel' },
               { text: 'Abrir Ajustes', onPress: () => Linking.openSettings().catch(() => {}) },
             ]
           );

@@ -284,7 +284,7 @@ export function SyncStatusCard({ compact }: Props) {
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={
-          classifiedAuth ? 'Iniciar sesion'
+          classifiedAuth ? 'Iniciar sesión'
           : classifiedTransient ? 'Reintentar ahora'
           : isSyncing ? 'Sincronizando'
           : 'Sincronizar ahora'

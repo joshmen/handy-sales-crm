@@ -102,10 +102,10 @@ export const useSyncStore = create<SyncState>((set, get) => ({
           if (_lastShownStatus !== 'error') {
             Toast.show({
               type: classified.type === 'network' || classified.type === 'server' ? 'info' : 'error',
-              text1: classified.type === 'auth' ? 'Sesion expirada'
-                : classified.type === 'network' ? 'Sin conexion'
+              text1: classified.type === 'auth' ? 'Sesión expirada'
+                : classified.type === 'network' ? 'Sin conexión'
                 : classified.type === 'server' ? 'Servidor no disponible'
-                : 'Sincronizacion fallida',
+                : 'Sincronización fallida',
               text2: classified.userMessage,
               visibilityTime: 3500,
               position: 'bottom',
