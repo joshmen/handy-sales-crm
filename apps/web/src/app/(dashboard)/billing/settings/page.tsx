@@ -253,7 +253,9 @@ export default function BillingSettingsPage() {
     >
       {/* Audit M-1: cross-link a settings para que admin encuentre fácil
           configuración de empresa no fiscal (nombre, logo, colores, perfil). */}
-      <div className="mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 text-sm text-blue-900 dark:text-blue-200">
+      {/* Sprint pre-prod #31: pastel azul reemplazado por tokens semanticos.
+          memoria feedback_no_em_dashes_no_pastels prohibe blue-200/950. */}
+      <div className="mb-4 rounded-lg bg-info/10 dark:bg-info/20 border border-info/30 p-3 text-sm text-info-foreground">
         ¿Buscas configuración general (logo, nombre, colores)? Está en{' '}
         <a href="/settings" className="font-medium underline hover:no-underline">
           Configuración general

@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
-import { ArrowRight, Users, Loader2 } from 'lucide-react';
+import { ArrowRight, Users, Loader2, AlertTriangle } from 'lucide-react';
 
 interface VendedorOption {
   id: number;
@@ -91,9 +91,15 @@ export default function TransferirCarteraPage() {
     >
       <div className="p-4 sm:p-6 max-w-2xl" data-testid="transferir-cartera-page">
         <div className="rounded-xl bg-surface-2 border border-border-subtle p-6 space-y-5">
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
-            <strong>⚠️ Operación permanente.</strong> Esta acción reasigna todos los clientes del vendedor origen al destino.
-            Para sustituciones temporales (vendedor enfermo un día), mejor usa &ldquo;Crear ruta manual&rdquo; en /routes sin tocar asignaciones.
+          {/* Sprint pre-prod #34: emoji warning a AlertTriangle icon + pastel
+              amber-200 a amber-300/700 dark + dark mode tokens. Memoria
+              feedback_no_em_dashes_no_pastels. */}
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3 text-sm text-amber-900 dark:text-amber-100 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-300 mt-0.5 flex-shrink-0" />
+            <span>
+              <strong>Operación permanente.</strong> Esta acción reasigna todos los clientes del vendedor origen al destino.
+              Para sustituciones temporales (vendedor enfermo un día), mejor usa &ldquo;Crear ruta manual&rdquo; en /routes sin tocar asignaciones.
+            </span>
           </div>
 
           {/* FROM */}

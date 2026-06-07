@@ -268,7 +268,7 @@ export default function FinkokAdminPage() {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center justify-end gap-1">
-                          {actionLoadingRfc === e.rfc && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                          {actionLoadingRfc === e.rfc && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                           {e.status === 'active' && (
                             <button
                               onClick={() => handleSuspend(e.rfc)}
