@@ -601,11 +601,30 @@ public class SyncRepository : ISyncRepository
                 return (pedido, wasConflict);
             }
             catch (DbUpdateException ex) when (
-                ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
-                && attempt < maxRetries - 1)
+                ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
             {
-                // Duplicate order number — clear tracker and retry with new number
+                // Sprint pre-prod #14 audit 2026-06-06: discriminar entre los
+                // dos UNIQUE constraints posibles:
+                //   1. IX_Pedidos_tenant_id_mobile_record_id (sprint #13)
+                //   2. duplicate NumeroPedido en mismo tenant
+                // Caso 1 = race idempotente: dos sync requests con mismo LocalId.
+                // El dedup application-layer (#9/#10) no captura window TOCTOU
+                // microscopica. Solucion: clear tracker, re-fetch el existing,
+                // retornar como "no es conflict, es la misma entity".
                 _db.ChangeTracker.Clear();
+
+                var constraintName = pg.ConstraintName ?? string.Empty;
+                if (constraintName.Contains("mobile_record_id") && !string.IsNullOrEmpty(dto.LocalId))
+                {
+                    var existing = await _db.Pedidos
+                        .Include(p => p.Detalles)
+                        .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.LocalId);
+                    if (existing != null) return (existing, false);
+                }
+
+                // Caso 2: duplicate NumeroPedido — retry con nuevo numero (hasta maxRetries).
+                if (attempt >= maxRetries - 1) throw;
+                // siguiente iteracion del for loop genera nuevo NumeroPedido
             }
         }
 
@@ -700,8 +719,27 @@ public class SyncRepository : ISyncRepository
             Version = 1
         };
 
-        _db.ClienteVisitas.Add(visita);
-        return (visita, wasConflict);
+        // Sprint pre-prod #14 audit 2026-06-06: SaveChanges + catch 23505 para
+        // captar violacion del UNIQUE index parcial sprint #13 cuando dos
+        // requests concurrentes pasen el dedup application-layer #9 (race
+        // TOCTOU). En ese caso re-fetch el existing y retornar idempotente.
+        try
+        {
+            _db.ClienteVisitas.Add(visita);
+            await _db.SaveChangesAsync();
+            return (visita, wasConflict);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
+            && (pg.ConstraintName ?? "").Contains("mobile_record_id")
+            && !string.IsNullOrEmpty(dto.LocalId))
+        {
+            _db.ChangeTracker.Clear();
+            var existing = await _db.ClienteVisitas
+                .FirstOrDefaultAsync(v => v.TenantId == tenantId && v.MobileRecordId == dto.LocalId);
+            if (existing != null) return (existing, false);
+            throw;
+        }
     }
 
     public async Task<(RutaVendedor entity, bool wasConflict)> UpsertRutaAsync(int tenantId, int usuarioId, SyncRutaDto dto, string userId)
@@ -991,8 +1029,26 @@ public class SyncRepository : ISyncRepository
             Version = 1
         };
 
-        _db.Cobros.Add(cobro);
-        return (cobro, wasConflict);
+        // Sprint pre-prod #14 audit 2026-06-06: SaveChanges + catch 23505 — mismo
+        // patron que UpsertVisitaAsync. CRITICAL en Cobro porque la duplicacion
+        // produce doble decremento del saldo del cliente.
+        try
+        {
+            _db.Cobros.Add(cobro);
+            await _db.SaveChangesAsync();
+            return (cobro, wasConflict);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
+            && (pg.ConstraintName ?? "").Contains("mobile_record_id")
+            && !string.IsNullOrEmpty(dto.LocalId))
+        {
+            _db.ChangeTracker.Clear();
+            var existing = await _db.Cobros
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.MobileRecordId == dto.LocalId);
+            if (existing != null) return (existing, false);
+            throw;
+        }
     }
 
     // === Gastos ===
