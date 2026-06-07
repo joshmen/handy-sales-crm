@@ -1,5 +1,14 @@
 name: Deploy APIs to Railway
 
+# Sprint pre-prod #95 audit 2026-06-06: concurrency group para evitar
+# que dos pushes consecutivos a main/staging hagan deploys paralelos
+# (race en migrations + posible inconsistencia entre los 3 APIs).
+# cancel-in-progress: false → preserva el deploy anterior; nuevo deploy
+# espera. Cambiar a true si queremos cancelar y solo correr el ultimo.
+concurrency:
+  group: deploy-apis-${{ github.ref }}
+  cancel-in-progress: false
+
 on:
   push:
     branches:

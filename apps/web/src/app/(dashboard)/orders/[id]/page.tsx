@@ -154,7 +154,7 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
           <span className="text-foreground/70">{t('loadingOrder')}</span>
@@ -165,7 +165,7 @@ export default function OrderDetailPage() {
 
   if (notFound || !order) {
     return (
-      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
@@ -190,7 +190,7 @@ export default function OrderDetailPage() {
     : STEPPER_STEPS.indexOf(estadoNorm);
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
         <Breadcrumb items={[
