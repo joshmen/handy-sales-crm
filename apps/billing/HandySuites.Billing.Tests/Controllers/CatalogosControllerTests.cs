@@ -210,6 +210,23 @@ public class CatalogosControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetUsosCfdi_FiltersByPersonaMoral()
+    {
+        // Act
+        var result = await _controller.GetUsosCfdi(personaFisica: null, personaMoral: true);
+
+        // Assert — only usos where AplicaPersonaMoral == true should remain
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var usos = okResult!.Value as IEnumerable<UsoCfdi>;
+        usos.Should().NotBeNull();
+        usos!.All(u => u.AplicaPersonaMoral).Should().BeTrue();
+        // D01 (only persona fisica) must be excluded
+        usos!.Any(u => u.Codigo == "D01").Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GetConfiguracionFiscal_ReturnsConfigForTenant()
     {
         // Act
@@ -299,6 +316,46 @@ public class CatalogosControllerTests : IDisposable
         // Verify
         var updated = await _context.ConfiguracionesFiscales.FindAsync(1);
         updated!.RazonSocial.Should().Be("Nombre Actualizado");
+    }
+
+    [Fact]
+    public async Task GetConfiguracionFiscal_ReturnsNotFound_WhenNoConfig()
+    {
+        // Arrange: switch the controller to a tenant that has no ConfiguracionFiscal seeded
+        var otherTenantClaims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, "99"),
+            new Claim("tenant_id", "tenant-without-config-999"),
+            new Claim(ClaimTypes.Role, "ADMIN")
+        };
+        _controller.ControllerContext.HttpContext.User =
+            new ClaimsPrincipal(new ClaimsIdentity(otherTenantClaims, "TestAuth"));
+
+        // Act
+        var result = await _controller.GetConfiguracionFiscal();
+
+        // Assert — covers the `if (config == null) return NotFound(...)` branch
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task UpdateConfiguracionFiscal_ReturnsNotFound_WhenIdMismatch()
+    {
+        // Arrange — id 9999 does not belong to the current tenant
+        var request = new UpdateConfiguracionFiscalRequest
+        {
+            RazonSocial = "No deberia actualizarse"
+        };
+
+        // Act
+        var result = await _controller.UpdateConfiguracionFiscal(9999, request);
+
+        // Assert — covers the `if (config == null) return NotFound()` branch
+        result.Should().BeOfType<NotFoundResult>();
+
+        // And the existing config (id=1) should remain unchanged
+        var unchanged = await _context.ConfiguracionesFiscales.FindAsync(1);
+        unchanged!.RazonSocial.Should().Be("Empresa Test S.A. de C.V.");
     }
 
     [Fact]

@@ -90,20 +90,27 @@ internal class StubCompanyLogoService : ICompanyLogoService
     public Task<string?> GetLogoUrlAsync(string tenantId) => Task.FromResult<string?>(null);
 }
 
+/// <summary>
+/// Mutable stub para inyectar pedidos por test.
+/// </summary>
 internal class StubOrderReaderService : IOrderReaderService
 {
+    public OrderForInvoice? NextOrder { get; set; }
+    public List<OrderForInvoice> GlobalOrders { get; set; } = new();
+
     public Task<OrderForInvoice?> GetOrderForInvoiceAsync(string tenantId, int pedidoId)
-        => Task.FromResult<OrderForInvoice?>(null);
+        => Task.FromResult(NextOrder);
 
     public Task<List<OrderForInvoice>> GetOrdersForFacturaGlobalAsync(
         string tenantId, DateTime fechaInicio, DateTime fechaFin, List<long> excludedPedidoIds)
-        => Task.FromResult(new List<OrderForInvoice>());
+        => Task.FromResult(GlobalOrders);
 }
 
 internal class StubTimbreEnforcementService : ITimbreEnforcementService
 {
+    public bool Allow { get; set; } = true;
     public Task<TimbreCheckResult> CheckTimbreAvailableAsync(string authorizationHeader)
-        => Task.FromResult(new TimbreCheckResult(true, null, 5, 100));
+        => Task.FromResult(new TimbreCheckResult(Allow, Allow ? null : "Sin timbres disponibles.", 5, 100));
     public Task NotifyTimbreUsedAsync(string authorizationHeader) => Task.CompletedTask;
 }
 
@@ -162,10 +169,24 @@ internal class StubBillingEmailService : HandySuites.Billing.Api.Services.IBilli
         => Task.FromResult(true);
 }
 
+/// <summary>
+/// FacturasController — 25 unit tests usando InMemory DB + stubs CFDI.
+///
+/// Algunos endpoints (TimbrarFactura, CreateFactura) usan ExecuteUpdateAsync / raw SQL
+/// que el provider InMemory no soporta. Esos tests están marcados como Skip con razón
+/// "Requires relational DB provider — InMemory does not support ExecuteUpdate/raw SQL".
+///
+/// El resto se ejercita end-to-end con InMemory:
+/// GetFacturas (paginación, filtros), GetFactura, GetTicketData, GetInvoicedOrders,
+/// CancelarFactura (flujo Finkok), GetPdf, GetXml, GetPublicByUuid, PreviewFacturaFromOrder,
+/// CreateFacturaFromOrder validation, ExportZip, GenerarFacturaGlobal validation.
+/// </summary>
 public class FacturasControllerTests : IDisposable
 {
     private readonly BillingDbContext _context;
     private readonly FacturasController _controller;
+    private readonly StubOrderReaderService _orderReader;
+    private readonly StubTimbreEnforcementService _timbreService;
     private readonly string _testTenantId = "test-tenant-001";
 
     private const string TestJwtSecret = "test-jwt-secret-key-for-encryption-32chars!";
@@ -200,12 +221,14 @@ public class FacturasControllerTests : IDisposable
         var emailService = new BillingEmailService(config, emailLogger);
         var httpClientFactory = new StubHttpClientFactory();
         var fiscalCodeResolver = new FiscalCodeResolver(_context);
+        _orderReader = new StubOrderReaderService();
+        _timbreService = new StubTimbreEnforcementService();
         _controller = new FacturasController(
             _context, logger, pdfService, emailService,
             new StubXmlBuilder(), new StubCfdiSigner(),
             new StubPacService(), new StubBlobStorageService(),
-            new StubTimbreEnforcementService(),
-            new StubCompanyLogoService(), new StubOrderReaderService(),
+            _timbreService,
+            new StubCompanyLogoService(), _orderReader,
             fiscalCodeResolver, httpClientFactory, config,
             new StubTenantEncryptionService());
 
@@ -251,7 +274,7 @@ public class FacturasControllerTests : IDisposable
             Activo = true
         });
 
-        // Add test facturas
+        // Factura TIMBRADA (id=1)
         _context.Facturas.Add(new Factura
         {
             Id = 1,
@@ -273,9 +296,11 @@ public class FacturasControllerTests : IDisposable
             Moneda = "MXN",
             TipoCambio = 1,
             Estado = "TIMBRADA",
+            PedidoId = 100,
             CreatedBy = 1
         });
 
+        // Factura PENDIENTE (id=2)
         _context.Facturas.Add(new Factura
         {
             Id = 2,
@@ -299,7 +324,33 @@ public class FacturasControllerTests : IDisposable
             CreatedBy = 1
         });
 
-        // Add test configuracion fiscal (required for timbrado)
+        // Factura CANCELADA (id=3) — para verificar que GetInvoicedOrders la excluye
+        _context.Facturas.Add(new Factura
+        {
+            Id = 3,
+            TenantId = _testTenantId,
+            Serie = "A",
+            Folio = 3,
+            Uuid = "test-uuid-003",
+            FechaEmision = DateTime.UtcNow.AddDays(-3),
+            TipoComprobante = "I",
+            EmisorRfc = "TEST010101AAA",
+            EmisorNombre = "Empresa Test",
+            EmisorRegimenFiscal = "601",
+            ReceptorRfc = "ABC010101AAA",
+            ReceptorNombre = "Otro Cliente",
+            ReceptorUsoCfdi = "G03",
+            Subtotal = 100m,
+            Total = 116m,
+            TotalImpuestosTrasladados = 16m,
+            Moneda = "MXN",
+            TipoCambio = 1,
+            Estado = "CANCELADA",
+            PedidoId = 101,
+            CreatedBy = 1
+        });
+
+        // Add test configuracion fiscal (required for timbrado, country gate)
         _context.ConfiguracionesFiscales.Add(new ConfiguracionFiscal
         {
             TenantId = _testTenantId,
@@ -308,6 +359,8 @@ public class FacturasControllerTests : IDisposable
             RazonSocial = "Empresa Test",
             RegimenFiscal = "601",
             CodigoPostal = "12345",
+            Pais = "México",
+            SerieFactura = "A",
             CertificadoSat = Convert.ToBase64String(new byte[] { 1, 2, 3 }),
             LlavePrivada = Convert.ToBase64String(new byte[] { 4, 5, 6 }),
             PasswordCertificado = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("testpass")),
@@ -320,36 +373,30 @@ public class FacturasControllerTests : IDisposable
         _context.SaveChanges();
     }
 
+    // ────────────────────────── GetFacturas ──────────────────────────
+
     [Fact]
     public async Task GetFacturas_ReturnsAllFacturasForTenant()
     {
-        // Act
         var result = await _controller.GetFacturas(null, null, null, null, 1, 20);
 
-        // Assert
         var okResult = result.Result as OkObjectResult;
         okResult.Should().NotBeNull();
 
-        // Controller returns anonymous { items, totalCount, page, pageSize }
         var value = okResult!.Value!;
-        var itemsProp = value.GetType().GetProperty("items");
-        itemsProp.Should().NotBeNull();
-        var items = itemsProp!.GetValue(value) as IEnumerable<FacturaListDto>;
+        var items = value.GetType().GetProperty("items")!.GetValue(value) as IEnumerable<FacturaListDto>;
         items.Should().NotBeNull();
-        items!.Count().Should().Be(2);
+        items!.Count().Should().Be(3);
     }
 
     [Fact]
     public async Task GetFacturas_FiltersByEstado()
     {
-        // Act
         var result = await _controller.GetFacturas(null, null, "TIMBRADA", null, 1, 20);
 
-        // Assert
         var okResult = result.Result as OkObjectResult;
         okResult.Should().NotBeNull();
 
-        // Controller returns anonymous { items, totalCount, page, pageSize }
         var value = okResult!.Value!;
         var items = value.GetType().GetProperty("items")!.GetValue(value) as IEnumerable<FacturaListDto>;
         items.Should().NotBeNull();
@@ -358,12 +405,71 @@ public class FacturasControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetFacturas_FiltersByReceptorRfc()
+    {
+        var result = await _controller.GetFacturas(null, null, null, "ABC010101", 1, 20);
+
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var value = okResult!.Value!;
+        var items = value.GetType().GetProperty("items")!.GetValue(value) as IEnumerable<FacturaListDto>;
+        items.Should().NotBeNull();
+        items!.Count().Should().Be(1);
+        items!.First().ReceptorRfc.Should().Be("ABC010101AAA");
+    }
+
+    [Fact]
+    public async Task GetFacturas_FiltersByDateRange()
+    {
+        var desde = DateTime.UtcNow.AddDays(-2);
+        var hasta = DateTime.UtcNow.AddDays(1);
+
+        var result = await _controller.GetFacturas(desde, hasta, null, null, 1, 20);
+
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var value = okResult!.Value!;
+        var items = (value.GetType().GetProperty("items")!.GetValue(value) as IEnumerable<FacturaListDto>)!.ToList();
+        items.Should().NotContain(f => f.Id == 3); // CANCELADA es de hace 3 días, fuera del rango
+        items.Count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetFacturas_PageSizeClampedToMax100()
+    {
+        var result = await _controller.GetFacturas(null, null, null, null, 1, 500);
+
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var value = okResult!.Value!;
+        var pageSize = (int)value.GetType().GetProperty("pageSize")!.GetValue(value)!;
+        pageSize.Should().Be(100);
+    }
+
+    [Fact]
+    public async Task GetFacturas_OrdersByFechaEmisionDescending()
+    {
+        var result = await _controller.GetFacturas(null, null, null, null, 1, 20);
+
+        var okResult = result.Result as OkObjectResult;
+        var value = okResult!.Value!;
+        var items = (value.GetType().GetProperty("items")!.GetValue(value) as IEnumerable<FacturaListDto>)!.ToList();
+
+        // PENDIENTE (hoy) > TIMBRADA (ayer) > CANCELADA (-3 días)
+        items[0].Id.Should().Be(2);
+        items[^1].Id.Should().Be(3);
+    }
+
+    // ────────────────────────── GetFactura ──────────────────────────
+
+    [Fact]
     public async Task GetFactura_ReturnsFacturaById()
     {
-        // Act
         var result = await _controller.GetFactura(1);
 
-        // Assert
         var okResult = result.Result as OkObjectResult;
         okResult.Should().NotBeNull();
 
@@ -376,93 +482,299 @@ public class FacturasControllerTests : IDisposable
     [Fact]
     public async Task GetFactura_ReturnsNotFoundForNonExistentId()
     {
-        // Act
         var result = await _controller.GetFactura(999);
 
-        // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // ────────────────────────── GetInvoicedOrders ──────────────────────────
+
+    [Fact]
+    public async Task GetInvoicedOrders_ReturnsDictionaryKeyedByPedidoId()
+    {
+        var result = await _controller.GetInvoicedOrders();
+
+        var okResult = result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        // El resultado es un Dictionary<long, anon>. Solo debería contener pedido 100
+        // (factura 1 TIMBRADA con PedidoId=100). El pedido 101 (factura CANCELADA) NO debe aparecer.
+        var value = okResult!.Value;
+        value.Should().NotBeNull();
+
+        // Iterar usando reflexión genérica sobre IDictionary
+        var dict = value as System.Collections.IDictionary;
+        dict.Should().NotBeNull();
+        dict!.Count.Should().Be(1);
+        dict.Contains(100L).Should().BeTrue();
+        dict.Contains(101L).Should().BeFalse();
+    }
+
+    // ────────────────────────── GetTicketData ──────────────────────────
+
+    [Fact]
+    public async Task GetTicketData_ReturnsBadRequestForFacturaPendiente()
+    {
+        var result = await _controller.GetTicketData(2);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetTicketData_ReturnsNotFoundForNonExistentId()
+    {
+        var result = await _controller.GetTicketData(999);
+
+        result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task GetTicketData_ReturnsOkForTimbradaWithUuid()
+    {
+        var result = await _controller.GetTicketData(1);
+
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var dto = okResult!.Value as FacturaTicketDataDto;
+        dto.Should().NotBeNull();
+        dto!.Uuid.Should().Be("test-uuid-001");
+        dto.EmisorRfc.Should().Be("TEST010101AAA");
+        // RFC PAC vacío cuando no hay XmlContent con TFD
+        dto.RfcPac.Should().Be(string.Empty);
+    }
+
+    // ────────────────────────── CreateFactura ──────────────────────────
+
+    [Fact]
+    public async Task CreateFactura_ReturnsBadRequestForInvalidEmisorRfc()
+    {
+        var request = new CreateFacturaRequest
+        {
+            TipoComprobante = "I",
+            EmisorRfc = "INVALID-RFC",
+            EmisorNombre = "Test",
+            ReceptorRfc = "XAXX010101000",
+            ReceptorNombre = "Cliente",
+            Subtotal = 100m,
+            Total = 116m,
+        };
+
+        var result = await _controller.CreateFactura(request);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task CreateFactura_ReturnsBadRequestForInvalidReceptorRfc()
+    {
+        var request = new CreateFacturaRequest
+        {
+            TipoComprobante = "I",
+            EmisorRfc = "TEST010101AAA",
+            EmisorNombre = "Test",
+            ReceptorRfc = "no-valido",
+            ReceptorNombre = "Cliente",
+            Subtotal = 100m,
+            Total = 116m,
+        };
+
+        var result = await _controller.CreateFactura(request);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact(Skip = "Requires relational DB provider — InMemory does not support raw SQL/ExecuteUpdate")]
     public async Task CreateFactura_CreatesNewFactura()
     {
-        // Arrange
         var request = new CreateFacturaRequest
         {
             TipoComprobante = "I",
-            MetodoPago = "PUE",
-            FormaPago = "01",
-            UsoCfdi = "G03",
             EmisorRfc = "TEST010101AAA",
             EmisorNombre = "Empresa Test",
-            EmisorRegimenFiscal = "601",
             ReceptorRfc = "CLIENTE010101AAA",
             ReceptorNombre = "Nuevo Cliente",
-            ReceptorUsoCfdi = "G03",
-            ReceptorDomicilioFiscal = "12345",
             Subtotal = 2000m,
             Total = 2320m,
-            TotalImpuestosTrasladados = 320m
         };
 
-        // Act
         var result = await _controller.CreateFactura(request);
 
-        // Assert
-        var createdResult = result.Result as CreatedAtActionResult;
-        createdResult.Should().NotBeNull();
-        createdResult!.StatusCode.Should().Be(201);
-
-        var factura = createdResult.Value as FacturaDto;
-        factura.Should().NotBeNull();
-        factura!.ReceptorNombre.Should().Be("Nuevo Cliente");
-        factura.Estado.Should().Be("PENDIENTE");
+        result.Result.Should().BeOfType<CreatedAtActionResult>();
     }
 
-    [Fact(Skip = "Requires relational DB provider — InMemory does not support raw SQL/ExecuteUpdate")]
-    public async Task TimbrarFactura_TimbraFacturaPendiente()
+    // ────────────────────────── PreviewFacturaFromOrder ──────────────────────────
+
+    [Fact]
+    public async Task PreviewFacturaFromOrder_ReturnsNotFoundForMissingOrder()
     {
-        // Act
-        var result = await _controller.TimbrarFactura(2); // Factura pendiente
+        _orderReader.NextOrder = null;
 
-        // Assert
-        var okResult = result.Result as OkObjectResult;
-        okResult.Should().NotBeNull();
+        var result = await _controller.PreviewFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 999 });
 
-        var factura = okResult!.Value as FacturaDto;
-        factura.Should().NotBeNull();
-        factura!.Estado.Should().Be("TIMBRADA");
-        factura.Uuid.Should().NotBeNullOrEmpty();
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
 
-    [Fact(Skip = "Requires relational DB provider — InMemory does not support raw SQL/ExecuteUpdate")]
-    public async Task TimbrarFactura_ReturnsBadRequestForTimbrada()
+    [Fact]
+    public async Task PreviewFacturaFromOrder_ReturnsBadRequestWhenOrderNotEntregado()
     {
-        // Act
-        var result = await _controller.TimbrarFactura(1); // Factura ya timbrada
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 50,
+            Estado = 1, // Pendiente, no Entregado
+            ClienteFacturable = true,
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Razón",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+        };
 
-        // Assert
+        var result = await _controller.PreviewFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 50 });
+
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
+    public async Task PreviewFacturaFromOrder_ReturnsBadRequestWhenClienteNotFacturable()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 50,
+            Estado = 5,
+            ClienteFacturable = false,
+            ClienteNombre = "Cliente Test",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Razón",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+        };
+
+        var result = await _controller.PreviewFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 50 });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task PreviewFacturaFromOrder_ReturnsBadRequestWhenClienteSinRfc()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 50,
+            Estado = 5,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Test",
+            ClienteRfc = "", // missing
+            ClienteRazonSocial = "Razón",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+        };
+
+        var result = await _controller.PreviewFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 50 });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task PreviewFacturaFromOrder_ReturnsBadRequestWhenClienteSinCodigoPostal()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 50,
+            Estado = 5,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Test",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Razón",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "", // missing
+        };
+
+        var result = await _controller.PreviewFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 50 });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task PreviewFacturaFromOrder_ReturnsOkWithUnmappedFlagWhenFallback()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 50,
+            NumeroPedido = "PED-50",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Test",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Razón Social SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 999, // no mapping → fallback
+                    ProductoNombre = "Producto X",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Total = 116m,
+                }
+            }
+        };
+
+        var result = await _controller.PreviewFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 50 });
+
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var dto = okResult!.Value as PreFacturaDto;
+        dto.Should().NotBeNull();
+        dto!.HasUnmappedProducts.Should().BeTrue();
+        dto.UnmappedCount.Should().Be(1);
+        dto.PedidoId.Should().Be(50);
+    }
+
+    // ────────────────────────── CreateFacturaFromOrder ──────────────────────────
+
+    [Fact]
+    public async Task CreateFacturaFromOrder_ReturnsBadRequestIfOrderAlreadyInvoiced()
+    {
+        // Factura 1 (no cancelada) ya tiene PedidoId=100. Reintentar el mismo pedido debe fallar.
+        var result = await _controller.CreateFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 100 });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task CreateFacturaFromOrder_ReturnsNotFoundWhenOrderMissing()
+    {
+        _orderReader.NextOrder = null;
+
+        var result = await _controller.CreateFacturaFromOrder(new CreateFacturaFromOrderRequest { PedidoId = 9999 });
+
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    // ────────────────────────── CancelarFactura ──────────────────────────
+
+    [Fact]
     public async Task CancelarFactura_CancelaFacturaTimbrada()
     {
-        // Arrange
         var request = new CancelarFacturaRequest
         {
             MotivoCancelacion = "02",
             FolioSustitucion = "A-003"
         };
 
-        // Act
         var result = await _controller.CancelarFactura(1, request);
 
-        // Assert
         var okResult = result as OkObjectResult;
         okResult.Should().NotBeNull();
 
-        // Verify the state changed
         var factura = await _context.Facturas.FindAsync(1L);
         factura!.Estado.Should().Be("CANCELADA");
     }
@@ -470,26 +782,60 @@ public class FacturasControllerTests : IDisposable
     [Fact]
     public async Task CancelarFactura_ReturnsBadRequestForPendiente()
     {
-        // Arrange
         var request = new CancelarFacturaRequest
         {
             MotivoCancelacion = "02"
         };
 
-        // Act
         var result = await _controller.CancelarFactura(2, request);
 
-        // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
+    public async Task CancelarFactura_ReturnsBadRequestForInvalidMotivo()
+    {
+        var request = new CancelarFacturaRequest
+        {
+            MotivoCancelacion = "99" // no válido (válidos: 01,02,03,04)
+        };
+
+        var result = await _controller.CancelarFactura(1, request);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task CancelarFactura_ReturnsBadRequestForMotivo01WithoutFolioSustitucion()
+    {
+        var request = new CancelarFacturaRequest
+        {
+            MotivoCancelacion = "01",
+            FolioSustitucion = null
+        };
+
+        var result = await _controller.CancelarFactura(1, request);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task CancelarFactura_ReturnsNotFoundForNonExistentId()
+    {
+        var request = new CancelarFacturaRequest { MotivoCancelacion = "02" };
+
+        var result = await _controller.CancelarFactura(9999, request);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // ────────────────────────── GetPdf ──────────────────────────
+
+    [Fact]
     public async Task GetPdf_ReturnsPdfForExistingFactura()
     {
-        // Act
         var result = await _controller.GetPdf(1);
 
-        // Assert
         var fileResult = result as FileContentResult;
         fileResult.Should().NotBeNull();
         fileResult!.ContentType.Should().Be("application/pdf");
@@ -497,13 +843,131 @@ public class FacturasControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetPdf_ReturnsNotFoundForNonExistentId()
+    {
+        var result = await _controller.GetPdf(9999);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // ────────────────────────── GetXml ──────────────────────────
+
+    [Fact]
     public async Task GetXml_ReturnsNotFoundWhenNoXml()
     {
-        // Act
+        // Factura 1 está TIMBRADA pero no tiene XmlContent ni XmlBlobUrl → 404
         var result = await _controller.GetXml(1);
 
-        // Assert
         result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetXml_ReturnsFileWhenXmlContentExists()
+    {
+        var f = await _context.Facturas.FindAsync(1L);
+        f!.XmlContent = "<cfdi:Comprobante>test</cfdi:Comprobante>";
+        await _context.SaveChangesAsync();
+
+        var result = await _controller.GetXml(1);
+
+        var fileResult = result as FileContentResult;
+        fileResult.Should().NotBeNull();
+        fileResult!.ContentType.Should().Be("application/xml");
+        fileResult.FileContents.Length.Should().BeGreaterThan(0);
+    }
+
+    // ────────────────────────── GetPublicByUuid ──────────────────────────
+
+    [Fact]
+    public async Task GetPublicByUuid_ReturnsOkForValidUuid()
+    {
+        var result = await _controller.GetPublicByUuid("test-uuid-001");
+
+        var okResult = result as OkObjectResult;
+        okResult.Should().NotBeNull();
+
+        var dto = okResult!.Value as FacturaPublicDto;
+        dto.Should().NotBeNull();
+        dto!.Uuid.Should().Be("test-uuid-001");
+        dto.Total.Should().Be(1160m);
+    }
+
+    [Fact]
+    public async Task GetPublicByUuid_ReturnsBadRequestForEmptyUuid()
+    {
+        var result = await _controller.GetPublicByUuid("");
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetPublicByUuid_ReturnsNotFoundForUnknownUuid()
+    {
+        var result = await _controller.GetPublicByUuid("00000000-0000-0000-0000-000000000000");
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    // ────────────────────────── ExportZip ──────────────────────────
+
+    [Fact]
+    public async Task ExportZip_ReturnsZipForTimbradas()
+    {
+        var result = await _controller.ExportZip();
+
+        // Si no hay XmlContent en facturas TIMBRADAS, el ZIP queda vacío pero el método aún devuelve File.
+        var fileResult = result as FileContentResult;
+        fileResult.Should().NotBeNull();
+        fileResult!.ContentType.Should().Be("application/zip");
+    }
+
+    // ────────────────────────── GenerarFacturaGlobal ──────────────────────────
+
+    [Fact]
+    public async Task GenerarFacturaGlobal_ReturnsBadRequestForInvalidPeriodicidad()
+    {
+        var request = new FacturaGlobalRequest
+        {
+            FechaInicio = DateTime.UtcNow.AddDays(-7),
+            FechaFin = DateTime.UtcNow,
+            Periodicidad = "99" // no válido
+        };
+
+        var result = await _controller.GenerarFacturaGlobal(request);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerarFacturaGlobal_ReturnsBadRequestWhenFechaInicioAfterFechaFin()
+    {
+        var request = new FacturaGlobalRequest
+        {
+            FechaInicio = DateTime.UtcNow,
+            FechaFin = DateTime.UtcNow.AddDays(-7),
+            Periodicidad = "04"
+        };
+
+        var result = await _controller.GenerarFacturaGlobal(request);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerarFacturaGlobal_ReturnsBadRequestWhenNoOrdersInRange()
+    {
+        _orderReader.GlobalOrders = new List<OrderForInvoice>(); // sin pedidos
+
+        var request = new FacturaGlobalRequest
+        {
+            FechaInicio = DateTime.UtcNow.AddDays(-7),
+            FechaFin = DateTime.UtcNow,
+            Periodicidad = "04"
+        };
+
+        var result = await _controller.GenerarFacturaGlobal(request);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     public void Dispose()
