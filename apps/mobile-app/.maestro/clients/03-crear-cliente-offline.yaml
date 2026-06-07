@@ -1,0 +1,260 @@
+appId: host.exp.exponent
+name: "Clientes > Crear cliente offline (vendedor) - hot path CRUD"
+---
+
+# ════════════════════════════════════════════════════════════
+# HOT-PATH VENDEDOR: Crear cliente desde mobile.
+#
+# MEMORY.md confirma feature DONE (May 2 2026) pero no había Maestro
+# yaml dedicado a crear cliente. Este flow cubre la rama offline
+# (queda en pending_sync) y la sincronización al volver online.
+#
+# Endpoint: POST /api/mobile/clientes (201 created server-side cuando
+# sincroniza). En offline el record se guarda en WatermelonDB con
+# pending_sync=true.
+#
+# PRE-REQ: sesión VENDEDOR activa (01-login-vendedor.yaml).
+# ════════════════════════════════════════════════════════════
+
+# 0. Dashboard listo.
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# Dismiss modales opcionales.
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn:
+          text: "Cerrar"
+          optional: true
+
+# 1. Tab Más → Clientes (VENDEDOR no tiene tab directo).
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+- takeScreenshot: crear-cliente-vendedor-01-mas
+
+- tapOn: "Clientes"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]lientes.*"
+    timeout: 15000
+
+- takeScreenshot: crear-cliente-vendedor-02-lista
+
+# 2. (Opcional) activar airplane mode — valida offline real.
+#    Si tu CI no tiene runScript, comentar y validar online.
+- runScript:
+    file: "./scripts/airplane-on.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+# 3. FAB / botón "+" para nuevo cliente.
+- runFlow:
+    when:
+      visible: "Crear cliente"
+    commands:
+      - tapOn: "Crear cliente"
+- runFlow:
+    when:
+      visible: "Nuevo cliente"
+    commands:
+      - tapOn: "Nuevo cliente"
+- runFlow:
+    when:
+      notVisible: "Crear Cliente"
+    commands:
+      - tapOn:
+          id: "add-client"
+          optional: true
+
+- extendedWaitUntil:
+    visible: "Crear Cliente"
+    timeout: 15000
+
+- takeScreenshot: crear-cliente-vendedor-03-form
+
+# 4. Secciones esperadas del form.
+- assertVisible: "UBICACION"
+- assertVisible: "DIRECCION"
+- assertVisible: "INFORMACION GENERAL"
+- assertVisible: "DATOS FISCALES"
+
+# 5. Capturar DIRECCION (requeridos).
+- tapOn:
+    text: "Nombre de la calle"
+- inputText: "Av Reforma"
+- hideKeyboard
+
+- tapOn:
+    text: "# Ext"
+- inputText: "456"
+- hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Colonia (opcional)"
+    commands:
+      - tapOn:
+          text: "Colonia (opcional)"
+      - inputText: "Roma"
+      - hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Ciudad (opcional)"
+    commands:
+      - tapOn:
+          text: "Ciudad (opcional)"
+      - inputText: "CDMX"
+      - hideKeyboard
+
+- takeScreenshot: crear-cliente-vendedor-04-direccion
+
+# 6. INFORMACION GENERAL — Razón social + teléfono.
+- scrollUntilVisible:
+    element:
+      text: "Nombre del cliente o negocio"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: "Nombre del cliente o negocio"
+- inputText: "Tienda QA Vendedor Offline"
+- hideKeyboard
+
+- runFlow:
+    when:
+      visible: "10 digitos (opcional)"
+    commands:
+      - tapOn:
+          text: "10 digitos (opcional)"
+      - inputText: "5598765432"
+      - hideKeyboard
+
+- takeScreenshot: crear-cliente-vendedor-05-info
+
+# 7. DATOS FISCALES — RFC (opcional, lo llenamos para hot path).
+- scrollUntilVisible:
+    element:
+      text: "DATOS FISCALES"
+    direction: DOWN
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "RFC"
+    commands:
+      - tapOn:
+          text: "RFC"
+      - inputText: "XAXX010101000"
+      - hideKeyboard
+
+- takeScreenshot: crear-cliente-vendedor-06-fiscal
+
+# 8. Guardar.
+- scrollUntilVisible:
+    element:
+      text: "Guardar Cliente"
+    direction: DOWN
+    timeout: 15000
+
+- assertVisible: "Guardar Cliente"
+- tapOn: "Guardar Cliente"
+
+# 9. Toast offline o online.
+- runFlow:
+    when:
+      visible: "Guardado offline"
+    commands:
+      - assertVisible: "Guardado offline"
+      - takeScreenshot: crear-cliente-vendedor-07-toast-offline
+- runFlow:
+    when:
+      visible: "Cliente creado"
+    commands:
+      - assertVisible: "Cliente creado"
+      - takeScreenshot: crear-cliente-vendedor-07-toast-ok
+
+# 10. Vuelve a la lista — cliente nuevo visible.
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]liente.*"
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Tienda QA Vendedor Offline"
+    commands:
+      - assertVisible: "Tienda QA Vendedor Offline"
+
+- takeScreenshot: crear-cliente-vendedor-08-lista-con-nuevo
+
+# 11. Validar que aparece como pendiente sync — tag/badge.
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - assertVisible: "Pendiente"
+
+# 12. Ir a Sincronización y validar pending count.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 15000
+
+- tapOn: "Sincronización"
+
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 15000
+
+- assertVisible: "Pendientes"
+
+- takeScreenshot: crear-cliente-vendedor-09-sync-pending
+
+# 13. Desactivar airplane mode + sincronizar.
+- runScript:
+    file: "./scripts/airplane-off.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+- extendedWaitUntil:
+    visible: "Conectado"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Sincronizar ahora"
+    commands:
+      - tapOn: "Sincronizar ahora"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*(Sincronizado|Listo|0 pendientes).*"
+    timeout: 60000
+
+- takeScreenshot: crear-cliente-vendedor-10-sync-ok
+
+# BUG / FIX TODO: complementar con query post-run en backend para
+# validar que el cliente realmente llegó al server:
+#   SELECT id, razon_social FROM "Clientes"
+#     WHERE razon_social = 'Tienda QA Vendedor Offline'
+#     AND creado_en > now() - interval '5 min';
+# Si Count=0 hay regresión en POST /api/mobile/clientes o en
+# WatermelonDB sync push.

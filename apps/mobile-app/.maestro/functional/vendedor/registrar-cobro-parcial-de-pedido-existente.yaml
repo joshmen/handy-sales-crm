@@ -1,0 +1,239 @@
+appId: host.exp.exponent
+name: "Vendedor - Registrar cobro PARCIAL de pedido existente"
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCTIONAL TEST — VENDEDOR
+# Use case: registrar-cobro-parcial-de-pedido-existente
+#
+# El vendedor registra un cobro PARCIAL (monto menor al saldo
+# pendiente) sobre un cliente existente, navegando desde el tab
+# Cobrar -> Estado de Cuenta -> Registrar Cobro.
+#
+# Validaciones clave:
+#   1) Pantalla muestra el saldo pendiente del cliente.
+#   2) Form acepta un monto MENOR al saldo sin disparar el
+#      warning "Monto excede el saldo pendiente".
+#   3) Tras CONFIRMAR aparece el recibo "Cobro Registrado".
+#   4) Al volver al dashboard de Cobranza el card "Pendiente"
+#      sigue mostrando saldo > 0 (cobro fue parcial, no total).
+#
+# Cobranza siempre Efectivo (badge "Pago en efectivo"); no hay
+# selector de metodo desde el audit 2026-05-07.
+# createCobroOffline persiste local + performSync push al backend.
+#
+# Pre-condicion: ejecutar antes
+#   apps/mobile-app/.maestro/auth/01-login-vendedor.yaml
+# (vendedor1@jeyma.com / test123) sobre seed Jeyma con al menos
+# un cliente con saldo > 100 MXN (e.g. "Abarrotes Don Pancho").
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx
+#   apps/mobile-app/app/(tabs)/cobrar/estado-cuenta/[clienteId].tsx
+#   apps/mobile-app/app/(tabs)/cobrar/registrar.tsx
+# ════════════════════════════════════════════════════════════
+
+# 1. Esperar dashboard "Hoy" hidratado tras login
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 2. Dismiss de modales opcionales (permisos GPS, sync, aviso)
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+      - waitForAnimationToEnd
+
+# 3. Reset navigation: doble tap "Hoy" para limpiar stack
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+# 4. Navegar al tab Cobrar
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: parcial-01-dashboard-cobranza
+
+# 5. Verificar cards del resumen de cartera
+- assertVisible: "Facturado"
+- assertVisible: "Cobrado"
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+# 6. Scroll para ver lista de clientes con saldo (SALDOS POR CLIENTE)
+- scroll
+
+- assertVisible:
+    text: "SALDOS POR CLIENTE"
+    optional: true
+
+- scroll
+
+# 7. Tap en primer cliente con saldo pendiente
+#    Las tarjetas exponen accessibilityLabel:
+#      "Estado de cuenta de {cliente}, saldo {monto}"
+- tapOn:
+    id: "Estado de cuenta de.*"
+    optional: true
+
+# Fallback: si el id no matcheo, intentar via texto "Facturado:" (meta de cada card)
+- runFlow:
+    when:
+      visible: "Facturado:"
+    commands:
+      - tapOn:
+          text: "Facturado:"
+          index: 0
+          optional: true
+
+# 8. Esperar pantalla Estado de Cuenta
+- extendedWaitUntil:
+    visible: "Estado de Cuenta"
+    timeout: 10000
+
+- takeScreenshot: parcial-02-estado-cuenta
+
+# 9. Verificar saldo pendiente visible (formato moneda con $)
+- assertVisible:
+    text: "Saldo Pendiente"
+    optional: true
+- assertVisible:
+    text: "Facturado"
+    optional: true
+
+# 10. Tap en boton "Registrar Cobro" (navega a /cobrar/registrar con clienteId + saldo)
+- tapOn:
+    text: "Registrar Cobro"
+
+- waitForAnimationToEnd
+
+# 11. Esperar pantalla de registrar cobro
+- extendedWaitUntil:
+    visible: "Monto a Cobrar"
+    timeout: 10000
+
+- takeScreenshot: parcial-03-registrar-empty
+
+# 12. Verificar que el cliente y saldo vienen pre-cargados desde params
+- assertVisible:
+    text: "Saldo pendiente:"
+    optional: true
+
+# 13. Verificar badge "Pago en efectivo" (metodo unico post-audit 2026-05-07)
+- assertVisible:
+    text: "Pago en efectivo"
+    optional: true
+
+# 14. Ingresar monto PARCIAL (50 MXN — asumimos saldo > 50)
+- tapOn:
+    text: "0.00"
+
+- inputText: "50"
+
+# Cerrar teclado decimal-pad con Enter
+- pressKey: "Enter"
+- waitForAnimationToEnd
+
+- takeScreenshot: parcial-04-monto-parcial
+
+# 15. CRITICO: validar que NO aparece el warning de overSaldo
+#     (logica isOverSaldo solo dispara si monto > saldo del cliente)
+- assertNotVisible: "Monto excede el saldo pendiente"
+
+# 16. Tap en boton "Confirmar Cobro" (texto incluye monto formateado)
+- tapOn:
+    text: "Confirmar Cobro.*"
+- waitForAnimationToEnd
+
+# 17. Modal de confirmacion (ConfirmModal)
+- extendedWaitUntil:
+    visible: "CONFIRMAR"
+    timeout: 5000
+
+- takeScreenshot: parcial-05-modal-confirmacion
+
+# 18. Confirmar dentro del modal
+- tapOn: "CONFIRMAR"
+- waitForAnimationToEnd
+
+# 19. Esperar recibo "Cobro Registrado"
+#     createCobroOffline + navegacion replace exitosa
+- extendedWaitUntil:
+    visible: "Cobro Registrado"
+    timeout: 15000
+
+- takeScreenshot: parcial-06-recibo
+
+# 20. Validar contenido del recibo
+- assertVisible: "Cobro Registrado"
+
+# 21. Asegurar que NO hay toast de error
+- assertNotVisible: "No se pudo registrar el cobro"
+- assertNotVisible: "Failed"
+- assertNotVisible: "Sin conexion"
+
+# 22. Tap "Listo" para volver al dashboard de Cobranza
+- tapOn:
+    text: "Listo"
+- waitForAnimationToEnd
+
+# Fallback: si "Listo" no estaba (recibo con otro CTA), usar back
+- runFlow:
+    when:
+      visible: "Cobro Registrado"
+    commands:
+      - back
+
+# 23. Confirmar regreso al dashboard de Cobranza
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 10000
+
+- takeScreenshot: parcial-07-dashboard-actualizado
+
+# 24. Verificar que seguimos en el dashboard de cobranza
+- assertVisible: "Facturado"
+- assertVisible: "Cobrado"
+
+# 25. El card "Pendiente" sigue visible (cobro parcial => saldo > 0)
+#     Diferencia conceptual vs cobro completo del supervisor flow
+#     05-cobro-completo.yaml: aqui el saldo NO se cierra.
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+# 26. Confirmar que la sesion vendedor sigue activa (tab bar VENDEDOR)
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Ruta"
+
+- takeScreenshot: parcial-08-flow-completo

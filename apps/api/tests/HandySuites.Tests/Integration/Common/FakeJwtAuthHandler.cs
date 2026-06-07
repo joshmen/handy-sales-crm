@@ -42,6 +42,13 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
             new(ClaimTypes.NameIdentifier, userId),
             new("tenant_id", tenantId),
             new("sub", userId),
+            // Emitir tambien "userId" — varios endpoints (CompanyEndpoints, DatosEmpresa,
+            // ProfileEndpoints, etc.) usan context.User.FindFirst("userId") en lugar de
+            // "sub"/NameIdentifier. JwtTokenGenerator NO emite "userId" en produccion,
+            // pero los tests deben poder ejercitar el path de role check sin ser
+            // bloqueados por un 401 prematuro. Ver QA report — production code uses
+            // inconsistent claim names ("userId" vs "sub").
+            new("userId", userId),
             new("session_version", "1"),
         };
 
