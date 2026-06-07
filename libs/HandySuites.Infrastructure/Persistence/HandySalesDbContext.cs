@@ -217,6 +217,13 @@ public class HandySuitesDbContext : DbContext
             // Matching query filter with Usuario (suppresses EF Core warning)
             entity.HasQueryFilter(rt => rt.Usuario!.EliminadoEn == null);
 
+            // Sprint pre-prod #25 audit 2026-06-06: UNIQUE index en Token.
+            // Hot path `WHERE Token = $1` corria seq scan en cada refresh.
+            // Mobile rota tokens ~cada 15min y la tabla crece monotonicamente
+            // (revocados no se purgan), asi que escala linealmente con dias
+            // de operacion. Sin esto, en 6 meses el refresh latency degrada.
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
             // Audit 2026-05-18: vinculo RefreshToken 1:1 con DeviceSession.
             // Permite revoke per-device sin afectar otras sesiones del user.
             // Nullable durante migration window; NOT NULL después de backfill.
