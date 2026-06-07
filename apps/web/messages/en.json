@@ -1198,6 +1198,22 @@
   },
   "clients": {
     "title": "Clients",
+    "transferCartera": {
+      "breadcrumbClients": "Clients",
+      "breadcrumb": "Reassign portfolio",
+      "title": "Reassign vendor portfolio",
+      "subtitle": "Reassign all clients from one vendor to another (e.g. when a vendor resigns or changes portfolio)",
+      "warningPermanent": "Permanent operation.",
+      "warningBody": "This action reassigns all clients from the source vendor to the target. For temporary substitutions (sick day), use \"Create manual route\" in /routes instead.",
+      "fromLabel": "Source vendor",
+      "fromPlaceholder": "Select the vendor whose portfolio will be transferred…",
+      "toLabel": "Target vendor",
+      "toPlaceholder": "Select the vendor that will receive the portfolio…",
+      "searchPlaceholder": "Search vendor…",
+      "onlyActive": "Only active clients (recommended)",
+      "submit": "Reassign portfolio",
+      "submitting": "Transferring…"
+    },
     "newClient": "New client",
     "searchPlaceholder": "Search client...",
     "emptyTitle": "No clients",
@@ -2845,6 +2861,18 @@
       "codesRegenerated": "{count} new codes generated and copied to clipboard",
       "invalidCode": "Invalid code",
       "regenerateError": "Error regenerating codes",
+      "twoFactorDisable": {
+        "title": "Disable 2FA",
+        "description": "Enter a code from your authenticator app to confirm disabling.",
+        "securityWarning": "Your account will be less secure without 2FA. Anyone with your password will be able to access it.",
+        "codePlaceholder": "000000",
+        "cancel": "Cancel",
+        "disableButton": "Disable 2FA",
+        "codeRequired": "Enter a 6-digit code",
+        "disabledSuccess": "2FA disabled successfully",
+        "invalidCode": "Invalid code",
+        "disableError": "Error disabling 2FA"
+      },
       "twoFactor": {
         "qrTitle": "Scan the QR code",
         "qrDescription": "Open your authenticator app (Google Authenticator, Microsoft Authenticator, etc.) and scan the QR code.",
@@ -5509,6 +5537,51 @@
   },
   "admin": {
     "breadcrumb": "Administration",
+    "finkok": {
+      "breadcrumb": "Finkok Integration",
+      "title": "Finkok Integration",
+      "subtitle": "Manage SAT issuers registered under the partner account",
+      "refresh": "Refresh",
+      "kpi": {
+        "total": "Total issuers",
+        "active": "Active",
+        "suspended": "Suspended",
+        "prepaid": "Prepaid",
+        "unlimited": "Unlimited"
+      },
+      "filters": {
+        "status": "Status",
+        "all": "All",
+        "active": "Active",
+        "suspended": "Suspended",
+        "frozen": "Frozen",
+        "mode": "Mode",
+        "allModes": "All",
+        "prepaid": "Prepaid",
+        "unlimited": "Unlimited"
+      },
+      "counter": "{filtered} of {total} issuers",
+      "loading": "Loading issuers from Finkok…",
+      "emptyTitle": "No issuers registered yet",
+      "emptyDesc": "Issuers are registered when a tenant configures their CSD in <fiscal/>. This view reflects the Finkok roster once at least one registration exists.",
+      "fiscalPath": "Billing → Fiscal configuration",
+      "noResults": "No issuers match those filters.",
+      "table": {
+        "rfc": "RFC",
+        "razonSocial": "Legal name",
+        "status": "Status",
+        "mode": "Mode",
+        "credits": "Credits",
+        "registered": "Registered",
+        "actions": "Actions"
+      },
+      "actions": {
+        "suspend": "Suspend",
+        "reactivate": "Reactivate",
+        "assignCredits": "Assign credits",
+        "switchMode": "Switch prepaid/unlimited"
+      }
+    },
     "accessDenied": {
       "title": "Access not available",
       "description": "The page you tried to access is not available for your role.",

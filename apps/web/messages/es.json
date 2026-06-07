@@ -1198,6 +1198,22 @@
   },
   "clients": {
     "title": "Clientes",
+    "transferCartera": {
+      "breadcrumbClients": "Clientes",
+      "breadcrumb": "Reasignar cartera",
+      "title": "Reasignar cartera de vendedor",
+      "subtitle": "Reasigna todos los clientes de un vendedor a otro (ej. cuando un vendedor renuncia o cambia cartera)",
+      "warningPermanent": "Operación permanente.",
+      "warningBody": "Esta acción reasigna todos los clientes del vendedor origen al destino. Para sustituciones temporales (vendedor enfermo un día), mejor usa \"Crear ruta manual\" en /routes sin tocar asignaciones.",
+      "fromLabel": "Vendedor origen",
+      "fromPlaceholder": "Selecciona el vendedor cuya cartera se va a transferir…",
+      "toLabel": "Vendedor destino",
+      "toPlaceholder": "Selecciona el vendedor que recibirá la cartera…",
+      "searchPlaceholder": "Buscar vendedor…",
+      "onlyActive": "Solo clientes activos (recomendado)",
+      "submit": "Reasignar cartera",
+      "submitting": "Transfiriendo…"
+    },
     "newClient": "Nuevo cliente",
     "searchPlaceholder": "Buscar cliente...",
     "emptyTitle": "No hay clientes",
@@ -2845,6 +2861,18 @@
       "codesRegenerated": "{count} códigos nuevos generados y copiados al portapapeles",
       "invalidCode": "Código inválido",
       "regenerateError": "Error al regenerar códigos",
+      "twoFactorDisable": {
+        "title": "Desactivar 2FA",
+        "description": "Ingresa un código de tu app de autenticación para confirmar la desactivación.",
+        "securityWarning": "Tu cuenta será menos segura sin 2FA. Cualquiera con tu contraseña podrá acceder.",
+        "codePlaceholder": "000000",
+        "cancel": "Cancelar",
+        "disableButton": "Desactivar 2FA",
+        "codeRequired": "Ingresa un código de 6 dígitos",
+        "disabledSuccess": "2FA desactivado exitosamente",
+        "invalidCode": "Código inválido",
+        "disableError": "Error al desactivar 2FA"
+      },
       "twoFactor": {
         "qrTitle": "Escanea el código QR",
         "qrDescription": "Abre tu app de autenticación (Google Authenticator, Microsoft Authenticator, etc.) y escanea el código QR.",
@@ -5509,6 +5537,51 @@
   },
   "admin": {
     "breadcrumb": "Administración",
+    "finkok": {
+      "breadcrumb": "Integración Finkok",
+      "title": "Integración Finkok",
+      "subtitle": "Gestión de emisores SAT registrados bajo la cuenta partner",
+      "refresh": "Refrescar",
+      "kpi": {
+        "total": "Total emisores",
+        "active": "Activos",
+        "suspended": "Suspendidos",
+        "prepaid": "Prepago",
+        "unlimited": "Ilimitado"
+      },
+      "filters": {
+        "status": "Status",
+        "all": "Todos",
+        "active": "Activos",
+        "suspended": "Suspendidos",
+        "frozen": "Frozen",
+        "mode": "Modalidad",
+        "allModes": "Todas",
+        "prepaid": "Prepago",
+        "unlimited": "Ilimitado"
+      },
+      "counter": "{filtered} de {total} emisores",
+      "loading": "Cargando emisores desde Finkok…",
+      "emptyTitle": "No hay emisores registrados aún",
+      "emptyDesc": "Los emisores se registran cuando un tenant configura su CSD en <fiscal/>. Esta vista refleja el padrón Finkok cuando exista al menos un alta.",
+      "fiscalPath": "Facturación → Configuración fiscal",
+      "noResults": "No hay emisores con esos filtros.",
+      "table": {
+        "rfc": "RFC",
+        "razonSocial": "Razón Social",
+        "status": "Status",
+        "mode": "Modalidad",
+        "credits": "Créditos",
+        "registered": "Registrado",
+        "actions": "Acciones"
+      },
+      "actions": {
+        "suspend": "Suspender",
+        "reactivate": "Reactivar",
+        "assignCredits": "Asignar créditos",
+        "switchMode": "Cambiar modalidad prepago/ilimitado"
+      }
+    },
     "accessDenied": {
       "title": "Acceso no disponible",
       "description": "La pagina que intentaste acceder no está disponible para tu rol.",
