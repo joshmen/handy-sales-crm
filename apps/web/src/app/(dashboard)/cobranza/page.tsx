@@ -45,6 +45,7 @@ import {
   EstadoCuenta,
   EstadoCuentaPedido,
   METODO_PAGO_OPTIONS,
+  ModoCobro,
 } from '@/services/api/cobranza';
 import { clientService } from '@/services/api/clients';
 import { formatCurrency } from '@/lib/utils';
@@ -65,6 +66,9 @@ const cobroSchema = z.object({
   fechaCobro: z.string().min(1, 'required'),
   referencia: z.string().optional(),
   notas: z.string().optional(),
+  // 2026-06-08 PR 3 plan eager-drifting cobros: modo explicito.
+  // Optional aqui — handler tiene fallback a PorPedido si undefined (compat).
+  modo: z.nativeEnum(ModoCobro).optional(),
 });
 
 type CobroFormData = z.infer<typeof cobroSchema>;
@@ -313,27 +317,50 @@ export default function CobranzaPage() {
   // ─── Create cobro ──────────────────────────────────
 
   const handleCreateCobro = async (data: CobroFormData) => {
-    // Validación client-side de saldo disponible — el backend también la hace
-    // (CobroRepository línea 136-138) pero así evitamos el round-trip y damos
-    // feedback instantáneo con el saldo exacto del pedido seleccionado.
-    if (data.pedidoId && data.pedidoId > 0) {
+    const modo = data.modo ?? ModoCobro.PorPedido;
+
+    // 2026-06-08 PR 3: validaciones client-side por modo (espejo del backend).
+    if (modo === ModoCobro.PorPedido) {
+      if (!data.pedidoId || data.pedidoId <= 0) {
+        toast.error(t('drawer.selectOrder'));
+        return;
+      }
       const pedidoSeleccionado = formPedidos.find(p => p.pedidoId === data.pedidoId);
       if (pedidoSeleccionado && data.monto > pedidoSeleccionado.saldo + 0.001) {
         toast.error(t('validation.amountExceedsBalance', { balance: formatCurrency(pedidoSeleccionado.saldo) }));
         return;
       }
+    } else if (modo === ModoCobro.AbonoFifo) {
+      // FIFO: monto debe ser <= suma de saldos pendientes del cliente.
+      const saldoTotal = formPedidos.reduce((sum, p) => sum + p.saldo, 0);
+      if (saldoTotal === 0) {
+        toast.error(t('drawer.noPendingOrders'));
+        return;
+      }
+      if (data.monto > saldoTotal + 0.001) {
+        toast.error(t('validation.amountExceedsBalance', { balance: formatCurrency(saldoTotal) }));
+        return;
+      }
+    } else if (modo === ModoCobro.Anticipo) {
+      // Anticipo: confirmacion bloqueante (genera saldo a favor).
+      const ok = window.confirm(
+        `Este cobro de ${formatCurrency(data.monto)} quedara como saldo a favor del cliente. ¿Confirmar?`
+      );
+      if (!ok) return;
     }
 
     try {
       setCreating(true);
       await createCobro({
-        pedidoId: data.pedidoId && data.pedidoId > 0 ? data.pedidoId : null,
+        // PorPedido: usa pedidoId. AbonoFifo/Anticipo: siempre null.
+        pedidoId: modo === ModoCobro.PorPedido && data.pedidoId && data.pedidoId > 0 ? data.pedidoId : null,
         clienteId: data.clienteId,
         monto: data.monto,
         metodoPago: data.metodoPago,
         fechaCobro: data.fechaCobro || undefined,
         referencia: data.referencia || undefined,
         notas: data.notas || undefined,
+        modo,
       });
       toast.success(t('paymentCreated'));
       setShowNewCobro(false);
@@ -372,6 +399,7 @@ export default function CobranzaPage() {
         monto: inlineCobroData.monto,
         metodoPago: inlineCobroData.metodoPago,
         referencia: inlineCobroData.referencia || undefined,
+        modo: ModoCobro.PorPedido, // inline siempre va atado a un pedido especifico
       });
       toast.success(t('paymentCreated'));
       setInlineCobroPedidoId(null);
@@ -1415,6 +1443,46 @@ export default function CobranzaPage() {
         }
       >
         <div className="p-6 space-y-4">
+          {/* 2026-06-08 PR 3 plan eager-drifting cobros: selector de modo */}
+          <div data-tour="cobro-modo-selector">
+            <label className="block text-xs font-medium text-foreground/70 mb-2">Tipo de cobro *</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: ModoCobro.PorPedido, label: 'Pago de pedido', hint: 'Aplicar a una factura específica' },
+                { value: ModoCobro.AbonoFifo, label: 'Abono a cuenta', hint: 'Distribuye automático FIFO' },
+                { value: ModoCobro.Anticipo, label: 'Anticipo', hint: 'Genera saldo a favor' },
+              ].map(opt => {
+                const selected = (watch('modo') ?? ModoCobro.PorPedido) === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-testid={`cobro-modo-${opt.value}`}
+                    onClick={() => {
+                      setValue('modo', opt.value, { shouldDirty: true });
+                      // Reset pedidoId cuando NO es PorPedido — evita enviar pedidoId+modo incoherentes
+                      if (opt.value !== ModoCobro.PorPedido) {
+                        setValue('pedidoId', 0, { shouldDirty: true });
+                      }
+                    }}
+                    className={`text-left px-3 py-2 border rounded-md text-xs transition-colors ${
+                      selected
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ring-1 ring-emerald-500'
+                        : 'border-border-default hover:border-emerald-300'
+                    }`}
+                  >
+                    <div className="font-semibold">{opt.label}</div>
+                    <div className="text-muted-foreground mt-0.5">{opt.hint}</div>
+                  </button>
+                );
+              })}
+            </div>
+            {(watch('modo') ?? ModoCobro.PorPedido) === ModoCobro.Anticipo && (
+              <div className="mt-2 p-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded-md text-xs text-amber-900 dark:text-amber-200">
+                Este cobro generará saldo a favor del cliente, aplicable a futuros pedidos. Confirma el monto antes de continuar.
+              </div>
+            )}
+          </div>
           <div data-tour="cobro-client-selector">
             <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.clientLabel')} *</label>
             <SearchableSelect
@@ -1430,6 +1498,9 @@ export default function CobranzaPage() {
             />
             {errors.clienteId && <p className="text-xs text-red-500 mt-1">{t('drawer.selectClient')}</p>}
           </div>
+          {/* Pedido picker solo visible en modo PorPedido. AbonoFifo distribuye auto;
+              Anticipo no aplica a pedido. */}
+          {(watch('modo') ?? ModoCobro.PorPedido) === ModoCobro.PorPedido && (
           <div data-tour="cobro-pedido-selector">
             <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.orderLabel')} *</label>
             {formPedidosLoading ? (
@@ -1474,6 +1545,7 @@ export default function CobranzaPage() {
             )}
             {errors.pedidoId && <p className="text-xs text-red-500 mt-1">{t('drawer.selectOrder')}</p>}
           </div>
+          )}
           <div data-tour="cobro-amount-method" className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.amountLabel')} *</label>
