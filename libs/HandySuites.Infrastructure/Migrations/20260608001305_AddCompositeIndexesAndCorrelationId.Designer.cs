@@ -3,6 +3,7 @@ using System;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace HandySuites.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySuitesDbContext))]
-    partial class HandySuitesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260608001305_AddCompositeIndexesAndCorrelationId")]
+    partial class AddCompositeIndexesAndCorrelationId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -5916,64 +5919,6 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Zonas");
-                });
-
-            modelBuilder.Entity("HandySuites.Domain.Notifications.NotificationOutbox", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("LastError")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("last_error");
-
-                    b.Property<DateTime>("NextAttemptAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("next_attempt_at");
-
-                    b.Property<int>("NotificationType")
-                        .HasColumnType("integer")
-                        .HasColumnName("notification_type");
-
-                    b.Property<string>("PayloadJson")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("payload_json");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("processed_at");
-
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("retry_count");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_outbox_tenant");
-
-                    b.HasIndex("Status", "NextAttemptAt")
-                        .HasDatabaseName("ix_outbox_status_next_attempt");
-
-                    b.ToTable("notification_outbox");
                 });
 
             modelBuilder.Entity("UnidadMedida", b =>
