@@ -48,10 +48,13 @@ export function resolveConflict(
     const localEstado = typeof local?.estado === 'number' ? local.estado : 0;
     const remoteEstado = typeof remote?.estado === 'number' ? remote.estado : 0;
     const winning = Math.max(localEstado, remoteEstado);
+    const resolvedEstado = typeof resolved.estado === 'number' ? resolved.estado : 0;
     // Telemetría: warn si Math.max sobreescribe un estado terminal local
     // (Entregado=5 o Cancelado=6). Caso típico: device A entregó offline,
     // device B canceló online — race que puede dejar inventario decrementado
     // + pedido cancelado. Reportar a crashReporter para reconciliación manual.
+    // Importante: warn fires por la SEMANTIC mismatch (local vs winning),
+    // independiente de si terminamos overrideando resolved.
     if (winning !== localEstado && (localEstado === 5 || localEstado === 6)) {
       console.warn('[Sync] Pedido estado conflict on terminal state', {
         id: resolved.id,
@@ -60,20 +63,36 @@ export function resolveConflict(
         winning,
       });
     }
+    // CRITICAL: NO override si winning ya coincide con resolved.estado.
+    // Sin este guard, retornar `{...resolved, estado: winning}` cuando winning
+    // === resolved.estado igual escribe el row (nuevo objeto reference), WDB
+    // notifica withChangesForTables, useAutoSync debounces 2s → dispara sync →
+    // pull trae el mismo row → conflict resolver corre otra vez → escritura →
+    // notificación → sync → loop infinito "Sincronizando" que no para.
+    // Caso típico que disparaba el loop: pedido ya en estado=5 server-side y
+    // local — cada pull post-sync iteraba sin progreso real.
+    if (winning === resolvedEstado) {
+      return resolved;
+    }
     return { ...resolved, estado: winning };
   }
 
-  // Cobro: last-write-wins fully por updated_at. Caso típico: vendedor
-  // edita el cobro en device A (online) Y device B (offline). Cuando B
-  // sincroniza, su updated_at puede ser < A — entonces A wins.
-  if (table === 'cobros') {
-    const localTs = typeof local?.updated_at === 'number' ? local.updated_at : 0;
-    const remoteTs = typeof remote?.updated_at === 'number' ? remote.updated_at : 0;
-    if (remoteTs > localTs) {
-      return remote as Raw;
-    }
-    return resolved;
-  }
+  // Cobro: NO custom branch. La logica anterior (`return remote` cuando
+  // remoteTs > localTs) generaba un loop infinito post-push:
+  //   1. Vendedor crea cobro offline → WDB raw con updated_at=T0
+  //   2. Sync push → server stamp ActualizadoEn=T1 (T1 > T0) → guarda
+  //   3. Sync pull (mismo ciclo) trae cobro con updated_at=T1
+  //   4. Conflict resolver: remoteTs(T1) > localTs(T0) → `return remote`
+  //   5. WDB replaceRaw con nueva reference → withChangesForTables fires →
+  //      useAutoSync debounce 2s → sync → push: cobros:1 (WDB cree pendiente)
+  //   6. Server actualiza ActualizadoEn=T2 → pull → resolver →
+  //      replaceRaw → withChangesForTables → … loop infinito cada ~4s.
+  // El default per-column WDB ya hace "last-write-wins por columna" correcto
+  // cuando _changed esta poblado (post-fix createWithDirtyColumns) o cuando
+  // estamos en idle steady-state. El caso edge "2 devices editan mismo cobro
+  // simultaneamente" lo manejara el follow-up SYSTEMIC fix (helper
+  // createWithDirtyColumns + drop de bandaids per-table).
+  // No-op aquí — cae a default per-column abajo.
 
   // Default: per-column client-wins (lo que WDB ya calcula).
   return resolved;

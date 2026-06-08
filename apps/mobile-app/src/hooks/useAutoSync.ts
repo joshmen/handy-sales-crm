@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { AppState, type AppStateStatus } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useSyncStore } from '@/stores';
+import { useSyncStore, useAuthStore } from '@/stores';
 import { crashReporter } from '@/services/crashReporter';
 import { database } from '@/db/database';
 
@@ -68,6 +68,16 @@ export function useAutoSync() {
   };
 
   const syncIfOnline = (trigger: 'wdb_change' | 'network_online' | 'foreground' | 'safety_net' | 'mount') => {
+    // Guard 2026-06-08: NO sync si user no esta autenticado o si la sesion
+    // fue revocada server-side. Sin esto, useAutoSync('mount') dispara sync
+    // en el primer render del (tabs) layout mientras restoreSession aun no
+    // hidrato auth → POST /sync/push retorna 401 → status='error' → banner
+    // "Sincronizando" + spinner aparecen en splash/transición. Misma logica
+    // que (tabs)/_layout.tsx Redirect si sessionExpired.
+    const auth = useAuthStore.getState();
+    if (!auth.isAuthenticated || auth.sessionExpired) {
+      return;
+    }
     NetInfo.fetch().then((net) => {
       if (net.isConnected && useSyncStore.getState().status !== 'syncing') {
         useSyncStore.getState().sync()

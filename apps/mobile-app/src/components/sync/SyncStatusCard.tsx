@@ -21,7 +21,7 @@ import {
   ImageIcon,
   Clock,
 } from 'lucide-react-native';
-import { useSyncStore } from '@/stores';
+import { useSyncStore, useAuthStore } from '@/stores';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { usePendingCount } from '@/hooks';
 import { classifyError } from '@/sync/errorClassifier';
@@ -86,6 +86,12 @@ export function SyncStatusCard({ compact }: Props) {
   const lastSummary = useSyncStore((s) => s.lastSummary);
   const sync = useSyncStore((s) => s.sync);
   const { data: pendingCount = 0 } = usePendingCount();
+  // Guard 2026-06-08: el banner solo aplica si hay sesión activa. En splash,
+  // onboarding y login el (tabs) layout aún no monta — pero por defensa
+  // mantenemos selector reactivo para que un sessionExpired transient
+  // oculte el banner de inmediato sin esperar otro change de syncStore.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionExpired = useAuthStore((s) => s.sessionExpired);
 
   // Spinner animation: rotacion infinita cuando status='syncing'.
   const spin = useSharedValue(0);
@@ -154,9 +160,29 @@ export function SyncStatusCard({ compact }: Props) {
   };
 
   // Compact mode: barra horizontal para home/index. Solo muestra cuando hay actividad
-  // (syncing) o error visible. En idle/success/offline no renderiza nada.
+  // que el user deba ver — pushing de pendings reales, attachments, o errores.
+  // Pulls rutinarios cada 60s (safety_net) NO merecen banner: sin esto el
+  // banner aparece ~1-2s cada minuto, se siente como "cycling" que distrae.
   if (compact) {
-    if (status !== 'syncing' && status !== 'error') return null;
+    // Guard 2026-06-08: NO mostrar el banner en splash, onboarding, login
+    // ni cuando sesión fue revocada. Sin esto el banner aparecía en
+    // transiciones tempranas (restoreSession en curso, AuthGate redirige a
+    // /(auth)/login) donde el user todavía no ve un dashboard.
+    if (!isAuthenticated || sessionExpired) return null;
+    if (status === 'error') {
+      // Error siempre se muestra — user debe saber que algo fallo.
+    } else if (status === 'syncing') {
+      // Gate 2026-06-08 (anti-cycling): solo mostrar Sincronizando si hay
+      // razón visible:
+      //   - hay pendings locales que van al server (push o attachments)
+      //   - O el phase ya es push/attachments (vendedor enviando data)
+      // Pulls rutinarios sin pendings → no spamear banner cada 60s.
+      const hasPendings = pendingCount > 0;
+      const isPushing = progress?.phase === 'push' || progress?.phase === 'attachments';
+      if (!hasPendings && !isPushing) return null;
+    } else {
+      return null; // idle, success, offline → nada
+    }
     return (
       <TouchableOpacity
         style={[styles.compactBanner, isSyncing ? styles.compactSyncing : styles.compactError]}

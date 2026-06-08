@@ -65,6 +65,32 @@ describe('conflictResolver — pedidos estado ratchet', () => {
     warnSpy.mockRestore();
   });
 
+  it('REGRESSION loop-fix 2026-06-08: cuando winning === resolved.estado retorna MISMA referencia (no triggerea withChangesForTables)', () => {
+    // Sin este guard, retornar `{...resolved, estado: winning}` igual escribia
+    // el WDB row aun cuando los valores eran identicos. WDB notificaba
+    // withChangesForTables → useAutoSync debounce 2s → sync → pull → loop.
+    const resolved = { id: 'p1', estado: 5, total: 100 };
+    const out = resolveConflict('pedidos', { estado: 5 }, { estado: 5 }, resolved);
+    expect(out).toBe(resolved); // MISMA referencia, no spread
+  });
+
+  it('loop-fix: retorna MISMA referencia cuando local=5, remote=0, resolved.estado=5 (Math.max ya dio winning=5)', () => {
+    // Edge: tras la primera sync exitosa, server tiene estado=5 y local
+    // tambien. Pull retorna remote estado=0 (por algun motivo). winning=5.
+    // Si resolved.estado ya es 5, NO debemos crear nuevo objeto.
+    const resolved = { id: 'p1', estado: 5, notas: 'x' };
+    const out = resolveConflict('pedidos', { estado: 5 }, { estado: 0 }, resolved);
+    expect(out).toBe(resolved);
+  });
+
+  it('loop-fix: SI hay cambio real (resolved.estado=0, winning=5), retorna NUEVO objeto con override', () => {
+    const resolved = { id: 'p1', estado: 0, total: 100 };
+    const out = resolveConflict('pedidos', { estado: 5 }, { estado: 0 }, resolved);
+    expect(out).not.toBe(resolved); // nueva referencia
+    expect(out.estado).toBe(5);
+    expect(out.total).toBe(100);
+  });
+
   it('defensive: estado no-number → fallback 0', () => {
     const out = resolveConflict('pedidos', { estado: undefined }, { estado: 'broken' }, {
       id: 'p1',
@@ -83,18 +109,23 @@ describe('conflictResolver — pedidos estado ratchet', () => {
   });
 });
 
-describe('conflictResolver — cobros last-write-wins', () => {
-  it('server wins si remote.updated_at > local.updated_at', () => {
+describe('conflictResolver — cobros (default per-column post-2026-06-08)', () => {
+  // El branch custom previo (`return remote` cuando remoteTs > localTs) fue
+  // removido por generar loop infinito post-push (server stampa updated_at
+  // siempre nuevo → resolver retornaba nuevo objeto → WDB write →
+  // withChangesForTables → sync → loop). Ahora cae a default per-column WDB.
+  it('REGRESSION 2026-06-08: NO loop post-push — siempre retorna resolved sin override', () => {
+    const resolved = { id: 'c1', updated_at: 100, monto: 30 };
     const out = resolveConflict(
       'cobros',
       { updated_at: 100 },
       { updated_at: 200, monto: 50 },
-      { id: 'c1', updated_at: 100, monto: 30 },
+      resolved,
     );
-    expect(out.monto).toBe(50);
+    expect(out).toBe(resolved); // mismo reference, no spread, no loop
   });
 
-  it('client (resolved) wins si timestamps iguales', () => {
+  it('retorna resolved aun cuando timestamps iguales', () => {
     const resolved = { id: 'c1', updated_at: 100, monto: 30 };
     const out = resolveConflict(
       'cobros',
@@ -103,18 +134,6 @@ describe('conflictResolver — cobros last-write-wins', () => {
       resolved,
     );
     expect(out).toBe(resolved);
-  });
-
-  it('client (resolved) wins si remote es más viejo', () => {
-    const resolved = { id: 'c1', updated_at: 200, monto: 30 };
-    const out = resolveConflict(
-      'cobros',
-      { updated_at: 200 },
-      { updated_at: 100, monto: 50 },
-      resolved,
-    );
-    expect(out).toBe(resolved);
-    expect(out.monto).toBe(30);
   });
 });
 
