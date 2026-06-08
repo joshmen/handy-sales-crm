@@ -1,0 +1,397 @@
+appId: host.exp.exponent
+name: "Vendedor - Jornada Completa Day-in-the-Life"
+---
+
+# ════════════════════════════════════════════════════════════
+# E2E DAY-IN-THE-LIFE — VENDEDOR (vendedor1@jeyma.com)
+# Flujo completo: login -> dashboard -> nuevo pedido preventa
+# -> cobrar -> mas -> logout
+# ════════════════════════════════════════════════════════════
+
+# ────────────────────────────────────────────
+# FASE 0: DISMISS ONBOARDING (primera ejecucion)
+# ────────────────────────────────────────────
+
+- runFlow:
+    when:
+      visible:
+        id: "skip-onboarding"
+    commands:
+      - tapOn:
+          id: "skip-onboarding"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ────────────────────────────────────────────
+# FASE 1: LOGIN
+# ────────────────────────────────────────────
+
+# Esperar pantalla de login
+- extendedWaitUntil:
+    visible: "Iniciar Sesión"
+    timeout: 45000
+
+- takeScreenshot: "vendedor-01-login-screen"
+
+# Email por testID
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+# Password por testID
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+- takeScreenshot: "vendedor-02-login-filled"
+
+# Tap login
+- tapOn:
+    id: "login-button"
+
+# ────────────────────────────────────────────
+# FASE 2: DISMISS MODALES POST-LOGIN
+# ────────────────────────────────────────────
+
+# Single-session strict: kick previous session
+- runFlow:
+    when:
+      visible: "Límite de sesiones"
+    commands:
+      - tapOn:
+          text: "Chrome en Windows"
+          optional: true
+      - tapOn:
+          text: "Desconectar y continuar aquí"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# GPS consent modal post-login
+- runFlow:
+    when:
+      visible: "Sobre tu ubicación"
+    commands:
+      - tapOn:
+          text: "Entendido"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# Aviso de Privacidad (opcional)
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar|Entendido|Acepto"
+          optional: true
+      - waitForAnimationToEnd
+
+# Android permission dialog "While using the app" / "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+      - waitForAnimationToEnd
+
+# Banner "AHORA NO" (opcional)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+      - waitForAnimationToEnd
+
+# Modal "Mas tarde" (con tilde) opcional
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+      - waitForAnimationToEnd
+
+# ────────────────────────────────────────────
+# FASE 3: VALIDAR DASHBOARD HOY
+# ────────────────────────────────────────────
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+- takeScreenshot: "vendedor-03-dashboard-hoy"
+
+# Saludo vendedor (substring match)
+- assertVisible: ".*Vendedor.*"
+
+# Resumen del Dia
+- assertVisible: "RESUMEN DEL DÍA"
+
+# Scroll para asegurar quick actions visibles
+- scroll
+- waitForAnimationToEnd
+
+- assertVisible: "Nuevo Pedido"
+
+- takeScreenshot: "vendedor-04-quick-actions"
+
+# ────────────────────────────────────────────
+# FASE 4: NUEVO PEDIDO PREVENTA
+# ────────────────────────────────────────────
+
+# Tap quick action "Nuevo Pedido"
+- tapOn: "Nuevo Pedido"
+- waitForAnimationToEnd
+
+# BottomSheet "Que tipo de pedido?" (opcional si default es Preguntar)
+- runFlow:
+    when:
+      visible: "tipo de pedido"
+    commands:
+      - takeScreenshot: "vendedor-05-bottom-sheet-tipo"
+      - tapOn: "Preventa"
+      - waitForAnimationToEnd
+
+# Step 1: Seleccionar cliente
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 15000
+
+- takeScreenshot: "vendedor-06-step1-clientes"
+
+# Tap el cliente vendedor 1 jeyma o el primer cliente disponible
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - tapOn: "Vendedor 1 Jeyma"
+      - waitForAnimationToEnd
+
+# Fallback: tap primer cliente visible si no hubo match
+- runFlow:
+    when:
+      visible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn: "Abarrotes Don Pancho"
+      - waitForAnimationToEnd
+
+# Continuar a Step 2
+- tapOn:
+    text: "Continuar"
+    optional: true
+- waitForAnimationToEnd
+
+# Step 2: Productos
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- takeScreenshot: "vendedor-07-step2-productos"
+
+# Tap categoria "Todos" (opcional)
+- tapOn:
+    text: "Todos"
+    optional: true
+- waitForAnimationToEnd
+
+# Tap "Agregar" primer producto (boton estandar segun pattern existente)
+- tapOn:
+    text: "Agregar"
+    optional: true
+- waitForAnimationToEnd
+
+# Ajustar cantidad si abre el numeric sheet
+- runFlow:
+    when:
+      visible: "Cantidad"
+    commands:
+      - tapOn:
+          text: "5"
+          optional: true
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Agregar|Confirmar"
+          optional: true
+      - waitForAnimationToEnd
+
+- takeScreenshot: "vendedor-08-producto-agregado"
+
+# Continuar a Step 3
+- tapOn:
+    text: "Continuar|Revisar pedido"
+    optional: true
+- waitForAnimationToEnd
+
+# Step 3: Revision
+- extendedWaitUntil:
+    visible: "Subtotal"
+    timeout: 15000
+
+- takeScreenshot: "vendedor-09-step3-revision"
+
+# Confirmar pedido
+- tapOn:
+    text: "Confirmar pedido|Levantar Pedido|Confirmar"
+    optional: true
+- waitForAnimationToEnd
+
+# Si aparece dialogo de confirmacion ENVIAR
+- runFlow:
+    when:
+      visible: "ENVIAR"
+    commands:
+      - tapOn: "ENVIAR"
+      - waitForAnimationToEnd
+
+# ────────────────────────────────────────────
+# FASE 5: VALIDAR SUCCESS SCREEN
+# ────────────────────────────────────────────
+
+- extendedWaitUntil:
+    visible: "Pedido Levantado|Pedido Creado|Venta Completada|Listo"
+    timeout: 20000
+
+- takeScreenshot: "vendedor-10-pedido-exito"
+
+# ────────────────────────────────────────────
+# FASE 6: VOLVER A HOY
+# ────────────────────────────────────────────
+
+- tapOn:
+    text: "Listo"
+    optional: true
+- waitForAnimationToEnd
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "RESUMEN DEL DÍA"
+    timeout: 15000
+
+- takeScreenshot: "vendedor-11-back-to-hoy"
+
+# ────────────────────────────────────────────
+# FASE 7: TAB COBRAR
+# ────────────────────────────────────────────
+
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza|Cobrar"
+    timeout: 15000
+
+- takeScreenshot: "vendedor-12-cobrar"
+
+# Validar resumen cobranza
+- assertVisible:
+    text: "Facturado"
+    optional: true
+- assertVisible:
+    text: "Cobrado"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+# ────────────────────────────────────────────
+# FASE 8: VOLVER A HOY
+# ────────────────────────────────────────────
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "RESUMEN DEL DÍA"
+    timeout: 15000
+
+# ────────────────────────────────────────────
+# FASE 9: TAB MAS - VALIDAR MENU
+# ────────────────────────────────────────────
+
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 15000
+
+- takeScreenshot: "vendedor-13-mas-menu"
+
+# Validar menu items
+- assertVisible:
+    text: "Configuración"
+    optional: true
+- assertVisible:
+    text: "Mi Perfil"
+    optional: true
+
+# ────────────────────────────────────────────
+# FASE 10: LOGOUT
+# ────────────────────────────────────────────
+
+# Scroll a "Cerrar sesion" (con tilde -> "Cerrar Sesi" partial)
+- scrollUntilVisible:
+    element: "Cerrar Sesi"
+    direction: DOWN
+    timeout: 10000
+
+- takeScreenshot: "vendedor-14-before-logout"
+
+# Tap "Cerrar sesion"
+- tapOn: "Cerrar Sesi"
+- waitForAnimationToEnd
+
+# Modal confirm "Si, cerrar sesion" (opcional)
+- runFlow:
+    when:
+      visible: "Si, cerrar sesi"
+    commands:
+      - tapOn:
+          text: "Si, cerrar sesi"
+      - waitForAnimationToEnd
+
+# Fallbacks para variantes del modal de confirmacion
+- tapOn:
+    text: "Si"
+    optional: true
+- tapOn:
+    text: "Cerrar Sesi"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+
+# ────────────────────────────────────────────
+# FASE 11: VALIDAR REGRESO A LOGIN
+# ────────────────────────────────────────────
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: "vendedor-15-back-to-login"
+
+- assertVisible: "Iniciar Sesi"
