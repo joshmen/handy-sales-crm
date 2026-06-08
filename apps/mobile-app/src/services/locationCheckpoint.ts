@@ -127,11 +127,18 @@ export async function startBackgroundLocationUpdates(usuarioId: number): Promise
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => {});
   }
 
+  // 2026-06-08 (anti-spam GPS): config alineada con Expo SDK 54 best practices
+  // + nuestro throttle pre-persist en locationBackgroundTask. timeInterval es
+  // hint MINIMO (Android no lo respeta estrictamente cuando otra app pide GPS
+  // con mayor frecuencia → piggyback). distanceInterval da filtro NATIVO
+  // adicional. pausesUpdatesAutomatically permite al OS pausar cuando detecta
+  // vendedor estacionario. activityType da hints al OS sobre bateria.
   await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
     accuracy: Location.Accuracy.Balanced,
     timeInterval: CHECKPOINT_INTERVAL_MS,
-    distanceInterval: 0,
-    pausesUpdatesAutomatically: false,
+    distanceInterval: 50, // metros — filtro nativo, defense in depth con throttle JS
+    pausesUpdatesAutomatically: true, // ahorra bateria cuando vendedor parado
+    activityType: Location.ActivityType.OtherNavigation, // mix walking + vehicle
     showsBackgroundLocationIndicator: true, // iOS only
     foregroundService: {
       notificationTitle: 'HandySuites · jornada activa',

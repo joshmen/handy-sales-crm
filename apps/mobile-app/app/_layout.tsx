@@ -41,6 +41,7 @@ import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
 import { useRealtime, useMe } from '@/hooks';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { useHorarioLaboralWatcher } from '@/hooks/useHorarioLaboralWatcher';
+import { useTrackingGpsEnabled } from '@/hooks/useTrackingGpsEnabled';
 import { useRutaJornadaWatcher } from '@/hooks/useRutaJornadaWatcher';
 import { useInactividadJornadaWatcher } from '@/hooks/useInactividadJornadaWatcher';
 import { PrivacyConsentModal } from '@/components/shared/PrivacyConsentModal';
@@ -110,6 +111,14 @@ function LocationTrackingBridge() {
   const jornadaActiva = useJornadaStore(s => s.activa);
   const hidratada = useJornadaStore(s => s.hidratada);
   const hidratarDesdeStorage = useJornadaStore(s => s.hidratarDesdeStorage);
+  // 2026-06-08: gate del background foreground service por feature de plan.
+  // Sin esto, planes sin `tracking_vendedor` igual encendian el foreground
+  // service notification "HandySuites · jornada activa" y mandaban pings
+  // que el backend rechaza con 403 (waste bateria + bandwidth). Con el gate,
+  // solo planes pagos arrancan el tracking continuo. Los `recordPing` event-
+  // driven (Venta/Cobro/Visita) siguen disparandose; el backend los rechaza
+  // con 403 → mobile `disableTracking()` se auto-aplica.
+  const trackingEnabled = useTrackingGpsEnabled();
 
   // Hidratar el estado persistido al primer mount tras login
   useEffect(() => {
@@ -123,10 +132,12 @@ function LocationTrackingBridge() {
     }
   }, [isAuthenticated, hidratada, hidratarDesdeStorage]);
 
-  // Arranca/para el timer cuando jornada cambia
+  // Arranca/para el timer cuando jornada cambia.
+  // 2026-06-08: agregado `trackingEnabled` dependency — sin el feature flag
+  // del plan, NO encendemos el foreground service (capa 5 plan eager-drifting).
   useEffect(() => {
     let cancelled = false;
-    if (!isAuthenticated || !user?.id || !jornadaActiva) {
+    if (!isAuthenticated || !user?.id || !jornadaActiva || !trackingEnabled) {
       // Cualquier transición a "no debería estar tracking" → stop
       import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
       return;
@@ -141,7 +152,7 @@ function LocationTrackingBridge() {
       cancelled = true;
       import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
     };
-  }, [isAuthenticated, user?.id, jornadaActiva]);
+  }, [isAuthenticated, user?.id, jornadaActiva, trackingEnabled]);
 
   // Watchers que disparan transiciones de jornada
   useHorarioLaboralWatcher();
