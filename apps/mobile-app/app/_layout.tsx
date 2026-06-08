@@ -33,7 +33,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
-import { database, isDatabaseEncrypted, verifyDatabaseEncryption } from '@/db/database';
+import { database, getDatabase, isDatabaseEncrypted, verifyDatabaseEncryption } from '@/db/database';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
@@ -341,28 +341,58 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [needsInitialSync, setNeedsInitialSync] = useState(false);
 
+  // Audit 2026-06-07: gate todo el JSX detras de dbReady. La WDB se inicializa
+  // de forma asincronica (passphrase SQLCipher resuelve via SecureStore) y los
+  // 37 modulos que importan `{ database }` requieren que el Proxy ya delegue
+  // al `_database` real ANTES de que se monten. SplashScreen.preventAutoHideAsync()
+  // mantiene el splash nativo visible hasta que dbReady=true; entonces hideAsync.
+  // Pattern oficial Expo SDK 54: docs.expo.dev/versions/latest/sdk/splash-screen
+  const [dbReady, setDbReady] = useState(false);
+  const [dbInitError, setDbInitError] = useState<string | null>(null);
+
   // Cableado AppState → focusManager para que `refetchOnWindowFocus: true`
   // funcione en RN. Una sola registración por sesión de app.
   useEffect(() => {
     return setupTanStackFocusBridge();
   }, []);
 
-  // Sprint pre-prod #7+#8 audit 2026-06-06: verificacion SQLCipher al boot.
+  // Audit 2026-06-07: lazy-init de la WDB (reemplaza top-level await que Hermes
+  // Expo SDK 54 NO soporta). Llama getDatabase() — resuelve la passphrase
+  // SQLCipher en background, construye el SQLiteAdapter cifrado y deja el
+  // Database singleton listo. Solo entonces dbReady=true y el resto del JSX
+  // monta (incluido DatabaseProvider que pasa `database` a hijos).
+  useEffect(() => {
+    void (async () => {
+      try {
+        await getDatabase();
+        setDbReady(true);
+      } catch (err: any) {
+        const msg = err?.message ?? String(err);
+        if (__DEV__) console.error('[RootLayout] getDatabase fallo:', msg);
+        crashReporter.reportCrash(err, 'db_init', 'CRASH');
+        setDbInitError(msg);
+        // Render fallback UI igual: marcar ready para hide splash y mostrar error
+        setDbReady(true);
+      }
+    })();
+  }, []);
+
+  // Sprint pre-prod #7+#8 audit 2026-06-06: verificacion SQLCipher post-init.
   //
-  // La passphrase ya se resolvio en database.ts via top-level await; aqui
-  // confirmamos que la WDB abre con la passphrase nueva (caso normal) o,
-  // si el archivo era plaintext de un build previo, ejecutamos el reset
-  // one-shot + full sync (migracion plaintext->encrypted).
+  // Tras getDatabase() resolver, confirmamos que la WDB abre con la passphrase
+  // nueva (caso normal) o, si el archivo era plaintext de un build previo,
+  // ejecutamos el reset one-shot + full sync (migracion plaintext->encrypted).
   //
   // Reporta el estado de encryption via crashReporter para tracking de
   // adoption en field — sin esto, no podemos confirmar que builds EAS
   // tengan SQLCipher activo.
   useEffect(() => {
+    if (!dbReady) return;
     void (async () => {
       try {
         const ok = await verifyDatabaseEncryption();
         crashReporter.reportEvent('db_encryption_status', {
-          encrypted: isDatabaseEncrypted,
+          encrypted: isDatabaseEncrypted(),
           reset_needed: !ok,
         });
         if (!ok && __DEV__) {
@@ -372,7 +402,7 @@ export default function RootLayout() {
         crashReporter.reportCrash(err, 'db_encryption_verify', 'ERROR');
       }
     })();
-  }, []);
+  }, [dbReady]);
 
   const handleAppReady = useCallback((firstSync?: boolean) => {
     if (!appReady) {
@@ -390,6 +420,34 @@ export default function RootLayout() {
   const handleSyncComplete = useCallback(async () => {
     // Sync completed — data is ready for offline use
   }, []);
+
+  // Audit 2026-06-07: si la DB no esta lista, retornamos null para mantener
+  // el native splash visible (SplashScreen.preventAutoHideAsync() lo bloquea
+  // al top del modulo). En cuanto dbReady=true, hideAsync se llama en el
+  // useEffect dependiente y el arbol React monta — los 37 modulos que
+  // importan { database } reciben el Proxy ya resolviendo al singleton.
+  useEffect(() => {
+    if (dbReady) {
+      SplashScreen.hideAsync().catch(() => {
+        // Silencioso — splash ya pudo haber sido hidden por el AnimatedSplash legacy.
+      });
+    }
+  }, [dbReady]);
+
+  if (!dbReady) {
+    return null;
+  }
+
+  if (dbInitError) {
+    // Fallback minimal cuando el init de WDB falla irrecuperablemente. No
+    // bloqueamos la app entera — el user puede al menos ver el mensaje y
+    // reinstalar. Sin Toast/SafeAreaProvider aqui porque no tenemos DB.
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>

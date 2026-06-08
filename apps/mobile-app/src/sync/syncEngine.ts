@@ -33,6 +33,13 @@ export interface SyncSummary {
   pulled: number;
   pushed: number;
   conflicts: number;
+  /**
+   * Audit 2026-06-07 (Fase 3): per-entity errors reportados por el backend
+   * tras los savepoints. NO incluye errores HTTP del push entero (esos throwean
+   * y se manejan por el catch en performSync). Es el conteo de entities que
+   * fallaron individualmente server-side pero el resto del batch commiteó.
+   */
+  errors?: number;
 }
 
 /**
@@ -87,6 +94,7 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
   const pendingIdMappings: any[] = [];
   let pushCount = 0;
   let conflictCount = 0;
+  let errorCount = 0;
 
   try {
     // Phase 0: Flush any pending crash reports from offline queue
@@ -215,6 +223,46 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
         const mappings = body?.data?.createdIdMappings ?? body?.createdIdMappings ?? [];
         if (mappings.length) pendingIdMappings.push(...mappings);
 
+        // Audit 2026-06-07 (Fase 3): leer response.errors[] que el server reporta
+        // por entity tras los savepoints. Pre-fix, mobile asumia "HTTP 200 = todo
+        // synced" y WDB marcaba TODO como _status:'synced' incluso si una entity
+        // fallo server-side — divergencia silenciosa + posible loop si la entity
+        // se reedita y el push del mismo error se repite.
+        //
+        // Comportamiento ahora:
+        //   - Loggear cada error a crashReporter con entityType/entityId/message
+        //     para diagnostico en field via AWS CloudWatch.
+        //   - NO throw — eso haria que WDB no marcara NINGUNA entity synced
+        //     y reintentara TODO el batch (volveriamos al loop original).
+        //   - El usuario ve las entities exitosas commiteadas, las fallidas
+        //     quedan en estado divergente local (WDB synced, server con error).
+        //     Hardening futuro: surfacear toast al user + circuit breaker en
+        //     useAutoSync (ya documentado en plan Fase 3 mobile-side).
+        const errors = body?.data?.errors ?? body?.errors ?? [];
+        if (Array.isArray(errors) && errors.length > 0) {
+          errorCount += errors.length;
+          if (__DEV__) {
+            console.warn(`[Sync] push completed with ${errors.length} per-entity error(s):`);
+            for (const e of errors) {
+              console.warn(
+                `  - ${e.entityType ?? e.EntityType}#${e.entityId ?? e.EntityId} (${e.operation ?? e.Operation}): ${e.message ?? e.Message}`,
+              );
+            }
+          }
+          // Reportar como warning event (NO crash) — el sync no fallo, solo
+          // algunas entities. Backend ya commiteó las demas via savepoints.
+          try {
+            crashReporter.reportEvent('sync_push_per_entity_errors', {
+              count: errors.length,
+              first_error_type: errors[0]?.entityType ?? errors[0]?.EntityType ?? 'unknown',
+              first_error_msg: (errors[0]?.message ?? errors[0]?.Message ?? '').slice(0, 200),
+              all_types: Array.from(new Set(errors.map((e: any) => e.entityType ?? e.EntityType ?? 'unknown'))).join(','),
+            });
+          } catch {
+            // crashReporter offline — el log __DEV__ arriba ya cubrió en local.
+          }
+        }
+
         // Sprint 1: push terminado.
         options?.onProgress?.({ phase: 'push', current: pushCount, total: pushCount });
       },
@@ -339,7 +387,7 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       if (__DEV__) console.warn('[Sync] Notification history fetch failed (non-fatal):', notificationSyncError);
     }
 
-    const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
+    const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount, errors: errorCount };
     // Atomic batch write — await garantiza persistencia antes de resolver el
     // sync. Sin esto, un logout justo después podía dejar storage stale.
     await syncCursors.commitSyncResult(summary);

@@ -1,23 +1,33 @@
 // SEC-M1 — SQLCipher encryption for WatermelonDB
 //
 // Sprint pre-prod #6+#7+#8 audit 2026-06-06: ACTIVADO.
+// Audit 2026-06-07: refactor a lazy-init async (proper fix sin workarounds).
 //
-// Estado:
+// Problema previo:
+//   Top-level await en este modulo causaba splash hang en APK preview con error
+//   `ReferenceError: Property 'await' doesn't exist` — Hermes Expo SDK 54 NO
+//   soporta TLA en el output de Metro bundler.
+//
+// Solucion (per docs oficiales Expo SDK 54 + WatermelonDB):
+//   - Lazy-init pattern: getDatabase() retorna Promise<Database> cacheada.
+//   - El root layout (`app/_layout.tsx`) usa `SplashScreen.preventAutoHideAsync()`
+//     + `useEffect(getDatabase)` y monta routes solo tras la promise resolver.
+//   - Los 37 archivos que importan `{ database }` siguen funcionando porque el
+//     Proxy delega al `_database` real una vez resuelto. Si alguien accede
+//     ANTES de la init (improbable porque routes no montan hasta `ready=true`),
+//     el Proxy lanza error claro en vez de undefined silencioso.
+//
+// Estado SQLCipher:
 //   - Clave AES-256 se genera y persiste en Keystore (Android) / Keychain (iOS)
 //     via `src/db/dbEncryptionKey.ts` (expo-secure-store).
-//   - Aqui se lee la clave con TOP-LEVEL AWAIT (Hermes Expo SDK 54+ soporta)
-//     y se pasa como `passphrase` al SQLiteAdapter nativo. Los 37 archivos que
-//     importan `database` reciben la instancia ya inicializada porque su modulo
-//     resuelve DESPUES del top-level await.
+//   - Se lee via `await getOrCreateDbEncryptionKey()` DENTRO de initDatabase()
+//     (no top-level — compatible con Hermes).
+//   - Se pasa como `passphrase` al SQLiteAdapter nativo.
 //   - Expo Go usa LokiJS (JS puro, sin native encryption) — la misma DB sigue
 //     plaintext en el flow de desarrollo Expo Go (esperado).
 //   - Migracion one-shot plaintext->encrypted: en el primer boot post-update,
 //     el SQLite adapter no podra abrir la DB existente (clave nueva). Caemos al
-//     fallback de `unsafeResetDatabase()` y full sync — acepta perder cambios
-//     offline pendientes. Documentado al usuario en release notes.
-//
-// CRITICAL: customer data (RFC, nombres, telefonos, GPS, fotos) ya NO esta
-// plaintext en disco en builds EAS native.
+//     fallback de `unsafeResetDatabase()` y full sync via verifyDatabaseEncryption.
 
 import { Database, Q } from '@nozbe/watermelondb';
 import Constants from 'expo-constants';
@@ -30,54 +40,112 @@ import { getOrCreateDbEncryptionKey } from './dbEncryptionKey';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Audit 2026-06-07: top-level await NO está soportado en Hermes del build EAS
-// actual (SDK 54). Comprobado con logcat: `ReferenceError: Property 'await'
-// doesn't exist` → módulo nunca resuelve → splash eterno en APK preview.
-//
-// Workaround temporal: passphrase = undefined siempre (DB plaintext, como pre-#6).
-// La passphrase se genera best-effort en background pero NO bloquea boot — el
-// SQLiteAdapter se crea ya sin passphrase. TODO antes de prod: rewrite a
-// pattern de lazy-init async (getDatabase(): Promise<Database>) y refactor de
-// los 37 callers para hacer await en App startup.
-const passphrase: string | undefined = undefined;
-if (!isExpoGo) {
-  getOrCreateDbEncryptionKey().catch((err) => {
-    if (__DEV__) console.warn('[database] passphrase pre-warm fail (non-fatal):', err);
+// Module-scoped lazy state. _database is set the first time initDatabase()
+// completes; _initPromise is cached so concurrent getDatabase() callers all
+// await the same in-flight init.
+let _database: Database | null = null;
+let _initPromise: Promise<Database> | null = null;
+let _encryptionActive = false;
+
+async function initDatabase(): Promise<Database> {
+  let passphrase: string | undefined;
+
+  if (!isExpoGo) {
+    try {
+      passphrase = await getOrCreateDbEncryptionKey();
+      _encryptionActive = !!passphrase;
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[database] getOrCreateDbEncryptionKey fail — falling back to plaintext SQLite:', err);
+      }
+      passphrase = undefined;
+      _encryptionActive = false;
+    }
+  }
+
+  // Expo Go: LokiJS (no native modules). APK/EAS: SQLiteAdapter (native, fast).
+  const adapter = isExpoGo
+    ? new (require('@nozbe/watermelondb/adapters/lokijs').default)({
+        schema,
+        migrations,
+        useWebWorker: false,
+        useIncrementalIndexedDB: true,
+      })
+    : new (require('@nozbe/watermelondb/adapters/sqlite').default)({
+        schema,
+        migrations,
+        dbName: 'handysuites',
+        jsi: true,
+        // SQLCipher cifra el archivo .db con AES-256 — `adb pull` o lectura
+        // directa del filesystem NO exponen PII. Si passphrase undefined (Expo Go
+        // o SecureStore fail), el adapter usa SQLite plaintext como antes.
+        ...(passphrase ? { passphrase } : {}),
+      });
+
+  _database = new Database({
+    adapter,
+    modelClasses,
   });
+
+  return _database;
 }
 
-// Expo Go: LokiJS (no native modules). APK/EAS: SQLiteAdapter (native, fast).
-const adapter = isExpoGo
-  ? new (require('@nozbe/watermelondb/adapters/lokijs').default)({
-      schema,
-      migrations,
-      useWebWorker: false,
-      useIncrementalIndexedDB: true,
-    })
-  : new (require('@nozbe/watermelondb/adapters/sqlite').default)({
-      schema,
-      migrations,
-      dbName: 'handysuites',
-      jsi: true,
-      // Sprint pre-prod #6: passphrase activado. SQLCipher cifra el archivo
-      // .db con AES-256 — `adb pull` o lectura directa del filesystem NO
-      // exponen PII. Si passphrase undefined (Expo Go o SecureStore fail),
-      // el adapter usa SQLite plaintext como antes.
-      ...(passphrase ? { passphrase } : {}),
-    });
+/**
+ * Primary API: returns the singleton Database instance, initializing it on first call.
+ * Subsequent calls return the same cached instance (or the in-flight init promise).
+ *
+ * Call this in `app/_layout.tsx`'s useEffect AFTER `SplashScreen.preventAutoHideAsync()`.
+ * Set `ready=true` when the promise resolves, then `SplashScreen.hideAsync()` and render
+ * the Stack. This guarantees all route components receive an initialized `database`.
+ */
+export function getDatabase(): Promise<Database> {
+  if (_database) return Promise.resolve(_database);
+  if (!_initPromise) _initPromise = initDatabase();
+  return _initPromise;
+}
 
-
-export const database = new Database({
-  adapter,
-  modelClasses,
+/**
+ * Legacy synchronous accessor. Delegates to `_database` via Proxy.
+ *
+ * SAFETY: throws if accessed BEFORE initialization completes — this is intentional,
+ * catches the bug at the first access instead of returning undefined and crashing
+ * deep inside WatermelonDB internals.
+ *
+ * The root layout (`app/_layout.tsx`) guarantees that `getDatabase()` resolves
+ * before any route mounts. The 37 modules importing `{ database }` therefore
+ * always see the initialized instance during normal app flow.
+ *
+ * If you need to use the database from code that runs DURING initialization
+ * (rare — only `_layout.tsx` itself before `setReady(true)`), use `getDatabase()`
+ * instead.
+ */
+export const database: Database = new Proxy({} as Database, {
+  get(_target, prop, receiver) {
+    if (!_database) {
+      throw new Error(
+        `[database] accessed before initialization complete. ` +
+        `RootLayout must await getDatabase() before rendering routes. ` +
+        `Accessed property: ${String(prop)}`
+      );
+    }
+    return Reflect.get(_database, prop, receiver);
+  },
+  has(_target, prop) {
+    if (!_database) return false;
+    return Reflect.has(_database, prop);
+  },
 });
 
 /**
- * Sprint pre-prod #6: indica si la base esta cifrada con SQLCipher.
- * Usado por _layout.tsx para confirmar el estado de seguridad al boot
- * y reportarlo via crashReporter / logs.
+ * Returns whether the SQLite adapter was initialized with a passphrase (SQLCipher active).
+ * Returns false in Expo Go (uses LokiJS, no encryption) and in EAS builds where
+ * getOrCreateDbEncryptionKey() threw.
+ *
+ * Was a `const` before the 2026-06-07 lazy-init refactor — now a function because
+ * the value is set inside initDatabase(). Existing callers (`_layout.tsx` line 365)
+ * read this AFTER getDatabase resolves, so the value is stable by then.
  */
-export const isDatabaseEncrypted = !isExpoGo && passphrase !== undefined;
+export const isDatabaseEncrypted = (): boolean => _encryptionActive;
 
 /**
  * C.2 hardening (fix prod 2026-06-04 post-incidente Rodrigo):
@@ -160,9 +228,10 @@ const HARD_BLOCKER_TABLES: ReadonlyArray<{ table: string; filter: Q.Clause }> = 
 
 export async function getPendingRecordCount(): Promise<number> {
   try {
+    const db = await getDatabase();
     const counts = await Promise.all(
       HARD_BLOCKER_TABLES.map((def) =>
-        database.collections.get(def.table).query(def.filter).fetchCount(),
+        db.collections.get(def.table).query(def.filter).fetchCount(),
       ),
     );
     return counts.reduce((sum, c) => sum + c, 0);
@@ -193,8 +262,9 @@ export async function getPendingRecordCount(): Promise<number> {
  */
 export async function safeResetWDB(reason: 'login_cross_user' | 'logout'): Promise<void> {
   try {
-    await database.write(async () => {
-      await database.unsafeResetDatabase();
+    const db = await getDatabase();
+    await db.write(async () => {
+      await db.unsafeResetDatabase();
     });
     // Sprint 3: telemetria minima — el caller (authStore) tipicamente ya
     // logea sus eventos de auth. crashReporter es opcional aqui para evitar
@@ -210,8 +280,9 @@ export async function safeResetWDB(reason: 'login_cross_user' | 'logout'): Promi
 
 export async function resetDatabase() {
   // 1. WDB wipe (puede tardar segundos)
-  await database.write(async () => {
-    await database.unsafeResetDatabase();
+  const db = await getDatabase();
+  await db.write(async () => {
+    await db.unsafeResetDatabase();
   });
 
   // 2-4. Side effects (paralelos: independientes entre si)
@@ -238,7 +309,7 @@ export async function resetDatabase() {
  *    (`encryption_active: true|false`). Sin esto, no sabemos si los builds en
  *    field realmente cifraron.
  *
- * NOTA: la pasaphrase ya esta cableada al adapter SQLite arriba (modulo top).
+ * NOTA: la pasaphrase ya esta cableada al adapter SQLite via getDatabase().
  * Aqui solo validamos el resultado y manejamos migracion plaintext->encrypted.
  *
  * @returns true si la DB esta lista, false si se hizo reset (caller debe
@@ -246,11 +317,12 @@ export async function resetDatabase() {
  */
 export async function verifyDatabaseEncryption(): Promise<boolean> {
   try {
-    // Trigger lazy init del adapter: query trivial sobre una collection.
+    // Trigger lazy init del adapter via getDatabase(): query trivial sobre una collection.
     // Si la passphrase es incorrecta o el archivo es plaintext, esto tira.
-    await database.collections.get('clientes').query().fetchCount();
+    const db = await getDatabase();
+    await db.collections.get('clientes').query().fetchCount();
     if (__DEV__) {
-      console.log(`[verifyDatabaseEncryption] OK (encrypted=${isDatabaseEncrypted})`);
+      console.log(`[verifyDatabaseEncryption] OK (encrypted=${_encryptionActive})`);
     }
     return true;
   } catch (err: any) {
@@ -262,8 +334,9 @@ export async function verifyDatabaseEncryption(): Promise<boolean> {
     // transition y resetear. El usuario pierde cambios offline pendientes pero
     // recupera la app en estado funcional (se documenta en release notes).
     try {
-      await database.write(async () => {
-        await database.unsafeResetDatabase();
+      const db = await getDatabase();
+      await db.write(async () => {
+        await db.unsafeResetDatabase();
       });
       await Promise.all([
         safeClearSyncCursors(),
@@ -281,4 +354,3 @@ export async function verifyDatabaseEncryption(): Promise<boolean> {
     }
   }
 }
-
