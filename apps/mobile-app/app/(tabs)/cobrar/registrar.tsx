@@ -395,8 +395,20 @@ function RegistrarCobroScreen() {
       </View>
       <ConfirmModal
         visible={showConfirmCobro}
-        title="Confirmar Cobro"
-        message={`¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`}
+        title={
+          // 2026-06-08 PR 4 plan eager-drifting cobros: titulo dinamico segun
+          // si el cobro va a generar saldo a favor (Anticipo de facto).
+          (!params.pedidoId && (effectiveSaldo === 0 || montoNum > saldoRounded))
+            ? 'Cobro como saldo a favor'
+            : 'Confirmar Cobro'
+        }
+        message={
+          (!params.pedidoId && effectiveSaldo === 0)
+            ? `Este cliente no tiene saldo pendiente. El cobro de ${formatCurrency(montoNum)} quedara como saldo a favor (anticipo) aplicable a futuros pedidos. ¿Confirmar?`
+            : (!params.pedidoId && montoNum > saldoRounded && saldoRounded > 0)
+              ? `Se cobrara ${formatCurrency(montoNum)}: ${formatCurrency(saldoRounded)} aplica a saldo pendiente, ${formatCurrency(montoNum - saldoRounded)} queda como saldo a favor. ¿Confirmar?`
+              : `¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`
+        }
         confirmText="Confirmar"
         onConfirm={executeConfirmarCobro}
         onCancel={() => setShowConfirmCobro(false)}

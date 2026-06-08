@@ -1117,6 +1117,15 @@ public class SyncRepository : ISyncRepository
                 throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
         }
 
+        // 2026-06-08 PR 4 plan eager-drifting cobros: mapear modo enviado por mobile.
+        // Si el mobile mapper derivo Anticipo (modo=2) pero el cobro llega CON pedidoId
+        // resolvable (caso raro: WDB tenia pedido cached pero mapper decidio Anticipo),
+        // forzamos modo=PorPedido para coherencia. EsAnticipo se persiste solo si
+        // Modo == Anticipo final.
+        var modoFinal = (ModoCobro)dto.Modo;
+        if (modoFinal == ModoCobro.Anticipo && resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
+            modoFinal = ModoCobro.PorPedido;
+
         var cobro = new Cobro
         {
             TenantId = tenantId,
@@ -1130,6 +1139,8 @@ public class SyncRepository : ISyncRepository
             Referencia = dto.Referencia,
             Notas = dto.Notas,
             Activo = dto.Activo,
+            Modo = modoFinal,
+            EsAnticipo = modoFinal == ModoCobro.Anticipo,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = userId,
             Version = 1
