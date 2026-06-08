@@ -265,7 +265,7 @@ export default function ClientsPage() {
       width: 50,
       align: 'center',
       cellRenderer: (client) => (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div onClick={(e) => e.stopPropagation()} data-testid={`delete-client-${client.id}`}>
           <ActiveToggle
             isActive={client.isActive}
             onToggle={() => handleToggleActive(client)}
@@ -290,6 +290,7 @@ export default function ClientsPage() {
                 disabled={loading || prospectActionLoading === client.id}
                 className="p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
                 title={t('approveProspect')}
+                data-testid={`approve-prospect-${client.id}`}
               >
                 <CheckCircle className="w-4 h-4 text-green-600" />
               </button>
@@ -298,6 +299,7 @@ export default function ClientsPage() {
                 disabled={loading || prospectActionLoading === client.id}
                 className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                 title={t('rejectProspect')}
+                data-testid={`reject-prospect-${client.id}`}
               >
                 <XCircle className="w-4 h-4 text-red-500" />
               </button>
@@ -308,6 +310,7 @@ export default function ClientsPage() {
             disabled={loading}
             className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
             title={tc('edit')}
+            data-testid={`edit-client-${client.id}`}
           >
             <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
           </button>
@@ -525,7 +528,7 @@ export default function ClientsPage() {
                     </div>
                     <div className="text-xs text-muted-foreground">{client.code}</div>
                   </div>
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div onClick={(e) => e.stopPropagation()} data-testid={`delete-client-${client.id}`}>
                     <ActiveToggle
                       isActive={client.isActive}
                       onToggle={() => handleToggleActive(client)}
@@ -542,15 +545,15 @@ export default function ClientsPage() {
                 <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                   {client.esProspecto && canManageProspects && (
                     <>
-                      <button onClick={() => handleAprobarProspecto(client)} disabled={loading || prospectActionLoading === client.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-700 hover:bg-green-50 rounded disabled:opacity-50 transition-colors" title="Aprobar prospecto">
+                      <button onClick={() => handleAprobarProspecto(client)} disabled={loading || prospectActionLoading === client.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-700 hover:bg-green-50 rounded disabled:opacity-50 transition-colors" title="Aprobar prospecto" data-testid={`approve-prospect-${client.id}`}>
                         <CheckCircle className="w-3.5 h-3.5" /><span>{tc('approve')}</span>
                       </button>
-                      <button onClick={() => handleRechazarProspecto(client)} disabled={loading || prospectActionLoading === client.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded disabled:opacity-50 transition-colors" title={t('rejectProspect')}>
+                      <button onClick={() => handleRechazarProspecto(client)} disabled={loading || prospectActionLoading === client.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded disabled:opacity-50 transition-colors" title={t('rejectProspect')} data-testid={`reject-prospect-${client.id}`}>
                         <XCircle className="w-3.5 h-3.5" /><span>{tc('reject')}</span>
                       </button>
                     </>
                   )}
-                  <button onClick={() => handleEditClient(client)} disabled={loading} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-amber-600 hover:bg-amber-50 rounded disabled:opacity-50 transition-colors">
+                  <button onClick={() => handleEditClient(client)} disabled={loading} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-amber-600 hover:bg-amber-50 rounded disabled:opacity-50 transition-colors" data-testid={`edit-client-${client.id}`}>
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /><span>{tc('edit')}</span>
                   </button>
                 </div>

@@ -190,20 +190,22 @@ function mapClienteDtoToClient(dto: ClienteDto): Client {
 class ClientService {
   private readonly basePath = '/clientes';
 
-  async getClients(params: ClientsListParams = {}): Promise<ClientsListResponse> {
+  async getClients(params: ClientsListParams & { signal?: AbortSignal } = {}): Promise<ClientsListResponse> {
     try {
+      const { signal, ...rest } = params;
       const queryParams = new URLSearchParams();
 
-      queryParams.append('pagina', (params.page || 1).toString());
-      queryParams.append('tamanoPagina', (params.limit || 20).toString());
-      if (params.search) queryParams.append('busqueda', params.search);
-      if (params.zoneId) queryParams.append('zonaId', params.zoneId.toString());
-      if (params.categoryId) queryParams.append('categoriaClienteId', params.categoryId.toString());
-      if (params.isActive !== undefined) queryParams.append('activo', params.isActive.toString());
-      if (params.esProspecto !== undefined) queryParams.append('esProspecto', params.esProspecto.toString());
+      queryParams.append('pagina', (rest.page || 1).toString());
+      queryParams.append('tamanoPagina', (rest.limit || 20).toString());
+      if (rest.search) queryParams.append('busqueda', rest.search);
+      if (rest.zoneId) queryParams.append('zonaId', rest.zoneId.toString());
+      if (rest.categoryId) queryParams.append('categoriaClienteId', rest.categoryId.toString());
+      if (rest.isActive !== undefined) queryParams.append('activo', rest.isActive.toString());
+      if (rest.esProspecto !== undefined) queryParams.append('esProspecto', rest.esProspecto.toString());
 
       const response = await api.get<ClientePaginatedResult>(
-        `${this.basePath}?${queryParams.toString()}`
+        `${this.basePath}?${queryParams.toString()}`,
+        { signal }
       );
 
       const data = response.data;

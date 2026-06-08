@@ -163,7 +163,7 @@ export function SyncStatusCard({ compact }: Props) {
         activeOpacity={0.85}
         onPress={() => router.push('/(tabs)/sync' as any)}
         accessibilityRole="button"
-        accessibilityLabel={isSyncing ? 'Sincronizando, toca para ver progreso' : 'Error de sincronizacion, toca para detalles'}
+        accessibilityLabel={isSyncing ? 'Sincronizando, toca para ver progreso' : 'Error de sincronización, toca para detalles'}
       >
         {isSyncing ? (
           <>
@@ -176,7 +176,7 @@ export function SyncStatusCard({ compact }: Props) {
           <>
             <AlertCircle size={14} color="#ffffff" />
             <Text style={styles.compactText} numberOfLines={1}>
-              {error ? classifyError(error, isOnline).userMessage : 'Error de sincronizacion'}
+              {error ? classifyError(error, isOnline).userMessage : 'Error de sincronización'}
             </Text>
           </>
         )}

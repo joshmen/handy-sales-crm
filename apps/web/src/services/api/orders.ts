@@ -127,8 +127,9 @@ class OrderService {
   private readonly basePath = '/pedidos';
 
   // CRUD Basico
-  async getOrders(params: OrderFilterParams = {}): Promise<OrdersListResponse> {
+  async getOrders(params: OrderFilterParams & { signal?: AbortSignal } = {}): Promise<OrdersListResponse> {
     try {
+      const { signal, ...rest } = params;
       const queryParams = new URLSearchParams();
       // Map frontend param names to backend (Spanish) param names
       const paramMap: Record<string, string> = {
@@ -141,7 +142,7 @@ class OrderService {
         fechaFin: 'fechaHasta',
         busqueda: 'busqueda',
       };
-      Object.entries(params).forEach(([key, value]) => {
+      Object.entries(rest).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           const backendKey = paramMap[key] || key;
           queryParams.append(backendKey, value.toString());
@@ -149,7 +150,8 @@ class OrderService {
       });
 
       const response = await api.get<{ items: OrderListItem[]; totalItems: number; pagina: number; tamanoPagina: number }>(
-        `${this.basePath}?${queryParams.toString()}`
+        `${this.basePath}?${queryParams.toString()}`,
+        { signal }
       );
       // Map backend response to frontend format
       const data = response.data;

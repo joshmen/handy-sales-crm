@@ -33,7 +33,7 @@ export function classifyError(rawError: string, isOnline: boolean): ClassifiedSy
   if (msg.includes('401') || msg.includes('session_revoked') || msg.includes('unauthorized')) {
     return {
       type: 'auth',
-      userMessage: 'Tu sesion expiro. Inicia sesion de nuevo para continuar.',
+      userMessage: 'Tu sesión expiró. Inicia sesión de nuevo para continuar.',
       isTransient: false,
     };
   }
@@ -49,7 +49,7 @@ export function classifyError(rawError: string, isOnline: boolean): ClassifiedSy
   if (msg.includes('network error') && isOnline) {
     return {
       type: 'network',
-      userMessage: 'Reintentando conexion con el servidor...',
+      userMessage: 'Reintentando conexión con el servidor...',
       isTransient: true,
     };
   }
@@ -57,7 +57,7 @@ export function classifyError(rawError: string, isOnline: boolean): ClassifiedSy
   if (msg.includes('network error') || msg.includes('timeout') || msg.includes('econn') || msg.includes('fetch') || msg.includes('abort')) {
     return {
       type: 'network',
-      userMessage: 'Sin conexion estable. Reintentaremos cuando haya senal.',
+      userMessage: 'Sin conexión estable. Reintentaremos cuando haya señal.',
       isTransient: true,
     };
   }
@@ -65,7 +65,7 @@ export function classifyError(rawError: string, isOnline: boolean): ClassifiedSy
   if (msg.includes('400') || msg.includes('422') || msg.includes('validation')) {
     return {
       type: 'client',
-      userMessage: 'Error de validacion. Contacta a tu administrador si persiste.',
+      userMessage: 'Error de validación. Contacta a tu administrador si persiste.',
       isTransient: false,
     };
   }

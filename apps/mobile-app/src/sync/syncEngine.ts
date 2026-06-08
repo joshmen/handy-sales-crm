@@ -312,8 +312,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     // Phase 4: Flush pending crash reports (deferred from offline)
     try {
       await crashReporter.flushPendingReports();
-    } catch {
+    } catch (crashFlushError) {
       // Never block sync for crash report flush
+      if (__DEV__) console.warn('[Sync] Crash report flush failed (non-fatal):', crashFlushError);
     }
 
     // Phase 5: Flush pending GPS pings (Fase B tracking-vendedor)
@@ -322,8 +323,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       const result = await flushPendingAsync();
       if (__DEV__ && result.pushed > 0) console.log(`[Sync] Pushed ${result.pushed} GPS pings`);
       if (__DEV__ && result.disabled) console.log('[Sync] Tracking disabled (plan no aplica)');
-    } catch {
+    } catch (gpsFlushError) {
       // Never block sync for GPS ping flush
+      if (__DEV__) console.warn('[Sync] GPS ping flush failed (non-fatal):', gpsFlushError);
     }
 
     // Phase 6: Sync notification history (rescata pushes que no llegaron en
@@ -332,8 +334,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       const { syncNotificationsFromBackend } = await import('@/services/notificationSync');
       const added = await syncNotificationsFromBackend();
       if (__DEV__ && added > 0) console.log(`[Sync] Pulled ${added} notifications from backend`);
-    } catch {
+    } catch (notificationSyncError) {
       // Never block sync for notification history fetch
+      if (__DEV__) console.warn('[Sync] Notification history fetch failed (non-fatal):', notificationSyncError);
     }
 
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
