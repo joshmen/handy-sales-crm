@@ -44,4 +44,41 @@ public class TransactionManager : ITransactionManager
             await operation();
             return null;
         });
+
+    /// <summary>
+    /// Like <see cref="ExecuteInTransactionAsync{T}"/> but exposes an
+    /// <see cref="ISavepointScope"/> for per-iteration savepoint isolation.
+    ///
+    /// If we are already inside a transaction (nested call), the savepoint scope is
+    /// constructed from the existing CurrentTransaction so failures from inner iterations
+    /// roll back only their savepoint, leaving the outer transaction intact. This mirrors
+    /// the nested-transaction handling in <see cref="ExecuteInTransactionAsync{T}"/>.
+    ///
+    /// See <see href="https://learn.microsoft.com/en-us/ef/core/saving/transactions#using-savepoints"/>.
+    /// </summary>
+    public async Task<T> ExecuteWithSavepointsAsync<T>(Func<ISavepointScope, Task<T>> operation)
+    {
+        if (_db.Database.CurrentTransaction != null)
+        {
+            var scope = new SavepointScope(_db.Database.CurrentTransaction, _db);
+            return await operation(scope);
+        }
+
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            var scope = new SavepointScope(tx, _db);
+            var result = await operation(scope);
+            await tx.CommitAsync();
+            return result;
+        });
+    }
+
+    public Task ExecuteWithSavepointsAsync(Func<ISavepointScope, Task> operation) =>
+        ExecuteWithSavepointsAsync<object?>(async sp =>
+        {
+            await operation(sp);
+            return null;
+        });
 }

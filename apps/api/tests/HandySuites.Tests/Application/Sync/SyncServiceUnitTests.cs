@@ -15,15 +15,20 @@ using Xunit;
 namespace HandySuites.Tests.Application.Sync;
 
 /// <summary>
-/// Unit tests for SyncService. Mocks ISyncRepository + ICurrentTenant + ITransactionManager.
-/// ExecuteInTransactionAsync is mocked to invoke the lambda inline so we can assert
-/// repository interactions through the transactional boundary.
+/// Unit tests for SyncService. Mocks ISyncRepository + ICurrentTenant + ITransactionManager + ISavepointScope.
+///
+/// 2026-06-07 refactor: SyncService now uses per-entity SAVEPOINTS for partial-failure tolerance.
+/// The mock <see cref="ITransactionManager.ExecuteWithSavepointsAsync"/> invokes the lambda inline
+/// with a mock <see cref="ISavepointScope"/>. The savepoint scope's <c>TryRunInSavepointAsync</c>
+/// runs the action and returns (true, null) on success or (false, ex) on throw — mirroring the
+/// real implementation's behavior so we can assert per-entity error capture without a real DB.
 /// </summary>
 public class SyncServiceUnitTests
 {
     private readonly Mock<ISyncRepository> _repo = new();
     private readonly Mock<ICurrentTenant> _tenant = new();
     private readonly Mock<ITransactionManager> _transactions = new();
+    private readonly Mock<ISavepointScope> _savepointScope = new();
     private readonly SyncService _service;
 
     public SyncServiceUnitTests()
@@ -34,10 +39,28 @@ public class SyncServiceUnitTests
         _tenant.SetupGet(t => t.IsAdminOrAbove).Returns(true);
         _tenant.SetupGet(t => t.IsStrictAdmin).Returns(true);
 
-        // Execute the lambda inline so callbacks against the repo are observable.
+        // Mock ExecuteWithSavepointsAsync to invoke the lambda inline with our mock scope,
+        // so per-entity savepoint behavior is observable through the existing repo mocks.
         _transactions
-            .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task>>()))
-            .Returns<Func<Task>>(f => f());
+            .Setup(t => t.ExecuteWithSavepointsAsync(It.IsAny<Func<ISavepointScope, Task>>()))
+            .Returns<Func<ISavepointScope, Task>>(f => f(_savepointScope.Object));
+
+        // Mock TryRunInSavepointAsync to invoke the action and capture exceptions per real
+        // SavepointScope semantics: return (true, null) on success, (false, ex) on throw.
+        _savepointScope
+            .Setup(s => s.TryRunInSavepointAsync(It.IsAny<string>(), It.IsAny<Func<Task>>()))
+            .Returns<string, Func<Task>>(async (name, action) =>
+            {
+                try
+                {
+                    await action();
+                    return (true, (Exception?)null);
+                }
+                catch (Exception ex)
+                {
+                    return (false, (Exception?)ex);
+                }
+            });
 
         // Default: empty pulls so syncAll requests don't blow up.
         SetupEmptyPulls();
@@ -111,46 +134,86 @@ public class SyncServiceUnitTests
     }
 
     // ============================================================
-    // 2. Transaccion invocada siempre
+    // 2. Transaccion (con savepoints) invocada cuando hay ClientChanges
     // ============================================================
     [Fact]
-    public async Task SyncAsync_DeberiaInvocarTransaccion_Siempre()
+    public async Task SyncAsync_DeberiaInvocarTransaccionConSavepoints_CuandoHayClientChanges()
     {
-        var request = new SyncRequestDto();
+        var clienteDto = new SyncClienteDto { Id = 1, Nombre = "X", Operation = SyncOperation.Update };
+        _repo.Setup(r => r.UpsertClienteAsync(1, clienteDto, "1"))
+            .ReturnsAsync((new Cliente { Id = 1 }, false));
+
+        var request = new SyncRequestDto
+        {
+            EntityTypes = new List<string> { "noop" },
+            ClientChanges = new SyncChangesDto { Clientes = new List<SyncClienteDto> { clienteDto } }
+        };
 
         await _service.SyncAsync(request);
 
-        _transactions.Verify(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task>>()), Times.Once);
+        // 2026-06-07: el wrapper transaccional es ExecuteWithSavepointsAsync (per-entity savepoints).
+        // Solo se invoca cuando hay ClientChanges — Pull es read-only fuera de transacción.
+        _transactions.Verify(t => t.ExecuteWithSavepointsAsync(It.IsAny<Func<ISavepointScope, Task>>()), Times.Once);
     }
 
-    // ============================================================
-    // 3. SaveChanges invocado dentro de transaccion
-    // ============================================================
     [Fact]
-    public async Task SyncAsync_DeberiaInvocarSaveChanges_DentroDeTransaccion()
+    public async Task SyncAsync_NoInvocaTransaccion_CuandoNoHayClientChanges()
     {
-        var request = new SyncRequestDto();
+        var request = new SyncRequestDto(); // sin ClientChanges
 
         await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.SaveChangesAsync(), Times.Once);
+        _transactions.Verify(t => t.ExecuteWithSavepointsAsync(It.IsAny<Func<ISavepointScope, Task>>()), Times.Never);
     }
 
     // ============================================================
-    // 4. Captura error y lo reporta cuando la transaccion falla
+    // 3. SaveChanges invocado per-entity dentro del savepoint
     // ============================================================
     [Fact]
-    public async Task SyncAsync_DeberiaCapturarErrorYReportarlo_CuandoTransaccionFalla()
+    public async Task SyncAsync_DeberiaInvocarSaveChanges_PorCadaEntityPusheada()
     {
+        var c1 = new SyncClienteDto { Id = 1, Nombre = "A", Operation = SyncOperation.Update };
+        var c2 = new SyncClienteDto { Id = 2, Nombre = "B", Operation = SyncOperation.Update };
+        _repo.Setup(r => r.UpsertClienteAsync(1, c1, "1")).ReturnsAsync((new Cliente { Id = 1 }, false));
+        _repo.Setup(r => r.UpsertClienteAsync(1, c2, "1")).ReturnsAsync((new Cliente { Id = 2 }, false));
+
+        var request = new SyncRequestDto
+        {
+            EntityTypes = new List<string> { "noop" },
+            ClientChanges = new SyncChangesDto { Clientes = new List<SyncClienteDto> { c1, c2 } }
+        };
+
+        await _service.SyncAsync(request);
+
+        // 2026-06-07: con savepoints per-entity, SaveChangesAsync se llama UNA vez por entity dentro
+        // del savepoint (commit aislado por iteración) en lugar de UNA al final del batch.
+        _repo.Verify(r => r.SaveChangesAsync(), Times.Exactly(2));
+    }
+
+    // ============================================================
+    // 4. Captura error y lo reporta cuando la transaccion externa falla (commit failure)
+    // ============================================================
+    [Fact]
+    public async Task SyncAsync_DeberiaCapturarErrorYReportarlo_CuandoExecuteWithSavepointsFalla()
+    {
+        // Simular fallo en el commit del wrapper (no en una entity individual)
         _transactions
-            .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task>>()))
+            .Setup(t => t.ExecuteWithSavepointsAsync(It.IsAny<Func<ISavepointScope, Task>>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
-        var result = await _service.SyncAsync(new SyncRequestDto());
+        var request = new SyncRequestDto
+        {
+            ClientChanges = new SyncChangesDto
+            {
+                Clientes = new List<SyncClienteDto> { new SyncClienteDto { Id = 1, Nombre = "X" } }
+            }
+        };
+
+        var result = await _service.SyncAsync(request);
 
         result.Errors.Should().HaveCount(1);
         result.Errors[0].EntityType.Should().Be("sync");
-        result.Errors[0].Operation.Should().Be("sync");
+        result.Errors[0].Operation.Should().Be("push_transaction");
         result.Errors[0].Details.Should().Be("boom");
         result.Summary.ErrorsFound.Should().Be(1);
     }
