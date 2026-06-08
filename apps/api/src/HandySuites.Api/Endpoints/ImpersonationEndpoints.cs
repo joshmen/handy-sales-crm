@@ -32,10 +32,13 @@ public static class ImpersonationEndpoints
 
             var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var userAgent = context.Request.Headers.UserAgent.FirstOrDefault();
+            // M-10 (single-session audit, junio 2026): capturar TraceIdentifier
+            // del HttpContext para correlacionar logs cross-service con la sesión.
+            var correlationId = context.TraceIdentifier;
 
             try
             {
-                var response = await service.StartSessionAsync(request, userId.Value, ipAddress, userAgent);
+                var response = await service.StartSessionAsync(request, userId.Value, ipAddress, userAgent, correlationId);
 
                 // Push real-time notification to all users in the target tenant
                 await hubContext.Clients.Group($"tenant:{request.TargetTenantId}")

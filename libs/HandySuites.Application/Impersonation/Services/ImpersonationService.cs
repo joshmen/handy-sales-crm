@@ -51,6 +51,7 @@ public class ImpersonationService : IImpersonationService
         int superAdminId,
         string ipAddress,
         string? userAgent,
+        string? correlationId = null,
         CancellationToken cancellationToken = default)
     {
         // H5: Justificación obligatoria solo para READ_WRITE, opcional para READ_ONLY
@@ -132,7 +133,8 @@ public class ImpersonationService : IImpersonationService
             UserAgent = userAgent,
             Status = ImpersonationStatus.Active,
             ActionsPerformed = "[]",
-            PagesVisited = "[]"
+            PagesVisited = "[]",
+            CorrelationId = correlationId
         };
 
         await _repository.CreateSessionAsync(session);
