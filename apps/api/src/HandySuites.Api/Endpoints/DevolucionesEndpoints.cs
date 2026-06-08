@@ -140,7 +140,6 @@ public static class DevolucionesEndpoints
             devolucion.MotivoAnulacion = req.Motivo;
             devolucion.ActualizadoEn = DateTime.UtcNow;
             devolucion.ActualizadoPor = userId;
-            devolucion.Version++;
 
             // Revertir side-effect SaldoFavor: regresa el monto al cliente
             if (devolucion.TipoReembolso == TipoReembolso.SaldoFavor && devolucion.MontoTotal > 0)

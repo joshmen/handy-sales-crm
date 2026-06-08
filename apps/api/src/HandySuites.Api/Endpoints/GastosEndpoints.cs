@@ -115,7 +115,6 @@ public static class GastosEndpoints
             gasto.MotivoInvalidacion = req.Motivo;
             gasto.ActualizadoEn = DateTime.UtcNow;
             gasto.ActualizadoPor = userId;
-            gasto.Version++;
             await db.SaveChangesAsync();
 
             return Results.Ok(new { gasto.Id, Estado = (int)gasto.Estado });

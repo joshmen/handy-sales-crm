@@ -430,7 +430,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         {
             g.RutaId = rutaId;
             g.ActualizadoEn = ahora;
-            g.Version++;
+            // Version++ removed — HandySalesDbContext.SaveChangesAsync interceptor
+            // auto-increments Version for Modified entities (avoid double-increment).
         }
 
         await _db.SaveChangesAsync();

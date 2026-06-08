@@ -1036,8 +1036,16 @@ public class RutaVendedorService
         // Atomico: cambiar estado ruta + cambiar estado batch de los pedidos asignados.
         // Reportado 2026-04-27: el admin tenia que cambiar el estado de cada pedido
         // uno por uno desde /pedidos. Ahora "Send to Load" lo hace automatico.
+        // M-2 fix: envolver en ExecuteInTransactionAsync — el repo modifica ruta + N
+        // pedidos y hace un solo SaveChangesAsync, pero con EnableRetryOnFailure la
+        // transaccion implicita puede partirse en reintentos. La estrategia de
+        // ejecucion garantiza atomicidad o rollback completo. Mismo patron que
+        // CerrarRutaAsync (H-3) y PedidoService.CrearAsync (BR-002).
         var pedidoIds = pedidosAsignados.Select(p => p.PedidoId).ToList();
-        await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId, pedidoIds);
+        await _transactions.ExecuteInTransactionAsync(async () =>
+        {
+            await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId, pedidoIds);
+        });
 
         return new EnviarACargaResumen
         {
@@ -1090,16 +1098,25 @@ public class RutaVendedorService
         if (ruta.Estado != EstadoRuta.Completada)
             throw new InvalidOperationException("Solo se pueden cerrar rutas completadas/terminadas");
 
-        // Update retornos if provided
-        if (dto.Retornos?.Any() == true)
+        // Atomic: actualizar todos los retornos y cerrar la ruta en una sola transaccion.
+        // Antes esto eran N+1 SaveChangesAsync calls (uno por cada retorno + uno por el
+        // cierre), de modo que si la app crasheaba o la conexion se interrumpia entre
+        // calls, la ruta quedaba con retornos parcialmente aplicados pero sin cerrar
+        // (estado inconsistente: faltante de inventario que no cuadra contra el cierre).
+        // Con la transaccion, o se aplica todo o nada.
+        await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            foreach (var retorno in dto.Retornos)
+            // Update retornos if provided
+            if (dto.Retornos?.Any() == true)
             {
-                await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, retorno.RecargaExterna, _tenant.TenantId);
+                foreach (var retorno in dto.Retornos)
+                {
+                    await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, retorno.RecargaExterna, _tenant.TenantId);
+                }
             }
-        }
 
-        await _repo.CerrarRutaAsync(rutaId, dto.MontoRecibido, _tenant.UserId, _tenant.TenantId);
+            await _repo.CerrarRutaAsync(rutaId, dto.MontoRecibido, _tenant.UserId, _tenant.TenantId);
+        });
     }
 
     /// <summary>

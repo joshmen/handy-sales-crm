@@ -5,6 +5,21 @@ using HandySuites.Shared.Multitenancy;
 
 namespace HandySuites.Application.Sync.Services;
 
+/// <summary>
+/// Sentinel exception thrown when per-entity upserts collected one or more errors,
+/// to force the outer ExecuteInTransactionAsync to roll back. Per-entity SyncErrorDto
+/// instances are already in response.Errors — we only need to abort the transaction.
+/// The outer catch checks for this type and avoids appending a generic "sync" error
+/// on top of the detailed per-entity errors.
+/// </summary>
+internal sealed class SyncPushAggregateException : Exception
+{
+    public SyncPushAggregateException(int errorCount)
+        : base($"Sync push aborted: {errorCount} per-entity error(s) collected. Transaction rolled back.")
+    {
+    }
+}
+
 public class SyncService
 {
     private readonly ISyncRepository _repo;
@@ -37,6 +52,17 @@ public class SyncService
         // commit partial/corrupt state if SaveChangesAsync happened to succeed.
         // With a transaction, either everything commits cleanly or everything rolls
         // back — no divergence between mobile and server.
+        //
+        // MEDIUM-1 hardening (pre-prod audit 2026-06-06): previously the per-entity
+        // try/catch blocks inside PushClientChangesAsync swallowed exceptions and
+        // pushed them to response.Errors, but execution continued. Subsequent
+        // SaveChangesAsync still committed the surviving entities. That produced
+        // "partial success" sync responses where the mobile thought entities A and C
+        // were saved (because B failed silently) — and the EF change tracker had
+        // already staged side-effects (idempotency lookups, etc) tied to the failed
+        // entity. Now: if ANY per-entity error was collected during push, we throw
+        // SyncPushAggregateException to abort the outer transaction. Semantics
+        // change from "best-effort partial commit" to "all-or-nothing per batch".
         try
         {
             await _transactions.ExecuteInTransactionAsync(async () =>
@@ -47,12 +73,28 @@ public class SyncService
                     await PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId);
                 }
 
+                // MEDIUM-1 (2026-06-06): if push collected per-entity errors, abort
+                // before SaveChangesAsync to prevent partial commits. The errors are
+                // already in response.Errors so the mobile sees diagnostics; we just
+                // need to force a rollback.
+                if (response.Errors.Count > 0)
+                {
+                    throw new SyncPushAggregateException(response.Errors.Count);
+                }
+
                 // 2. Pull server changes to client
                 await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
 
                 // 3. Save all changes atomically
                 await _repo.SaveChangesAsync();
             });
+        }
+        catch (SyncPushAggregateException)
+        {
+            // Per-entity errors already populated response.Errors during push —
+            // do NOT add a generic top-level error here, just let the response
+            // propagate with the detailed diagnostics. The transaction has been
+            // rolled back by ExecuteInTransactionAsync.
         }
         catch (Exception ex)
         {
@@ -363,10 +405,15 @@ public class SyncService
                             response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "devoluciones_pedido", LocalId = dto.LocalId, ServerId = entity.Id });
                         }
                         // Map children created IDs por LocalId
-                        for (int i = 0; i < dto.Detalles.Count && i < entity.Detalles.Count; i++)
+                        // MEDIUM-7 (2026-06-06): materialize Detalles once outside the loop.
+                        // entity.Detalles is ICollection; ElementAt(i) on a non-indexed
+                        // ICollection enumerates from the start every call (O(N) per access,
+                        // O(N^2) total). Cast to List<T> once for O(1) indexed access.
+                        var detallesList = entity.Detalles.ToList();
+                        for (int i = 0; i < dto.Detalles.Count && i < detallesList.Count; i++)
                         {
                             var childDto = dto.Detalles[i];
-                            var childEntity = entity.Detalles.ElementAt(i);
+                            var childEntity = detallesList[i];
                             if (!string.IsNullOrEmpty(childDto.LocalId) && childDto.Id == 0 && childEntity.Id > 0)
                             {
                                 response.CreatedIdMappings.Add(new IdMappingDto

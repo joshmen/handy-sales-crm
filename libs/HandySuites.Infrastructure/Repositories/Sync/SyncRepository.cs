@@ -171,7 +171,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -225,7 +225,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 return (existing, wasConflict);
             }
@@ -307,7 +307,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -336,7 +336,7 @@ public class SyncRepository : ISyncRepository
                 existing.Longitud = dto.Longitud;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 // Update detalles if provided
                 if (dto.Detalles != null)
@@ -591,21 +591,40 @@ public class SyncRepository : ISyncRepository
 
                     if (rutaId.HasValue)
                     {
+                        // Atomic counter update via SQL UPDATE — evita read-modify-write race
+                        // condition cuando dos sync requests concurrentes incrementan la misma
+                        // RutaCarga (ej. vendedor y supervisor pusheando al mismo tiempo).
+                        // El `+=` en memoria leia carga.CantidadVendida del snapshot del tracker
+                        // y sobreescribia con el resultado, perdiendo el incremento del otro hilo
+                        // (lost update). ExecuteUpdateAsync genera "SET cantidad = cantidad + N"
+                        // que es atomico en el motor de PostgreSQL.
+                        var nowUtc = DateTime.UtcNow;
                         foreach (var detalle in newDetalles)
                         {
-                            var carga = await _db.RutasCarga
-                                .FirstOrDefaultAsync(c => c.RutaId == rutaId.Value
-                                    && c.ProductoId == detalle.ProductoId
-                                    && c.TenantId == tenantId
-                                    && c.Activo);
-                            if (carga != null)
+                            var deltaCantidad = (int)detalle.Cantidad;
+                            if (pedido.TipoVenta == TipoVenta.VentaDirecta)
                             {
-                                if (pedido.TipoVenta == TipoVenta.VentaDirecta)
-                                    carga.CantidadVendida += (int)detalle.Cantidad;
-                                else
-                                    carga.CantidadEntregada += (int)detalle.Cantidad;
-                                carga.ActualizadoEn = DateTime.UtcNow;
-                                carga.ActualizadoPor = userId;
+                                await _db.RutasCarga
+                                    .Where(c => c.RutaId == rutaId.Value
+                                        && c.ProductoId == detalle.ProductoId
+                                        && c.TenantId == tenantId
+                                        && c.Activo)
+                                    .ExecuteUpdateAsync(setters => setters
+                                        .SetProperty(c => c.CantidadVendida, c => c.CantidadVendida + deltaCantidad)
+                                        .SetProperty(c => c.ActualizadoEn, nowUtc)
+                                        .SetProperty(c => c.ActualizadoPor, userId));
+                            }
+                            else
+                            {
+                                await _db.RutasCarga
+                                    .Where(c => c.RutaId == rutaId.Value
+                                        && c.ProductoId == detalle.ProductoId
+                                        && c.TenantId == tenantId
+                                        && c.Activo)
+                                    .ExecuteUpdateAsync(setters => setters
+                                        .SetProperty(c => c.CantidadEntregada, c => c.CantidadEntregada + deltaCantidad)
+                                        .SetProperty(c => c.ActualizadoEn, nowUtc)
+                                        .SetProperty(c => c.ActualizadoPor, userId));
                             }
                         }
                     }
@@ -658,7 +677,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -688,7 +707,7 @@ public class SyncRepository : ISyncRepository
                 existing.Fotos = dto.Fotos;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 return (existing, wasConflict);
             }
@@ -790,7 +809,7 @@ public class SyncRepository : ISyncRepository
                 existing.Notas = dto.Notas;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 // Update detalles
                 if (dto.Detalles != null)
@@ -811,7 +830,7 @@ public class SyncRepository : ISyncRepository
                             existingDetalle.Notas = detalleDto.Notas;
                             existingDetalle.ActualizadoEn = DateTime.UtcNow;
                             existingDetalle.ActualizadoPor = userId;
-                            existingDetalle.Version++;
+                            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
                         }
                     }
                 }
@@ -954,7 +973,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -988,7 +1007,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 return (existing, wasConflict);
             }
@@ -1113,7 +1132,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -1149,7 +1168,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
                 return (existing, wasConflict);
             }
         }
@@ -1244,12 +1263,17 @@ public class SyncRepository : ISyncRepository
             existing.AnuladaPor = userId;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             // Revertir saldo cliente si era SaldoFavor.
+            // Atomic UPDATE para evitar lost update si dos requests modifican el saldo
+            // del mismo cliente concurrentemente (cobro y devolucion en simultaneo).
             if (existing.TipoReembolso == TipoReembolso.SaldoFavor)
             {
-                var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == existing.ClienteId && c.TenantId == tenantId);
-                if (cliente != null) cliente.Saldo += existing.MontoTotal;
+                var revertMonto = existing.MontoTotal;
+                await _db.Clientes
+                    .Where(c => c.Id == existing.ClienteId && c.TenantId == tenantId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.Saldo, c => c.Saldo + revertMonto));
             }
             // Revertir side-effects de inventario si era ReposicionProducto.
             // Math.Max(0, ...) protege contra ediciones manuales del admin que ya bajaron
@@ -1279,7 +1303,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
                 return (existing, wasConflict);
             }
         }
@@ -1425,10 +1449,15 @@ public class SyncRepository : ISyncRepository
         _db.DevolucionesPedido.Add(devolucion);
 
         // Side-effect monetario: SaldoFavor decrementa saldo del cliente.
+        // Atomic UPDATE — mismo razonamiento que el path de anular: previene lost update
+        // contra cobros/devoluciones concurrentes sobre el mismo Cliente.Saldo.
         if (devolucion.TipoReembolso == TipoReembolso.SaldoFavor && devolucion.MontoTotal > 0)
         {
-            var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId);
-            if (cliente != null) cliente.Saldo -= devolucion.MontoTotal;
+            var montoDelta = devolucion.MontoTotal;
+            await _db.Clientes
+                .Where(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(c => c.Saldo, c => c.Saldo - montoDelta));
         }
 
         // Side-effect inventario: ReposicionProducto ajusta automaticamente las
