@@ -50,29 +50,63 @@ ON CONFLICT (tenant_id, usuario_id, capturado_en) DO NOTHING
 RETURNING id;
 ";
         var inserted = 0;
-        await using var conn = (Npgsql.NpgsqlConnection)_db.Database.GetDbConnection();
-        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync();
+        // CRITICAL 2026-06-08 (adversarial review pre-push): NO usar
+        // `await using` sobre _db.Database.GetDbConnection() — esa es la
+        // conexion compartida con EF, y `await using` la dispose al exit,
+        // breakeando cualquier _db.Database.* posterior en el mismo scope.
+        // Usamos OpenConnectionAsync (idempotent) y dejamos a EF gestionar
+        // el lifecycle. Wrap el loop en una transaccion explicita para
+        // preservar atomicidad batch-vs-fragmento (recuperabilidad por
+        // retries vendria via ON CONFLICT, pero la atomicidad evita
+        // perder rows si una falla mid-batch detiene el flush mobile).
+        if (_db.Database.GetDbConnection().State != System.Data.ConnectionState.Open)
+        {
+            await _db.Database.OpenConnectionAsync();
+        }
+        var conn = (Npgsql.NpgsqlConnection)_db.Database.GetDbConnection();
+        await using var tx = await conn.BeginTransactionAsync();
+        // Prepared command reusable — Postgres parsea/plana 1 vez en vez de N.
+        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn, tx);
+        var pTenant = cmd.Parameters.Add("@tenant_id", NpgsqlTypes.NpgsqlDbType.Integer);
+        var pUser = cmd.Parameters.Add("@usuario_id", NpgsqlTypes.NpgsqlDbType.Integer);
+        var pLat = cmd.Parameters.Add("@latitud", NpgsqlTypes.NpgsqlDbType.Numeric);
+        var pLng = cmd.Parameters.Add("@longitud", NpgsqlTypes.NpgsqlDbType.Numeric);
+        var pAcc = cmd.Parameters.Add("@precision_metros", NpgsqlTypes.NpgsqlDbType.Numeric);
+        var pTipo = cmd.Parameters.Add("@tipo", NpgsqlTypes.NpgsqlDbType.Integer);
+        var pCapt = cmd.Parameters.Add("@capturado_en", NpgsqlTypes.NpgsqlDbType.Timestamp);
+        var pRef = cmd.Parameters.Add("@referencia_id", NpgsqlTypes.NpgsqlDbType.Integer);
+        var pDia = cmd.Parameters.Add("@dia_servicio", NpgsqlTypes.NpgsqlDbType.Date);
+        var pAct = cmd.Parameters.Add("@activo", NpgsqlTypes.NpgsqlDbType.Boolean);
+        var pCreEn = cmd.Parameters.Add("@creado_en", NpgsqlTypes.NpgsqlDbType.Timestamp);
+        var pCreBy = cmd.Parameters.Add("@creado_por", NpgsqlTypes.NpgsqlDbType.Text);
         foreach (var p in deduped)
         {
-            await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@tenant_id", p.TenantId);
-            cmd.Parameters.AddWithValue("@usuario_id", p.UsuarioId);
-            cmd.Parameters.AddWithValue("@latitud", p.Latitud);
-            cmd.Parameters.AddWithValue("@longitud", p.Longitud);
-            cmd.Parameters.AddWithValue("@precision_metros", (object?)p.PrecisionMetros ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@tipo", (int)p.Tipo);
-            cmd.Parameters.AddWithValue("@capturado_en", p.CapturadoEn);
-            cmd.Parameters.AddWithValue("@referencia_id", (object?)p.ReferenciaId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@dia_servicio", p.DiaServicio);
-            cmd.Parameters.AddWithValue("@activo", p.Activo);
-            cmd.Parameters.AddWithValue("@creado_en", p.CreadoEn);
-            cmd.Parameters.AddWithValue("@creado_por", (object?)p.CreadoPor ?? DBNull.Value);
+            pTenant.Value = p.TenantId;
+            pUser.Value = p.UsuarioId;
+            pLat.Value = p.Latitud;
+            pLng.Value = p.Longitud;
+            pAcc.Value = (object?)p.PrecisionMetros ?? DBNull.Value;
+            pTipo.Value = (int)p.Tipo;
+            // Defensive: capturado_en es `timestamp without time zone` en DB;
+            // si llega Kind=Unspecified pasa OK, pero forzamos Unspecified
+            // para evitar warnings con LegacyTimestampBehavior toggled.
+            pCapt.Value = p.CapturadoEn.Kind == DateTimeKind.Utc
+                ? DateTime.SpecifyKind(p.CapturadoEn, DateTimeKind.Unspecified)
+                : p.CapturadoEn;
+            pRef.Value = (object?)p.ReferenciaId ?? DBNull.Value;
+            pDia.Value = p.DiaServicio;
+            pAct.Value = p.Activo;
+            pCreEn.Value = p.CreadoEn.Kind == DateTimeKind.Utc
+                ? DateTime.SpecifyKind(p.CreadoEn, DateTimeKind.Unspecified)
+                : p.CreadoEn;
+            pCreBy.Value = (object?)p.CreadoPor ?? DBNull.Value;
             var result = await cmd.ExecuteScalarAsync();
             if (result != null && result != DBNull.Value)
             {
                 inserted++;
             }
         }
+        await tx.CommitAsync();
 
         var skipped = intraBatchSkipped + (deduped.Count - inserted);
         return (inserted, skipped);
