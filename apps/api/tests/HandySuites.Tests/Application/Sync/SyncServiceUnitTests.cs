@@ -65,6 +65,10 @@ public class SyncServiceUnitTests
             .ReturnsAsync(new Dictionary<int, List<RutaCarga>>());
         _repo.Setup(r => r.GetCobrosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
             .ReturnsAsync(new List<Cobro>());
+        _repo.Setup(r => r.GetGastosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
+            .ReturnsAsync(new List<Gasto>());
+        _repo.Setup(r => r.GetDevolucionesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
+            .ReturnsAsync(new List<DevolucionPedido>());
         _repo.Setup(r => r.GetPreciosPorProductoAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
             .ReturnsAsync(new List<SyncPrecioPorProductoDto>());
         _repo.Setup(r => r.GetDescuentosAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
@@ -93,7 +97,7 @@ public class SyncServiceUnitTests
     // ============================================================
     // 1. Happy path minimo
     // ============================================================
-    [Fact(Skip = "Wave 1 generated test — mock setup divergent from SUT actual behavior, requires manual review")]
+    [Fact]
     public async Task SyncAsync_DeberiaRetornarServerTimestamp_CuandoRequestVacio()
     {
         var request = new SyncRequestDto { LastSyncTimestamp = null, EntityTypes = null, ClientChanges = null };
@@ -122,7 +126,7 @@ public class SyncServiceUnitTests
     // ============================================================
     // 3. SaveChanges invocado dentro de transaccion
     // ============================================================
-    [Fact(Skip = "Wave 1 generated test — mock setup divergent from SUT actual behavior, requires manual review")]
+    [Fact]
     public async Task SyncAsync_DeberiaInvocarSaveChanges_DentroDeTransaccion()
     {
         var request = new SyncRequestDto();
@@ -492,7 +496,7 @@ public class SyncServiceUnitTests
     // ============================================================
     // 18. SyncAll → todos los Get* invocados
     // ============================================================
-    [Fact(Skip = "Wave 1 generated test — mock setup divergent from SUT actual behavior, requires manual review")]
+    [Fact]
     public async Task SyncAsync_DeberiaPullTodasLasEntidades_CuandoSyncAll()
     {
         var request = new SyncRequestDto { EntityTypes = null }; // syncAll
@@ -505,6 +509,8 @@ public class SyncServiceUnitTests
         _repo.Verify(r => r.GetVisitasModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetRutasModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetCobrosModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
+        _repo.Verify(r => r.GetGastosModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
+        _repo.Verify(r => r.GetDevolucionesModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetZonasModifiedSinceAsync(1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetCategoriasClienteModifiedSinceAsync(1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetCategoriasProductoModifiedSinceAsync(1, It.IsAny<DateTime?>()), Times.Once);

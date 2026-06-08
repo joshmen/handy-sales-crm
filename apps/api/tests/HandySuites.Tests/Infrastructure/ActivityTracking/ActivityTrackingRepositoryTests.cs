@@ -13,28 +13,46 @@ namespace HandySuites.Tests.Infrastructure.ActivityTracking
         private readonly HandySuitesDbContext _context;
         private readonly ActivityTrackingRepository _repository;
 
+        // Frozen "now" used by the stub time-zone service. Picking 12:00 UTC keeps
+        // tests well away from the midnight boundary so day-window queries are
+        // deterministic regardless of when the suite is executed (fixes M-15).
+        private static readonly DateTime FrozenUtcNow = new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc);
+
         public ActivityTrackingRepositoryTests(CustomWebApplicationFactory factory)
         {
             var scope = factory.Services.CreateScope();
             _context = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             // Forzamos stub UTC: el real `TenantTimeZoneService` requiere
             // `ICurrentTenant` en scope (HTTP context), que el test fixture
-            // no provee.
-            _repository = new ActivityTrackingRepository(_context, new FixedUtcTenantTimeZoneService());
+            // no provee. Le pasamos un `DateTime` congelado para evitar el
+            // flake de medianoche (M-15): el stub anterior usaba
+            // `DateTime.UtcNow` y el día/ventana cambiaba entre llamadas.
+            _repository = new ActivityTrackingRepository(_context, new FixedUtcTenantTimeZoneService(FrozenUtcNow));
         }
 
         // Stub UTC para tests cuando el container no registra el servicio real.
+        // Toma un `DateTime` congelado por constructor para que `GetTenantTodayAsync`
+        // y `GetTenantDayWindowUtcAsync` sean deterministas (no usan `DateTime.UtcNow`).
         private sealed class FixedUtcTenantTimeZoneService : ITenantTimeZoneService
         {
+            private readonly DateTime _frozenUtcNow;
+
+            public FixedUtcTenantTimeZoneService(DateTime frozenUtcNow)
+            {
+                if (frozenUtcNow.Kind != DateTimeKind.Utc)
+                    throw new ArgumentException("frozenUtcNow must be DateTimeKind.Utc", nameof(frozenUtcNow));
+                _frozenUtcNow = frozenUtcNow;
+            }
+
             public Task<TimeZoneInfo> GetTenantTimeZoneAsync(System.Threading.CancellationToken ct = default)
                 => Task.FromResult(TimeZoneInfo.Utc);
             public Task<TimeZoneInfo> GetTimeZoneForTenantAsync(int tenantId, System.Threading.CancellationToken ct = default)
                 => Task.FromResult(TimeZoneInfo.Utc);
             public Task<DateOnly> GetTenantTodayAsync(System.Threading.CancellationToken ct = default)
-                => Task.FromResult(DateOnly.FromDateTime(DateTime.UtcNow));
+                => Task.FromResult(DateOnly.FromDateTime(_frozenUtcNow));
             public Task<(DateTime InicioUtc, DateTime FinUtc)> GetTenantDayWindowUtcAsync(DateOnly? dia = null, System.Threading.CancellationToken ct = default)
             {
-                var d = dia ?? DateOnly.FromDateTime(DateTime.UtcNow);
+                var d = dia ?? DateOnly.FromDateTime(_frozenUtcNow);
                 var start = d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
                 return Task.FromResult((start, start.AddDays(1)));
             }
@@ -189,7 +207,9 @@ namespace HandySuites.Tests.Infrastructure.ActivityTracking
             // tenantId=9010 has userId=9010; tenantId=9020 has userId=9020 (seeded)
             var tenantId = 9010;
             var otherTenantId = 9020;
-            var today = DateTime.UtcNow.Date;
+            // M-15 fix: use the same frozen "today" the stub returns to avoid
+            // a midnight boundary flake (stub day vs test day diverging).
+            var today = FrozenUtcNow.Date;
 
             // Actividades de hoy para tenant 1
             await _repository.CreateActivityLogAsync(new ActivityLog
@@ -287,7 +307,8 @@ namespace HandySuites.Tests.Infrastructure.ActivityTracking
         {
             // Arrange — use tenant 1 (users 123, 124 belong to it)
             var tenantId = 1;
-            var today = DateTime.UtcNow.Date;
+            // M-15 fix: use the same frozen "today" the stub returns.
+            var today = FrozenUtcNow.Date;
 
             // Usuario 123 con múltiples actividades
             await _repository.CreateActivityLogAsync(new ActivityLog
@@ -337,7 +358,8 @@ namespace HandySuites.Tests.Infrastructure.ActivityTracking
             // Arrange
             var tenantId = 1;
             var days = 7;
-            var today = DateTime.UtcNow.Date;
+            // M-15 fix: use the same frozen "today" the stub returns.
+            var today = FrozenUtcNow.Date;
 
             // Crear actividades en diferentes días
             await _repository.CreateActivityLogAsync(new ActivityLog

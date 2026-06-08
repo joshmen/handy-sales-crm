@@ -170,6 +170,26 @@ internal class StubBillingEmailService : HandySuites.Billing.Api.Services.IBilli
 }
 
 /// <summary>
+/// Deterministic folio provider for tests. Bypasses the PostgreSQL
+/// INSERT...ON CONFLICT path (which the EF Core InMemory provider cannot
+/// execute) by returning a monotonically increasing folio per (tenant, serie).
+/// </summary>
+internal class StubFolioProvider : HandySuites.Billing.Api.Services.IFolioProvider
+{
+    private readonly Dictionary<string, int> _counters = new();
+
+    public Task<int> GetNextFolioAsync(string tenantId, string serie)
+    {
+        var key = $"{tenantId}|{serie}";
+        if (!_counters.TryGetValue(key, out var current))
+            current = 0;
+        current++;
+        _counters[key] = current;
+        return Task.FromResult(current);
+    }
+}
+
+/// <summary>
 /// FacturasController — 25 unit tests usando InMemory DB + stubs CFDI.
 ///
 /// Algunos endpoints (TimbrarFactura, CreateFactura) usan ExecuteUpdateAsync / raw SQL
@@ -197,6 +217,10 @@ public class FacturasControllerTests : IDisposable
 
         var options = new DbContextOptionsBuilder<BillingDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            // CreateFactura wraps folio + insert in BeginTransactionAsync (BR-010).
+            // The InMemory provider does not support transactions; suppress the
+            // warning so the no-op transaction does not throw under tests.
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         // Mock IHttpContextAccessor so global query filters resolve CurrentTenantId
@@ -230,7 +254,8 @@ public class FacturasControllerTests : IDisposable
             _timbreService,
             new StubCompanyLogoService(), _orderReader,
             fiscalCodeResolver, httpClientFactory, config,
-            new StubTenantEncryptionService());
+            new StubTenantEncryptionService(),
+            new StubFolioProvider());
 
         // Setup user claims
         SetupUserClaims();
@@ -584,15 +609,16 @@ public class FacturasControllerTests : IDisposable
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
-    [Fact(Skip = "Requires relational DB provider — InMemory does not support raw SQL/ExecuteUpdate")]
+    [Fact]
     public async Task CreateFactura_CreatesNewFactura()
     {
+        // Use SAT-valid RFCs: pattern ^[A-ZÑ&]{3,4}\d{6}[A-V1-9][0-9A-Z]\d$
         var request = new CreateFacturaRequest
         {
             TipoComprobante = "I",
-            EmisorRfc = "TEST010101AAA",
+            EmisorRfc = "JUMP800101AB1",
             EmisorNombre = "Empresa Test",
-            ReceptorRfc = "CLIENTE010101AAA",
+            ReceptorRfc = "CLNT800101AB1",
             ReceptorNombre = "Nuevo Cliente",
             Subtotal = 2000m,
             Total = 2320m,

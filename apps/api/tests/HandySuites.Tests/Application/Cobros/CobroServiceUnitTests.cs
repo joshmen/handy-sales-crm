@@ -26,7 +26,8 @@ public class CobroServiceUnitTests
         _tenant.SetupGet(t => t.TenantId).Returns(1);
         _tenant.SetupGet(t => t.UserId).Returns("1");
         _tenant.SetupGet(t => t.Role).Returns("ADMIN");
-        _tenant.SetupGet(t => t.IsAdmin).Returns(true);
+        _tenant.SetupGet(t => t.IsAdminOrAbove).Returns(true);
+        _tenant.SetupGet(t => t.IsStrictAdmin).Returns(true);
         _tenant.SetupGet(t => t.IsSuperAdmin).Returns(false);
         _tenant.SetupGet(t => t.IsSupervisor).Returns(false);
 
@@ -66,7 +67,7 @@ public class CobroServiceUnitTests
     [Fact]
     public async Task ObtenerCobrosAsync_DeberiaForzarUsuarioId_CuandoEsVendedor()
     {
-        _tenant.SetupGet(t => t.IsAdmin).Returns(false);
+        _tenant.SetupGet(t => t.IsAdminOrAbove).Returns(false);
         _tenant.SetupGet(t => t.IsSuperAdmin).Returns(false);
         _tenant.SetupGet(t => t.UserId).Returns("42");
 
@@ -84,10 +85,10 @@ public class CobroServiceUnitTests
     // -------------------------------------------------------------------
     // 2. ObtenerCobrosAsync — admin: respeta usuarioId del parámetro
     // -------------------------------------------------------------------
-    [Fact(Skip = "Wave 1 generated test — mock setup divergent from SUT actual behavior, requires manual review")]
+    [Fact]
     public async Task ObtenerCobrosAsync_DeberiaRespetarUsuarioIdParametro_CuandoEsAdmin()
     {
-        _tenant.SetupGet(t => t.IsAdmin).Returns(true);
+        _tenant.SetupGet(t => t.IsAdminOrAbove).Returns(true);
         _tenant.SetupGet(t => t.IsSuperAdmin).Returns(false);
         _tenant.SetupGet(t => t.UserId).Returns("1");
 

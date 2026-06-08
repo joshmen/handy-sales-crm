@@ -176,6 +176,10 @@ builder.Services.AddSingleton<IOrderReaderService, OrderReaderService>();
 // Fiscal code resolver (resolves SAT codes via mapping → product → defaults → fallback)
 builder.Services.AddScoped<FiscalCodeResolver>();
 
+// Folio provider (atomic INSERT...ON CONFLICT on numeracion_documentos)
+// — Scoped so it shares the request-scoped BillingDbContext + ambient EF tx (BR-010).
+builder.Services.AddScoped<IFolioProvider, NpgsqlFolioProvider>();
+
 // Email service (SendGrid)
 builder.Services.AddSingleton<IBillingEmailService, BillingEmailService>();
 

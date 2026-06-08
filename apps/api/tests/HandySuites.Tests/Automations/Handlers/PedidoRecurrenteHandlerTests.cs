@@ -7,7 +7,6 @@ using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -25,7 +24,6 @@ namespace HandySuites.Tests.Automations.Handlers;
 /// </summary>
 public class PedidoRecurrenteHandlerTests : IDisposable
 {
-    private readonly SqliteConnection _connection;
     private readonly HandySuitesDbContext _db;
     private readonly Mock<INotificationService> _notifications = new();
     private readonly Mock<IEmailService> _emailService = new();
@@ -39,18 +37,12 @@ public class PedidoRecurrenteHandlerTests : IDisposable
 
     public PedidoRecurrenteHandlerTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        // Disable FK enforcement — testeamos solo logica del handler, no integridad referencial.
-        using (var pragma = _connection.CreateCommand())
-        {
-            pragma.CommandText = "PRAGMA foreign_keys = OFF;";
-            pragma.ExecuteNonQuery();
-        }
-
+        // InMemory provider — SQLite can't translate Sum/Average on decimal columns
+        // and the handler queries Pedidos.Average(p => p.Total). Each test gets an
+        // isolated database via a unique Guid name.
         var options = new DbContextOptionsBuilder<HandySuitesDbContext>()
-            .UseSqlite(_connection)
+            .UseInMemoryDatabase($"PedidoRecurrente-{Guid.NewGuid()}")
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         _db = new HandySuitesDbContext(options);
@@ -126,7 +118,7 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────────
     // 1. Slug — sanity check basico
     // ─────────────────────────────────────────────────────────────────────────
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public void Slug_DeberiaSerPedidoRecurrente()
     {
         _sut.Slug.Should().Be("pedido-recurrente");
@@ -135,7 +127,7 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────────
     // 2. Sin clientes con suficiente historial → sale temprano sin notificar
     // ─────────────────────────────────────────────────────────────────────────
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_SinClientesConSuficienteHistorial_DeberiaRetornarSinClientesRecurrentes()
     {
         // Arrange — solo 1 pedido por cliente (default min = 3)
@@ -161,7 +153,7 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────────
     // 3. Clientes con suficiente historial pero ciclo normal → no notificar
     // ─────────────────────────────────────────────────────────────────────────
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_CicloNormal_DeberiaRetornarTodosClientesCicloNormal()
     {
         // Arrange — 4 pedidos cada 30 dias, ultimo hace solo 10 dias → urgencia ~0.33 (< 1.2)
@@ -188,7 +180,7 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────────
     // 4. Cliente con ciclo superado → push al vendedor + admin + email
     // ─────────────────────────────────────────────────────────────────────────
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_ClienteConCicloSuperado_DeberiaNotificarYRetornarSuccess()
     {
         // Arrange — 3 pedidos cada 30 dias, ultimo hace 100 dias → urgencia ~3.3 (>= 1.2)
@@ -222,7 +214,7 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────────
     // 5. Destinatario admin only → push al admin pero no al vendedor del cliente
     // ─────────────────────────────────────────────────────────────────────────
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_DestinatarioAdmin_DeberiaNotificarSoloAdmin()
     {
         // Arrange — ciclo claramente superado
@@ -255,7 +247,7 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────────
     // 6. Pedidos cancelados NO cuentan para el historial
     // ─────────────────────────────────────────────────────────────────────────
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_PedidosCancelados_NoCuentanParaElHistorial()
     {
         // Arrange — todos los pedidos del cliente son cancelados → no llega al min
@@ -300,6 +292,5 @@ public class PedidoRecurrenteHandlerTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        _connection.Dispose();
     }
 }

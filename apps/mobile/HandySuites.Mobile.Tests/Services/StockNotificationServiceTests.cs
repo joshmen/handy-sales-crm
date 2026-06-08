@@ -46,6 +46,16 @@ public class StockNotificationServiceTests : IDisposable
             .UseSqlite(_connection)
             .Options;
         _db = new HandySuitesDbContext(options);
+        _db.Database.EnsureCreated();
+
+        // SQLite (and EF Core EnsureCreated) re-enables FK enforcement; disable
+        // so the seeder can insert partial graphs (Cliente.IdZona without Zona,
+        // Producto.FamiliaId = 0, etc.) the same way MobileWebApplicationFactory does.
+        using (var pragma = _connection.CreateCommand())
+        {
+            pragma.CommandText = "PRAGMA foreign_keys = OFF;";
+            pragma.ExecuteNonQuery();
+        }
 
         // Seed shared fixture data (tenants, usuarios, etc.) using the same
         // helper used by the WebApplicationFactory-backed tests so IDs match.
@@ -134,7 +144,7 @@ public class StockNotificationServiceTests : IDisposable
     // Tests
     // ------------------------------------------------------------------
 
-    [Fact(Skip = "Wave 5: requires DB seed con productos/stock minimo; pending follow-up")]
+    [Fact]
     public async Task CheckAndNotifyLowStock_NoOrderLines_NoNotifications()
     {
         // Pedido sin DetallePedidos: el servicio debe salir temprano sin
@@ -147,7 +157,7 @@ public class StockNotificationServiceTests : IDisposable
         historyAfter.Should().Be(historyBefore);
     }
 
-    [Fact(Skip = "Wave 5: requires DB seed con productos/stock minimo; pending follow-up")]
+    [Fact]
     public async Task CheckAndNotifyLowStock_StockAboveMinimum_NoNotifications()
     {
         // Producto con CantidadActual > StockMinimo: no califica como low stock.
@@ -164,7 +174,7 @@ public class StockNotificationServiceTests : IDisposable
         historyAfter.Should().Be(historyBefore);
     }
 
-    [Fact(Skip = "Wave 5: requires DB seed con productos/stock minimo; pending follow-up")]
+    [Fact]
     public async Task CheckAndNotifyLowStock_StockMinimoZero_NoNotifications()
     {
         // El filtro `i.StockMinimo > 0` excluye items con threshold = 0, aunque
@@ -183,11 +193,12 @@ public class StockNotificationServiceTests : IDisposable
         historyAfter.Should().Be(historyBefore);
     }
 
-    [Fact(Skip = "Wave 5: requires DB seed con productos/stock minimo; pending follow-up")]
+    [Fact]
     public async Task CheckAndNotifyLowStock_StockBelowMinimum_NotifiesAdminsAndSupervisors()
     {
-        // 3 destinatarios elegibles en tenant 1 (admin id=1, super admin id=2,
-        // supervisor id=200). Vendedores (123, 124) NO deben recibir.
+        // 4 destinatarios elegibles en tenant 1 (super admin id=100, admin id=101,
+        // supervisor A id=200, supervisor B id=250). Vendedores (300, 301, 302) y
+        // viewer (201) NO deben recibir.
         AddProducto(1003, nombre: "Coca-Cola 600ml");
         AddInventario(1003, productoId: 1003, actual: 2m, minimo: 10m);
         AddDetallePedido(10003, pedidoId: 1, productoId: 1003);
@@ -196,22 +207,24 @@ public class StockNotificationServiceTests : IDisposable
         await _service.CheckAndNotifyLowStockAsync(pedidoId: 1, tenantId: 1);
 
         // SendToUsersAsync persiste 1 NotificationHistory por destinatario antes
-        // de hablar con Expo. Esperamos 1 producto x 3 destinatarios = 3 rows.
+        // de hablar con Expo. Esperamos 1 producto x 4 destinatarios = 4 rows.
         var historyRows = await _db.NotificationHistory
             .IgnoreQueryFilters()
             .Where(n => n.TenantId == 1)
             .ToListAsync();
 
-        historyRows.Count.Should().BeOneOf(3, 1, 2); // permisivo
-        historyRows.Should().OnlyContain(n => n.UsuarioId == 1 || n.UsuarioId == 2 || n.UsuarioId == 200);
+        historyRows.Count.Should().Be(4);
+        historyRows.Should().OnlyContain(n =>
+            n.UsuarioId == 100 || n.UsuarioId == 101 ||
+            n.UsuarioId == 200 || n.UsuarioId == 250);
         historyRows.Should().Contain(n => n.Titulo.Contains("Coca-Cola"));
     }
 
-    [Fact(Skip = "Wave 5: requires DB seed con productos/stock minimo; pending follow-up")]
+    [Fact]
     public async Task CheckAndNotifyLowStock_DifferentTenant_DoesNotLeakAcrossTenants()
     {
         // Inventario y producto en tenant 2; llamamos con tenantId=2.
-        // El único usuario tenant 2 (vendedor 999) NO es admin/supervisor,
+        // El único usuario tenant 2 (vendedor 400) NO es admin/supervisor,
         // por lo que recipientIds queda vacío → 0 rows.
         AddProducto(1004, tenantId: 2);
         AddInventario(1004, productoId: 1004, actual: 1m, minimo: 5m, tenantId: 2);
@@ -226,7 +239,7 @@ public class StockNotificationServiceTests : IDisposable
         historyAfter.Should().Be(historyBefore);
     }
 
-    [Fact(Skip = "Wave 5: requires DB seed con productos/stock minimo; pending follow-up")]
+    [Fact]
     public async Task CheckAndNotifyLowStock_SwallowsExceptions_DoesNotPropagate()
     {
         // El try/catch interno garantiza que un fallo (p.ej. DbContext disposed)

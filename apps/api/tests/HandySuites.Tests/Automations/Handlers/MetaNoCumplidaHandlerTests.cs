@@ -7,7 +7,6 @@ using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -21,7 +20,6 @@ namespace HandySuites.Tests.Automations.Handlers;
 /// </summary>
 public class MetaNoCumplidaHandlerTests : IDisposable
 {
-    private readonly SqliteConnection _connection;
     private readonly HandySuitesDbContext _db;
     private readonly Mock<INotificationService> _notifications = new();
     private readonly Mock<IEmailService> _email = new();
@@ -34,17 +32,12 @@ public class MetaNoCumplidaHandlerTests : IDisposable
 
     public MetaNoCumplidaHandlerTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        using (var pragma = _connection.CreateCommand())
-        {
-            pragma.CommandText = "PRAGMA foreign_keys = OFF;";
-            pragma.ExecuteNonQuery();
-        }
-
+        // InMemory provider — SQLite can't translate Sum/Average on decimal columns
+        // and the handler queries Pedidos.SumAsync(p => p.Total). Each test gets an
+        // isolated database via a unique Guid name.
         var options = new DbContextOptionsBuilder<HandySuitesDbContext>()
-            .UseSqlite(_connection)
+            .UseInMemoryDatabase($"MetaNoCumplida-{Guid.NewGuid()}")
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         _db = new HandySuitesDbContext(options);
@@ -122,7 +115,7 @@ public class MetaNoCumplidaHandlerTests : IDisposable
         _db.SaveChanges();
     }
 
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_SinMetasConfiguradas_RetornaResultadoExitosoSinAlertas()
     {
         var ctx = BuildContext();
@@ -134,7 +127,7 @@ public class MetaNoCumplidaHandlerTests : IDisposable
         _notifications.Verify(n => n.EnviarNotificacionAsync(It.IsAny<SendNotificationDto>()), Times.Never);
     }
 
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_TodosLosVendedoresPorEncimaDelUmbral_NoEnviaAlertas()
     {
         // Meta de 1000 con 1000 vendidos => 100% => por encima del umbral default (80)
@@ -148,7 +141,7 @@ public class MetaNoCumplidaHandlerTests : IDisposable
         _notifications.Verify(n => n.EnviarNotificacionAsync(It.IsAny<SendNotificationDto>()), Times.Never);
     }
 
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_VendedorBajoUmbralEnVentas_EnviaAlertaPushAlVendedorYAlAdmin()
     {
         // Meta 1000, real 100 => 10% < 80%
@@ -167,7 +160,7 @@ public class MetaNoCumplidaHandlerTests : IDisposable
             It.Is<SendNotificationDto>(d => d.UsuarioId == AdminId)), Times.AtLeastOnce);
     }
 
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_PedidosCancelados_NoCuentanParaElTotalRealizado()
     {
         // Meta 1000. Hay un pedido cancelado de 1000 (no debe contar) y nada más => 0% => alerta
@@ -182,7 +175,7 @@ public class MetaNoCumplidaHandlerTests : IDisposable
             It.Is<SendNotificationDto>(d => d.UsuarioId == VendedorId)), Times.AtLeastOnce);
     }
 
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_UmbralCustomViaParams_RespetaConfiguracion()
     {
         // Meta 1000 con 900 realizado => 90%. Con umbral default (80) no alerta; con 95 sí.
@@ -197,7 +190,7 @@ public class MetaNoCumplidaHandlerTests : IDisposable
             It.Is<SendNotificationDto>(d => d.UsuarioId == VendedorId)), Times.AtLeastOnce);
     }
 
-    [Fact(Skip = "Wave 3: handler requiere wiring DI complejo / dependencia HandySalesDbContext interceptor; review futuro")]
+    [Fact]
     public async Task ExecuteAsync_MetaPorConteoDePedidos_CalculaUsandoCount()
     {
         // Meta "pedidos" = 10. Solo hay 1 pedido vigente => 10% < 80% => alerta.
@@ -215,6 +208,5 @@ public class MetaNoCumplidaHandlerTests : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        _connection.Dispose();
     }
 }

@@ -34,11 +34,17 @@ test.describe('Cobranza — ADMIN saldos resumen', () => {
     const heading = page.getByRole('heading', { name: /Cobranza/i }).first();
     await expect(heading).toBeVisible({ timeout: 10000 });
 
-    // Al menos 2 de 4 KPI cards
-    const labels = [/Total vendido/i, /^Cobrado$/i, /Por cobrar/i, /Clientes.*deben/i];
+    // 2026-06-07: KPI labels render as `<p>{label} <HelpTooltip/></p>` so the
+    // <p> text node carries trailing whitespace + button content. Anchored
+    // regex like /^Cobrado$/i fails to match the normalized text. Use partial
+    // regexes scoped to the data-tour container to disambiguate from other
+    // occurrences of "Cobrado" in tooltips/table totals.
+    const kpis = page.locator('[data-tour="cobranza-kpis"]');
+    await kpis.waitFor({ state: 'visible', timeout: 10000 });
+    const labels = [/Total vendido/i, /Cobrado/i, /Por cobrar/i, /Clientes.*deben/i];
     let found = 0;
     for (const lbl of labels) {
-      if (await page.getByText(lbl).first().isVisible({ timeout: 2500 }).catch(() => false)) {
+      if (await kpis.getByText(lbl).first().isVisible({ timeout: 2500 }).catch(() => false)) {
         found++;
       }
     }

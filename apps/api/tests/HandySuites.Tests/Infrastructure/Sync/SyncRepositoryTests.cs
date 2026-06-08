@@ -246,10 +246,9 @@ public class SyncRepositoryTests : IDisposable
 
         conflict.Should().BeFalse();
         entity.Nombre.Should().Be("Actualizado");
-        // SyncRepository.UpsertClienteAsync increments Version (1→2) on update; then the
-        // HandySalesDbContext.SaveChangesAsync audit interceptor increments again (2→3) when
-        // it detects the entity is Modified. End state in production for a single sync push.
-        entity.Version.Should().Be(3);
+        // Version bump is owned by HandySalesDbContext.SaveChangesAsync interceptor (1→2 on Modified).
+        // SyncRepository no longer increments manually — see audit finding 4.14 (double-bump fix).
+        entity.Version.Should().Be(2);
         // Note: SaveChangesAsync override sets ActualizadoPor = _tenantContext?.CurrentUserEmail.
         // Tests instantiate HandySalesDbContext without a tenant context, so the userId="10"
         // value the repo wrote is overwritten with null. In production the tenant context
@@ -270,9 +269,11 @@ public class SyncRepositoryTests : IDisposable
         };
 
         var (entity, conflict) = await _sut.UpsertClienteAsync(TenantId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
 
         conflict.Should().BeFalse();
         entity.Activo.Should().BeFalse();
+        // Version bump is owned by HandySalesDbContext.SaveChangesAsync interceptor (1→2 on Modified).
         entity.Version.Should().Be(2);
     }
 

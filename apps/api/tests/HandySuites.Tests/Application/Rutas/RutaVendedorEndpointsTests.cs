@@ -6,6 +6,33 @@ using Xunit;
 
 namespace HandySuites.Tests.Application.Rutas
 {
+    // === H-2 / Item 5.2 (Outbox Test Sweep — 2026-06-07) ===
+    //
+    // The four endpoints `POST /rutas/{id}/cancelar`, `POST /rutas/{id}/carga/pedidos`,
+    // `POST /rutas/{id}/carga/enviar`, plus the Update/Create paths that emit
+    // `RouteAssignedSignalR`, were refactored from `_ = Task.Run(...)` fire-and-forget
+    // to durable `IOutboxService.EnqueueAsync(...)` writes against the `NotificationOutbox`
+    // table (helpers in `RutaVendedorEndpoints.cs#L40-L146`).
+    //
+    // SWEEP RESULT: No existing tests in this file (or in `RutaVendedorServiceUnitTests`)
+    // mocked `IHttpClientFactory` + `IRealtimePushService` for those endpoints — so there
+    // were no `mockPushService.Verify(...)` calls to convert into
+    // `db.NotificationOutbox.Should().ContainSingle(...)` assertions. The existing tests
+    // only assert HTTP status codes and don't reach the notification path.
+    //
+    // FOLLOW-UP TICKET (recommended): add positive coverage that:
+    //   1. POST /rutas/{id}/cancelar (state CargaAceptada|EnProgreso) ->
+    //      db.NotificationOutbox has 1 Pending row with NotificationType=MobileRouteCancelled,
+    //      TenantId=expected, RetryCount=0.
+    //   2. POST /rutas/{id}/carga/pedidos (state CargaAceptada|EnProgreso) ->
+    //      1 Pending row with NotificationType=MobileRouteAssignment, payload pedidoId matches.
+    //   3. POST /rutas/{id}/carga/enviar -> 2 Pending rows
+    //      (MobileRouteSentToLoad + RouteAssignedSignalR), both same TenantId.
+    //   4. POST /rutas + PUT /rutas/{id} (with UsuarioId assigned) ->
+    //      1 Pending row with NotificationType=RouteAssignedSignalR, EventName="RutaAssigned".
+    //
+    // These tests need DB seeding (RutaVendedor + RutasCarga + Pedido fixtures) that
+    // doesn't exist yet in the integration harness, so they are deferred.
     public class RutaVendedorEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {
         private readonly HttpClient _client;
