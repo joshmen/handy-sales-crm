@@ -36,6 +36,8 @@ import {
 } from '@/components/ui/Dialog';
 import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
 import { ImpersonationModal } from '@/components/impersonation';
+import { useImpersonationStore } from '@/stores/useImpersonationStore';
+import { impersonationService } from '@/services/api/impersonation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import type { DefaultSession } from 'next-auth';
@@ -197,6 +199,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      // SECURITY FIX 4.15: End any active impersonation session BEFORE logout so the
+      // backend marks ImpersonationSession as Ended (auditoría completa) and the
+      // SUPER_ADMIN does not leave an open tenant session behind on logout.
+      try {
+        const { isImpersonating, sessionId } = useImpersonationStore.getState();
+        if (isImpersonating && sessionId) {
+          await impersonationService.endSession(sessionId).catch(() => {});
+        }
+        // Clear in-memory impersonation state regardless of backend result
+        useImpersonationStore.getState().clear();
+      } catch { /* best-effort — proceed with client-side logout even if cleanup fails */ }
+
       // Close DeviceSession on backend (marks session as LoggedOut)
       try {
         const { api: apiClient } = await import('@/lib/api');

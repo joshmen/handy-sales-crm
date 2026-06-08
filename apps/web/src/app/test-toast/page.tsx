@@ -4,16 +4,24 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { toast } from "@/hooks/useToast";
 import { Layout } from "@/components/layout/Layout";
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
+import { notFound } from "next/navigation";
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
   Info,
   Loader2
 } from "lucide-react";
 import { useState } from "react";
 
 export default function TestToastPage() {
+  // Sprint pre-prod #37 audit 2026-06-06: esta page era de QA dev pero
+  // estaba accesible en prod via /test-toast. Gate con NODE_ENV: si NO
+  // es development, 404. Asi seguimos teniendo la utility para dev
+  // sin exponerla a clientes.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
   const [isLoading, setIsLoading] = useState(false);
 
   const showSuccessToast = () => {

@@ -1,0 +1,178 @@
+appId: host.exp.exponent
+name: "Sync offline -> online (push pending + pull catalogos)"
+---
+
+# ════════════════════════════════════════════════════════════
+# HOT-PATH: VENDEDOR offline-first.
+#
+# 01-sync-screen.yaml solo valida UI estática. Este flow ejercita
+# el push real WatermelonDB:
+#   1. Modo airplane ON.
+#   2. Crear pedido offline (queda en pending_sync).
+#   3. Airplane OFF.
+#   4. Tap "Sincronizar Ahora".
+#   5. Assert "0 pendientes" + estado conectado.
+#
+# Endpoints validados:
+#   - POST /api/mobile/sync/push (200 OK)
+#   - GET  /api/mobile/sync/pull (200 OK)
+#
+# PRE-REQ: sesión activa VENDEDOR (corre 01-login-vendedor.yaml antes).
+#
+# NOTA Maestro/Android: airplane mode se controla por adb shell. Maestro
+# no expone API nativa para esto — usamos el comando `runScript` con
+# fallback manual. Si no disponible, el flow degrada a validar solo el
+# push online (el pedido sigue pendiente hasta toggle manual).
+# ════════════════════════════════════════════════════════════
+
+# 0. Dashboard listo
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: sync-flow-00-dashboard
+
+# 1. Activar airplane mode via adb (Android).
+#    Si tu emulador requiere root: `adb root` antes del run.
+- runScript:
+    file: "./scripts/airplane-on.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+# BUG / FIX TODO: Maestro 1.x no garantiza runScript con file relativo.
+# Si falla, fallback es desactivar wifi por shortcut UI:
+# - openLink: "android-settings://wifi"  ← no portable
+# Por ahora la receta canónica es: ejecutar `adb shell svc wifi disable`
+# externamente antes de lanzar el flow, y `adb shell svc wifi enable`
+# al final. Documentado en README .maestro/sync/.
+
+- takeScreenshot: sync-flow-01-airplane-on
+
+# 2. Crear pedido offline rápido — Tab Vender → FAB.
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# Si modoDefault=Preguntar aparece BottomSheet; tomamos Preventa para
+# evitar dependency de catálogo monetario.
+- runFlow:
+    when:
+      visible: "Tipo de Venta"
+    commands:
+      - tapOn: "Preventa"
+      - waitForAnimationToEnd
+
+# Cliente cualquiera.
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 10000
+
+- tapOn:
+    point: "50%,40%"
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# Agregar 1 producto.
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 10000
+
+- tapOn:
+    text: "+"
+- waitForAnimationToEnd
+
+# Revisar + confirmar.
+- runFlow:
+    when:
+      visible: "Revisar"
+    commands:
+      - tapOn: "Revisar"
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Crear Pedido"
+    commands:
+      - tapOn: "Crear Pedido"
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedido Creado|Guardado offline|Pedidos"
+    timeout: 15000
+
+- takeScreenshot: sync-flow-02-pedido-offline-creado
+
+# 3. Ir a tab Más → Sincronización para ver el pending count > 0.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 15000
+
+- tapOn: "Sincronización"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 15000
+
+# Estado debe ser Sin conexión + Pendientes >= 1.
+- assertVisible: "Sin conexión"
+- assertVisible: "Pendientes"
+- takeScreenshot: sync-flow-03-pending-offline
+
+# 4. Desactivar airplane mode.
+- runScript:
+    file: "./scripts/airplane-off.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+# Esperar a que la pantalla detecte "Conectado".
+- extendedWaitUntil:
+    visible: "Conectado"
+    timeout: 30000
+
+- takeScreenshot: sync-flow-04-online-restored
+
+# 5. Disparar sync manual.
+- tapOn:
+    text: "Sincronizar ahora|Sincronizar Ahora"
+
+# 6. Esperar el resultado: 0 pendientes / Sincronizado / Listo.
+- extendedWaitUntil:
+    visible:
+      text: ".*(Sincronizado|Listo|0 pendientes|Sin cambios).*"
+    timeout: 60000
+
+- takeScreenshot: sync-flow-05-sync-completado
+
+# 7. Assert final: pending count en 0.
+- assertVisible:
+    text: "0|Sin cambios|Sincronizado"
+
+# BUG / FIX TODO: si el backend no recibe push (verificable consultando
+# `SELECT count(*) FROM "Pedidos" WHERE creado_en > now() - interval '5 min'`
+# en Postgres), la pantalla mostrará "0" pero el server no tendrá el row.
+# Para confirmar end-to-end, este flow debería complementarse con un
+# script post-run que haga query SQL. Maestro no ejecuta queries DB
+# nativamente — agregar como step en CI (psql + grep folio).

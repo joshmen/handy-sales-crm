@@ -1,0 +1,394 @@
+appId: host.exp.exponent
+name: "Vendedor: Rutas con multiples paradas + cierre del dia"
+tags:
+  - functional
+  - vendedor
+  - ruta
+  - paradas-multiples
+  - cierre
+  - extras
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: rutas-multiples-paradas-cierre
+#
+# Objetivo de cobertura REAL:
+#   Verificar que un vendedor puede recorrer multiples paradas de la
+#   ruta del dia y llegar al "Resumen del Dia" (cierre), validando
+#   que el progreso multi-stop se calcula correctamente.
+#
+# Flujo (todos los pasos son tap/inputText reales, no solo screenshot):
+#   1) Aceptar ruta si esta en estado Planificada / PendienteAceptar
+#      -> dispara rutasApi.aceptar() + rutasApi.iniciar() + startRoute local
+#   2) Validar que aparecen MULTIPLES paradas en la lista
+#      (ProgressCard "Paradas atendidas X / TOTAL" con TOTAL >= 2)
+#   3) Tap parada 1 -> auto-arrive (stop.arrive() en useEffect mount)
+#      -> badge "En Progreso" + acciones disponibles
+#   4) Back -> tap parada 2 -> verificar segundo detalle se abre OK
+#   5) Back a la lista -> verificar contador de progreso visible
+#   6) Navegar a Resumen del Dia (tab Mas) -> verificar cierre con
+#      Efectividad %, KPIs (Visitas / Completadas / Pendientes) y
+#      "Paradas completadas X / TOTAL" reflejando la ruta multi-stop
+#
+# Strings y screens validados contra:
+#   apps/mobile-app/app/(tabs)/ruta/index.tsx           (lista paradas)
+#   apps/mobile-app/app/(tabs)/ruta/parada/[detalleId].tsx (detalle)
+#   apps/mobile-app/app/(tabs)/ruta/resumen.tsx         (cierre del dia)
+#
+# Endpoints backend involucrados:
+#   POST  /api/rutas/{id}/aceptar          (0|4 -> 5)
+#   POST  /api/rutas/{id}/iniciar          (5|0 -> 1 En Progreso)
+#   PATCH /api/rutas/detalles/{id}/llegada (parada Pendiente -> En Progreso)
+#   GET   /api/rutas/hoy                   (carga ruta del dia)
+#   GET   /api/visitas/resumen             (alimenta resumen.tsx)
+#
+# Pre-condicion:
+#   Ejecutar antes: apps/mobile-app/.maestro/auth/01-login-vendedor.yaml
+#   Seed: tenant Jeyma con ruta del dia asignada al vendedor1@jeyma.com
+#   con al menos 2 paradas (idealmente Pendientes).
+#
+# PROD BUG / FIX TODO:
+#   - Si el emulador no tiene GPS mock activado, location es null y
+#     stop.arrive() no transiciona la parada a En Progreso. El test
+#     contempla ambos estados (En Progreso | Pendiente) con optional.
+#   - El boton de "Finalizar Ruta" / "Cerrar Ruta" no existe como tal:
+#     la ruta cierra automaticamente cuando todas las paradas pasan a
+#     Completada/Omitida. El "cierre" del dia desde UI vendedor pasa
+#     por el Resumen del Dia (resumen.tsx). Si en futuro se agrega un
+#     boton explicito "Finalizar Ruta" actualizar este test.
+# =================================================================
+
+launchApp:
+  clearState: false
+
+# -----------------------------------------------------------------
+# 0) Dismiss modales opcionales — privacidad, permisos GPS, banners.
+# -----------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------
+# 1) Esperar dashboard "Hoy" hidratado tras login y limpiar stack.
+# -----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- takeScreenshot: rutas-multi-00-dashboard
+
+# -----------------------------------------------------------------
+# 2) Navegar al tab Ruta (visible en tab bar VENDEDOR).
+# -----------------------------------------------------------------
+- assertVisible: "Ruta"
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del D"
+    timeout: 15000
+
+- takeScreenshot: rutas-multi-01-ruta-del-dia
+
+# -----------------------------------------------------------------
+# 3) Aceptar ruta si esta Planificada / PendienteAceptar.
+#    Dispara rutasApi.aceptar + rutasApi.iniciar + startRoute local.
+# -----------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Nueva ruta asignada"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - extendedWaitUntil:
+          visible: "Ruta aceptada"
+          timeout: 15000
+      - takeScreenshot: rutas-multi-02-ruta-aceptada
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------
+# 4) Validar progreso multi-paradas visible.
+#    "Paradas atendidas" es el label del ProgressCard. Para cobertura
+#    real de "multiples paradas" debe haber al menos 2 stops listados.
+# -----------------------------------------------------------------
+- assertVisible: "Paradas atendidas"
+
+# Pendiente aparece al menos una vez en la lista de stops
+- assertVisible:
+    text: "Pendiente"
+
+- takeScreenshot: rutas-multi-03-lista-multi-paradas
+
+# -----------------------------------------------------------------
+# 5) Visitar PARADA 1 — tap, esperar detalle, verificar acciones.
+#    El accessibilityLabel del stopItem es:
+#      "Parada {orden}: {cliente}, Pendiente"
+# -----------------------------------------------------------------
+- tapOn:
+    text: "Parada 1:.*"
+    optional: true
+
+# Fallback: si la regex de accessibilityLabel no matchea (TalkBack off
+# o Maestro mapeando texto visible), tap por el primer "Pendiente".
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - tapOn:
+          text: "Pendiente"
+          index: 0
+
+- waitForAnimationToEnd
+
+# Esperar pantalla de Parada — header "Parada #N"
+- extendedWaitUntil:
+    visible: "Parada #"
+    timeout: 15000
+
+- takeScreenshot: rutas-multi-04-parada-1-detalle
+
+# Verificar info del cliente cargada
+- assertVisible:
+    text: "Cliente"
+
+# Quick actions disponibles para parada activa (preventa o delivery)
+- assertVisible:
+    text: "Nuevo Pedido|Confirmar Entrega"
+
+# PROD BUG / FIX TODO: el badge "En Progreso" depende del auto-arrive
+# (GPS). En emulador sin GPS mock puede quedarse en "Pendiente".
+- assertVisible:
+    text: "En Progreso|Pendiente"
+    optional: true
+
+- takeScreenshot: rutas-multi-05-parada-1-en-progreso
+
+# Validar que NO hay error toast / crash
+- assertNotVisible: "Parada no encontrada"
+- assertNotVisible: "No se pudo cargar"
+- assertNotVisible: "Failed"
+
+# -----------------------------------------------------------------
+# 6) Back a la lista de paradas (header back o gesture).
+# -----------------------------------------------------------------
+- tapOn:
+    id: "back-button"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Parada #"
+    commands:
+      - back
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del D"
+    timeout: 10000
+
+- takeScreenshot: rutas-multi-06-back-a-lista
+
+# -----------------------------------------------------------------
+# 7) Visitar PARADA 2 — verificar que la lista soporta multi-stop.
+#    Esta es la cobertura clave del caso "rutas-multiples-paradas":
+#    si solo hubiera 1 parada, la segunda navegacion fallaria.
+# -----------------------------------------------------------------
+- tapOn:
+    text: "Parada 2:.*"
+    optional: true
+
+# Fallback: si no hay accessibilityLabel match, tap segundo "Pendiente"
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - tapOn:
+          text: "Pendiente"
+          index: 1
+
+- waitForAnimationToEnd
+
+# Esperar detalle de la SEGUNDA parada
+- extendedWaitUntil:
+    visible: "Parada #"
+    timeout: 15000
+
+- takeScreenshot: rutas-multi-07-parada-2-detalle
+
+# Validar que es una parada distinta (debe seguir cargando "Cliente")
+- assertVisible:
+    text: "Cliente"
+
+# Quick actions deben seguir disponibles
+- assertVisible:
+    text: "Nuevo Pedido|Confirmar Entrega"
+
+# -----------------------------------------------------------------
+# 8) Back a la lista — validar que el progreso se reflejo
+#    (al menos una transicion Pendiente -> En Progreso si GPS OK).
+# -----------------------------------------------------------------
+- tapOn:
+    id: "back-button"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Parada #"
+    commands:
+      - back
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del D"
+    timeout: 10000
+
+- takeScreenshot: rutas-multi-08-progreso-multi-stop
+
+# La lista debe seguir mostrando contador de paradas
+- assertVisible: "Paradas atendidas"
+
+# -----------------------------------------------------------------
+# 9) Navegar al CIERRE del dia — Resumen del Dia.
+#    Esta pantalla esta en tab "Mas" (no es ruta directa desde la
+#    lista de paradas). Es el cierre efectivo de la jornada/ruta
+#    desde la UI vendedor.
+# -----------------------------------------------------------------
+- tapOn:
+    id: "tab-mas"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Mas"
+    commands:
+      - tapOn:
+          text: "Mas|Más"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Resumen del D"
+    timeout: 15000
+
+- takeScreenshot: rutas-multi-09-mas-menu
+
+- tapOn:
+    text: "Resumen del D"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------------------------
+# 10) Validar cierre del dia — Resumen.
+#     resumen.tsx muestra:
+#       - "Resumen del Dia" (header)
+#       - "Efectividad del Dia" + %
+#       - KPIs: Visitas / Completadas / Con Venta / Pendientes
+#       - Desglose: completadas, con venta, canceladas, tasa conversion
+#       - Si hay ruta: "Paradas completadas X/TOTAL"
+# -----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Resumen del D"
+    timeout: 15000
+
+- assertVisible: "Efectividad del D"
+- assertVisible: "Visitas"
+- assertVisible: "Completadas"
+- assertVisible: "Pendientes"
+- assertVisible: "Desglose"
+
+# Tasa de conversion es parte del cierre KPI
+- assertVisible:
+    text: "Tasa de conversi"
+    optional: true
+
+# Si la ruta cargo OK, debe mostrar "Paradas completadas X/TOTAL"
+# (resumen.tsx linea 96-99). Esto valida el cierre multi-stop.
+- assertVisible:
+    text: "Paradas completadas"
+    optional: true
+
+- takeScreenshot: rutas-multi-10-resumen-cierre
+
+# Validar boton de cierre
+- assertVisible: "Volver al Inicio"
+
+# -----------------------------------------------------------------
+# 11) Tap "Volver al Inicio" — cierra el flujo de la jornada/ruta.
+# -----------------------------------------------------------------
+- tapOn: "Volver al Inicio"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 15000
+
+- takeScreenshot: rutas-multi-11-vuelta-inicio
+
+# -----------------------------------------------------------------
+# 12) Verificar que la sesion vendedor sigue activa (tab bar intacta).
+# -----------------------------------------------------------------
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Ruta"
+- assertVisible: "Hoy"
+
+- takeScreenshot: rutas-multi-12-flow-completo
+
+# -----------------------------------------------------------------
+# 13) Validar que NO hubo crash / error global durante el flow
+#     multi-stop + cierre.
+# -----------------------------------------------------------------
+- assertNotVisible: "Algo salio mal"
+- assertNotVisible: "iniciaste sesion"
+- assertNotVisible: "Sesion expirada"
+- assertNotVisible: "Failed to fetch"

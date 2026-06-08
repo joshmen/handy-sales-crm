@@ -1,9 +1,12 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentValidation;
 using HandySuites.Application.Notifications.Interfaces;
 using HandySuites.Application.Rutas.DTOs;
 using HandySuites.Application.Rutas.Services;
 using HandySuites.Domain.Entities;
+using HandySuites.Domain.Notifications;
+using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,169 +14,135 @@ namespace HandySuites.Api.Endpoints;
 
 public static class RutaVendedorEndpoints
 {
-    // Marker para ILogger genérico
-    private sealed class RutaVendedorEndpointsLog { }
+    // === H-2 Outbox MVP (2026-06-07) ===
+    //
+    // The four `Notify*` / `Emit*` helpers below used to run inline via
+    // `_ = Task.Run(async () => { ... })`. That pattern lost notifications
+    // silently if the API crashed mid-dispatch (no durability) and there
+    // was no retry on transient HTTP failures.
+    //
+    // Now each helper just enqueues a row in `notification_outbox` via
+    // IOutboxService; the OutboxProcessor BackgroundService polls every
+    // 30s and dispatches with exponential backoff (1m/5m/30m, 3 retries).
+    //
+    // IMPORTANT: the enqueue requires `db.SaveChangesAsync()` to commit
+    // the row. The endpoint handlers that call these helpers DO save —
+    // either implicitly because the underlying service write already
+    // SaveChanges'd (the outbox row joins the next pending change), or
+    // we add an explicit SaveChanges at the call site. Each helper now
+    // takes the DbContext alongside the outbox service so the call site
+    // can be ergonomic — one helper call, no extra ceremony.
 
-    /// <summary>
-    /// Fire-and-forget push al vendedor cuando admin cancela su ruta activa.
-    /// Reportado 2026-04-27 — sin esto, el vendedor seguiría viendo la ruta como
-    /// activa hasta el próximo sync manual y podría intentar visitar paradas
-    /// que ya no aplican.
-    /// </summary>
-    private static void NotifyMobileRouteCancelled(
-        IHttpClientFactory factory,
+    private const string DataKeyType = "type";
+    private const string DataKeyRutaId = "rutaId";
+    private const string DataKeyPedidoId = "pedidoId";
+
+    private static async Task EnqueueMobileRouteCancelledAsync(
+        IOutboxService outbox,
+        HandySuitesDbContext db,
         int tenantId,
         int vendedorId,
         int rutaId,
         string? motivo,
-        ILogger logger)
+        CancellationToken ct)
     {
-        _ = Task.Run(async () =>
-        {
-            try
+        await outbox.EnqueueAsync(tenantId, NotificationOutboxType.MobileRouteCancelled,
+            new MobilePushPayload
             {
-                var client = factory.CreateClient("MobileApi");
-                var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                TenantId = tenantId,
+                UserIds = new[] { vendedorId },
+                Title = "Ruta cancelada",
+                Body = string.IsNullOrWhiteSpace(motivo)
+                    ? "Tu ruta de hoy fue cancelada por el administrador."
+                    : $"Tu ruta de hoy fue cancelada: {motivo}",
+                Data = new Dictionary<string, string>
                 {
-                    tenantId,
-                    userIds = new[] { vendedorId },
-                    title = "Ruta cancelada",
-                    body = string.IsNullOrWhiteSpace(motivo)
-                        ? "Tu ruta de hoy fue cancelada por el administrador."
-                        : $"Tu ruta de hoy fue cancelada: {motivo}",
-                    data = new Dictionary<string, string>
-                    {
-                        ["type"] = "route.cancelled",
-                        ["rutaId"] = rutaId.ToString(),
-                    }
-                });
-                if (!resp.IsSuccessStatusCode)
-                    logger.LogWarning("Mobile API push-notify (route cancelled) returned {Status} for ruta {RutaId}", resp.StatusCode, rutaId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to notify Mobile API of route cancellation ruta {RutaId}", rutaId);
-            }
-        });
+                    [DataKeyType] = "route.cancelled",
+                    [DataKeyRutaId] = rutaId.ToString(),
+                }
+            }, ct);
+        await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>
-    /// Fire-and-forget push notification al vendedor cuando se le asignan items
-    /// a una ruta YA ACTIVA (CargaAceptada o EnProgreso). Antes el admin podía
-    /// asignar pedidos a una ruta corriendo y el vendedor no se enteraba hasta
-    /// el siguiente sync manual. Reportado 2026-04-27.
-    /// </summary>
-    private static void NotifyMobileRouteAssignment(
-        IHttpClientFactory factory,
+    private static async Task EnqueueMobileRouteAssignmentAsync(
+        IOutboxService outbox,
+        HandySuitesDbContext db,
         int tenantId,
         int vendedorId,
         int rutaId,
         int pedidoId,
-        ILogger logger)
+        CancellationToken ct)
     {
-        _ = Task.Run(async () =>
-        {
-            try
+        await outbox.EnqueueAsync(tenantId, NotificationOutboxType.MobileRouteAssignment,
+            new MobilePushPayload
             {
-                var client = factory.CreateClient("MobileApi");
-                var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                TenantId = tenantId,
+                UserIds = new[] { vendedorId },
+                Title = "Nuevo pedido asignado a tu ruta",
+                Body = "Se agregó un pedido a tu ruta en curso. Sincroniza para verlo.",
+                Data = new Dictionary<string, string>
                 {
-                    tenantId,
-                    userIds = new[] { vendedorId },
-                    title = "Nuevo pedido asignado a tu ruta",
-                    body = $"Se agregó un pedido a tu ruta en curso. Sincroniza para verlo.",
-                    data = new Dictionary<string, string>
-                    {
-                        ["type"] = "route.pedido_assigned",
-                        ["rutaId"] = rutaId.ToString(),
-                        ["pedidoId"] = pedidoId.ToString(),
-                    }
-                });
-                if (!resp.IsSuccessStatusCode)
-                    logger.LogWarning("Mobile API push-notify returned {Status} for ruta {RutaId} pedido {PedidoId}", resp.StatusCode, rutaId, pedidoId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to notify Mobile API of route assignment ruta {RutaId} pedido {PedidoId}", rutaId, pedidoId);
-            }
-        });
+                    [DataKeyType] = "route.pedido_assigned",
+                    [DataKeyRutaId] = rutaId.ToString(),
+                    [DataKeyPedidoId] = pedidoId.ToString(),
+                }
+            }, ct);
+        await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>
-    /// Emite evento SignalR `RutaAssigned` al vendedor para que el cliente
-    /// mobile dispare un sync inmediato de WatermelonDB y la pantalla "Hoy"
-    /// actualice sin pull. Complementa el push nativo: si el cliente está
-    /// online via SignalR, se entera al instante; si solo recibe el push
-    /// nativo, también dispara sync (vía usePushNotifications.ts).
-    /// Reportado 2026-05-05: vendedor2 no veía la nueva ruta tras admin asignar.
-    /// </summary>
-    private static void EmitRouteAssignedSignalR(
-        IRealtimePushService? realtimePush,
+    private static async Task EnqueueRouteAssignedSignalRAsync(
+        IOutboxService outbox,
+        HandySuitesDbContext db,
+        int tenantId,
         int vendedorId,
         int rutaId,
-        ILogger logger)
+        CancellationToken ct)
     {
-        if (realtimePush is null) return;
-        _ = Task.Run(async () =>
+        // SignalR client originally received `new { rutaId, usuarioId }` — we
+        // preserve that shape by pre-serializing it as the event body JSON;
+        // OutboxProcessor re-hydrates into a JsonElement on dispatch.
+        var eventBody = JsonSerializer.Serialize(new
         {
-            try
-            {
-                await realtimePush.SendEventToUserAsync(vendedorId, "RutaAssigned",
-                    new { rutaId, usuarioId = vendedorId });
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to emit SignalR RutaAssigned to vendedor {VendedorId} ruta {RutaId}", vendedorId, rutaId);
-            }
+            rutaId,
+            usuarioId = vendedorId,
         });
+        await outbox.EnqueueAsync(tenantId, NotificationOutboxType.RouteAssignedSignalR,
+            new SignalRUserEventPayload
+            {
+                UserId = vendedorId,
+                EventName = "RutaAssigned",
+                EventBodyJson = eventBody,
+            }, ct);
+        await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>
-    /// Fire-and-forget push notification al vendedor cuando admin envia ruta a carga.
-    /// Antes EnviarACargaAsync solo cambiaba estado de ruta y NO avisaba al vendedor
-    /// (reportado 2026-04-27). Ahora le llega push con resumen completo.
-    /// </summary>
-    private static void NotifyMobileRouteSentToLoad(
-        IHttpClientFactory factory,
+    private static async Task EnqueueMobileRouteSentToLoadAsync(
+        IOutboxService outbox,
+        HandySuitesDbContext db,
         int tenantId,
         RutaVendedorService.EnviarACargaResumen resumen,
-        ILogger logger)
+        CancellationToken ct)
     {
         if (!resumen.VendedorId.HasValue) return;
-        _ = Task.Run(async () =>
-        {
-            try
+        // Cuerpo del push: paradas + pedidos + 2 totales separados (igual que antes).
+        var body = $"Ruta: {resumen.RutaNombre}. {resumen.TotalParadas} parada{(resumen.TotalParadas == 1 ? "" : "s")}, "
+                 + $"{resumen.TotalPedidos} pedido{(resumen.TotalPedidos == 1 ? "" : "s")}. "
+                 + $"Pedidos: ${resumen.MontoTotalEntrega:0.00} | Carga: ${resumen.MontoTotalCarga:0.00}. "
+                 + "Toca para revisar y aceptar.";
+        await outbox.EnqueueAsync(tenantId, NotificationOutboxType.MobileRouteSentToLoad,
+            new MobilePushPayload
             {
-                var client = factory.CreateClient("MobileApi");
-                // Cuerpo del push: paradas + pedidos + 2 totales separados.
-                // Pedidos = pre-asignados a clientes; Carga = productos sueltos
-                // para venta libre. Reportado 2026-05-05: el body solo mostraba
-                // MontoTotalEntrega ($0 cuando solo había carga) y confundía al
-                // vendedor sobre qué llevaba realmente.
-                var body = $"Ruta: {resumen.RutaNombre}. {resumen.TotalParadas} parada{(resumen.TotalParadas == 1 ? "" : "s")}, "
-                         + $"{resumen.TotalPedidos} pedido{(resumen.TotalPedidos == 1 ? "" : "s")}. "
-                         + $"Pedidos: ${resumen.MontoTotalEntrega:0.00} | Carga: ${resumen.MontoTotalCarga:0.00}. "
-                         + "Toca para revisar y aceptar.";
-                var resp = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                TenantId = tenantId,
+                UserIds = new[] { resumen.VendedorId.Value },
+                Title = "Nueva carga asignada",
+                Body = body,
+                Data = new Dictionary<string, string>
                 {
-                    tenantId,
-                    userIds = new[] { resumen.VendedorId.Value },
-                    title = "Nueva carga asignada",
-                    body,
-                    data = new Dictionary<string, string>
-                    {
-                        ["type"] = "route.published",
-                        ["rutaId"] = resumen.RutaId.ToString(),
-                    }
-                });
-                if (!resp.IsSuccessStatusCode)
-                    logger.LogWarning("Mobile API push-notify returned {Status} for send-to-load ruta {RutaId}", resp.StatusCode, resumen.RutaId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to notify Mobile API of send-to-load ruta {RutaId}", resumen.RutaId);
-            }
-        });
+                    [DataKeyType] = "route.published",
+                    [DataKeyRutaId] = resumen.RutaId.ToString(),
+                }
+            }, ct);
+        await db.SaveChangesAsync(ct);
     }
 
     public static void MapRutaVendedorEndpoints(this IEndpointRouteBuilder app)
@@ -292,8 +261,8 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
-            [FromServices] IRealtimePushService realtimePush,
-            [FromServices] ILogger<RutaVendedorEndpointsLog> rtLogger,
+            [FromServices] IOutboxService outbox,
+            [FromServices] HandySuitesDbContext outboxDb,
             [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var validation = await validator.ValidateAsync(dto);
@@ -327,8 +296,9 @@ public static class RutaVendedorEndpoints
                     }
                 }
                 catch { /* push failure should not block route creation */ }
-                // SignalR para sync inmediato en cliente mobile online.
-                EmitRouteAssignedSignalR(realtimePush, dto.UsuarioId, id, rtLogger);
+                // H-2 Outbox: SignalR para sync inmediato en cliente mobile online.
+                await EnqueueRouteAssignedSignalRAsync(outbox, outboxDb,
+                    tenantContext.TenantId, dto.UsuarioId, id, CancellationToken.None);
             }
 
             return Results.Created($"/rutas/{id}", new { id });
@@ -356,8 +326,8 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
-            [FromServices] IRealtimePushService realtimePush,
-            [FromServices] ILogger<RutaVendedorEndpointsLog> rtLogger,
+            [FromServices] IOutboxService outbox,
+            [FromServices] HandySuitesDbContext outboxDb,
             [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var rutaAntes = await servicio.ObtenerPorIdAsync(id);
@@ -395,8 +365,9 @@ public static class RutaVendedorEndpoints
                     });
                 }
                 catch { /* push failure should not block route update */ }
-                // SignalR sync inmediato si cliente está conectado.
-                EmitRouteAssignedSignalR(realtimePush, nuevoUsuarioId, id, rtLogger);
+                // H-2 Outbox: SignalR sync inmediato si cliente está conectado.
+                await EnqueueRouteAssignedSignalRAsync(outbox, outboxDb,
+                    tenantId, nuevoUsuarioId, id, CancellationToken.None);
             }
 
             return Results.NoContent();
@@ -466,20 +437,21 @@ public static class RutaVendedorEndpoints
             [FromBody] CancelarRutaDto? dto,
             HttpContext context,
             [FromServices] RutaVendedorService servicio,
-            [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
+            [FromServices] IOutboxService outbox,
+            [FromServices] HandySuitesDbContext outboxDb) =>
         {
             var (ok, estadoPrevio, vendedorId) = await servicio.CancelarRutaDetalladoAsync(id, dto?.Motivo);
             if (!ok)
                 return Results.BadRequest(new { error = "No se pudo cancelar la ruta. Verifica que no esté completada o ya cancelada." });
 
-            // Push al vendedor si la ruta estaba activa — sin esto el vendedor seguiría
-            // viendo la ruta como activa hasta el próximo sync manual.
+            // H-2 Outbox: notifica al vendedor si la ruta estaba activa — sin esto
+            // el vendedor seguiría viendo la ruta como activa hasta el próximo sync manual.
             if ((estadoPrevio == EstadoRuta.CargaAceptada || estadoPrevio == EstadoRuta.EnProgreso)
                 && vendedorId.HasValue
                 && int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
             {
-                NotifyMobileRouteCancelled(httpClientFactory, tenantId, vendedorId.Value, id, dto?.Motivo, logger);
+                await EnqueueMobileRouteCancelledAsync(outbox, outboxDb,
+                    tenantId, vendedorId.Value, id, dto?.Motivo, CancellationToken.None);
             }
 
             return Results.Ok(new { mensaje = "Ruta cancelada" });
@@ -636,19 +608,20 @@ public static class RutaVendedorEndpoints
             AsignarPedidoRequest dto,
             HttpContext context,
             [FromServices] RutaVendedorService servicio,
-            [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
+            [FromServices] IOutboxService outbox,
+            [FromServices] HandySuitesDbContext outboxDb) =>
         {
             var (estado, vendedorId) = await servicio.AsignarPedidoAsync(id, dto.PedidoId);
 
-            // Si la ruta ya está activa (vendedor la aceptó o ya empezó) y tenemos
-            // tenantId + vendedor: dispara push fire-and-forget para que el mobile
-            // sepa que tiene un pedido nuevo sin esperar al pull manual.
+            // H-2 Outbox: si la ruta ya está activa (vendedor la aceptó o ya empezó)
+            // y tenemos tenantId + vendedor, encola un push durable. OutboxProcessor
+            // lo despacha en <=30s con reintentos en caso de falla transitoria.
             if ((estado == EstadoRuta.CargaAceptada || estado == EstadoRuta.EnProgreso)
                 && vendedorId.HasValue
                 && int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
             {
-                NotifyMobileRouteAssignment(httpClientFactory, tenantId, vendedorId.Value, id, dto.PedidoId, logger);
+                await EnqueueMobileRouteAssignmentAsync(outbox, outboxDb,
+                    tenantId, vendedorId.Value, id, dto.PedidoId, CancellationToken.None);
             }
 
             return Results.Ok(new { mensaje = "Pedido asignado" });
@@ -662,16 +635,17 @@ public static class RutaVendedorEndpoints
             AsignarPedidosBatchRequest dto,
             HttpContext context,
             [FromServices] RutaVendedorService servicio,
-            [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
+            [FromServices] IOutboxService outbox,
+            [FromServices] HandySuitesDbContext outboxDb) =>
         {
             if (dto.PedidoIds == null || dto.PedidoIds.Count == 0)
                 return Results.BadRequest(new { mensaje = "Debe enviar al menos un pedidoId" });
 
             var (resultado, estado, vendedorId) = await servicio.AsignarPedidosBatchAsync(id, dto.PedidoIds);
 
-            // Push solo por los pedidos que se asignaron exitosamente y solo si
-            // la ruta está activa. Mismo patrón que el endpoint single.
+            // H-2 Outbox: encola un push por cada pedido asignado exitosamente.
+            // Mismo patrón que el endpoint single — un solo SaveChanges al final
+            // por eficiencia.
             if ((estado == EstadoRuta.CargaAceptada || estado == EstadoRuta.EnProgreso)
                 && vendedorId.HasValue
                 && resultado.Asignados.Count > 0
@@ -679,8 +653,22 @@ public static class RutaVendedorEndpoints
             {
                 foreach (var pedidoIdAsignado in resultado.Asignados)
                 {
-                    NotifyMobileRouteAssignment(httpClientFactory, tenantId, vendedorId.Value, id, pedidoIdAsignado, logger);
+                    await outbox.EnqueueAsync(tenantId, NotificationOutboxType.MobileRouteAssignment,
+                        new MobilePushPayload
+                        {
+                            TenantId = tenantId,
+                            UserIds = new[] { vendedorId.Value },
+                            Title = "Nuevo pedido asignado a tu ruta",
+                            Body = "Se agregó un pedido a tu ruta en curso. Sincroniza para verlo.",
+                            Data = new Dictionary<string, string>
+                            {
+                                [DataKeyType] = "route.pedido_assigned",
+                                [DataKeyRutaId] = id.ToString(),
+                                [DataKeyPedidoId] = pedidoIdAsignado.ToString(),
+                            }
+                        }, CancellationToken.None);
                 }
+                await outboxDb.SaveChangesAsync(CancellationToken.None);
             }
 
             return Results.Ok(resultado);
@@ -722,20 +710,23 @@ public static class RutaVendedorEndpoints
             int id,
             HttpContext context,
             [FromServices] RutaVendedorService servicio,
-            [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IRealtimePushService realtimePush,
-            [FromServices] ILogger<RutaVendedorEndpointsLog> logger) =>
+            [FromServices] IOutboxService outbox,
+            [FromServices] HandySuitesDbContext outboxDb) =>
         {
             var resumen = await servicio.EnviarACargaAsync(id);
 
-            // Push fire-and-forget con resumen para el vendedor + SignalR
-            // event para que el cliente mobile actualice la pantalla "Hoy"
-            // sin pull cuando esté conectado.
+            // H-2 Outbox: push con resumen para el vendedor + SignalR event para
+            // que el cliente mobile actualice la pantalla "Hoy" sin pull cuando
+            // esté conectado. Ambos van por outbox — un solo SaveChanges al final.
             if (int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tenantId))
             {
-                NotifyMobileRouteSentToLoad(httpClientFactory, tenantId, resumen, logger);
+                await EnqueueMobileRouteSentToLoadAsync(outbox, outboxDb,
+                    tenantId, resumen, CancellationToken.None);
                 if (resumen.VendedorId.HasValue)
-                    EmitRouteAssignedSignalR(realtimePush, resumen.VendedorId.Value, resumen.RutaId, logger);
+                {
+                    await EnqueueRouteAssignedSignalRAsync(outbox, outboxDb,
+                        tenantId, resumen.VendedorId.Value, resumen.RutaId, CancellationToken.None);
+                }
             }
 
             return Results.Ok(new

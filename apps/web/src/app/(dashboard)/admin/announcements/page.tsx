@@ -702,7 +702,7 @@ export default function AnnouncementsPage() {
             <button
               onClick={handleCreate}
               disabled={creating || !form.titulo.trim() || !form.mensaje.trim()}
-              className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full h-10 bg-success hover:bg-success/90 text-success-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {creating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

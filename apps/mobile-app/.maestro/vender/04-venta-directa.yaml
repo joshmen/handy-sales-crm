@@ -1,0 +1,200 @@
+appId: host.exp.exponent
+name: "Vender > Venta Directa (cobro inmediato contado) - vendedor"
+---
+
+# ════════════════════════════════════════════════════════════
+# HOT-PATH VENDEDOR: Venta Directa.
+#
+# 01-flow-venta-acelerada.yaml solo cubre PREVENTA (tap "Preventa" en
+# bottom sheet). Este flow ejercita la rama VENTA DIRECTA:
+#   - El bottom sheet tipo venta tiene ambas opciones.
+#   - Venta Directa cobra en el momento (no incrementa saldo cliente).
+#   - Folio se genera y aparece en pantalla.
+#
+# Endpoint: POST /api/mobile/venta-directa (201 created).
+# Endpoint cobro: POST /api/mobile/cobros (200 asociado).
+#
+# PRE-REQ: sesión VENDEDOR activa (01-login-vendedor.yaml).
+# ════════════════════════════════════════════════════════════
+
+# 0. Dashboard listo.
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 1. Tab Vender.
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-01-hub
+
+# 2. FAB Nueva Venta.
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# 3. BottomSheet Tipo de Venta. Debe mostrar ambas opciones —
+#    si solo aparece una, hay regresión en el bottom sheet del rol VENDEDOR.
+- runFlow:
+    when:
+      visible: "Tipo de Venta"
+    commands:
+      - assertVisible: "Preventa"
+      - assertVisible: "Venta Directa"
+      - takeScreenshot: vd-vendedor-02-bottom-sheet
+      - tapOn: "Venta Directa"
+      - waitForAnimationToEnd
+
+# Si modoVentaDefault=VentaDirecta el sheet no aparece → se salta directo.
+
+# 4. Pantalla cliente.
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-03-clientes
+
+# Permisos GPS (Android) — el screen puede pedirlos para "Cercanos a ti".
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+# Tap primer cliente disponible.
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# 5. Productos — agregar 1.
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-04-productos
+
+- tapOn:
+    text: "+"
+- waitForAnimationToEnd
+
+- takeScreenshot: vd-vendedor-05-producto-agregado
+
+# 6. Revisar pedido.
+- runFlow:
+    when:
+      visible: "Revisar"
+    commands:
+      - tapOn: "Revisar"
+- runFlow:
+    when:
+      visible: "Revisar pedido"
+    commands:
+      - tapOn: "Revisar pedido"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Subtotal|Total"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-06-revision
+
+# 7. Método pago Efectivo (contado).
+- assertVisible: "Efectivo"
+- tapOn: "Efectivo"
+- waitForAnimationToEnd
+
+# 8. Cobrar y Entregar.
+- runFlow:
+    when:
+      visible: "Cobrar y entregar"
+    commands:
+      - tapOn: "Cobrar y entregar"
+- runFlow:
+    when:
+      visible: "Cobrar y Entregar"
+    commands:
+      - tapOn: "Cobrar y Entregar"
+
+- waitForAnimationToEnd
+
+# Modal confirmación — Venta Directa usa "COBRAR".
+- runFlow:
+    when:
+      visible: "COBRAR"
+    commands:
+      - tapOn: "COBRAR"
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+
+- waitForAnimationToEnd
+
+# 9. Pantalla éxito Venta Completada.
+- extendedWaitUntil:
+    visible: "Venta Completada"
+    timeout: 20000
+
+- assertVisible: "Venta Completada"
+
+# 10. Verificar folio visible — la API responde con un folio numérico/string.
+#     Buscamos pattern "Folio" o "Pedido #" — al menos uno debe estar.
+- assertVisible:
+    text: "Folio|Pedido|#"
+    optional: true
+
+- takeScreenshot: vd-vendedor-07-venta-completada
+
+# 11. Verificar que NO se cobró a crédito — la pantalla de Venta Directa
+#     no muestra "Saldo pendiente" ni "Por cobrar" (eso es Preventa).
+- assertNotVisible: "Saldo pendiente"
+- assertNotVisible: "Por cobrar"
+
+# BUG / FIX TODO: validar server-side que UbicacionesVendedor no creó
+# un row de "crédito" — requiere query SQL externa. Aquí solo cubrimos
+# la UI. Complementar con script post-run que valide:
+#   SELECT estado FROM "Pedidos" WHERE folio = '<folio>'
+# debe ser 'PAGADO' (no 'PENDIENTE_PAGO').
+
+# 12. Volver al listado.
+- runFlow:
+    when:
+      visible: "Listo"
+    commands:
+      - tapOn: "Listo"
+- runFlow:
+    when:
+      visible: "Volver al inicio"
+    commands:
+      - tapOn: "Volver al inicio"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-08-listado-final

@@ -1,0 +1,334 @@
+appId: host.exp.exponent
+name: "Supervisor: sync offline-first (pull/push scoping)"
+---
+# ============================================================
+# MODULO: MobileSyncEndpoints — SUPERVISOR push/pull semantics
+# Inventario: HIGH gap #2
+# Backend: POST /api/mobile/sync/pull + /api/mobile/sync/push
+# Sprint correctivo 2026-06-06
+#
+# Hipotesis bajo prueba:
+#   El SUPERVISOR ve datos de equipo en las pantallas server-side
+#   (Equipo / Vender / Cobrar) PERO su WatermelonDB local SOLO debe
+#   contener su propia actividad de campo (sus clientes, sus pedidos,
+#   sus cobros). Pull NO debe traer datos de vendedores subordinados.
+#
+# Riesgos cubiertos:
+#   - Inflar payload de pull con datos del equipo
+#   - Cross-rol leak en DB local (offline-first leak)
+#   - Romper sync push del supervisor (su actividad propia)
+#   - Romper indicador de "ultima sincronizacion"
+#
+# Reusa fixtures: supervisor@jeyma.com / test123
+# Patron alineado con suite-sync-forzado.yaml (extendido con scope check).
+#
+# COMPLEMENTO SERVER-SIDE (no en este YAML, documentado para Codex):
+#   curl -X POST http://localhost:1050/api/mobile/sync/pull \
+#     -H "Authorization: Bearer <JWT supervisor@jeyma.com>" \
+#     -H "Content-Type: application/json" \
+#     -d '{"lastPulledAt": 0}'
+#   Asserts esperados sobre el response:
+#     - response.changes.clientes.created[].vendedorId == supervisor.id
+#     - response.changes.pedidos.created[].vendedorId == supervisor.id
+#     - response.changes.cobros.created[].vendedorId == supervisor.id
+#     - NINGUN registro creado por Vendedor 1 Jeyma (subordinado)
+#   BUG / FIX TODO: si pull devuelve registros con vendedorId != supervisor.id,
+#   el filtro de scoping de MobileSyncEndpoints esta roto. Documentar y abrir
+#   ticket — NO modificar backend desde este test.
+# ============================================================
+
+- launchApp:
+    clearState: true
+
+# ---- Aviso de Privacidad opcional ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login SUPERVISOR ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "supervisor@jeyma.com"
+
+- pressKey: "TAB"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: supervisor-sync-01-login
+
+# ---- FASE 2: Consents / permisos ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# ---- FASE 3: Dashboard SUPERVISOR loaded ----
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 30000
+
+- takeScreenshot: supervisor-sync-02-dashboard
+
+# ---- FASE 4: Navegar a Mas > Sincronizacion ----
+
+- tapOn:
+    text: "Más"
+    optional: true
+
+- runFlow:
+    when:
+      notVisible: "Sincronización"
+    commands:
+      - tapOn:
+          text: "Mas"
+          optional: true
+
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 30000
+
+- takeScreenshot: supervisor-sync-03-menu-mas
+
+- tapOn: "Sincronización"
+
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 30000
+
+# ---- FASE 5: Assertions de estructura de la pantalla ----
+
+- assertVisible: "Sincronización"
+- assertVisible: "ESTADO"
+- assertVisible: "DETALLES"
+- assertVisible: "Pendientes de sincronizar"
+
+- takeScreenshot: supervisor-sync-04-pantalla-sync-cargada
+
+# ---- FASE 6: Estado de conexion (online esperado en E2E local) ----
+
+- runFlow:
+    when:
+      visible: "Conectado"
+    commands:
+      - assertVisible: "Conectado"
+      - assertVisible: "Los datos se sincronizan automáticamente"
+      - takeScreenshot: supervisor-sync-05-conectado
+
+- runFlow:
+    when:
+      visible: "Sin conexión"
+    commands:
+      # Si esta offline en CI, el test no puede validar sync — solo dejamos
+      # screenshot de evidencia. BUG / FIX TODO: documentar requisito de red.
+      - assertVisible: "Sin conexión"
+      - takeScreenshot: supervisor-sync-05-sin-conexion
+
+# ---- FASE 7: Validar estado idle inicial del SyncStatusCard ----
+
+- runFlow:
+    when:
+      visible: "Listo para sincronizar"
+    commands:
+      - assertVisible: "Listo para sincronizar"
+      - takeScreenshot: supervisor-sync-06-idle
+
+# ---- FASE 8: Trigger sync forzado ----
+
+- runFlow:
+    when:
+      visible: "Sincronizar ahora"
+    commands:
+      - tapOn: "Sincronizar ahora"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-sync-07-tras-tap
+
+# ---- FASE 9: Estado syncing transitorio ----
+
+- runFlow:
+    when:
+      visible: "Sincronizando"
+    commands:
+      - takeScreenshot: supervisor-sync-08-syncing
+      - extendedWaitUntil:
+          notVisible: "Sincronizando..."
+          timeout: 45000
+
+# ---- FASE 10: Verificar terminacion exitosa ----
+
+- runFlow:
+    when:
+      visible: "¡Sincronizado!"
+    commands:
+      - assertVisible: "¡Sincronizado!"
+      - takeScreenshot: supervisor-sync-09-success
+
+- runFlow:
+    when:
+      visible: "Sincronización completada"
+    commands:
+      - assertVisible: "Sincronización completada"
+      - takeScreenshot: supervisor-sync-09-success-alt
+
+# ---- FASE 11: Manejo de error transient (no esperado, pero capturado) ----
+
+- runFlow:
+    when:
+      visible: "Reintentando sincronización"
+    commands:
+      - assertVisible: "Reintentando sincronización"
+      - takeScreenshot: supervisor-sync-10-error-transient
+      # BUG / FIX TODO: si SUPERVISOR cae en retry constante, revisar payload
+      # de pull con vendedorId scoping en MobileSyncEndpoints.
+
+- runFlow:
+    when:
+      visible: "Tu sesión expiró"
+    commands:
+      - assertVisible: "Tu sesión expiró"
+      - takeScreenshot: supervisor-sync-11-error-auth
+      # BUG / FIX TODO: SUPERVISOR no deberia perder sesion durante sync.
+
+# ---- FASE 12: Detalles — ultima sincronizacion + pendientes ----
+
+- assertVisible: "DETALLES"
+
+- runFlow:
+    when:
+      visible: "Última sincronización"
+    commands:
+      - assertVisible: "Última sincronización"
+      - takeScreenshot: supervisor-sync-12-ultima-sync
+
+- assertVisible: "registros"
+
+# ---- FASE 13: Validar offline-first scoping (lado mobile) ----
+# Sub-validacion visual: contador de "Pendientes de sincronizar"
+# debe corresponder SOLO a actividad propia del supervisor.
+# (La validacion server-side del payload se hace via curl en complemento.)
+
+- scroll
+- takeScreenshot: supervisor-sync-13-detalles-scroll
+
+# ---- FASE 14: Link a Restaurar datos (offline-first safety net) ----
+
+- runFlow:
+    when:
+      visible: "Problemas con tus datos?"
+    commands:
+      - assertVisible: "Problemas con tus datos?"
+      - takeScreenshot: supervisor-sync-14-link-restaurar
+      - tapOn: "Problemas con tus datos?"
+      - extendedWaitUntil:
+          visible: "Restaurar"
+          timeout: 30000
+      - takeScreenshot: supervisor-sync-15-restaurar-screen
+      - back
+      - extendedWaitUntil:
+          visible: "ESTADO"
+          timeout: 30000
+
+# ---- FASE 15: Cross-check — volver a Equipo y confirmar que datos de
+#                 vendedores subordinados SIGUEN visibles via server-side ----
+# (Esto prueba que el scoping de la pantalla SUPERVISOR es independiente
+#  de la DB local: pull no trajo esos datos, pero la UI los muestra desde API.)
+
+- runFlow:
+    when:
+      visible: "Volver"
+    commands:
+      - tapOn:
+          id: "Volver"
+          optional: true
+
+- tapOn: "Equipo"
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+- assertVisible: "Vendedor 1 Jeyma"
+- takeScreenshot: supervisor-sync-16-equipo-server-side-ok
+
+# ---- FASE 16: Logout limpio ----
+
+- tapOn:
+    text: "Más"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: supervisor-sync-17-logout

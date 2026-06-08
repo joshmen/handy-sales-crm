@@ -1,0 +1,205 @@
+appId: host.exp.exponent
+name: admin-mobile-dashboard-team-flow
+---
+# ============================================================
+# MODULO: ADMIN mobile — dashboard equipo + supervisores + top vendedores
+# Prioridad: HIGH
+# Sprint correctivo 2026-06-06 — gap matriz cross-role
+# Asume: app instalada en Expo Go + API local en :1050
+# Cubre:
+#   1. Login con admin@jeyma.com / test123
+#   2. Dashboard ADMIN diferenciado (KPIs equipo + secciones)
+#   3. Tab Equipo (lista vendedores reportados)
+#   4. Tab Mapa (vista equipo)
+#   5. Configuracion ADMIN (datos empresa)
+#   6. Logout
+# ============================================================
+
+# ---- FASE 0: Force open Expo Go via deeplink ----
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: admin-01-login-submitted
+
+# ---- FASE 2: Manejar consent / permisos opcionales ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+# ---- FASE 3: Validar dashboard ADMIN diferenciado ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: admin-02-dashboard-loaded
+
+# Saludo Administrador
+- assertVisible:
+    text: "Administrador"
+
+# KPIs ADMIN (deberian incluir contador de Vendedores)
+- assertVisible:
+    text: "Vendedores"
+
+# Sección SUPERVISORES debe estar visible para ADMIN
+- runFlow:
+    when:
+      visible:
+        text: "SUPERVISORES"
+    commands:
+      - takeScreenshot: admin-03-seccion-supervisores
+
+# Sección TOP VENDEDORES debe estar visible
+- runFlow:
+    when:
+      visible:
+        text: "TOP VENDEDORES"
+    commands:
+      - takeScreenshot: admin-04-seccion-top-vendedores
+
+# ---- FASE 4: Acciones rapidas ADMIN (Equipo + Mapa) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Equipo"
+    commands:
+      - tapOn:
+          text: "Equipo"
+      - extendedWaitUntil:
+          visible:
+            text: "Equipo"
+          timeout: 20000
+      - takeScreenshot: admin-05-equipo-screen
+
+- runFlow:
+    when:
+      visible:
+        text: "Hoy"
+    commands:
+      - tapOn:
+          text: "Hoy"
+
+# ---- FASE 5: Tab Mapa (vista equipo) ----
+
+- tapOn:
+    text: "Mapa"
+- extendedWaitUntil:
+    visible:
+      text: "Mapa"
+    timeout: 30000
+- takeScreenshot: admin-06-mapa
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+# ---- FASE 6: Configuracion ADMIN ----
+
+- tapOn:
+    text: "Más"
+- extendedWaitUntil:
+    visible:
+      text: "Más"
+    timeout: 20000
+- takeScreenshot: admin-07-mas-menu
+
+- runFlow:
+    when:
+      visible:
+        text: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - extendedWaitUntil:
+          visible:
+            text: "Configuración"
+          timeout: 20000
+      - takeScreenshot: admin-08-configuracion
+
+# ---- FASE 7: Logout ----
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: admin-09-logout-success

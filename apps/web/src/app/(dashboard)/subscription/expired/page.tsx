@@ -16,6 +16,7 @@ import { subscriptionService } from '@/services/api/subscriptions';
 import type { SubscriptionPlan, SubscriptionStatus } from '@/types/subscription';
 import { useTranslations } from 'next-intl';
 import { useFormatters } from '@/hooks/useFormatters';
+import { getSupportContactInfo, hasAnyContactConfigured } from '@/lib/contactInfo';
 
 export default function SubscriptionExpiredPage() {
   const te = useTranslations('subscription.expired');
@@ -190,32 +191,66 @@ export default function SubscriptionExpiredPage() {
           <h3 className="text-lg font-bold mb-5 text-center">
             {te('needHelp')}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="p-3 bg-blue-50 rounded-full inline-block mb-3">
-                <Phone className="h-5 w-5 text-blue-600" />
+          {(() => {
+            // Sprint pre-prod #24 audit 2026-06-06: antes habia
+            // `+52 555 123 4567` placeholder hardcoded; cliente intentando
+            // renovar marcaba el numero falso. Ahora viene de
+            // NEXT_PUBLIC_SUPPORT_* (env vars). Si NO se configuran, el
+            // bloque entero se oculta para evitar mostrar contactos rotos.
+            const contact = getSupportContactInfo();
+            if (!hasAnyContactConfigured(contact)) return null;
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {contact.phone && (
+                  <div className="text-center">
+                    <div className="p-3 bg-blue-50 rounded-full inline-block mb-3">
+                      <Phone className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h4 className="font-medium text-sm mb-1">{te('callUs')}</h4>
+                    <a
+                      href={`tel:${contact.phone.replace(/\s/g, '')}`}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {contact.phone}
+                    </a>
+                    <p className="text-xs text-muted-foreground">{contact.hours ?? te('monFri')}</p>
+                  </div>
+                )}
+                {contact.whatsapp && (
+                  <div className="text-center">
+                    <div className="p-3 bg-green-50 rounded-full inline-block mb-3">
+                      <MessageSquare className="h-5 w-5 text-green-600" />
+                    </div>
+                    <h4 className="font-medium text-sm mb-1">WhatsApp</h4>
+                    <a
+                      href={`https://wa.me/${contact.whatsapp.replace(/[^\d]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {contact.whatsapp}
+                    </a>
+                    <p className="text-xs text-muted-foreground">{te('immediateResponse')}</p>
+                  </div>
+                )}
+                {contact.email && (
+                  <div className="text-center">
+                    <div className="p-3 bg-purple-50 rounded-full inline-block mb-3">
+                      <Mail className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <h4 className="font-medium text-sm mb-1">Email</h4>
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {contact.email}
+                    </a>
+                    <p className="text-xs text-muted-foreground">{te('responseTime')}</p>
+                  </div>
+                )}
               </div>
-              <h4 className="font-medium text-sm mb-1">{te('callUs')}</h4>
-              <p className="text-sm text-muted-foreground">+52 555 123 4567</p>
-              <p className="text-xs text-muted-foreground">{te('monFri')}</p>
-            </div>
-            <div className="text-center">
-              <div className="p-3 bg-green-50 rounded-full inline-block mb-3">
-                <MessageSquare className="h-5 w-5 text-green-600" />
-              </div>
-              <h4 className="font-medium text-sm mb-1">WhatsApp</h4>
-              <p className="text-sm text-muted-foreground">+52 555 123 4567</p>
-              <p className="text-xs text-muted-foreground">{te('immediateResponse')}</p>
-            </div>
-            <div className="text-center">
-              <div className="p-3 bg-purple-50 rounded-full inline-block mb-3">
-                <Mail className="h-5 w-5 text-purple-600" />
-              </div>
-              <h4 className="font-medium text-sm mb-1">Email</h4>
-              <p className="text-sm text-muted-foreground">ventas@handysuites.com</p>
-              <p className="text-xs text-muted-foreground">{te('responseTime')}</p>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* Payment Methods */}

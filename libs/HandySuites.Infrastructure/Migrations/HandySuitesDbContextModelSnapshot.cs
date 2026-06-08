@@ -1090,6 +1090,10 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("VendedorId");
 
+                    b.HasIndex("TenantId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
                     b.ToTable("Clientes");
                 });
 
@@ -1225,6 +1229,10 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "FechaProgramada");
 
+                    b.HasIndex("TenantId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
                     b.HasIndex("TenantId", "UsuarioId");
 
                     b.ToTable("ClienteVisitas", (string)null);
@@ -1324,9 +1332,17 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "FechaCobro");
 
+                    b.HasIndex("TenantId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
                     b.HasIndex("TenantId", "PedidoId");
 
                     b.HasIndex("TenantId", "UsuarioId");
+
+                    b.HasIndex("TenantId", "UsuarioId", "ActualizadoEn");
+
+                    b.HasIndex("TenantId", "UsuarioId", "CreadoEn");
 
                     b.ToTable("Cobros", (string)null);
                 });
@@ -2421,6 +2437,10 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("ProductoId");
 
+                    b.HasIndex("PedidoId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
                     b.HasIndex("PedidoId", "ProductoId");
 
                     b.ToTable("DetallePedidos", (string)null);
@@ -2675,7 +2695,9 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.HasIndex("TenantId", "MobileRecordId");
+                    b.HasIndex("TenantId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
 
                     b.HasIndex("TenantId", "PedidoId");
 
@@ -2868,9 +2890,15 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "FechaGasto");
 
-                    b.HasIndex("TenantId", "MobileRecordId");
+                    b.HasIndex("TenantId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
 
                     b.HasIndex("TenantId", "RutaId");
+
+                    b.HasIndex("TenantId", "UsuarioId", "ActualizadoEn");
+
+                    b.HasIndex("TenantId", "UsuarioId", "CreadoEn");
 
                     b.HasIndex("TenantId", "UsuarioId", "FechaGasto");
 
@@ -2961,6 +2989,11 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("actions_performed");
 
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("correlation_id");
+
                     b.Property<DateTime?>("EndedAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("ended_at");
@@ -3041,6 +3074,8 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnName("user_agent");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
 
                     b.HasIndex("StartedAt");
 
@@ -3900,10 +3935,18 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "FechaPedido");
 
+                    b.HasIndex("TenantId", "MobileRecordId")
+                        .IsUnique()
+                        .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
                     b.HasIndex("TenantId", "NumeroPedido")
                         .IsUnique();
 
                     b.HasIndex("TenantId", "UsuarioId");
+
+                    b.HasIndex("TenantId", "UsuarioId", "ActualizadoEn");
+
+                    b.HasIndex("TenantId", "UsuarioId", "CreadoEn");
 
                     b.ToTable("Pedidos", (string)null);
                 });
@@ -4267,6 +4310,9 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceSessionId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -5710,6 +5756,14 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("email_verificado");
 
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_login_attempts");
+
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("locked_until");
+
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean")
                         .HasColumnName("must_change_password");
@@ -5777,6 +5831,9 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.HasIndex("RoleId");
 
@@ -5859,6 +5916,64 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Zonas");
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Notifications.NotificationOutbox", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("notification_type");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload_json");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("retry_count");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_outbox_tenant");
+
+                    b.HasIndex("Status", "NextAttemptAt")
+                        .HasDatabaseName("ix_outbox_status_next_attempt");
+
+                    b.ToTable("notification_outbox");
                 });
 
             modelBuilder.Entity("UnidadMedida", b =>

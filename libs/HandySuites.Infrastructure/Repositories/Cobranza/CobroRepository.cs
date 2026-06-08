@@ -114,9 +114,9 @@ public class CobroRepository : ICobroRepository
                     // porque la sub-SELECT de SUM(Cobros) no respeta el lock del Pedidos row
                     // bajo READ COMMITTED; dos transacciones paralelas veían cobrado=0 y ambas
                     // insertaban, resultando en saldo negativo (sweep 4, abril 2026).
-                    await _db.Database.ExecuteSqlRawAsync(
-                        "SELECT pg_advisory_xact_lock({0}, {1})",
-                        tenantId, dto.PedidoId.Value);
+                    var pedidoId = dto.PedidoId.Value;
+                    await _db.Database.ExecuteSqlInterpolatedAsync(
+                        $"SELECT pg_advisory_xact_lock({tenantId}, {pedidoId})");
 
                     // Single query: locks pedido row + sums existing cobros atomically
                     var balance = await _db.Database.SqlQueryRaw<PedidoBalanceRow>(

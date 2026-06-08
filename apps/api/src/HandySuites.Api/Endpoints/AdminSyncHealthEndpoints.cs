@@ -27,14 +27,27 @@ public static class AdminSyncHealthEndpoints
         // o menos casos.
         app.MapGet("/api/admin/sync-health", async (
             [FromServices] ISyncTelemetryService telemetry,
+            [FromServices] ICurrentTenant currentTenant,
             [FromQuery] int? minPending,
             [FromQuery] int? minStaleMinutes,
             [FromQuery] bool? allTenants) =>
         {
+            // Sprint pre-prod #12.5 (security review 2026-06-06): privilege
+            // escalation via query param — un ADMIN o SUPERVISOR podia pasar
+            // `?allTenants=true` y obtener telemetria cross-tenant. El check
+            // RequireRole solo autoriza el endpoint, no el parametro.
+            // Fix: el flag allTenants solo aplica si el caller es SUPER_ADMIN;
+            // para cualquier otro rol queda forzado a false.
+            var effectiveAllTenants = (allTenants ?? false) && currentTenant.IsSuperAdmin;
+            if ((allTenants ?? false) && !currentTenant.IsSuperAdmin)
+            {
+                return Results.Forbid();
+            }
+
             var result = await telemetry.GetSyncHealthAsync(
                 minPendingThreshold: minPending ?? 10,
                 minStaleMinutes: minStaleMinutes ?? 30,
-                allTenants: allTenants ?? false);
+                allTenants: effectiveAllTenants);
 
             return Results.Ok(new { success = true, data = result });
         })

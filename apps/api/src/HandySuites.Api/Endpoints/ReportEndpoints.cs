@@ -18,8 +18,22 @@ public static class ReportEndpoints
         // RBAC: Reports expose tenant-wide aggregates (cross-vendedor ventas,
         // cartera, metas, comisiones, insights). Vendedores/Viewers no deben
         // verlos — restringir a roles de gestión.
+        //
+        // FINDING 4.3 (HIGH) — SUPERVISOR scope:
+        // SUPERVISOR is a team-scoped role (only sees members of its assigned
+        // team), but these report queries are tenant-wide aggregates with no
+        // per-supervisor filtering. Exposing them to SUPERVISOR would leak
+        // data from vendedores outside the supervisor's team (ventas totales,
+        // cartera de otros equipos, metas/comisiones cross-team, etc.).
+        //
+        // Decision: restrict to ADMIN / SUPER_ADMIN only. Supervisors must use
+        // their dedicated team-scoped endpoints (e.g. /api/team/*) which already
+        // enforce the supervisor->team filter at the query level. Adding a
+        // proper supervisor-scoped variant of these reports would require
+        // rewriting every query to join through the supervisor->team->vendedor
+        // graph and is tracked as future work, not a security patch.
         var group = app.MapGroup("/api/reports")
-            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR"));
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // ═══════════════════════════════════════════════════════
         // TIER INFO (for frontend gating)

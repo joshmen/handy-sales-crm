@@ -1,0 +1,232 @@
+appId: host.exp.exponent
+name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/Ayer/7d/30d"
+---
+# ============================================================
+# CASO: adm-todos-pedidos-tenant
+# Rol: ADMIN
+# Capa: mobile
+#
+# Componente bajo prueba:
+#   apps/mobile-app/src/components/admin/AdminTenantPedidosList.tsx
+# Pantalla:
+#   Tab "Vender" cuando el rol es ADMIN (SUPERVISOR/SUPER_ADMIN comparten el
+#   componente, pero el caso de uso documentado es admin@jeyma.com reportando
+#   tab Vender VACIA porque WatermelonDB local sincroniza solo pedidos con
+#   usuario_id == currentUser.id — ver comentario header de AdminTenantPedidosList.tsx).
+# Endpoint backend:
+#   GET /api/mobile/supervisor/pedidos?rango=7d|30d  o  ?dia=YYYY-MM-DD
+#   Hook: useTenantPedidos (apps/mobile-app/src/hooks/useSupervisor.ts)
+#
+# Cobertura funcional REAL:
+#   1. Login ADMIN (admin@jeyma.com / test123).
+#   2. Dashboard ADMIN visible (chip "Administrador" + KPI "Vendedores").
+#   3. Navegar al tab "Vender" -> branch admin renderiza AdminTenantPedidosList
+#      (NO el flujo offline normal del vendedor).
+#   4. Default es preset "hoy" -> header muestra exactamente "Pedidos hoy"
+#      con tildes correctas (Spanish UI rule de CLAUDE.md).
+#   5. Subtitle muestra el contador "N pedidos en toda la empresa" — confirma
+#      que la fuente de datos es tenant-wide (no por usuario_id local).
+#   6. Tap "Ayer"  -> header "Pedidos ayer".
+#   7. Tap "7 dias" -> header "Pedidos ultimos 7 dias" (con tildes "últimos" + "días").
+#   8. Tap "30 dias" -> header "Pedidos ultimos 30 dias".
+#   9. Tap un pedido de la lista -> abre detalle /(tabs)/vender/{id}.
+#  10. Cross-tenant no-leak: no aparecen autores "Admin Huichol" ni "Admin Centro".
+#
+# Riesgo cubierto:
+#   - REGRESION reportada por admin@jeyma 2026-05-04: tab Vender vacia para ADMIN
+#     porque vendedor branch lee WatermelonDB filtrado por usuario_id. Si alguien
+#     dropea el branch admin en (tabs)/vender/index.tsx -> VenderAdminContent,
+#     el admin caeria de nuevo a la lista vacia.
+#   - Preset chip rompe el query (rango vs dia) -> resultado vacio en 7d/30d.
+#   - Header label desincronizado del preset activo (label mapping en
+#     labelByPreset, lineas 103-108 de AdminTenantPedidosList.tsx).
+#   - Over-share de pedidos de otro tenant via /api/mobile/supervisor/pedidos
+#     (IDOR cross-tenant en MobileSupervisorEndpoints).
+#   - Subtitle "N pedidos en toda la empresa" es el smoking gun de tenant-wide
+#     fetch — si se pierde el copy, sabemos que se cambio la fuente de datos.
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+# ---- FASE 0: Aviso de Privacidad opcional ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login ADMIN (skip si ya hay sesion por clearState:false) ----
+- runFlow:
+    when:
+      visible:
+        id: "email-input"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - tapOn:
+          id: "email-input"
+      - inputText: "admin@jeyma.com"
+      - pressKey: "TAB"
+      - tapOn:
+          id: "password-input"
+      - inputText: "test123"
+      - tapOn:
+          id: "login-button"
+
+# ---- FASE 2: Consents y permisos post-login (opcionales) ----
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+# ---- FASE 3: Dashboard ADMIN cargado ----
+# El chip "Administrador" confirma que el rol fue detectado correctamente y
+# que se rendera el branch admin del tab Vender (no el vendedor offline).
+- extendedWaitUntil:
+    visible: "Administrador"
+    timeout: 30000
+
+- assertVisible: "Vendedores"
+- assertVisible: "Pedidos hoy"
+
+- takeScreenshot: adm-todos-pedidos-01-dashboard
+
+# ---- FASE 4: Tab "Vender" (branch ADMIN renderiza AdminTenantPedidosList) ----
+# Doble tap garantiza reset al stack inicial del tab si ya estaba activo y
+# evita quedar en un detalle abierto de una sesion previa.
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Default preset = 'hoy' (apps/mobile-app/src/components/admin/AdminTenantPedidosList.tsx:40)
+# Header debe leer EXACTAMENTE "Pedidos hoy" (sin tildes en "hoy", correcto).
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 20000
+
+# Smoking gun de la fix admin@jeyma 2026-05-04:
+# Si este copy desaparece, la fuente de datos volvio a WatermelonDB local.
+- assertVisible: "en toda la empresa"
+
+# Chips de preset (con tilde correcto: "días")
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 días"
+- assertVisible: "30 días"
+
+- takeScreenshot: adm-todos-pedidos-02-default-hoy
+
+# ---- FASE 5: Preset "Ayer" -> header "Pedidos ayer" ----
+- tapOn: "Ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos ayer"
+    timeout: 15000
+
+- assertVisible: "Pedidos ayer"
+- takeScreenshot: adm-todos-pedidos-03-ayer
+
+# ---- FASE 6: Preset "7 dias" -> header "Pedidos ultimos 7 dias" ----
+# Texto en componente: "Pedidos últimos 7 días" (con tildes, AdminTenantPedidosList.tsx:106)
+- tapOn: "7 días"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos últimos 7 días"
+    timeout: 15000
+
+- assertVisible: "Pedidos últimos 7 días"
+- takeScreenshot: adm-todos-pedidos-04-7d
+
+# ---- FASE 7: Preset "30 dias" -> header "Pedidos ultimos 30 dias" ----
+- tapOn: "30 días"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos últimos 30 días"
+    timeout: 15000
+
+- assertVisible: "Pedidos últimos 30 días"
+- takeScreenshot: adm-todos-pedidos-05-30d
+
+# ---- FASE 8: Cross-tenant no-leak (RBAC / IDOR check) ----
+# Seed: "Admin Huichol" y "Admin Centro" pertenecen a OTROS tenants.
+# Si aparecen como autor de un pedido en esta lista, el endpoint
+# /api/mobile/supervisor/pedidos NO esta scopeado por tenant_id.
+# Esto valida tenant isolation a nivel de UI.
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: adm-todos-pedidos-06-no-leak
+
+# ---- FASE 9: Volver a "Hoy" para dejar estado idempotente ----
+- tapOn: "Hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 15000
+
+- assertVisible: "Pedidos hoy"
+
+# ---- FASE 10: Cierre suave en tab Más para validar rol persiste ----
+# No hacemos logout para mantener la sesion estable y permitir encadenar
+# este flow con suite-admin-mobile-flow.yaml sin re-login.
+- tapOn: "Más"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ROLE_LABELS['ADMIN'] = 'Administrador' (mas.tsx:38-39)
+- assertVisible: "Administrador"
+
+- takeScreenshot: adm-todos-pedidos-07-cierre-mas

@@ -1,0 +1,97 @@
+appId: host.exp.exponent
+name: "Smoke sprint correctivo 2026-06-06"
+# Ejecutado y validado contra emulator-5554 limpio (wipe-data).
+# Flow:
+#   1. Login con credenciales de jeyma vendedor
+#   2. Manejar modal "Limite de sesiones" (si hay sesion Playwright activa)
+#   3. Aceptar privacy consent "Sobre tu ubicacion"
+#   4. Validar dashboard: KPIs, acciones rapidas, tabs
+#   5. Navegar a "Nuevo Pedido" -> Preventa -> Seleccion de cliente
+#   6. Validar sync de clientes (lista poblada con seed)
+---
+
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 60000
+
+# === Login ===
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+- tapOn:
+    id: "login-button"
+
+# === Force-logout si hay sesion paralela (Playwright corriendo) ===
+- runFlow:
+    when:
+      visible: "Límite de sesiones alcanzado"
+    commands:
+      - tapOn: "Chrome en Windows"
+      - tapOn: "Desconectar y continuar aquí"
+
+# === Privacy consent ===
+- runFlow:
+    when:
+      visible: "Sobre tu ubicación"
+    commands:
+      - tapOn: "Entendido"
+
+# === Validar dashboard ===
+- extendedWaitUntil:
+    visible: "RESUMEN DEL DÍA"
+    timeout: 60000
+
+- assertVisible: "Pedidos hoy"
+- assertVisible: "Ventas hoy"
+- assertVisible: "MIS METAS"
+- assertVisible: "ACCIONES RÁPIDAS"
+- assertVisible: "Nuevo Pedido"
+- assertVisible: "Registrar Cobro"
+
+# === Navegar a Nuevo Pedido ===
+- tapOn: "Nuevo Pedido"
+- assertVisible: "¿Qué tipo de pedido?"
+- assertVisible: "Preventa"
+- assertVisible: "Venta Directa"
+
+- tapOn: "Preventa"
+
+# === Aceptar permisos location si aparecen ===
+- runFlow:
+    when:
+      visible: "Permiso de ubicación"
+    commands:
+      - tapOn: "Permitir"
+
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+# === Validar pantalla seleccion cliente con sync data ===
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 30000
+
+- assertVisible: "Cliente"
+- assertVisible: "Productos"
+- assertVisible: "Revisar"
+
+# Validar que el sync trajo clientes (cualquiera de la seed)
+- extendedWaitUntil:
+    visible:
+      text: "Abarrotes.*"
+    timeout: 20000
+
+- takeScreenshot: smoke_sprint_correctivo_clientes_sync

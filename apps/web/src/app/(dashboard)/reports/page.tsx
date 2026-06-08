@@ -77,6 +77,10 @@ const reports: ReportCard[] = [
   { id: 'cumplimiento-metas', labelKey: 'cards.cumplimientoMetas', descKey: 'cards.cumplimientoMetasDesc', icon: SbGoals, sectionKey: 'sections.performance' },
   { id: 'comparativo', labelKey: 'cards.comparativo', descKey: 'cards.comparativoDesc', icon: SbCompare, sectionKey: 'sections.analysis' },
   { id: 'insights', labelKey: 'cards.insights', descKey: 'cards.insightsDesc', icon: SbLightbulb, sectionKey: 'sections.analysis' },
+  { id: 'efectividad-visitas', labelKey: 'cards.efectividadVisitas', descKey: 'cards.efectividadVisitasDesc', icon: SbGoals, sectionKey: 'sections.performance' },
+  { id: 'comisiones', labelKey: 'cards.comisiones', descKey: 'cards.comisionesDesc', icon: SbWallet, sectionKey: 'sections.performance' },
+  { id: 'rentabilidad-cliente', labelKey: 'cards.rentabilidadCliente', descKey: 'cards.rentabilidadClienteDesc', icon: SbBarChart, sectionKey: 'sections.analysis' },
+  { id: 'analisis-abc', labelKey: 'cards.analisisAbc', descKey: 'cards.analisisAbcDesc', icon: SbCompare, sectionKey: 'sections.analysis' },
 ];
 
 const reportComponents: Record<ReportId, React.ComponentType> = {

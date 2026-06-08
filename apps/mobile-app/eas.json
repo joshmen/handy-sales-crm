@@ -2,7 +2,6 @@
   "cli": {
     "version": ">= 12.0.0",
     "requireCommit": true,
-    "_comment_appVersionSource": "local = EAS lee version/versionCode de app.json en cada build. Default cambió a 'remote' en CLI nuevos (EAS managea autoincrement server-side) y emitía warning. Fijamos 'local' explicito para que app.json sea la fuente de verdad — homologa con app.config.ts que ahora spreadea version/versionCode desde config (incidente Rodrigo 2026-06-03).",
     "appVersionSource": "local"
   },
   "build": {

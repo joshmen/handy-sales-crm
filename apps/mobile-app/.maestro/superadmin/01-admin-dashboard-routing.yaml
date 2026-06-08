@@ -1,0 +1,177 @@
+appId: host.exp.exponent
+name: superadmin-admin-dashboard-routing
+---
+# ============================================================
+# MODULO: SUPER_ADMIN mobile — DashboardRouter renders AdminDashboard (not Vendedor)
+# Prioridad: HIGH
+# Sprint correctivo 2026-06-06 — gap matriz cross-role para SUPER_ADMIN mobile
+#
+# Pin contra regresion en app/(tabs)/index.tsx linea 9:
+#   if (role === 'ADMIN' || role === 'SUPER_ADMIN') return <AdminDashboard />;
+#
+# Si alguien drop 'SUPER_ADMIN' del OR (typo, refactor, condicional invertido),
+# el SA caeria silenciosamente al VendedorDashboard. Este flow falla rapido
+# porque el VendedorDashboard NO muestra KPI "Vendedores" ni "Ventas del dia"
+# y SI muestra KPI "Visitas / Paradas / Pendiente".
+#
+# Asume:
+#   - App instalada en Expo Go (host.exp.exponent)
+#   - API local en :1050 con seed que incluye xjoshmenx@gmail.com (SUPER_ADMIN)
+#   - Metro corriendo
+#
+# Cubre:
+#   1. Login con xjoshmenx@gmail.com / test123 (unico SA del sistema)
+#   2. AdminDashboard visible (KPI "Vendedores" + "Pedidos hoy" + "Ventas del dia")
+#   3. Saludo personalizado tipo "Admin" (user.name.split(' ')[0] o fallback)
+#   4. AUSENCIA de KPIs exclusivas de VendedorDashboard ("Paradas", "Visitas")
+#   5. Tab "Mas" -> chip "Super Admin" visible (validacion ROLE_LABELS)
+# ============================================================
+
+# ---- FASE 0: Launch + privacy consent ----
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login SUPER_ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "xjoshmenx@gmail.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: sa-01-login-submitted
+
+# ---- FASE 2: Consent + permisos opcionales ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+# ---- FASE 3: Asserción CRITICA — AdminDashboard renderizado ----
+# Estos 3 labels existen SOLO en AdminDashboard.tsx (ver kpiLabel lines
+# 88, 92, 98). VendedorDashboard NO los tiene.
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: sa-02-dashboard-loaded
+
+# KPI "Vendedores" — exclusivo AdminDashboard
+- assertVisible:
+    text: "Vendedores"
+
+# KPI "Pedidos hoy" — exclusivo AdminDashboard
+- assertVisible:
+    text: "Pedidos hoy"
+
+# KPI "Ventas del día" (con tilde, segun AdminDashboard.tsx:98)
+- assertVisible:
+    text: "Ventas del día"
+
+# ---- FASE 4: Asserción NEGATIVA — VendedorDashboard NO debe renderizarse ----
+# Estos labels existen SOLO en VendedorDashboard.tsx (lines 236, 240, 244).
+# Si alguno aparece, significa que la ruta cayó al fallback de vendedor.
+# Si la SA cae al fallback estos serian visibles.
+
+- assertNotVisible:
+    text: "Paradas"
+
+- assertNotVisible:
+    text: "Visitas"
+
+- takeScreenshot: sa-03-vendedor-kpis-ausentes
+
+# ---- FASE 5: Validar chip "Super Admin" en tab Más ----
+# ROLE_LABELS['SUPER_ADMIN'] = 'Super Admin' (mas.tsx:38-39)
+# Color: '#7c3aed' (purple) — no podemos assertear el color desde Maestro,
+# pero el texto del chip es identificable.
+
+- tapOn:
+    text: "Más"
+
+- extendedWaitUntil:
+    visible:
+      text: "Más"
+    timeout: 20000
+
+- takeScreenshot: sa-04-tab-mas
+
+- assertVisible:
+    text: "Super Admin"
+
+- takeScreenshot: sa-05-chip-super-admin-visible
+
+# ---- FASE 6: Logout limpio ----
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: sa-06-logout-success

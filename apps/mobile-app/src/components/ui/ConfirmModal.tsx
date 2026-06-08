@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions, Pressable } from 'react-native';
 import { AlertTriangle, Info } from 'lucide-react-native';
 
 interface ConfirmModalProps {
@@ -47,8 +47,13 @@ export function ConfirmModal({
       onRequestClose={onCancel}
       statusBarTranslucent
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+      <Pressable
+        style={styles.overlay}
+        onPress={onCancel}
+        accessibilityLabel="Cerrar"
+        accessibilityRole="button"
+      >
+        <Pressable style={styles.card} onPress={(e) => e.stopPropagation?.()}>
           {hasCustomIcon ? (
             <View style={styles.customIconWrapper}>
               {icon}
@@ -85,8 +90,8 @@ export function ConfirmModal({
               <Text style={styles.confirmText}>{confirmText}</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

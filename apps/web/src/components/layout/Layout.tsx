@@ -95,7 +95,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       />
       <div className="flex">
         <Sidebar isImpersonating={isImpersonating} />
+        {/* Sprint pre-prod #49 audit 2026-06-06: skip-link de layout.tsx
+            apuntaba a #main-content que NO existia en el DOM. Agregado
+            id="main-content" + tabIndex={-1} aqui para que el skip-link
+            funcione (foco se mueve a <main>). */}
         <main
+          id="main-content"
+          tabIndex={-1}
           className={cn(
             'flex-1 transition-[margin-left] duration-300 ease-in-out',
             isImpersonating

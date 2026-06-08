@@ -76,6 +76,9 @@ docs/deployment/RAILWAY_SETUP.md
 docs/deployment/VERCEL_SETUP.md
 docs/deployment/AZURE_MIGRATION.md
 
+# ── Railway env vars (contain secrets — never track) ──
+railway/
+
 # ── Claude Code ───────────────────────────
 .claude/
 

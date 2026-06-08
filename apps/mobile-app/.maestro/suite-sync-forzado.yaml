@@ -1,0 +1,205 @@
+appId: host.exp.exponent
+name: sync-forzado
+---
+# Maestro flow: Pull-to-refresh + boton 'Sincronizar ahora' + manejo de error red
+# Asume sesion activa (login en flow previo). Valida pantalla Sync (/(tabs)/sync.tsx)
+# y comportamiento de pull-to-refresh en pantalla con RefreshControl (Clientes).
+
+# 1) Cerrar modales/permisos opcionales que puedan aparecer post-login
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+# 2) Esperar a que el dashboard este listo (tab Hoy visible)
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 3) Verificar pull-to-refresh en pantalla de Clientes (tiene RefreshControl real)
+- tapOn:
+    text: "Clientes"
+    optional: true
+- runFlow:
+    when:
+      visible: "Clientes"
+    commands:
+      - extendedWaitUntil:
+          visible: "Clientes"
+          timeout: 30000
+      # Gesto pull-to-refresh: swipe vertical desde arriba hacia abajo
+      - swipe:
+          start: 50%, 25%
+          end: 50%, 85%
+          duration: 800
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: sync-forzado-01-pull-to-refresh-clientes
+
+# 4) Navegar al tab Mas para acceder a Sincronizacion
+- tapOn:
+    text: "Más"
+    optional: true
+- runFlow:
+    when:
+      notVisible: "Sincronización"
+    commands:
+      - tapOn:
+          text: "M�s"
+          optional: true
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 30000
+- takeScreenshot: sync-forzado-02-menu-mas
+
+# 5) Entrar a la pantalla de Sincronizacion
+- tapOn: "Sincronización"
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 30000
+
+# 6) Assertions del header y estructura
+- assertVisible: "Sincronización"
+- assertVisible: "ESTADO"
+- assertVisible: "DETALLES"
+- assertVisible: "Pendientes de sincronizar"
+
+# 7) Assertion del estado de conexion (Conectado o Sin conexion)
+- runFlow:
+    when:
+      visible: "Conectado"
+    commands:
+      - assertVisible: "Conectado"
+      - assertVisible: "Los datos se sincronizan automáticamente"
+- runFlow:
+    when:
+      visible: "Sin conexión"
+    commands:
+      - assertVisible: "Sin conexión"
+      - assertVisible: "Los cambios se guardarán localmente"
+
+# 8) Assertion del SyncStatusCard - estado idle por defecto
+- runFlow:
+    when:
+      visible: "Listo para sincronizar"
+    commands:
+      - assertVisible: "Listo para sincronizar"
+      - assertVisible: "Última sincronización"
+
+# 9) Screenshot del estado inicial de la pantalla Sync
+- takeScreenshot: sync-forzado-03-pantalla-sync-idle
+
+# 10) Verificar que existe el boton de accion principal
+- runFlow:
+    when:
+      visible: "Sincronizar ahora"
+    commands:
+      - assertVisible: "Sincronizar ahora"
+      # Tap del boton de sync forzado
+      - tapOn: "Sincronizar ahora"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: sync-forzado-04-tras-tap-sincronizar
+
+# 11) Si esta offline, verificar que el boton muestra 'Sin conexion' (disabled)
+- runFlow:
+    when:
+      visible: "Sin conexión"
+    commands:
+      - takeScreenshot: sync-forzado-05-estado-offline
+
+# 12) Verificar estados transitorios posibles (syncing/success/error)
+- runFlow:
+    when:
+      visible: "Sincronizando"
+    commands:
+      - takeScreenshot: sync-forzado-06-estado-syncing
+      - extendedWaitUntil:
+          notVisible: "Sincronizando..."
+          timeout: 30000
+
+- runFlow:
+    when:
+      visible: "¡Sincronizado!"
+    commands:
+      - assertVisible: "¡Sincronizado!"
+      - takeScreenshot: sync-forzado-07-estado-success
+
+# 13) Manejo de error transient (reintentando) - solo si aparece
+- runFlow:
+    when:
+      visible: "Reintentando sincronización"
+    commands:
+      - assertVisible: "Reintentando sincronización"
+      - takeScreenshot: sync-forzado-08-error-transient
+      - runFlow:
+          when:
+            visible: "Reintentar ahora"
+          commands:
+            - assertVisible: "Reintentar ahora"
+
+# 14) Manejo de error de sesion (auth) - solo si aparece
+- runFlow:
+    when:
+      visible: "Tu sesión expiró"
+    commands:
+      - assertVisible: "Tu sesión expiró"
+      - takeScreenshot: sync-forzado-09-error-auth
+
+# 15) Verificar Detalles - pendientes y ultima sync
+- assertVisible: "DETALLES"
+- assertVisible: "registros"
+
+# 16) Verificar link discreto a restaurar-datos (problemas con datos)
+- scroll
+- runFlow:
+    when:
+      visible: "Problemas con tus datos?"
+    commands:
+      - assertVisible: "Problemas con tus datos?"
+      - takeScreenshot: sync-forzado-10-link-restaurar-datos
+
+# 17) Navegar a restaurar-datos para verificar manejo de error de datos
+- runFlow:
+    when:
+      visible: "Problemas con tus datos?"
+    commands:
+      - tapOn: "Problemas con tus datos?"
+      - extendedWaitUntil:
+          visible: "Restaurar"
+          timeout: 30000
+      - takeScreenshot: sync-forzado-11-restaurar-datos-screen
+      # Regresar a sync
+      - back
+      - extendedWaitUntil:
+          visible: "ESTADO"
+          timeout: 30000
+
+# 18) Verificar boton 'Volver' del header (chevron left)
+- runFlow:
+    when:
+      visible: "Volver"
+    commands:
+      - tapOn:
+          id: "Volver"
+          optional: true
+
+# 19) Screenshot final del modulo
+- takeScreenshot: sync-forzado-12-final
+

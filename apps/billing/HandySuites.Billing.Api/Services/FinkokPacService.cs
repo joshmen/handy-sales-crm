@@ -29,6 +29,10 @@ public class FinkokPacService : IPacService
 
     public async Task<TimbradoResult> TimbrarAsync(string xmlPreFirmado, ConfiguracionFiscal config)
     {
+        _logger.LogInformation(
+            "Iniciando CFDI timbrado. ConfigId={ConfigId}, Ambiente={Ambiente}",
+            config.Id, config.PacAmbiente);
+
         var url = GetStampUrl(config.PacAmbiente);
 
         var soapBody = BuildStampSoapEnvelope(xmlPreFirmado, config.PacUsuario!, config.PacPassword!);

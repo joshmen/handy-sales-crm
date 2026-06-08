@@ -1,0 +1,287 @@
+appId: host.exp.exponent
+name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCIONAL VENDEDOR — Crear cliente NUEVO en modo OFFLINE y luego
+# sincronizar al volver online.
+#
+# Cubre el hot-path E2E mobile completo:
+#   1. Navega Más → Clientes (VENDEDOR no tiene tab directo).
+#   2. Activa airplane mode (offline real).
+#   3. Abre form "Crear Cliente" y llena DIRECCION + INFO GENERAL
+#      + DATOS FISCALES (RFC genérico XAXX010101000).
+#   4. Guarda → record en WatermelonDB con pending_sync=true,
+#      toast "Guardado offline", badge "Pendiente" en lista.
+#   5. Va a Sincronización → confirma "Pendientes" > 0.
+#   6. Desactiva airplane mode → reconexión "Conectado".
+#   7. Tap "Sincronizar ahora" → push WatermelonDB →
+#      POST /api/mobile/clientes (MobileClienteEndpoints.cs).
+#   8. Estado final: "Sincronizado" / "0 pendientes".
+#
+# PRE-REQ runtime:
+#   - Emulador Android emulator-5554 con Expo Go (host.exp.exponent).
+#   - Metro bundler en puerto 8081 (`npx expo start --go --port 8081`).
+#   - Seeds locales aplicados (seed_local_pg.sql + seed_e2e_pg.sql).
+#   - NO debe existir cliente previo con razon_social
+#     = "Cliente QA Vendedor Offline 2026-06-06" en tenant del vendedor.
+#
+# PRE-REQ flow: este test asume sesión VENDEDOR activa
+# (vendedor1@jeyma.com / test123, tenant Jeyma). Encadenar con
+# `.maestro/auth/01-login-vendedor.yaml` si se ejecuta standalone.
+#
+# PRE-REQ scripts:
+#   - apps/mobile-app/.maestro/scripts/airplane-on.sh
+#   - apps/mobile-app/.maestro/scripts/airplane-off.sh
+#   Ambos deben hacer:
+#     `adb -s $ANDROID_SERIAL shell cmd connectivity airplane-mode enable|disable`
+#
+# Endpoint backend: POST /api/mobile/clientes (201 Created al sincronizar).
+# Screen form: apps/mobile-app/app/clients/crear.tsx.
+# WatermelonDB: clients table con pending_sync=true en modo offline.
+# ════════════════════════════════════════════════════════════
+
+# 0. Dashboard 'Hoy' visible — confirma sesión vendedor activa.
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 1. Dismiss modales opcionales (Aviso de Privacidad / promos).
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn:
+          text: "Cerrar"
+          optional: true
+
+# 2. Navegar a tab Más (vendedor sin tab Clientes directo).
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+- takeScreenshot: func-vendedor-crear-cliente-01-mas
+
+# 3. Abrir lista de Clientes.
+- tapOn: "Clientes"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]lientes.*"
+    timeout: 15000
+
+- takeScreenshot: func-vendedor-crear-cliente-02-lista
+
+# 4. ACTIVAR OFFLINE — airplane mode para forzar rama
+#    createClienteOffline → WatermelonDB pending_sync=true.
+- runScript:
+    file: "../../scripts/airplane-on.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+# 5. Abrir form "Crear Cliente" (FAB / botón "+").
+- runFlow:
+    when:
+      visible: "Crear cliente"
+    commands:
+      - tapOn: "Crear cliente"
+- runFlow:
+    when:
+      visible: "Nuevo cliente"
+    commands:
+      - tapOn: "Nuevo cliente"
+- runFlow:
+    when:
+      notVisible: "Crear Cliente"
+    commands:
+      - tapOn:
+          id: "add-client"
+          optional: true
+
+- extendedWaitUntil:
+    visible: "Crear Cliente"
+    timeout: 15000
+
+- takeScreenshot: func-vendedor-crear-cliente-03-form
+
+# 6. Validar estructura del form (4 secciones esperadas).
+- assertVisible: "UBICACION"
+- assertVisible: "DIRECCION"
+- assertVisible: "INFORMACION GENERAL"
+- assertVisible: "DATOS FISCALES"
+
+# 7. DIRECCION — calle + número exterior (requeridos).
+- tapOn:
+    text: "Nombre de la calle"
+- inputText: "Av Reforma"
+- hideKeyboard
+
+- tapOn:
+    text: "# Ext"
+- inputText: "456"
+- hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Colonia (opcional)"
+    commands:
+      - tapOn:
+          text: "Colonia (opcional)"
+      - inputText: "Roma"
+      - hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Ciudad (opcional)"
+    commands:
+      - tapOn:
+          text: "Ciudad (opcional)"
+      - inputText: "CDMX"
+      - hideKeyboard
+
+- takeScreenshot: func-vendedor-crear-cliente-04-direccion
+
+# 8. INFORMACION GENERAL — Razón social + teléfono.
+- scrollUntilVisible:
+    element:
+      text: "Nombre del cliente o negocio"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: "Nombre del cliente o negocio"
+- inputText: "Cliente QA Vendedor Offline 2026-06-06"
+- hideKeyboard
+
+- runFlow:
+    when:
+      visible: "10 digitos (opcional)"
+    commands:
+      - tapOn:
+          text: "10 digitos (opcional)"
+      - inputText: "5598765432"
+      - hideKeyboard
+
+- takeScreenshot: func-vendedor-crear-cliente-05-info
+
+# 9. DATOS FISCALES — RFC genérico SAT.
+- scrollUntilVisible:
+    element:
+      text: "DATOS FISCALES"
+    direction: DOWN
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "RFC"
+    commands:
+      - tapOn:
+          text: "RFC"
+      - inputText: "XAXX010101000"
+      - hideKeyboard
+
+- takeScreenshot: func-vendedor-crear-cliente-06-fiscal
+
+# 10. Submit "Guardar Cliente".
+- scrollUntilVisible:
+    element:
+      text: "Guardar Cliente"
+    direction: DOWN
+    timeout: 15000
+
+- assertVisible: "Guardar Cliente"
+- tapOn: "Guardar Cliente"
+
+# 11. Validar toast offline — rama airplane mode.
+- runFlow:
+    when:
+      visible: "Guardado offline"
+    commands:
+      - assertVisible: "Guardado offline"
+      - takeScreenshot: func-vendedor-crear-cliente-07-toast-offline
+
+# 12. Volver a la lista — cliente recién creado visible.
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]liente.*"
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Cliente QA Vendedor Offline 2026-06-06"
+    commands:
+      - assertVisible: "Cliente QA Vendedor Offline 2026-06-06"
+
+- takeScreenshot: func-vendedor-crear-cliente-08-lista-con-nuevo
+
+# 13. Validar badge "Pendiente" (WatermelonDB pending_sync=true).
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - assertVisible: "Pendiente"
+
+# 14. Navegar a Sincronización.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 15000
+
+- tapOn: "Sincronización"
+
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 15000
+
+- assertVisible: "Pendientes"
+
+- takeScreenshot: func-vendedor-crear-cliente-09-sync-pending
+
+# 15. DESACTIVAR OFFLINE — restaurar conectividad.
+- runScript:
+    file: "../../scripts/airplane-off.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+- extendedWaitUntil:
+    visible: "Conectado"
+    timeout: 30000
+
+# 16. Disparar push WatermelonDB → POST /api/mobile/clientes.
+- runFlow:
+    when:
+      visible: "Sincronizar ahora"
+    commands:
+      - tapOn: "Sincronizar ahora"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*(Sincronizado|Listo|0 pendientes).*"
+    timeout: 60000
+
+- takeScreenshot: func-vendedor-crear-cliente-10-sync-ok
+
+# ════════════════════════════════════════════════════════════
+# POST-RUN MANUAL VERIFICATION (TODO en CI):
+#
+# Validar que POST /api/mobile/clientes recibió el insert:
+#   SELECT id, razon_social, tenant_id, creado_en
+#     FROM "Clientes"
+#     WHERE razon_social = 'Cliente QA Vendedor Offline 2026-06-06'
+#       AND creado_en > now() - interval '5 min';
+#
+# Resultado esperado: 1 row con tenant_id = Jeyma.
+# Si Count=0: regresión en MobileClienteEndpoints.cs o en
+# WatermelonDB sync push (pendingClientesPushQueue).
+# ════════════════════════════════════════════════════════════

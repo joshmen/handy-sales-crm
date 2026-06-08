@@ -35,10 +35,37 @@ export interface SyncSummary {
   conflicts: number;
 }
 
+/**
+ * Sprint 1 audit code-quality: feedback granular del sync engine.
+ * Permite que el UI muestre "Enviando 12 de 47 pedidos" en lugar de
+ * un spinner generico que deja al usuario "a ciegas".
+ *
+ * Phases:
+ *  - flush_crash: vaciando cola de crash reports offline
+ *  - pull: bajando cambios del server
+ *  - apply_pull: aplicando cambios al WDB local
+ *  - push: subiendo cambios locales al server
+ *  - attachments: subiendo fotos/firmas pendientes
+ *  - done: sync terminado (current=total=0, opcional emitir)
+ */
+export type SyncPhase = 'flush_crash' | 'pull' | 'apply_pull' | 'push' | 'attachments' | 'done';
+
+export interface SyncProgress {
+  phase: SyncPhase;
+  current: number;
+  total: number;
+  entity?: string;
+}
+
 interface SyncOptions {
   onStart?: () => void;
   onFinish?: (info: SyncSummary) => void;
   onError?: (error: Error) => void;
+  /**
+   * Sprint 1: callback opcional de progreso. Backwards compatible.
+   * Llamado al inicio de cada fase + cada N items dentro de la fase.
+   */
+  onProgress?: (progress: SyncProgress) => void;
 }
 
 // WatermelonDB no permite synchronize() concurrentes. Deduplicamos llamadas paralelas
@@ -63,6 +90,7 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
 
   try {
     // Phase 0: Flush any pending crash reports from offline queue
+    options?.onProgress?.({ phase: 'flush_crash', current: 0, total: 0 });
     try {
       await crashReporter.flushPendingReports();
     } catch (flushError) {
@@ -73,6 +101,8 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       database,
 
       pullChanges: async ({ lastPulledAt }) => {
+        // Sprint 1: signal de inicio de pull. current/total se conocen tras recibir response.
+        options?.onProgress?.({ phase: 'pull', current: 0, total: 0 });
         const lastSync = lastPulledAt
           ? new Date(lastPulledAt).toISOString()
           : null;
@@ -126,11 +156,17 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
           if (Array.isArray(entityData)) pullCount += entityData.length;
         }
 
+        // Sprint 1: ya conocemos el total del pull (bajamos todo en una request).
+        // Emitir progreso para que UI muestre "Bajando X registros".
+        options?.onProgress?.({ phase: 'pull', current: pullCount, total: pullCount });
+
+        options?.onProgress?.({ phase: 'apply_pull', current: 0, total: pullCount });
         const timestamp = new Date(serverTimestamp).getTime();
         const changes = await mapPullToWatermelon(serverChanges, lastPulledAt ?? null);
 
         if (__DEV__) console.log('[Sync] Mapped changes for', Object.keys(changes).length, 'tables');
 
+        options?.onProgress?.({ phase: 'apply_pull', current: pullCount, total: pullCount });
         return { changes, timestamp };
       },
 
@@ -148,6 +184,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
           .map(([k, v]) => `${k}:${(v as any[]).length}`)
           .join(', ');
         if (__DEV__ && summary) console.log('[Sync] Pushing:', summary);
+
+        // Sprint 1: signal de inicio de push con total conocido.
+        options?.onProgress?.({ phase: 'push', current: 0, total: pushCount });
 
         // Only push if there are actual changes
         const hasChanges = pushCount > 0;
@@ -175,6 +214,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
         // Store ID mappings to apply after sync completes
         const mappings = body?.data?.createdIdMappings ?? body?.createdIdMappings ?? [];
         if (mappings.length) pendingIdMappings.push(...mappings);
+
+        // Sprint 1: push terminado.
+        options?.onProgress?.({ phase: 'push', current: pushCount, total: pushCount });
       },
 
       sendCreatedAsUpdated: true,
@@ -243,12 +285,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     }
 
     // Phase 3: Upload pending attachments (deferred, non-fatal)
+    // Sprint 1: signal de inicio de attachments. uploadPendingAttachments no
+    // expone progreso per-file por ahora — refactor futuro.
+    options?.onProgress?.({ phase: 'attachments', current: 0, total: 0 });
     try {
       const uploaded = await uploadPendingAttachments();
       if (uploaded > 0) {
         if (__DEV__) console.log(`[Sync] Uploaded ${uploaded} attachments`);
         await cleanUploadedFiles();
       }
+      options?.onProgress?.({ phase: 'attachments', current: uploaded, total: uploaded });
     } catch (attachmentError) {
       if (__DEV__) console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
     }
@@ -266,8 +312,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     // Phase 4: Flush pending crash reports (deferred from offline)
     try {
       await crashReporter.flushPendingReports();
-    } catch {
+    } catch (crashFlushError) {
       // Never block sync for crash report flush
+      if (__DEV__) console.warn('[Sync] Crash report flush failed (non-fatal):', crashFlushError);
     }
 
     // Phase 5: Flush pending GPS pings (Fase B tracking-vendedor)
@@ -276,8 +323,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       const result = await flushPendingAsync();
       if (__DEV__ && result.pushed > 0) console.log(`[Sync] Pushed ${result.pushed} GPS pings`);
       if (__DEV__ && result.disabled) console.log('[Sync] Tracking disabled (plan no aplica)');
-    } catch {
+    } catch (gpsFlushError) {
       // Never block sync for GPS ping flush
+      if (__DEV__) console.warn('[Sync] GPS ping flush failed (non-fatal):', gpsFlushError);
     }
 
     // Phase 6: Sync notification history (rescata pushes que no llegaron en
@@ -286,8 +334,9 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
       const { syncNotificationsFromBackend } = await import('@/services/notificationSync');
       const added = await syncNotificationsFromBackend();
       if (__DEV__ && added > 0) console.log(`[Sync] Pulled ${added} notifications from backend`);
-    } catch {
+    } catch (notificationSyncError) {
       // Never block sync for notification history fetch
+      if (__DEV__) console.warn('[Sync] Notification history fetch failed (non-fatal):', notificationSyncError);
     }
 
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };

@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
+import { BACKEND_MESSAGES_STATIC_ES_TO_EN, BACKEND_MESSAGES_STATIC_EN_TO_ES } from '@/lib/backendMessagesStatic';
 
 /**
  * Bidirectional dynamic patterns for messages with variables.
@@ -71,7 +72,18 @@ export function useBackendTranslation() {
     (message: string | undefined | null): string => {
       if (!message) return '';
 
-      // 1. Exact match in backendMessages dictionary.
+      // 1. Static dict lookup (entries con dots o caracteres especiales que
+      // next-intl rechaza como keys). Audit code-quality 2026-06-05: estos 259
+      // entries fueron movidos del JSON al TS dict porque next-intl crasheaba
+      // con `INVALID_KEY: keys cannot contain dot`.
+      if (lang === 'en' && BACKEND_MESSAGES_STATIC_ES_TO_EN[message]) {
+        return BACKEND_MESSAGES_STATIC_ES_TO_EN[message];
+      }
+      if (lang !== 'en' && BACKEND_MESSAGES_STATIC_EN_TO_ES[message]) {
+        return BACKEND_MESSAGES_STATIC_EN_TO_ES[message];
+      }
+
+      // 2. Exact match in backendMessages dictionary (JSON via next-intl).
       // Skip when the message contains characters that ICU MessageFormat / next-intl
       // path parsing cannot handle as a key: apostrophe, braces, #, dots inside a phrase.
       // These appear in dynamic messages like "Ya existe un cliente con el nombre 'X'."
@@ -86,7 +98,7 @@ export function useBackendTranslation() {
         } catch { /* not found */ }
       }
 
-      // 2. Bidirectional dynamic patterns
+      // 3. Bidirectional dynamic patterns
       for (const p of PATTERNS) {
         if (lang === 'en' && p.es.test(message)) {
           return message.replace(p.es, p.toEn);
@@ -96,7 +108,7 @@ export function useBackendTranslation() {
         }
       }
 
-      // 3. Return original
+      // 4. Return original
       return message;
     },
     [t, lang]

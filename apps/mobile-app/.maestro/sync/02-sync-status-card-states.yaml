@@ -1,0 +1,119 @@
+appId: host.exp.exponent
+name: "Sync Status Card - 6 estados visuales (Sprint 1 audit)"
+tags:
+  - audit
+  - sprint1
+  - sync-ux
+---
+
+# Sprint 1 audit code-quality validation: SyncStatusCard nuevo unifica
+# feedback de sync en 7 estados (idle, syncing pull/push/attachments,
+# success, error transient/auth/permanent, offline). Este flow valida
+# que cada estado renderiza los elementos esperados.
+#
+# Pre-requisitos:
+#  - APK build >= sprint 1 audit (commits fe823da5+)
+#  - Sesion vendedor1@jeyma.com logueado
+#  - Red activa
+#
+# Que NO se valida aqui: el spinner animado (Reanimated rotacion 360deg
+# infinita) requiere takeScreenshot consecutivo para ver rotacion;
+# Maestro takeScreenshot es estatico. Validamos presencia del spinner
+# (icon RefreshCcw visible durante syncing) pero no su animacion.
+
+# === ESTADO 1: IDLE (entrada normal a la pantalla) ===
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Más"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 15000
+
+- tapOn: "Sincronización"
+
+- extendedWaitUntil:
+    visible: "Listo para sincronizar"
+    timeout: 15000
+
+# Estado idle muestra:
+#  - "Listo para sincronizar" como título
+#  - "Última sincronización: hace X" o "Nunca"
+#  - Botón "Sincronizar ahora"
+- assertVisible: "Listo para sincronizar"
+- assertVisible: "Sincronizar ahora"
+- assertVisible:
+    text: "Última"
+    optional: true
+
+- takeScreenshot: sync-card-idle
+
+# === ESTADO 2: SYNCING (tap botón → spinner + progress) ===
+- tapOn: "Sincronizar ahora"
+
+# El syncing puede ser muy rápido. Esperar al menos el primer phase label.
+- extendedWaitUntil:
+    visible: "Sincronizando"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: sync-card-syncing
+
+# Phase labels esperados durante syncing (cualquiera de estos puede aparecer
+# segun timing):
+- assertVisible:
+    text: "Bajando"
+    optional: true
+- assertVisible:
+    text: "Enviando"
+    optional: true
+- assertVisible:
+    text: "Subiendo"
+    optional: true
+- assertVisible:
+    text: "Sincronizando"
+    optional: true
+
+# === ESTADO 3: SUCCESS (post-syncing, 3s transient verde) ===
+- extendedWaitUntil:
+    visible: "Sincronizado"
+    timeout: 30000
+    optional: true
+
+- takeScreenshot: sync-card-success-or-back-to-idle
+
+# Success card muestra resumen "X enviados, Y recibidos" si hubo movimiento.
+# Si nada se movio, vuelve a idle directo (sin success transient).
+- assertVisible:
+    text: "enviados"
+    optional: true
+- assertVisible:
+    text: "recibidos"
+    optional: true
+
+# Después de 3s success vuelve a idle automáticamente
+- waitForAnimationToEnd
+- takeScreenshot: sync-card-final-state
+
+# === ESTADO 4: NAVEGACIÓN (verificar mini-banner global en otras pantallas) ===
+# Mini-banner global solo visible cuando syncing/error.
+# En idle/success NO debe aparecer (no agregar ruido visual).
+- tapOn:
+    id: "tab-hoy"
+    optional: true
+- tapOn:
+    text: "Hoy"
+    optional: true
+
+- waitForAnimationToEnd
+- takeScreenshot: home-without-sync-mini-banner
+
+# En idle, el mini-banner NO debe estar visible (asserción negativa = ausencia
+# del texto). Si esta visible significa que sync no terminó o hubo error.
+- assertNotVisible:
+    text: "Bajando"
+- assertNotVisible:
+    text: "Enviando"

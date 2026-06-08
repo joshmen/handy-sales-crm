@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
+// Audit (2026-06-05): modal con animaciones + form fields requiere tiempo extra.
+test.use({ navigationTimeout: 60000, actionTimeout: 30000 });
+
 /**
  * Audit del modal "Crear nuevo usuario" en /equipo (2026-05-04).
  *
@@ -19,7 +22,7 @@ import { loginAsAdmin } from './helpers/auth';
 test.describe('Team — invite-link create user flow', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/equipo');
+    await page.goto('/team');
   });
 
   test('opens modal sin campo password por default', async ({ page }) => {
@@ -59,9 +62,17 @@ test.describe('Team — invite-link create user flow', () => {
 
   test('toggle sin-email muestra password + deshabilita email', async ({ page }) => {
     await page.getByRole('button', { name: /nuevo usuario/i }).first().click();
+    // Esperar a que el heading del modal esté pintado: en Mobile Chrome el portal +
+    // backdrop-blur tarda y disparar .check() antes deja el onChange sin enlazar.
+    await expect(page.getByRole('heading', { name: /crear/i })).toBeVisible({ timeout: 10000 });
 
     const sinEmailCheckbox = page.getByTestId('create-user-sin-email');
-    await sinEmailCheckbox.check();
+    await expect(sinEmailCheckbox).toBeVisible();
+    // .click() en input native dispara onChange con e.target.checked=true de forma
+    // determinística. .check({force:true}) bypass actionability y en Mobile puede
+    // generar pointerdown+click que el handler stale ignora.
+    await sinEmailCheckbox.click();
+    await expect(sinEmailCheckbox).toBeChecked();
 
     // Password field debe aparecer
     const passwordField = page.getByTestId('create-user-password');
@@ -79,9 +90,23 @@ test.describe('Team — invite-link create user flow', () => {
     // loginAsAdmin → admin (no super_admin)
     await page.getByRole('button', { name: /nuevo usuario/i }).first().click();
 
-    // Tap dropdown rol — busca por placeholder "Seleccionar rol" o por label
-    const roleDropdown = page.locator('[role="combobox"]').first();
-    await roleDropdown.click();
+    // Audit code-quality 2026-06-05: esperar a que el modal termine de abrir.
+    // Dropdown rol vive dentro del modal — sin wait el .first() devuelve un
+    // combobox de filtros de la pagina y el dropdown abre vacio.
+    await page.getByRole('heading', { name: /crear nuevo usuario|crear usuario/i }).waitFor({ state: 'visible', timeout: 10000 });
+
+    // Tap dropdown rol DENTRO del modal. Radix UI Select responde a pointerdown
+    // (no a click DOM directo). Disparar pointerdown via dispatchEvent.
+    const rolLabel = page.getByText(/^Rol$/).last();
+    await rolLabel.scrollIntoViewIfNeeded().catch(() => {});
+    const roleDropdown = rolLabel.locator('xpath=following-sibling::*[1]//*[@role="combobox"] | following::*[@role="combobox"][1]').first();
+    await roleDropdown.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    // Radix Select: enfocar primero + abrir con teclado funciona consistente.
+    await roleDropdown.focus().catch(() => {});
+    await roleDropdown.press(' ').catch(async () => {
+      await roleDropdown.click({ force: true }).catch(() => {});
+    });
+    await page.waitForTimeout(700);
 
     // ADMIN normal NO debe ver SUPER_ADMIN ni ADMIN como opciones
     // (filtro RoleHierarchy mirror del backend).

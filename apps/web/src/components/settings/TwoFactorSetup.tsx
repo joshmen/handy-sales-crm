@@ -26,6 +26,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { profileService, TwoFactorSetupResponse } from '@/services/api/profileService';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 type Step = 'qr' | 'verify' | 'recovery';
 
@@ -40,7 +41,8 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   onOpenChange,
   onComplete,
 }) => {
-  const { formatDate, formatNumber } = useFormatters();
+  const { formatDate } = useFormatters();
+  const t = useTranslations('settings.security.twoFactor');
   const [step, setStep] = useState<Step>('qr');
   const [setupData, setSetupData] = useState<TwoFactorSetupResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,16 +60,16 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
       if (response.success && response.data) {
         setSetupData(response.data);
       } else {
-        toast.error(response.error || 'Error al generar configuración 2FA');
+        toast.error(response.error || t('setupError'));
         onOpenChange(false);
       }
     } catch {
-      toast.error('Error de conexión al configurar 2FA');
+      toast.error(t('connectionError'));
       onOpenChange(false);
     } finally {
       setLoading(false);
     }
-  }, [onOpenChange]);
+  }, [onOpenChange, t]);
 
   // Start setup when dialog opens
   useEffect(() => {
@@ -92,7 +94,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   const handleVerify = async () => {
     const cleanCode = verifyCode.replace(/\s/g, '');
     if (cleanCode.length !== 6) {
-      toast.error('Ingresa un código de 6 dígitos');
+      toast.error(t('codeRequired'));
       return;
     }
 
@@ -102,14 +104,14 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
       if (response.success && response.data) {
         setRecoveryCodes(response.data.recoveryCodes);
         setStep('recovery');
-        toast.success('2FA activado exitosamente');
+        toast.success(t('activatedSuccess'));
       } else {
-        toast.error(response.error || 'Código inválido. Verifica que tu reloj esté sincronizado.');
+        toast.error(response.error || t('invalidCodeMessage'));
         setVerifyCode('');
         codeInputRef.current?.focus();
       }
     } catch {
-      toast.error('Error al verificar código');
+      toast.error(t('verifyError'));
     } finally {
       setVerifying(false);
     }
@@ -118,23 +120,23 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   const handleCopyManualKey = () => {
     if (setupData?.manualKey) {
       navigator.clipboard.writeText(setupData.manualKey.replace(/\s/g, ''));
-      toast.success('Clave copiada al portapapeles');
+      toast.success(t('keyCopied'));
     }
   };
 
   const handleCopyRecoveryCodes = () => {
     const text = recoveryCodes.join('\n');
     navigator.clipboard.writeText(text);
-    toast.success('Códigos de recuperación copiados');
+    toast.success(t('recoveryCopied'));
   };
 
   const handleDownloadRecoveryCodes = () => {
     const text = [
-      'Handy Suites - Códigos de Recuperación 2FA',
-      `Generados: ${formatDate(new Date())}`,
+      t('downloadFileHeader'),
+      t('downloadFileGenerated', { date: formatDate(new Date()) }),
       '',
-      'Guarda estos códigos en un lugar seguro.',
-      'Cada código solo puede usarse una vez.',
+      t('downloadFileSaveHint'),
+      t('downloadFileSingleUseHint'),
       '',
       ...recoveryCodes.map((code, i) => `${(i + 1).toString().padStart(2, '0')}. ${code}`),
     ].join('\n');
@@ -146,7 +148,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     a.download = 'handysuites-recovery-codes.txt';
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Códigos descargados');
+    toast.success(t('recoveryDownloaded'));
   };
 
   const handleFinish = () => {
@@ -203,17 +205,17 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <QrCode className="h-5 w-5" />
-                Escanea el código QR
+                {t('qrTitle')}
               </DialogTitle>
               <DialogDescription>
-                Abre tu app de autenticación (Google Authenticator, Microsoft Authenticator, etc.) y escanea el código QR.
+                {t('qrDescription')}
               </DialogDescription>
             </DialogHeader>
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Spinner size="lg" className="text-primary" />
-                <p className="mt-3 text-sm text-muted-foreground">Generando código QR...</p>
+                <p className="mt-3 text-sm text-muted-foreground">{t('generatingQr')}</p>
               </div>
             ) : setupData ? (
               <div className="space-y-4">
@@ -222,7 +224,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   <div className="bg-white p-3 rounded-lg border">
                     <img
                       src={`data:image/png;base64,${setupData.qrCodeBase64}`}
-                      alt="Código QR para 2FA"
+                      alt={t('qrAlt')}
                       className="w-48 h-48"
                     />
                   </div>
@@ -236,7 +238,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                     className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showManualKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    {showManualKey ? 'Ocultar clave manual' : 'No puedes escanear? Ingresa la clave manualmente'}
+                    {showManualKey ? t('hideManualKey') : t('showManualKey')}
                   </button>
 
                   {showManualKey && (
@@ -248,7 +250,8 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                         variant="ghost"
                         size="icon"
                         onClick={handleCopyManualKey}
-                        title="Copiar clave"
+                        title={t('copyKey')}
+                        aria-label={t('copyKey')}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -260,13 +263,13 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
 
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
+                {t('cancel')}
               </Button>
               <Button
                 onClick={() => setStep('verify')}
                 disabled={!setupData}
               >
-                Siguiente
+                {t('next')}
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </DialogFooter>
@@ -279,10 +282,10 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5" />
-                Verifica el código
+                {t('verifyTitle')}
               </DialogTitle>
               <DialogDescription>
-                Ingresa el código de 6 dígitos que muestra tu app de autenticación para confirmar la configuración.
+                {t('verifyDescription')}
               </DialogDescription>
             </DialogHeader>
 
@@ -293,7 +296,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
-                  placeholder="000000"
+                  placeholder={t('codePlaceholder')}
                   value={verifyCode}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -305,20 +308,20 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                 />
               </div>
               <p className="text-xs text-center text-muted-foreground">
-                El código cambia cada 30 segundos
+                {t('codeRotationHint')}
               </p>
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setStep('qr')}>
-                Volver
+                {t('back')}
               </Button>
               <Button
                 onClick={handleVerify}
                 disabled={verifyCode.replace(/\s/g, '').length !== 6 || verifying}
                 loading={verifying}
               >
-                Verificar y activar
+                {t('verifyButton')}
               </Button>
             </DialogFooter>
           </>
@@ -330,10 +333,10 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <SbCheckCircle size={20} />
-                2FA activado exitosamente
+                {t('recoveryTitle')}
               </DialogTitle>
               <DialogDescription>
-                Guarda estos códigos de recuperación en un lugar seguro. Si pierdes acceso a tu app de autenticación, puedes usar uno de estos códigos para iniciar sesión.
+                {t('recoveryDescription')}
               </DialogDescription>
             </DialogHeader>
 
@@ -341,7 +344,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               {/* Warning */}
               <div className="flex items-start gap-2 p-3 bg-muted/50 border border-border rounded-lg text-sm text-muted-foreground">
                 <SbAlert size={16} className="mt-0.5 flex-shrink-0" />
-                <span>Cada código solo puede usarse una vez. No podrás ver estos códigos de nuevo.</span>
+                <span>{t('recoveryWarning')}</span>
               </div>
 
               {/* Recovery codes grid */}
@@ -362,7 +365,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   onClick={handleCopyRecoveryCodes}
                 >
                   <Copy className="mr-2 h-4 w-4" />
-                  Copiar
+                  {t('copyButton')}
                 </Button>
                 <Button
                   variant="outline"
@@ -371,7 +374,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   onClick={handleDownloadRecoveryCodes}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Descargar .txt
+                  {t('downloadButton')}
                 </Button>
               </div>
             </div>
@@ -379,7 +382,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             <DialogFooter>
               <Button onClick={() => { setCodesConfirmed(true); handleFinish(); }}>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                He guardado mis códigos
+                {t('savedCodes')}
               </Button>
             </DialogFooter>
           </>

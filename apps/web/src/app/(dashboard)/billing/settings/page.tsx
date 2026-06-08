@@ -12,6 +12,7 @@ import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { toast } from '@/hooks/useToast';
 import { getConfigFiscal, saveConfigFiscal, uploadCertificado, retryFinkokRegistration, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
 import type { ConfiguracionFiscal, NumeracionDocumento } from '@/types/billing';
+import { REGIMENES_FISCALES, formatRegimenLabel } from '@/lib/sat/regimenes-fiscales';
 
 type SettingsTab = 'datos' | 'series';
 
@@ -253,7 +254,9 @@ export default function BillingSettingsPage() {
     >
       {/* Audit M-1: cross-link a settings para que admin encuentre fácil
           configuración de empresa no fiscal (nombre, logo, colores, perfil). */}
-      <div className="mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 text-sm text-blue-900 dark:text-blue-200">
+      {/* Sprint pre-prod #31: pastel azul reemplazado por tokens semanticos.
+          memoria feedback_no_em_dashes_no_pastels prohibe blue-200/950. */}
+      <div className="mb-4 rounded-lg bg-info/10 dark:bg-info/20 border border-info/30 p-3 text-sm text-info-foreground">
         ¿Buscas configuración general (logo, nombre, colores)? Está en{' '}
         <a href="/settings" className="font-medium underline hover:no-underline">
           Configuración general
@@ -351,25 +354,12 @@ export default function BillingSettingsPage() {
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
                 >
                   <option value="">{t('selectOption')}</option>
-                  <option value="601">601 — General de Ley Personas Morales</option>
-                  <option value="603">603 — Personas Morales con Fines no Lucrativos</option>
-                  <option value="605">605 — Sueldos y Salarios</option>
-                  <option value="606">606 — Arrendamiento</option>
-                  <option value="607">607 — Régimen de Enajenación o Adquisición de Bienes</option>
-                  <option value="608">608 — Demás ingresos</option>
-                  <option value="610">610 — Residentes en el Extranjero</option>
-                  <option value="611">611 — Ingresos por Dividendos</option>
-                  <option value="612">612 — Personas Físicas con Actividades Empresariales y Profesionales</option>
-                  <option value="614">614 — Ingresos por intereses</option>
-                  <option value="615">615 — Sin obligaciones fiscales</option>
-                  <option value="616">616 — Sin obligaciones fiscales</option>
-                  <option value="620">620 — Sociedades Cooperativas de Producción</option>
-                  <option value="621">621 — Incorporación Fiscal</option>
-                  <option value="622">622 — Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
-                  <option value="623">623 — Opcional para Grupos de Sociedades</option>
-                  <option value="624">624 — Coordinados</option>
-                  <option value="625">625 — Régimen de las Actividades Empresariales (RESICO)</option>
-                  <option value="626">626 — Régimen Simplificado de Confianza</option>
+                  {/* Sprint pre-prod #45: catalogo centralizado en lib/sat/.
+                      Antes 20 options hardcoded con em-dash (regla memoria
+                      feedback_no_em_dashes_no_pastels). */}
+                  {REGIMENES_FISCALES.map(reg => (
+                    <option key={reg.code} value={reg.code}>{formatRegimenLabel(reg)}</option>
+                  ))}
                 </select>
               </div>
             </div>

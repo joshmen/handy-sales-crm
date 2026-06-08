@@ -100,6 +100,7 @@ using HandySuites.Application.Notifications.Interfaces;
 using HandySuites.Application.Notifications.Services;
 using HandySuites.Infrastructure.Notifications.Repositories;
 using HandySuites.Infrastructure.Notifications.Services;
+using HandySuites.Infrastructure.Notifications.Outbox;
 using HandySuites.Api.Hubs;
 using HandySuites.Application.Interfaces;
 using HandySuites.Application.Impersonation.Interfaces;
@@ -317,6 +318,11 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IRealtimePushService, SignalRPushService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<NotificationSettingsService>();
+
+        // H-2 Outbox MVP (2026-06-07) — durable queue for fire-and-forget
+        // notifications. OutboxProcessor BackgroundService is registered in
+        // Program.cs alongside the other AddHostedService<> entries.
+        services.AddScoped<IOutboxService, OutboxService>();
 
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();

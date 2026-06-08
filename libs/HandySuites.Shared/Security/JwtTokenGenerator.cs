@@ -14,6 +14,15 @@ public class JwtTokenGenerator
     public JwtTokenGenerator(IOptions<JwtSettings> options)
     {
         _settings = options.Value;
+
+        // Secondary guard for C-1 / M-8. The startup guard in JwtExtensions catches
+        // misconfiguration first in API hosts; this protects any other consumer
+        // (tests, background workers, separate hosts) from emitting tokens signed
+        // with an empty or undersized secret, or without issuer/audience.
+        if (string.IsNullOrWhiteSpace(_settings.Secret) || _settings.Secret.Length < 32)
+            throw new InvalidOperationException("JWT Secret must be at least 32 characters. Configure Jwt:Secret env var or appsettings.");
+        if (string.IsNullOrWhiteSpace(_settings.Issuer) || string.IsNullOrWhiteSpace(_settings.Audience))
+            throw new InvalidOperationException("JWT Issuer and Audience must be configured.");
     }
 
     public string GenerateToken(string userId, int tenantId, int sessionVersion = 1)

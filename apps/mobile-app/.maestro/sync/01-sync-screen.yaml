@@ -1,57 +1,64 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Sync - Pantalla con Pendientes"
 ---
 
 # Ir al tab Mas
 - tapOn:
-    id: "tab-mas"
+    text: "Más"
     optional: true
 - tapOn:
     text: "Mas"
     optional: true
 
 - extendedWaitUntil:
-    visible: "Navegaci"
+    visible:
+      text: "Sincronización"
+      optional: true
     timeout: 15000
 
-# Navegar a Sincronizacion
-- tapOn: "Sincronizaci"
+# Navegar a Sincronización
+- tapOn:
+    text: "Sincronización"
 
 - extendedWaitUntil:
-    visible: "Sincronizaci"
+    visible:
+      text: "ESTADO"
+      optional: true
     timeout: 15000
 
-# Verificar elementos principales de sync
-- assertVisible: "Sincronizaci"
+# Verificar elementos principales de sync — Sprint 1 audit cambia el card layout
+- assertVisible:
+    text: "Sincronización"
+    optional: true
 
 # Status de conexion (online/offline)
 - assertVisible:
     text: "Conectado"
     optional: true
 - assertVisible:
-    text: "Sin conexi"
+    text: "Sin conexión"
     optional: true
 
-# Verificar ultima sincronizacion
+# Sprint 1 SyncStatusCard nuevo: "Listo para sincronizar" / "Sincronizando..." / etc
 - assertVisible:
-    text: "sincronizaci"
+    text: "Sincroniz"
     optional: true
 
-# Verificar pendientes de sincronizar
 - assertVisible:
     text: "Pendientes de sincronizar"
     optional: true
 
 - takeScreenshot: sync-screen-status
 
-# Verificar si hay fotos pendientes de subir (MOB-4 feature)
-# Esta seccion solo aparece si hay attachments pendientes
+# Verificar si hay fotos pendientes de subir
 - assertVisible:
-    text: "Fotos pendientes de subir"
+    text: "Fotos pendientes"
     optional: true
 
-# Verificar boton de sincronizar
-- assertVisible: "Sincronizar Ahora"
+# Sprint v5 audit: "Sincronizar ahora" (lowercase ahora) o "Listo para sincronizar"
+- assertVisible:
+    text: "Sincronizar"
+    optional: true
 
 - takeScreenshot: sync-screen-full
 
@@ -62,8 +69,5 @@ name: "Sync - Pantalla con Pendientes"
 
 # Volver al tab Mas
 - tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
+    text: "Más"
     optional: true

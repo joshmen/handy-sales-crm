@@ -13,7 +13,7 @@ public static class CobroEndpoints
     public static void MapCobroEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/cobros")
-            .RequireAuthorization()
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPERVISOR", "SUPER_ADMIN"))
             .WithTags("Cobros")
             .WithOpenApi();
 

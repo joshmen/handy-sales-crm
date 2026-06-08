@@ -188,7 +188,7 @@ public class PedidoService
             subordinadoIds.Add(supervisorId);
             filterByUsuarioIds = subordinadoIds;
         }
-        else if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        else if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 filtro.UsuarioId = vendedorId;

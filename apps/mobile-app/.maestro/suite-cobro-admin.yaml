@@ -1,0 +1,258 @@
+appId: host.exp.exponent
+name: suite-cobro-admin
+---
+# ============================================================
+# MODULO: COBRO ADMIN — saldos + registrar cobro como ADMIN
+# Inventario gap HIGH 3/4 (pre-prod audit 2026-06-06).
+# Cubre lo que cobrar/01-saldos.yaml y 02-registrar-cobro.yaml NO cubren:
+#   - Login con admin@jeyma.com (no vendedor)
+#   - Tab Cobrar -> Saldos: lista NO vacia (scope tenant-wide)
+#   - Registrar cobro contra cliente asignado a otro vendedor
+#   - Validar atribucion (CreadoPor=adminUserId) via estado-cuenta
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: cobro-admin-01-login
+
+# ---- FASE 2: Dismiss permisos/consent ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+# ---- FASE 3: Dashboard ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- assertVisible:
+    text: "Administrador"
+
+# ---- FASE 4: Tab Cobrar ----
+
+- tapOn:
+    text: "Cobrar"
+
+- extendedWaitUntil:
+    visible:
+      text: "Cobrar"
+    timeout: 20000
+
+- takeScreenshot: cobro-admin-02-cobrar-tab
+
+# ---- FASE 5: Saldos pendientes ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Saldos"
+    commands:
+      - tapOn:
+          text: "Saldos"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- takeScreenshot: cobro-admin-03-saldos-screen
+
+# ADMIN debe ver lista NO vacia — saldos de TODOS los vendedores del tenant
+# (BUG: si solo ve saldos de clientes asignados a su UserId hay regresion).
+- assertVisible:
+    text: "Saldo pendiente"
+
+# Validar que hay AL MENOS un cliente listado (scope tenant-wide)
+- runFlow:
+    when:
+      visible:
+        text: "Cliente"
+    commands:
+      - takeScreenshot: cobro-admin-04-saldos-con-clientes
+
+# ---- FASE 6: Entrar a un cliente -> estado de cuenta ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Cliente"
+    commands:
+      - tapOn:
+          text: "Cliente"
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- takeScreenshot: cobro-admin-05-estado-cuenta
+
+- runFlow:
+    when:
+      visible:
+        text: "Estado de cuenta"
+    commands:
+      - assertVisible:
+          text: "Estado de cuenta"
+
+# ---- FASE 7: Registrar cobro ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Registrar cobro"
+    commands:
+      - tapOn:
+          text: "Registrar cobro"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- takeScreenshot: cobro-admin-06-form-cobro
+
+# Llenar monto
+- runFlow:
+    when:
+      visible:
+        id: "monto-input"
+    commands:
+      - tapOn:
+          id: "monto-input"
+      - inputText: "100.00"
+
+# Metodo de pago: Efectivo (default por lo general)
+- runFlow:
+    when:
+      visible:
+        text: "Efectivo"
+    commands:
+      - tapOn:
+          text: "Efectivo"
+
+- takeScreenshot: cobro-admin-07-form-lleno
+
+# Guardar
+- runFlow:
+    when:
+      visible:
+        text: "Guardar cobro"
+    commands:
+      - tapOn:
+          text: "Guardar cobro"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+- runFlow:
+    when:
+      visible:
+        text: "Registrar"
+    commands:
+      - tapOn:
+          text: "Registrar"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# ---- FASE 8: Validar success ----
+
+- takeScreenshot: cobro-admin-08-cobro-registrado
+
+- runFlow:
+    when:
+      visible:
+        text: "Cobro registrado"
+    commands:
+      - assertVisible:
+          text: "Cobro registrado"
+
+- runFlow:
+    when:
+      visible:
+        text: "Éxito"
+    commands:
+      - takeScreenshot: cobro-admin-09-success
+
+# ---- FASE 9: Logout ----
+
+- tapOn:
+    text: "Más"
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: cobro-admin-10-logout

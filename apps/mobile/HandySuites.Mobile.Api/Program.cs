@@ -84,6 +84,25 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+    // Sprint pre-prod #19 audit 2026-06-06: geo proxy (Google Places +
+    // Reverse Geocoding) sin rate limit. Google Places Details ~$17/1000 →
+    // cualquier vendedor autenticado podia drenar la cuota en horas. Cap
+    // a 30/min por user (suficiente para autocomplete normal + visit
+    // confirmations; bloquea abuso programatico).
+    options.AddPolicy("geo-proxy", context =>
+    {
+        var userId = context.User?.FindFirst("sub")?.Value
+                     ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? context.Connection.RemoteIpAddress?.ToString()
+                     ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+
     // Tracking GPS batch: 60 batches/min/user. Suficiente para checkpoint
     // cada 15min + bursts post-offline; previene un token comprometido
     // inflando la tabla GPS. Audit MED.

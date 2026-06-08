@@ -73,7 +73,7 @@ public static class ServiceRegistrationExtensions
     public static IServiceCollection AddMobileServices(this IServiceCollection services, IConfiguration config)
     {
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        Console.WriteLine($"[Mobile API] Entorno actual: {environment}");
+        Serilog.Log.Information("[Mobile API] Entorno actual: {Environment}", environment);
 
         // HttpContextAccessor es necesario para ITenantContextService
         services.AddHttpContextAccessor();

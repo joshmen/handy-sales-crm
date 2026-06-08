@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Audit code-quality 2026-06-06 (sprint pre-prod #5): pre-commit hook que escanea
+# secretos con gitleaks antes de permitir el commit.
+#
+# Instalacion (cada dev una sola vez):
+#   git config core.hooksPath hooks
+#
+# Para saltarse (solo si sabes lo que haces):
+#   git commit --no-verify
+#
+# Requiere: gitleaks instalado en PATH.
+#   macOS:   brew install gitleaks
+#   Windows: scoop install gitleaks   o   choco install gitleaks
+#   Linux:   ver https://github.com/gitleaks/gitleaks/releases
+
+set -e
+
+# Si gitleaks no esta instalado, avisar pero NO bloquear (CI workflow es backstop).
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠  gitleaks no encontrado en PATH. El workflow CI lo correra de todos modos." >&2
+  echo "   Para escaneo local, instalar gitleaks y ejecutar de nuevo." >&2
+  exit 0
+fi
+
+# Escanea solo lo staged (rapido). Si encuentra algo, gitleaks exit code != 0.
+echo "🔍 gitleaks: escaneando cambios staged..."
+gitleaks protect --staged --no-banner --config=.gitleaks.toml --verbose
+echo "✓ gitleaks: no secretos detectados en el commit."

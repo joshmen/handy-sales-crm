@@ -1,0 +1,243 @@
+appId: host.exp.exponent
+name: catalogos-sync-validation
+---
+# Validacion exhaustiva de catalogos sincronizados
+# Asume: sesion activa + sync previo ejecutado
+
+- launchApp:
+    appId: "host.exp.exponent"
+    stopApp: false
+
+# Cerrar modales/permission dialogs opcionales que aparecen al entrar
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+# Esperar dashboard cargado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: catalogos-01-dashboard
+
+# ============================================
+# PASO 1: Navegar al tab Vender (hub catalogos)
+# ============================================
+- tapOn: "Vender"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+      index: 0
+    timeout: 30000
+
+- takeScreenshot: catalogos-02-vender-hub
+
+# ============================================
+# PASO 2: Abrir catalogo de Productos
+# ============================================
+- runFlow:
+    when:
+      visible: "Productos"
+    commands:
+      - tapOn: "Productos"
+
+- runFlow:
+    when:
+      visible: "Catalogo"
+    commands:
+      - tapOn: "Catalogo"
+
+- runFlow:
+    when:
+      visible: "Catalogo de productos"
+    commands:
+      - tapOn: "Catalogo de productos"
+
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 30000
+
+- takeScreenshot: catalogos-03-productos-lista
+
+# ============================================
+# Assertions: catalogo de productos visible
+# ============================================
+- assertVisible: "Productos"
+
+# Validar buscador/filtros (UI tipica de catalogo)
+- runFlow:
+    when:
+      visible: "Buscar"
+    commands:
+      - assertVisible: "Buscar"
+
+# Validar precios visibles ($) -> indicador de lista de precios sincronizada
+- runFlow:
+    when:
+      visible:
+        text: "\\$.*"
+    commands:
+      - assertVisible:
+          text: "\\$.*"
+
+- takeScreenshot: catalogos-04-productos-con-precios
+
+# ============================================
+# PASO 3: Abrir detalle de primer producto
+# (valida lista de precios + descuentos asociados)
+# ============================================
+- runFlow:
+    when:
+      visible:
+        text: "\\$.*"
+    commands:
+      - tapOn:
+          text: "\\$.*"
+          index: 0
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+      index: 0
+    timeout: 30000
+
+- takeScreenshot: catalogos-05-producto-detalle
+
+# ============================================
+# Assertions detalle producto: precio + descripcion + descuentos
+# ============================================
+- runFlow:
+    when:
+      visible: "Precio"
+    commands:
+      - assertVisible: "Precio"
+
+- runFlow:
+    when:
+      visible: "Lista de precios"
+    commands:
+      - assertVisible: "Lista de precios"
+
+- runFlow:
+    when:
+      visible: "Descuento"
+    commands:
+      - assertVisible: "Descuento"
+
+- runFlow:
+    when:
+      visible: "Stock"
+    commands:
+      - assertVisible: "Stock"
+
+# Volver a lista
+- back
+
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 30000
+
+# ============================================
+# PASO 4: Validar acceso a Inventario sincronizado
+# ============================================
+- back
+
+- runFlow:
+    when:
+      visible: "Más"
+    commands:
+      - tapOn: "Más"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+      index: 0
+    timeout: 30000
+
+- takeScreenshot: catalogos-06-mas-menu
+
+- runFlow:
+    when:
+      visible: "Inventario"
+    commands:
+      - tapOn: "Inventario"
+      - extendedWaitUntil:
+          visible: "Inventario"
+          timeout: 30000
+      - assertVisible: "Inventario"
+      - takeScreenshot: catalogos-07-inventario
+      - back
+
+# ============================================
+# PASO 5: Validar pantalla Sync muestra catalogos al dia
+# ============================================
+- runFlow:
+    when:
+      visible: "Sync"
+    commands:
+      - tapOn: "Sync"
+
+- runFlow:
+    when:
+      visible: "Sincronizar"
+    commands:
+      - tapOn: "Sincronizar"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+      index: 0
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Productos"
+    commands:
+      - assertVisible: "Productos"
+
+- runFlow:
+    when:
+      visible: "Listas de precios"
+    commands:
+      - assertVisible: "Listas de precios"
+
+- runFlow:
+    when:
+      visible: "Descuentos"
+    commands:
+      - assertVisible: "Descuentos"
+
+- runFlow:
+    when:
+      visible: "Promociones"
+    commands:
+      - assertVisible: "Promociones"
+
+- takeScreenshot: catalogos-08-sync-estado
+
+# ============================================
+# Screenshot final consolidado
+# ============================================
+- takeScreenshot: catalogos-09-final-catalogos-accesibles
+

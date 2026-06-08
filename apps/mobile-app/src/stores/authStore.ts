@@ -7,6 +7,25 @@ import { setAccessToken, authEventEmitter } from '@/api/client';
 import { queryClient } from '@/providers/QueryProvider';
 import { syncCursors } from '@/sync/cursors';
 
+/**
+ * Sprint 6 audit code-quality: helper centralizado para persistir el flag
+ * SESSION_EXPIRED en SecureStore. Antes habia 4 instancias duplicadas:
+ *  - L111 (login fresh -> false)
+ *  - L156 (logout -> false)
+ *  - L320 (sessionRevoked emit -> true)
+ *  - L336 (forceLogout legacy -> true)
+ * Todas con .catch(() => {}) silencioso identico.
+ * Centralizar permite cambiar el handling (telemetria, retry) en un lugar.
+ */
+function persistSessionExpired(expired: boolean): void {
+  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, expired ? 'true' : 'false').catch((e) => {
+    // Silencioso: si SecureStore falla aqui, el flag in-memory sigue siendo
+    // correcto y restoreSession en next launch tomara default false (safe).
+    // No re-throw: nunca queremos bloquear auth flow por persistencia secundaria.
+    if (__DEV__) console.warn('[persistSessionExpired] secureStorage.set failed:', e);
+  });
+}
+
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
@@ -54,6 +73,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const prevUser = get().user;
     const isDifferentUser = !!prevUser && prevUser.id !== user.id;
 
+    // Hardening 2026-06-05 (cross-user data-loss prevention):
+    // Si el user que esta entrando es DISTINTO al que estaba, el codigo de
+    // abajo wipea el WDB completo para evitar cross-tenant leak. Pero ese
+    // wipe destruiria pedidos/cobros/clientes pendientes del user anterior
+    // que aun no han llegado al server (offline, o sync push fallando 401).
+    //
+    // Bloqueamos el login con un error tipado que el UI captura para
+    // mostrar pantalla explicativa. NO persistimos tokens nuevos: el flow
+    // queda exactamente como antes del intento de login (prev user sigue
+    // siendo el dueno del SecureStore + WDB). El user puede:
+    //  (a) Cerrar sesion del vendedor2 attempt, re-loguear como vendedor1,
+    //      drenar pendientes via sync, luego logout, luego login vendedor2.
+    //  (b) Contactar a soporte si vendedor1 no esta disponible.
+    if (isDifferentUser) {
+      const { getPendingRecordCount } = await import('@/db/database');
+      const pendingCount = await getPendingRecordCount();
+      if (pendingCount > 0) {
+        // count puede ser MAX_SAFE_INTEGER si WDB query fallo (fail-safe).
+        // Marcamos countUnknown=true para que el UI muestre mensaje generico
+        // en lugar de un numero absurdo.
+        const countUnknown = pendingCount === Number.MAX_SAFE_INTEGER;
+        const displayCount = countUnknown ? 0 : pendingCount;
+        const err = new Error(
+          `PENDING_DATA_BLOCKS_USER_CHANGE: ${countUnknown ? 'estado WDB desconocido' : displayCount + ' registros pendientes'} de ${prevUser!.email}`,
+        );
+        (err as any).code = 'PENDING_DATA_BLOCKS_USER_CHANGE';
+        (err as any).pendingCount = displayCount;
+        (err as any).countUnknown = countUnknown;
+        (err as any).previousUserEmail = prevUser!.email;
+        (err as any).previousUserName = prevUser!.name;
+        throw err;
+      }
+    }
+
     // Reliability Fase 1: persistir a SecureStore PRIMERO. Si OEM Android mata
     // el proceso entre setAccessToken (in-memory) y el await Promise.all (disk),
     // el token queda en memoria pero perdido al next boot → restoreSession ve
@@ -74,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     ]);
 
     // Persistir SESSION_EXPIRED=false (login fresh limpia el flag persistido).
-    secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'false').catch(() => {});
+    persistSessionExpired(false);
 
     if (isDifferentUser) {
       // Full reset: query cache, sync cursors y WDB local. El nuevo user
@@ -84,17 +137,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // antes que loop de error que deje al user fuera.
       try { await queryClient.cancelQueries(); queryClient.clear(); } catch {}
       try { syncCursors.clear(); } catch {}
-      try {
-        const { database } = await import('@/db/database');
-        await database.write(async () => {
-          await database.unsafeResetDatabase();
-        });
-      } catch (e) {
-        // Si el reset falla, loggeamos pero NO abortamos el login —
-        // siguiente sync server-side filtrará por tenant. Stale cache
-        // ≪ que dejar al user sin poder entrar.
-        if (__DEV__) console.warn('[authStore] WDB reset failed:', e);
-      }
+      // Sprint 3 audit: usar helper safeResetWDB centralizado (DRY con logout).
+      const { safeResetWDB } = await import('@/db/database');
+      await safeResetWDB('login_cross_user');
     }
 
     // setAccessToken al final: disk persistido + cross-user reset hechos.
@@ -127,23 +172,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // entraría a login (correcto), pero al loguear se sentaba el flag en false
     // por la persistencia de login(); de todas formas escribimos explícitamente
     // aquí como defense-in-depth para el hard logout path.
-    secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'false').catch(() => {});
+    persistSessionExpired(false);
     // Audit 2026-06-01 (v5) — SEC CRIT: replicar el patrón de B1 del v4 (login()).
     // logout() es la otra vía por la que un device puede cambiar de user (caso:
     // admin desvincula device → Alert → logout(); o user tappea "Cerrar sesión"
     // y entra otro user al mismo device). Sin reset del WDB local, los datos
     // (clientes, pedidos, catálogos) del user anterior quedan accesibles para
     // el siguiente login → cross-user/cross-tenant leak idéntico al de B1.
-    // Dynamic import para evitar circular (database → stores → authStore);
-    // try/catch silencioso para no abortar el logout si el reset falla
-    // (preferimos sesión cerrada con stale WDB que loop de error que deje al
-    // user con sesión abierta).
-    try {
-      const { database } = await import('@/db/database');
-      await database.write(async () => { await database.unsafeResetDatabase(); });
-    } catch (e) {
-      if (__DEV__) console.warn('[authStore] WDB reset on logout failed:', e);
-    }
+    // Sprint 3 audit: helper safeResetWDB centralizado (DRY con login cross-user).
+    const { safeResetWDB } = await import('@/db/database');
+    await safeResetWDB('logout');
     // Audit 2026-06-01 — incluir sessionExpired: false en el reset. Sin esto,
     // si el user llegó a login screen vía banner (sessionExpired=true) y
     // ejecuta logout() manual desde un endpoint duro, el flag se quedaba
@@ -298,7 +336,8 @@ authEventEmitter.on('sessionRevoked', () => {
   useAuthStore.setState({ sessionExpired: true });
   // Audit 2026-06-01 (v4) — persistir el flag para que cold-start respete el
   // estado revocado y no monte (tabs) con tokens stale (ver restoreSession).
-  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'true').catch(() => {});
+  // Sprint 6 audit: persistSessionExpired helper centralizado.
+  persistSessionExpired(true);
 });
 
 // Backward-compat: handler legacy 'forceLogout' redirige a soft signal
@@ -314,5 +353,5 @@ authEventEmitter.on('sessionRevoked', () => {
 // `sessionExpired=true`, NO tocamos `isAuthenticated` (preservamos soft).
 authEventEmitter.on('forceLogout', () => {
   useAuthStore.setState({ sessionExpired: true });
-  secureStorage.set(STORAGE_KEYS.SESSION_EXPIRED, 'true').catch(() => {});
+  persistSessionExpired(true);
 });

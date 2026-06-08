@@ -1,0 +1,227 @@
+﻿appId: host.exp.exponent
+name: auth-flow-login-consent-dashboard-logout
+---
+# ============================================================
+# MODULO: Login + force-logout + privacy consent + dashboard
+# Prioridad: CRITICAL
+# Asume: app ya esta logueada por flow previo (login.yaml)
+# Cubre:
+#   1. Dashboard accesible post-login
+#   2. Manejo de privacy consent / permisos / anuncios
+#   3. Smoke test de tabs principales
+#   4. Force-logout desde configuracion
+#   5. Retorno a login screen con inputs visibles
+# ============================================================
+
+# ---- FASE 0: Handle modales opcionales que pueden aparecer al entrar ----
+
+# Privacy consent modal (si aparece)
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - takeScreenshot: 01-privacy-consent-modal
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Variante alternativa: consent con texto "Acepto"
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Permission dialog Android (location/notifications)
+- runFlow:
+    when:
+      visible:
+        text: "Allow"
+    commands:
+      - tapOn:
+          text: "Allow"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# Announcement / anuncio modal ("AHORA NO")
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# Update banner (si aparece)
+- runFlow:
+    when:
+      visible:
+        text: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# ---- FASE 1: Validar dashboard (Hoy) cargado ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: 02-dashboard-loaded
+
+# Assertions del dashboard: tab bar visible con tabs principales
+- assertVisible:
+    text: "Hoy"
+- assertVisible:
+    text: "Vender"
+- assertVisible:
+    text: "Cobrar"
+- assertVisible:
+    text: "M�s"
+
+# ---- FASE 2: Smoke test de navegacion entre tabs principales ----
+
+# Tab Vender
+- tapOn:
+    text: "Vender"
+- extendedWaitUntil:
+    visible:
+      text: "Vender"
+    timeout: 30000
+- takeScreenshot: 03-tab-vender
+
+# Tab Cobrar
+- tapOn:
+    text: "Cobrar"
+- extendedWaitUntil:
+    visible:
+      text: "Cobrar"
+    timeout: 30000
+- takeScreenshot: 04-tab-cobrar
+
+# Volver a Hoy (dashboard)
+- tapOn:
+    text: "Hoy"
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+- takeScreenshot: 05-back-to-dashboard
+
+# ---- FASE 3: Force-logout desde Mas -> Configuracion ----
+
+- tapOn:
+    text: "M�s"
+- extendedWaitUntil:
+    visible:
+      text: "M�s"
+    timeout: 30000
+- takeScreenshot: 06-tab-mas
+
+# Buscar opcion Configuracion / Cerrar sesion
+- runFlow:
+    when:
+      visible:
+        text: "Configuracion"
+    commands:
+      - tapOn:
+          text: "Configuracion"
+      - extendedWaitUntil:
+          visible:
+            text: "Configuracion"
+          timeout: 30000
+      - takeScreenshot: 07-configuracion-screen
+
+# Scroll para buscar boton Cerrar sesion
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- assertVisible:
+    text: "Cerrar sesión"
+- takeScreenshot: 08-cerrar-sesion-visible
+
+- tapOn:
+    text: "Cerrar sesión"
+
+# Confirmacion de logout (si aparece modal)
+- runFlow:
+    when:
+      visible:
+        text: "Confirmar"
+    commands:
+      - takeScreenshot: 09-logout-confirm-modal
+      - tapOn:
+          text: "Confirmar"
+
+- runFlow:
+    when:
+      visible:
+        text: "Si, Cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Si, Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Salir"
+    commands:
+      - tapOn:
+          text: "Salir"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---- FASE 4: Validar retorno al Login screen ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- assertVisible:
+    id: "email-input"
+- assertVisible:
+    id: "password-input"
+- assertVisible:
+    id: "login-button"
+
+- takeScreenshot: 10-login-screen-after-logout
+
+# ---- FIN: Modulo auth-flow validado ----
+

@@ -1,0 +1,315 @@
+appId: host.exp.exponent
+name: "Supervisor: vista agregada de pedidos y cobros del equipo"
+---
+# ============================================================
+# MODULO: SUPERVISOR mobile — vistas agregadas equipo (HIGH GAP)
+# Inventario: HIGH gap #1
+# Backend: GET /api/mobile/supervisor/pedidos + /api/mobile/supervisor/cobros
+# Sprint correctivo 2026-06-06
+#
+# Cubre:
+#   1. Login con supervisor@jeyma.com / test123
+#   2. Tab Vender (pedidos del equipo) — lista NO vacia
+#   3. Filtros de rango Hoy / Semana / Mes
+#   4. Tab Cobrar (cobros del equipo) — lista NO vacia
+#   5. Cross-check: vendedores listados coinciden con /mis-vendedores
+#   6. Screenshot proof por fase para auditoria visual de scoping
+#
+# Riesgo cubierto: over-share (ver pedidos/cobros de OTRO supervisor)
+#                  o under-share (no ver subordinados propios).
+# Reusa fixtures: supervisor@jeyma.com tiene >=1 vendedor asignado
+#                 (alineado con suite-supervisor-mobile-flow.yaml).
+# ============================================================
+
+- launchApp:
+    clearState: true
+
+# ---- Aviso de Privacidad opcional ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login SUPERVISOR ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "supervisor@jeyma.com"
+
+- pressKey: "TAB"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: supervisor-pedcob-01-login
+
+# ---- FASE 2: Consents / permisos post-login ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+# ---- FASE 3: Dashboard SUPERVISOR loaded ----
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 30000
+
+- assertVisible: "Vendedores"
+- takeScreenshot: supervisor-pedcob-02-dashboard
+
+# ---- FASE 4: Capturar vendedores subordinados (cross-check) ----
+# La seccion EQUIPO del dashboard ya lista los vendedores que retorna
+# /api/mobile/supervisor/mis-vendedores. Capturamos ese state para
+# usarlo como referencia visual contra las pantallas /pedidos y /cobros.
+
+- tapOn: "Equipo"
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+# Seed garantizado: supervisor@jeyma.com supervisa Vendedor 1 Jeyma
+- assertVisible: "Vendedor 1 Jeyma"
+- takeScreenshot: supervisor-pedcob-03-equipo-mis-vendedores
+
+# ---- FASE 5: Tab Vender = vista agregada de Pedidos del equipo ----
+
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+# Header de la vista debe declarar que es del equipo (supervisor scoping)
+- assertVisible:
+    text: "Pedidos"
+
+- takeScreenshot: supervisor-pedcob-04-vender-dashboard
+
+# ---- FASE 5a: Validar lista NO vacia ----
+# Seed garantiza que Vendedor 1 Jeyma tiene >=1 pedido del dia.
+# BUG / FIX TODO: si la pantalla aun no expone testID "pedido-row-*",
+# este assert cae al texto visible del vendedor subordinado.
+# Tracking: ver MobileSupervisorEndpoints.GetPedidos response shape.
+- runFlow:
+    when:
+      visible:
+        id: "pedido-row-0"
+    commands:
+      - assertVisible:
+          id: "pedido-row-0"
+      - takeScreenshot: supervisor-pedcob-05-pedidos-lista-testid
+
+- runFlow:
+    when:
+      notVisible:
+        id: "pedido-row-0"
+    commands:
+      # Fallback: validar visualmente que el subordinado aparece como autor
+      - assertVisible: "Vendedor 1 Jeyma"
+      - takeScreenshot: supervisor-pedcob-05-pedidos-lista-fallback
+
+# ---- FASE 5b: Filtros de rango Hoy / Semana / Mes ----
+
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-pedcob-06-filtro-hoy
+
+- runFlow:
+    when:
+      visible: "Semana"
+    commands:
+      - tapOn: "Semana"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-pedcob-07-filtro-semana
+
+- runFlow:
+    when:
+      visible: "Mes"
+    commands:
+      - tapOn: "Mes"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-pedcob-08-filtro-mes
+
+# ---- FASE 5c: Sub-exposicion check ----
+# Si la vista trae pedidos, deben ser de vendedores de MI equipo.
+# Lista de vendedores AJENOS (de seed) que NO deberian aparecer:
+#   - "Admin Huichol"   (otro tenant / otro supervisor)
+#   - "Admin Centro"    (otro tenant)
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: supervisor-pedcob-09-no-leak-pedidos
+
+# ---- FASE 6: Tab Cobrar = vista agregada de Cobros del equipo ----
+
+- tapOn: "Cobrar"
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Facturado"
+    timeout: 15000
+
+- assertVisible: "Cobrado"
+- assertVisible: "Pendiente de Cobro"
+- takeScreenshot: supervisor-pedcob-10-cobrar-dashboard
+
+# ---- FASE 6a: Historial de cobros (subordinados) ----
+
+- runFlow:
+    when:
+      visible: "Historial"
+    commands:
+      - tapOn: "Historial"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: supervisor-pedcob-11-cobros-historial
+
+# Validar al menos un cobro / row visible
+- runFlow:
+    when:
+      visible:
+        id: "cobro-row-0"
+    commands:
+      - assertVisible:
+          id: "cobro-row-0"
+      - takeScreenshot: supervisor-pedcob-12-cobros-lista-testid
+
+- runFlow:
+    when:
+      notVisible:
+        id: "cobro-row-0"
+    commands:
+      # Fallback: visualmente el subordinado aparece en algun cobro
+      - takeScreenshot: supervisor-pedcob-12-cobros-lista-fallback
+
+# ---- FASE 6b: Cross-rol no leak en cobros ----
+
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: supervisor-pedcob-13-no-leak-cobros
+
+# ---- FASE 6c: Filtros de rango en cobros ----
+
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-pedcob-14-cobros-filtro-hoy
+
+- runFlow:
+    when:
+      visible: "Semana"
+    commands:
+      - tapOn: "Semana"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-pedcob-15-cobros-filtro-semana
+
+- runFlow:
+    when:
+      visible: "Mes"
+    commands:
+      - tapOn: "Mes"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: supervisor-pedcob-16-cobros-filtro-mes
+
+# ---- FASE 7: Screenshot final consolidado ----
+
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+- takeScreenshot: supervisor-pedcob-17-cierre-equipo
+
+# ---- FASE 8: Logout limpio (deja device estable para siguiente suite) ----
+
+- tapOn:
+    text: "Más"
+    optional: true
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: supervisor-pedcob-18-logout

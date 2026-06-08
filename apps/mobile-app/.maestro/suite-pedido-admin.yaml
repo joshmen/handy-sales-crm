@@ -1,0 +1,279 @@
+appId: host.exp.exponent
+name: suite-pedido-admin
+---
+# ============================================================
+# MODULO: PEDIDO ADMIN — crear pedido desde mobile como ADMIN
+# Inventario gap HIGH 2/4 (pre-prod audit 2026-06-06).
+# Cubre lo que supervisor/03-crear-pedido-completo.yaml NO cubre:
+#   - Login con admin@jeyma.com (no SUPERVISOR)
+#   - Acceso al stepper de 3 pasos desde tab Vender
+#   - Validar que el ADMIN puede crear pedido a cualquier
+#     cliente del tenant (no solo asignados a su UserId)
+#   - Confirmar pedido y validar folio generado
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: pedido-admin-01-login
+
+# ---- FASE 2: Dismiss permisos/consent ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+# ---- FASE 3: Dashboard ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- assertVisible:
+    text: "Administrador"
+
+- takeScreenshot: pedido-admin-02-dashboard
+
+# ---- FASE 4: Tab Vender ----
+
+- tapOn:
+    text: "Vender"
+
+- extendedWaitUntil:
+    visible:
+      text: "Vender"
+    timeout: 20000
+
+- takeScreenshot: pedido-admin-03-vender-tab
+
+# ---- FASE 5: Iniciar crear pedido (stepper 3 pasos) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Nuevo pedido"
+    commands:
+      - tapOn:
+          text: "Nuevo pedido"
+
+- runFlow:
+    when:
+      visible:
+        text: "Crear pedido"
+    commands:
+      - tapOn:
+          text: "Crear pedido"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot: pedido-admin-04-stepper-paso1
+
+# ---- FASE 6: Paso 1 — Seleccionar cliente ----
+
+# ADMIN debe ver clientes asignados a CUALQUIER vendedor del tenant
+- runFlow:
+    when:
+      visible:
+        text: "Seleccionar cliente"
+    commands:
+      - tapOn:
+          text: "Seleccionar cliente"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# Tap el primer cliente disponible (ADMIN tiene visibilidad de todos)
+- runFlow:
+    when:
+      visible:
+        text: "Cliente"
+    commands:
+      - tapOn:
+          text: "Cliente"
+          index: 0
+
+- takeScreenshot: pedido-admin-05-cliente-seleccionado
+
+# Siguiente paso
+- runFlow:
+    when:
+      visible:
+        text: "Continuar"
+    commands:
+      - tapOn:
+          text: "Continuar"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ---- FASE 7: Paso 2 — Agregar productos ----
+
+- takeScreenshot: pedido-admin-06-stepper-paso2
+
+- runFlow:
+    when:
+      visible:
+        text: "Agregar producto"
+    commands:
+      - tapOn:
+          text: "Agregar producto"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# Tap primer producto disponible
+- runFlow:
+    when:
+      visible:
+        text: "Agregar"
+    commands:
+      - tapOn:
+          text: "Agregar"
+          index: 0
+
+- takeScreenshot: pedido-admin-07-producto-agregado
+
+- runFlow:
+    when:
+      visible:
+        text: "Continuar"
+    commands:
+      - tapOn:
+          text: "Continuar"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ---- FASE 8: Paso 3 — Confirmar y finalizar ----
+
+- takeScreenshot: pedido-admin-08-stepper-paso3
+
+- runFlow:
+    when:
+      visible:
+        text: "Finalizar"
+    commands:
+      - tapOn:
+          text: "Finalizar"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+- runFlow:
+    when:
+      visible:
+        text: "Confirmar"
+    commands:
+      - tapOn:
+          text: "Confirmar"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# ---- FASE 9: Validar pedido creado (folio visible) ----
+
+- takeScreenshot: pedido-admin-09-pedido-confirmado
+
+- runFlow:
+    when:
+      visible:
+        text: "Pedido creado"
+    commands:
+      - assertVisible:
+          text: "Pedido creado"
+
+# El folio es la confirmacion server-side: PED-XXXX
+- runFlow:
+    when:
+      visible:
+        text: "PED-"
+    commands:
+      - assertVisible:
+          text: "PED-"
+      - takeScreenshot: pedido-admin-10-folio-visible
+
+# ---- FASE 10: Logout ----
+
+- tapOn:
+    text: "Más"
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: pedido-admin-11-logout

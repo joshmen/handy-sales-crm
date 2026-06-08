@@ -1,0 +1,346 @@
+appId: host.exp.exponent
+name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-cobros-equipo
+# Rol: SUPERVISOR
+# Capa: mobile
+#
+# Objetivo: Verificar que el SUPERVISOR ve la vista agregada de
+# cobros del equipo al entrar al tab "Cobrar" (renderiza
+# AdminTenantCobrosList), puede cambiar filtros de rango (Hoy /
+# Ayer / 7d / 30d), abrir el detalle de un cobro y NO ve cobros
+# de otros tenants / supervisores (no-leak).
+#
+# Cobertura REAL (no solo navegar):
+#   1. Login supervisor@jeyma.com / test123
+#   2. Navegar al tab Cobrar
+#   3. assertVisible header "Cobros" (vista admin/supervisor)
+#   4. Cambiar filtros de rango y validar que la lista responde
+#   5. Tap en un cobro -> ruta /cobrar/detalle-cobro/[id]
+#   6. assertNotVisible vendedores de OTROS tenants (no-leak)
+#   7. Logout limpio
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/cobros
+#   GET /api/mobile/supervisor/mis-vendedores  (consumido por hook)
+#
+# Pantalla:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx
+#   -> rama isAdminOrSupervisor renderiza
+#      <AdminTenantCobrosList /> con header "Cobros".
+#
+# Seeds garantizados (suite-supervisor-mobile-flow):
+#   supervisor@jeyma.com supervisa "Vendedor 1 Jeyma" con cobros.
+#
+# PROD BUG / FIX TODO: el componente AdminTenantCobrosList NO
+# expone testIDs en cada row ni en los chips de filtro Hoy/Ayer/7d/30d
+# (ver apps/mobile-app/src/components/admin/AdminTenantCobrosList.tsx).
+# Esto obliga a este test a apoyarse en texto visible y a usar
+# runFlow:when:visible para los chips. Cuando se agreguen
+# `cobro-row-0` y `filtro-rango-hoy/ayer/7d/30d`, este test debe
+# migrarse a esos selectores para hacerlo determinista en CI.
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+# ---- Aviso de Privacidad opcional (primer arranque del device) ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Si quedó una sesión previa abierta, cerrarla para no contaminar el caso.
+- runFlow:
+    when:
+      visible:
+        text: "Más"
+    commands:
+      - tapOn:
+          text: "Más"
+      - runFlow:
+          when:
+            visible: "Configuración"
+          commands:
+            - tapOn:
+                text: "Configuración"
+            - scrollUntilVisible:
+                element:
+                  text: "Cerrar sesión"
+                direction: DOWN
+                timeout: 15000
+                speed: 40
+            - tapOn:
+                text: "Cerrar sesión"
+            - runFlow:
+                when:
+                  visible:
+                    text: "Sí, cerrar sesión"
+                commands:
+                  - tapOn:
+                      text: "Sí, cerrar sesión"
+
+# ============================================================
+# FASE 1: Login SUPERVISOR
+# ============================================================
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 45000
+
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: "supervisor@jeyma.com"
+
+- pressKey: "TAB"
+
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: "test123"
+- hideKeyboard
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: sup-cobros-equipo-01-login
+
+# ---- Permisos / consents post-login (opcionales) ----
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Más tarde"
+    commands:
+      - tapOn:
+          text: "Más tarde"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+# ============================================================
+# FASE 2: Dashboard SUPERVISOR cargado
+# ============================================================
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 45000
+
+- assertVisible: "Mi Equipo"
+- takeScreenshot: sup-cobros-equipo-02-dashboard
+
+# ============================================================
+# FASE 3: Navegar al tab Cobrar
+# ============================================================
+
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+# El componente para SUPERVISOR/ADMIN renderiza un header con título "Cobros"
+# (CobrarAdminContent -> AdminTenantCobrosList). Si el rol fuera VENDEDOR,
+# el header sería el dashboard con KPIs "Facturado / Cobrado / Pendiente de Cobro".
+- extendedWaitUntil:
+    visible: "Cobros"
+    timeout: 20000
+
+- assertVisible: "Cobros"
+- takeScreenshot: sup-cobros-equipo-03-vista-cobros-equipo
+
+# ============================================================
+# FASE 4: Filtros de rango Hoy / Ayer / 7d / 30d
+# ============================================================
+# La lista debe re-renderizarse al cambiar el preset.
+
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: sup-cobros-equipo-04-filtro-hoy
+
+- runFlow:
+    when:
+      visible: "Ayer"
+    commands:
+      - tapOn: "Ayer"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: sup-cobros-equipo-05-filtro-ayer
+
+- runFlow:
+    when:
+      visible: "7d"
+    commands:
+      - tapOn: "7d"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: sup-cobros-equipo-06-filtro-7d
+
+- runFlow:
+    when:
+      visible: "30d"
+    commands:
+      - tapOn: "30d"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: sup-cobros-equipo-07-filtro-30d
+
+# Volver a "Hoy" para el resto del flujo (estado determinista).
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd:
+          timeout: 4000
+
+# ============================================================
+# FASE 5: Lista de cobros del equipo — assertVisible vendedor subordinado
+# ============================================================
+# Seed garantiza que "Vendedor 1 Jeyma" tiene >= 1 cobro reciente.
+# Cada row del AdminTenantCobrosList muestra el nombre del vendedor
+# (item.usuarioNombre) dentro de un badge "User". Esto es el efecto
+# de que el supervisor está viendo agregado del equipo (no solo lo suyo).
+
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - assertVisible: "Vendedor 1 Jeyma"
+      - takeScreenshot: sup-cobros-equipo-08-lista-con-subordinado
+
+# Fallback: si por seed timing no hay cobros del día,
+# documentar el estado vacío del componente para auditoría visual.
+- runFlow:
+    when:
+      visible: "Sin cobros"
+    commands:
+      - takeScreenshot: sup-cobros-equipo-08b-empty-state
+
+# ============================================================
+# FASE 6: No-leak — el supervisor NO ve cobros de OTROS tenants
+# ============================================================
+# Vendedores/usuarios de OTROS tenants en seed:
+#   - "Admin Huichol"   (tenant huichol)
+#   - "Admin Centro"    (tenant centro)
+#   - "Admin Rutas Norte"
+# Si alguno de estos nombres apareciera en el feed de cobros del
+# supervisor de Jeyma, sería data leak entre tenants (CRITICO).
+
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- assertNotVisible: "Admin Rutas Norte"
+
+- takeScreenshot: sup-cobros-equipo-09-no-leak
+
+# ============================================================
+# FASE 7: Tap en un cobro -> abrir detalle
+# ============================================================
+# Si hay un cobro de "Vendedor 1 Jeyma" visible, tap para validar
+# que la navegación a /cobrar/detalle-cobro/[id] no se rompe y la
+# pantalla de detalle abre correctamente.
+
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - tapOn: "Vendedor 1 Jeyma"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      # Header esperado en detalle de cobro (apps/mobile-app/app/(tabs)/cobrar/detalle-cobro/[cobroId].tsx)
+      - extendedWaitUntil:
+          visible: "Detalle"
+          timeout: 15000
+      - takeScreenshot: sup-cobros-equipo-10-detalle-cobro
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: "Cobros"
+          timeout: 15000
+
+# ============================================================
+# FASE 8: Pull-to-refresh — verificar refetch del feed
+# ============================================================
+- swipe:
+    direction: DOWN
+    duration: 800
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- assertVisible: "Cobros"
+- takeScreenshot: sup-cobros-equipo-11-post-refresh
+
+# ============================================================
+# FASE 9: Logout limpio (deja device estable para siguiente suite)
+# ============================================================
+
+- tapOn:
+    text: "Más"
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: sup-cobros-equipo-12-logout

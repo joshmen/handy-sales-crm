@@ -177,13 +177,13 @@ function MasScreenContent() {
     },
   ];
 
-  // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" en su propia
+  // C.2 hardening (fix prod 2026-06-04): "Sincronización completa" en su propia
   // seccion al final del menu Mas, NO inline en sync.tsx. Reduce visibilidad
   // accidental durante uso diario. La sub-pantalla tiene blockers desglosados
-  // + TypeToConfirmModal con palabra "RESTAURAR" como friccion final.
+  // + TypeToConfirmModal con palabra "SINCRONIZAR" como friccion final.
   const emergencyItems: MenuItem[] = [
     {
-      label: 'Borrado de datos',
+      label: 'Sincronización completa',
       icon: <Trash2 size={20} color="#dc2626" />,
       iconBg: '#fef2f2',
       onPress: () => router.push('/(tabs)/restaurar-datos' as any),
@@ -270,7 +270,7 @@ function MasScreenContent() {
           final + iconografia destructiva para que solo se descubra cuando
           se necesita y NO como atajo en scroll normal. */}
       <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.section}>
-        <Text style={styles.sectionTitle}>Si algo esta mal</Text>
+        <Text style={styles.sectionTitle}>Si algo está mal</Text>
         {emergencyItems.map((item) => (
           <TouchableOpacity
             key={item.label}

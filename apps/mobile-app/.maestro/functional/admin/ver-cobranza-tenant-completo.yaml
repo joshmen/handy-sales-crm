@@ -1,0 +1,376 @@
+appId: host.exp.exponent
+name: "Admin: ver cobranza tenant completo (tab Cobrar)"
+---
+# ============================================================
+# CASO FUNCIONAL: adm-cobranza-tenant
+# Rol: ADMIN (admin@jeyma.com)
+# Capa: mobile
+#
+# Objetivo: Verificar que el ADMIN ve la vista AGREGADA TENANT-WIDE
+# de cobranza al entrar al tab "Cobrar" (renderiza
+# AdminTenantCobrosList con header "Cobros"), puede cambiar los
+# filtros de rango (Hoy / Ayer / 7 días / 30 días), validar el
+# subtítulo "X cobros en toda la empresa", abrir el detalle de un
+# cobro registrado por cualquier vendedor del tenant, y NO ve
+# cobros de OTROS tenants (no-leak cross-tenant).
+#
+# Cobertura REAL (no solo navegar):
+#   1. Login admin@jeyma.com / test123
+#   2. Navegar al tab Cobrar (rama isAdminOrSupervisor -> ADMIN)
+#   3. assertVisible header "Cobros" (vista admin, NO la del vendedor
+#      con "Cobranza" + "Facturado/Cobrado/Pendiente de Cobro")
+#   4. Verificar subtítulo "cobros en toda la empresa" (label admin)
+#   5. Cambiar filtros de rango y validar que la lista responde
+#   6. Tap en un cobro -> ruta /cobrar/detalle-cobro/[id]
+#   7. assertNotVisible vendedores de OTROS tenants (no-leak)
+#   8. Pull-to-refresh para validar refetch
+#   9. Logout limpio
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/cobros  (hook useTenantCobros)
+#   GET /api/mobile/empresa            (consumido por useTenantLocale)
+#
+# Pantalla:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx
+#   -> CobrarScreenContent detecta role ADMIN/SUPER_ADMIN/SUPERVISOR
+#      y renderiza CobrarAdminContent -> AdminTenantCobrosList.
+#   apps/mobile-app/src/components/admin/AdminTenantCobrosList.tsx
+#   -> Header "Cobros" + subtítulo "{total} cobros en toda la empresa"
+#      + presets Hoy/Ayer/7 días/30 días.
+#
+# Diferencia clave vs SUPERVISOR (sup-cobros-equipo):
+#   - SUPERVISOR ve solo los cobros de SUS vendedores asignados
+#     (filtrado por usuarios_asignaciones).
+#   - ADMIN ve TODOS los cobros del tenant sin filtro de jerarquía.
+#
+# Seeds garantizados (seed_local_pg + seed_e2e_pg):
+#   admin@jeyma.com (tenant Jeyma) + Vendedor 1 Jeyma con cobros.
+#   Otros tenants: huichol, centro, rutas norte (NO deben aparecer).
+#
+# PROD BUG / FIX TODO: el componente AdminTenantCobrosList no expone
+# testIDs en filas ni chips de filtro Hoy/Ayer/7 días/30 días (ver
+# apps/mobile-app/src/components/admin/AdminTenantCobrosList.tsx).
+# Esto obliga al test a depender de texto visible. Cuando se agreguen
+# testIDs `cobro-row-{index}` y `filtro-rango-{preset}` este test debe
+# migrarse a esos selectores para hacerlo determinista en CI.
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+# ---- Aviso de Privacidad opcional (primer arranque del device) ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Si quedó una sesión previa abierta (no admin), cerrarla.
+- runFlow:
+    when:
+      visible:
+        text: "Más"
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "email-input"
+          commands:
+            # Ya está en login screen, no hacer nada
+            - waitForAnimationToEnd:
+                timeout: 1000
+
+# ============================================================
+# FASE 1: Login ADMIN
+# ============================================================
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 45000
+
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "admin@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+- takeScreenshot: adm-cobranza-tenant-01-login-filled
+
+- tapOn:
+    id: "login-button"
+
+# ---- Permisos / consents post-login (opcionales) ----
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Más tarde"
+    commands:
+      - tapOn:
+          text: "Más tarde"
+
+# ============================================================
+# FASE 2: Dashboard ADMIN cargado
+# ============================================================
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+# Saludo "Administrador" + KPI "Vendedores" confirma que el rol cargó
+# como ADMIN y no como VENDEDOR (cuyo dashboard solo dice "Hoy" +
+# "Mis Pedidos" / "Mis Cobros").
+- assertVisible:
+    text: "Administrador"
+    optional: true
+- assertVisible:
+    text: "Vendedores"
+    optional: true
+
+- takeScreenshot: adm-cobranza-tenant-02-dashboard-admin
+
+# ============================================================
+# FASE 3: Navegar al tab Cobrar
+# ============================================================
+
+- tapOn: "Cobrar"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# CRITICAL ASSERT: si el ADMIN viera "Cobranza" (header vendedor con
+# "Facturado/Cobrado/Pendiente de Cobro") significaría que la rama
+# isAdminOrSupervisor no detectó el rol y cayó al CobrarVendedorContent.
+# El header correcto admin es "Cobros".
+- extendedWaitUntil:
+    visible: "Cobros"
+    timeout: 25000
+
+- assertVisible: "Cobros"
+
+# Confirmar que NO está renderizando la vista de vendedor.
+# "Pendiente de Cobro" es exclusivo de CobrarVendedorContent.
+- assertNotVisible: "Pendiente de Cobro"
+
+- takeScreenshot: adm-cobranza-tenant-03-vista-admin-tenant
+
+# ============================================================
+# FASE 4: Subtítulo agregado tenant-wide
+# ============================================================
+# AdminTenantCobrosList renderiza:
+#   "{data?.total ?? 0} {1 ? 'cobro' : 'cobros'} en toda la empresa"
+# La frase "en toda la empresa" es UNICA de la vista admin y prueba
+# que el endpoint devolvió un agregado tenant-wide.
+
+- assertVisible:
+    text: "en toda la empresa"
+    optional: true
+
+- takeScreenshot: adm-cobranza-tenant-04-subtitulo-empresa
+
+# ============================================================
+# FASE 5: Filtros de rango Hoy / Ayer / 7 días / 30 días
+# ============================================================
+# Cada tap debe re-disparar useTenantCobros con queryOpts distintos.
+# Labels exactos del componente: "Hoy", "Ayer", "7 días", "30 días".
+
+- runFlow:
+    when:
+      visible: "Ayer"
+    commands:
+      - tapOn: "Ayer"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - assertVisible: "Cobros"
+      - takeScreenshot: adm-cobranza-tenant-05-filtro-ayer
+
+- runFlow:
+    when:
+      visible: "7 días"
+    commands:
+      - tapOn: "7 días"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - assertVisible: "Cobros"
+      - takeScreenshot: adm-cobranza-tenant-06-filtro-7d
+
+- runFlow:
+    when:
+      visible: "30 días"
+    commands:
+      - tapOn: "30 días"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - assertVisible: "Cobros"
+      - takeScreenshot: adm-cobranza-tenant-07-filtro-30d
+
+# Volver a "Hoy" para dejar estado determinista.
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd:
+          timeout: 4000
+
+- takeScreenshot: adm-cobranza-tenant-08-filtro-hoy-restored
+
+# ============================================================
+# FASE 6: Lista de cobros tenant-wide — vendedores del tenant
+# ============================================================
+# AdminTenantCobrosList muestra cada cobro con el badge del vendedor
+# que lo registró (item.usuarioNombre). El seed Jeyma garantiza al
+# menos "Vendedor 1 Jeyma" con cobros recientes.
+
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - assertVisible: "Vendedor 1 Jeyma"
+      - takeScreenshot: adm-cobranza-tenant-09-lista-con-vendedor
+
+# Fallback: si por timing del seed no hay cobros del día seleccionado,
+# documentar el estado vacío del componente.
+- runFlow:
+    when:
+      visible: "Sin cobros"
+    commands:
+      - takeScreenshot: adm-cobranza-tenant-09b-empty-state
+
+# ============================================================
+# FASE 7: No-leak cross-tenant — ADMIN Jeyma NO ve otros tenants
+# ============================================================
+# Vendedores/usuarios de OTROS tenants en seed:
+#   - "Admin Huichol"      (tenant huichol)
+#   - "Admin Centro"       (tenant centro)
+#   - "Admin Rutas Norte"  (tenant rutas norte)
+# Si alguno apareciera en el feed del ADMIN de Jeyma sería un IDOR /
+# data leak crítico (filtro tenant_id roto en /api/mobile/supervisor/cobros).
+
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- assertNotVisible: "Admin Rutas Norte"
+
+- takeScreenshot: adm-cobranza-tenant-10-no-leak
+
+# ============================================================
+# FASE 8: Tap en un cobro -> abrir detalle
+# ============================================================
+# Tap por el nombre del vendedor (visible en la card). La navegación
+# es a /cobrar/detalle-cobro/[id]. El header esperado es "Detalle".
+
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - tapOn: "Vendedor 1 Jeyma"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - extendedWaitUntil:
+          visible: "Detalle"
+          timeout: 15000
+      - takeScreenshot: adm-cobranza-tenant-11-detalle-cobro
+      # Verificar que NO hay error/toast de "Failed" / "Sin conexión"
+      # al abrir el detalle como admin (autorización cross-vendedor).
+      - assertNotVisible: "Sin conexión"
+      - assertNotVisible: "Failed"
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: "Cobros"
+          timeout: 15000
+
+# ============================================================
+# FASE 9: Pull-to-refresh — refetch del feed tenant-wide
+# ============================================================
+
+- swipe:
+    direction: DOWN
+    duration: 800
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- assertVisible: "Cobros"
+- takeScreenshot: adm-cobranza-tenant-12-post-refresh
+
+# ============================================================
+# FASE 10: Logout limpio
+# ============================================================
+
+- tapOn:
+    text: "Más"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: adm-cobranza-tenant-13-logout

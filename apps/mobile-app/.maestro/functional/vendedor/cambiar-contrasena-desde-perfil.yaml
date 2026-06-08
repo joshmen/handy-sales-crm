@@ -1,0 +1,173 @@
+# =============================================================================
+# Maestro E2E — VENDEDOR: cambiar contraseña forzada (mustChangePassword=true)
+# -----------------------------------------------------------------------------
+# Use case: cambiar-contrasena-desde-perfil
+# Role: VENDEDOR
+# Layer: mobile (React Native + Expo Go)
+#
+# Flujo cubierto (único entry point real disponible en la app):
+#   1. Login con vendedor cuyo backend devuelve user.mustChangePassword=true
+#   2. AuthGate (app/_layout.tsx) redirige a /(auth)/cambiar-password
+#   3. Validación client-side (<8 chars muestra "al menos 8 caracteres")
+#   4. Bloqueo de hardware back en Android (BackHandler returns true)
+#   5. Submit con password valido → POST /api/mobile/auth/change-password (200)
+#      → setUser({mustChangePassword:false}) → router.replace('/(tabs)')
+#   6. Verificación de aterrizaje en dashboard del vendedor
+#
+# NOTA: NO existe en el código actual un entry point voluntario "Cambiar
+# contraseña" en (tabs)/profile.tsx ni en (tabs)/configuracion.tsx; la pantalla
+# cambiar-password.tsx solo es alcanzable vía AuthGate cuando el flag forzado
+# está activo. Este test cubre ese único flujo real.
+#
+# Pre-requisitos manuales (ver setup_required en el spec):
+#   - Emulador Android con Expo Go corriendo
+#   - Metro bundler en :8081
+#   - Backend mobile-api en localhost:1052
+#   - SQL previo:
+#       UPDATE "Usuarios"
+#          SET must_change_password = true,
+#              password_hash = '<bcrypt-de-Temp123!>'
+#        WHERE email = 'vendedor-temp@jeyma.com';
+#   - Tras correr el test, re-aplicar el SQL para permitir re-runs
+# =============================================================================
+appId: host.exp.exponent
+name: vendedor - cambiar contrasena forzada desde AuthGate
+tags:
+  - vendedor
+  - auth
+  - cambiar-password
+  - mobile
+---
+# -----------------------------------------------------------------------------
+# Paso 0 — Reset defensivo de sesión previa (si quedó un dashboard abierto)
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn:
+          text: "Más"
+          optional: true
+      - waitForAnimationToEnd
+      - scroll
+      - tapOn:
+          text: "Cerrar Sesión"
+          optional: true
+      - waitForAnimationToEnd
+      # Confirmación del ConfirmModal de logout
+      - tapOn:
+          text: "Cerrar Sesión"
+          optional: true
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 1 — Esperar pantalla de login
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Iniciar Sesión"
+    timeout: 15000
+
+# -----------------------------------------------------------------------------
+# Paso 2 — Login con vendedor que tiene mustChangePassword=true
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "input-email"
+    optional: true
+- inputText: "vendedor-temp@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "input-password"
+    optional: true
+- inputText: "Temp123!"
+- hideKeyboard
+
+- tapOn:
+    text: "Iniciar Sesión"
+- waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 3 — AuthGate redirige a /(auth)/cambiar-password
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Cambia tu contraseña"
+    timeout: 10000
+
+# Aserciones sobre los elementos clave de la pantalla forzada
+- assertVisible: "Tu administrador te creó una contraseña temporal"
+- assertVisible: "Contraseña actual"
+- assertVisible: "Nueva contraseña"
+- assertVisible: "Confirmar nueva contraseña"
+- assertVisible: "Guardar nueva contraseña"
+- assertVisible: "Cerrar sesión"
+
+# Artefacto QA: pantalla forzada visible
+- takeScreenshot: cambiar-pwd-01-pantalla-forzada
+
+# -----------------------------------------------------------------------------
+# Paso 4 — Bloqueo de hardware back en Android
+# (cambiar-password.tsx líneas 45-51: BackHandler.addEventListener returns true)
+# -----------------------------------------------------------------------------
+- pressKey: "Back"
+- waitForAnimationToEnd
+- assertVisible: "Cambia tu contraseña"
+
+# -----------------------------------------------------------------------------
+# Paso 5 — Validación client-side: password nuevo con <8 caracteres
+# (validate() línea 68 → "La nueva contraseña debe tener al menos 8 caracteres")
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "cambiar-pwd-old"
+- inputText: "Temp123!"
+- hideKeyboard
+
+- tapOn:
+    id: "cambiar-pwd-new"
+- inputText: "abc"
+- hideKeyboard
+
+- tapOn:
+    id: "cambiar-pwd-confirm"
+- inputText: "abc"
+- hideKeyboard
+
+- tapOn:
+    id: "cambiar-pwd-submit"
+- waitForAnimationToEnd
+- assertVisible: "al menos 8 caracteres"
+
+# -----------------------------------------------------------------------------
+# Paso 6 — Reintento con password válido (>=8 chars, ambos campos coinciden,
+# distinto del actual)
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "cambiar-pwd-new"
+- eraseText: 100
+- inputText: "Nuevo123Pass!"
+- hideKeyboard
+
+- tapOn:
+    id: "cambiar-pwd-confirm"
+- eraseText: 100
+- inputText: "Nuevo123Pass!"
+- hideKeyboard
+
+- tapOn:
+    id: "cambiar-pwd-submit"
+- waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 7 — Backend responde 200 → onSuccess → setUser({mustChangePassword:false})
+# → router.replace('/(tabs)') → aterrizamos en el dashboard del vendedor
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "ACCIONES RÁPIDAS|Hoy|Buenas"
+      enabled: true
+    timeout: 10000
+
+# La pantalla forzada ya no debe estar visible
+- assertNotVisible: "Cambia tu contraseña"
+
+# Artefacto QA: dashboard del vendedor tras cambio exitoso
+- takeScreenshot: cambiar-pwd-02-llegada-tabs

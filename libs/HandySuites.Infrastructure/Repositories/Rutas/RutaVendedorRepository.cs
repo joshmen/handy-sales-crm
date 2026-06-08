@@ -146,9 +146,13 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
         var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
+        // Sprint correctivo 2026-06-06: SQLite no soporta ORDER BY sobre
+        // TimeSpan (NotSupportedException). PostgreSQL si. Workaround
+        // cross-DB: ordenar por Ticks (long) que ambos soportan. Resultado
+        // identico — el sort key es el tick count del TimeSpan.
         var items = await query
             .OrderByDescending(r => r.Fecha)
-            .ThenBy(r => r.HoraInicioEstimada)
+            .ThenBy(r => r.HoraInicioEstimada.HasValue ? r.HoraInicioEstimada.Value.Ticks : 0L)
             .Skip((pagina - 1) * tamano)
             .Take(tamano)
             .Select(r => new RutaListaDto
@@ -426,7 +430,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         {
             g.RutaId = rutaId;
             g.ActualizadoEn = ahora;
-            g.Version++;
+            // Version++ removed — HandySalesDbContext.SaveChangesAsync interceptor
+            // auto-increments Version for Modified entities (avoid double-increment).
         }
 
         await _db.SaveChangesAsync();

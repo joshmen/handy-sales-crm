@@ -1,0 +1,246 @@
+appId: host.exp.exponent
+name: "Funcional VENDEDOR > Crear pedido Venta Directa con cobro inmediato"
+tags:
+  - functional
+  - vendedor
+  - vender
+  - venta-directa
+---
+
+# ══════════════════════════════════════════════════════════════════════
+# CASO DE USO: crear-pedido-venta-directa-con-cobro-inmediato
+# ROL: VENDEDOR (rol minimo necesario — no es test de RBAC)
+# CAPA: mobile (apps/mobile-app — React Native / Expo / WatermelonDB)
+#
+# OBJETIVO:
+#   El vendedor logueado crea desde el tab "Vender" un pedido tipo
+#   VENTA DIRECTA, selecciona cliente, agrega producto, elige metodo
+#   de pago Efectivo y confirma con el boton COBRAR. La pantalla
+#   "Venta Completada" confirma cobro inmediato y NO genera saldo
+#   pendiente (diferenciador vs Preventa).
+#
+# ENDPOINTS EJERCITADOS:
+#   - POST /api/mobile/venta-directa  -> 201 (crea pedido pagado)
+#   - POST /api/mobile/cobros         -> 201 (cobro asociado, opcional
+#                                              segun version backend)
+#
+# PRE-REQUISITOS:
+#   1) Ejecutar primero:
+#        apps/mobile-app/.maestro/auth/01-login-vendedor.yaml
+#      (vendedor1@jeyma.com / test123)
+#   2) Tenant Jeyma con subscription_plans.modoVentaDefault en
+#      'Preguntar' o 'VentaDirecta'. Si esta forzado a 'Preventa'
+#      el bottom sheet auto-skipea y este flow falla en el assert
+#      de "Venta Directa" — eso es regresion, no flake.
+#   3) Backend api_main + api_mobile arriba en docker-compose.dev.yml.
+#   4) Emulador Android con Expo Go (host.exp.exponent) + Metro 8081.
+#   5) Clientes y productos sincronizados en WatermelonDB local.
+#
+# NOTA TILDES:
+#   Strings UI con tildes (Sesion -> Sesion, Mas -> Mas) usar prefijos
+#   parciales en aserciones para evitar problemas de encoding.
+# ══════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────────────
+# 0. Dashboard del vendedor cargado tras login previo.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# ──────────────────────────────────────────────────────────────────────
+# 1. Navegar al tab "Vender".
+# ──────────────────────────────────────────────────────────────────────
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-01-hub
+
+# ──────────────────────────────────────────────────────────────────────
+# 2. FAB Nueva Venta (preferir tap por id sobre tap por text).
+# ──────────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 3. BottomSheet "Tipo de Venta".
+#    Debe mostrar Preventa Y Venta Directa. Si solo aparece una hay
+#    regresion en la visibilidad del bottom sheet para rol VENDEDOR.
+#    Si modoVentaDefault esta forzado, el sheet hace auto-skip y este
+#    bloque se omite via runFlow when:visible.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Tipo de Venta"
+    commands:
+      - assertVisible: "Preventa"
+      - assertVisible: "Venta Directa"
+      - takeScreenshot: vd-vendedor-02-bottom-sheet
+      - tapOn: "Venta Directa"
+      - waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 4. Pantalla seleccion cliente (paso 1 ProgressSteps).
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-03-clientes
+
+# Permisos GPS Android (opcionales — solo aparecen 1ra vez).
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+# Tap sobre el primer cliente visible (centro de pantalla).
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 5. Pantalla productos (paso 2 ProgressSteps) — agregar 1 producto.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-04-productos
+
+# QuantityStepper "+" del primer producto listado.
+- tapOn:
+    text: "+"
+- waitForAnimationToEnd
+
+- takeScreenshot: vd-vendedor-05-producto-agregado
+
+# ──────────────────────────────────────────────────────────────────────
+# 6. Ir a pantalla revision via CartBar.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Revisar"
+    commands:
+      - tapOn: "Revisar"
+- runFlow:
+    when:
+      visible: "Revisar pedido"
+    commands:
+      - tapOn: "Revisar pedido"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Subtotal|Total"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-06-revision
+
+# ──────────────────────────────────────────────────────────────────────
+# 7. Metodo de pago Efectivo — solo aparece en rama Venta Directa.
+#    Si NO aparece es regresion (la UI esta cayendo a flujo Preventa).
+# ──────────────────────────────────────────────────────────────────────
+- assertVisible: "Efectivo"
+- tapOn: "Efectivo"
+- waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 8. CTA Cobrar y Entregar (texto puede variar capitalizacion).
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Cobrar y entregar"
+    commands:
+      - tapOn: "Cobrar y entregar"
+- runFlow:
+    when:
+      visible: "Cobrar y Entregar"
+    commands:
+      - tapOn: "Cobrar y Entregar"
+      - waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 9. ConfirmModal Venta Directa — boton COBRAR (uppercase).
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "COBRAR"
+    commands:
+      - tapOn: "COBRAR"
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+      - waitForAnimationToEnd
+
+# ──────────────────────────────────────────────────────────────────────
+# 10. Pantalla exito "Venta Completada".
+#     Esta pantalla solo se muestra si POST /api/mobile/venta-directa
+#     respondio 201. Si timeout -> hay error 4xx/5xx en backend.
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Venta Completada"
+    timeout: 20000
+
+- assertVisible: "Venta Completada"
+
+# Folio del pedido (opcional — algunas versiones lo ocultan en succes).
+- assertVisible:
+    text: "Folio|Pedido|#"
+    optional: true
+
+- takeScreenshot: vd-vendedor-07-venta-completada
+
+# ──────────────────────────────────────────────────────────────────────
+# 11. DIFERENCIADOR CLAVE vs Preventa:
+#     Venta Directa cobra inmediato -> NO debe haber "Saldo pendiente"
+#     ni "Por cobrar" en la pantalla de exito. Si aparecen, el cobro
+#     asociado no se aplico (regresion en POST /api/mobile/cobros).
+# ──────────────────────────────────────────────────────────────────────
+- assertNotVisible: "Saldo pendiente"
+- assertNotVisible: "Por cobrar"
+
+# ──────────────────────────────────────────────────────────────────────
+# 12. Volver al hub Vender — confirma navegacion post-exito funcional.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Listo"
+    commands:
+      - tapOn: "Listo"
+- runFlow:
+    when:
+      visible: "Volver al inicio"
+    commands:
+      - tapOn: "Volver al inicio"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- takeScreenshot: vd-vendedor-08-listado-final

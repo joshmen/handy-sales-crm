@@ -1,0 +1,284 @@
+appId: host.exp.exponent
+name: "Supervisor: Aprobar (confirmar) un pedido en estado Borrador creado por vendedor"
+tags:
+  - functional
+  - supervisor
+  - vender
+  - aprobacion
+  - borrador
+---
+# =================================================================
+# E2E FUNCTIONAL — SUPERVISOR
+# Use case: sup-aprobar-pedido-borrador
+#
+# Contexto de negocio:
+#   Cuando un vendedor levanta un pedido desde la app movil, este
+#   se guarda con estado=0 (Borrador). Es responsabilidad del
+#   supervisor/admin "aprobarlo" (transicionar a Confirmado=2) antes
+#   de que entre a la ruta. Ver apps/mobile-app/app/(tabs)/vender/
+#   crear/revision.tsx:197 — comentario explicito del flujo.
+#
+# Flujo cubierto:
+#   tab Hoy -> tab Vender (vista AdminTenantPedidosList para supervisor)
+#   -> Lista tenant-wide de pedidos -> tap pedido en Borrador
+#   -> Pantalla detalle [id].tsx -> tap "Confirmar Pedido" (testID
+#   btn-confirmar, solo visible cuando estado=0)
+#   -> ConfirmModal -> confirma -> stepper avanza a "Confirmado"
+#
+# PREREQ tecnico:
+#   - Emulador Android con Expo Go (host.exp.exponent)
+#   - Metro bundler activo (puerto 8081)
+#   - docker-compose.dev.yml: api_main + api_billing + postgres
+#   - Seed Jeyma: supervisor@jeyma.com / test123 con rol SUPERVISOR
+#   - Al menos un pedido en estado Borrador (estado=0) en el tenant
+#     Jeyma del dia de hoy. Si no existe, este flow se considera
+#     skip-friendly via runFlow when:visible "Borrador".
+#
+# PROD BUG / FIX TODO:
+#   AdminTenantPedidosList.tsx NO expone filtro por estado (Borrador/
+#   Confirmado/etc). Solo filtra por rango temporal (hoy/ayer/7d/30d).
+#   El supervisor debe scrollear visualmente para identificar pedidos
+#   con texto estado "borrador". UX-bug: deberia haber chips de
+#   estado similar a la vista vendedor para que el supervisor encuentre
+#   rapido los pedidos pendientes de aprobacion.
+# =================================================================
+
+# ---------------------------------------------------------------
+# 0) Launch app preservando estado (sesion supervisor previa)
+#    Suite supervisor: requiere correr antes 01-login-supervisor.yaml
+# ---------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+# ---------------------------------------------------------------
+# 1) Dismiss modales opcionales (onboarding, permisos, KeepAwake,
+#    Aviso de Privacidad). runFlow when:visible es no-op si no aparece.
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# ---------------------------------------------------------------
+# 1.5) Si no hay sesion activa (caso ejecutar solo, sin suite),
+#      hacer login supervisor.
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible:
+        id: "login-button"
+    commands:
+      - tapOn:
+          id: "email-input"
+      - eraseText
+      - inputText: "supervisor@jeyma.com"
+      - tapOn:
+          id: "password-input"
+      - eraseText
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          id: "login-button"
+      - extendedWaitUntil:
+          visible: "Hoy"
+          timeout: 45000
+
+# ---------------------------------------------------------------
+# 2) Verificar dashboard supervisor (banner "Mi Equipo" indica
+#    que el rol cargado es SUPERVISOR — ver dashboard/index.tsx).
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- assertVisible: "Mi Equipo"
+- takeScreenshot: sup-aprobar-00-dashboard
+
+# ---------------------------------------------------------------
+# 3) Navegar a tab "Vender"
+#    Para supervisor renderiza VenderAdminContent ->
+#    AdminTenantPedidosList (lista tenant-wide via API
+#    /api/mobile/supervisor/pedidos).
+# ---------------------------------------------------------------
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 20000
+
+# Header de la vista admin
+- assertVisible: "Pedidos"
+- takeScreenshot: sup-aprobar-01-tab-vender-admin
+
+# Verificar chips de preset temporal de AdminTenantPedidosList
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 días"
+- assertVisible: "30 días"
+
+# ---------------------------------------------------------------
+# 4) Asegurar preset "Hoy" activo y ampliar rango si no hay
+#    pedidos en Borrador del dia. Empezamos con 7 dias para
+#    aumentar probabilidad de encontrar un Borrador.
+# ---------------------------------------------------------------
+- tapOn: "7 días"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Pedidos últimos 7 días"
+    timeout: 10000
+- takeScreenshot: sup-aprobar-02-preset-7dias
+
+# ---------------------------------------------------------------
+# 5) Buscar tarjeta de pedido en estado "borrador".
+#    AdminTenantPedidosList renderiza item.estado en lowercase
+#    como texto plano (ver styles.estadoText con textTransform:
+#    capitalize -> el match by text "borrador" funciona por
+#    substring case-insensitive en Maestro).
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      notVisible: "borrador"
+    commands:
+      # Fallback: ampliar a 30 dias para hallar Borrador historico
+      - tapOn: "30 días"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Pedidos últimos 30 días"
+          timeout: 10000
+
+- takeScreenshot: sup-aprobar-03-lista-pedidos
+
+# ---------------------------------------------------------------
+# 6) Si encontramos un pedido en Borrador, ejecutar el flujo
+#    completo de aprobacion. Si NO hay borrador en el tenant
+#    (caso seed limpio), el test reporta visible: false y se
+#    salta el resto — esto es un caso de datos faltantes, NO
+#    falla del feature.
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "borrador"
+    commands:
+      # 6.1) Tap en la palabra "borrador" abre la card padre (TouchableOpacity)
+      #      gracias a la propagacion del touch event en RN.
+      - tapOn: "borrador"
+      - waitForAnimationToEnd
+
+      # 6.2) Verificar entrada a pantalla detalle [id].tsx
+      #      Header azul con "Pedido #..." + badge estado "Borrador"
+      - extendedWaitUntil:
+          visible: "Borrador"
+          timeout: 15000
+      - assertVisible: "Borrador"
+      - assertVisible: "Productos"
+      - assertVisible: "Total"
+      - takeScreenshot: sup-aprobar-04-detalle-pedido-borrador
+
+      # 6.3) Boton de aprobacion: testID "btn-confirmar"
+      #      Solo se renderiza si normalizeEstado(estado) === 0 (Borrador)
+      #      AND el pedido tiene serverId (isSynced=true).
+      #      Ver vender/[id].tsx:120-135.
+      - extendedWaitUntil:
+          visible:
+            id: "btn-confirmar"
+          timeout: 10000
+      - assertVisible:
+          id: "btn-confirmar"
+      - assertVisible: "Confirmar Pedido"
+      - takeScreenshot: sup-aprobar-05-boton-confirmar-visible
+
+      # 6.4) Tap "Confirmar Pedido" -> ConfirmModal
+      - tapOn:
+          id: "btn-confirmar"
+      - waitForAnimationToEnd
+
+      # 6.5) ConfirmModal con titulo "Confirmar Pedido" y mensaje
+      #      "¿Confirmar este pedido?". Fallback: cualquiera de los
+      #      CTAs estandar Aceptar/Confirmar/Si.
+      - extendedWaitUntil:
+          visible:
+            text: "Confirmar Pedido|¿Confirmar este pedido?|Aceptar|Confirmar|Si"
+          timeout: 10000
+      - takeScreenshot: sup-aprobar-06-confirm-modal
+
+      - runFlow:
+          when:
+            visible: "Aceptar"
+          commands:
+            - tapOn: "Aceptar"
+      - runFlow:
+          when:
+            visible: "Confirmar"
+          commands:
+            - tapOn: "Confirmar"
+      - runFlow:
+          when:
+            visible: "Sí"
+          commands:
+            - tapOn: "Sí"
+
+      - waitForAnimationToEnd
+
+      # 6.6) Efecto observable: el badge cambia de "Borrador" a
+      #      "Confirmado". El stepper avanza al step 2.
+      #      mutation confirmarMutation onSuccess -> updateLocalStatus(2).
+      #      En modo offline tambien transiciona local (ver onError handler).
+      - extendedWaitUntil:
+          visible: "Confirmado"
+          timeout: 30000
+
+      - assertVisible: "Confirmado"
+      - takeScreenshot: sup-aprobar-07-pedido-confirmado
+
+      # 6.7) Volver a la lista — el pedido aprobado ya NO debe
+      #      aparecer con estado "borrador" tras refresh manual.
+      - back
+      - waitForAnimationToEnd
+
+      - extendedWaitUntil:
+          visible: "Pedidos"
+          timeout: 15000
+      - takeScreenshot: sup-aprobar-08-vuelta-lista
+
+# ---------------------------------------------------------------
+# 7) Verificar integridad: tab bar de supervisor sigue intacto
+#    (tabs Hoy, Vender, Cobrar, Equipo, Más).
+# ---------------------------------------------------------------
+- assertVisible: "Vender"
+- assertVisible: "Equipo"
+- assertVisible: "Más"
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 15000
+- assertVisible: "Mi Equipo"
+- takeScreenshot: sup-aprobar-09-final-dashboard

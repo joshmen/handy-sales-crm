@@ -1,0 +1,254 @@
+appId: host.exp.exponent
+name: "Funcional SUPERVISOR > Ver actividad reciente del equipo (feed)"
+tags:
+  - functional
+  - supervisor
+  - equipo
+  - actividad
+---
+
+# ══════════════════════════════════════════════════════════════════════
+# CASO DE USO: sup-actividad-feed
+# ROL: SUPERVISOR (rol minimo necesario para ver actividad del equipo)
+# CAPA: mobile (apps/mobile-app — React Native / Expo / WatermelonDB)
+#
+# OBJETIVO:
+#   El supervisor logueado navega al tab Equipo, abre el feed de
+#   "Actividad" (boton del header azul) y verifica que ve eventos
+#   reales del equipo (pedidos / visitas / cobros) con nombre del
+#   vendedor, descripcion y estado. Hace pull-to-refresh para
+#   forzar refetch del endpoint y confirma el header "Actividad".
+#
+# ENDPOINTS EJERCITADOS:
+#   - GET /api/mobile/supervisor/dashboard        -> KPIs Mi Equipo
+#   - GET /api/mobile/supervisor/mis-vendedores   -> lista de subordinados
+#   - GET /api/mobile/supervisor/actividad        -> feed (este test)
+#
+# SCREEN / HOOK:
+#   - apps/mobile-app/app/(tabs)/equipo/actividad.tsx
+#   - hook: useActividadEquipo (apps/mobile-app/src/hooks/useSupervisor.ts)
+#   - testID disparador: "ver-actividad" en /equipo/index.tsx
+#
+# PRE-REQUISITOS:
+#   1) Tenant Jeyma con supervisor@jeyma.com / test123
+#   2) supervisor@jeyma.com supervisa a Vendedor 1 Jeyma
+#   3) Seed con >=1 evento reciente del equipo (pedido o visita)
+#   4) Backend api_main + api_mobile arriba en docker-compose.dev.yml
+#   5) Emulador Android con Expo Go (host.exp.exponent) + Metro 8081
+#
+# NOTA TILDES:
+#   Usar Configuración, Sesión, Más con tilde correcta.
+# ══════════════════════════════════════════════════════════════════════
+
+- launchApp:
+    clearState: false
+
+# ──────────────────────────────────────────────────────────────────────
+# 0. Aviso de Privacidad opcional + permisos OS
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+# ──────────────────────────────────────────────────────────────────────
+# 1. LOGIN SUPERVISOR (clearState:false => si ya hay sesion, se salta)
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible:
+        id: "email-input"
+    commands:
+      - tapOn:
+          id: "email-input"
+      - eraseText
+      - inputText: "supervisor@jeyma.com"
+      - tapOn:
+          id: "password-input"
+      - eraseText
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          id: "login-button"
+
+# Consents post-login opcionales
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+
+# ──────────────────────────────────────────────────────────────────────
+# 2. DASHBOARD HOY CARGADO
+# ──────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 45000
+
+- takeScreenshot: sup-act-01-dashboard
+
+# ──────────────────────────────────────────────────────────────────────
+# 3. NAVEGAR AL TAB EQUIPO
+# ──────────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 20000
+
+# Sanity: el header azul de Equipo aparece + boton Actividad existe
+- assertVisible:
+    id: "supervisor-kpis"
+
+- assertVisible:
+    id: "ver-actividad"
+
+- takeScreenshot: sup-act-02-equipo-listo
+
+# ──────────────────────────────────────────────────────────────────────
+# 4. ABRIR FEED DE ACTIVIDAD (accion real, no solo navegacion)
+# ──────────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "ver-actividad"
+- waitForAnimationToEnd
+
+# Header de la pantalla nueva
+- extendedWaitUntil:
+    visible:
+      text: "Actividad"
+    timeout: 20000
+
+- takeScreenshot: sup-act-03-feed-abierto
+
+# ──────────────────────────────────────────────────────────────────────
+# 5. ASSERT contenido REAL del feed
+#    Caso A: hay eventos -> debe verse el vendedor subordinado y un
+#            badge de estado conocido (completada / en_curso / etc).
+#    Caso B: feed vacio  -> el empty state "Sin actividad reciente"
+#            con su mensaje aparece y el test sigue siendo verde.
+# ──────────────────────────────────────────────────────────────────────
+- runFlow:
+    when:
+      visible: "Sin actividad reciente"
+    commands:
+      # Empty state legitimo (seed vacio). Validar copy completo.
+      - assertVisible: "Sin actividad reciente"
+      - assertVisible:
+          text: "Aquí verás la actividad del equipo en tiempo real"
+      - takeScreenshot: sup-act-04-feed-vacio
+
+- runFlow:
+    when:
+      notVisible: "Sin actividad reciente"
+    commands:
+      # Feed con datos. El subordinado de seed debe aparecer al menos
+      # como autor de un item (vendorName se renderiza en activityVendor).
+      - assertVisible: "Vendedor 1 Jeyma"
+      - takeScreenshot: sup-act-04-feed-con-datos
+
+# ──────────────────────────────────────────────────────────────────────
+# 6. NO-LEAK cross-tenant: vendedores de OTROS tenants no deben aparecer
+# ──────────────────────────────────────────────────────────────────────
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- takeScreenshot: sup-act-05-no-leak
+
+# ──────────────────────────────────────────────────────────────────────
+# 7. PULL-TO-REFRESH (acciona refetch real del endpoint /actividad)
+#    El FlatList tiene RefreshControl conectado a refetch().
+# ──────────────────────────────────────────────────────────────────────
+- swipe:
+    start: 50%, 30%
+    end: 50%, 80%
+    duration: 600
+
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Tras refresh el header "Actividad" sigue visible (no rompio la pantalla)
+- assertVisible:
+    text: "Actividad"
+
+- takeScreenshot: sup-act-06-post-refresh
+
+# ──────────────────────────────────────────────────────────────────────
+# 8. VOLVER AL EQUIPO via boton back del header azul
+# ──────────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Volver"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+- takeScreenshot: sup-act-07-back-a-equipo
+
+# ──────────────────────────────────────────────────────────────────────
+# 9. LOGOUT limpio (deja device estable para siguiente suite)
+# ──────────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Más"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: sup-act-08-logout

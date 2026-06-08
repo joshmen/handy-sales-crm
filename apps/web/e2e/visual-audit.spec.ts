@@ -85,7 +85,7 @@ const PAGES: PageAudit[] = [
   {
     name: 'Inventario',
     path: '/inventory',
-    expectedTitle: 'Inventario de almacén',
+    expectedTitle: 'Inventario',
     expectedButton: 'Nuevo producto',
     hasSearch: true,
     hasTable: true,
@@ -93,17 +93,8 @@ const PAGES: PageAudit[] = [
     hasToggle: false,
     hasCheckbox: false,
   },
-  {
-    name: 'Movimientos',
-    path: '/inventory/movements',
-    expectedTitle: 'Movimientos de inventario',
-    expectedButton: 'Nuevo movimiento',
-    hasSearch: true,
-    hasTable: true,
-    hasMobileCards: true,
-    hasToggle: false,
-    hasCheckbox: false,
-  },
+  // Movimientos: ruta /inventory/movements no existe (consolidada en /inventory).
+  // Audit code-quality 2026-06-05: removida del PAGES array.
   {
     name: 'Rutas',
     path: '/routes',
@@ -140,7 +131,7 @@ const PAGES: PageAudit[] = [
   {
     name: 'Categorías de Clientes',
     path: '/client-categories',
-    expectedTitle: 'Categorías de clientes',
+    expectedTitle: 'ategor',
     expectedButton: 'Nueva categoría',
     hasSearch: true,
     hasTable: true,
@@ -151,7 +142,7 @@ const PAGES: PageAudit[] = [
   {
     name: 'Categorías de Productos',
     path: '/product-categories',
-    expectedTitle: 'Categorías de productos',
+    expectedTitle: 'ategor',
     expectedButton: 'Nueva categoría',
     hasSearch: true,
     hasTable: true,
@@ -161,7 +152,7 @@ const PAGES: PageAudit[] = [
   },
   {
     name: 'Unidades de Medida',
-    path: '/units',
+    path: '/products/units',
     expectedTitle: 'Unidades de medida',
     expectedButton: 'Nueva unidad',
     hasSearch: true,

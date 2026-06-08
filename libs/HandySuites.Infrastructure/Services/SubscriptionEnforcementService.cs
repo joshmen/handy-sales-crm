@@ -38,9 +38,8 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
     {
         if (!_db.Database.IsNpgsql()) return;
 
-        await _db.Database.ExecuteSqlRawAsync(
-            "SELECT pg_advisory_xact_lock({0}, {1})",
-            tenantId, resourceId);
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({tenantId}, {resourceId})");
     }
 
     public async Task<EnforcementResult> CanCreateUsuarioAsync(int tenantId)
@@ -177,27 +176,28 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         var now = DateTime.UtcNow;
         var resetFecha = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Atomic: reset counter if new month, then increment only if under limit
-        var sql = @"
-            UPDATE ""Tenants""
-            SET ""TimbresUsadosMes"" = CASE
-                    WHEN ""TimbresResetFecha"" IS NULL
-                         OR EXTRACT(MONTH FROM ""TimbresResetFecha"") != {1}
-                         OR EXTRACT(YEAR FROM ""TimbresResetFecha"") != {2}
-                    THEN 1
-                    ELSE ""TimbresUsadosMes"" + 1
-                END,
-                ""TimbresResetFecha"" = {3}
-            WHERE ""Id"" = {0}
-              AND (
-                  ""TimbresResetFecha"" IS NULL
-                  OR EXTRACT(MONTH FROM ""TimbresResetFecha"") != {1}
-                  OR EXTRACT(YEAR FROM ""TimbresResetFecha"") != {2}
-                  OR ""TimbresUsadosMes"" < {4}
-              )";
-
-        var rows = await _db.Database.ExecuteSqlRawAsync(sql,
-            tenantId, now.Month, now.Year, resetFecha, totalLimit);
+        // Atomic: reset counter if new month, then increment only if under limit.
+        // ExecuteSqlInterpolatedAsync binds each {var} as a parameter; the SQL keywords
+        // and double-quoted identifiers stay literal.
+        var month = now.Month;
+        var year = now.Year;
+        var rows = await _db.Database.ExecuteSqlInterpolatedAsync(
+            $@"UPDATE ""Tenants""
+               SET ""TimbresUsadosMes"" = CASE
+                       WHEN ""TimbresResetFecha"" IS NULL
+                            OR EXTRACT(MONTH FROM ""TimbresResetFecha"") != {month}
+                            OR EXTRACT(YEAR FROM ""TimbresResetFecha"") != {year}
+                       THEN 1
+                       ELSE ""TimbresUsadosMes"" + 1
+                   END,
+                   ""TimbresResetFecha"" = {resetFecha}
+               WHERE ""Id"" = {tenantId}
+                 AND (
+                     ""TimbresResetFecha"" IS NULL
+                     OR EXTRACT(MONTH FROM ""TimbresResetFecha"") != {month}
+                     OR EXTRACT(YEAR FROM ""TimbresResetFecha"") != {year}
+                     OR ""TimbresUsadosMes"" < {totalLimit}
+                 )");
 
         return rows > 0;
     }
@@ -246,20 +246,19 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         var resetFecha = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
         // Atomic: reset counter if new month, then increment (no hard limit — overage billed via Stripe)
-        var sql = @"
-            UPDATE ""Tenants""
-            SET ""FacturasGeneradasMes"" = CASE
-                    WHEN ""FacturasResetFecha"" IS NULL
-                         OR EXTRACT(MONTH FROM ""FacturasResetFecha"") != {1}
-                         OR EXTRACT(YEAR FROM ""FacturasResetFecha"") != {2}
-                    THEN 1
-                    ELSE ""FacturasGeneradasMes"" + 1
-                END,
-                ""FacturasResetFecha"" = {3}
-            WHERE ""Id"" = {0}";
-
-        var rows = await _db.Database.ExecuteSqlRawAsync(sql,
-            tenantId, now.Month, now.Year, resetFecha);
+        var month = now.Month;
+        var year = now.Year;
+        var rows = await _db.Database.ExecuteSqlInterpolatedAsync(
+            $@"UPDATE ""Tenants""
+               SET ""FacturasGeneradasMes"" = CASE
+                       WHEN ""FacturasResetFecha"" IS NULL
+                            OR EXTRACT(MONTH FROM ""FacturasResetFecha"") != {month}
+                            OR EXTRACT(YEAR FROM ""FacturasResetFecha"") != {year}
+                       THEN 1
+                       ELSE ""FacturasGeneradasMes"" + 1
+                   END,
+                   ""FacturasResetFecha"" = {resetFecha}
+               WHERE ""Id"" = {tenantId}");
 
         return rows > 0;
     }

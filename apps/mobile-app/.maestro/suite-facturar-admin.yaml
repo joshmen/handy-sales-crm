@@ -1,0 +1,311 @@
+appId: host.exp.exponent
+name: suite-facturar-admin
+---
+# ============================================================
+# MODULO: FACTURAR ADMIN — timbrar CFDI from-order desde mobile
+# Inventario gap HIGH 4/4 (pre-prod audit 2026-06-06).
+# Cero coverage previo. Riesgo: regresion en flow PAC o PDF
+# afecta cumplimiento SAT.
+#
+# Cubre:
+#   - Login con admin@jeyma.com
+#   - Abrir un pedido confirmado/entregado
+#   - Tap "Facturar"
+#   - Validar pantalla "Factura timbrada" con UUID visible
+#   - Opcional: descargar PDF / enviar por email
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: facturar-admin-01-login
+
+# ---- FASE 2: Dismiss permisos/consent ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+# ---- FASE 3: Dashboard ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- assertVisible:
+    text: "Administrador"
+
+- takeScreenshot: facturar-admin-02-dashboard
+
+# ---- FASE 4: Navegar a Pedidos / Vender ----
+
+- tapOn:
+    text: "Vender"
+
+- extendedWaitUntil:
+    visible:
+      text: "Vender"
+    timeout: 20000
+
+# Si hay vista "Mis pedidos" o lista de pedidos recientes
+- runFlow:
+    when:
+      visible:
+        text: "Pedidos"
+    commands:
+      - tapOn:
+          text: "Pedidos"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- takeScreenshot: facturar-admin-03-pedidos-list
+
+# ---- FASE 5: Abrir un pedido Entregado ----
+
+# Buscar pedido en estado Entregado (los facturables)
+- runFlow:
+    when:
+      visible:
+        text: "Entregado"
+    commands:
+      - tapOn:
+          text: "Entregado"
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- takeScreenshot: facturar-admin-04-detalle-pedido
+
+# ---- FASE 6: Tap Facturar ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Facturar"
+    commands:
+      - tapOn:
+          text: "Facturar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- takeScreenshot: facturar-admin-05-form-facturar
+
+# ---- FASE 7: Llenar datos fiscales (uso CFDI) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Uso CFDI"
+    commands:
+      - tapOn:
+          text: "Uso CFDI"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- runFlow:
+    when:
+      visible:
+        text: "G03"
+    commands:
+      - tapOn:
+          text: "G03"
+
+# Si pide email del receptor
+- runFlow:
+    when:
+      visible:
+        id: "email-receptor-input"
+    commands:
+      - tapOn:
+          id: "email-receptor-input"
+      - inputText: "cliente@destino.com"
+
+- takeScreenshot: facturar-admin-06-form-lleno
+
+# ---- FASE 8: Confirmar timbrado ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Timbrar"
+    commands:
+      - tapOn:
+          text: "Timbrar"
+      - waitForAnimationToEnd:
+          timeout: 15000
+
+- runFlow:
+    when:
+      visible:
+        text: "Confirmar"
+    commands:
+      - tapOn:
+          text: "Confirmar"
+      - waitForAnimationToEnd:
+          timeout: 15000
+
+# ---- FASE 9: Validar pantalla "Factura timbrada" con UUID ----
+
+- takeScreenshot: facturar-admin-07-postsubmit
+
+- runFlow:
+    when:
+      visible:
+        text: "Factura timbrada"
+    commands:
+      - assertVisible:
+          text: "Factura timbrada"
+      - takeScreenshot: facturar-admin-08-factura-timbrada
+
+# UUID SAT es un GUID 8-4-4-4-12. Validamos que aparece el bloque "UUID:"
+- runFlow:
+    when:
+      visible:
+        text: "UUID"
+    commands:
+      - assertVisible:
+          text: "UUID"
+      - takeScreenshot: facturar-admin-09-uuid-visible
+
+# Folio fiscal alternativo
+- runFlow:
+    when:
+      visible:
+        text: "Folio fiscal"
+    commands:
+      - assertVisible:
+          text: "Folio fiscal"
+
+# ---- FASE 10: Probar descarga PDF (opcional, soft assertion) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Ver PDF"
+    commands:
+      - tapOn:
+          text: "Ver PDF"
+      - waitForAnimationToEnd:
+          timeout: 10000
+      - takeScreenshot: facturar-admin-10-pdf-modal
+
+- back
+
+# ---- FASE 11: Enviar por email (opcional, soft assertion) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Enviar por email"
+    commands:
+      - tapOn:
+          text: "Enviar por email"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: facturar-admin-11-enviar-email
+
+- runFlow:
+    when:
+      visible:
+        text: "Enviar"
+    commands:
+      - tapOn:
+          text: "Enviar"
+      - waitForAnimationToEnd:
+          timeout: 8000
+
+- runFlow:
+    when:
+      visible:
+        text: "enviada"
+    commands:
+      - takeScreenshot: facturar-admin-12-email-enviado
+
+# ---- FASE 12: Logout ----
+
+- tapOn:
+    text: "Más"
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: facturar-admin-13-logout

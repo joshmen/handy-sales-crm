@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
+using HandySuites.Domain.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 namespace HandySuites.Infrastructure.Persistence;
@@ -101,6 +102,10 @@ public class HandySuitesDbContext : DbContext
     // Coupon System
     public DbSet<Cupon> Cupones => Set<Cupon>();
     public DbSet<CuponRedencion> CuponRedenciones => Set<CuponRedencion>();
+
+    // H-2 Outbox — durable queue for fire-and-forget notifications.
+    // See NotificationOutbox.cs for full design notes.
+    public DbSet<NotificationOutbox> NotificationOutbox => Set<NotificationOutbox>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -217,6 +222,13 @@ public class HandySuitesDbContext : DbContext
             // Matching query filter with Usuario (suppresses EF Core warning)
             entity.HasQueryFilter(rt => rt.Usuario!.EliminadoEn == null);
 
+            // Sprint pre-prod #25 audit 2026-06-06: UNIQUE index en Token.
+            // Hot path `WHERE Token = $1` corria seq scan en cada refresh.
+            // Mobile rota tokens ~cada 15min y la tabla crece monotonicamente
+            // (revocados no se purgan), asi que escala linealmente con dias
+            // de operacion. Sin esto, en 6 meses el refresh latency degrada.
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
             // Audit 2026-05-18: vinculo RefreshToken 1:1 con DeviceSession.
             // Permite revoke per-device sin afectar otras sesiones del user.
             // Nullable durante migration window; NOT NULL después de backfill.
@@ -300,6 +312,12 @@ public class HandySuitesDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(u => u.SupervisorId);
+
+            // Sprint pre-prod #77 audit 2026-06-06: UNIQUE index Email.
+            // Hot path `WHERE Email = X` corria seq scan en cada login.
+            // Sin UNIQUE, ademas, un bug podia crear 2 usuarios con mismo
+            // email — guarantia de invariant a nivel DB.
+            entity.HasIndex(u => u.Email).IsUnique();
         });
         
         // Configure DatosFacturacion entity
@@ -376,6 +394,19 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(p => new { p.TenantId, p.UsuarioId });
             entity.HasIndex(p => new { p.TenantId, p.Estado });
             entity.HasIndex(p => new { p.TenantId, p.FechaPedido });
+            // M-6 (single-session audit, junio 2026): composite indexes para
+            // soportar consultas mobile incremental sync por (tenant, usuario)
+            // ordenadas por fecha de modificación o creación.
+            entity.HasIndex(p => new { p.TenantId, p.UsuarioId, p.ActualizadoEn });
+            entity.HasIndex(p => new { p.TenantId, p.UsuarioId, p.CreadoEn });
+            // Sprint pre-prod #13 audit 2026-06-06: UNIQUE parcial
+            // (TenantId, MobileRecordId) — defensa en DB contra retry race
+            // que el dedup application-layer (#9/#10) tiene una ventana
+            // microscopica. WHERE NOT NULL evita conflicto con pedidos
+            // creados via UI web (sin LocalId).
+            entity.HasIndex(p => new { p.TenantId, p.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure DetallePedido entity
@@ -398,6 +429,11 @@ public class HandySuitesDbContext : DbContext
 
             // Índices
             entity.HasIndex(dp => new { dp.PedidoId, dp.ProductoId });
+            // Sprint pre-prod #13: UNIQUE parcial (PedidoId, MobileRecordId)
+            // — dedup de detalles enviados via sync mobile.
+            entity.HasIndex(dp => new { dp.PedidoId, dp.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure ClienteVisita entity
@@ -435,6 +471,10 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(cv => new { cv.TenantId, cv.UsuarioId });
             entity.HasIndex(cv => new { cv.TenantId, cv.FechaProgramada });
             entity.HasIndex(cv => new { cv.TenantId, cv.FechaHoraInicio });
+            // Sprint pre-prod #13: UNIQUE parcial (TenantId, MobileRecordId).
+            entity.HasIndex(cv => new { cv.TenantId, cv.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
 
         });
 
@@ -702,6 +742,10 @@ public class HandySuitesDbContext : DbContext
             entity.Property(ims => ims.Status).HasMaxLength(20).IsRequired();
             entity.Property(ims => ims.ActionsPerformed).HasColumnType("jsonb");
             entity.Property(ims => ims.PagesVisited).HasColumnType("jsonb");
+            // M-10 (single-session audit, junio 2026): correlation ID nullable
+            // para trazar logs cross-service por sesión de impersonación.
+            entity.Property(ims => ims.CorrelationId).HasMaxLength(64);
+            entity.HasIndex(ims => ims.CorrelationId);
 
             // Relación con Usuario (SuperAdmin)
             entity.HasOne(ims => ims.SuperAdmin)
@@ -763,6 +807,16 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(c => new { c.TenantId, c.PedidoId });
             entity.HasIndex(c => new { c.TenantId, c.UsuarioId });
             entity.HasIndex(c => new { c.TenantId, c.FechaCobro });
+            // M-6 (single-session audit, junio 2026): composite indexes para
+            // soportar consultas mobile incremental sync por (tenant, usuario)
+            // ordenadas por fecha de modificación o creación.
+            entity.HasIndex(c => new { c.TenantId, c.UsuarioId, c.ActualizadoEn });
+            entity.HasIndex(c => new { c.TenantId, c.UsuarioId, c.CreadoEn });
+            // Sprint pre-prod #13: UNIQUE parcial (TenantId, MobileRecordId)
+            // — CRITICAL doble cobro al retry sync queue.
+            entity.HasIndex(c => new { c.TenantId, c.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure Gasto entity (gastos del vendedor con foto opcional)
@@ -795,7 +849,16 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(g => new { g.TenantId, g.FechaGasto });
             entity.HasIndex(g => new { g.TenantId, g.UsuarioId, g.FechaGasto });
             entity.HasIndex(g => new { g.TenantId, g.RutaId });
-            entity.HasIndex(g => new { g.TenantId, g.MobileRecordId });
+            // M-6 (single-session audit, junio 2026): composite indexes para
+            // soportar consultas mobile incremental sync por (tenant, usuario)
+            // ordenadas por fecha de modificación o creación.
+            entity.HasIndex(g => new { g.TenantId, g.UsuarioId, g.ActualizadoEn });
+            entity.HasIndex(g => new { g.TenantId, g.UsuarioId, g.CreadoEn });
+            // Sprint pre-prod #13: el index existente (TenantId, MobileRecordId)
+            // ahora es UNIQUE parcial para evitar duplicados al retry sync.
+            entity.HasIndex(g => new { g.TenantId, g.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure DevolucionPedido entity (devolucion de cliente, ligada a un Pedido)
@@ -841,7 +904,10 @@ public class HandySuitesDbContext : DbContext
             entity.HasIndex(d => new { d.TenantId, d.ClienteId, d.FechaDevolucion });
             entity.HasIndex(d => new { d.TenantId, d.RutaId });
             entity.HasIndex(d => new { d.TenantId, d.UsuarioId, d.FechaDevolucion });
-            entity.HasIndex(d => new { d.TenantId, d.MobileRecordId });
+            // Sprint pre-prod #13: UNIQUE parcial (TenantId, MobileRecordId).
+            entity.HasIndex(d => new { d.TenantId, d.MobileRecordId })
+                .IsUnique()
+                .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
         // Configure DetalleDevolucion entity (lineas individuales de una DevolucionPedido)
@@ -979,6 +1045,20 @@ public class HandySuitesDbContext : DbContext
         // Entidades principales con TenantId + Soft Delete
         modelBuilder.Entity<Cliente>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        // Sprint pre-prod #13 audit 2026-06-06: UNIQUE parcial
+        // (TenantId, MobileRecordId) — defensa DB contra retry race del sync
+        // mobile. Igual patron que aplicado a Pedido/Cobro/Visita/Gasto.
+        modelBuilder.Entity<Cliente>()
+            .HasIndex(c => new { c.TenantId, c.MobileRecordId })
+            .IsUnique()
+            .HasFilter("\"mobile_record_id\" IS NOT NULL");
+
+        // Preserva el single-col index que EF Core dropea automaticamente
+        // al ver el composite (TenantId, MobileRecordId). Sin esto, queries
+        // que filtran solo por tenant_id (multi-tenant scope) degradan.
+        modelBuilder.Entity<Cliente>()
+            .HasIndex(c => c.TenantId);
 
         modelBuilder.Entity<Producto>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
@@ -1233,5 +1313,28 @@ public class HandySuitesDbContext : DbContext
         // herede multi-tenancy correctamente desde día 1.
         modelBuilder.Entity<AutomationSchedule>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // H-2 Outbox (2026-06-07): durable queue para notificaciones fire-and-forget.
+        // No hereda AuditableEntity (append-only + purged por retention job).
+        // Indexes:
+        //  - (status, next_attempt_at): hot-path del processor — WHERE Status =
+        //    Pending AND NextAttemptAt <= UtcNow ORDER BY CreatedAt. Sin esto
+        //    cada poll (30s) corre seq scan sobre todos los rows históricos.
+        //  - tenant_id: para retention/diagnostic queries per-tenant.
+        // NO se aplica tenant filter — el processor es global y necesita ver
+        // pending rows de TODOS los tenants. La columna TenantId es metadata
+        // para auditoría + dispatch (el payload mobile push la incluye).
+        modelBuilder.Entity<NotificationOutbox>(entity =>
+        {
+            entity.HasIndex(e => new { e.Status, e.NextAttemptAt })
+                .HasDatabaseName("ix_outbox_status_next_attempt");
+            entity.HasIndex(e => e.TenantId)
+                .HasDatabaseName("ix_outbox_tenant");
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.NotificationType).HasConversion<int>();
+            // Truncamos LastError en el processor para evitar payloads gigantes;
+            // límite a nivel DB como seguro adicional.
+            entity.Property(e => e.LastError).HasMaxLength(1000);
+        });
     }
 }

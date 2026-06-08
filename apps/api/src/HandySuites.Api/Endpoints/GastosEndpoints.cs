@@ -1,5 +1,6 @@
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -87,14 +88,22 @@ public static class GastosEndpoints
         .WithName("ListGastos")
         .WithOpenApi();
 
-        // POST /gastos/{id}/invalidar — supervisor marca gasto como invalido
+        // POST /gastos/{id}/invalidar — supervisor marca gasto como invalido.
+        //
+        // Sprint pre-prod #12.5 (security review 2026-06-06): role check agregado.
+        // Antes cualquier VENDEDOR del tenant podia invalidar CUALQUIER gasto del
+        // mismo tenant. El comentario decia "supervisor marca" pero no enforcement.
         group.MapPost("/{id:int}/invalidar", async (
             HandySuitesDbContext db,
             int id,
             [FromBody] InvalidarGastoRequest req,
-            HttpContext httpContext) =>
+            HttpContext httpContext,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
-            var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+            if (!currentTenant.IsStrictAdmin && !currentTenant.IsSupervisor)
+                return Results.Forbid();
+
+            var userId = currentTenant.UserId;
             var gasto = await db.Gastos.FirstOrDefaultAsync(g => g.Id == id);
             if (gasto == null) return Results.NotFound(new { error = "Gasto no encontrado" });
             if (gasto.Estado == EstadoGasto.Invalidado)
@@ -106,7 +115,6 @@ public static class GastosEndpoints
             gasto.MotivoInvalidacion = req.Motivo;
             gasto.ActualizadoEn = DateTime.UtcNow;
             gasto.ActualizadoPor = userId;
-            gasto.Version++;
             await db.SaveChangesAsync();
 
             return Results.Ok(new { gasto.Id, Estado = (int)gasto.Estado });

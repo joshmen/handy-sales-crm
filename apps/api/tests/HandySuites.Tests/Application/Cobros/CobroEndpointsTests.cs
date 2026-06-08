@@ -77,8 +77,13 @@ namespace HandySuites.Tests.Application.Cobros
         {
             _client.DefaultRequestHeaders.Add("Authorization", "Bearer fake-jwt-token");
             var response = await _client.GetAsync("/cobros/saldos");
-            // Complex aggregation queries may not work with SQLite in-memory
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.InternalServerError);
+            // Sprint pre-prod #28 audit 2026-06-06: el assert previo era
+            // `BeOneOf(OK, InternalServerError)` con comment "Complex aggregation
+            // may not work with SQLite in-memory". Eso significaba que la
+            // implementacion podia estar rota en PG y el CI seguia verde.
+            // Drop del whitelist 500 — si SQLite no soporta la query agregada,
+            // el test debe FALLAR para forzar la migracion a Testcontainers PG.
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
         [Fact]
@@ -86,8 +91,8 @@ namespace HandySuites.Tests.Application.Cobros
         {
             _client.DefaultRequestHeaders.Add("Authorization", "Bearer fake-jwt-token");
             var response = await _client.GetAsync("/cobros/saldos/resumen");
-            // Complex aggregation queries may not work with SQLite in-memory
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.InternalServerError);
+            // Sprint pre-prod #28: ver comentario en GetSaldos arriba.
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
         [Fact]

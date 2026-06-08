@@ -1,0 +1,67 @@
+appId: host.exp.exponent
+name: "Suite 01: Login + onboarding + force-logout + privacy + dashboard"
+# Sprint correctivo 2026-06-06 — exhaustive mobile validation
+# Prerequisito de TODOS los demas flows
+---
+
+# 0. Skip onboarding (3 slides "Vende en ruta", etc). Loop hasta ver login-button.
+- runFlow:
+    when:
+      visible: "Omitir"
+    commands:
+      - tapOn: "Omitir"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# 1. Esperar login screen
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 60000
+
+# 2. Llenar credenciales
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+- tapOn:
+    id: "login-button"
+
+# 3. Force-logout si single-session strict bloquea
+- runFlow:
+    when:
+      visible: "Límite de sesiones alcanzado"
+    commands:
+      - tapOn: "Chrome en Windows"
+      - tapOn: "Desconectar y continuar aquí"
+
+# 4. Privacy consent
+- runFlow:
+    when:
+      visible: "Sobre tu ubicación"
+    commands:
+      - tapOn: "Entendido"
+
+# 5. Dashboard rendered
+- extendedWaitUntil:
+    visible: "RESUMEN DEL DÍA"
+    timeout: 60000
+
+- assertVisible: "Pedidos hoy"
+- assertVisible: "Ventas hoy"
+- assertVisible: "Visitas"
+- assertVisible: "ACCIONES RÁPIDAS"
+
+- assertVisible: "Hoy"
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+
+- takeScreenshot: suite_01_login_dashboard

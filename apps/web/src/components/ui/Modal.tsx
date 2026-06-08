@@ -32,6 +32,7 @@ export const Modal: React.FC<ModalProps> = ({
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
   useEffect(() => {
@@ -61,6 +62,9 @@ export const Modal: React.FC<ModalProps> = ({
     setTimeout(() => {
       setVisible(false);
       onClose();
+      // Restore focus to the element that had it before the modal opened (a11y).
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
     }, 200);
   }, [onClose]);
 
@@ -95,6 +99,10 @@ export const Modal: React.FC<ModalProps> = ({
     if (!visible) return;
     const panel = panelRef.current;
     if (!panel) return;
+
+    // Capture the element that had focus before opening, so we can restore it
+    // on close (a11y: focus must return to the trigger that opened the modal).
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
 
     const focusableSelector =
       'button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])';

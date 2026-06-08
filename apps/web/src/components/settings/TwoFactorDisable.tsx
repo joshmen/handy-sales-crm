@@ -14,6 +14,7 @@ import {
 import { SbSecurity, SbAlert } from '@/components/layout/DashboardIcons';
 import { profileService } from '@/services/api/profileService';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 
 interface TwoFactorDisableProps {
   open: boolean;
@@ -26,6 +27,7 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
   onOpenChange,
   onComplete,
 }) => {
+  const t = useTranslations('settings.security.twoFactorDisable');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +42,7 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
   const handleDisable = async () => {
     const cleanCode = code.replace(/\s/g, '');
     if (cleanCode.length !== 6) {
-      toast.error('Ingresa un código de 6 dígitos');
+      toast.error(t('codeRequired'));
       return;
     }
 
@@ -48,16 +50,16 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
     try {
       const response = await profileService.disable2FA(cleanCode);
       if (response.success) {
-        toast.success('2FA desactivado exitosamente');
+        toast.success(t('disabledSuccess'));
         onOpenChange(false);
         onComplete();
       } else {
-        toast.error(response.error || 'Código inválido');
+        toast.error(response.error || t('invalidCode'));
         setCode('');
         inputRef.current?.focus();
       }
     } catch {
-      toast.error('Error al desactivar 2FA');
+      toast.error(t('disableError'));
     } finally {
       setLoading(false);
     }
@@ -75,17 +77,17 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <SbSecurity size={20} />
-            Desactivar 2FA
+            {t('title')}
           </DialogTitle>
           <DialogDescription>
-            Ingresa un código de tu app de autenticación para confirmar la desactivación.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="flex items-start gap-2 p-3 bg-muted/50 border border-border rounded-lg text-sm text-muted-foreground">
             <SbAlert size={16} className="mt-0.5 flex-shrink-0" />
-            <span>Tu cuenta será menos segura sin 2FA. Cualquiera con tu contraseña podrá acceder.</span>
+            <span>{t('securityWarning')}</span>
           </div>
 
           <div className="flex justify-center">
@@ -94,7 +96,7 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
               type="text"
               inputMode="numeric"
               maxLength={6}
-              placeholder="000000"
+              placeholder={t('codePlaceholder')}
               value={code}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -109,7 +111,7 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('cancel')}
           </Button>
           <Button
             variant="destructive"
@@ -117,7 +119,7 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
             disabled={code.replace(/\s/g, '').length !== 6 || loading}
             loading={loading}
           >
-            Desactivar 2FA
+            {t('disableButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

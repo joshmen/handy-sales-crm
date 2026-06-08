@@ -67,15 +67,18 @@ test.describe('SA-2: Sidebar Simplificado', () => {
     await page.goto('/admin/system-dashboard');
     await waitForPageLoad(page);
 
-    // Wait for sidebar to be visible AND fully loaded with menu items
+    // Wait for sidebar to be visible AND fully loaded with menu items.
+    // Audit code-quality (2026-06-06): el sidebar SA muestra labels en
+    // español ("Tablero", no "Dashboard"). El assert legacy "Dashboard"
+    // fallaba consistentemente — corregido a "Tablero".
     const sidebar = page.locator('aside');
     await expect(sidebar).toBeVisible({ timeout: 10000 });
-    await expect(sidebar.getByText('Dashboard')).toBeVisible({ timeout: 15000 });
+    await expect(sidebar.getByText('Tablero')).toBeVisible({ timeout: 15000 });
 
     const sidebarContent = (await sidebar.textContent()) || '';
 
-    // Should have the 3 simplified items
-    expect(sidebarContent).toContain('Dashboard');
+    // Should have the SA simplified items
+    expect(sidebarContent).toContain('Tablero');
     expect(sidebarContent).toContain('Empresas');
     expect(sidebarContent).toContain('Configuración');
 

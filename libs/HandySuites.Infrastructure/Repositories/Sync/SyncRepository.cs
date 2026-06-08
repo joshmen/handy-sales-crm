@@ -171,7 +171,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -225,7 +225,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 return (existing, wasConflict);
             }
@@ -307,7 +307,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -336,7 +336,7 @@ public class SyncRepository : ISyncRepository
                 existing.Longitud = dto.Longitud;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 // Update detalles if provided
                 if (dto.Detalles != null)
@@ -410,9 +410,22 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Sprint pre-prod #16 audit 2026-06-06: bloquea IDOR cross-tenant.
+        // Antes asignabamos ClienteId/ProductoId directo del DTO sin verificar
+        // pertenencia. Vendedor del tenant A podia crear Pedido con cliente
+        // de tenant B y al timbrar CFDI saldria al RFC equivocado.
+        if (dto.ClienteId > 0)
+            await _db.EnsureClienteBelongsToTenantAsync(dto.ClienteId, tenantId);
+        if (dto.ListaPrecioId.HasValue && dto.ListaPrecioId.Value > 0)
+            await _db.EnsureListaPrecioBelongsToTenantAsync(dto.ListaPrecioId.Value, tenantId);
+
         // Create new pedido — look up server-side product info (precio + tasa + flag IVA)
         // para usar LineAmountCalculator que respeta el catálogo de impuestos.
         var newProductoIds = dto.Detalles?.Select(d => d.ProductoId).Distinct().ToList() ?? new List<int>();
+        // Batch ensure de los productos — 1 query en lugar de N. Throw si alguno
+        // no pertenece al tenant.
+        if (newProductoIds.Count > 0)
+            await _db.EnsureAllProductosBelongToTenantAsync(newProductoIds, tenantId);
         var newProductosInfo = await GetProductoPricingInfoAsync(newProductoIds, tenantId);
 
         // Build detalles with server-validated prices to compute correct totals
@@ -578,21 +591,40 @@ public class SyncRepository : ISyncRepository
 
                     if (rutaId.HasValue)
                     {
+                        // Atomic counter update via SQL UPDATE — evita read-modify-write race
+                        // condition cuando dos sync requests concurrentes incrementan la misma
+                        // RutaCarga (ej. vendedor y supervisor pusheando al mismo tiempo).
+                        // El `+=` en memoria leia carga.CantidadVendida del snapshot del tracker
+                        // y sobreescribia con el resultado, perdiendo el incremento del otro hilo
+                        // (lost update). ExecuteUpdateAsync genera "SET cantidad = cantidad + N"
+                        // que es atomico en el motor de PostgreSQL.
+                        var nowUtc = DateTime.UtcNow;
                         foreach (var detalle in newDetalles)
                         {
-                            var carga = await _db.RutasCarga
-                                .FirstOrDefaultAsync(c => c.RutaId == rutaId.Value
-                                    && c.ProductoId == detalle.ProductoId
-                                    && c.TenantId == tenantId
-                                    && c.Activo);
-                            if (carga != null)
+                            var deltaCantidad = (int)detalle.Cantidad;
+                            if (pedido.TipoVenta == TipoVenta.VentaDirecta)
                             {
-                                if (pedido.TipoVenta == TipoVenta.VentaDirecta)
-                                    carga.CantidadVendida += (int)detalle.Cantidad;
-                                else
-                                    carga.CantidadEntregada += (int)detalle.Cantidad;
-                                carga.ActualizadoEn = DateTime.UtcNow;
-                                carga.ActualizadoPor = userId;
+                                await _db.RutasCarga
+                                    .Where(c => c.RutaId == rutaId.Value
+                                        && c.ProductoId == detalle.ProductoId
+                                        && c.TenantId == tenantId
+                                        && c.Activo)
+                                    .ExecuteUpdateAsync(setters => setters
+                                        .SetProperty(c => c.CantidadVendida, c => c.CantidadVendida + deltaCantidad)
+                                        .SetProperty(c => c.ActualizadoEn, nowUtc)
+                                        .SetProperty(c => c.ActualizadoPor, userId));
+                            }
+                            else
+                            {
+                                await _db.RutasCarga
+                                    .Where(c => c.RutaId == rutaId.Value
+                                        && c.ProductoId == detalle.ProductoId
+                                        && c.TenantId == tenantId
+                                        && c.Activo)
+                                    .ExecuteUpdateAsync(setters => setters
+                                        .SetProperty(c => c.CantidadEntregada, c => c.CantidadEntregada + deltaCantidad)
+                                        .SetProperty(c => c.ActualizadoEn, nowUtc)
+                                        .SetProperty(c => c.ActualizadoPor, userId));
                             }
                         }
                     }
@@ -601,11 +633,30 @@ public class SyncRepository : ISyncRepository
                 return (pedido, wasConflict);
             }
             catch (DbUpdateException ex) when (
-                ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
-                && attempt < maxRetries - 1)
+                ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
             {
-                // Duplicate order number — clear tracker and retry with new number
+                // Sprint pre-prod #14 audit 2026-06-06: discriminar entre los
+                // dos UNIQUE constraints posibles:
+                //   1. IX_Pedidos_tenant_id_mobile_record_id (sprint #13)
+                //   2. duplicate NumeroPedido en mismo tenant
+                // Caso 1 = race idempotente: dos sync requests con mismo LocalId.
+                // El dedup application-layer (#9/#10) no captura window TOCTOU
+                // microscopica. Solucion: clear tracker, re-fetch el existing,
+                // retornar como "no es conflict, es la misma entity".
                 _db.ChangeTracker.Clear();
+
+                var constraintName = pg.ConstraintName ?? string.Empty;
+                if (constraintName.Contains("mobile_record_id") && !string.IsNullOrEmpty(dto.LocalId))
+                {
+                    var existing = await _db.Pedidos
+                        .Include(p => p.Detalles)
+                        .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.LocalId);
+                    if (existing != null) return (existing, false);
+                }
+
+                // Caso 2: duplicate NumeroPedido — retry con nuevo numero (hasta maxRetries).
+                if (attempt >= maxRetries - 1) throw;
+                // siguiente iteracion del for loop genera nuevo NumeroPedido
             }
         }
 
@@ -626,7 +677,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -656,11 +707,32 @@ public class SyncRepository : ISyncRepository
                 existing.Fotos = dto.Fotos;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 return (existing, wasConflict);
             }
         }
+
+        // Sprint pre-prod #9 audit 2026-06-06: idempotency por (TenantId, MobileRecordId).
+        // Sin esto, un retry del sync queue (timeout despues del INSERT en DB pero antes
+        // de que el response llegue al mobile) creaba 2 visitas duplicadas para el mismo
+        // LocalId. Mismo patron que UpsertPedidoAsync L401-411.
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var existingByMobileId = await _db.ClienteVisitas
+                .FirstOrDefaultAsync(v => v.TenantId == tenantId && v.MobileRecordId == dto.LocalId);
+            if (existingByMobileId != null)
+            {
+                return (existingByMobileId, false);
+            }
+        }
+
+        // Sprint pre-prod #17 audit 2026-06-06: bloquea IDOR cross-tenant.
+        // ClienteId y PedidoId opcional vienen directo del DTO mobile.
+        if (dto.ClienteId > 0)
+            await _db.EnsureClienteBelongsToTenantAsync(dto.ClienteId, tenantId);
+        if (dto.PedidoId.HasValue && dto.PedidoId.Value > 0)
+            await _db.EnsurePedidoBelongsToTenantAsync(dto.PedidoId.Value, tenantId);
 
         // Create new visita
         var visita = new ClienteVisita
@@ -686,8 +758,27 @@ public class SyncRepository : ISyncRepository
             Version = 1
         };
 
-        _db.ClienteVisitas.Add(visita);
-        return (visita, wasConflict);
+        // Sprint pre-prod #14 audit 2026-06-06: SaveChanges + catch 23505 para
+        // captar violacion del UNIQUE index parcial sprint #13 cuando dos
+        // requests concurrentes pasen el dedup application-layer #9 (race
+        // TOCTOU). En ese caso re-fetch el existing y retornar idempotente.
+        try
+        {
+            _db.ClienteVisitas.Add(visita);
+            await _db.SaveChangesAsync();
+            return (visita, wasConflict);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
+            && (pg.ConstraintName ?? "").Contains("mobile_record_id")
+            && !string.IsNullOrEmpty(dto.LocalId))
+        {
+            _db.ChangeTracker.Clear();
+            var existing = await _db.ClienteVisitas
+                .FirstOrDefaultAsync(v => v.TenantId == tenantId && v.MobileRecordId == dto.LocalId);
+            if (existing != null) return (existing, false);
+            throw;
+        }
     }
 
     public async Task<(RutaVendedor entity, bool wasConflict)> UpsertRutaAsync(int tenantId, int usuarioId, SyncRutaDto dto, string userId)
@@ -718,7 +809,7 @@ public class SyncRepository : ISyncRepository
                 existing.Notas = dto.Notas;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 // Update detalles
                 if (dto.Detalles != null)
@@ -739,7 +830,7 @@ public class SyncRepository : ISyncRepository
                             existingDetalle.Notas = detalleDto.Notas;
                             existingDetalle.ActualizadoEn = DateTime.UtcNow;
                             existingDetalle.ActualizadoPor = userId;
-                            existingDetalle.Version++;
+                            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
                         }
                     }
                 }
@@ -882,7 +973,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -916,7 +1007,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
 
                 return (existing, wasConflict);
             }
@@ -924,6 +1015,25 @@ public class SyncRepository : ISyncRepository
 
         if (dto.Monto <= 0)
             throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
+
+        // Sprint pre-prod #10 audit 2026-06-06: idempotency por (TenantId, MobileRecordId).
+        // CRITICAL — sin esto, retry del sync queue insertaba 2 cobros con mismo LocalId,
+        // resultando en doble decremento del saldo del cliente. Mismo patron que
+        // UpsertPedidoAsync L401-411. Reutilizar entidad existente en vez de crear nueva.
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var existingByMobileId = await _db.Cobros
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.MobileRecordId == dto.LocalId);
+            if (existingByMobileId != null)
+            {
+                return (existingByMobileId, false);
+            }
+        }
+
+        // Sprint pre-prod #18 audit 2026-06-06: bloquea IDOR cross-tenant.
+        // Cobro referenciando cliente de otro tenant = saldo afectado en empresa equivocada.
+        if (dto.ClienteId > 0)
+            await _db.EnsureClienteBelongsToTenantAsync(dto.ClienteId, tenantId);
 
         // Resolver PedidoLocalId (WDB id) → PedidoId cuando el pedido padre fue creado
         // en el mismo sync y aún no tiene ServerId en el cliente. Evita cobros huérfanos
@@ -934,6 +1044,15 @@ public class SyncRepository : ISyncRepository
             var parent = await _db.Pedidos.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.PedidoLocalId);
             if (parent != null) resolvedPedidoId = parent.Id;
+        }
+
+        // Sprint pre-prod #18 audit 2026-06-06: si el dto suministra PedidoId directo,
+        // validar que pertenece al tenant. El lookup por PedidoLocalId arriba YA filtra
+        // por tenant, pero el dto.PedidoId directo (cuando el mobile ya tiene ServerId)
+        // se asignaba sin ensure.
+        if (resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
+        {
+            await _db.EnsurePedidoBelongsToTenantAsync(resolvedPedidoId.Value, tenantId);
         }
 
         if (resolvedPedidoId.HasValue && resolvedPedidoId.Value > 0)
@@ -963,8 +1082,26 @@ public class SyncRepository : ISyncRepository
             Version = 1
         };
 
-        _db.Cobros.Add(cobro);
-        return (cobro, wasConflict);
+        // Sprint pre-prod #14 audit 2026-06-06: SaveChanges + catch 23505 — mismo
+        // patron que UpsertVisitaAsync. CRITICAL en Cobro porque la duplicacion
+        // produce doble decremento del saldo del cliente.
+        try
+        {
+            _db.Cobros.Add(cobro);
+            await _db.SaveChangesAsync();
+            return (cobro, wasConflict);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
+            && (pg.ConstraintName ?? "").Contains("mobile_record_id")
+            && !string.IsNullOrEmpty(dto.LocalId))
+        {
+            _db.ChangeTracker.Clear();
+            var existing = await _db.Cobros
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.MobileRecordId == dto.LocalId);
+            if (existing != null) return (existing, false);
+            throw;
+        }
     }
 
     // === Gastos ===
@@ -995,7 +1132,7 @@ public class SyncRepository : ISyncRepository
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             return (existing, wasConflict);
         }
 
@@ -1031,7 +1168,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
                 return (existing, wasConflict);
             }
         }
@@ -1126,12 +1263,17 @@ public class SyncRepository : ISyncRepository
             existing.AnuladaPor = userId;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
-            existing.Version++;
+            // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
             // Revertir saldo cliente si era SaldoFavor.
+            // Atomic UPDATE para evitar lost update si dos requests modifican el saldo
+            // del mismo cliente concurrentemente (cobro y devolucion en simultaneo).
             if (existing.TipoReembolso == TipoReembolso.SaldoFavor)
             {
-                var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == existing.ClienteId && c.TenantId == tenantId);
-                if (cliente != null) cliente.Saldo += existing.MontoTotal;
+                var revertMonto = existing.MontoTotal;
+                await _db.Clientes
+                    .Where(c => c.Id == existing.ClienteId && c.TenantId == tenantId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.Saldo, c => c.Saldo + revertMonto));
             }
             // Revertir side-effects de inventario si era ReposicionProducto.
             // Math.Max(0, ...) protege contra ediciones manuales del admin que ya bajaron
@@ -1161,7 +1303,7 @@ public class SyncRepository : ISyncRepository
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
-                existing.Version++;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
                 return (existing, wasConflict);
             }
         }
@@ -1307,10 +1449,15 @@ public class SyncRepository : ISyncRepository
         _db.DevolucionesPedido.Add(devolucion);
 
         // Side-effect monetario: SaldoFavor decrementa saldo del cliente.
+        // Atomic UPDATE — mismo razonamiento que el path de anular: previene lost update
+        // contra cobros/devoluciones concurrentes sobre el mismo Cliente.Saldo.
         if (devolucion.TipoReembolso == TipoReembolso.SaldoFavor && devolucion.MontoTotal > 0)
         {
-            var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId);
-            if (cliente != null) cliente.Saldo -= devolucion.MontoTotal;
+            var montoDelta = devolucion.MontoTotal;
+            await _db.Clientes
+                .Where(c => c.Id == devolucion.ClienteId && c.TenantId == tenantId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(c => c.Saldo, c => c.Saldo - montoDelta));
         }
 
         // Side-effect inventario: ReposicionProducto ajusta automaticamente las

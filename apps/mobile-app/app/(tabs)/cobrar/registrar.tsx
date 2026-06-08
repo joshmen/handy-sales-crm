@@ -18,10 +18,6 @@ import type Cliente from '@/db/models/Cliente';
 import type RutaDetalleModel from '@/db/models/RutaDetalle';
 import {
   Banknote,
-  ArrowRightLeft,
-  FileText,
-  CreditCard,
-  MoreHorizontal,
   User,
   Check,
   Camera,
@@ -33,14 +29,8 @@ import {
 import { SbPayments } from '@/components/icons/DashboardIcons';
 import { COLORS } from '@/theme/colors';
 
-const METODO_ICONS: Record<number, React.ReactNode> = {
-  0: <Banknote size={20} color="#6b7280" />,
-  1: <ArrowRightLeft size={20} color="#6b7280" />,
-  2: <FileText size={20} color="#6b7280" />,
-  3: <CreditCard size={20} color="#6b7280" />,
-  4: <CreditCard size={20} color="#6b7280" />,
-  5: <MoreHorizontal size={20} color="#6b7280" />,
-};
+// Sprint 3 audit: METODO_ICONS removido (dead code: declarado nunca usado en
+// este archivo, solo en historial.tsx que ahora usa src/constants/paymentIcons).
 
 function RegistrarCobroScreen() {
   const insets = useSafeAreaInsets();

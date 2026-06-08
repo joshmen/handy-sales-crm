@@ -1,0 +1,298 @@
+appId: host.exp.exponent
+name: clientes-crear-offline-sync
+---
+# ============================================================
+# MODULO: Crear cliente offline desde mobile > datos > guardar
+# Asume: sesion activa, dashboard accesible.
+# ============================================================
+
+# Paso 0 - Asegurar dashboard cargado (otro flow hizo login)
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+- takeScreenshot: clientes-crear-00-dashboard
+
+# Paso 0.1 - Cerrar modales opcionales (anuncios, rating, etc.)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn:
+          text: "Cerrar"
+          optional: true
+
+# Paso 1 - Navegar al tab Mas (donde vive Clientes en el menu)
+- runFlow:
+    when:
+      visible: "Más"
+    commands:
+      - tapOn: "Más"
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 30000
+- takeScreenshot: clientes-crear-01-menu-mas
+
+# Paso 2 - Entrar a Clientes
+- tapOn: "Clientes"
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]liente.*"
+    timeout: 30000
+- takeScreenshot: clientes-crear-02-lista
+
+# Paso 3 - Aceptar permiso de ubicacion si aparece (Android)
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Mientras la app esta en uso"
+    commands:
+      - tapOn: "Mientras la app esta en uso"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+# Paso 4 - Abrir formulario Crear Cliente (boton +)
+- runFlow:
+    when:
+      visible: "Crear cliente"
+    commands:
+      - tapOn: "Crear cliente"
+- runFlow:
+    when:
+      visible: "Nuevo cliente"
+    commands:
+      - tapOn: "Nuevo cliente"
+- runFlow:
+    when:
+      notVisible: "Crear Cliente"
+    commands:
+      - tapOn:
+          id: "add-client"
+          optional: true
+- extendedWaitUntil:
+    visible: "Crear Cliente"
+    timeout: 30000
+- takeScreenshot: clientes-crear-03-form-vacio
+
+# Paso 5 - Verificar secciones visibles del formulario
+- assertVisible: "UBICACION"
+- assertVisible: "DIRECCION"
+- assertVisible: "INFORMACION GENERAL"
+- assertVisible: "CLASIFICACION"
+- assertVisible: "COMERCIAL"
+- assertVisible: "DATOS FISCALES"
+
+# Paso 6 - Captura DIRECCION (campos requeridos)
+- tapOn:
+    text: "Nombre de la calle"
+- inputText: "Av Insurgentes"
+- hideKeyboard
+
+- tapOn:
+    text: "# Ext"
+- inputText: "123"
+- hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Colonia (opcional)"
+    commands:
+      - tapOn:
+          text: "Colonia (opcional)"
+      - inputText: "Centro"
+      - hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Ciudad (opcional)"
+    commands:
+      - tapOn:
+          text: "Ciudad (opcional)"
+      - inputText: "CDMX"
+      - hideKeyboard
+
+- takeScreenshot: clientes-crear-04-direccion
+
+# Paso 7 - Captura INFORMACION GENERAL
+- scrollUntilVisible:
+    element:
+      text: "Nombre del cliente o negocio"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    text: "Nombre del cliente o negocio"
+- inputText: "Cliente Maestro QA Offline"
+- hideKeyboard
+
+- runFlow:
+    when:
+      visible: "10 digitos (opcional)"
+    commands:
+      - tapOn:
+          text: "10 digitos (opcional)"
+      - inputText: "5512345678"
+      - hideKeyboard
+
+- runFlow:
+    when:
+      visible: "correo@ejemplo.com (opcional)"
+    commands:
+      - tapOn:
+          text: "correo@ejemplo.com (opcional)"
+      - inputText: "qa@handysuites.test"
+      - hideKeyboard
+
+- takeScreenshot: clientes-crear-05-info-general
+
+# Paso 8 - Captura CLASIFICACION (Zona + Categoria via dropdowns)
+- scrollUntilVisible:
+    element:
+      text: "CLASIFICACION"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn: "Seleccionar zona..."
+- extendedWaitUntil:
+    visible: "Zona"
+    timeout: 15000
+- takeScreenshot: clientes-crear-06-zona-modal
+- runFlow:
+    when:
+      notVisible: "Sin resultados"
+    commands:
+      - tapOn:
+          index: 0
+          text: ".+"
+          optional: true
+- runFlow:
+    when:
+      visible: "Sin resultados"
+    commands:
+      - tapOn:
+          id: "close-modal"
+          optional: true
+
+- scrollUntilVisible:
+    element:
+      text: "Seleccionar categoria..."
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Seleccionar categoria..."
+- extendedWaitUntil:
+    visible: "Categoria"
+    timeout: 15000
+- takeScreenshot: clientes-crear-07-categoria-modal
+- runFlow:
+    when:
+      notVisible: "Sin resultados"
+    commands:
+      - tapOn:
+          index: 0
+          text: ".+"
+          optional: true
+
+# Paso 9 - Notas
+- scrollUntilVisible:
+    element:
+      text: "Notas internas sobre el cliente (opcional)"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    text: "Notas internas sobre el cliente (opcional)"
+- inputText: "Creado por Maestro E2E offline"
+- hideKeyboard
+- takeScreenshot: clientes-crear-08-form-completo
+
+# Paso 10 - Guardar Cliente
+- scrollUntilVisible:
+    element:
+      text: "Guardar Cliente"
+    direction: DOWN
+    timeout: 15000
+- assertVisible: "Guardar Cliente"
+- tapOn: "Guardar Cliente"
+
+# Paso 11 - Verificar toast (online o offline)
+- runFlow:
+    when:
+      visible: "Cliente creado"
+    commands:
+      - assertVisible: "Cliente creado"
+      - takeScreenshot: clientes-crear-09-toast-success
+- runFlow:
+    when:
+      visible: "Guardado offline"
+    commands:
+      - assertVisible: "Guardado offline"
+      - takeScreenshot: clientes-crear-09-toast-offline
+
+# Paso 12 - Regresar a lista y verificar cliente
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]liente.*"
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Cliente Maestro QA Offline"
+    commands:
+      - assertVisible: "Cliente Maestro QA Offline"
+- takeScreenshot: clientes-crear-10-lista-con-nuevo
+
+# Paso 13 - Navegar a Sync para verificar pending count
+- runFlow:
+    when:
+      visible: "Más"
+    commands:
+      - tapOn: "Más"
+- extendedWaitUntil:
+    visible: "Sincronizacion"
+    timeout: 30000
+- tapOn: "Sincronizacion"
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 30000
+- assertVisible: "ESTADO"
+- takeScreenshot: clientes-crear-11-sync-screen
+
+# Paso 14 - Disparar sync si esta online
+- runFlow:
+    when:
+      visible: "Sincronizar ahora"
+    commands:
+      - tapOn: "Sincronizar ahora"
+      - extendedWaitUntil:
+          visible:
+            text: ".*(Listo|exitos|Sincronizado|Conectado).*"
+          timeout: 30000
+      - takeScreenshot: clientes-crear-12-sync-completado
+- runFlow:
+    when:
+      visible: "Sin conexion"
+    commands:
+      - assertVisible: "Sin conexion"
+      - takeScreenshot: clientes-crear-12-sync-offline
+
+# Paso 15 - Screenshot final
+- takeScreenshot: clientes-crear-13-flow-final
+

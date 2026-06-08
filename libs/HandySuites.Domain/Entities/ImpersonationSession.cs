@@ -16,6 +16,16 @@ public class ImpersonationSession
     public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
+    /// Correlation ID para trazabilidad cross-service (logs, requests, audit).
+    /// M-10 (single-session audit, junio 2026): se captura el TraceIdentifier
+    /// del HttpContext que originó la sesión para poder correlacionar logs
+    /// distribuidos con la sesión de impersonación.
+    /// </summary>
+    [Column("correlation_id")]
+    [MaxLength(64)]
+    public string? CorrelationId { get; set; }
+
+    /// <summary>
     /// ID del SUPER_ADMIN que realiza la impersonación
     /// </summary>
     [Column("super_admin_id")]

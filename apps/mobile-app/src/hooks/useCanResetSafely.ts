@@ -5,6 +5,7 @@ import { database } from '@/db/database';
 import { useJornadaStore } from '@/stores';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSyncStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 
 /**
  * C.2 hardening (fix prod 2026-06-04 post-incidente Rodrigo):
@@ -69,6 +70,23 @@ export interface CanResetSafelyResult {
   isLoading: boolean;
   isOnline: boolean;
   isSyncing: boolean;
+  /**
+   * Fix prod 2026-06-05 (data-loss prevention):
+   * Soft-logout server-side. JWT local sigue pero el server rechaza requests
+   * con 401 SESSION_REVOKED. El SessionExpiredBanner ya consume este flag.
+   */
+  sessionExpired: boolean;
+  /**
+   * True cuando sessionExpired=true (independiente de hardBlockers).
+   * Hardening 2026-06-05: bloquea SIEMPRE el restore con sesion expirada, no
+   * solo cuando hay pendientes. Razon: aunque hardBlockers=0, el wipe deja
+   * WDB vacio y el sync pull post-wipe falla 401 -> usuario queda con app
+   * "en cero" sin recovery hasta re-login. El toast de "Datos restaurados"
+   * miente. La UI debe forzar Iniciar sesion antes de cualquier restore.
+   * El override 'Restaurar de todos modos' queda como escape solo cuando
+   * hardBlockers > 0 (hay algo conscientemente que perder).
+   */
+  sessionExpiredBlocksDestructive: boolean;
 }
 
 export function useCanResetSafely(): CanResetSafelyResult {
@@ -77,6 +95,7 @@ export function useCanResetSafely(): CanResetSafelyResult {
   const status = useSyncStore((s) => s.status);
   const isSyncing = status === 'syncing';
   const jornadaActiva = useJornadaStore((s) => s.activa);
+  const sessionExpired = useAuthStore((s) => s.sessionExpired);
 
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -143,7 +162,16 @@ export function useCanResetSafely(): CanResetSafelyResult {
 
     const hardBlockers = blockers.filter((b) => b.severity === 'block');
     const softWarnings = blockers.filter((b) => b.severity === 'warn');
+    // canReset NO incluye sessionExpired: la pantalla aplica el gate
+    // destructivo via sessionExpiredBlocksDestructive en restaurar-datos.tsx.
     const canReset = isOnline && !isSyncing && hardBlockers.length === 0;
+    // Hardening 2026-06-05: sessionExpired bloquea SIEMPRE el restore,
+    // independiente de hardBlockers. Si la sesion expiro:
+    //  - hardBlockers > 0: wipe + sync push = 401 = pendientes perdidos
+    //  - hardBlockers === 0: wipe + sync pull = 401 = WDB en cero sin
+    //    recovery hasta re-login. El toast de exito miente al usuario.
+    // Forzar 'Iniciar sesion' como CTA primario en ambos casos.
+    const sessionExpiredBlocksDestructive = sessionExpired;
 
     return {
       canReset,
@@ -153,8 +181,10 @@ export function useCanResetSafely(): CanResetSafelyResult {
       isLoading,
       isOnline,
       isSyncing,
+      sessionExpired,
+      sessionExpiredBlocksDestructive,
     };
-  }, [counts, isOnline, isSyncing, isLoading, jornadaActiva]);
+  }, [counts, isOnline, isSyncing, isLoading, jornadaActiva, sessionExpired]);
 
   return result;
 }

@@ -588,26 +588,30 @@ function mapDevolucionToRaw(d: any, devMap: Map<number, string>, pedidoMap: Map<
 }
 
 // Extrae los detalles embebidos en cada devolucion server payload y los mapea como tabla aparte.
-function extractDetallesDevolucion(devs: any[] | undefined, isFirstSync: boolean,
+function extractDetallesDevolucion(devs: any[] | undefined, _isFirstSync: boolean,
   detalleDevMap: Map<number, string>, devMap: Map<number, string>,
   productoMap: Map<number, string>, detallePedidoMap: Map<number, string>): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
-  const created: DirtyRaw[] = [];
   const updated: DirtyRaw[] = [];
   const deleted: string[] = [];
-  if (!devs?.length) return { created, updated, deleted };
+  if (!devs?.length) return { created: [], updated, deleted };
 
   for (const dev of devs) {
+    // Skip padres marcados como deleted; WDB ya elimina en cascada los hijos.
+    if (dev.isDeleted || dev.operation === 2) continue;
     const detalles = dev.detalles || [];
     for (const dd of detalles) {
       const raw = mapDetalleDevolucionToRaw(dd, detalleDevMap, devMap, productoMap, detallePedidoMap, dev.id);
-      if (isFirstSync || (!dd.id && !detalleDevMap.has(dd.id))) {
-        created.push(raw);
-      } else {
-        updated.push(raw);
-      }
+      // Todos los detalles van como 'updated' — sendCreatedAsUpdated: true en
+      // syncEngine.ts:222 hace que WDB upserts por id (crea si no existe, actualiza
+      // si existe). Mismo patrón que extractDetallesPedido (línea 313) y
+      // splitByOperation (línea 161). Antes: la rama `isFirstSync` enrutaba a
+      // created[] en cada primer login → WDB emitía warning
+      // "sendCreatedAsUpdated is enabled, and yet server sends some records as
+      // 'created'" en applyRemote.js:242.
+      updated.push(raw);
     }
   }
-  return dedupeChangeset({ created, updated, deleted });
+  return dedupeChangeset({ created: [], updated, deleted });
 }
 
 function mapDetalleDevolucionToRaw(dd: any, detalleDevMap: Map<number, string>, devMap: Map<number, string>,

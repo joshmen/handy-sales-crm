@@ -1500,12 +1500,17 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
 
       {/* Create Modal */}
       {isCreateModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface-2 dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
-            <div className="px-6 py-4 border-b border-border-subtle">
+        // Audit code-quality 2026-06-06: modal con altura limitada al viewport
+        // y body scrolleable. Antes en Mobile (Pixel 5 393x851) el contenido
+        // del form desbordaba la pantalla, los inputs interiores quedaban
+        // detras del backdrop y los clicks eran interceptados (pointer
+        // events). Items-start + overflow-y-auto fija el problema.
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6">
+          <div className="bg-surface-2 dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border flex flex-col max-h-[calc(100vh-3rem)]">
+            <div className="px-6 py-4 border-b border-border-subtle flex-shrink-0">
               <h2 className="text-lg font-semibold text-foreground">{t("createUserTitle")}</h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-foreground/80 mb-1">{t("fullName")} *</label>
                 <input
@@ -1527,7 +1532,16 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   id="sin-email-checkbox"
                   data-testid="create-user-sin-email"
                   checked={formData.sinEmail}
-                  onChange={(e) => setFormData({ ...formData, sinEmail: e.target.checked })}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setFormData((prev) => ({
+                      ...prev,
+                      sinEmail: checked,
+                      // Al activar sin-email limpiamos email (queda disabled); al desactivar limpiamos password.
+                      email: checked ? '' : prev.email,
+                      password: checked ? prev.password : '',
+                    }));
+                  }}
                   className="mt-1 cursor-pointer"
                 />
                 <label htmlFor="sin-email-checkbox" className="text-sm text-foreground/80 cursor-pointer flex-1">
@@ -1618,7 +1632,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3 flex-shrink-0">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
                 className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1"

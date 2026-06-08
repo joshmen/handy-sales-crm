@@ -58,7 +58,8 @@ public static class DashboardEndpoints
     private static async Task<IResult> GetDashboardMetrics(
         [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] ITenantTimeZoneService tenantTz)
+        [FromServices] ITenantTimeZoneService tenantTz,
+        [FromServices] ILogger<HandySuitesDbContext> logger)
     {
         try
         {
@@ -84,35 +85,46 @@ public static class DashboardEndpoints
                 var monthStartUtc = await tenantTz.ConvertTenantDateToUtcAsync(monthStartTenant);
                 var sevenDaysAgoUtc = await tenantTz.ConvertTenantDateToUtcAsync(sevenDaysAgoTenant);
 
-                todayActivities = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= todayUtc)
-                    .CountAsync();
+                // Sprint 2 audit code-quality: consolidamos 4 CountAsync separados
+                // (4 SQL round-trips) en 1 query con SUM(CASE WHEN ...). PostgreSQL
+                // optimiza esto a un solo scan de activity_logs. Reduce latencia
+                // de dashboard ~3-4x para tenants con muchos logs.
+                // activeUsersToday queda separado porque DISTINCT no combina bien
+                // dentro del mismo Sum aggregate.
+                var counts = await context.ActivityLogs
+                    .Where(a => a.TenantId == tenantId)
+                    .GroupBy(a => 1)
+                    .Select(g => new
+                    {
+                        Today = g.Sum(a => a.CreatedAt >= todayUtc ? 1 : 0),
+                        Week = g.Sum(a => a.CreatedAt >= weekStartUtc ? 1 : 0),
+                        Monthly = g.Sum(a => a.ActivityType == "login" && a.CreatedAt >= monthStartUtc ? 1 : 0),
+                        Errors = g.Sum(a => a.ActivityStatus == "failed" && a.CreatedAt >= sevenDaysAgoUtc ? 1 : 0),
+                    })
+                    .FirstOrDefaultAsync();
 
-                weekActivities = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId && a.CreatedAt >= weekStartUtc)
-                    .CountAsync();
-
-                monthlyLogins = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId
-                        && a.ActivityType == "login"
-                        && a.CreatedAt >= monthStartUtc)
-                    .CountAsync();
+                if (counts != null)
+                {
+                    todayActivities = counts.Today;
+                    weekActivities = counts.Week;
+                    monthlyLogins = counts.Monthly;
+                    recentErrors = counts.Errors;
+                }
 
                 activeUsersToday = await context.ActivityLogs
                     .Where(a => a.TenantId == tenantId && a.CreatedAt >= todayUtc)
                     .Select(a => a.UserId)
                     .Distinct()
                     .CountAsync();
-
-                recentErrors = await context.ActivityLogs
-                    .Where(a => a.TenantId == tenantId
-                        && a.ActivityStatus == "failed"
-                        && a.CreatedAt >= sevenDaysAgoUtc)
-                    .CountAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                // activity_logs table may not exist yet — return zeros
+                // Sprint pre-prod #64 audit 2026-06-06: catch silenciado escondia
+                // bugs reales. Si activity_logs FUNCIONA en general pero falla
+                // por timeout/conexion/permisos, antes el endpoint devolvia zeros
+                // como si fuera "tabla no existe" sin warning en logs. Ahora
+                // logueamos via Serilog para detectar el patron.
+                logger.LogWarning(ex, "Dashboard metrics activity_logs query failed for tenant {TenantId}", tenantId);
             }
 
             var metrics = new
@@ -151,7 +163,7 @@ public static class DashboardEndpoints
             {
                 // Super Admin ve toda la actividad
             }
-            else if (currentTenant.IsAdmin)
+            else if (currentTenant.IsAdminOrAbove)
             {
                 query = query.Where(a => a.TenantId == currentTenant.TenantId);
             }

@@ -123,19 +123,21 @@ function mapProductoDtoToProduct(dto: ProductoDto): Product {
 class ProductService {
   private readonly basePath = '/productos';
 
-  async getProducts(params: ProductsListParams = {}): Promise<ProductsListResponse> {
+  async getProducts(params: ProductsListParams & { signal?: AbortSignal } = {}): Promise<ProductsListResponse> {
     try {
+      const { signal, ...rest } = params;
       const queryParams = new URLSearchParams();
 
-      if (params.page) queryParams.append('pagina', params.page.toString());
-      if (params.limit) queryParams.append('tamanoPagina', params.limit.toString());
-      if (params.search) queryParams.append('busqueda', params.search);
-      if (params.categoryId) queryParams.append('categoriaId', params.categoryId.toString());
-      if (params.familyId) queryParams.append('familiaId', params.familyId.toString());
-      if (params.isActive !== undefined) queryParams.append('activo', params.isActive.toString());
+      if (rest.page) queryParams.append('pagina', rest.page.toString());
+      if (rest.limit) queryParams.append('tamanoPagina', rest.limit.toString());
+      if (rest.search) queryParams.append('busqueda', rest.search);
+      if (rest.categoryId) queryParams.append('categoriaId', rest.categoryId.toString());
+      if (rest.familyId) queryParams.append('familiaId', rest.familyId.toString());
+      if (rest.isActive !== undefined) queryParams.append('activo', rest.isActive.toString());
 
       const response = await api.get<ProductoPaginatedResult>(
-        `${this.basePath}?${queryParams.toString()}`
+        `${this.basePath}?${queryParams.toString()}`,
+        { signal }
       );
 
       const data = response.data;
