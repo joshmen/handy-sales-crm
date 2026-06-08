@@ -60,6 +60,7 @@ public class SubscriptionFeatureGuard : ISubscriptionFeatureGuard
             "facturacion" => plan.IncluyeFacturacion,
             "reportes" => plan.IncluyeReportes,
             "soporte_prioritario" => plan.IncluyeSoportePrioritario,
+            "anticipos_en_campo" => plan.PermitirAnticiposEnCampo,
             _ => false,
         };
 

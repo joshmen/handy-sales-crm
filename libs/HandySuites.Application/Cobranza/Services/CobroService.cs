@@ -2,6 +2,7 @@ using HandySuites.Application.Clientes.Interfaces;
 using HandySuites.Application.Cobranza.DTOs;
 using HandySuites.Application.Cobranza.Interfaces;
 using HandySuites.Application.Pedidos.Interfaces;
+using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -10,10 +11,17 @@ namespace HandySuites.Application.Cobranza.Services;
 
 public class CobroService
 {
+    /// <summary>
+    /// Feature code para SubscriptionFeatureGuard. Mirror del campo
+    /// SubscriptionPlan.PermitirAnticiposEnCampo.
+    /// </summary>
+    public const string FeatureAnticiposEnCampo = "anticipos_en_campo";
+
     private readonly ICobroRepository _repo;
     private readonly ICurrentTenant _tenant;
     private readonly IClienteRepository _clienteRepo;
     private readonly IPedidoRepository _pedidoRepo;
+    private readonly ISubscriptionFeatureGuard _featureGuard;
     private readonly ILogger<CobroService> _logger;
 
     public CobroService(
@@ -21,12 +29,14 @@ public class CobroService
         ICurrentTenant tenant,
         IClienteRepository clienteRepo,
         IPedidoRepository pedidoRepo,
+        ISubscriptionFeatureGuard featureGuard,
         ILogger<CobroService>? logger = null)
     {
         _repo = repo;
         _tenant = tenant;
         _clienteRepo = clienteRepo;
         _pedidoRepo = pedidoRepo;
+        _featureGuard = featureGuard;
         _logger = logger ?? NullLogger<CobroService>.Instance;
     }
 
@@ -49,8 +59,49 @@ public class CobroService
     {
         var currentUserId = _tenant.UserId;
         _logger.LogInformation(
-            "CobroService.CrearAsync iniciando. ClienteId={ClienteId}, PedidoId={PedidoId}, UsuarioId={UsuarioId}",
-            dto.ClienteId, dto.PedidoId, currentUserId);
+            "CobroService.CrearAsync iniciando. ClienteId={ClienteId}, PedidoId={PedidoId}, Modo={Modo}, UsuarioId={UsuarioId}",
+            dto.ClienteId, dto.PedidoId, dto.Modo, currentUserId);
+
+        // 2026-06-08 (plan eager-drifting cobros 3 modos): validar coherencia
+        // del Modo con el resto del payload + feature gate del plan.
+        switch (dto.Modo)
+        {
+            case ModoCobroDto.PorPedido:
+                if (!dto.PedidoId.HasValue)
+                {
+                    _logger.LogWarning(
+                        "CobroService.CrearAsync Modo=PorPedido sin PedidoId. ClienteId={ClienteId}",
+                        dto.ClienteId);
+                    throw new InvalidOperationException(
+                        "El modo 'Pago de pedido' requiere seleccionar un pedido especifico.");
+                }
+                break;
+            case ModoCobroDto.AbonoFifo:
+                // FIFO distribuye contra pedidos abiertos del cliente.
+                // No requiere PedidoId del caller. La implementacion completa
+                // del distribuidor FIFO esta en PR 2 (CobroFifoAplicadorService).
+                // Por ahora rechazamos para evitar generar saldoFavor accidental
+                // hasta que el distribuidor exista.
+                _logger.LogWarning(
+                    "CobroService.CrearAsync Modo=AbonoFifo aun no implementado (espera PR 2). ClienteId={ClienteId}",
+                    dto.ClienteId);
+                throw new InvalidOperationException(
+                    "El modo 'Abono a cuenta' (distribucion FIFO) aun no esta disponible. Usa 'Pago de pedido' o 'Anticipo'.");
+            case ModoCobroDto.Anticipo:
+                // Feature gate: solo planes con PermitirAnticiposEnCampo=true.
+                // Throw FeatureNotInPlanException si el plan no lo incluye —
+                // mobile/web deberian gating la UI antes pero defense-in-depth.
+                await _featureGuard.RequireFeatureAsync(_tenant.TenantId, FeatureAnticiposEnCampo);
+                if (dto.PedidoId.HasValue)
+                {
+                    _logger.LogWarning(
+                        "CobroService.CrearAsync Modo=Anticipo con PedidoId={PedidoId} — incoherente",
+                        dto.PedidoId.Value);
+                    throw new InvalidOperationException(
+                        "El modo 'Anticipo' no debe llevar pedido especifico — genera saldo a favor del cliente.");
+                }
+                break;
+        }
 
         // BR-C-monto: el monto debe ser estrictamente positivo. Antes el endpoint
         // mobile aceptaba 0 y negativos porque no había validación en el Service

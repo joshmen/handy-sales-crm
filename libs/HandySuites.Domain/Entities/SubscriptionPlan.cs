@@ -59,6 +59,17 @@ public class SubscriptionPlan
     [Column("incluye_tracking_vendedor")]
     public bool IncluyeTrackingVendedor { get; set; }
 
+    /// <summary>
+    /// 2026-06-08: permite que el vendedor en campo registre cobros tipo
+    /// Anticipo (saldoFavor) desde mobile. Sin este flag, mobile rechaza
+    /// modo Anticipo y solo permite PorPedido o AbonoFifo. Default false
+    /// porque cobranza informal de campo requiere acuerdo explicito del
+    /// tenant (impacto fiscal NIF D-1 / SAT — anticipo es pasivo, no ingreso).
+    /// Recomendado activar para tenants Pro/Business con equipo contable.
+    /// </summary>
+    [Column("permitir_anticipos_en_campo")]
+    public bool PermitirAnticiposEnCampo { get; set; }
+
     [Column("max_facturas_mes")]
     public int MaxFacturasMes { get; set; }
 

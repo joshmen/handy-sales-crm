@@ -168,6 +168,10 @@ public class CobroRepository : ICobroRepository
                 FechaCobro = dto.FechaCobro ?? DateTime.UtcNow,
                 Referencia = dto.Referencia,
                 Notas = dto.Notas,
+                // 2026-06-08: modo explicito + flag EsAnticipo (plan eager-drifting cobros).
+                // CobroService valida coherencia entre Modo/PedidoId/feature gate antes de llamar.
+                Modo = (ModoCobro)(int)dto.Modo,
+                EsAnticipo = dto.Modo == ModoCobroDto.Anticipo,
                 CreadoEn = DateTime.UtcNow,
                 Activo = true,
             };

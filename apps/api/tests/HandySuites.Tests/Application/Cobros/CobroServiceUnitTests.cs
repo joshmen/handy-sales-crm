@@ -6,6 +6,7 @@ using HandySuites.Application.Cobranza.Interfaces;
 using HandySuites.Application.Cobranza.Services;
 using HandySuites.Application.Pedidos.DTOs;
 using HandySuites.Application.Pedidos.Interfaces;
+using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Domain.Entities;
 using HandySuites.Shared.Multitenancy;
 using Moq;
@@ -19,6 +20,7 @@ public class CobroServiceUnitTests
     private readonly Mock<ICurrentTenant> _tenant = new();
     private readonly Mock<IClienteRepository> _clienteRepo = new();
     private readonly Mock<IPedidoRepository> _pedidoRepo = new();
+    private readonly Mock<ISubscriptionFeatureGuard> _featureGuard = new();
     private readonly CobroService _service;
 
     public CobroServiceUnitTests()
@@ -31,11 +33,17 @@ public class CobroServiceUnitTests
         _tenant.SetupGet(t => t.IsSuperAdmin).Returns(false);
         _tenant.SetupGet(t => t.IsSupervisor).Returns(false);
 
+        // 2026-06-08: default sin restricciones para tests existentes — los nuevos
+        // tests del Modo Anticipo configuran el guard explicitamente.
+        _featureGuard.Setup(g => g.RequireFeatureAsync(It.IsAny<int>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+        _featureGuard.Setup(g => g.HasFeatureAsync(It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(true);
+
         _service = new CobroService(
             _repo.Object,
             _tenant.Object,
             _clienteRepo.Object,
-            _pedidoRepo.Object);
+            _pedidoRepo.Object,
+            _featureGuard.Object);
     }
 
     private static ClienteDto BuildCliente(int id = 10) => new()
@@ -126,12 +134,13 @@ public class CobroServiceUnitTests
 
     // -------------------------------------------------------------------
     // 4. CrearAsync — monto <= 0 debe lanzar
+    // 2026-06-08: agregado PedidoId valido para pasar la nueva validacion Modo=PorPedido.
     // -------------------------------------------------------------------
     [Fact]
     public async Task CrearAsync_DeberiaLanzar_CuandoMontoEsCeroOnegativo()
     {
         var dto = new CobroCreateDto(
-            PedidoId: null,
+            PedidoId: 100,
             ClienteId: 10,
             Monto: 0m,
             MetodoPago: 1,
@@ -148,12 +157,13 @@ public class CobroServiceUnitTests
 
     // -------------------------------------------------------------------
     // 5. CrearAsync — cliente no pertenece al tenant
+    // 2026-06-08: agregado PedidoId valido para pasar Modo=PorPedido check.
     // -------------------------------------------------------------------
     [Fact]
     public async Task CrearAsync_DeberiaLanzar_CuandoClienteNoPerteneceAlTenant()
     {
         var dto = new CobroCreateDto(
-            PedidoId: null,
+            PedidoId: 100,
             ClienteId: 10,
             Monto: 200m,
             MetodoPago: 1,
@@ -250,12 +260,13 @@ public class CobroServiceUnitTests
 
     // -------------------------------------------------------------------
     // 9. CrearAsync — fecha futura debe lanzar
+    // 2026-06-08: agregado PedidoId + setup pedido para pasar Modo=PorPedido check.
     // -------------------------------------------------------------------
     [Fact]
     public async Task CrearAsync_DeberiaLanzar_CuandoFechaCobroEsFutura()
     {
         var dto = new CobroCreateDto(
-            PedidoId: null,
+            PedidoId: 100,
             ClienteId: 10,
             Monto: 200m,
             MetodoPago: 1,
@@ -264,6 +275,8 @@ public class CobroServiceUnitTests
             Notas: null);
 
         _clienteRepo.Setup(r => r.ObtenerPorIdAsync(10, 1)).ReturnsAsync(BuildCliente(10));
+        _pedidoRepo.Setup(r => r.ObtenerPorIdAsync(100, 1))
+            .ReturnsAsync(BuildPedido(100, clienteId: 10, estado: EstadoPedido.Entregado));
 
         var act = async () => await _service.CrearAsync(dto);
 
@@ -295,6 +308,119 @@ public class CobroServiceUnitTests
         var result = await _service.CrearAsync(dto);
 
         result.Should().Be(99);
+        _repo.Verify(r => r.CrearAsync(dto, 1, 1), Times.Once);
+    }
+
+    // ─── 2026-06-08: Nuevos tests para Modo explicito (PR 1 plan eager-drifting) ───
+
+    [Fact]
+    public async Task CrearAsync_ModoPorPedido_SinPedidoId_DebeLanzar()
+    {
+        // El modo default es PorPedido — sin PedidoId es incoherente.
+        var dto = new CobroCreateDto(
+            PedidoId: null,
+            ClienteId: 10,
+            Monto: 200m,
+            MetodoPago: 1,
+            FechaCobro: DateTime.UtcNow,
+            Referencia: null,
+            Notas: null,
+            Modo: ModoCobroDto.PorPedido);
+
+        var act = async () => await _service.CrearAsync(dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*requiere seleccionar un pedido*");
+        _repo.Verify(r => r.CrearAsync(It.IsAny<CobroCreateDto>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearAsync_ModoAbonoFifo_DebeLanzarNoImplementadoEnPR1()
+    {
+        // AbonoFifo se implementa en PR 2 (CobroFifoAplicadorService). PR 1 rechaza
+        // para evitar generar saldoFavor accidental.
+        var dto = new CobroCreateDto(
+            PedidoId: null,
+            ClienteId: 10,
+            Monto: 200m,
+            MetodoPago: 1,
+            FechaCobro: DateTime.UtcNow,
+            Referencia: null,
+            Notas: null,
+            Modo: ModoCobroDto.AbonoFifo);
+
+        var act = async () => await _service.CrearAsync(dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*aun no esta disponible*");
+        _repo.Verify(r => r.CrearAsync(It.IsAny<CobroCreateDto>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearAsync_ModoAnticipo_SinFeatureFlag_DebeLanzarFeatureNotInPlan()
+    {
+        // Plan SIN PermitirAnticiposEnCampo: rechazar con FeatureNotInPlanException.
+        _featureGuard.Setup(g => g.RequireFeatureAsync(1, CobroService.FeatureAnticiposEnCampo))
+            .ThrowsAsync(new FeatureNotInPlanException(CobroService.FeatureAnticiposEnCampo));
+
+        var dto = new CobroCreateDto(
+            PedidoId: null,
+            ClienteId: 10,
+            Monto: 500m,
+            MetodoPago: 1,
+            FechaCobro: DateTime.UtcNow,
+            Referencia: null,
+            Notas: null,
+            Modo: ModoCobroDto.Anticipo);
+
+        var act = async () => await _service.CrearAsync(dto);
+
+        await act.Should().ThrowAsync<FeatureNotInPlanException>();
+        _repo.Verify(r => r.CrearAsync(It.IsAny<CobroCreateDto>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearAsync_ModoAnticipo_ConPedidoId_DebeLanzar()
+    {
+        // Anticipo NO debe llevar PedidoId — genera saldoFavor, no aplica a pedido.
+        var dto = new CobroCreateDto(
+            PedidoId: 100,
+            ClienteId: 10,
+            Monto: 500m,
+            MetodoPago: 1,
+            FechaCobro: DateTime.UtcNow,
+            Referencia: null,
+            Notas: null,
+            Modo: ModoCobroDto.Anticipo);
+
+        var act = async () => await _service.CrearAsync(dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*no debe llevar pedido especifico*");
+        _repo.Verify(r => r.CrearAsync(It.IsAny<CobroCreateDto>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearAsync_ModoAnticipo_HappyPath_DebeRetornarId()
+    {
+        // Plan permite anticipos + dto coherente → cobro creado.
+        var dto = new CobroCreateDto(
+            PedidoId: null,
+            ClienteId: 10,
+            Monto: 750m,
+            MetodoPago: 0, // Efectivo
+            FechaCobro: DateTime.UtcNow,
+            Referencia: "ANTICIPO-001",
+            Notas: "Abono anticipado",
+            Modo: ModoCobroDto.Anticipo);
+
+        _clienteRepo.Setup(r => r.ObtenerPorIdAsync(10, 1)).ReturnsAsync(BuildCliente(10));
+        _repo.Setup(r => r.CrearAsync(dto, 1, 1)).ReturnsAsync(123);
+
+        var result = await _service.CrearAsync(dto);
+
+        result.Should().Be(123);
+        _featureGuard.Verify(g => g.RequireFeatureAsync(1, CobroService.FeatureAnticiposEnCampo), Times.Once);
         _repo.Verify(r => r.CrearAsync(dto, 1, 1), Times.Once);
     }
 }
