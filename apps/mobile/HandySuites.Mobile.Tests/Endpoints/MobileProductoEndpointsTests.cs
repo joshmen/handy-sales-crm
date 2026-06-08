@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Inventario.DTOs;
 using HandySuites.Application.Inventario.Interfaces;
 using HandySuites.Application.Inventario.Services;
@@ -14,6 +15,7 @@ public class MobileProductoEndpointsTests
     private readonly Mock<IProductoRepository> _productoRepoMock;
     private readonly Mock<IInventarioRepository> _inventarioRepoMock;
     private readonly Mock<ICurrentTenant> _tenantMock;
+    private readonly Mock<ITransactionManager> _txMock;
     private readonly ProductoService _productoService;
     private readonly InventarioService _inventarioService;
     private readonly List<ProductoDto> _testProductos;
@@ -25,9 +27,14 @@ public class MobileProductoEndpointsTests
         _inventarioRepoMock = new Mock<IInventarioRepository>();
         _tenantMock = new Mock<ICurrentTenant>();
         _tenantMock.Setup(t => t.TenantId).Returns(1);
+        // M-12 fix: InventarioService now requires ITransactionManager. Passthrough mock executes the delegate without a real transaction.
+        _txMock = new Mock<ITransactionManager>();
+        _txMock
+            .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<InventarioService.CrearInventarioResult>>>()))
+            .Returns<Func<Task<InventarioService.CrearInventarioResult>>>(op => op());
 
         _productoService = new ProductoService(_productoRepoMock.Object, _tenantMock.Object);
-        _inventarioService = new InventarioService(_inventarioRepoMock.Object, _tenantMock.Object);
+        _inventarioService = new InventarioService(_inventarioRepoMock.Object, _tenantMock.Object, _txMock.Object);
 
         _testProductos = new List<ProductoDto>
         {
