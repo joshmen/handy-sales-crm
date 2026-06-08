@@ -30,22 +30,21 @@ import { getOrCreateDbEncryptionKey } from './dbEncryptionKey';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Sprint pre-prod #6: top-level await para resolver la passphrase ANTES de
-// construir el SQLiteAdapter. Hermes (Expo SDK 54+) soporta top-level await
-// en modulos ES — el primer `import { database } from '@/db/database'` resuelve
-// SOLO despues de que esta promesa concluye.
+// Audit 2026-06-07: top-level await NO está soportado en Hermes del build EAS
+// actual (SDK 54). Comprobado con logcat: `ReferenceError: Property 'await'
+// doesn't exist` → módulo nunca resuelve → splash eterno en APK preview.
 //
-// Expo Go (LokiJS): passphrase = undefined, no encryption.
-// Native (EAS build): passphrase = AES-256 hex de SecureStore.
-const passphrase: string | undefined = isExpoGo
-  ? undefined
-  : await getOrCreateDbEncryptionKey().catch((err) => {
-      // Sprint #8 (migration plaintext->encrypted): si SecureStore falla
-      // (Expo Go en algunos emuladores, KeyStore corrupto), caemos al
-      // ciclo de re-init que el catch del Database constructor maneja.
-      if (__DEV__) console.warn('[database] getOrCreateDbEncryptionKey fallo:', err);
-      return undefined;
-    });
+// Workaround temporal: passphrase = undefined siempre (DB plaintext, como pre-#6).
+// La passphrase se genera best-effort en background pero NO bloquea boot — el
+// SQLiteAdapter se crea ya sin passphrase. TODO antes de prod: rewrite a
+// pattern de lazy-init async (getDatabase(): Promise<Database>) y refactor de
+// los 37 callers para hacer await en App startup.
+const passphrase: string | undefined = undefined;
+if (!isExpoGo) {
+  getOrCreateDbEncryptionKey().catch((err) => {
+    if (__DEV__) console.warn('[database] passphrase pre-warm fail (non-fatal):', err);
+  });
+}
 
 // Expo Go: LokiJS (no native modules). APK/EAS: SQLiteAdapter (native, fast).
 const adapter = isExpoGo
