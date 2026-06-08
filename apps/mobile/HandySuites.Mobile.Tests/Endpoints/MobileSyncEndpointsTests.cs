@@ -448,25 +448,48 @@ public class MobileSyncEndpointsTests
     [Fact]
     public async Task SyncAsync_SuccessfulSync_CallsSaveChangesAsync()
     {
-        var request = new SyncRequestDto { EntityTypes = new List<string> { "clientes" } };
+        // 2026-06-08: con per-entity savepoints, SaveChangesAsync se llama UNA vez
+        // por entity dentro del savepoint (commit aislado), no UNA al final del batch.
+        // Pull es read-only y NO llama SaveChangesAsync.
+        var cliente = new SyncClienteDto { Id = 1, Nombre = "Test", Operation = SyncOperation.Update };
+        _repo.Setup(r => r.UpsertClienteAsync(TenantId, cliente, It.IsAny<string>()))
+            .ReturnsAsync((new Cliente { Id = 1 }, false));
+
+        var request = new SyncRequestDto
+        {
+            EntityTypes = new List<string> { "clientes" },
+            ClientChanges = new SyncChangesDto { Clientes = new List<SyncClienteDto> { cliente } }
+        };
 
         await _service.SyncAsync(request);
 
+        // Un push entity → un SaveChangesAsync (dentro del savepoint).
         _repo.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
     [Fact]
     public async Task SyncAsync_SaveChangesAsyncThrows_CapturedAsSyncError()
     {
-        // Si SaveChangesAsync revienta (ej. constraint violation a nivel DB), el
-        // try/catch externo lo captura y lo agrega a Errors. El cliente recibe
-        // 200 con HasErrors=true (no 500).
+        // Si SaveChangesAsync revienta (ej. constraint violation a nivel DB) dentro
+        // del savepoint per-entity, el TryRunInSavepointAsync captura la excepción
+        // y reporta el entity en response.Errors[] con detalles del entity. NO se
+        // agrega un error generico "sync" al top-level — eso fue revertido del
+        // M-1 patch para evitar duplicar diagnosticos.
+        var cliente = new SyncClienteDto { Id = 1, Nombre = "Test", Operation = SyncOperation.Update };
+        _repo.Setup(r => r.UpsertClienteAsync(TenantId, cliente, It.IsAny<string>()))
+            .ReturnsAsync((new Cliente { Id = 1 }, false));
         _repo.Setup(r => r.SaveChangesAsync()).ThrowsAsync(new Exception("DB down"));
 
-        var response = await _service.SyncAsync(new SyncRequestDto { EntityTypes = new List<string> { "clientes" } });
+        var response = await _service.SyncAsync(new SyncRequestDto
+        {
+            EntityTypes = new List<string> { "clientes" },
+            ClientChanges = new SyncChangesDto { Clientes = new List<SyncClienteDto> { cliente } }
+        });
 
         response.Errors.Should().ContainSingle();
-        response.Errors[0].EntityType.Should().Be("sync");
+        // El error reporta el entity especifico que fallo, no "sync" generico.
+        response.Errors[0].EntityType.Should().Be("Cliente");
+        response.Errors[0].Message.Should().Contain("DB down");
         response.HasErrors.Should().BeTrue();
     }
 
@@ -480,5 +503,22 @@ public class MobileSyncEndpointsTests
     {
         public Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation) => operation();
         public Task ExecuteInTransactionAsync(Func<Task> operation) => operation();
+
+        // 2026-06-08: nuevos miembros de ITransactionManager (per-entity savepoints).
+        // En tests inline ejecutamos la operacion con un FakeSavepointScope que corre
+        // cada accion inline y captura excepciones segun la semantica de SavepointScope.
+        public Task<T> ExecuteWithSavepointsAsync<T>(Func<ISavepointScope, Task<T>> operation)
+            => operation(new FakeSavepointScope());
+        public Task ExecuteWithSavepointsAsync(Func<ISavepointScope, Task> operation)
+            => operation(new FakeSavepointScope());
+    }
+
+    private sealed class FakeSavepointScope : ISavepointScope
+    {
+        public async Task<(bool Committed, Exception? Error)> TryRunInSavepointAsync(string savepointName, Func<Task> action)
+        {
+            try { await action(); return (true, null); }
+            catch (Exception ex) { return (false, ex); }
+        }
     }
 }

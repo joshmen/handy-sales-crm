@@ -632,6 +632,22 @@ public class MobileVentaDirectaEndpointsTests : IDisposable
     {
         public Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation) => operation();
         public Task ExecuteInTransactionAsync(Func<Task> operation) => operation();
+
+        // 2026-06-08: per-entity savepoints API. InMemory provider no soporta savepoints
+        // reales; el fake scope ejecuta cada accion inline y captura excepciones.
+        public Task<T> ExecuteWithSavepointsAsync<T>(Func<ISavepointScope, Task<T>> operation)
+            => operation(new InlineSavepointScope());
+        public Task ExecuteWithSavepointsAsync(Func<ISavepointScope, Task> operation)
+            => operation(new InlineSavepointScope());
+    }
+
+    private sealed class InlineSavepointScope : ISavepointScope
+    {
+        public async Task<(bool Committed, Exception? Error)> TryRunInSavepointAsync(string savepointName, Func<Task> action)
+        {
+            try { await action(); return (true, null); }
+            catch (Exception ex) { return (false, ex); }
+        }
     }
 
     /// <summary>

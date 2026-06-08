@@ -175,8 +175,11 @@ public class MobileSyncLargePayloadTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(30),
             "10k mocked upserts no deben tener patologia O(n^2)");
 
-        // Assert — SaveChangesAsync se invoca UNA sola vez al final (batch transaction)
-        _repo.Verify(r => r.SaveChangesAsync(), Times.Once);
+        // Assert — 2026-06-08: con per-entity savepoints, SaveChangesAsync se llama
+        // UNA vez por entity (dentro de cada savepoint para commit aislado), no UNA
+        // al final del batch. 10k entities → 10k SaveChangesAsync calls.
+        _repo.Verify(r => r.SaveChangesAsync(),
+            Times.Exactly(totalPedidos + totalCobros + totalClientes));
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -267,11 +270,18 @@ public class MobileSyncLargePayloadTests
     // ──────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task SyncAsync_LargePayload_SaveChangesFails_CapturedAsSyncError()
+    public async Task SyncAsync_LargePayload_SaveChangesFails_CapturedPerEntity()
     {
-        // Si la transaccion final falla (constraint, deadlock, timeout PG con
-        // payload muy grande), el outer try/catch captura y devuelve 200 con
-        // HasErrors=true en lugar de 500. Mobile entonces re-encola para retry.
+        // 2026-06-08: con per-entity savepoints, si SaveChangesAsync revienta para
+        // CADA entity individual (DB down / deadlock affectando cada savepoint),
+        // cada entity reporta su propio error en response.Errors[]. NO se colapsa
+        // en un solo "sync" error generico — eso era el comportamiento previo del
+        // M-1 (todo o nada) que se revirtió porque rompía el mobile con loops.
+        //
+        // El response sigue siendo HTTP 200 con HasErrors=true para que mobile NO
+        // marque las entities como synced y las reintente (per WatermelonDB Sync
+        // protocol: "if push fails for some records, server should report them so
+        // client can retry").
         const int total = 3000;
         var pedidos = BuildPedidos(total);
 
@@ -289,10 +299,14 @@ public class MobileSyncLargePayloadTests
 
         var response = await _service.SyncAsync(request);
 
-        response.Errors.Should().ContainSingle();
-        response.Errors[0].EntityType.Should().Be("sync");
-        response.Errors[0].Details.Should().Contain("deadlock");
+        // Cada savepoint atrapa el throw de SaveChanges → 1 error por entity
+        response.Errors.Should().HaveCount(total);
+        response.Errors.Should().OnlyContain(e => e.EntityType == "Pedido");
+        response.Errors.Should().OnlyContain(e => e.Message.Contains("deadlock"));
         response.HasErrors.Should().BeTrue();
+
+        // Ninguna entity se marca synced cuando todos sus savepoints rollback
+        response.Summary.PedidosPushed.Should().Be(0);
 
         // ServerTimestamp aun se setea — mobile usa este para next-since
         response.ServerTimestamp.Should().BeAfter(DateTime.UtcNow.AddMinutes(-1));
@@ -442,5 +456,20 @@ public class MobileSyncLargePayloadTests
     {
         public Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation) => operation();
         public Task ExecuteInTransactionAsync(Func<Task> operation) => operation();
+
+        // 2026-06-08: per-entity savepoints API.
+        public Task<T> ExecuteWithSavepointsAsync<T>(Func<ISavepointScope, Task<T>> operation)
+            => operation(new FakeSavepointScope());
+        public Task ExecuteWithSavepointsAsync(Func<ISavepointScope, Task> operation)
+            => operation(new FakeSavepointScope());
+    }
+
+    private sealed class FakeSavepointScope : ISavepointScope
+    {
+        public async Task<(bool Committed, Exception? Error)> TryRunInSavepointAsync(string savepointName, Func<Task> action)
+        {
+            try { await action(); return (true, null); }
+            catch (Exception ex) { return (false, ex); }
+        }
     }
 }
