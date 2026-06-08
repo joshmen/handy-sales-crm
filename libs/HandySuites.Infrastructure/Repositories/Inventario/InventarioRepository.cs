@@ -178,8 +178,7 @@ public class InventarioRepository : IInventarioRepository
     public async Task AcquireProductoLockAsync(int tenantId, int productoId)
     {
         if (!_db.Database.IsNpgsql()) return;
-        await _db.Database.ExecuteSqlRawAsync(
-            "SELECT pg_advisory_xact_lock({0}, {1})",
-            tenantId, productoId);
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({tenantId}, {productoId})");
     }
 }

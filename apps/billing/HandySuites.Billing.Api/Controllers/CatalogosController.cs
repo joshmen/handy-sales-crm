@@ -179,7 +179,7 @@ public class CatalogosController : ControllerBase
         _context.ConfiguracionesFiscales.Add(config);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Configuración fiscal creada para tenant {tenantId}");
+        _logger.LogInformation("Configuración fiscal creada para tenant {TenantId}", tenantId);
 
         return CreatedAtAction(nameof(GetConfiguracionFiscal), new { config.Id, config.TenantId, message = "Configuración fiscal creada" });
     }
@@ -214,7 +214,7 @@ public class CatalogosController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"Configuración fiscal actualizada para tenant {tenantId}");
+        _logger.LogInformation("Configuración fiscal actualizada para tenant {TenantId}", tenantId);
 
         return NoContent();
     }

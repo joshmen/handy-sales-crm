@@ -187,7 +187,12 @@ public static class AnalyticsEndpoints
                 selectParts.AddRange(source.Columns.Select(c => $"\"{c.Name}\""));
             }
 
-            var sql = $"SELECT {string.Join(", ", selectParts)} FROM {source.Table} WHERE tenant_id = {tenantId}";
+            // source.Table is safe — `source` came from the Sources whitelist above (line 149).
+            // We still quote the identifier defensively so the SQL is well-formed regardless
+            // of future whitelist entries. tenantId is bound as a parameter (@tenantId) to
+            // satisfy SQL-safety review, even though it originates server-side from the auth
+            // context (never request input).
+            var sql = $"SELECT {string.Join(", ", selectParts)} FROM \"{source.Table}\" WHERE tenant_id = @tenantId";
 
             if (dimensions.Length > 0 && metrics.Length > 0)
             {
@@ -213,6 +218,10 @@ public static class AnalyticsEndpoints
             await conn.OpenAsync();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
+            var tenantParam = cmd.CreateParameter();
+            tenantParam.ParameterName = "@tenantId";
+            tenantParam.Value = tenantId;
+            cmd.Parameters.Add(tenantParam);
 
             var rows = new List<Dictionary<string, object?>>();
             var columns = new List<string>();
