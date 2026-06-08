@@ -327,6 +327,8 @@ public static class ServiceRegistrationExtensions
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();
         services.AddScoped<CobroService>();
+        // 2026-06-08 PR 2 plan eager-drifting cobros: distribuidor FIFO para modo AbonoFifo.
+        services.AddScoped<ICobroFifoAplicadorService, CobroFifoAplicadorService>();
         services.AddValidatorsFromAssemblyContaining<CobroCreateDtoValidator>();
 
         // Tenant Repository (Platform-level)

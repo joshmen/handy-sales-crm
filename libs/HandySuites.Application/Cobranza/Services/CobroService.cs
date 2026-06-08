@@ -22,6 +22,7 @@ public class CobroService
     private readonly IClienteRepository _clienteRepo;
     private readonly IPedidoRepository _pedidoRepo;
     private readonly ISubscriptionFeatureGuard _featureGuard;
+    private readonly ICobroFifoAplicadorService? _fifoAplicador;
     private readonly ILogger<CobroService> _logger;
 
     public CobroService(
@@ -30,6 +31,7 @@ public class CobroService
         IClienteRepository clienteRepo,
         IPedidoRepository pedidoRepo,
         ISubscriptionFeatureGuard featureGuard,
+        ICobroFifoAplicadorService? fifoAplicador = null,
         ILogger<CobroService>? logger = null)
     {
         _repo = repo;
@@ -37,6 +39,7 @@ public class CobroService
         _clienteRepo = clienteRepo;
         _pedidoRepo = pedidoRepo;
         _featureGuard = featureGuard;
+        _fifoAplicador = fifoAplicador;
         _logger = logger ?? NullLogger<CobroService>.Instance;
     }
 
@@ -77,16 +80,29 @@ public class CobroService
                 }
                 break;
             case ModoCobroDto.AbonoFifo:
-                // FIFO distribuye contra pedidos abiertos del cliente.
-                // No requiere PedidoId del caller. La implementacion completa
-                // del distribuidor FIFO esta en PR 2 (CobroFifoAplicadorService).
-                // Por ahora rechazamos para evitar generar saldoFavor accidental
-                // hasta que el distribuidor exista.
-                _logger.LogWarning(
-                    "CobroService.CrearAsync Modo=AbonoFifo aun no implementado (espera PR 2). ClienteId={ClienteId}",
-                    dto.ClienteId);
-                throw new InvalidOperationException(
-                    "El modo 'Abono a cuenta' (distribucion FIFO) aun no esta disponible. Usa 'Pago de pedido' o 'Anticipo'.");
+                // FIFO: delega al distribuidor que crea N cobros children
+                // (uno per-pedido tocado en orden FIFO). Retorna el id del
+                // PRIMER cobro creado para mantener contract `Task<int>` —
+                // si UI quiere ver la breakdown completa, usar CrearFifoAsync.
+                if (_fifoAplicador == null)
+                {
+                    _logger.LogError(
+                        "CobroService.CrearAsync Modo=AbonoFifo pero ICobroFifoAplicadorService no esta inyectado. " +
+                        "Constructor opcional → DI mal configurado en este host.");
+                    throw new InvalidOperationException(
+                        "El modo 'Abono a cuenta' no esta disponible en este servicio.");
+                }
+                if (dto.PedidoId.HasValue)
+                {
+                    throw new InvalidOperationException(
+                        "El modo 'Abono a cuenta' no debe llevar pedido especifico — la distribucion es automatica FIFO.");
+                }
+                var aplicaciones = await _fifoAplicador.DistribuirAsync(
+                    dto.ClienteId, dto.Monto, dto.MetodoPago, dto.FechaCobro, dto.Referencia, dto.Notas);
+                _logger.LogInformation(
+                    "CobroService.CrearAsync Modo=AbonoFifo completado. ClienteId={ClienteId}, NumAplicaciones={Num}, PrimerCobroId={CobroId}",
+                    dto.ClienteId, aplicaciones.Count, aplicaciones.FirstOrDefault()?.CobroId);
+                return aplicaciones.First().CobroId;
             case ModoCobroDto.Anticipo:
                 // Feature gate: solo planes con PermitirAnticiposEnCampo=true.
                 // Throw FeatureNotInPlanException si el plan no lo incluye —
@@ -190,6 +206,35 @@ public class CobroService
             "CobroService.CrearAsync completado. CobroId={CobroId}, ClienteId={ClienteId}, PedidoId={PedidoId}, UsuarioId={UsuarioId}",
             cobroId, dto.ClienteId, dto.PedidoId, currentUserId);
         return cobroId;
+    }
+
+    /// <summary>
+    /// 2026-06-08 PR 2 plan eager-drifting cobros: convenience wrapper que
+    /// retorna la breakdown FIFO completa (lista de cobros creados per-pedido).
+    /// Endpoints web/mobile pueden usar este metodo si quieren mostrar al user
+    /// "Se aplicaron $X a PED-001, $Y a PED-002, $Z a PED-003" tras submit.
+    /// </summary>
+    public async Task<List<FifoAplicacionDto>> CrearFifoAsync(CobroCreateDto dto)
+    {
+        if (dto.Modo != ModoCobroDto.AbonoFifo)
+            throw new InvalidOperationException("CrearFifoAsync requires Modo=AbonoFifo.");
+        if (dto.Monto <= 0)
+            throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
+        if (dto.PedidoId.HasValue)
+            throw new InvalidOperationException(
+                "El modo 'Abono a cuenta' no debe llevar pedido especifico.");
+        if (_fifoAplicador == null)
+            throw new InvalidOperationException(
+                "El modo 'Abono a cuenta' no esta disponible en este servicio.");
+
+        // Validar cliente pertenece al tenant (mismo guard del CrearAsync).
+        var cliente = await _clienteRepo.ObtenerPorIdAsync(dto.ClienteId, _tenant.TenantId);
+        if (cliente == null)
+            throw new InvalidOperationException(
+                "El cliente especificado no existe o no pertenece a tu empresa.");
+
+        return await _fifoAplicador.DistribuirAsync(
+            dto.ClienteId, dto.Monto, dto.MetodoPago, dto.FechaCobro, dto.Referencia, dto.Notas);
     }
 
     public Task<bool> ActualizarAsync(int id, CobroUpdateDto dto)

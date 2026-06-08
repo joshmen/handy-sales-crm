@@ -335,10 +335,13 @@ public class CobroServiceUnitTests
     }
 
     [Fact]
-    public async Task CrearAsync_ModoAbonoFifo_DebeLanzarNoImplementadoEnPR1()
+    public async Task CrearAsync_ModoAbonoFifo_SinFifoServiceInyectado_DebeLanzar()
     {
-        // AbonoFifo se implementa en PR 2 (CobroFifoAplicadorService). PR 1 rechaza
-        // para evitar generar saldoFavor accidental.
+        // PR 2 plan: si DI no registra ICobroFifoAplicadorService, modo FIFO falla
+        // con mensaje claro. Test del fallback defensivo.
+        var serviceSinFifo = new CobroService(
+            _repo.Object, _tenant.Object, _clienteRepo.Object, _pedidoRepo.Object, _featureGuard.Object,
+            fifoAplicador: null);
         var dto = new CobroCreateDto(
             PedidoId: null,
             ClienteId: 10,
@@ -349,11 +352,109 @@ public class CobroServiceUnitTests
             Notas: null,
             Modo: ModoCobroDto.AbonoFifo);
 
-        var act = async () => await _service.CrearAsync(dto);
+        var act = async () => await serviceSinFifo.CrearAsync(dto);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*aun no esta disponible*");
-        _repo.Verify(r => r.CrearAsync(It.IsAny<CobroCreateDto>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            .WithMessage("*no esta disponible*");
+    }
+
+    [Fact]
+    public async Task CrearAsync_ModoAbonoFifo_ConPedidoId_DebeLanzar()
+    {
+        // FIFO distribuye automaticamente — incoherente con pedido especifico.
+        var fifo = new Mock<ICobroFifoAplicadorService>();
+        var service = new CobroService(
+            _repo.Object, _tenant.Object, _clienteRepo.Object, _pedidoRepo.Object, _featureGuard.Object,
+            fifoAplicador: fifo.Object);
+        var dto = new CobroCreateDto(
+            PedidoId: 100,
+            ClienteId: 10,
+            Monto: 200m,
+            MetodoPago: 1,
+            FechaCobro: DateTime.UtcNow,
+            Referencia: null,
+            Notas: null,
+            Modo: ModoCobroDto.AbonoFifo);
+
+        var act = async () => await service.CrearAsync(dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*no debe llevar pedido*");
+        fifo.Verify(f => f.DistribuirAsync(It.IsAny<int>(), It.IsAny<decimal>(), It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<string?>(), It.IsAny<string?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearAsync_ModoAbonoFifo_HappyPath_DelegaAFifoYRetornaPrimerCobroId()
+    {
+        var fifo = new Mock<ICobroFifoAplicadorService>();
+        fifo.Setup(f => f.DistribuirAsync(10, 500m, 0, It.IsAny<DateTime?>(), null, "Pago multiple"))
+            .ReturnsAsync(new List<FifoAplicacionDto>
+            {
+                new(CobroId: 201, PedidoId: 100, NumeroPedido: "PED-0001", MontoAplicado: 300m),
+                new(CobroId: 202, PedidoId: 101, NumeroPedido: "PED-0002", MontoAplicado: 200m),
+            });
+
+        var service = new CobroService(
+            _repo.Object, _tenant.Object, _clienteRepo.Object, _pedidoRepo.Object, _featureGuard.Object,
+            fifoAplicador: fifo.Object);
+        var dto = new CobroCreateDto(
+            PedidoId: null,
+            ClienteId: 10,
+            Monto: 500m,
+            MetodoPago: 0,
+            FechaCobro: DateTime.UtcNow,
+            Referencia: null,
+            Notas: "Pago multiple",
+            Modo: ModoCobroDto.AbonoFifo);
+
+        var result = await service.CrearAsync(dto);
+
+        result.Should().Be(201);
+        fifo.Verify(f => f.DistribuirAsync(10, 500m, 0, It.IsAny<DateTime?>(), null, "Pago multiple"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearFifoAsync_HappyPath_RetornaListaCompleta()
+    {
+        var fifo = new Mock<ICobroFifoAplicadorService>();
+        var lista = new List<FifoAplicacionDto>
+        {
+            new(201, 100, "PED-0001", 300m),
+            new(202, 101, "PED-0002", 200m),
+        };
+        fifo.Setup(f => f.DistribuirAsync(10, 500m, 0, It.IsAny<DateTime?>(), null, null))
+            .ReturnsAsync(lista);
+
+        _clienteRepo.Setup(r => r.ObtenerPorIdAsync(10, 1)).ReturnsAsync(BuildCliente(10));
+
+        var service = new CobroService(
+            _repo.Object, _tenant.Object, _clienteRepo.Object, _pedidoRepo.Object, _featureGuard.Object,
+            fifoAplicador: fifo.Object);
+        var dto = new CobroCreateDto(
+            PedidoId: null, ClienteId: 10, Monto: 500m, MetodoPago: 0,
+            FechaCobro: DateTime.UtcNow, Referencia: null, Notas: null,
+            Modo: ModoCobroDto.AbonoFifo);
+
+        var result = await service.CrearFifoAsync(dto);
+
+        result.Should().BeEquivalentTo(lista);
+    }
+
+    [Fact]
+    public async Task CrearFifoAsync_ModoIncorrecto_DebeLanzar()
+    {
+        var service = new CobroService(
+            _repo.Object, _tenant.Object, _clienteRepo.Object, _pedidoRepo.Object, _featureGuard.Object,
+            fifoAplicador: Mock.Of<ICobroFifoAplicadorService>());
+        var dto = new CobroCreateDto(
+            PedidoId: 100, ClienteId: 10, Monto: 100m, MetodoPago: 0,
+            FechaCobro: DateTime.UtcNow, Referencia: null, Notas: null,
+            Modo: ModoCobroDto.PorPedido);
+
+        var act = async () => await service.CrearFifoAsync(dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Modo=AbonoFifo*");
     }
 
     [Fact]
