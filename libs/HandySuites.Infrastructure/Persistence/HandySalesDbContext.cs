@@ -1121,8 +1121,15 @@ public class HandySuitesDbContext : DbContext
         modelBuilder.Entity<UbicacionVendedor>(entity =>
         {
             entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            // UNIQUE INDEX 2026-06-08 (anti-spam GPS bug): la combinacion
+            // (tenant_id, usuario_id, capturado_en) debe ser unica. Antes era
+            // index NO-unico + dedup query-then-insert en UbicacionVendedorRepository,
+            // con race window que permitio duplicates exactos (ids 22+23 en staging
+            // con timestamp 2026-06-08 08:57:31.366). Ahora DB es source-of-truth
+            // dedup; el repo usa INSERT ... ON CONFLICT DO NOTHING.
             entity.HasIndex(e => new { e.TenantId, e.UsuarioId, e.CapturadoEn })
-                  .HasDatabaseName("IX_UbicacionesVendedor_tenant_usuario_capturado");
+                  .HasDatabaseName("UQ_UbicacionesVendedor_tenant_usuario_capturado")
+                  .IsUnique();
             entity.HasIndex(e => new { e.TenantId, e.DiaServicio, e.UsuarioId })
                   .HasDatabaseName("IX_UbicacionesVendedor_tenant_dia_usuario");
             entity.HasOne(e => e.Usuario)

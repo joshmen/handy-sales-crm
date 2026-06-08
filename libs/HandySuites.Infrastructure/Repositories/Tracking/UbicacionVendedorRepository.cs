@@ -21,36 +21,61 @@ public class UbicacionVendedorRepository : IUbicacionVendedorRepository
         var pingList = pings.ToList();
         if (pingList.Count == 0) return (0, 0);
 
-        // Dedup por (UsuarioId, CapturadoEn) consultando los timestamps que ya
-        // existen para el batch. Más simple que ON CONFLICT (necesitaría unique
-        // index dedicado y EF no lo soporta cleanly con SaveChanges).
-        var keys = pingList
-            .Select(p => new { p.UsuarioId, p.CapturadoEn })
-            .Distinct()
+        // Dedup intra-batch primero — si el mismo batch trae duplicates,
+        // los quitamos antes de mandar al DB para evitar conflict consigo mismo.
+        // Mantiene el primer ping con cada key (orden de entrada).
+        var deduped = pingList
+            .GroupBy(p => (p.UsuarioId, p.CapturadoEn))
+            .Select(g => g.First())
             .ToList();
+        var intraBatchSkipped = pingList.Count - deduped.Count;
 
-        var usuarioIds = keys.Select(k => k.UsuarioId).Distinct().ToList();
-        var minTime = keys.Min(k => k.CapturadoEn);
-        var maxTime = keys.Max(k => k.CapturadoEn);
-
-        var existentes = await _db.UbicacionesVendedor.AsNoTracking()
-            .Where(u => u.TenantId == tenantId
-                        && usuarioIds.Contains(u.UsuarioId)
-                        && u.CapturadoEn >= minTime
-                        && u.CapturadoEn <= maxTime)
-            .Select(u => new { u.UsuarioId, u.CapturadoEn })
-            .ToListAsync();
-
-        var existKey = new HashSet<(int, DateTime)>(existentes.Select(e => (e.UsuarioId, e.CapturadoEn)));
-        var nuevos = pingList.Where(p => !existKey.Contains((p.UsuarioId, p.CapturadoEn))).ToList();
-
-        if (nuevos.Count > 0)
+        // 2026-06-08 (fix GPS spam): INSERT ... ON CONFLICT DO NOTHING contra el
+        // UNIQUE INDEX (tenant_id, usuario_id, capturado_en). Elimina la race
+        // window del query-then-insert anterior — DB es source-of-truth dedup.
+        // RETURNING id cuenta cuantos rows fueron realmente insertados (no
+        // conflictivos). Los que conflicten se ignoran silenciosamente.
+        var sql = @"
+INSERT INTO ""UbicacionesVendedor"" (
+    tenant_id, usuario_id, latitud, longitud, precision_metros,
+    tipo, capturado_en, referencia_id, dia_servicio, activo,
+    creado_en, actualizado_en, creado_por, actualizado_por,
+    eliminado_en, eliminado_por, version
+) VALUES (
+    @tenant_id, @usuario_id, @latitud, @longitud, @precision_metros,
+    @tipo, @capturado_en, @referencia_id, @dia_servicio, @activo,
+    @creado_en, NULL, @creado_por, NULL, NULL, NULL, 1
+)
+ON CONFLICT (tenant_id, usuario_id, capturado_en) DO NOTHING
+RETURNING id;
+";
+        var inserted = 0;
+        await using var conn = (Npgsql.NpgsqlConnection)_db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync();
+        foreach (var p in deduped)
         {
-            _db.UbicacionesVendedor.AddRange(nuevos);
-            await _db.SaveChangesAsync();
+            await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@tenant_id", p.TenantId);
+            cmd.Parameters.AddWithValue("@usuario_id", p.UsuarioId);
+            cmd.Parameters.AddWithValue("@latitud", p.Latitud);
+            cmd.Parameters.AddWithValue("@longitud", p.Longitud);
+            cmd.Parameters.AddWithValue("@precision_metros", (object?)p.PrecisionMetros ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@tipo", (int)p.Tipo);
+            cmd.Parameters.AddWithValue("@capturado_en", p.CapturadoEn);
+            cmd.Parameters.AddWithValue("@referencia_id", (object?)p.ReferenciaId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@dia_servicio", p.DiaServicio);
+            cmd.Parameters.AddWithValue("@activo", p.Activo);
+            cmd.Parameters.AddWithValue("@creado_en", p.CreadoEn);
+            cmd.Parameters.AddWithValue("@creado_por", (object?)p.CreadoPor ?? DBNull.Value);
+            var result = await cmd.ExecuteScalarAsync();
+            if (result != null && result != DBNull.Value)
+            {
+                inserted++;
+            }
         }
 
-        return (nuevos.Count, pingList.Count - nuevos.Count);
+        var skipped = intraBatchSkipped + (deduped.Count - inserted);
+        return (inserted, skipped);
     }
 
     public async Task<List<UltimaUbicacionDto>> ObtenerUltimasAsync(int tenantId, List<int>? usuarioIds = null)

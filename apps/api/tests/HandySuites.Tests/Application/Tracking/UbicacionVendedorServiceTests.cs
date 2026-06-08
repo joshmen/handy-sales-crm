@@ -222,4 +222,100 @@ public class UbicacionVendedorServiceTests
             It.IsAny<TipoPingUbicacion>(), It.IsAny<TipoPingUbicacion>(),
             It.IsAny<DateOnly>(), It.IsAny<DateTime>()), Times.Never);
     }
+
+    // ─── Proximity throttle Checkpoint (2026-06-08, anti-spam GPS bug) ───
+
+    [Fact]
+    public async Task GuardarBatch_CheckpointsCercanosEnTiempoYEspacio_SeThrottlean()
+    {
+        // 3 Checkpoints en 30s al mismo punto deberian aceptar 1 (el primero)
+        // y rechazar 2 por proximidad (<60s + <50m vs el primero).
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        IEnumerable<UbicacionVendedor>? captured = null;
+        _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
+            .Callback<int, IEnumerable<UbicacionVendedor>>((_, p) => captured = p.ToList())
+            .ReturnsAsync((1, 0));
+
+        var t0 = DateTime.UtcNow.AddMinutes(-5);
+        var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0 },
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0.AddSeconds(10) }, // throttle
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0.AddSeconds(30) }, // throttle
+            }
+        });
+
+        result.Aceptados.Should().Be(1);
+        result.Duplicados.Should().Be(2);
+        captured.Should().HaveCount(1);
+        captured!.Single().CapturadoEn.Should().Be(t0);
+    }
+
+    [Fact]
+    public async Task GuardarBatch_CheckpointSeparadoMasDe60s_NoSeThrottlea()
+    {
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
+            .ReturnsAsync((2, 0));
+
+        var t0 = DateTime.UtcNow.AddMinutes(-5);
+        var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0 },
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0.AddSeconds(61) }, // pasa por tiempo
+            }
+        });
+
+        result.Aceptados.Should().Be(2);
+        result.Duplicados.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GuardarBatch_CheckpointDistanciaMayor50m_NoSeThrottlea()
+    {
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
+            .ReturnsAsync((2, 0));
+
+        var t0 = DateTime.UtcNow.AddMinutes(-5);
+        // 0.001 grado lat ≈ 111m. Movimiento >50m incluso a 10s del anterior.
+        var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0 },
+                new() { Latitud = 19.4336m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0.AddSeconds(10) }, // ~111m, pasa
+            }
+        });
+
+        result.Aceptados.Should().Be(2);
+        result.Duplicados.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GuardarBatch_VentaCercaCheckpoint_NoSeThrottlea_PorqueEsEventoNegocio()
+    {
+        // El proximity throttle aplica SOLO a Checkpoint. Una Venta a 1m y 5s
+        // de un Checkpoint debe entrar — es un evento de negocio con referencia.
+        _guard.Setup(g => g.RequireFeatureAsync(Tenant, It.IsAny<string>())).Returns(Task.CompletedTask);
+        _repo.Setup(r => r.InsertBatchAsync(Tenant, It.IsAny<IEnumerable<UbicacionVendedor>>()))
+            .ReturnsAsync((2, 0));
+
+        var t0 = DateTime.UtcNow.AddMinutes(-5);
+        var result = await _service.GuardarBatchAsync(new UbicacionBatchRequestDto
+        {
+            Pings = new List<UbicacionPingDto>
+            {
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Checkpoint, CapturadoEn = t0 },
+                new() { Latitud = 19.4326m, Longitud = -99.1332m, Tipo = TipoPingUbicacion.Venta, CapturadoEn = t0.AddSeconds(5), ReferenciaId = 100 },
+            }
+        });
+
+        result.Aceptados.Should().Be(2);
+        result.Duplicados.Should().Be(0);
+    }
 }
