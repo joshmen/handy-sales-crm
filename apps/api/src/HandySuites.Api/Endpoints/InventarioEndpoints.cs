@@ -13,19 +13,19 @@ public static class InventarioEndpoints
         {
             var resultado = await servicio.ObtenerPorFiltroAsync(filtro);
             return Results.Ok(resultado);
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPERVISOR", "SUPER_ADMIN"));
 
         app.MapGet("/inventario/{id:int}", async (int id, [FromServices] InventarioService servicio) =>
         {
             var item = await servicio.ObtenerPorIdAsync(id);
             return item is null ? Results.NotFound() : Results.Ok(item);
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPERVISOR", "SUPER_ADMIN"));
 
         app.MapGet("/inventario/por-producto/{productoId:int}", async (int productoId, [FromServices] InventarioService servicio) =>
         {
             var item = await servicio.ObtenerPorProductoIdAsync(productoId);
             return item is null ? Results.NotFound() : Results.Ok(item);
-        }).RequireAuthorization();
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPERVISOR", "SUPER_ADMIN"));
 
         app.MapPost("/inventario", async (InventarioCreateDto dto, IValidator<InventarioCreateDto> validator, [FromServices] InventarioService servicio) =>
         {

@@ -52,6 +52,8 @@ import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // ─── Zod Schema ───────────────────────────────────────
 
@@ -128,6 +130,19 @@ export default function CobranzaPage() {
   const fmtDate = (d: string) => formatDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
+
+  // Defense-in-depth role gating (finding 4.4): backend already restricts
+  // cobranza endpoints, but the route should not render for VENDEDOR/VIEWER.
+  // Only ADMIN/SUPERVISOR/SUPER_ADMIN may access the collections workspace.
+  const router = useRouter();
+  const { userRole, isLoading: permsLoading } = usePermissions();
+  const allowedRoles = ['ADMIN', 'SUPERVISOR', 'SUPER_ADMIN'];
+  const isAuthorized = !!userRole && allowedRoles.includes(userRole);
+  useEffect(() => {
+    if (!permsLoading && !isAuthorized) {
+      router.replace('/dashboard');
+    }
+  }, [permsLoading, isAuthorized, router]);
 
   // Bug #10 (audit 2026-05-07): default tab cambiado a 'cobros'
   // (Historial). Owner reportó que al cargar /cobranza esperaba ver
@@ -446,6 +461,13 @@ export default function CobranzaPage() {
   const totalCobros = useMemo(() => cobros.reduce((s, c) => s + c.monto, 0), [cobros]);
 
   // ─── Render ────────────────────────────────────────
+
+  // Defense-in-depth: hide UI while resolving session or for disallowed roles
+  // (useEffect above triggers the redirect). Return null to avoid flashing
+  // the cobranza workspace before the router push completes.
+  if (permsLoading || !isAuthorized) {
+    return null;
+  }
 
   return (
     <>

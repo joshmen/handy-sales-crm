@@ -11,6 +11,7 @@ using HandySuites.Application.CompanySettings.Interfaces;
 using HandySuites.Application.Tenants.Interfaces;
 using HandySuites.Api.TwoFactor;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
 
 public class AuthService
@@ -29,6 +30,7 @@ public class AuthService
     private readonly PwnedPasswordService _pwnedPasswords;
     private readonly IEmailService _emailService;
     private readonly ITenantSeedService _tenantSeedService;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -42,6 +44,7 @@ public class AuthService
         PwnedPasswordService pwnedPasswords,
         IEmailService emailService,
         ITenantSeedService tenantSeedService,
+        IMemoryCache cache,
         ILogger<AuthService> logger)
     {
         _db = db;
@@ -54,6 +57,7 @@ public class AuthService
         _pwnedPasswords = pwnedPasswords;
         _emailService = emailService;
         _tenantSeedService = tenantSeedService;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -322,20 +326,32 @@ public class AuthService
 
     private async Task CreateCloudinaryFolderAsync(Tenant tenant)
     {
-        try
+        var tenantFolder = _cloudinaryService.GenerateTenantFolder(tenant.Id, tenant.NombreEmpresa);
+
+        // M-3 fix: retry with exponential backoff (1s/2s/4s). After all 3 attempts
+        // fail, log at Error level so the failure is not silently swallowed.
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            var tenantFolder = _cloudinaryService.GenerateTenantFolder(tenant.Id, tenant.NombreEmpresa);
-            var folderCreated = await _cloudinaryService.CreateFolderAsync(tenantFolder);
-            if (folderCreated)
+            try
             {
-                tenant.CloudinaryFolder = tenantFolder;
-                _db.Tenants.Update(tenant);
-                await _db.SaveChangesAsync();
+                var folderCreated = await _cloudinaryService.CreateFolderAsync(tenantFolder);
+                if (folderCreated)
+                {
+                    tenant.CloudinaryFolder = tenantFolder;
+                    _db.Tenants.Update(tenant);
+                    await _db.SaveChangesAsync();
+                }
+                break;
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error creating Cloudinary folder");
+            catch (Exception ex) when (attempt < 2)
+            {
+                _logger.LogWarning(ex, "Cloudinary folder creation attempt {Attempt} failed for tenant={TenantId}", attempt + 1, tenant.Id);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cloudinary folder creation failed after 3 attempts. tenant={TenantId}", tenant.Id);
+            }
         }
     }
 
@@ -669,6 +685,29 @@ public class AuthService
         }
 
         await _db.SaveChangesAsync();
+
+        // 4.17: Invalidate cached session_version so SessionValidationMiddleware
+        // immediately observes the bump and rejects in-flight JWTs (cache TTL is 30s
+        // otherwise — see SessionValidationMiddleware.cs L105-126).
+        _cache.Remove($"session_version_{usuario.Id}");
+
+        // 4.5: Audit-log every revoked device session so we have a trail of
+        // forced/automatic session terminations (single-session enforcement,
+        // social login takeover, 2FA verification, etc.).
+        foreach (var session in activeSessions)
+        {
+            var description = $"Sesión {session.Id} ({session.DeviceName ?? "dispositivo desconocido"}) revocada para {usuario.Email}";
+            if (!string.IsNullOrWhiteSpace(reason))
+                description += $" — motivo: {reason}";
+
+            await LogActivityAsync(
+                usuario.TenantId,
+                usuario.Id,
+                "session_revoked",
+                "auth",
+                description,
+                "session_revoked");
+        }
     }
 
     /// <summary>
@@ -719,8 +758,14 @@ public class AuthService
     /// <summary>
     /// Social login: verifies user exists by email, returns tokens.
     /// Called from NextAuth server-side after Google/Microsoft OAuth verifies identity.
+    /// <para>
+    /// When <paramref name="force"/> is <c>false</c> (default) and the user has no 2FA,
+    /// the call mirrors <see cref="LoginAsync"/>: if there are active sessions it returns
+    /// <c>ACTIVE_SESSION_EXISTS</c> so the client can confirm before takeover. The client
+    /// retries with <paramref name="force"/>=<c>true</c> to actually close prior sessions.
+    /// </para>
     /// </summary>
-    public async Task<object?> SocialLoginAsync(string email, string provider)
+    public async Task<object?> SocialLoginAsync(string email, string provider, bool force = false)
     {
         var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == email);
 
@@ -744,6 +789,30 @@ public class AuthService
         // If user has 2FA enabled, social login still needs 2FA verification
         if (usuario.TotpEnabled)
         {
+            // Surface active-session metadata to the client (same payload shape as LoginAsync L437-471)
+            var hasActiveSession = false;
+            string? activeDevice = null;
+            string? lastActivity = null;
+            string? maskedIp = null;
+
+            if (!usuario.IsSuperAdmin)
+            {
+                var latestSession = await _db.DeviceSessions
+                    .IgnoreQueryFilters()
+                    .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
+                    .OrderByDescending(ds => ds.LastActivity)
+                    .FirstOrDefaultAsync();
+
+                if (latestSession != null)
+                {
+                    hasActiveSession = true;
+                    activeDevice = ParseDeviceInfo(latestSession.UserAgent ?? "");
+                    var minutesAgo = (int)(DateTime.UtcNow - latestSession.LastActivity).TotalMinutes;
+                    lastActivity = minutesAgo <= 1 ? "Hace un momento" : $"Hace {minutesAgo} minutos";
+                    maskedIp = MaskIpAddress(latestSession.IpAddress);
+                }
+            }
+
             var tempToken = _jwt.GenerateTempToken(
                 usuario.Id.ToString(),
                 usuario.TenantId,
@@ -753,14 +822,44 @@ public class AuthService
             {
                 requires2FA = true,
                 tempToken,
-                sessionConflict = false,
-                activeDevice = (string?)null,
-                lastActivity = (string?)null,
-                ip = (string?)null
+                sessionConflict = hasActiveSession,
+                activeDevice,
+                lastActivity,
+                ip = maskedIp
             };
         }
 
-        // Close existing sessions (single session enforcement)
+        // 4.6: Mirror LoginAsync L487-510 — never silently revoke another active
+        // session on a non-2FA account. The client must confirm via force=true
+        // (analogous to the password flow's ForceLoginAsync).
+        // SuperAdmin is exempt from single session enforcement.
+        if (!force && !usuario.IsSuperAdmin)
+        {
+            var activeSessions = await _db.DeviceSessions
+                .IgnoreQueryFilters()
+                .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
+                .OrderByDescending(ds => ds.LastActivity)
+                .ToListAsync();
+
+            if (activeSessions.Any())
+            {
+                var latestSession = activeSessions.First();
+                var deviceInfo = ParseDeviceInfo(latestSession.UserAgent ?? "");
+                var minutesAgo = (int)(DateTime.UtcNow - latestSession.LastActivity).TotalMinutes;
+
+                return new
+                {
+                    code = "ACTIVE_SESSION_EXISTS",
+                    activeDevice = deviceInfo,
+                    lastActivity = minutesAgo <= 1 ? "Hace un momento" : $"Hace {minutesAgo} minutos",
+                    ip = MaskIpAddress(latestSession.IpAddress),
+                    suggest2FA = !usuario.TotpEnabled
+                };
+            }
+        }
+
+        // Close existing sessions (single session enforcement) — only reached when
+        // the user is SuperAdmin, has no prior sessions, or explicitly confirmed force=true.
         await CloseAllActiveSessions(usuario, $"Sesión cerrada por social login ({provider})");
 
         await LogActivityAsync(usuario.TenantId, usuario.Id, "social_login", "auth",

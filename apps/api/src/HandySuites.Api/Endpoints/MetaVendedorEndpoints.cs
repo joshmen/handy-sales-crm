@@ -32,11 +32,6 @@ public static class MetaVendedorEndpoints
             [FromServices] ILoggerFactory loggerFactory,
             HttpContext context) =>
         {
-            // Admin only
-            var role = context.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-            if (role is not ("ADMIN" or "SUPER_ADMIN"))
-                return Results.Forbid();
-
             if (string.IsNullOrWhiteSpace(dto.Tipo) || !new[] { "ventas", "visitas", "pedidos" }.Contains(dto.Tipo))
                 return Results.BadRequest(new { error = "Tipo debe ser: ventas, visitas o pedidos" });
 
@@ -78,7 +73,7 @@ public static class MetaVendedorEndpoints
             }
 
             return Results.Created($"/api/metas/{id}", new { id });
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         group.MapPut("/{id:int}", async (
             int id,
@@ -86,57 +81,38 @@ public static class MetaVendedorEndpoints
             [FromServices] MetaVendedorService servicio,
             HttpContext context) =>
         {
-            var role = context.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-            if (role is not ("ADMIN" or "SUPER_ADMIN"))
-                return Results.Forbid();
-
             var usuario = context.User.Identity?.Name ?? "sistema";
             var actualizado = await servicio.UpdateAsync(id, dto, usuario);
             return actualizado ? Results.NoContent() : Results.NotFound();
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         group.MapDelete("/{id:int}", async (
             int id,
-            [FromServices] MetaVendedorService servicio,
-            HttpContext context) =>
+            [FromServices] MetaVendedorService servicio) =>
         {
-            var role = context.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-            if (role is not ("ADMIN" or "SUPER_ADMIN"))
-                return Results.Forbid();
-
             var deleted = await servicio.DeleteAsync(id);
             return deleted ? Results.NoContent() : Results.NotFound();
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         group.MapPatch("/{id:int}/activo", async (
             int id,
             [FromBody] MetaCambiarActivoDto dto,
-            [FromServices] MetaVendedorService servicio,
-            HttpContext context) =>
+            [FromServices] MetaVendedorService servicio) =>
         {
-            var role = context.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-            if (role is not ("ADMIN" or "SUPER_ADMIN"))
-                return Results.Forbid();
-
             var actualizado = await servicio.CambiarActivoAsync(id, dto.Activo);
             return actualizado ? Results.Ok(new { actualizado = true }) : Results.NotFound();
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         group.MapPatch("/batch-toggle", async (
             MetaBatchToggleRequest request,
-            [FromServices] MetaVendedorService servicio,
-            HttpContext context) =>
+            [FromServices] MetaVendedorService servicio) =>
         {
-            var role = context.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-            if (role is not ("ADMIN" or "SUPER_ADMIN"))
-                return Results.Forbid();
-
             if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados = count });
-        });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
     }
 }
 
