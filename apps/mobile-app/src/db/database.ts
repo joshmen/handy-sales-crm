@@ -120,7 +120,7 @@ export function getDatabase(): Promise<Database> {
  * instead.
  */
 export const database: Database = new Proxy({} as Database, {
-  get(_target, prop, receiver) {
+  get(_target, prop) {
     if (!_database) {
       throw new Error(
         `[database] accessed before initialization complete. ` +
@@ -128,11 +128,25 @@ export const database: Database = new Proxy({} as Database, {
         `Accessed property: ${String(prop)}`
       );
     }
-    return Reflect.get(_database, prop, receiver);
+    // Pasar _database como receiver: getters que usan `this.#privateField`
+    // necesitan el brand check correcto (Proxy fallaria).
+    const value = Reflect.get(_database, prop, _database);
+    // Bind methods so cuando el caller hace `database.foo()`, `this` es la
+    // instancia real (no el Proxy). Sin esto, métodos que llaman `this.bar`
+    // recursarian a traves del Proxy y posiblemente fallarian en private fields.
+    return typeof value === 'function' ? value.bind(_database) : value;
   },
   has(_target, prop) {
-    if (!_database) return false;
-    return Reflect.has(_database, prop);
+    return _database !== null && prop in _database;
+  },
+  // Override getPrototypeOf para que `instanceof Database` retorne true al
+  // checkear la cadena prototypal. Sin esto, DatabaseProvider y otros callers
+  // que hagan brand check rechazan el Proxy. (En la practica DatabaseProvider
+  // recibe la instancia real via state — esto es defensa para callers desconocidos.)
+  getPrototypeOf() {
+    return _database
+      ? Object.getPrototypeOf(_database)
+      : (Database as unknown as { prototype: object }).prototype;
   },
 });
 

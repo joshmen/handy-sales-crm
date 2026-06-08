@@ -34,6 +34,7 @@ import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
 import { database, getDatabase, isDatabaseEncrypted, verifyDatabaseEncryption } from '@/db/database';
+import type { Database } from '@nozbe/watermelondb';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
@@ -341,13 +342,15 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [needsInitialSync, setNeedsInitialSync] = useState(false);
 
-  // Audit 2026-06-07: gate todo el JSX detras de dbReady. La WDB se inicializa
-  // de forma asincronica (passphrase SQLCipher resuelve via SecureStore) y los
-  // 37 modulos que importan `{ database }` requieren que el Proxy ya delegue
-  // al `_database` real ANTES de que se monten. SplashScreen.preventAutoHideAsync()
-  // mantiene el splash nativo visible hasta que dbReady=true; entonces hideAsync.
+  // Audit 2026-06-07: gate todo el JSX detras de dbInstance state. La WDB se
+  // inicializa de forma asincronica (passphrase SQLCipher resuelve via SecureStore)
+  // y los 37 modulos que importan `{ database }` reciben el Proxy que delega
+  // al singleton real una vez resuelto. PERO DatabaseProvider hace brand check
+  // `instanceof Database` que el Proxy no pasa → debe recibir la instancia REAL
+  // via state (no el Proxy). SplashScreen.preventAutoHideAsync() mantiene el
+  // splash nativo visible hasta que dbInstance esta listo; entonces hideAsync.
   // Pattern oficial Expo SDK 54: docs.expo.dev/versions/latest/sdk/splash-screen
-  const [dbReady, setDbReady] = useState(false);
+  const [dbInstance, setDbInstance] = useState<Database | null>(null);
   const [dbInitError, setDbInitError] = useState<string | null>(null);
 
   // Cableado AppState → focusManager para que `refetchOnWindowFocus: true`
@@ -359,20 +362,18 @@ export default function RootLayout() {
   // Audit 2026-06-07: lazy-init de la WDB (reemplaza top-level await que Hermes
   // Expo SDK 54 NO soporta). Llama getDatabase() — resuelve la passphrase
   // SQLCipher en background, construye el SQLiteAdapter cifrado y deja el
-  // Database singleton listo. Solo entonces dbReady=true y el resto del JSX
-  // monta (incluido DatabaseProvider que pasa `database` a hijos).
+  // Database singleton listo. Guarda la instancia REAL en state para pasarla
+  // al DatabaseProvider (el Proxy `database` NO pasa el brand check de WDB).
   useEffect(() => {
     void (async () => {
       try {
-        await getDatabase();
-        setDbReady(true);
+        const db = await getDatabase();
+        setDbInstance(db);
       } catch (err: any) {
         const msg = err?.message ?? String(err);
         if (__DEV__) console.error('[RootLayout] getDatabase fallo:', msg);
         crashReporter.reportCrash(err, 'db_init', 'CRASH');
         setDbInitError(msg);
-        // Render fallback UI igual: marcar ready para hide splash y mostrar error
-        setDbReady(true);
       }
     })();
   }, []);
@@ -387,7 +388,7 @@ export default function RootLayout() {
   // adoption en field — sin esto, no podemos confirmar que builds EAS
   // tengan SQLCipher activo.
   useEffect(() => {
-    if (!dbReady) return;
+    if (!dbInstance) return;
     void (async () => {
       try {
         const ok = await verifyDatabaseEncryption();
@@ -402,7 +403,7 @@ export default function RootLayout() {
         crashReporter.reportCrash(err, 'db_encryption_verify', 'ERROR');
       }
     })();
-  }, [dbReady]);
+  }, [dbInstance]);
 
   const handleAppReady = useCallback((firstSync?: boolean) => {
     if (!appReady) {
@@ -423,20 +424,16 @@ export default function RootLayout() {
 
   // Audit 2026-06-07: si la DB no esta lista, retornamos null para mantener
   // el native splash visible (SplashScreen.preventAutoHideAsync() lo bloquea
-  // al top del modulo). En cuanto dbReady=true, hideAsync se llama en el
-  // useEffect dependiente y el arbol React monta — los 37 modulos que
-  // importan { database } reciben el Proxy ya resolviendo al singleton.
+  // al top del modulo). En cuanto dbInstance esta seteado, hideAsync se llama
+  // y el arbol React monta — los 37 modulos que importan { database } reciben
+  // el Proxy que ahora delega al singleton real.
   useEffect(() => {
-    if (dbReady) {
+    if (dbInstance || dbInitError) {
       SplashScreen.hideAsync().catch(() => {
-        // Silencioso — splash ya pudo haber sido hidden por el AnimatedSplash legacy.
+        // Silencioso — splash ya pudo haber sido hidden por AnimatedSplash legacy.
       });
     }
-  }, [dbReady]);
-
-  if (!dbReady) {
-    return null;
-  }
+  }, [dbInstance, dbInitError]);
 
   if (dbInitError) {
     // Fallback minimal cuando el init de WDB falla irrecuperablemente. No
@@ -449,10 +446,18 @@ export default function RootLayout() {
     );
   }
 
+  if (!dbInstance) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <DatabaseProvider database={database}>
+        {/* DatabaseProvider necesita la instancia REAL (no el Proxy) por brand
+            check `instanceof Database`. Los 37 callers que hacen
+            `import { database }` siguen usando el Proxy — ese delega al mismo
+            singleton y los metodos funcionan via .bind(_database). */}
+        <DatabaseProvider database={dbInstance}>
           <QueryProvider>
             <StatusBar style={showSplash ? 'light' : 'dark'} />
             <AuthGate onReady={handleAppReady} />
