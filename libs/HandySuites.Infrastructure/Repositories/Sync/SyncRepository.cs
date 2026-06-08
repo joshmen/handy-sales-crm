@@ -398,7 +398,28 @@ public class SyncRepository : ISyncRepository
             }
         }
 
-        // Idempotency: if this mobile_record_id was already pushed, return existing
+        // Idempotency-by-mobileRecordId (audit 2026-06-08 bug fix):
+        //
+        // Pattern: InsertOrUpdate para disconnected entities, donde la "key" puede
+        // ser el primary key (dto.Id) OR un alternate key (mobile_record_id).
+        // Microsoft Learn EF Core docs:
+        // https://learn.microsoft.com/en-us/ef/core/saving/disconnected-entities
+        //
+        // Bug previo: cuando found por mobile_record_id, retornaba la entity SIN
+        // aplicar los dto fields → violaba el pattern InsertORUpdate (quedaba en
+        // "if exists, no-op"). Especificamente roto en el flow eagerSave + sync push:
+        //   1. createVentaDirectaOffline → WDB Pedido estado=5 (Entregado), serverId=null
+        //   2. eagerSave fires async → server crea como Borrador, retorna serverId
+        //   3. RACE: useAutoSync corre push ANTES de que eagerSave actualice WDB.serverId
+        //   4. Push manda dto.Id=0, dto.LocalId=X, dto.Estado=5 (Entregado)
+        //   5. Server: existing found by mobile_record_id → return as-is (BUG)
+        //   6. Pedido server-side queda en Borrador para siempre — el cliente nunca
+        //      lo ve promocionado a Entregado.
+        //
+        // Fix proper: aplicar dto fields a existing + side effects Entregado (decremento
+        // inventario + RutasCarga increment) si transicion Borrador→Entregado, igual
+        // que el CREATE path. Manteniene atomicidad via el savepoint del SyncService
+        // (cada entity push tiene su propio SAVEPOINT).
         if (!string.IsNullOrEmpty(dto.LocalId))
         {
             var existingByMobileId = await _db.Pedidos
@@ -406,6 +427,38 @@ public class SyncRepository : ISyncRepository
                 .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.LocalId);
             if (existingByMobileId != null)
             {
+                var previousEstado = existingByMobileId.Estado;
+                var newEstado = (EstadoPedido)dto.Estado;
+
+                // Apply dto fields — same as UPDATE-by-Id path (L330-338)
+                existingByMobileId.FechaEntregaEstimada = dto.FechaEntregaEstimada;
+                existingByMobileId.Estado = newEstado;
+                existingByMobileId.TipoVenta = (TipoVenta)dto.TipoVenta;
+                existingByMobileId.Notas = dto.Notas;
+                existingByMobileId.DireccionEntrega = dto.DireccionEntrega;
+                existingByMobileId.Latitud = dto.Latitud;
+                existingByMobileId.Longitud = dto.Longitud;
+                existingByMobileId.ActualizadoEn = DateTime.UtcNow;
+                existingByMobileId.ActualizadoPor = userId;
+                // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
+
+                // Detalles update intentionally SKIPPED here — eagerSave already
+                // persisted the same detalles, and the push's dto.Detalles are
+                // typically identical. Re-applying would force Remove+Add cycle
+                // unnecessarily and risk losing eagerSave's calculated totals.
+                // (UPDATE-by-Id path applies detalles because that's the canonical
+                // update flow where mobile may have edited line items locally.)
+
+                // Apply Entregado side effects (inventory + RutasCarga) if transitioning
+                // Borrador→Entregado. Same logic as CREATE path L508-630 but using the
+                // existing entity's Detalles instead of dto.Detalles.
+                var transitionedToEntregado = previousEstado != EstadoPedido.Entregado
+                                              && newEstado == EstadoPedido.Entregado;
+                if (transitionedToEntregado)
+                {
+                    await ApplyEntregadoSideEffectsAsync(existingByMobileId, tenantId, usuarioId, userId);
+                }
+
                 return (existingByMobileId, false);
             }
         }
@@ -1757,5 +1810,129 @@ public class SyncRepository : ISyncRepository
                 ? t
                 : defaultTasa
         });
+    }
+
+    /// <summary>
+    /// Applies the side effects of a Pedido transitioning to Estado=Entregado:
+    /// decrement inventory (for VentaDirecta) + increment RutasCarga counters.
+    ///
+    /// Extracted 2026-06-08 to be callable from both the CREATE path (inline at
+    /// L508-630) and the idempotency-by-mobileRecordId path (after applying dto
+    /// fields when transitioning Borrador→Entregado post-eagerSave race).
+    ///
+    /// MUST be called inside an EF transaction with the pedido already loaded
+    /// and its Detalles collection populated (Include(p =&gt; p.Detalles)).
+    ///
+    /// Concurrent-safe via atomic SQL <c>ExecuteUpdateAsync</c> for the RutasCarga
+    /// counters (avoids read-modify-write races between two sync requests pushing
+    /// to the same RutaCarga).
+    /// </summary>
+    private async Task ApplyEntregadoSideEffectsAsync(Pedido pedido, int tenantId, int usuarioId, string userId)
+    {
+        var detalles = pedido.Detalles.ToList();
+        if (detalles.Count == 0) return;
+
+        // BR-VD-INV: Para VentaDirecta Entregada, decrementar inventario y registrar
+        // MovimientoInventario por cada producto. Análogo a PedidoService.CrearAsync.
+        if (pedido.TipoVenta == TipoVenta.VentaDirecta && pedido.Estado == EstadoPedido.Entregado)
+        {
+            foreach (var detalle in detalles)
+            {
+                var inv = await _db.Inventarios
+                    .FirstOrDefaultAsync(i => i.TenantId == tenantId && i.ProductoId == detalle.ProductoId);
+                if (inv == null) continue; // producto sin inventario — no bloquear la venta
+                var anterior = inv.CantidadActual;
+                var nueva = anterior - detalle.Cantidad;
+                inv.CantidadActual = nueva;
+                inv.ActualizadoEn = DateTime.UtcNow;
+                inv.ActualizadoPor = userId;
+                _db.MovimientosInventario.Add(new MovimientoInventario
+                {
+                    TenantId = tenantId,
+                    ProductoId = detalle.ProductoId,
+                    TipoMovimiento = "SALIDA",
+                    Cantidad = detalle.Cantidad,
+                    CantidadAnterior = anterior,
+                    CantidadNueva = nueva,
+                    Motivo = "VENTA",
+                    Comentario = $"Venta directa mobile sync — Pedido #{pedido.Id}",
+                    UsuarioId = usuarioId,
+                    ReferenciaId = pedido.Id,
+                    ReferenciaTipo = "PEDIDO",
+                    CreadoEn = DateTime.UtcNow,
+                    CreadoPor = userId,
+                    Version = 1
+                });
+            }
+        }
+
+        // BR-RUTA-CARGA (audit 2026-05-21, incident vendedor@jeyma + 2026-06-08 idempotency fix):
+        // Increment RutasCarga counters when a Pedido is delivered. VentaDirecta
+        // increments CantidadVendida; otros TipoVenta incrementan CantidadEntregada.
+        // Uses atomic SQL ExecuteUpdateAsync to avoid lost-update races (per H-1 fix).
+        if (pedido.Estado != EstadoPedido.Entregado) return;
+
+        int? rutaId = null;
+
+        // Caso 1: Pedido con RutasPedidos pre-link (preventa entregada en ruta)
+        var rutaPedidoLink = await _db.RutasPedidos
+            .AsNoTracking()
+            .Where(rp => rp.PedidoId == pedido.Id && rp.Activo)
+            .Select(rp => (int?)rp.RutaId)
+            .FirstOrDefaultAsync();
+        if (rutaPedidoLink.HasValue)
+        {
+            rutaId = rutaPedidoLink;
+        }
+        else if (pedido.TipoVenta == TipoVenta.VentaDirecta)
+        {
+            // Caso 2: VentaDirecta sin pre-link — buscar la ruta del DÍA DEL PEDIDO
+            // (no "ruta activa now"). Acotado por fecha para evitar cross-contamination
+            // cuando sync push llega tarde y ya hay otra ruta del mismo día.
+            var fechaInicio = pedido.FechaPedido.Date;
+            var fechaFin = fechaInicio.AddDays(1);
+            rutaId = await _db.RutasVendedor
+                .AsNoTracking()
+                .Where(r => r.UsuarioId == usuarioId
+                         && r.TenantId == tenantId
+                         && r.Activo
+                         && r.Fecha >= fechaInicio && r.Fecha < fechaFin
+                         && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
+                .OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                .Select(r => (int?)r.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        if (!rutaId.HasValue) return;
+
+        var nowUtc = DateTime.UtcNow;
+        foreach (var detalle in detalles)
+        {
+            var deltaCantidad = (int)detalle.Cantidad;
+            if (pedido.TipoVenta == TipoVenta.VentaDirecta)
+            {
+                await _db.RutasCarga
+                    .Where(c => c.RutaId == rutaId.Value
+                        && c.ProductoId == detalle.ProductoId
+                        && c.TenantId == tenantId
+                        && c.Activo)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.CantidadVendida, c => c.CantidadVendida + deltaCantidad)
+                        .SetProperty(c => c.ActualizadoEn, nowUtc)
+                        .SetProperty(c => c.ActualizadoPor, userId));
+            }
+            else
+            {
+                await _db.RutasCarga
+                    .Where(c => c.RutaId == rutaId.Value
+                        && c.ProductoId == detalle.ProductoId
+                        && c.TenantId == tenantId
+                        && c.Activo)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(c => c.CantidadEntregada, c => c.CantidadEntregada + deltaCantidad)
+                        .SetProperty(c => c.ActualizadoEn, nowUtc)
+                        .SetProperty(c => c.ActualizadoPor, userId));
+            }
+        }
     }
 }
