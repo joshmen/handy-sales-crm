@@ -7,6 +7,7 @@ import { uploadPendingAttachments, cleanUploadedFiles, recoverOrphanAttachmentSt
 import { crashReporter } from '@/services/crashReporter';
 import { useAuthStore } from '@/stores/authStore';
 import { withRetry } from './retry';
+import { resolveConflict } from './conflictResolver';
 
 /**
  * Strips records whose tenantId doesn't match the authenticated user's tenant.
@@ -269,57 +270,10 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
 
       sendCreatedAsUpdated: true,
 
-      // B.5 conflict resolver per-collection (fix prod 2026-06-03 post-incidente Rodrigo).
-      //
-      // Default WDB (`resolved`): per-column client-wins. Resuelve la mayoría de
-      // casos pero NO maneja transiciones de estado server-side:
-      //   - Pedido en `Estado=Cancelado` (admin canceló desde web) podía ser
-      //     "resucitado" por el cliente si tenía cambios locales en otra columna.
-      //   - Cobro modificado en 2 devices podía perder el más reciente.
-      //
-      // Reglas:
-      //   - `pedidos`: si server avanzó Estado (Borrador → Confirmado → Entregado
-      //     → Cancelado), el server SIEMPRE wins. El estado es one-way ratchet
-      //     server-side; el cliente no puede "regresar" un Pedido cancelado a
-      //     Borrador. Otras columnas (notas, detalles) usan per-column normal.
-      //   - `cobros`: last-write-wins por updated_at — si server tiene fecha
-      //     más reciente, server wins fully (no per-column).
-      //   - Otras: default WDB (per-column client-wins).
-      //
-      // Bug prod 2026-06-03: sin el conflictResolver explícito el pull podía
-      // abortar con `Cannot update a record with pending changes pedidos#qQyLko2m8rS8z4fb`
-      // — combinado con el dedupe en mappers.ts ese error queda resuelto.
-      conflictResolver: (table, local, remote, resolved) => {
-        // Pedido: server-wins en Estado si avanzó. El sentido es Borrador(0) →
-        // Confirmado(2) → EnRuta(3) → Entregado(5) → Cancelado(99). Si server
-        // tiene estado >= local, prevalece el remote (incluido el caso de
-        // Cancelado por admin desde web).
-        if (table === 'pedidos') {
-          const localEstado = typeof local?.estado === 'number' ? local.estado : 0;
-          const remoteEstado = typeof remote?.estado === 'number' ? remote.estado : 0;
-          if (remoteEstado >= localEstado && remoteEstado !== localEstado) {
-            // Server avanzó (o canceló) el Pedido — forzar el estado server.
-            // Resto de columnas siguen per-column.
-            return { ...resolved, estado: remoteEstado };
-          }
-          return resolved;
-        }
-
-        // Cobro: last-write-wins fully por updated_at. Caso típico: vendedor
-        // edita el cobro en device A (online) Y device B (offline). Cuando B
-        // sincroniza, su updated_at puede ser < A — entonces A wins.
-        if (table === 'cobros') {
-          const localTs = typeof local?.updated_at === 'number' ? local.updated_at : 0;
-          const remoteTs = typeof remote?.updated_at === 'number' ? remote.updated_at : 0;
-          if (remoteTs > localTs) {
-            return remote;
-          }
-          return resolved;
-        }
-
-        // Default: per-column client-wins (lo que WDB ya calcula).
-        return resolved;
-      },
+      // B.5 conflict resolver — extraído a ./conflictResolver.ts para testabilidad
+      // (apps/mobile-app/src/sync/__tests__/conflictResolver.test.ts).
+      // Reglas vivas allí, este lambda solo delega.
+      conflictResolver: resolveConflict,
     });
 
     // Phase 2b: Server ID mappings — log only, don't modify records
