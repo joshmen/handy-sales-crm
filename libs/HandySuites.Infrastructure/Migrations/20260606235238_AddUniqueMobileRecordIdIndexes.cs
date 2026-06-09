@@ -30,6 +30,105 @@ namespace HandySuites.Infrastructure.Migrations
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // PATCH 2026-06-09 (post-prod deploy failure): producción tenía
+            // duplicados historicos (sync bug pre-idempotency #14) que
+            // hacian fallar el CREATE UNIQUE INDEX con 23505. Staging no
+            // tenia duplicados, por eso paso ahi sin issue. Como la
+            // migration NO se marca aplicada en prod (fallo el primer try),
+            // EF la re-correra con el nuevo SQL en el proximo deploy.
+            //
+            // Policy: "keep newest" — para cada grupo (clave_natural,
+            // mobile_record_id), conservar el id MAX (ultimo insert =
+            // version mas reciente del cliente offline) y DELETE el resto.
+            // Los duplicados son writes idempotentes que el cliente reenvio
+            // sin que el server tuviera el guard pre-#14. La version mas
+            // nueva es la fuente de verdad.
+            //
+            // Dedup cubre TODAS las 7 tablas, no solo DetallePedidos, por
+            // defensa en profundidad (latent dups en otras tablas
+            // bloquearian la migration en futuras restoraciones).
+            //
+            // suppressTransaction:true mantiene consistencia con el resto
+            // del migration (CREATE INDEX CONCURRENTLY abajo no puede
+            // estar en transaction). Postgres ejecuta cada DELETE en
+            // autocommit individual.
+            migrationBuilder.Sql(@"
+                DELETE FROM ""DetallePedidos"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY pedido_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""DetallePedidos""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
+            migrationBuilder.Sql(@"
+                DELETE FROM ""Pedidos"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY tenant_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""Pedidos""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
+            migrationBuilder.Sql(@"
+                DELETE FROM ""Gastos"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY tenant_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""Gastos""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
+            migrationBuilder.Sql(@"
+                DELETE FROM ""DevolucionesPedido"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY tenant_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""DevolucionesPedido""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
+            migrationBuilder.Sql(@"
+                DELETE FROM ""Cobros"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY tenant_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""Cobros""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
+            migrationBuilder.Sql(@"
+                DELETE FROM ""ClienteVisitas"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY tenant_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""ClienteVisitas""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
+            migrationBuilder.Sql(@"
+                DELETE FROM ""Clientes"" WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (
+                            PARTITION BY tenant_id, mobile_record_id ORDER BY id DESC
+                        ) AS rn
+                        FROM ""Clientes""
+                        WHERE mobile_record_id IS NOT NULL
+                    ) ranked WHERE rn > 1
+                );", suppressTransaction: true);
+
             // Drop indexes previos no-unique (Gastos, Devoluciones).
             // DROP INDEX CONCURRENTLY tampoco corre en transaccion.
             migrationBuilder.Sql("DROP INDEX CONCURRENTLY IF EXISTS \"IX_Gastos_tenant_id_mobile_record_id\";", suppressTransaction: true);
