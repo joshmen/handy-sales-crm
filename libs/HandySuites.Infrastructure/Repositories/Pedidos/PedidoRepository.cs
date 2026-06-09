@@ -734,13 +734,21 @@ public class PedidoRepository : IPedidoRepository
         {
             var fechaInicio = pedido.FechaPedido.Date;
             var fechaFin = fechaInicio.AddDays(1);
-            rutaId = await _db.RutasVendedor.AsNoTracking()
+            var query = _db.RutasVendedor.AsNoTracking()
                 .Where(r => r.UsuarioId == pedido.UsuarioId
                          && r.TenantId == tenantId
                          && r.Activo
                          && r.Fecha >= fechaInicio && r.Fecha < fechaFin
-                         && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
-                .OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                         && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada));
+            // 2026-06-09 cross-DB: PG nativo, SQLite ternary explicito
+            var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+            var ordered = isPostgres
+                ? query.OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                : query.OrderByDescending(r =>
+                    r.HoraInicioReal.HasValue ? r.HoraInicioReal.Value
+                    : r.AceptadaEn.HasValue ? r.AceptadaEn.Value
+                    : r.Fecha);
+            rutaId = await ordered
                 .Select(r => (int?)r.Id)
                 .FirstOrDefaultAsync();
         }
