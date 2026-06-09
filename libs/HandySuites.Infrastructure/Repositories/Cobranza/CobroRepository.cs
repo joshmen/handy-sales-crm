@@ -178,6 +178,19 @@ public class CobroRepository : ICobroRepository
 
             _db.Cobros.Add(entity);
             await _db.SaveChangesAsync();
+
+            // PR 5b cobros 3 modos: mantener Cliente.Saldo denormalizado consistente.
+            // Solo cobros PorPedido decrementan saldo — Anticipos son creditos (no
+            // reducen deuda). FIFO siempre llega aqui con PedidoId asignado (ver
+            // CobroFifoAplicadorService que crea N child cobros via CrearAsync con
+            // pedidoId), por lo que cada child decrementa correctamente.
+            if (entity.PedidoId.HasValue && entity.Modo == ModoCobro.PorPedido)
+            {
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $@"UPDATE ""Clientes"" SET saldo = saldo - {dto.Monto}
+                       WHERE id = {dto.ClienteId} AND tenant_id = {tenantId}");
+            }
+
             await transaction.CommitAsync();
             return entity.Id;
         }
@@ -246,6 +259,7 @@ public class CobroRepository : ICobroRepository
                 }
             }
 
+            var montoAnterior = entity.Monto;
             entity.Monto = dto.Monto;
             entity.MetodoPago = (MetodoPago)dto.MetodoPago;
             if (dto.FechaCobro.HasValue) entity.FechaCobro = dto.FechaCobro.Value;
@@ -254,6 +268,23 @@ public class CobroRepository : ICobroRepository
             entity.ActualizadoEn = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            // PR 5b cobros 3 modos: ajustar Cliente.Saldo por el delta del monto.
+            // Solo aplica a PorPedido (Anticipos no afectan saldo de deuda).
+            // delta = nuevo - anterior. Si nuevo > anterior, saldo decrementa mas
+            // (cliente pago mas). Si nuevo < anterior, saldo incrementa (cliente
+            // pago menos del que se asumio).
+            if (entity.PedidoId.HasValue && entity.Modo == ModoCobro.PorPedido)
+            {
+                var delta = dto.Monto - montoAnterior;
+                if (delta != 0)
+                {
+                    await _db.Database.ExecuteSqlInterpolatedAsync(
+                        $@"UPDATE ""Clientes"" SET saldo = saldo - {delta}
+                           WHERE id = {entity.ClienteId} AND tenant_id = {tenantId}");
+                }
+            }
+
             await transaction.CommitAsync();
             return true;
         }
@@ -267,17 +298,44 @@ public class CobroRepository : ICobroRepository
 
     public async Task<bool> AnularAsync(int id, int tenantId)
     {
-        var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
-        if (entity == null) return false;
+        // PR 5b cobros 3 modos: envuelvo en transaction para atomicidad entre
+        // entity.Activo=false y el revert de Cliente.Saldo. Si el SaveChanges
+        // del entity falla, no debe haber cambio en saldo (consistencia).
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+            if (entity == null) return false;
 
-        // Idempotencia: anular un cobro ya anulado debe devolver 404, no otro 204,
-        // para que la UI no reporte dos "éxitos" seguidos.
-        if (!entity.Activo) return false;
+            // Idempotencia: anular un cobro ya anulado debe devolver 404, no otro 204,
+            // para que la UI no reporte dos "éxitos" seguidos.
+            if (!entity.Activo) return false;
 
-        entity.Activo = false;
-        entity.ActualizadoEn = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return true;
+            entity.Activo = false;
+            entity.ActualizadoEn = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            // PR 5b: revertir Cliente.Saldo si el cobro anulado era PorPedido
+            // (Anticipos no afectaron saldo originalmente, no hay nada que revertir).
+            if (entity.PedidoId.HasValue && entity.Modo == ModoCobro.PorPedido)
+            {
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $@"UPDATE ""Clientes"" SET saldo = saldo + {entity.Monto}
+                       WHERE id = {entity.ClienteId} AND tenant_id = {tenantId}");
+            }
+
+            await transaction.CommitAsync();
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+        }); // end strategy.ExecuteAsync
     }
 
     public async Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null)

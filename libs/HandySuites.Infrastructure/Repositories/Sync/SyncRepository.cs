@@ -1023,10 +1023,19 @@ public class SyncRepository : ISyncRepository
             {
                 throw new InvalidOperationException($"Cobro with id {dto.Id} not found or unauthorized");
             }
+            // PR 5b cobros 3 modos: revertir Cliente.Saldo si el cobro era PorPedido
+            // y aun estaba activo (la anulacion ahora aplica al saldo).
+            var wasActiveBeforeDelete = existing.Activo;
             existing.Activo = false;
             existing.ActualizadoEn = DateTime.UtcNow;
             existing.ActualizadoPor = userId;
             // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
+            if (wasActiveBeforeDelete && existing.PedidoId.HasValue && existing.Modo == ModoCobro.PorPedido)
+            {
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $@"UPDATE ""Clientes"" SET saldo = saldo + {existing.Monto}
+                       WHERE id = {existing.ClienteId} AND tenant_id = {tenantId}");
+            }
             return (existing, wasConflict);
         }
 
@@ -1053,6 +1062,10 @@ public class SyncRepository : ISyncRepository
                         throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
                 }
 
+                // PR 5b cobros 3 modos: capturar estado anterior para calcular delta
+                // de Cliente.Saldo si el cobro era/sigue siendo PorPedido.
+                var montoAnterior = existing.Monto;
+                var activoAnterior = existing.Activo;
                 existing.Monto = dto.Monto;
                 existing.MetodoPago = (MetodoPago)dto.MetodoPago;
                 existing.Referencia = dto.Referencia;
@@ -1061,6 +1074,25 @@ public class SyncRepository : ISyncRepository
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
                 // Version bump handled by HandySalesDbContext.SaveChangesAsync interceptor on Modified.
+
+                if (existing.PedidoId.HasValue && existing.Modo == ModoCobro.PorPedido)
+                {
+                    // Logica de delta:
+                    //  - activo->activo: delta = nuevo - anterior (cobro modificado).
+                    //  - activo->inactivo: revertir el cobro original (delta = -monto anterior).
+                    //  - inactivo->activo: reaplicar cobro (delta = +monto nuevo).
+                    //  - inactivo->inactivo: sin cambio.
+                    decimal saldoDelta = 0;
+                    if (activoAnterior && dto.Activo) saldoDelta = -(dto.Monto - montoAnterior);
+                    else if (activoAnterior && !dto.Activo) saldoDelta = montoAnterior;
+                    else if (!activoAnterior && dto.Activo) saldoDelta = -dto.Monto;
+                    if (saldoDelta != 0)
+                    {
+                        await _db.Database.ExecuteSqlInterpolatedAsync(
+                            $@"UPDATE ""Clientes"" SET saldo = saldo + {saldoDelta}
+                               WHERE id = {existing.ClienteId} AND tenant_id = {tenantId}");
+                    }
+                }
 
                 return (existing, wasConflict);
             }
@@ -1153,6 +1185,19 @@ public class SyncRepository : ISyncRepository
         {
             _db.Cobros.Add(cobro);
             await _db.SaveChangesAsync();
+
+            // PR 5b cobros 3 modos: decrementar Cliente.Saldo si el cobro mobile
+            // es PorPedido y esta activo. Anticipos no afectan saldo de deuda
+            // (son creditos). El catch 23505 abajo asegura idempotencia — si la
+            // duplicacion se detecta, el SaveChanges falla antes y NO se decrementa
+            // dos veces.
+            if (cobro.Activo && cobro.PedidoId.HasValue && cobro.Modo == ModoCobro.PorPedido)
+            {
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $@"UPDATE ""Clientes"" SET saldo = saldo - {cobro.Monto}
+                       WHERE id = {cobro.ClienteId} AND tenant_id = {tenantId}");
+            }
+
             return (cobro, wasConflict);
         }
         catch (DbUpdateException ex) when (
