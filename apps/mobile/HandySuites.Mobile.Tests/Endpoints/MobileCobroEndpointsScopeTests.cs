@@ -458,7 +458,7 @@ public class MobileCobroEndpointsScopeTests
     public async Task ObtenerSaldos_PassesTenantIdFromCurrentTenant()
     {
         var tenant = BuildVendedorTenant(tenantId: TenantId);
-        _cobroRepoMock.Setup(r => r.ObtenerSaldosAsync(TenantId, null))
+        _cobroRepoMock.Setup(r => r.ObtenerSaldosAsync(TenantId, null, It.IsAny<bool>()))
             .ReturnsAsync(new List<SaldoClienteDto>
             {
                 new() { ClienteId = 10, ClienteNombre = "Cli", TotalFacturado = 500m,
@@ -470,8 +470,8 @@ public class MobileCobroEndpointsScopeTests
         var saldos = await svc.ObtenerSaldosAsync();
 
         saldos.Should().HaveCount(1);
-        _cobroRepoMock.Verify(r => r.ObtenerSaldosAsync(TenantId, null), Times.Once);
-        _cobroRepoMock.Verify(r => r.ObtenerSaldosAsync(OtherTenantId, It.IsAny<int?>()), Times.Never);
+        _cobroRepoMock.Verify(r => r.ObtenerSaldosAsync(TenantId, null, It.IsAny<bool>()), Times.Once);
+        _cobroRepoMock.Verify(r => r.ObtenerSaldosAsync(OtherTenantId, It.IsAny<int?>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
