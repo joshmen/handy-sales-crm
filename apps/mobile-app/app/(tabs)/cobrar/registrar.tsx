@@ -511,26 +511,32 @@ function RegistrarCobroScreen() {
         visible={showConfirmCobro}
         title={
           // PR 5 cobros 3 modos: prioriza el modo explicito si el vendedor lo
-          // eligio en el selector. Fallback al derive-by-saldo de PR 4 (para
-          // deep links con pedidoId que no muestran selector).
+          // eligio en el selector. PorPedido siempre muestra "Confirmar Cobro"
+          // (es el caso normal). Fallback al derive-by-saldo solo aplica al
+          // flujo deep link con params.pedidoId — ahi el selector no se muestra
+          // y el cobro se asume PorPedido pero con coherencia explicita.
           modo === ModoCobro.Anticipo
             ? 'Cobro como saldo a favor'
             : modo === ModoCobro.AbonoFifo
               ? 'Abono a cuenta'
-              : (!params.pedidoId && (effectiveSaldo === 0 || montoNum > saldoRounded))
-                ? 'Cobro como saldo a favor'
-                : 'Confirmar Cobro'
+              : modo === ModoCobro.PorPedido
+                ? 'Confirmar Cobro'
+                : (!params.pedidoId && (effectiveSaldo === 0 || montoNum > saldoRounded))
+                  ? 'Cobro como saldo a favor'
+                  : 'Confirmar Cobro'
         }
         message={
           modo === ModoCobro.Anticipo
             ? `Este cobro de ${formatCurrency(montoNum)} quedara como saldo a favor del cliente, aplicable a futuros pedidos. ¿Confirmar?`
             : modo === ModoCobro.AbonoFifo
               ? `El monto de ${formatCurrency(montoNum)} se distribuira automaticamente FIFO contra los pedidos abiertos del cliente. ¿Confirmar?`
-              : (!params.pedidoId && effectiveSaldo === 0)
-                ? `Este cliente no tiene saldo pendiente. El cobro de ${formatCurrency(montoNum)} quedara como saldo a favor (anticipo) aplicable a futuros pedidos. ¿Confirmar?`
-                : (!params.pedidoId && montoNum > saldoRounded && saldoRounded > 0)
-                  ? `Se cobrara ${formatCurrency(montoNum)}: ${formatCurrency(saldoRounded)} aplica a saldo pendiente, ${formatCurrency(montoNum - saldoRounded)} queda como saldo a favor. ¿Confirmar?`
-                  : `¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`
+              : modo === ModoCobro.PorPedido
+                ? `¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`
+                : (!params.pedidoId && effectiveSaldo === 0)
+                  ? `Este cliente no tiene saldo pendiente. El cobro de ${formatCurrency(montoNum)} quedara como saldo a favor (anticipo) aplicable a futuros pedidos. ¿Confirmar?`
+                  : (!params.pedidoId && montoNum > saldoRounded && saldoRounded > 0)
+                    ? `Se cobrara ${formatCurrency(montoNum)}: ${formatCurrency(saldoRounded)} aplica a saldo pendiente, ${formatCurrency(montoNum - saldoRounded)} queda como saldo a favor. ¿Confirmar?`
+                    : `¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`
         }
         confirmText="Confirmar"
         onConfirm={executeConfirmarCobro}
