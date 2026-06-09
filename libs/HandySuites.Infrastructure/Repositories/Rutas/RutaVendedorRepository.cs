@@ -146,16 +146,24 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
         var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
-        // Sprint correctivo 2026-06-09 (fix prod): el workaround anterior
-        // (`HasValue ? .Value.Ticks : 0L`) NO se traduce en Npgsql EF Core 8 —
-        // ternary + .Ticks access sobre TimeSpan? rompe LINQ translation en
-        // prod. PostgreSQL soporta ORDER BY sobre `interval` (tipo nativo
-        // para TimeSpan) directamente. SQLite tests que usen este path
-        // necesitarian provider-conditional, pero no hay tests SQLite que
-        // ejerzan esta query de paginacion — usar el sort directo del campo.
-        var items = await query
-            .OrderByDescending(r => r.Fecha)
-            .ThenBy(r => r.HoraInicioEstimada)
+        // Sprint correctivo 2026-06-09 (provider-conditional fix): el ORDER BY
+        // sobre TimeSpan? requiere paths distintos por provider:
+        //  - Npgsql (prod PostgreSQL): soporta ORDER BY interval nativamente.
+        //    Sort directo del campo nullable.
+        //  - SQLite (xUnit tests): no soporta ORDER BY interval ni COALESCE
+        //    sobre TimeSpan?. Workaround `.HasValue ? .Value.Ticks : 0L`
+        //    convierte a long que SQLite ordena bien.
+        //  - El COALESCE generico (?? TimeSpan.Zero) NO traduce en EF Core 8
+        //    Sqlite porque el TimeSpan se serializa como TEXT y el converter
+        //    no aplica al constante TimeSpan.Zero.
+        var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+        var ordered = isPostgres
+            ? query.OrderByDescending(r => r.Fecha)
+                   .ThenBy(r => r.HoraInicioEstimada)
+            : query.OrderByDescending(r => r.Fecha)
+                   .ThenBy(r => r.HoraInicioEstimada.HasValue ? r.HoraInicioEstimada.Value.Ticks : 0L);
+
+        var items = await ordered
             .Skip((pagina - 1) * tamano)
             .Take(tamano)
             .Select(r => new RutaListaDto
