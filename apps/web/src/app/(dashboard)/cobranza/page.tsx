@@ -37,6 +37,7 @@ import {
   getResumenCartera,
   getSaldos,
   getEstadoCuenta,
+  getFifoPreview,
   createCobro,
   deleteCobro,
   Cobro,
@@ -44,6 +45,7 @@ import {
   SaldoCliente,
   EstadoCuenta,
   EstadoCuentaPedido,
+  FifoAplicacion,
   METODO_PAGO_OPTIONS,
   ModoCobro,
 } from '@/services/api/cobranza';
@@ -55,6 +57,7 @@ import { formatDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useCompany } from '@/hooks/useCompany';
 
 // ─── Zod Schema ───────────────────────────────────────
 
@@ -142,6 +145,13 @@ export default function CobranzaPage() {
   const { userRole, isLoading: permsLoading } = usePermissions();
   const allowedRoles = ['ADMIN', 'SUPERVISOR', 'SUPER_ADMIN'];
   const isAuthorized = !!userRole && allowedRoles.includes(userRole);
+
+  // PR 6 plan gating cobros 3 modos (web): leer el flag del plan del tenant
+  // para deshabilitar el boton "Anticipo" del selector cuando el plan no lo
+  // incluye. Default false (fail-closed): si la company aun no carga o
+  // explicitamente vino false del backend, el boton queda gateado.
+  const { companySettings } = useCompany();
+  const permitirAnticiposEnCampo = companySettings?.permitirAnticiposEnCampo === true;
   useEffect(() => {
     if (!permsLoading && !isAuthorized) {
       router.replace('/dashboard');
@@ -182,6 +192,13 @@ export default function CobranzaPage() {
   // Pedidos for selected client in new cobro form
   const [formPedidos, setFormPedidos] = useState<EstadoCuentaPedido[]>([]);
   const [formPedidosLoading, setFormPedidosLoading] = useState(false);
+
+  // 2026-06-09 PR 6: FIFO preview — solo activo cuando modo=AbonoFifo +
+  // cliente seleccionado + monto > 0. Debounce 300ms para no spamear
+  // el endpoint mientras el user teclea el monto.
+  const [fifoPreview, setFifoPreview] = useState<FifoAplicacion[] | null>(null);
+  const [fifoPreviewLoading, setFifoPreviewLoading] = useState(false);
+  const [fifoPreviewError, setFifoPreviewError] = useState<string | null>(null);
 
   // React Hook Form
   const { register, handleSubmit: rhfSubmit, reset: resetForm, watch, setValue, formState: { errors, isDirty } } = useForm<CobroFormData>({
@@ -269,6 +286,8 @@ export default function CobranzaPage() {
 
   // When client changes in form, load their pending pedidos
   const watchedClienteId = watch('clienteId');
+  const watchedMonto = watch('monto');
+  const watchedModo = watch('modo');
 
   useEffect(() => {
     const loadPedidos = async () => {
@@ -285,6 +304,43 @@ export default function CobranzaPage() {
     };
     loadPedidos();
   }, [watchedClienteId]);
+
+  // 2026-06-09 PR 6: FIFO preview — calcula la distribución cada vez
+  // que cambia el monto / cliente, debounced 300ms. Limpia cuando el
+  // modo no es AbonoFifo o cuando faltan inputs.
+  useEffect(() => {
+    const modo = watchedModo ?? ModoCobro.PorPedido;
+    if (modo !== ModoCobro.AbonoFifo || !watchedClienteId || !watchedMonto || watchedMonto <= 0) {
+      setFifoPreview(null);
+      setFifoPreviewError(null);
+      setFifoPreviewLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setFifoPreviewLoading(true);
+      setFifoPreviewError(null);
+      try {
+        const resultado = await getFifoPreview(watchedClienteId, watchedMonto);
+        if (!cancelled) {
+          setFifoPreview(resultado);
+        }
+      } catch (error: any) {
+        if (!cancelled) {
+          setFifoPreviewError(error?.message || t('errorLoadingPayments'));
+          setFifoPreview(null);
+        }
+      } finally {
+        if (!cancelled) setFifoPreviewLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [watchedClienteId, watchedMonto, watchedModo, t]);
 
   // ─── Detail modal ───────────────────────────────────
 
@@ -1453,12 +1509,23 @@ export default function CobranzaPage() {
                 { value: ModoCobro.Anticipo, label: t('modes.advance.label'), hint: t('modes.advance.hint') },
               ].map(opt => {
                 const selected = (watch('modo') ?? ModoCobro.PorPedido) === opt.value;
+                // PR 6 plan gating: solo Anticipo es gateado por feature flag.
+                // Si el plan del tenant no lo incluye, deshabilitamos el boton
+                // y mostramos tooltip "Disponible en plan PRO" — el backend
+                // tambien rechaza con 403 FeatureNotInPlanException, esto es
+                // proactivo para evitar el roundtrip.
+                const isAnticipoDisabled =
+                  opt.value === ModoCobro.Anticipo && !permitirAnticiposEnCampo;
                 return (
                   <button
                     key={opt.value}
                     type="button"
                     data-testid={`cobro-modo-${opt.value}`}
+                    disabled={isAnticipoDisabled}
+                    title={isAnticipoDisabled ? t('modes.advance.disabledTooltip') : undefined}
+                    aria-disabled={isAnticipoDisabled}
                     onClick={() => {
+                      if (isAnticipoDisabled) return;
                       setValue('modo', opt.value, { shouldDirty: true });
                       // Reset pedidoId cuando NO es PorPedido — evita enviar pedidoId+modo incoherentes
                       if (opt.value !== ModoCobro.PorPedido) {
@@ -1466,9 +1533,11 @@ export default function CobranzaPage() {
                       }
                     }}
                     className={`text-left px-3 py-2 border rounded-md text-xs transition-colors ${
-                      selected
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ring-1 ring-emerald-500'
-                        : 'border-border-default hover:border-emerald-300'
+                      isAnticipoDisabled
+                        ? 'border-amber-200 bg-amber-50/40 text-foreground/40 opacity-60 cursor-not-allowed dark:border-amber-900/30 dark:bg-amber-950/10'
+                        : selected
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ring-1 ring-emerald-500'
+                          : 'border-border-default hover:border-emerald-300'
                     }`}
                   >
                     <div className="font-semibold">{opt.label}</div>
@@ -1586,6 +1655,47 @@ export default function CobranzaPage() {
               </select>
             </div>
           </div>
+          {/* 2026-06-09 PR 6 plan eager-drifting cobros: FIFO preview panel.
+              Solo visible cuando modo=AbonoFifo + cliente + monto > 0.
+              Mostrar al usuario la distribución calculada ANTES de submit. */}
+          {(watchedModo ?? ModoCobro.PorPedido) === ModoCobro.AbonoFifo && watchedClienteId > 0 && watchedMonto > 0 && (
+            <div data-testid="cobro-fifo-preview">
+              {fifoPreviewLoading && !fifoPreview && !fifoPreviewError && (
+                <div className="p-4 bg-surface-2 border border-border-subtle rounded-lg flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {t('modes.fifo.previewCalculating')}
+                </div>
+              )}
+              {fifoPreviewError && !fifoPreviewLoading && (
+                <div className="p-4 bg-red-50 border border-red-300 rounded-lg">
+                  <p className="text-xs text-red-600 font-medium">{fifoPreviewError}</p>
+                </div>
+              )}
+              {fifoPreview && fifoPreview.length > 0 && (
+                <div className="p-4 border border-green-300 bg-green-50/50 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" weight="fill" />
+                    <p className="text-xs font-semibold text-green-800">{t('modes.fifo.previewTitle')}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {fifoPreview.map((app) => (
+                      <div key={app.pedidoId} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          {app.numeroPedido}: <span className="font-medium text-foreground">{formatCurrency(app.montoAplicado)}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {fifoPreviewLoading && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-green-200">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {t('modes.fifo.previewCalculating')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.paymentDate')} *</label>
             <DateTimePicker

@@ -7,6 +7,7 @@ using CompanySettingsDto = HandySuites.Application.CompanySettings.DTOs.CompanyS
 using HandySuites.Application.CompanySettings.DTOs;
 using HandySuites.Application.DatosFacturacion.DTOs;
 using HandySuites.Application.DatosFacturacion.Interfaces;
+using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,16 +27,26 @@ namespace HandySuites.Api.Endpoints
             group.MapGet("/settings", async (
                 HttpContext context,
                 [FromServices] ICompanySettingsService companyService,
-                [FromServices] ICurrentTenant currentTenant) =>
+                [FromServices] ICurrentTenant currentTenant,
+                [FromServices] ISubscriptionFeatureGuard featureGuard) =>
             {
                 try
                 {
                     var tenantId = currentTenant.TenantId;
                     var result = await companyService.GetSettingsAsync(tenantId);
 
-                    return result != null
-                        ? Results.Ok(result)
-                        : Results.NotFound("Configuración no encontrada");
+                    if (result == null)
+                        return Results.NotFound("Configuración no encontrada");
+
+                    // PR 6 plan gating cobros: el web cobranza/page.tsx lee este flag
+                    // para deshabilitar el boton "Anticipo" del selector cuando el
+                    // plan del tenant no lo incluye. Espejo del flag en
+                    // MobileEmpresaEndpoints.cs (mobile useEmpresa). HasFeatureAsync
+                    // no tira si el tenant esta en free trial sin plan — retorna false.
+                    result.PermitirAnticiposEnCampo = await featureGuard
+                        .HasFeatureAsync(tenantId, "anticipos_en_campo");
+
+                    return Results.Ok(result);
                 }
                 catch (Exception ex)
                 {

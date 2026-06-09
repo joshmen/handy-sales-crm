@@ -4,7 +4,7 @@ import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
-import { useOfflineClientById, useOfflineClients } from '@/hooks';
+import { useOfflineClientById, useOfflineClients, useEstadoCuenta } from '@/hooks';
 import { database } from '@/db/database';
 import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
@@ -90,6 +90,60 @@ function RegistrarCobroScreen() {
 
   const { data: cliente } = useOfflineClientById(effectiveClienteId);
 
+  // PR 5c: Pedido picker post-PorPedido. Cuando el vendedor elige modo
+  // PorPedido + cliente con saldo, mostramos un segundo picker con los pedidos
+  // abiertos (facturas con saldo > 0) extraidos del estado de cuenta del
+  // servidor. Solo fetch cuando aplica (gate por modo + cliente server_id
+  // disponible). Si el deep link ya trae params.pedidoId el picker se omite
+  // (el modo viene forzado por el pedido padre).
+  const enableEstadoCuenta =
+    !params.pedidoId &&
+    modo === ModoCobro.PorPedido &&
+    !!cliente?.serverId &&
+    (cliente?.serverId ?? 0) > 0;
+  const { data: estadoCuenta, isLoading: estadoCuentaLoading } = useEstadoCuenta(
+    enableEstadoCuenta ? (cliente?.serverId ?? 0) : 0
+  );
+
+  // Pedidos abiertos: facturas en el running ledger con saldo > 0. movimiento.id
+  // corresponde directamente al pedidoId (per EstadoCuentaMovimientoDto: para
+  // tipo='factura' el Id es el pedidoId, rango natural < 1M).
+  const pedidosAbiertos = useMemo(() => {
+    if (!estadoCuenta?.movimientos) return [] as { id: number; concepto: string; saldo: number; fecha: string }[];
+    return estadoCuenta.movimientos
+      .filter((m) => m.tipo === 'factura' && Number(m.saldo) > 0)
+      .map((m) => ({
+        id: m.id,
+        concepto: m.concepto,
+        saldo: Number(m.saldo),
+        fecha: m.fecha,
+      }));
+  }, [estadoCuenta]);
+
+  const [selectedPedido, setSelectedPedido] = useState<{
+    id: number;
+    concepto: string;
+    saldo: number;
+  } | null>(null);
+  const [pedidoPickerOpen, setPedidoPickerOpen] = useState(false);
+
+  // Reset pedido seleccionado al cambiar de modo o cliente (el pedido
+  // seleccionado se vuelve incoherente si el contexto cambia).
+  useEffect(() => {
+    setSelectedPedido(null);
+    setPedidoPickerOpen(false);
+  }, [modo, effectiveClienteId]);
+
+  const handleSelectPedido = (p: { id: number; concepto: string; saldo: number }) => {
+    setSelectedPedido(p);
+    setPedidoPickerOpen(false);
+  };
+
+  const handleClearPedido = () => {
+    setSelectedPedido(null);
+    setPedidoPickerOpen(false);
+  };
+
   const [monto, setMonto] = useState('');
   const [montoError, setMontoError] = useState('');
   const [metodoPago, setMetodoPago] = useState(0);
@@ -127,7 +181,21 @@ function RegistrarCobroScreen() {
   const montoNum = round2(parseFloat(monto) || 0);
   const saldoRounded = round2(effectiveSaldo);
   const MAX_MONTO = 999999.99;
-  const isValid = montoNum > 0 && montoNum <= MAX_MONTO && !!effectiveClienteId;
+  // PR 5c: si esta en modo PorPedido y el cliente tiene pedidos abiertos, el
+  // vendedor DEBE seleccionar un pedido especifico (asi el cobro arrastra
+  // pedido_id != null al backend). Si no hay pedidos abiertos no podemos
+  // exigirlo — la guidance UI redirige a Anticipo/AbonoFifo.
+  const pedidoSelectionRequired =
+    !params.pedidoId &&
+    modo === ModoCobro.PorPedido &&
+    !!effectiveClienteId &&
+    pedidosAbiertos.length > 0;
+  const pedidoSelectionOk = !pedidoSelectionRequired || !!selectedPedido;
+  const isValid =
+    montoNum > 0 &&
+    montoNum <= MAX_MONTO &&
+    !!effectiveClienteId &&
+    pedidoSelectionOk;
   const isOverSaldo = saldoRounded > 0 && montoNum > saldoRounded;
 
   const handleConfirmar = () => {
@@ -145,6 +213,14 @@ function RegistrarCobroScreen() {
       // PR 5 cobros 3 modos: pasamos modo explicito al store local. El sync
       // mapper rawToCobroDto respeta raw.modo si esta presente, sino deriva
       // del pedidoId (retrocompat con cobros pre-PR5).
+      // PR 5c: si el vendedor escogio pedido del picker (post-PorPedido), el
+      // server_id del pedido se persiste como string numerica en pedido_id —
+      // el mapper de sync lo trata como pedido_server_id valido (raw.pedido_id
+      // matches /^\d+$/ → parseInt → DTO.pedidoId). Si viene via deep link
+      // (params.pedidoId, que es un WDB localId) se respeta el flujo legacy.
+      const pedidoIdForCobro = selectedPedido
+        ? String(selectedPedido.id)
+        : (params.pedidoId || null);
       const cobro = await createCobroOffline(
         effectiveClienteId || '',
         cliente?.serverId ?? null,
@@ -153,7 +229,7 @@ function RegistrarCobroScreen() {
         metodoPago,
         referencia || undefined,
         notas || undefined,
-        params.pedidoId || null,
+        pedidoIdForCobro,
         modo
       );
 
@@ -197,6 +273,8 @@ function RegistrarCobroScreen() {
       setNotas('');
       setReceiptPhoto(null);
       setSelectedClient(null);
+      setSelectedPedido(null);
+      setPedidoPickerOpen(false);
     } catch {
       Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo registrar el cobro' });
     } finally {
@@ -407,6 +485,98 @@ function RegistrarCobroScreen() {
             <ChevronRight size={16} color="#cbd5e1" />
           </TouchableOpacity>
         )}
+
+        {/* PR 5c: Pedido Picker post-PorPedido. Solo cuando:
+            - No es deep link con params.pedidoId.
+            - modo === PorPedido (no aplica a AbonoFifo/Anticipo).
+            - Cliente ya elegido (efectivo + cliente.serverId resuelto).
+            - Cliente picker no esta abierto (evita doble layout activo).
+            testID="cobro-pedido-picker-{trigger|item-N|empty}" para Maestro. */}
+        {!params.pedidoId &&
+          modo === ModoCobro.PorPedido &&
+          !!effectiveClienteId &&
+          !pickerOpen &&
+          (selectedClient || paramClienteId) ? (
+          estadoCuentaLoading ? (
+            <View style={styles.pedidoLoadingCard}>
+              <Text style={styles.pedidoLoadingText}>Cargando pedidos del cliente...</Text>
+            </View>
+          ) : pedidosAbiertos.length === 0 ? (
+            /* Cliente sin pedidos con saldo > 0 → guidance. */
+            <View testID="cobro-pedido-picker-empty" style={styles.pedidoEmptyCard}>
+              <Text style={styles.pedidoEmptyTitle}>Cliente sin pedidos pendientes</Text>
+              <Text style={styles.pedidoEmptyText}>
+                Cambia a Anticipo si quieres registrar saldo a favor, o selecciona otro cliente con saldo pendiente.
+              </Text>
+            </View>
+          ) : selectedPedido && !pedidoPickerOpen ? (
+            /* Pedido elegido → card con saldo + boton cambiar. */
+            <View testID="cobro-pedido-selected" style={styles.pedidoSelectedCard}>
+              <View style={styles.pedidoSelectedIcon}>
+                <Banknote size={18} color="#16a34a" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.pedidoSelectedConcepto} numberOfLines={1}>
+                  {selectedPedido.concepto}
+                </Text>
+                <Text style={styles.pedidoSelectedSaldo}>
+                  Saldo pendiente: {formatCurrency(selectedPedido.saldo)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleClearPedido}
+                style={styles.changeClientBtn}
+                accessibilityLabel="Cambiar pedido"
+                accessibilityRole="button"
+              >
+                <X size={16} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+          ) : pedidoPickerOpen ? (
+            /* Picker abierto → lista de pedidos abiertos. */
+            <View style={styles.pickerSection}>
+              <Text style={styles.sectionLabel}>Seleccionar Pedido</Text>
+              <View style={styles.clientList}>
+                {pedidosAbiertos.slice(0, 10).map((p, idx) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    testID={`cobro-pedido-picker-item-${idx}`}
+                    style={styles.clientOption}
+                    onPress={() => handleSelectPedido(p)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.clientOptionAvatar}>
+                      <Banknote size={16} color="#64748b" />
+                    </View>
+                    <View style={styles.clientOptionContent}>
+                      <Text style={styles.clientOptionName} numberOfLines={1}>{p.concepto}</Text>
+                      <Text style={styles.clientOptionMeta}>
+                        Saldo: {formatCurrency(p.saldo)}
+                      </Text>
+                    </View>
+                    <ChevronRight size={14} color="#cbd5e1" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ) : (
+            /* Trigger inicial → boton para abrir picker. */
+            <TouchableOpacity
+              testID="cobro-pedido-picker-trigger"
+              style={styles.pickerTrigger}
+              onPress={() => setPedidoPickerOpen(true)}
+              activeOpacity={0.7}
+              accessibilityLabel="Seleccionar pedido"
+              accessibilityRole="button"
+            >
+              <View style={styles.pickerTriggerIcon}>
+                <Banknote size={18} color="#94a3b8" />
+              </View>
+              <Text style={styles.pickerTriggerText}>Seleccionar pedido</Text>
+              <ChevronRight size={16} color="#cbd5e1" />
+            </TouchableOpacity>
+          )
+        ) : null}
 
         {/* Monto */}
         <View style={styles.montoSection}>
@@ -873,6 +1043,72 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
+  },
+  // PR 5c: pedido picker post-PorPedido styles.
+  pedidoLoadingCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  pedidoLoadingText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  pedidoEmptyCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: '#fffbeb',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
+  pedidoEmptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#92400e',
+    marginBottom: 4,
+  },
+  pedidoEmptyText: {
+    fontSize: 12,
+    color: '#92400e',
+    lineHeight: 16,
+  },
+  pedidoSelectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  pedidoSelectedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#dcfce7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pedidoSelectedConcepto: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  pedidoSelectedSaldo: {
+    fontSize: 12,
+    color: '#15803d',
+    marginTop: 2,
+    fontWeight: '500',
   },
 });
 

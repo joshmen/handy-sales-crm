@@ -50,6 +50,11 @@ export interface CompanySettings {
   diasLaborables?: string | null; // CSV "1,2,3,4,5" (1=Lun..7=Dom)
   // Modo default de venta para mobile. "Preventa" | "VentaDirecta" | "Preguntar".
   modoVentaDefault?: string | null;
+  // PR 6 plan gating cobros: true si plan.permitir_anticipos_en_campo.
+  // Gateia el boton "Anticipo" del selector de modos en cobranza/page.tsx.
+  // Default false (fail-closed) si el backend omite el campo o el tenant esta
+  // en free trial sin plan asignado.
+  permitirAnticiposEnCampo?: boolean;
 }
 
 export interface UpdateGlobalSettingsRequest {

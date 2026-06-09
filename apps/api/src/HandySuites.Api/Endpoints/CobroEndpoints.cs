@@ -3,6 +3,7 @@ using HandySuites.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.Interfaces;
 using HandySuites.Application.Cobranza.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -135,5 +136,34 @@ public static class CobroEndpoints
             return estado is null ? Results.NotFound() : Results.Ok(estado);
         })
         .WithSummary("Estado de cuenta detallado de un cliente");
+
+        // 2026-06-09 PR 6 plan eager-drifting cobros (FIFO preview).
+        // Calcula la distribución FIFO SIN persistir — la UI muestra al usuario
+        // cuánto se aplicará a cada pedido antes de hacer submit.
+        group.MapPost("/fifo-preview", async (
+            FifoPreviewRequest req,
+            [FromServices] ICobroFifoAplicadorService fifoService) =>
+        {
+            if (req.Monto <= 0)
+                return Results.BadRequest(new { error = "El monto debe ser mayor a cero." });
+            if (req.ClienteId <= 0)
+                return Results.BadRequest(new { error = "ClienteId es obligatorio." });
+
+            try
+            {
+                var aplicaciones = await fifoService.CalcularSinPersistirAsync(req.ClienteId, req.Monto);
+                return Results.Ok(aplicaciones);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithSummary("Preview FIFO: calcula distribución sin persistir");
     }
+
+    /// <summary>
+    /// 2026-06-09 PR 6: body del endpoint /cobros/fifo-preview.
+    /// </summary>
+    public record FifoPreviewRequest(int ClienteId, decimal Monto);
 }
