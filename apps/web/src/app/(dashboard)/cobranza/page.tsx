@@ -326,9 +326,10 @@ export default function CobranzaPage() {
         if (!cancelled) {
           setFifoPreview(resultado);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (!cancelled) {
-          setFifoPreviewError(error?.message || t('errorLoadingPayments'));
+          const msg = error instanceof Error ? error.message : t('errorLoadingPayments');
+          setFifoPreviewError(msg);
           setFifoPreview(null);
         }
       } finally {
