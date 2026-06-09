@@ -125,7 +125,11 @@ namespace HandySuites.Tests.Integration.Security
                 TenantId = 2,
                 ClienteId = cliente.Id,
                 UsuarioId = 125, // usuario seedeado del tenant 2
-                NumeroPedido = $"PED-T2-IDOR-{Random.Shared.Next(1000, 9999)}",
+                // 2026-06-09 fix flake: Random.Shared.Next(1000,9999) tenia ~9000 valores
+                // unicos, colisionaba con UNIQUE (tenant_id, numero_pedido) cuando el suite
+                // corria multiples tests con el mismo proceso. Guid prefix da 8 hex chars
+                // = ~4B variaciones, suficiente para correr todo el suite sin colision.
+                NumeroPedido = $"PED-T2-IDOR-{Guid.NewGuid().ToString("N")[..8]}",
                 FechaPedido = DateTime.UtcNow,
                 Estado = EstadoPedido.Borrador,
                 TipoVenta = TipoVenta.Preventa,
