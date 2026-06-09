@@ -109,8 +109,16 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
         var tamano = (filtro.TamanoPagina is int t && t > 0) ? Math.Min(t, 200) : 20;
 
-        var visitas = await query
-            .OrderByDescending(v => v.FechaProgramada ?? v.FechaHoraInicio ?? v.CreadoEn)
+        // 2026-06-09 cross-DB OrderBy
+        var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+        var orderedQuery = isPostgres
+            ? query.OrderByDescending(v => v.FechaProgramada ?? v.FechaHoraInicio ?? v.CreadoEn)
+            : query.OrderByDescending(v =>
+                v.FechaProgramada.HasValue ? v.FechaProgramada.Value
+                : v.FechaHoraInicio.HasValue ? v.FechaHoraInicio.Value
+                : v.CreadoEn);
+
+        var visitas = await orderedQuery
             .Skip((pagina - 1) * tamano)
             .Take(tamano)
             .Select(v => new ClienteVisitaListaDto
@@ -245,10 +253,19 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
 
     public async Task<IEnumerable<ClienteVisitaListaDto>> ObtenerPorClienteAsync(int clienteId, int tenantId)
     {
-        return await _db.ClienteVisitas
+        // 2026-06-09 cross-DB OrderBy
+        var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+        var baseQuery = _db.ClienteVisitas
             .AsNoTracking()
-            .Where(v => v.ClienteId == clienteId && v.TenantId == tenantId && v.Activo)
-            .OrderByDescending(v => v.FechaProgramada ?? v.FechaHoraInicio ?? v.CreadoEn)
+            .Where(v => v.ClienteId == clienteId && v.TenantId == tenantId && v.Activo);
+        var orderedQuery = isPostgres
+            ? baseQuery.OrderByDescending(v => v.FechaProgramada ?? v.FechaHoraInicio ?? v.CreadoEn)
+            : baseQuery.OrderByDescending(v =>
+                v.FechaProgramada.HasValue ? v.FechaProgramada.Value
+                : v.FechaHoraInicio.HasValue ? v.FechaHoraInicio.Value
+                : v.CreadoEn);
+
+        return await orderedQuery
             .Take(50)
             .Select(v => new ClienteVisitaListaDto
             {
@@ -270,11 +287,20 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
     public async Task<IEnumerable<ClienteVisitaListaDto>> ObtenerMisVisitasAsync(int usuarioId, int tenantId)
     {
         var hoy = DateTime.UtcNow.Date;
-        return await _db.ClienteVisitas
+        // 2026-06-09 cross-DB OrderBy
+        var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+        var baseQuery = _db.ClienteVisitas
             .AsNoTracking()
             .Where(v => v.UsuarioId == usuarioId && v.TenantId == tenantId && v.Activo)
-            .Where(v => v.FechaProgramada >= hoy || v.FechaHoraInicio >= hoy)
-            .OrderBy(v => v.FechaProgramada ?? v.FechaHoraInicio)
+            .Where(v => v.FechaProgramada >= hoy || v.FechaHoraInicio >= hoy);
+        var orderedQuery = isPostgres
+            ? baseQuery.OrderBy(v => v.FechaProgramada ?? v.FechaHoraInicio)
+            : baseQuery.OrderBy(v =>
+                v.FechaProgramada.HasValue ? v.FechaProgramada.Value
+                : v.FechaHoraInicio.HasValue ? v.FechaHoraInicio.Value
+                : DateTime.MaxValue);
+
+        return await orderedQuery
             .Take(50)
             .Select(v => new ClienteVisitaListaDto
             {
@@ -298,13 +324,22 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         var fechaInicio = fecha.Date;
         var fechaFin = fecha.Date.AddDays(1);
 
-        return await _db.ClienteVisitas
+        // 2026-06-09 cross-DB OrderBy
+        var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+        var baseQuery = _db.ClienteVisitas
             .AsNoTracking()
             .Where(v => v.UsuarioId == usuarioId && v.TenantId == tenantId && v.Activo)
             .Where(v =>
                 (v.FechaProgramada >= fechaInicio && v.FechaProgramada < fechaFin) ||
-                (v.FechaHoraInicio >= fechaInicio && v.FechaHoraInicio < fechaFin))
-            .OrderBy(v => v.FechaProgramada ?? v.FechaHoraInicio)
+                (v.FechaHoraInicio >= fechaInicio && v.FechaHoraInicio < fechaFin));
+        var orderedQuery = isPostgres
+            ? baseQuery.OrderBy(v => v.FechaProgramada ?? v.FechaHoraInicio)
+            : baseQuery.OrderBy(v =>
+                v.FechaProgramada.HasValue ? v.FechaProgramada.Value
+                : v.FechaHoraInicio.HasValue ? v.FechaHoraInicio.Value
+                : DateTime.MaxValue);
+
+        return await orderedQuery
             .Select(v => new ClienteVisitaListaDto
             {
                 Id = v.Id,

@@ -630,14 +630,22 @@ public class SyncRepository : ISyncRepository
                         // siguiente ruta del día.
                         var fechaInicio = pedido.FechaPedido.Date;
                         var fechaFin = fechaInicio.AddDays(1);
-                        rutaId = await _db.RutasVendedor
+                        // 2026-06-09 cross-DB: PG nativo, SQLite ternary explicito
+                        var isPostgresInner = _db.Database.ProviderName?.Contains("Npgsql") == true;
+                        var rutaQueryInner = _db.RutasVendedor
                             .AsNoTracking()
                             .Where(r => r.UsuarioId == usuarioId
                                      && r.TenantId == tenantId
                                      && r.Activo
                                      && r.Fecha >= fechaInicio && r.Fecha < fechaFin
-                                     && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
-                            .OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                                     && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada));
+                        var orderedInner = isPostgresInner
+                            ? rutaQueryInner.OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                            : rutaQueryInner.OrderByDescending(r =>
+                                r.HoraInicioReal.HasValue ? r.HoraInicioReal.Value
+                                : r.AceptadaEn.HasValue ? r.AceptadaEn.Value
+                                : r.Fecha);
+                        rutaId = await orderedInner
                             .Select(r => (int?)r.Id)
                             .FirstOrDefaultAsync();
                     }
@@ -1947,14 +1955,22 @@ public class SyncRepository : ISyncRepository
             // cuando sync push llega tarde y ya hay otra ruta del mismo día.
             var fechaInicio = pedido.FechaPedido.Date;
             var fechaFin = fechaInicio.AddDays(1);
-            rutaId = await _db.RutasVendedor
+            // 2026-06-09 cross-DB: PG nativo, SQLite ternary explicito
+            var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+            var rutaQuery = _db.RutasVendedor
                 .AsNoTracking()
                 .Where(r => r.UsuarioId == usuarioId
                          && r.TenantId == tenantId
                          && r.Activo
                          && r.Fecha >= fechaInicio && r.Fecha < fechaFin
-                         && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada))
-                .OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                         && (r.Estado == EstadoRuta.EnProgreso || r.Estado == EstadoRuta.CargaAceptada));
+            var ordered = isPostgres
+                ? rutaQuery.OrderByDescending(r => r.HoraInicioReal ?? r.AceptadaEn ?? r.Fecha)
+                : rutaQuery.OrderByDescending(r =>
+                    r.HoraInicioReal.HasValue ? r.HoraInicioReal.Value
+                    : r.AceptadaEn.HasValue ? r.AceptadaEn.Value
+                    : r.Fecha);
+            rutaId = await ordered
                 .Select(r => (int?)r.Id)
                 .FirstOrDefaultAsync();
         }
