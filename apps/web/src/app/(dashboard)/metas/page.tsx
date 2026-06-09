@@ -357,7 +357,7 @@ export default function MetasPage() {
         { label: t('vendorGoals') },
       ]}
       title={t('vendorGoals')}
-      subtitle={metas.length > 0 ? t('metaCount', { count: metas.length, plural: metas.length !== 1 ? 's' : '' }) : undefined}
+      subtitle={sorted.length > 0 ? t('metaCount', { count: sorted.length, plural: sorted.length !== 1 ? 's' : '' }) : undefined}
       actions={
         isAdmin ? (
           <button
