@@ -17,6 +17,7 @@ public interface IImpersonationService
         int superAdminId,
         string ipAddress,
         string? userAgent,
+        string? correlationId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

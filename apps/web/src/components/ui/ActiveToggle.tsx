@@ -20,12 +20,16 @@ export const ActiveToggle: React.FC<ActiveToggleProps> = ({
     <button
       onClick={onToggle}
       disabled={disabled || isLoading}
+      role="switch"
+      aria-checked={isActive}
+      aria-label={title ?? (isActive ? 'Desactivar' : 'Activar')}
       className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
         isActive ? 'bg-green-500' : 'bg-surface-3'
       } ${isLoading ? 'opacity-50' : ''}`}
       title={title ?? (isActive ? 'Desactivar' : 'Activar')}
     >
       <span
+        aria-hidden="true"
         className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 flex items-center justify-center ${
           isActive ? 'translate-x-4' : 'translate-x-0'
         }`}

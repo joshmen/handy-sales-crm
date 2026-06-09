@@ -1,7 +1,8 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "requireCommit": true
+    "requireCommit": true,
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -23,10 +24,10 @@
         "buildType": "apk"
       },
       "env": {
-        "_comment": "preview apunta a STAGING mobile API + PRODUCTION main API. Main API NO tiene servicio staging deployado en Railway (solo Mobile API). Si se agrega un servicio Main API staging, actualizar EXPO_PUBLIC_MAIN_API_URL aquí.",
+        "_comment": "preview apunta a STAGING mobile API + STAGING main API. Audit 2026-06-07: Main API staging deployado en Railway, URL actualizada.",
         "_maps_comment": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY se inyecta vía EAS Secret (nunca commiteada). Setear con: npx eas secret:create --scope project --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value AIzaSy... — ver docs/deployment/GOOGLE_MAPS_SETUP.md",
         "EXPO_PUBLIC_API_URL": "https://mobile-api-staging.up.railway.app",
-        "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-production-7566.up.railway.app",
+        "EXPO_PUBLIC_MAIN_API_URL": "https://main-api-staging-1a8f.up.railway.app",
         "EXPO_PUBLIC_ENV": "staging"
       }
     },

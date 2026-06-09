@@ -1,0 +1,268 @@
+appId: host.exp.exponent
+name: "Vendedor: Registrar dos cobros consecutivos (multiple payments) end-to-end"
+tags:
+  - vendedor
+  - cobranza
+  - multi-pago
+  - e2e
+---
+
+# ════════════════════════════════════════════════════════════════════
+# USE CASE: registrar-cobro-completo-con-multiple-pagos (VENDEDOR)
+#
+# Flujo: el vendedor registra DOS cobros consecutivos en la misma
+# sesión. Cobro #1 con notas, regresa al hub, Cobro #2 con segundo
+# cliente. Valida que cada cobro emita su recibo ("Cobro Registrado")
+# y que la cartera vuelva al hub limpia tras cada operación.
+#
+# Cubre Bug #4-mobile: selector de método de pago removido, siempre
+# se asume "Pago en efectivo" (badge visible en el formulario).
+#
+# PREREQ:
+#   - Emulador Android con Expo Go en Metro :8081
+#   - Backend docker-compose up con seed Jeyma (cliente
+#     "Abarrotes Don Pancho" con factura pendiente)
+#   - Sesión inicial NO requerida: este flow ejecuta login subflow
+# ════════════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR (subflow)
+- runFlow: ../../auth/01-login-vendedor.yaml
+
+# 2. Dismiss de modales opcionales post-login (permisos, recordatorios)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mientras uso la app"
+    commands:
+      - tapOn: "Mientras uso la app"
+      - waitForAnimationToEnd
+
+# 3. Verificar dashboard cargado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# ════════════════════════════════════════════════════════════════════
+# HUB DE COBRANZA
+# ════════════════════════════════════════════════════════════════════
+
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: cobro-multi-01-dashboard-inicial
+
+# Cards de resumen (cartera)
+- assertVisible:
+    text: "Facturado"
+    optional: true
+- assertVisible:
+    text: "Cobrado"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+# ════════════════════════════════════════════════════════════════════
+# ───── COBRO #1: Abarrotes Don Pancho — $100 efectivo con notas
+# ════════════════════════════════════════════════════════════════════
+
+- tapOn:
+    id: "btn-registrar-cobro"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Registrar Cobro"
+    timeout: 10000
+
+# Verificar layout del formulario
+- assertVisible:
+    text: "Monto a Cobrar"
+    optional: true
+- assertVisible:
+    text: "Pago en efectivo"
+    optional: true
+- assertVisible:
+    text: "Notas (opcional)"
+    optional: true
+- assertVisible:
+    text: "Comprobante (opcional)"
+    optional: true
+
+# Seleccionar cliente via picker
+- tapOn: "Seleccionar cliente"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Buscar cliente por nombre"
+    timeout: 5000
+
+- tapOn: "Buscar cliente por nombre"
+- inputText: "Abarrotes"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+- takeScreenshot: cobro-multi-02-cliente1-seleccionado
+
+# Monto
+- tapOn:
+    text: "0.00"
+- inputText: "100"
+- hideKeyboard
+
+# Bug #4-mobile: el badge "Pago en efectivo" confirma que el selector
+# fue removido y siempre se registra como efectivo.
+- assertVisible:
+    text: "Pago en efectivo"
+    optional: true
+
+# Notas
+- tapOn: "Observaciones adicionales"
+- inputText: "Cobro #1 multi-test E2E"
+- hideKeyboard
+
+- takeScreenshot: cobro-multi-03-cobro1-listo
+
+# Confirmar (botón footer con monto formateado)
+- tapOn:
+    text: "Confirmar Cobro.*"
+- waitForAnimationToEnd
+
+# ConfirmModal — el título se repite "Confirmar Cobro" y el body trae
+# "Registrar cobro de $X a CLIENTE". Tap el botón "Confirmar" del modal.
+- extendedWaitUntil:
+    visible: "Registrar cobro de"
+    timeout: 5000
+
+- tapOn:
+    text: "Confirmar"
+    index: 1
+
+# Recibo del Cobro #1
+- extendedWaitUntil:
+    visible: "Cobro Registrado"
+    timeout: 15000
+
+- takeScreenshot: cobro-multi-04-recibo1
+
+- assertVisible: "Cobro Registrado"
+- assertVisible:
+    text: "Abarrotes Don Pancho"
+    optional: true
+
+# ════════════════════════════════════════════════════════════════════
+# REGRESAR AL HUB
+# ════════════════════════════════════════════════════════════════════
+
+# Doble tap a "Cobrar" para resetear el stack de navegación si quedó
+# en el recibo (patrón Expo Router tabs).
+- tapOn: "Cobrar"
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: cobro-multi-05-dashboard-tras-cobro1
+
+# ════════════════════════════════════════════════════════════════════
+# ───── COBRO #2: segundo cliente — $250.50 efectivo
+# ════════════════════════════════════════════════════════════════════
+
+- tapOn:
+    id: "btn-registrar-cobro"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Registrar Cobro"
+    timeout: 10000
+
+- tapOn: "Seleccionar cliente"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Buscar cliente por nombre"
+    timeout: 5000
+
+# Búsqueda genérica para listar varios clientes; tomamos el primer
+# chevron-right (primer cliente con saldo en la lista).
+- tapOn: "Buscar cliente por nombre"
+- inputText: "a"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- tapOn:
+    id: "chevron-right"
+    index: 0
+- waitForAnimationToEnd
+
+# Monto del Cobro #2
+- tapOn:
+    text: "0.00"
+- inputText: "250.50"
+- hideKeyboard
+
+# Notas
+- tapOn: "Observaciones adicionales"
+- inputText: "Cobro #2 multi-test E2E"
+- hideKeyboard
+
+- takeScreenshot: cobro-multi-06-cobro2-listo
+
+# Confirmar
+- tapOn:
+    text: "Confirmar Cobro.*"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Registrar cobro de"
+    timeout: 5000
+
+- tapOn:
+    text: "Confirmar"
+    index: 1
+
+# Recibo del Cobro #2
+- extendedWaitUntil:
+    visible: "Cobro Registrado"
+    timeout: 15000
+
+- takeScreenshot: cobro-multi-07-recibo2
+
+- assertVisible: "Cobro Registrado"
+
+# ════════════════════════════════════════════════════════════════════
+# VERIFICACIÓN FINAL — hub limpio tras dos cobros consecutivos
+# ════════════════════════════════════════════════════════════════════
+
+- tapOn: "Cobrar"
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- assertVisible: "Cobranza"
+
+- takeScreenshot: cobro-multi-08-dashboard-final

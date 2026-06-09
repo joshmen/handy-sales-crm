@@ -41,6 +41,21 @@ const storeTheme = (theme: 'light' | 'dark') => {
   }
 };
 
+/**
+ * Aplica la clase de tema al <html> sincrónicamente. Antes esto vivía solo en
+ * useEffect del Header que dependía de `mounted`, causando una race condition:
+ *   click → store cambia → useEffect spera próximo render → class actualizado
+ *   reload temprano → snapshot toma HTML antes de aplicar la clase
+ * Aplicar aquí garantiza que toggleTheme / setTheme actualicen el DOM en el
+ * mismo tick que el state change.
+ */
+const applyThemeClass = (theme: 'light' | 'dark') => {
+  if (typeof document === 'undefined') return;
+  const html = document.documentElement;
+  html.classList.remove('light', 'dark');
+  html.classList.add(theme);
+};
+
 export const useUIStore = create<UIState>((set, get) => ({
   sidebarOpen: false,
   sidebarCollapsed: false,
@@ -59,19 +74,22 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setTheme: (theme: 'light' | 'dark') => {
     storeTheme(theme);
+    applyThemeClass(theme);
     set({ theme });
   },
-  
+
   toggleTheme: () => {
     const currentTheme = get().theme;
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     storeTheme(newTheme);
+    applyThemeClass(newTheme);
     set({ theme: newTheme });
   },
 
   // Función para hidratar el estado desde localStorage
   hydrate: () => {
     const storedTheme = getStoredTheme();
+    applyThemeClass(storedTheme);
     set({ theme: storedTheme, hasHydrated: true });
   },
 }));

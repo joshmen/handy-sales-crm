@@ -1,5 +1,17 @@
 namespace HandySuites.Application.Cobranza.DTOs;
 
+/// <summary>
+/// 2026-06-08: modo explicito de cobro. Paridad web+mobile per plan eager-drifting-journal.
+/// Mirror de Domain.Entities.ModoCobro — no usamos el enum del Domain directamente en DTO
+/// para mantener separacion de capas.
+/// </summary>
+public enum ModoCobroDto
+{
+    PorPedido = 0,
+    AbonoFifo = 1,
+    Anticipo = 2,
+}
+
 public class CobroDto
 {
     public int Id { get; set; }
@@ -17,6 +29,10 @@ public class CobroDto
     public string? Notas { get; set; }
     public bool Activo { get; set; }
     public DateTime CreadoEn { get; set; }
+    /// <summary>2026-06-08: modo del cobro (PorPedido / AbonoFifo / Anticipo).</summary>
+    public ModoCobroDto Modo { get; set; } = ModoCobroDto.PorPedido;
+    /// <summary>2026-06-08: true si Modo == Anticipo. Genera saldoFavor.</summary>
+    public bool EsAnticipo { get; set; }
 }
 
 public record CobroCreateDto(
@@ -26,7 +42,13 @@ public record CobroCreateDto(
     int MetodoPago,
     DateTime? FechaCobro,
     string? Referencia,
-    string? Notas
+    string? Notas,
+    /// <summary>
+    /// 2026-06-08: modo del cobro. PorPedido (default) requires PedidoId,
+    /// AbonoFifo distribuye contra pedidos abiertos, Anticipo genera saldoFavor.
+    /// Default PorPedido para retrocompat con callers que no envien Modo.
+    /// </summary>
+    ModoCobroDto Modo = ModoCobroDto.PorPedido
 );
 
 public record CobroUpdateDto(

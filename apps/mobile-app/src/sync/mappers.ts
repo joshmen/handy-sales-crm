@@ -588,26 +588,30 @@ function mapDevolucionToRaw(d: any, devMap: Map<number, string>, pedidoMap: Map<
 }
 
 // Extrae los detalles embebidos en cada devolucion server payload y los mapea como tabla aparte.
-function extractDetallesDevolucion(devs: any[] | undefined, isFirstSync: boolean,
+function extractDetallesDevolucion(devs: any[] | undefined, _isFirstSync: boolean,
   detalleDevMap: Map<number, string>, devMap: Map<number, string>,
   productoMap: Map<number, string>, detallePedidoMap: Map<number, string>): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
-  const created: DirtyRaw[] = [];
   const updated: DirtyRaw[] = [];
   const deleted: string[] = [];
-  if (!devs?.length) return { created, updated, deleted };
+  if (!devs?.length) return { created: [], updated, deleted };
 
   for (const dev of devs) {
+    // Skip padres marcados como deleted; WDB ya elimina en cascada los hijos.
+    if (dev.isDeleted || dev.operation === 2) continue;
     const detalles = dev.detalles || [];
     for (const dd of detalles) {
       const raw = mapDetalleDevolucionToRaw(dd, detalleDevMap, devMap, productoMap, detallePedidoMap, dev.id);
-      if (isFirstSync || (!dd.id && !detalleDevMap.has(dd.id))) {
-        created.push(raw);
-      } else {
-        updated.push(raw);
-      }
+      // Todos los detalles van como 'updated' — sendCreatedAsUpdated: true en
+      // syncEngine.ts:222 hace que WDB upserts por id (crea si no existe, actualiza
+      // si existe). Mismo patrón que extractDetallesPedido (línea 313) y
+      // splitByOperation (línea 161). Antes: la rama `isFirstSync` enrutaba a
+      // created[] en cada primer login → WDB emitía warning
+      // "sendCreatedAsUpdated is enabled, and yet server sends some records as
+      // 'created'" en applyRemote.js:242.
+      updated.push(raw);
     }
   }
-  return dedupeChangeset({ created, updated, deleted });
+  return dedupeChangeset({ created: [], updated, deleted });
 }
 
 function mapDetalleDevolucionToRaw(dd: any, detalleDevMap: Map<number, string>, devMap: Map<number, string>,
@@ -1100,6 +1104,20 @@ function rawToDetalleDevolucionDto(raw: DirtyRaw): any {
 }
 
 function rawToCobroDto(raw: DirtyRaw, operation: number): any {
+  // 2026-06-08 PR 4/PR 5 plan eager-drifting cobros: derivar modo basado en
+  // el valor persistido (PR 5 WDB v24 columna `modo` set explicitamente por
+  // el selector de registrar.tsx) o sino derivar de la presencia de pedidoId
+  // como fallback retrocompat con cobros pre-PR5.
+  //  - raw.modo number → respeta el explicito (PR 5).
+  //  - pedidoId resolvable (server_id o id local numerico) → PorPedido (0).
+  //  - sin pedidoId ni raw.modo → Anticipo (2) por defecto (cubre el caso
+  //    historico de cobros pre-PR5 que iban siempre sin pedido).
+  const hasPedido = !!raw.pedido_server_id
+    || (raw.pedido_id && /^\d+$/.test(String(raw.pedido_id)))
+    || (raw.pedido_id && !/^\d+$/.test(String(raw.pedido_id))); // localId queue
+  const modoDerivado = typeof raw.modo === 'number'
+    ? raw.modo
+    : (hasPedido ? 0 /* PorPedido */ : 2 /* Anticipo */);
   return {
     id: raw.server_id ?? 0,
     localId: raw.id,
@@ -1123,6 +1141,7 @@ function rawToCobroDto(raw: DirtyRaw, operation: number): any {
     activo: raw.activo ?? true,
     version: raw.version ?? 1,
     operation,
+    modo: modoDerivado,
   };
 }
 

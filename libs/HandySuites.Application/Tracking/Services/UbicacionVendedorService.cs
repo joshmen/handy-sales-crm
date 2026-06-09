@@ -32,6 +32,15 @@ public class UbicacionVendedorService
     private const double MaxVelocityKmh = 1000.0;
     private const double EarthRadiusKm = 6371.0;
 
+    // 2026-06-08 (anti-spam GPS): throttle por proximidad para Checkpoint.
+    // El mobile YA throttlea en locationBackgroundTask, esto es defense in
+    // depth contra clientes maliciosos / bugs futuros / versions viejas del
+    // APK que no hayan recibido el fix. Aplica SOLO a Checkpoint (tipo=5) —
+    // los eventos de negocio (Venta/Cobro/Visita/InicioRuta/etc) tienen
+    // ReferenciaId y son legitimos aun si cerca/rapidos.
+    private static readonly TimeSpan CheckpointMinInterval = TimeSpan.FromSeconds(60);
+    private const double CheckpointMinDistanceKm = 0.050; // 50 metros
+
     private readonly IUbicacionVendedorRepository _repo;
     private readonly ISubscriptionFeatureGuard _guard;
     private readonly ICurrentTenant _tenant;
@@ -104,6 +113,15 @@ public class UbicacionVendedorService
 
         var accepted = new List<UbicacionPingDto>();
         var velocityRejected = 0;
+        var proximityThrottled = 0;
+        // Track last accepted Checkpoint para el throttle por proximidad —
+        // separado de `prev` (que es last accepted de cualquier tipo, usado
+        // para velocity). Iniciamos con lastKnown SOLO si es Checkpoint, para
+        // que el primer Checkpoint del batch tenga referencia incluso si entre
+        // sync y sync no hubo otros Checkpoints persistidos.
+        UbicacionPingDto? lastCheckpoint = (lastKnown != null && lastKnown.Count > 0 && lastKnown[0].Tipo == TipoPingUbicacion.Checkpoint)
+            ? prev
+            : null;
         foreach (var p in validPings)
         {
             if (prev != null && IsImplausibleVelocity(prev, p))
@@ -111,8 +129,25 @@ public class UbicacionVendedorService
                 velocityRejected++;
                 continue;
             }
+            // Throttle proximidad SOLO para Checkpoint. Eventos de negocio
+            // (Venta/Cobro/Visita/InicioRuta/etc) pasan sin filtrar — son
+            // significativos y tienen ReferenciaId.
+            if (p.Tipo == TipoPingUbicacion.Checkpoint && lastCheckpoint != null)
+            {
+                var deltaSec = (p.CapturadoEn - lastCheckpoint.CapturadoEn).TotalSeconds;
+                var deltaKm = HaversineKm(lastCheckpoint.Latitud, lastCheckpoint.Longitud, p.Latitud, p.Longitud);
+                if (deltaSec < CheckpointMinInterval.TotalSeconds && deltaKm < CheckpointMinDistanceKm)
+                {
+                    proximityThrottled++;
+                    continue;
+                }
+            }
             accepted.Add(p);
             prev = p;
+            if (p.Tipo == TipoPingUbicacion.Checkpoint)
+            {
+                lastCheckpoint = p;
+            }
         }
 
         if (accepted.Count == 0)
@@ -177,7 +212,7 @@ public class UbicacionVendedorService
             .ToList();
 
         var (inserted, skipped) = await _repo.InsertBatchAsync(_tenant.TenantId, entidades);
-        var totalRejected = (request.Pings.Count - validPings.Count) + velocityRejected + sessionDuplicates + skipped;
+        var totalRejected = (request.Pings.Count - validPings.Count) + velocityRejected + proximityThrottled + sessionDuplicates + skipped;
         return new UbicacionBatchResultDto { Aceptados = inserted, Duplicados = totalRejected };
     }
 

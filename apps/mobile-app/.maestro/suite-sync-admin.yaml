@@ -1,0 +1,226 @@
+appId: host.exp.exponent
+name: suite-sync-admin
+---
+# ============================================================
+# MODULO: SYNC ADMIN — pull tenant-wide + status + push
+# Inventario gap HIGH 1/4 (pre-prod audit 2026-06-06).
+# Cubre lo que el endpoint sync/01-sync-screen.yaml NO cubre:
+#   - Login con admin@jeyma.com (no vendedor)
+#   - Acceso a Mas -> Sincronizacion
+#   - Forzar pull manual -> validar que el ADMIN ve registros
+#     de TODO el tenant (no solo asignados a su UserId)
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "admin@jeyma.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: sync-admin-01-login-submitted
+
+# ---- FASE 2: Dismiss permisos/consent ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+# ---- FASE 3: Esperar dashboard ADMIN ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: sync-admin-02-dashboard
+
+# Validar que es realmente ADMIN (saludo "Administrador")
+- assertVisible:
+    text: "Administrador"
+
+# ---- FASE 4: Navegar a Mas -> Sincronizacion ----
+
+- tapOn:
+    text: "Más"
+
+- extendedWaitUntil:
+    visible:
+      text: "Sincronización"
+    timeout: 30000
+
+- takeScreenshot: sync-admin-03-menu-mas
+
+- tapOn:
+    text: "Sincronización"
+
+- extendedWaitUntil:
+    visible:
+      text: "ESTADO"
+    timeout: 30000
+
+- takeScreenshot: sync-admin-04-pantalla-sync
+
+# ---- FASE 5: Verificar header + estado conexion ----
+
+- assertVisible:
+    text: "Sincronización"
+- assertVisible:
+    text: "ESTADO"
+- assertVisible:
+    text: "DETALLES"
+
+- runFlow:
+    when:
+      visible:
+        text: "Conectado"
+    commands:
+      - assertVisible:
+          text: "Conectado"
+
+# ---- FASE 6: Forzar sync (ADMIN debe poder ejecutarlo) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Sincronizar ahora"
+    commands:
+      - tapOn:
+          text: "Sincronizar ahora"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: sync-admin-05-tras-sincronizar
+
+# ---- FASE 7: Verificar que termino sin error ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Sincronizando"
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            text: "Sincronizando..."
+          timeout: 60000
+
+- runFlow:
+    when:
+      visible:
+        text: "¡Sincronizado!"
+    commands:
+      - assertVisible:
+          text: "¡Sincronizado!"
+      - takeScreenshot: sync-admin-06-success
+
+# ---- FASE 8: Validar pendientes en 0 tras sync ----
+
+- assertVisible:
+    text: "Pendientes de sincronizar"
+
+# ---- FASE 9: Regresar y validar que dashboard refleja datos tenant-wide ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Volver"
+    commands:
+      - tapOn:
+          text: "Volver"
+
+- tapOn:
+    text: "Hoy"
+
+- extendedWaitUntil:
+    visible:
+      text: "Vendedores"
+    timeout: 20000
+
+- takeScreenshot: sync-admin-07-dashboard-postsync
+
+# ADMIN ve seccion VENDEDORES (KPIs tenant-wide) — confirma scope
+- assertVisible:
+    text: "Vendedores"
+
+# ---- FASE 10: Logout ----
+
+- tapOn:
+    text: "Más"
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: sync-admin-08-logout

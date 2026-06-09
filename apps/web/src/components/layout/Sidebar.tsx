@@ -765,7 +765,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
           </div>
 
           {/* Navigation Items */}
-          <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+          <nav
+            data-tour="sidebar-nav"
+            aria-label="Navegación principal"
+            className="flex-1 overflow-y-auto py-4 px-2 space-y-1"
+          >
               {activeItems.map(item => {
                 if (!hasPermission(item.permission)) return null;
                 return (

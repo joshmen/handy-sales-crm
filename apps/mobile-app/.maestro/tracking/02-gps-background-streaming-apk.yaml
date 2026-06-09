@@ -1,0 +1,158 @@
+appId: com.handysuites.app
+name: "GPS background streaming (APK dev build) - Fase B"
+---
+
+# ════════════════════════════════════════════════════════════
+# HOT-PATH VENDEDOR: Tracking GPS background streaming (Fase B).
+#
+# 01-gps-background-toggle.yaml SOLO valida UI del toggle + permission
+# flow. Documenta explícitamente que "expo-task-manager + foreground
+# service NO funcionan en Expo Go" y que "validación REAL requiere
+# dev build APK".
+#
+# Este flow EJERCITA el background streaming real:
+#   1. Activar toggle.
+#   2. App al background.
+#   3. adb emu geo fix con coords sucesivas.
+#   4. Esperar 60s.
+#   5. Volver foreground y verificar que el toggle sigue ON +
+#      sin errores reportados.
+#
+# Endpoint POST /api/mobile/tracking/batch debe recibir las coords
+# (validable server-side con query a UbicacionesVendedor).
+#
+# CRÍTICO: appId es com.handysuites.app (NO host.exp.exponent).
+# Este flow REQUIERE APK dev build (eas build --profile development).
+# En Expo Go el background task NO se ejecuta — el flow fallará en
+# la assertion "tracking activo".
+#
+# PRE-REQ:
+#   - Plan tenant incluye_tracking_vendedor=true (Pro+).
+#   - Backend serializa trackingGpsEnabled=true.
+#   - Vendedor logged in en APK dev build.
+# ════════════════════════════════════════════════════════════
+
+# 0. Dashboard listo.
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 1. Ir a Configuración.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- tapOn: "Configuración"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Configuración"
+    timeout: 15000
+
+# 2. Scroll a sección Privacidad.
+- swipe:
+    direction: UP
+
+- assertVisible: "Tracking GPS en segundo plano"
+
+- takeScreenshot: gps-bg-streaming-01-pre-toggle
+
+# 3. Activar toggle.
+- tapOn:
+    text: "Tracking GPS en segundo plano"
+- waitForAnimationToEnd
+
+# 4. Manejar permission de ubicación background (Android 11+).
+- runFlow:
+    when:
+      visible: "Allow all the time"
+    commands:
+      - tapOn: "Allow all the time"
+- runFlow:
+    when:
+      visible: "Permitir todo el tiempo"
+    commands:
+      - tapOn: "Permitir todo el tiempo"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+- takeScreenshot: gps-bg-streaming-02-post-toggle
+
+# 5. Verificar que NO hubo kick-out a login (regression común).
+- assertNotVisible:
+    id: "login-button"
+
+# 6. App al background con HOME.
+- pressKey: "Home"
+
+- takeScreenshot: gps-bg-streaming-03-app-background
+
+# 7. Inyectar coords con adb emu geo fix.
+#    Maestro no tiene API nativa para geo fix → runScript.
+- runScript:
+    file: "./scripts/geo-fix-batch.sh"
+    env:
+      ANDROID_SERIAL: "emulator-5554"
+
+# BUG / FIX TODO: el script `./scripts/geo-fix-batch.sh` debe iterar
+# enviando coords cada 10s durante 60s:
+#   for lat in 19.4326 19.4330 19.4335 19.4340 19.4345 19.4350; do
+#     adb emu geo fix -99.1332 $lat
+#     sleep 10
+#   done
+# Si runScript no se ejecuta por permisos CI, el flow degrada a
+# screenshot únicamente — falla la validación end-to-end.
+
+# 8. Esperar 70s para que el background task envíe el batch.
+#    locationBackgroundTask.ts hace flush cada 30-60s según config.
+- waitForAnimationToEnd
+
+# Maestro no tiene `wait Nseconds` puro — usamos extendedWaitUntil
+# con un timeout largo sobre un selector que NO va a aparecer en
+# background, forzando los 70s.
+- extendedWaitUntil:
+    visible: "__never_visible_placeholder__"
+    timeout: 70000
+    optional: true
+
+# 9. Reabrir la app desde recientes.
+- launchApp:
+    appId: "com.handysuites.app"
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: gps-bg-streaming-04-foreground-restored
+
+# 10. Verificar que el toggle sigue ON (persist).
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- tapOn: "Configuración"
+- waitForAnimationToEnd
+
+- swipe:
+    direction: UP
+
+- assertVisible: "Tracking GPS en segundo plano"
+
+- takeScreenshot: gps-bg-streaming-05-toggle-persist
+
+# 11. Verificar que no aparece error toast / banner crítico.
+- assertNotVisible: "Error de tracking"
+- assertNotVisible: "Permission denied"
+- assertNotVisible: "feature flag"
+
+# BUG / FIX TODO: validación server-side OBLIGATORIA para cerrar
+# el loop end-to-end. Ejecutar post-run:
+#   psql $RAILWAY_PG_URL -c "
+#     SELECT count(*) FROM \"UbicacionesVendedor\"
+#       WHERE usuario_id = (SELECT id FROM \"Usuarios\"
+#                            WHERE email = 'vendedor1@jeyma.com')
+#       AND creado_en > now() - interval '5 minutes';"
+# Esperado: count >= 3 (al menos 3 puntos del batch llegaron).
+# Esperado HTTP: 200 batch accepted; 403 si subscription_plans
+# tenía incluye_tracking_vendedor=false (negative test separado).

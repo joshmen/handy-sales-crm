@@ -1,9 +1,21 @@
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
+import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import { secureStorage } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/utils/constants';
 import UbicacionVendedor from '@/db/models/UbicacionVendedor';
+// 2026-06-08 — anti-spam throttle pre-persist. Modulo puro sin deps nativas
+// para que sea testeable. Re-export desde aqui para mantener backward compat
+// con tests/imports previos que vivian en locationBackgroundTask.
+import {
+  filterCheckpointsByThrottle,
+  ACCURACY_MAX_METERS,
+  MIN_INTERVAL_SECONDS,
+  MIN_DISTANCE_METERS,
+  type PersistedCheckpoint,
+} from './locationThrottle';
+export { filterCheckpointsByThrottle, ACCURACY_MAX_METERS, MIN_INTERVAL_SECONDS, MIN_DISTANCE_METERS };
 
 /**
  * Background location task — corre en JS context SEPARADO cuando el OS entrega
@@ -34,6 +46,34 @@ async function getCurrentUsuarioIdForBackgroundTask(): Promise<number | null> {
 }
 
 /**
+ * Last persisted Checkpoint del usuario. Usado para throttle por tiempo+distancia.
+ * Query WDB: ubicaciones_vendedor.tipo=5 + usuario_id=X, ORDER BY capturado_en DESC, take 1.
+ * Devuelve null si no hay ningun Checkpoint previo (primer ping del vendedor).
+ */
+async function getLastCheckpoint(usuarioId: number): Promise<PersistedCheckpoint | null> {
+  try {
+    const col = database.get<UbicacionVendedor>('ubicaciones_vendedor');
+    const rows = await col
+      .query(
+        Q.where('usuario_id', usuarioId),
+        Q.where('tipo', 5),
+        Q.sortBy('capturado_en', Q.desc),
+        Q.take(1),
+      )
+      .fetch();
+    if (rows.length === 0) return null;
+    const r = rows[0] as any;
+    return {
+      capturadoEn: r.capturadoEn instanceof Date ? r.capturadoEn : new Date(r.capturadoEn),
+      latitud: typeof r.latitud === 'number' ? r.latitud : Number(r.latitud),
+      longitud: typeof r.longitud === 'number' ? r.longitud : Number(r.longitud),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Define el task headless. Se llama UNA VEZ al boot del JS (importar este
  * modulo desde root layout o syncEngine garantiza el registro).
  *
@@ -57,13 +97,24 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     return;
   }
 
-  // Persistir cada location como ubicacion_vendedor tipo=Checkpoint (5).
+  // 2026-06-08 (anti-spam GPS): el OS Android entrega arrays de 1-N locations
+  // por callback (Doze wakeup, GPS chipset jitter). Antes persistia TODAS;
+  // ahora throttle pre-persist con haversine + tiempo. Reduce ~135x el
+  // volumen storage (verificado en staging: 10 pings/100s → ~1 ping/min).
+  const lastCheckpoint = await getLastCheckpoint(usuarioId);
+  const accepted = filterCheckpointsByThrottle(locations, lastCheckpoint);
+  if (accepted.length === 0) {
+    if (__DEV__) console.log(`[BgLocationTask] all ${locations.length} locations throttled`);
+    return;
+  }
+
+  // Persistir cada location aceptada como ubicacion_vendedor tipo=Checkpoint (5).
   // El flush al backend ocurre en el sync engine cuando la app vuelve a abrir
   // OR cuando otro ping foreground dispara performSync (NetInfo/AppState handlers).
   try {
     await database.write(async () => {
       const col = database.get<UbicacionVendedor>('ubicaciones_vendedor');
-      for (const loc of locations) {
+      for (const loc of accepted) {
         await col.create((rec: any) => {
           rec.usuarioId = usuarioId;
           rec.latitud = loc.coords.latitude;
@@ -77,7 +128,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         });
       }
     });
-    if (__DEV__) console.log(`[BgLocationTask] persisted ${locations.length} locations`);
+    if (__DEV__) console.log(`[BgLocationTask] persisted ${accepted.length}/${locations.length} locations (throttled ${locations.length - accepted.length})`);
   } catch (err) {
     if (__DEV__) console.warn('[BgLocationTask] persist failed:', err);
   }

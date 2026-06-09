@@ -223,3 +223,107 @@ test.describe('RBAC - Clientes', () => {
     expect(titleText).toContain('Clientes');
   });
 });
+
+// ─── ADMIN ROUTES NEGATIVE (VENDEDOR) ────────────────────────────
+//
+// Inventory HIGH gap: rbac.spec.ts solo validaba positivos para
+// VENDEDOR (no ve filtro "Todos los vendedores"). NO había guard
+// negativa para hits directos a /admin, /superadmin, /admin/finkok,
+// etc. Una regresión en middleware.ts ROLE_RESTRICTED_ROUTES
+// expondría UI admin a VENDEDOR sin ser detectada por el suite.
+//
+// Comportamiento esperado: middleware redirige a /unauthorized o
+// /dashboard?error=unauthorized (302) ANTES de hidratar la página.
+test.describe('RBAC - VENDEDOR admin routes redirect (negative)', { tag: '@rbac' }, () => {
+
+  const ADMIN_ROUTES = [
+    '/admin',
+    '/superadmin',
+    '/admin/finkok',
+    '/admin/companies',
+    '/admin/cupones',
+    '/admin/team',
+    '/admin/global-users',
+  ];
+
+  for (const route of ADMIN_ROUTES) {
+    test(`VENDEDOR cannot access ${route}`, async ({ page }, testInfo) => {
+      if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
+      test.setTimeout(45000);
+
+      await loginAsVendedor(page);
+      await waitForPageLoad(page);
+
+      // Hit directo a la ruta admin. domcontentloaded basta — el redirect
+      // del middleware ocurre antes del SSR de la página protegida.
+      await page.goto(route, { waitUntil: 'domcontentloaded' }).catch(() => {
+        // Si el middleware corta la navegación con un throw el goto puede
+        // rejectar — está OK, validamos URL final abajo.
+      });
+
+      // Esperar a que termine cualquier client-side redirect (NextAuth
+      // middleware puede hacer un hop adicional vía window.location).
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+
+      const finalUrl = page.url();
+
+      // Screenshot para auditoría visual de la pantalla post-redirect.
+      const safeName = route.replace(/\//g, '_').replace(/^_/, '');
+      await page.screenshot({
+        path: `e2e/screenshots/rbac-vendedor-blocked-${safeName}.png`,
+        fullPage: true,
+      });
+
+      // 1. La URL final NO debe seguir en la ruta admin solicitada.
+      //    Aceptamos /unauthorized, /dashboard, /dashboard?error=...,
+      //    /login (si la session se invalidó por algún motivo) o
+      //    cualquier ruta non-admin del rol vendedor.
+      const stillOnAdminRoute = finalUrl.includes(route) &&
+        !finalUrl.includes('/unauthorized') &&
+        !finalUrl.includes('error=unauthorized');
+
+      expect(stillOnAdminRoute, `VENDEDOR landed inside ${route} — middleware guard regression. final=${finalUrl}`).toBe(false);
+
+      // 2. El DOM no debe contener data-testid de UI admin. Si alguna
+      //    página admin se renderizó parcialmente antes del redirect
+      //    client-side, los testids quedan colgados.
+      const adminTestidCount = await page.locator('[data-testid^="admin-"], [data-testid^="superadmin-"]').count();
+      expect(adminTestidCount, `Admin DOM leaked for VENDEDOR on ${route}`).toBe(0);
+
+      // 3. Heading nunca debe ser "SuperAdmin" o "Administración global".
+      const h1Text = (await page.locator('h1').first().textContent().catch(() => '')) ?? '';
+      expect(/Super ?Admin|Administraci[oó]n global|Global Users|Finkok/i.test(h1Text),
+        `Admin heading rendered for VENDEDOR on ${route}: "${h1Text}"`).toBe(false);
+    });
+  }
+
+  test('VENDEDOR sees friendly unauthorized banner on /admin', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
+    test.setTimeout(45000);
+
+    await loginAsVendedor(page);
+    await waitForPageLoad(page);
+
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+
+    await page.screenshot({
+      path: 'e2e/screenshots/rbac-vendedor-unauthorized-banner.png',
+      fullPage: true,
+    });
+
+    // Debe haber alguna pista visual al usuario — banner, toast o página
+    // de "no autorizado". No queremos un dashboard silencioso sin feedback.
+    const bodyText = (await page.textContent('body').catch(() => '')) ?? '';
+    const hasFeedback =
+      /no autorizado|sin permisos|no tienes acceso|acceso denegado|unauthorized/i.test(bodyText) ||
+      page.url().includes('error=unauthorized') ||
+      page.url().includes('/unauthorized');
+
+    // BUG / FIX TODO: si esta assertion falla pero las anteriores pasan,
+    // el guard funciona pero el feedback al usuario es deficiente. No es
+    // bloqueante para seguridad pero sí UX — registrar como follow-up.
+    expect(hasFeedback,
+      'VENDEDOR fue redirigido sin feedback visible — UX gap. Considerar agregar toast o página /unauthorized.').toBe(true);
+  });
+});

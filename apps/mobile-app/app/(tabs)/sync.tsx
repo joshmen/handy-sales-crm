@@ -1,15 +1,15 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Card, Button } from '@/components/ui';
+import { Card } from '@/components/ui';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
-  Wifi, WifiOff, RefreshCcw, CheckCircle, Clock,
-  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ImageIcon, ChevronLeft,
+  Wifi, WifiOff, Clock, ImageIcon, ChevronLeft,
 } from 'lucide-react-native';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { usePendingCount, usePendingAttachmentCount, useTenantLocale } from '@/hooks';
 import { useSyncStore } from '@/stores';
+import { SyncStatusCard } from '@/components/sync/SyncStatusCard';
 import { COLORS } from '@/theme/colors';
 
 function formatLastSync(timestamp: number | null, dateTimeFmt: (d: Date) => string): string {
@@ -21,46 +21,23 @@ function formatLastSync(timestamp: number | null, dateTimeFmt: (d: Date) => stri
   return dateTimeFmt(new Date(timestamp));
 }
 
-/**
- * Audit 2026-05-19: vendedor@jeyma vio "Network Error" cuando en realidad
- * el device estaba conectado (banner verde "Conectado") pero el refresh
- * de tokens había fallado por race condition server-side. El mensaje
- * técnico no era accionable. Esta función traduce:
- * - "Network Error" + online → "Reintentando..." (probable race/timeout
- *   transient; el SessionExpiredBanner se encarga si es auth)
- * - "Network Error" + offline → mostrar offline-genuine (raro porque
- *   ya tenemos OfflineBanner pero defensivo)
- * - 401/sesión → mensaje claro de re-login (también cubierto por
- *   SessionExpiredBanner pero útil aquí también)
- * - Otros → mensaje original
- */
-function translateSyncError(rawError: string, isOnline: boolean): string {
-  const msg = rawError.toLowerCase();
-  if (msg.includes('network error') && isOnline) {
-    return 'Reintentando conexión con el servidor...';
-  }
-  if (msg.includes('network error') || msg.includes('timeout')) {
-    return 'Sin conexión estable. Reintentaremos cuando haya señal.';
-  }
-  if (msg.includes('401') || msg.includes('session_revoked') || msg.includes('unauthorized')) {
-    return 'Tu sesión necesita renovarse. Toca "Iniciar sesión" en el banner rojo.';
-  }
-  if (msg.includes('500') || msg.includes('502') || msg.includes('503')) {
-    return 'Servidor temporalmente no disponible. Reintenta en un momento.';
-  }
-  return rawError;
-}
+// Sprint 1 audit code-quality (2026-06-04): translateSyncError extraido a
+// src/sync/errorClassifier.ts (classifyError) para que UI + syncStore usen
+// la misma fuente de verdad sobre tipo de error y mensaje al usuario.
 
 export default function SyncScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isConnected: isOnline } = useNetworkStatus();
-  const { status, lastSyncAt, lastSummary, error, sync } = useSyncStore();
+  const { lastSyncAt, lastSummary } = useSyncStore();
   const { data: pendingCount = 0 } = usePendingCount();
   const { data: pendingAttachments = 0 } = usePendingAttachmentCount();
   const { dateTime: dateTimeFmt } = useTenantLocale();
 
-  const isSyncing = status === 'syncing';
+  // C.2 hardening (fix prod 2026-06-04): "Borrado de datos" se MOVIO a su
+  // propia sub-pantalla bajo /(tabs)/restaurar-datos accesible desde el menu
+  // Mas en seccion "Si algo esta mal". Aqui en sync solo dejamos un link
+  // discreto al final para vendedores que llegaron buscando arreglar sync.
 
   return (
     <ScrollView
@@ -94,42 +71,17 @@ export default function SyncScreen() {
         </View>
       </Animated.View>
 
-      {/* Error banner — audit 2026-05-19: traducir mensajes técnicos
-          (axios "Network Error" / "Request failed status 401") a algo
-          accionable para el vendedor en campo. */}
-      {status === 'error' && error && (
-        <View style={styles.errorBanner}>
-          <AlertTriangle size={18} color="#dc2626" />
-          <Text style={styles.errorText}>{translateSyncError(error, isOnline)}</Text>
-        </View>
-      )}
-
-      {/* Conflict banner */}
-      {lastSummary && lastSummary.conflicts > 0 && (
-        <View style={styles.conflictBanner}>
-          <AlertTriangle size={18} color="#d97706" />
-          <Text style={styles.conflictText}>
-            {lastSummary.conflicts} registro{lastSummary.conflicts !== 1 ? 's' : ''} actualizado{lastSummary.conflicts !== 1 ? 's' : ''} por el servidor
-          </Text>
-        </View>
-      )}
-
-      {/* Last Sync */}
-      <Text style={styles.sectionLabel}>DETALLES</Text>
-      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
-        <Card className="mb-4">
-          <View style={styles.syncRow}>
-            <CheckCircle size={18} color={lastSyncAt ? '#16a34a' : '#94a3b8'} style={{ marginRight: 12 }} />
-            <View style={styles.syncContent}>
-              <Text style={styles.syncLabel}>Última sincronización</Text>
-              <Text style={styles.syncValue}>{formatLastSync(lastSyncAt, dateTimeFmt)}</Text>
-            </View>
-          </View>
-        </Card>
+      {/* Sprint 1 audit: SyncStatusCard unificado reemplaza error banner +
+          boton sync separado + offline hint. Maneja los 7 estados (idle,
+          syncing pull/push/attachments, success, error transient/auth/client,
+          offline) con feedback claro al usuario. */}
+      <Animated.View entering={FadeInDown.duration(400).delay(150)} style={styles.statusCardWrap}>
+        <SyncStatusCard />
       </Animated.View>
 
-      {/* Pending */}
-      <Animated.View entering={FadeInDown.duration(400).delay(300)}>
+      {/* Detalles adicionales: pendientes desglosados (no duplica el card; informativo) */}
+      <Animated.View entering={FadeInDown.duration(400).delay(250)}>
+        <Text style={styles.sectionLabel}>DETALLES</Text>
         <Card className="mb-4">
           <View style={styles.syncRow}>
             <Clock size={18} color={pendingCount > 0 ? '#d97706' : '#94a3b8'} style={{ marginRight: 12 }} />
@@ -141,7 +93,6 @@ export default function SyncScreen() {
         </Card>
       </Animated.View>
 
-      {/* Pending Attachments */}
       {pendingAttachments > 0 && (
         <Card className="mb-4">
           <View style={styles.syncRow}>
@@ -154,59 +105,34 @@ export default function SyncScreen() {
         </Card>
       )}
 
-      {/* Last Sync Summary */}
-      {lastSummary && (lastSummary.pulled > 0 || lastSummary.pushed > 0) && (
-        <>
-        <Text style={styles.sectionLabel}>RESUMEN</Text>
+      {/* Ultima sync timestamp tradicional (complementa el card que muestra "hace X min" informal) */}
+      {lastSyncAt && (
         <Card className="mb-4">
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <ArrowDownToLine size={16} color={COLORS.primary} />
-              <Text style={styles.summaryValue}>{lastSummary.pulled}</Text>
-              <Text style={styles.summaryLabel}>recibidos</Text>
+          <View style={styles.syncRow}>
+            <Clock size={18} color="#94a3b8" style={{ marginRight: 12 }} />
+            <View style={styles.syncContent}>
+              <Text style={styles.syncLabel}>Última sincronización</Text>
+              <Text style={styles.syncValue}>{formatLastSync(lastSyncAt, dateTimeFmt)}</Text>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <ArrowUpFromLine size={16} color={COLORS.salesGreen} />
-              <Text style={styles.summaryValue}>{lastSummary.pushed}</Text>
-              <Text style={styles.summaryLabel}>enviados</Text>
-            </View>
-            {lastSummary.conflicts > 0 && (
-              <>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                  <AlertTriangle size={16} color="#d97706" />
-                  <Text style={styles.summaryValue}>{lastSummary.conflicts}</Text>
-                  <Text style={styles.summaryLabel}>conflictos</Text>
-                </View>
-              </>
-            )}
           </View>
         </Card>
-        </>
       )}
 
-      {/* Sync Button — indigo */}
+      {/* C.2 hardening — link discreto a la sub-pantalla dedicada de borrado.
+          NO duplicamos el boton aqui para evitar el tap accidental que
+          motivó el hardening. El usuario que tiene problemas con sus datos
+          encontrara la opcion en Mas > Si algo esta mal > Sincronización completa. */}
       <TouchableOpacity
-        style={[styles.syncButton, !isOnline && styles.syncButtonDisabled]}
-        onPress={sync}
-        disabled={!isOnline || isSyncing}
-        activeOpacity={0.8}
-        accessibilityLabel="Sincronizar ahora"
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !isOnline || isSyncing, busy: isSyncing }}
+        style={styles.troubleLink}
+        onPress={() => router.push('/(tabs)/restaurar-datos' as any)}
+        activeOpacity={0.7}
+        accessibilityLabel="Problemas con tus datos"
+        accessibilityRole="link"
       >
-        <RefreshCcw size={18} color={COLORS.headerText} />
-        <Text style={styles.syncButtonText}>
-          {isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
+        <Text style={styles.troubleLinkText}>
+          Problemas con tus datos?
         </Text>
       </TouchableOpacity>
-
-      {!isOnline && (
-        <Text style={styles.offlineHint}>
-          Conéctate a internet para sincronizar
-        </Text>
-      )}
       </View>
     </ScrollView>
   );
@@ -226,6 +152,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
   body: { paddingHorizontal: 16, paddingTop: 20 },
+  statusCardWrap: { marginBottom: 16 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
@@ -301,5 +228,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textTertiary,
     marginTop: 12,
+  },
+  troubleLink: {
+    marginTop: 32,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  troubleLinkText: {
+    fontSize: 13,
+    color: COLORS.textTertiary,
+    textDecorationLine: 'underline',
   },
 });

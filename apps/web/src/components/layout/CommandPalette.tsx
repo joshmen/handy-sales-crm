@@ -65,18 +65,22 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
       return;
     }
 
-    let cancelled = false;
+    // Abort previous in-flight search. The signal is forwarded to each service
+    // call so axios can cancel the underlying HTTP request, and signal.aborted
+    // is still used as a guard to prevent stale responses from overwriting state.
+    const controller = new AbortController();
+    const { signal } = controller;
     setLoading(true);
 
     const search = async () => {
       try {
         const [clientsRes, productsRes, ordersRes] = await Promise.allSettled([
-          clientService.getClients({ search: debouncedQuery, limit: 5 }),
-          productService.getProducts({ search: debouncedQuery, limit: 5 }),
-          orderService.getOrders({ busqueda: debouncedQuery, pageSize: 5 }),
+          clientService.getClients({ search: debouncedQuery, limit: 5, signal }),
+          productService.getProducts({ search: debouncedQuery, limit: 5, signal }),
+          orderService.getOrders({ busqueda: debouncedQuery, pageSize: 5, signal }),
         ]);
 
-        if (cancelled) return;
+        if (signal.aborted) return;
 
         setResults({
           clients: clientsRes.status === 'fulfilled' ? clientsRes.value.clients : [],
@@ -86,12 +90,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
       } catch {
         // silently fail — partial results are fine
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     };
 
     search();
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, [debouncedQuery]);
 
   // Reset on close

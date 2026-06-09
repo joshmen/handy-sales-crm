@@ -15,6 +15,7 @@ import DetalleDevolucion from './models/DetalleDevolucion';
 import { round2 } from '@/utils/money';
 import { calculateLineAmounts } from '@/utils/lineAmountCalculator';
 import { captureOrderLocation } from '@/services/captureOrderLocation';
+import { eagerSavePedido } from '@/services/eagerSavePedido';
 import Toast from 'react-native-toast-message';
 
 /**
@@ -201,8 +202,8 @@ export async function createPedidoOffline(
     });
   }
 
-  return database.write(async () => {
-    const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
+  const pedido = await database.write(async () => {
+    const created = await database.get<Pedido>('pedidos').create((record: any) => {
       record.serverId = null;
       record.clienteId = clienteId;
       record.clienteServerId = clienteServerId;
@@ -227,7 +228,7 @@ export async function createPedidoOffline(
       const lineSubtotal = item.precioUnitario * item.cantidad;
       await database.get<DetallePedido>('detalle_pedidos').create((record: any) => {
         record.serverId = null;
-        record.pedidoId = pedido.id;
+        record.pedidoId = created.id;
         record.productoId = item.productoId;
         record.productoServerId = item.productoServerId;
         record.productoNombre = item.productoNombre;
@@ -248,8 +249,16 @@ export async function createPedidoOffline(
       });
     }
 
-    return pedido;
+    return created;
   });
+
+  // B.1 eager-save (fix prod 2026-06-03 post-incidente Rodrigo).
+  // Fire-and-forget: si hay red, el server tiene el Pedido como Borrador en <1s,
+  // garantizando durabilidad aún si el SQLite local se borra (uninstall, wipe).
+  // Si NO hay red: falla silente, el sync push normal eventualmente lo sube.
+  void eagerSavePedido(pedido, items);
+
+  return pedido;
 }
 
 /**
@@ -311,7 +320,7 @@ export async function createVentaDirectaOffline(
     });
   }
 
-  return database.write(async () => {
+  const result = await database.write(async () => {
     const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
       record.serverId = null;
       record.clienteId = clienteId;
@@ -440,6 +449,14 @@ export async function createVentaDirectaOffline(
 
     return { pedido, cobro };
   });
+
+  // B.1 eager-save (fix prod 2026-06-03 post-incidente Rodrigo).
+  // Fire-and-forget para venta directa también. El server lo persiste como
+  // Borrador (NO afecta inventario server-side) — la promoción a Entregado
+  // pasa por el sync push normal vía MobileVentaDirectaEndpoints.
+  void eagerSavePedido(result.pedido, items);
+
+  return result;
 }
 
 /**
@@ -453,7 +470,10 @@ export async function createCobroOffline(
   metodoPago: number,
   referencia?: string,
   notas?: string,
-  pedidoId?: string | null
+  pedidoId?: string | null,
+  // PR 5 cobros 3 modos: 0=PorPedido, 1=AbonoFifo, 2=Anticipo. Si undefined,
+  // el mapper rawToCobroDto lo derivara al sync time desde presencia de pedidoId.
+  modo?: number
 ): Promise<Cobro> {
   return database.write(async () => {
     return database.get<Cobro>('cobros').create((record: any) => {
@@ -468,6 +488,7 @@ export async function createCobroOffline(
       record.notas = notas || null;
       record.activo = true;
       record.version = 1;
+      record.modo = typeof modo === 'number' ? modo : null;
       record.updatedAt = new Date();
     });
   });

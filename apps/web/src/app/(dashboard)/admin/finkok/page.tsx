@@ -14,6 +14,7 @@ import { Loader2, RefreshCw, CheckCircle, AlertCircle, AlertTriangle, Pause, Pla
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Modal } from '@/components/ui/Modal';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 import {
   listEmitters,
   suspendEmitter,
@@ -24,6 +25,8 @@ import {
 } from '@/services/api/finkokAdmin';
 
 export default function FinkokAdminPage() {
+  const t = useTranslations('admin.finkok');
+  const ta = useTranslations('admin');
   const [emitters, setEmitters] = useState<EmitterRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'suspended' | 'frozen'>('all');
@@ -150,11 +153,11 @@ export default function FinkokAdminPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Administración' },
-        { label: 'Integración Finkok' },
+        { label: ta('breadcrumb') },
+        { label: t('breadcrumb') },
       ]}
-      title="Integración Finkok"
-      subtitle="Gestión de emisores SAT registrados bajo la cuenta partner"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={
         <button
           onClick={fetchEmitters}
@@ -162,47 +165,47 @@ export default function FinkokAdminPage() {
           className="flex items-center gap-2 px-3 py-2 text-sm text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refrescar
+          {t('refresh')}
         </button>
       }
     >
       <div className="space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3" data-testid="finkok-kpis">
-          <KpiCard label="Total emisores" value={kpis.total} />
-          <KpiCard label="Activos" value={kpis.active} accent="text-green-600" />
-          <KpiCard label="Suspendidos" value={kpis.suspended} accent="text-red-500" />
-          <KpiCard label="Prepago" value={kpis.prepaid} />
-          <KpiCard label="Ilimitado" value={kpis.unlimited} />
+          <KpiCard label={t('kpi.total')} value={kpis.total} />
+          <KpiCard label={t('kpi.active')} value={kpis.active} accent="text-green-600" />
+          <KpiCard label={t('kpi.suspended')} value={kpis.suspended} accent="text-red-500" />
+          <KpiCard label={t('kpi.prepaid')} value={kpis.prepaid} />
+          <KpiCard label={t('kpi.unlimited')} value={kpis.unlimited} />
         </div>
 
         {/* Filters */}
         <div className="flex gap-3 flex-wrap items-center">
-          <label className="text-xs font-medium text-foreground/80">Status:</label>
+          <label className="text-xs font-medium text-foreground/80">{t('filters.status')}:</label>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
             className="text-sm px-2 py-1.5 border border-border-default rounded bg-background"
           >
-            <option value="all">Todos</option>
-            <option value="active">Activos</option>
-            <option value="suspended">Suspendidos</option>
-            <option value="frozen">Frozen</option>
+            <option value="all">{t('filters.all')}</option>
+            <option value="active">{t('filters.active')}</option>
+            <option value="suspended">{t('filters.suspended')}</option>
+            <option value="frozen">{t('filters.frozen')}</option>
           </select>
 
-          <label className="text-xs font-medium text-foreground/80 ml-2">Modalidad:</label>
+          <label className="text-xs font-medium text-foreground/80 ml-2">{t('filters.mode')}:</label>
           <select
             value={filterMode}
             onChange={(e) => setFilterMode(e.target.value as typeof filterMode)}
             className="text-sm px-2 py-1.5 border border-border-default rounded bg-background"
           >
-            <option value="all">Todas</option>
-            <option value="P">Prepago</option>
-            <option value="O">Ilimitado</option>
+            <option value="all">{t('filters.allModes')}</option>
+            <option value="P">{t('filters.prepaid')}</option>
+            <option value="O">{t('filters.unlimited')}</option>
           </select>
 
           <span className="text-xs text-muted-foreground ml-auto">
-            {filtered.length} de {emitters.length} emisores
+            {t('counter', { filtered: filtered.length, total: emitters.length })}
           </span>
         </div>
 
@@ -211,24 +214,42 @@ export default function FinkokAdminPage() {
           {loading && emitters.length === 0 ? (
             <div className="py-16 text-center">
               <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Cargando emisores desde Finkok...</p>
+              <p className="text-sm text-muted-foreground">{t('loading')}</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-sm text-muted-foreground">No hay emisores con esos filtros.</p>
+            <div className="py-16 text-center px-6">
+              {emitters.length === 0 ? (
+                <>
+                  <AlertCircle className="w-8 h-8 mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+                  <p className="text-sm font-medium text-muted-foreground mb-1">
+                    {t('emptyTitle')}
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 max-w-md mx-auto">
+                    {t.rich('emptyDesc', {
+                      fiscal: () => (
+                        <span className="font-mono text-[11px] bg-surface-3 px-1.5 py-0.5 rounded">
+                          {t('fiscalPath')}
+                        </span>
+                      ),
+                    })}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('noResults')}</p>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-surface-1 border-b border-border-subtle">
-                    <Th>RFC</Th>
-                    <Th>Razón Social</Th>
-                    <Th>Status</Th>
-                    <Th>Modalidad</Th>
-                    <Th>Créditos</Th>
-                    <Th>Registrado</Th>
-                    <Th className="text-right">Acciones</Th>
+                    <Th>{t('table.rfc')}</Th>
+                    <Th>{t('table.razonSocial')}</Th>
+                    <Th>{t('table.status')}</Th>
+                    <Th>{t('table.mode')}</Th>
+                    <Th>{t('table.credits')}</Th>
+                    <Th>{t('table.registered')}</Th>
+                    <Th className="text-right">{t('table.actions')}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -254,12 +275,13 @@ export default function FinkokAdminPage() {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center justify-end gap-1">
-                          {actionLoadingRfc === e.rfc && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                          {actionLoadingRfc === e.rfc && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                           {e.status === 'active' && (
                             <button
                               onClick={() => handleSuspend(e.rfc)}
                               disabled={actionLoadingRfc === e.rfc}
-                              title="Suspender"
+                              title={t('actions.suspend')}
+                              aria-label={t('actions.suspend')}
                               className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 disabled:opacity-50"
                               data-testid={`suspend-${e.rfc}`}
                             >
@@ -270,7 +292,8 @@ export default function FinkokAdminPage() {
                             <button
                               onClick={() => handleReactivate(e.rfc)}
                               disabled={actionLoadingRfc === e.rfc}
-                              title="Reactivar"
+                              title={t('actions.reactivate')}
+                              aria-label={t('actions.reactivate')}
                               className="p-1.5 rounded hover:bg-green-50 dark:hover:bg-green-950/30 text-green-600 disabled:opacity-50"
                               data-testid={`reactivate-${e.rfc}`}
                             >
@@ -280,7 +303,8 @@ export default function FinkokAdminPage() {
                           {e.typeUser === 'P' && (
                             <button
                               onClick={() => { setCreditsModalRfc(e.rfc); setCreditsInput('100'); }}
-                              title="Asignar créditos"
+                              title={t('actions.assignCredits')}
+                              aria-label={t('actions.assignCredits')}
                               className="p-1.5 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-600"
                               data-testid={`assign-credits-${e.rfc}`}
                             >
@@ -289,7 +313,8 @@ export default function FinkokAdminPage() {
                           )}
                           <button
                             onClick={() => { setSwitchModalRfc(e.rfc); setSwitchNewMode(e.typeUser === 'O' ? 'P' : 'O'); }}
-                            title="Cambiar modalidad prepago/ilimitado"
+                            title={t('actions.switchMode')}
+                            aria-label={t('actions.switchMode')}
                             className="p-1.5 rounded hover:bg-purple-50 dark:hover:bg-purple-950/30 text-purple-600"
                             data-testid={`switch-mode-${e.rfc}`}
                           >

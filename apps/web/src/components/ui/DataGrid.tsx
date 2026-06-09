@@ -58,6 +58,7 @@ export interface DataGridProps<T> {
   emptyIcon?: React.ReactNode;
   emptyTitle?: string;
   emptyMessage?: string;
+  emptyAction?: React.ReactNode;
 
   mobileCardRenderer?: (item: T) => React.ReactNode;
 
@@ -81,6 +82,7 @@ export function DataGrid<T>({
   emptyIcon,
   emptyTitle,
   emptyMessage,
+  emptyAction,
   mobileCardRenderer,
   className,
 }: DataGridProps<T>) {
@@ -176,6 +178,7 @@ export function DataGrid<T>({
               {emptyIcon && <div className="mb-3 text-muted-foreground/60">{emptyIcon}</div>}
               <p className="text-sm font-medium text-muted-foreground">{resolvedEmptyTitle}</p>
               {emptyMessage && <p className="text-xs text-muted-foreground mt-1">{emptyMessage}</p>}
+              {emptyAction && <div className="mt-4">{emptyAction}</div>}
             </div>
           ) : (
             data.map((item, idx) => {
@@ -235,6 +238,7 @@ export function DataGrid<T>({
             {emptyIcon && <div className="mb-3 text-muted-foreground/60">{emptyIcon}</div>}
             <p className="text-sm font-medium text-muted-foreground">{resolvedEmptyTitle}</p>
             {emptyMessage && <p className="text-xs text-muted-foreground mt-1">{emptyMessage}</p>}
+            {emptyAction && <div className="mt-4">{emptyAction}</div>}
           </div>
         ) : (
           <div className={`divide-y divide-border-subtle ${loading ? 'opacity-50' : ''}`}>

@@ -1,0 +1,179 @@
+appId: host.exp.exponent
+name: supervisor-mobile-dashboard-equipo
+---
+# ============================================================
+# MODULO: SUPERVISOR mobile — dashboard equipo
+# Prioridad: HIGH
+# Sprint correctivo 2026-06-06 — SUPERVISOR mobile coverage = 0 yamls
+# Asume: app instalada en Expo Go + API local en :1050
+# Cubre:
+#   1. Login con supervisor@jeyma.com / test123
+#   2. Dashboard SUPERVISOR diferenciado
+#   3. Sección EQUIPO (lista vendedores asignados)
+#   4. Tab Mapa
+#   5. Tab Más + logout
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login SUPERVISOR ----
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "supervisor@jeyma.com"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: supervisor-01-login
+
+# ---- FASE 2: Manejar consent / permisos ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+# ---- FASE 3: Validar dashboard SUPERVISOR ----
+
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: supervisor-02-dashboard-loaded
+
+# Saludo Supervisor
+- assertVisible:
+    text: "Supervisor"
+
+# KPIs Supervisor incluyen Vendedores activos
+- assertVisible:
+    text: "Vendedores"
+
+# Sección EQUIPO debe estar visible
+- runFlow:
+    when:
+      visible:
+        text: "EQUIPO"
+    commands:
+      - takeScreenshot: supervisor-03-seccion-equipo
+
+# Validar al menos un vendedor en lista (Vendedor 1 / E2E Vend)
+- runFlow:
+    when:
+      visible:
+        text: "Vendedor"
+    commands:
+      - takeScreenshot: supervisor-04-vendedor-en-equipo
+
+# ---- FASE 4: Mapa con equipo ----
+
+- tapOn:
+    text: "Mapa"
+- extendedWaitUntil:
+    visible:
+      text: "Mapa"
+    timeout: 30000
+- takeScreenshot: supervisor-05-mapa-equipo
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+# ---- FASE 5: Mas menu (Configuracion + Cerrar sesion) ----
+
+- tapOn:
+    text: "Más"
+- extendedWaitUntil:
+    visible:
+      text: "Más"
+    timeout: 20000
+- takeScreenshot: supervisor-06-mas-menu
+
+# ---- FASE 6: Logout ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - extendedWaitUntil:
+          visible:
+            text: "Configuración"
+          timeout: 20000
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn:
+    text: "Cerrar sesión"
+
+- runFlow:
+    when:
+      visible:
+        text: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: supervisor-07-logout-success

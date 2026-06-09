@@ -241,6 +241,15 @@ export default function DiscountsPage() {
   const globalCount = discounts.filter(d => d.tipoAplicacion === 'Global').length;
   const productCount = discounts.filter(d => d.tipoAplicacion === 'Producto').length;
 
+  // Conteo de inactivos del tab activo (para empty state informativo)
+  const inactiveCountInTab = discounts.filter(d =>
+    (activeTab === 'global' ? d.tipoAplicacion === 'Global' : d.tipoAplicacion === 'Producto')
+    && !d.activo
+  ).length;
+  const tabTotalCount = activeTab === 'global' ? globalCount : productCount;
+  const hasOnlyInactive = !showInactive && tabTotalCount > 0 && inactiveCountInTab === tabTotalCount;
+  const hasSearchNoMatch = !!searchTerm && filteredDiscounts.length === 0;
+
   const totalItems = filteredDiscounts.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const paginatedDiscounts = filteredDiscounts.slice(
@@ -549,8 +558,35 @@ export default function DiscountsPage() {
               loading={loading}
               loadingMessage={t('loadingDiscounts')}
               emptyIcon={<Percent className="w-16 h-16 text-orange-300" />}
-              emptyTitle={t('noDiscounts')}
-              emptyMessage={t('noDiscountsDesc')}
+              emptyTitle={
+                hasSearchNoMatch
+                  ? t('noMatchingDiscounts')
+                  : hasOnlyInactive
+                    ? t('noActiveDiscounts')
+                    : t('noDiscounts')
+              }
+              emptyMessage={
+                hasSearchNoMatch
+                  ? t('noMatchingDiscountsDesc')
+                  : hasOnlyInactive
+                    ? t('noActiveDiscountsDesc', { count: inactiveCountInTab })
+                    : t('noDiscountsDesc')
+              }
+              emptyAction={
+                hasOnlyInactive ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === 'global') setShowInactiveGlobal(true);
+                      else setShowInactiveProduct(true);
+                      setCurrentPage(1);
+                    }}
+                    className="px-4 py-2 rounded-md bg-success text-success-foreground hover:opacity-90 text-sm font-medium"
+                  >
+                    {t('showAllDiscounts')}
+                  </button>
+                ) : undefined
+              }
               onRowClick={(d) => handleOpenEdit(d)}
               sort={{
                 key: sortKey,

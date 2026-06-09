@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Threading.RateLimiting;
+using HandySuites.Api.BackgroundServices;
 using HandySuites.Api.Configuration;
 using HandySuites.Api.Endpoints;
 using HandySuites.Api.Hubs;
@@ -183,6 +184,10 @@ builder.Services.AddHostedService<SubscriptionMonitor>();
 builder.Services.AddHostedService<AutomationEngine>();
 builder.Services.AddHostedService<MaterializedViewRefresher>();
 builder.Services.AddHostedService<HandySuites.Api.Jobs.AggregateLocationHistoryJob>();
+// H-2 Outbox MVP (2026-06-07) — drains the notification_outbox queue every 30s.
+builder.Services.AddHostedService<OutboxProcessor>();
+// H-2 Outbox retention (item 5.3) — daily purge of Sent/Failed rows older than 30 days.
+builder.Services.AddHostedService<OutboxRetentionService>();
 
 var app = builder.Build();
 
@@ -230,6 +235,7 @@ app.MapClienteVisitaEndpoints();
 app.MapDeviceSessionEndpoints();
 app.MapRutaVendedorEndpoints();
 app.MapSyncEndpoints();
+app.MapAdminSyncHealthEndpoints();
 app.MapUsuarioEndpoints();
 app.MapTeamLocationEndpoints();
 app.MapProductoEndpoints();

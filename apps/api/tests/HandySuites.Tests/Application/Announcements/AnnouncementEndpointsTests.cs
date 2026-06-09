@@ -266,29 +266,10 @@ public class AnnouncementEndpointsTests : IClassFixture<CustomWebApplicationFact
         Assert.False(found, "Announcement with DisplayMode=Notification should NOT appear in /banners endpoint");
     }
 
-    [Fact(Skip = "SuperAdmin announcements without TargetRoles are filtered out for Admin users by design")]
-    public async Task BannersEndpoint_BothMode_IsVisible()
-    {
-        // Create with Both displayMode
-        var dto = new { titulo = "Both Mode", mensaje = "Test", tipo = "Banner", displayMode = "Both" };
-        await _superAdminClient.PostAsJsonAsync("/api/superadmin/announcements", dto);
-
-        // Fetch banners as Admin user
-        var response = await _client.GetAsync("/api/notificaciones/banners");
-        response.EnsureSuccessStatusCode();
-
-        var banners = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var found = false;
-        foreach (var b in banners.EnumerateArray())
-        {
-            if (b.GetProperty("titulo").GetString() == "Both Mode")
-            {
-                found = true;
-                break;
-            }
-        }
-        Assert.True(found, "Announcement with DisplayMode=Both should appear in /banners endpoint");
-    }
+    // Note: presence-and-payload coverage for DisplayMode=Both on /banners is provided by
+    // BannersEndpoint_ReturnsDisplayModeInResponse below (it asserts both that the banner
+    // is found AND that the displayMode field round-trips correctly). A separate
+    // presence-only test was removed as redundant.
 
     [Fact]
     public async Task BannersEndpoint_ReturnsDisplayModeInResponse()

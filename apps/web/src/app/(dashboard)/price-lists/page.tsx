@@ -154,6 +154,14 @@ export default function PriceListsPage() {
     currentPage * pageSize
   );
 
+  // Empty-state derivations (Bug #10 - paridad con /discounts).
+  // Si todos los items son inactivos y showInactive=false, el usuario
+  // ve "No hay listas" sin saber que sus datos solo están ocultos por filtro.
+  const inactiveCountTotal = priceLists.filter((x) => !x.activo).length;
+  const totalCount = priceLists.length;
+  const hasOnlyInactive = !showInactive && totalCount > 0 && inactiveCountTotal === totalCount;
+  const hasSearchNoMatch = !!searchTerm && filteredLists.length === 0;
+
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -411,8 +419,34 @@ export default function PriceListsPage() {
             loading={loading}
             loadingMessage={t('loadingLists')}
             emptyIcon={<CurrencyDollar className="w-16 h-16 text-green-300" weight="duotone" />}
-            emptyTitle={t('noLists')}
-            emptyMessage={searchTerm ? t('noListsSearch') : t('noListsDesc')}
+            emptyTitle={
+              hasSearchNoMatch
+                ? t('noMatchingLists')
+                : hasOnlyInactive
+                  ? t('noActiveLists')
+                  : t('noLists')
+            }
+            emptyMessage={
+              hasSearchNoMatch
+                ? t('noMatchingListsDesc')
+                : hasOnlyInactive
+                  ? t('noActiveListsDesc', { count: inactiveCountTotal })
+                  : t('noListsDesc')
+            }
+            emptyAction={
+              hasOnlyInactive ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInactive(true);
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2 rounded-md bg-success text-success-foreground hover:opacity-90 text-sm font-medium"
+                >
+                  {t('showAllLists')}
+                </button>
+              ) : undefined
+            }
             mobileCardRenderer={(list) => (
               <div className={!list.activo ? 'opacity-60' : ''}>
                 <div className="flex items-center gap-3 mb-2">

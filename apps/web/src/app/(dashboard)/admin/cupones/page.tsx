@@ -432,7 +432,7 @@ export default function CuponesAdminPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {saving ? (
               <>
@@ -525,7 +525,7 @@ export default function CuponesAdminPage() {
           <p className="mt-4 text-muted-foreground">{t('noCoupons')}</p>
           <button
             onClick={openCreate}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-success-foreground bg-success rounded-lg hover:bg-success/90"
           >
             <Plus className="h-4 w-4" />
             {t('createFirst')}

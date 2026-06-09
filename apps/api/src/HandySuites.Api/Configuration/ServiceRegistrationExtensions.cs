@@ -100,6 +100,7 @@ using HandySuites.Application.Notifications.Interfaces;
 using HandySuites.Application.Notifications.Services;
 using HandySuites.Infrastructure.Notifications.Repositories;
 using HandySuites.Infrastructure.Notifications.Services;
+using HandySuites.Infrastructure.Notifications.Outbox;
 using HandySuites.Api.Hubs;
 using HandySuites.Application.Interfaces;
 using HandySuites.Application.Impersonation.Interfaces;
@@ -304,6 +305,13 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ISyncRepository, SyncRepository>();
         services.AddScoped<SyncService>();
 
+        // B.2 — Telemetría sync (admin dashboard /sync-health expone backlog
+        // por vendedor para detección proactiva pre-incidente Rodrigo 2026-06-03)
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryRepository,
+                            HandySuites.Infrastructure.Repositories.SyncTelemetryRepository>();
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryService,
+                            HandySuites.Application.Telemetry.Services.SyncTelemetryService>();
+
         // Notification Services
         services.AddScoped<IFcmService, FcmService>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -311,9 +319,16 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<NotificationSettingsService>();
 
+        // H-2 Outbox MVP (2026-06-07) — durable queue for fire-and-forget
+        // notifications. OutboxProcessor BackgroundService is registered in
+        // Program.cs alongside the other AddHostedService<> entries.
+        services.AddScoped<IOutboxService, OutboxService>();
+
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();
         services.AddScoped<CobroService>();
+        // 2026-06-08 PR 2 plan eager-drifting cobros: distribuidor FIFO para modo AbonoFifo.
+        services.AddScoped<ICobroFifoAplicadorService, CobroFifoAplicadorService>();
         services.AddValidatorsFromAssemblyContaining<CobroCreateDtoValidator>();
 
         // Tenant Repository (Platform-level)

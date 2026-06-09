@@ -6,9 +6,36 @@ namespace HandySuites.Application.Pedidos.Interfaces;
 public enum CambiarEstadoStatus { Ok, NotFound, TransicionInvalida, SinRutaActiva }
 public record CambiarEstadoOutcome(CambiarEstadoStatus Status, EstadoPedido? EstadoActual);
 
+/// <summary>
+/// Outcome del eager-save (B.1). Si Idempotent=true, el ServerId apunta al
+/// Pedido pre-existente y NO se modificó nada — el cliente debe usar ese serverId
+/// para próximos sync push sin duplicar.
+/// </summary>
+public record PedidoEagerSaveOutcome(int ServerId, EstadoPedido Estado, DateTime AckedAt, bool Idempotent);
+
 public interface IPedidoRepository
 {
     Task<int> CrearAsync(PedidoCreateDto dto, int usuarioId, int tenantId);
+    /// <summary>
+    /// B.1 eager-save (fix prod 2026-06-04). Crea un Pedido con Estado=Borrador
+    /// idempotentemente vía mobile_record_id. NO ejecuta BOGO, NO valida stock,
+    /// NO decrementa inventario, NO toca RutasCarga — solo persiste para
+    /// durabilidad. Genera NumeroPedido porque la columna es NOT NULL (schema
+    /// constraint pre-existente). La promoción Borrador → Confirmado/Entregado
+    /// (con sus side effects) pasa por el sync push normal (UpsertPedidoAsync).
+    ///
+    /// Si ya existe un Pedido con (mobile_record_id, tenant_id), retorna su id
+    /// existente con outcome.Idempotent=true SIN tocar nada.
+    /// </summary>
+    Task<PedidoEagerSaveOutcome> EagerSaveAsync(PedidoEagerSaveDto dto, int usuarioId, int tenantId);
+
+    /// <summary>
+    /// C.1 — Drafts huérfanos. Lista Pedidos en Estado=Borrador cuyo CreadoEn
+    /// es >= cutoffDate. Soporta filtro opcional por usuarioId (supervisor
+    /// inspeccionando un vendedor específico).
+    /// </summary>
+    Task<List<OrphanDraftDto>> GetOrphanDraftsAsync(DateTime cutoffDate, int tenantId, int? usuarioId = null);
+
     Task<PedidoDto?> ObtenerPorIdAsync(int id, int tenantId);
     Task<PedidoDto?> ObtenerPorNumeroAsync(string numeroPedido, int tenantId);
     Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId, List<int>? filterByUsuarioIds = null);

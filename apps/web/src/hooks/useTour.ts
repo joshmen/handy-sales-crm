@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { Driver } from 'driver.js';
 import { getTourForPathname } from '@/data/tours';
 import { restoreDrawerFromTour, closeDrawerForTour, consumeTourContinuation } from '@/data/tours/types';
@@ -45,6 +45,7 @@ function ensureDriverCSS() {
 export function useTour() {
   const pathname = usePathname();
   const tTours = useTranslations('tours');
+  const locale = useLocale();
   const driverRef = useRef<Driver | null>(null);
 
   const tourConfig = getTourForPathname(pathname);
@@ -85,7 +86,12 @@ export function useTour() {
       nextBtnText: tTours('nav.next'),
       prevBtnText: tTours('nav.prev'),
       doneBtnText: tourConfig.doneBtnText ? tTours(tourConfig.doneBtnText as Parameters<typeof tTours>[0]) : tTours('nav.done'),
-      progressText: tTours('nav.progress'),
+      // Audit code-quality 2026-06-05: progressText es consumido por driver.js
+      // que hace su propia interpolación `{{current}}` / `{{total}}`. next-intl
+      // (ICU MessageFormat) trata `{{` como sintaxis inválida y devuelve la key
+      // como fallback (`tours.nav.progress` literal). Hardcoded por locale para
+      // bypass — driver.js completa la sustitución.
+      progressText: locale === 'en' ? '{{current}} of {{total}}' : '{{current}} de {{total}}',
       onDestroyed: () => {
         if (driverRef.current?.isLastStep()) {
           markTourCompleted(tourId);

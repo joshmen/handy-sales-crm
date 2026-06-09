@@ -1,0 +1,77 @@
+appId: host.exp.exponent
+name: "Cobrar - Modo Anticipo (saldo a favor)"
+---
+
+# PR 5 cobros 3 modos: valida que el selector "Anticipo" funcione + el
+# ConfirmModal muestre el titulo de saldo a favor. NO confirma el cobro
+# (back antes del submit) para no contaminar el DB de test.
+
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- tapOn:
+    text: "Registrar Cobro"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Tipo de cobro"
+    timeout: 10000
+
+- takeScreenshot: cobrar-modo-selector-default
+
+# Tap en boton modo Anticipo (testID="cobro-modo-2")
+- tapOn:
+    id: "cobro-modo-2"
+
+# Assert warning amber visible
+- extendedWaitUntil:
+    visible: "Saldo a favor"
+    timeout: 5000
+
+- assertVisible:
+    text: "saldo a favor"
+
+- takeScreenshot: cobrar-modo-anticipo-selected
+
+# Seleccionar cualquier cliente (modo Anticipo no filtra por saldo)
+- tapOn:
+    text: "Seleccionar cliente"
+    optional: true
+
+- tapOn:
+    index: 0
+    optional: true
+
+# Ingresar monto
+- tapOn:
+    text: "0.00"
+    optional: true
+- inputText: "100"
+- hideKeyboard
+
+- takeScreenshot: cobrar-modo-anticipo-filled
+
+# Tap Confirmar Cobro → debe abrir ConfirmModal con titulo "Cobro como saldo a favor"
+- tapOn:
+    text: "Confirmar Cobro"
+
+- extendedWaitUntil:
+    visible: "Cobro como saldo a favor"
+    timeout: 5000
+
+- assertVisible:
+    text: "Cobro como saldo a favor"
+- assertVisible:
+    text: "quedara como saldo a favor"
+
+- takeScreenshot: cobrar-modo-anticipo-confirmmodal
+
+# Cancelar modal y volver
+- tapOn:
+    text: "Cancelar"
+    optional: true
+- back
+- tapOn: "Cobrar"

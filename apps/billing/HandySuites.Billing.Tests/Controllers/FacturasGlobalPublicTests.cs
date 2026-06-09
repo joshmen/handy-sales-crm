@@ -94,7 +94,8 @@ public class FacturasGlobalPublicTests : IDisposable
             orderReaderService ?? new StubOrderReaderService(),
             new FiscalCodeResolver(_context),
             new StubHttpClientFactory(), config,
-            new StubTenantEncryptionService());
+            new StubTenantEncryptionService(),
+            new StubFolioProvider());
 
         // Setup user claims
         var claims = new List<Claim>
@@ -280,7 +281,7 @@ public class FacturasGlobalPublicTests : IDisposable
     // Factura Global Tests
     // ═══════════════════════════════════════════════════════════════════════
 
-    [Fact(Skip = "Requires relational DB provider — InMemory does not support raw SQL/ExecuteUpdate")]
+    [Fact]
     public async Task PostFacturaGlobal_CreaFacturaConPedidosPublicoGeneral()
     {
         // Arrange — stub order reader returns 2 orders with detalles

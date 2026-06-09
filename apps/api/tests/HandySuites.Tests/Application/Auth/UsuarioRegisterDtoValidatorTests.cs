@@ -14,7 +14,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "",
-                Password = "password123",
+                Password = "PasswordValid12",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA"
             };
@@ -44,7 +44,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "",
                 NombreEmpresa = "Empresa SA"
             };
@@ -59,7 +59,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = ""
             };
@@ -74,7 +74,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
                 IdentificadorFiscal = new string('X', 21) // Excede 20 caracteres
@@ -90,7 +90,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
                 Contacto = new string('C', 101)
@@ -106,7 +106,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan Pérez",
                 NombreEmpresa = "Empresa SA",
                 IdentificadorFiscal = "XAXX010101000",
@@ -124,7 +124,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
                 IdentificadorFiscal = "ABC123", // Invalid RFC format
@@ -141,7 +141,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
                 IdentificadorFiscal = "XAXX010101000",
@@ -158,7 +158,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
                 IdentificadorFiscal = "900123456-7",
@@ -175,7 +175,7 @@ namespace HandySuites.Tests.Application.Usuarios
             var dto = new UsuarioRegisterDto
             {
                 Email = "user@demo.com",
-                Password = "segura123",
+                Password = "SeguraValid123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
                 IdentificadorFiscal = "",

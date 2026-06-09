@@ -67,7 +67,7 @@ public static class IntegrationEndpoints
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IntegrationService service)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsStrictAdmin)
             return Results.Forbid();
 
         try
@@ -87,7 +87,7 @@ public static class IntegrationEndpoints
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] IntegrationService service)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        if (!currentTenant.IsStrictAdmin)
             return Results.Forbid();
 
         try

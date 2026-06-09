@@ -45,7 +45,7 @@ public static class HealthEndpoints
                 {
                     jwtConfigured = !string.IsNullOrEmpty(configuration["JWT:SecretKey"]),
                     multitenancyEnabled = !string.IsNullOrEmpty(configuration["Multitenancy:DefaultTenantId"]),
-                    cloudinaryConfigured = !string.IsNullOrEmpty(configuration["Cloudinary:CloudName"])
+                    cloudinaryConfigured = !string.IsNullOrEmpty(configuration["Cloudinary:Url"])
                 },
 
                 system = new

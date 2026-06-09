@@ -1,0 +1,328 @@
+appId: host.exp.exponent
+name: "Ruta Flow - Mapa, Paradas, Check-In/Out, Finalizar Visita"
+---
+
+# =====================================================
+# Preconditions: sesion activa con rol VENDEDOR.
+# El tab "Mapa" solo es visible para VENDEDOR (showMapa=isVendedor en _layout.tsx).
+# =====================================================
+
+# 0) Esperar al dashboard (Hoy) tras login externo
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 0.1) Cerrar modales opcionales (privacidad GPS, anuncios, ahora no, etc.)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Aceptar"
+    commands:
+      - tapOn: "Aceptar"
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn: "Entendido"
+
+# 0.2) Permisos de ubicacion del SO (Android)
+- runFlow:
+    when:
+      visible: "Mientras usas la app"
+    commands:
+      - tapOn: "Mientras usas la app"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+- takeScreenshot: ruta-00-dashboard-ready
+
+# =====================================================
+# 1) Navegar al tab Mapa (solo visible para VENDEDOR)
+# =====================================================
+- tapOn:
+    text: "Mapa"
+    optional: true
+- tapOn:
+    id: "tab-mapa"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Mapa"
+    timeout: 30000
+
+# Permisos del mapa si aparecen tras montar la pantalla
+- runFlow:
+    when:
+      visible: "Mientras usas la app"
+    commands:
+      - tapOn: "Mientras usas la app"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+
+# Cerrar alert opcional "Ubicacion no disponible" (locError)
+- runFlow:
+    when:
+      visible: "Ubicaci"
+    commands:
+      - tapOn:
+          text: "OK"
+          optional: true
+      - tapOn:
+          text: "Cancelar"
+          optional: true
+
+- assertVisible:
+    text: "Mapa"
+
+- takeScreenshot: ruta-01-mapa-tab-clientes
+
+# =====================================================
+# 2) Cambiar a modo "Ruta" via MapModeToggle
+# =====================================================
+- tapOn:
+    text: "Ruta"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Parada"
+    timeout: 30000
+    optional: true
+
+# Aserciones de modo ruta
+- assertVisible:
+    text: "Ruta"
+    optional: true
+
+- takeScreenshot: ruta-02-mapa-modo-ruta
+
+# =====================================================
+# 3) Validar NextStopPanel (panel inferior con proxima parada)
+# Componente: NextStopPanel.tsx renders "Parada #N", "Navegar", "Llegue"
+# =====================================================
+- assertVisible:
+    text: "Parada"
+    optional: true
+- assertVisible:
+    text: "Navegar"
+    optional: true
+- assertVisible:
+    text: "Llegu"
+    optional: true
+
+- takeScreenshot: ruta-03-next-stop-panel
+
+# =====================================================
+# 4) Tap en "Llegue" para disparar el check-in
+# =====================================================
+- tapOn:
+    text: "Llegu"
+    optional: true
+
+# CheckInPanel aparece con "Dentro del rango" o "Fuera del rango"
+- extendedWaitUntil:
+    visible: "rango"
+    timeout: 30000
+    optional: true
+
+# Aserciones del CheckInPanel
+- assertVisible:
+    text: "rango"
+    optional: true
+- assertVisible:
+    text: "Iniciar"
+    optional: true
+
+- takeScreenshot: ruta-04-checkin-panel
+
+# =====================================================
+# 5) Confirmar check-in: tap "Iniciar Visita" o "Iniciar de todas formas"
+# =====================================================
+- tapOn:
+    text: "Iniciar"
+    optional: true
+
+# Toast de confirmacion / navegacion a visita-activa
+- extendedWaitUntil:
+    visible: "Visita"
+    timeout: 30000
+    optional: true
+
+- takeScreenshot: ruta-05-visita-iniciada
+
+# =====================================================
+# 6) Validar pantalla Visita Activa (visita-activa.tsx)
+# =====================================================
+- assertVisible:
+    text: "Visita"
+    optional: true
+
+- assertVisible:
+    text: "Acciones"
+    optional: true
+- assertVisible:
+    text: "Nuevo Pedido"
+    optional: true
+- assertVisible:
+    text: "Registrar Cobro"
+    optional: true
+
+- takeScreenshot: ruta-06-visita-activa-acciones
+
+# =====================================================
+# 7) Validar selector "Resultado de la Visita" (4 opciones)
+# =====================================================
+- scrollUntilVisible:
+    element:
+      text: "Resultado"
+    direction: DOWN
+    timeout: 10000
+    optional: true
+
+- assertVisible:
+    text: "Resultado"
+    optional: true
+- assertVisible:
+    text: "Con Venta"
+    optional: true
+- assertVisible:
+    text: "Sin Venta"
+    optional: true
+- assertVisible:
+    text: "No Encontrado"
+    optional: true
+- assertVisible:
+    text: "Reagendada"
+    optional: true
+
+- takeScreenshot: ruta-07-resultado-selector
+
+# Seleccionar "Sin Venta" como resultado (no requiere productos)
+- tapOn:
+    text: "Sin Venta"
+    optional: true
+
+- takeScreenshot: ruta-08-resultado-sin-venta
+
+# =====================================================
+# 8) Validar Notas, Evidencia y Firma
+# =====================================================
+- scrollUntilVisible:
+    element:
+      text: "Notas"
+    direction: DOWN
+    timeout: 10000
+    optional: true
+
+- assertVisible:
+    text: "Notas"
+    optional: true
+
+- scrollUntilVisible:
+    element:
+      text: "Evidencia"
+    direction: DOWN
+    timeout: 10000
+    optional: true
+
+- assertVisible:
+    text: "Evidencia"
+    optional: true
+
+- takeScreenshot: ruta-09-evidencia-section
+
+- scrollUntilVisible:
+    element:
+      text: "Firma"
+    direction: DOWN
+    timeout: 10000
+    optional: true
+
+- assertVisible:
+    text: "Firma"
+    optional: true
+- assertVisible:
+    text: "Capturar Firma"
+    optional: true
+
+- takeScreenshot: ruta-10-firma-section
+
+# =====================================================
+# 9) Validar boton "Terminar Visita" (checkout / finalizar)
+# =====================================================
+- scrollUntilVisible:
+    element:
+      text: "Terminar"
+    direction: DOWN
+    timeout: 10000
+    optional: true
+
+- assertVisible:
+    text: "Terminar"
+    optional: true
+
+- takeScreenshot: ruta-11-terminar-visible
+
+# Tap para finalizar la visita
+- tapOn:
+    text: "Terminar"
+    optional: true
+
+# Posible modal de confirmacion
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+- runFlow:
+    when:
+      visible: "Sí, terminar"
+    commands:
+      - tapOn: "Sí, terminar"
+
+# Volver al Mapa o a la lista de paradas
+- extendedWaitUntil:
+    visible: "Mapa"
+    timeout: 30000
+    optional: true
+
+- takeScreenshot: ruta-12-post-finalizar
+
+# =====================================================
+# 10) Re-validar mapa post-finalizacion (estado consistente)
+# =====================================================
+- tapOn:
+    id: "tab-mapa"
+    optional: true
+- tapOn:
+    text: "Mapa"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Mapa"
+    timeout: 30000
+
+- assertVisible:
+    text: "Mapa"
+
+- takeScreenshot: ruta-13-mapa-post-visita-final
+

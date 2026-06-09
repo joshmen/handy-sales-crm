@@ -65,9 +65,18 @@ public class CurrentTenant : ICurrentTenant
         }
     }
 
-    public bool IsAdmin => Role is "ADMIN" or "SUPER_ADMIN" or "SUPERVISOR";
+    public bool IsAdminOrAbove => Role is "ADMIN" or "SUPER_ADMIN" or "SUPERVISOR";
+
+    public bool IsStrictAdmin => Role is "ADMIN" or "SUPER_ADMIN";
 
     public bool IsSuperAdmin => Role == "SUPER_ADMIN";
 
     public bool IsSupervisor => Role == "SUPERVISOR";
+
+    // Sprint pre-prod #11: alias historico. Llama IsAdminOrAbove para no
+    // romper comportamiento existente, pero los 30+ call sites deben migrarse
+    // a IsStrictAdmin si su comentario decia "solo Admin y SuperAdmin"
+    // (sprint #12). El analyzer Obsolete avisa en cada uso.
+    [System.Obsolete("Usa IsAdminOrAbove (incluye SUPERVISOR) o IsStrictAdmin (solo ADMIN/SUPER_ADMIN).")]
+    public bool IsAdmin => IsAdminOrAbove;
 }

@@ -1,0 +1,288 @@
+# =============================================================================
+# Maestro E2E - VENDEDOR: devolucion con reembolso "Saldo a favor" (nota credito)
+# -----------------------------------------------------------------------------
+# Use case: ext-devolucion-nc
+# Role: VENDEDOR
+# Layer: mobile (React Native + Expo Go)
+#
+# CONTEXTO DEL CASO "NC" (Nota de Credito):
+#   El mobile NO emite CFDI tipo "Egreso/Nota de Credito" (eso solo existe en
+#   apps/billing/HandySuites.Billing.Api para web). El equivalente funcional
+#   en mobile es una Devolucion con TipoReembolso=SaldoFavor (=0), que aplica
+#   cliente.Saldo -= MontoTotal al sincronizar al backend
+#   (libs/HandySuites.Application + DevolucionesEndpoints.cs).
+#
+#   Ese saldo a favor es lo mas cercano a una "nota de credito" desde el rol
+#   VENDEDOR en mobile: NO hay timbrado SAT, NO hay PDF de NC. Solo:
+#     - DevolucionPedido(Estado=Activa, TipoReembolso=SaldoFavor, MontoTotal=X)
+#     - Side-effect: cliente.Saldo se decrementa en backend al sync.
+#
+#   PROD BUG / FIX TODO: Si el negocio exige una NC fiscal real desde mobile,
+#   hace falta:
+#     (a) endpoint Mobile que llame al Billing API CFDI tipo Egreso (hoy no existe),
+#     (b) UI mobile para CFDI receptor + uso CFDI + relacion fact origen,
+#     (c) UX para esperar timbrado del PAC (Finkok) + manejar fallos asincronos.
+#
+# COBERTURA DEL TEST (estado actual REAL):
+#   1. Login VENDEDOR (subflow existente).
+#   2. Tab "Ruta" -> primera parada completada con pedido.
+#   3. Tap "Registrar devolucion".
+#   4. Seleccionar 1 producto, qty 1 (via boton "+").
+#   5. Motivo "Cliente se retracta" (id=4) — caso clasico de NC.
+#   6. TipoReembolso "Saldo a favor" (id=0) — equivalente NC funcional.
+#   7. Adjuntar evidencia desde Galeria (obligatoria por validacion FE).
+#   8. Tap "Registrar devolucion" (btn-save).
+#   9. Assert toast "Devolucion registrada".
+#  10. Assert back a parada detail (regreso natural por router.back).
+#
+# PRECONDICIONES:
+#   - Backend docker-compose up + seed Jeyma con al menos 1 ruta del dia para
+#     vendedor1@jeyma.com con UNA parada en Entregado/Completada y pedido con
+#     >=1 detalle.
+#   - Emulador Android con permiso de galeria/storage ya concedido (o se
+#     resuelve por runFlow when:visible "Permitir").
+#   - Hay al menos 1 imagen en la galeria del emulador (si no hay, el test
+#     marca el fallo en paso 7 y se documenta como bug de entorno, no de codigo).
+#
+# NOTA sobre flakiness: dependemos de la primera parada del dia tener
+# pedido + estar Completada. El test seed (Jeyma) cumple esto; si la seed
+# cambia, este test falla y hay que revisar el seed antes que el codigo.
+# =============================================================================
+appId: host.exp.exponent
+name: "Vendedor: devolucion con saldo a favor (NC funcional)"
+tags:
+  - vendedor
+  - ruta
+  - devolucion
+  - nota-credito
+  - saldo-favor
+  - mobile
+---
+
+# -----------------------------------------------------------------------------
+# Paso 1 - Launch sin reset (preserva sesion previa para velocidad de suite)
+# -----------------------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+# -----------------------------------------------------------------------------
+# Paso 2 - Dismiss de onboarding si esta visible (cold start)
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Omitir"
+    commands:
+      - tapOn: "Omitir"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 3 - Login VENDEDOR via subflow ya validado
+#   Si la sesion ya esta viva (clearState:false), este subflow falla suave
+#   porque ya estamos en "Hoy"; lo envolvemos en runFlow when:visible para
+#   ser idempotente.
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Iniciar Sesi"
+    file: ../../auth/01-login-vendedor.yaml
+
+# -----------------------------------------------------------------------------
+# Paso 4 - Dismiss de modales opcionales post-login
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar|Continuar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mientras uso la app"
+    commands:
+      - tapOn: "Mientras uso la app"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 5 - Llegar al dashboard vendedor
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+- takeScreenshot: devnc-01-dashboard
+
+# -----------------------------------------------------------------------------
+# Paso 6 - Tab "Ruta" -> abrir primera parada
+#   La primera parada del seed Jeyma deberia estar Completada (estado=2) con
+#   pedido entregado para que aparezca el CTA "Registrar devolucion".
+# -----------------------------------------------------------------------------
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del día"
+    timeout: 15000
+
+- takeScreenshot: devnc-02-ruta-list
+
+# Tap por coordenada relativa al centro: cae en la primera card de parada.
+# (Mismo patron que ruta/03-devolucion-cliente.yaml ya verde.)
+- tapOn:
+    point: "50%,55%"
+- waitForAnimationToEnd
+
+- takeScreenshot: devnc-03-parada-detail
+
+# -----------------------------------------------------------------------------
+# Paso 7 - CTA "Registrar devolucion" debe estar visible en parada Completada
+#   Si falla aqui: la primera parada del seed no esta Entregada o no tiene
+#   pedido (problema de entorno, no de codigo).
+# -----------------------------------------------------------------------------
+- assertVisible: "Registrar devolucion"
+
+- tapOn:
+    id: "btn-registrar-devolucion"
+
+- extendedWaitUntil:
+    visible:
+      id: "devolucion-screen"
+    timeout: 15000
+
+- takeScreenshot: devnc-04-form-open
+
+# -----------------------------------------------------------------------------
+# Paso 8 - Capturar cantidad 1 del primer item con boton "+"
+#   (incrementCantidad clampa al maximo original, asi que 1 tap siempre es valido.)
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "item-0-plus"
+
+# Verifica que aparecio el subtotal del item => qty > 0 efectivo.
+- assertVisible: "Subtotal:"
+
+- takeScreenshot: devnc-05-item-seleccionado
+
+# -----------------------------------------------------------------------------
+# Paso 9 - Motivo "Cliente se retracta" (value=4)
+#   Es el escenario canonico para emitir una NC: el cliente cancela post-venta.
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "motivo-4"
+
+# -----------------------------------------------------------------------------
+# Paso 10 - TipoReembolso "Saldo a favor" (value=0)
+#   EQUIVALENTE FUNCIONAL DE NOTA DE CREDITO en mobile (sin CFDI fiscal).
+#   Backend al sync: cliente.Saldo -= MontoTotal.
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "reembolso-0"
+
+- takeScreenshot: devnc-06-motivo-saldo
+
+# -----------------------------------------------------------------------------
+# Paso 11 - Adjuntar foto (obligatorio por canSave en pantalla)
+#   Usamos Galeria para evitar permiso de camara. Si galeria pide permiso, el
+#   runFlow "Permitir" mas abajo lo concede.
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "btn-gallery"
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+      - waitForAnimationToEnd
+
+# Espera al picker del SO. Tap en una imagen cualquiera (centro de pantalla).
+# Si el emulador no tiene imagenes precargadas, este paso fallara y el log lo
+# dejara claro (issue de entorno).
+- extendedWaitUntil:
+    visible:
+      text: "Photos|Recientes|Galer.a|Files|Imagenes"
+    timeout: 15000
+    optional: true
+
+- tapOn:
+    point: "50%,40%"
+- waitForAnimationToEnd
+
+- takeScreenshot: devnc-07-foto-picked
+
+# -----------------------------------------------------------------------------
+# Paso 12 - Notas opcionales (audit trail del caso de prueba)
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "input-notas"
+- inputText: "E2E maestro - devolucion saldo a favor (NC funcional)"
+- hideKeyboard
+
+- takeScreenshot: devnc-08-form-full
+
+# -----------------------------------------------------------------------------
+# Paso 13 - Guardar la devolucion
+# -----------------------------------------------------------------------------
+- tapOn:
+    id: "btn-save"
+
+# -----------------------------------------------------------------------------
+# Paso 14 - Assert toast "Devolucion registrada"
+#   (Toast.show text1 desde devolucion/[detalleId].tsx linea 243.)
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Devolucion registrada"
+    timeout: 15000
+
+- takeScreenshot: devnc-09-toast-success
+
+# -----------------------------------------------------------------------------
+# Paso 15 - Volver a parada detail (router.back() automatico)
+#   El boton "Registrar devolucion" sigue visible => regresamos al detail.
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Registrar devolucion"
+    timeout: 10000
+
+- takeScreenshot: devnc-10-back-parada
+
+# -----------------------------------------------------------------------------
+# Paso 16 - Dejar el state limpio para la suite (tab "Hoy")
+# -----------------------------------------------------------------------------
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 10000
+
+- takeScreenshot: devnc-11-final-dashboard

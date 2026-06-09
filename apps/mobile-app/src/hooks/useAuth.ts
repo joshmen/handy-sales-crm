@@ -1,14 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores';
-import { authApi, catalogosApi } from '@/api';
+import { authApi } from '@/api';
+import { prefetchCatalogos } from '@/api/prefetchCatalogos';
 import type { LoginRequest } from '@/types';
 
-function prefetchCatalogos(queryClient: ReturnType<typeof useQueryClient>) {
-  queryClient.prefetchQuery({ queryKey: ['catalogos', 'zonas'], queryFn: () => catalogosApi.getZonas() });
-  queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-cliente'], queryFn: () => catalogosApi.getCategoriasCliente() });
-  queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-producto'], queryFn: () => catalogosApi.getCategoriasProducto() });
-  queryClient.prefetchQuery({ queryKey: ['catalogos', 'familias-producto'], queryFn: () => catalogosApi.getFamiliasProducto() });
-}
+// Sprint 3 audit: prefetchCatalogos extraido a src/api/prefetchCatalogos.ts
+// para eliminar duplicacion con app/_layout.tsx (AuthGate).
 
 export function useLogin() {
   const { login, setLoggingIn } = useAuthStore();

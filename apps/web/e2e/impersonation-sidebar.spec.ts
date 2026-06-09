@@ -175,6 +175,15 @@ test.describe('Impersonation Sidebar: During', () => {
     // The important thing is the role badge says "ADMIN (Soporte)" not the SA-only indigo badge.
 
     // ── Impersonation banner should be visible ──
+    // Audit code-quality 2026-06-06: validamos por data-testid (más robusto que
+    // textContent) y verificamos atributos ARIA (role=alert + aria-live=polite)
+    // que se agregaron al banner para accesibilidad y E2E robusto.
+    const banner = page.getByTestId('impersonation-banner');
+    await expect(banner).toBeVisible({ timeout: 10000 });
+    await expect(banner).toHaveAttribute('role', 'alert');
+    await expect(banner).toHaveAttribute('aria-live', 'polite');
+
+    // El texto MODO SOPORTE / Soporte sigue siendo verificable como sanity
     const bodyContent = (await page.textContent('body')) || '';
     const hasSupportBanner =
       bodyContent.includes('MODO SOPORTE') || bodyContent.includes('Soporte');

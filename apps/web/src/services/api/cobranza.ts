@@ -4,6 +4,17 @@ import { api, handleApiError } from '@/lib/api';
 // TYPES
 // ═══════════════════════════════════════════════════════
 
+/**
+ * 2026-06-08: modo explicito de cobro (plan eager-drifting cobros 3 modos).
+ * Espeja Domain.Entities.ModoCobro + Application.DTOs.ModoCobroDto.
+ * Valores numericos del enum backend — usar ModoCobro.PorPedido en lugar de 0.
+ */
+export enum ModoCobro {
+  PorPedido = 0,
+  AbonoFifo = 1,
+  Anticipo = 2,
+}
+
 export interface Cobro {
   id: number;
   pedidoId: number;
@@ -20,6 +31,10 @@ export interface Cobro {
   notas: string | null;
   activo: boolean;
   creadoEn: string;
+  /** 2026-06-08: modo del cobro. Default PorPedido para cobros pre-feature. */
+  modo?: ModoCobro;
+  /** 2026-06-08: true si el cobro genera saldoFavor (modo Anticipo). */
+  esAnticipo?: boolean;
 }
 
 export interface CobroCreateDto {
@@ -30,6 +45,12 @@ export interface CobroCreateDto {
   fechaCobro?: string;
   referencia?: string;
   notas?: string;
+  /**
+   * 2026-06-08: modo explicito del cobro. Opcional para retrocompat —
+   * si se omite, backend asume PorPedido (default), que requiere pedidoId.
+   * Web siempre debe enviar este campo a partir de PR 3 del plan eager-drifting.
+   */
+  modo?: ModoCobro;
 }
 
 export interface CobroUpdateDto {

@@ -1,0 +1,204 @@
+appId: host.exp.exponent
+name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
+---
+# ============================================================
+# CASO: sup-pedidos-equipo
+# Rol: SUPERVISOR
+# Capa: mobile
+#
+# Componente bajo prueba:
+#   apps/mobile-app/src/components/admin/AdminTenantPedidosList.tsx
+# Pantalla:
+#   Tab "Vender" cuando el rol es SUPERVISOR/ADMIN/SUPER_ADMIN
+#   (apps/mobile-app/app/(tabs)/vender/index.tsx -> VenderAdminContent)
+# Endpoint backend:
+#   GET /api/mobile/supervisor/pedidos?rango=7d|30d  o  ?dia=YYYY-MM-DD
+#   (MobileSupervisorEndpoints.cs)
+#
+# Cobertura funcional:
+#   1. Login supervisor -> dashboard.
+#   2. Navegar a tab Vender -> ve la lista admin/supervisor.
+#   3. Asserts presets visibles: "Hoy" | "Ayer" | "7 dias" | "30 dias".
+#   4. Tap en cada preset -> el header de la lista cambia el titulo:
+#        Hoy   -> "Pedidos hoy"
+#        Ayer  -> "Pedidos ayer"
+#        7d    -> "Pedidos ultimos 7 dias"
+#        30d   -> "Pedidos ultimos 30 dias"
+#   5. Cross-check no-leak: no aparecen vendedores de otros tenants.
+#
+# Riesgo cubierto:
+#   - Preset chip rompe el query (rango vs dia) -> resultado vacio en 7d/30d.
+#   - Header label desincronizado del preset activo.
+#   - Over-share de pedidos de otro tenant (Huichol / Centro).
+# ============================================================
+
+- launchApp:
+    clearState: false
+
+# ---- Aviso de Privacidad opcional ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 1: Login SUPERVISOR ----
+# Si ya hay sesion (clearState:false), el email-input no aparece y saltamos.
+- runFlow:
+    when:
+      visible:
+        id: "email-input"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - tapOn:
+          id: "email-input"
+      - inputText: "supervisor@jeyma.com"
+      - pressKey: "TAB"
+      - tapOn:
+          id: "password-input"
+      - inputText: "test123"
+      - tapOn:
+          id: "login-button"
+
+# ---- FASE 2: Consents post-login (opcionales) ----
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+# ---- FASE 3: Dashboard supervisor cargado ----
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 30000
+
+- takeScreenshot: sup-pedidos-presets-01-dashboard
+
+# ---- FASE 4: Ir a tab "Vender" ----
+# Doble tap garantiza reset al stack inicial del tab si ya estaba activo.
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# La cabecera del componente AdminTenantPedidosList arranca en preset "hoy"
+# y muestra "Pedidos hoy" como title. Esto a su vez confirma que el rol
+# fue detectado como SUPERVISOR (vendedor veria el flujo offline normal).
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 20000
+
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 dias"
+- assertVisible: "30 dias"
+
+- takeScreenshot: sup-pedidos-presets-02-default-hoy
+
+# ---- FASE 5: Preset "Ayer" ----
+- tapOn: "Ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos ayer"
+    timeout: 15000
+
+- assertVisible: "Pedidos ayer"
+- takeScreenshot: sup-pedidos-presets-03-ayer
+
+# ---- FASE 6: Preset "7 dias" ----
+- tapOn: "7 dias"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos ultimos 7 dias"
+    timeout: 15000
+
+- assertVisible: "Pedidos ultimos 7 dias"
+- takeScreenshot: sup-pedidos-presets-04-7d
+
+# ---- FASE 7: Preset "30 dias" ----
+- tapOn: "30 dias"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos ultimos 30 dias"
+    timeout: 15000
+
+- assertVisible: "Pedidos ultimos 30 dias"
+- takeScreenshot: sup-pedidos-presets-05-30d
+
+# ---- FASE 8: Vuelta a "Hoy" (estado idempotente para siguiente suite) ----
+- tapOn: "Hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 15000
+
+- assertVisible: "Pedidos hoy"
+
+# ---- FASE 9: Cross-tenant no-leak ----
+# Seed: "Admin Huichol" y "Admin Centro" pertenecen a OTROS tenants.
+# Si aparecen como autor de un pedido en esta lista, hay over-share del
+# endpoint /api/mobile/supervisor/pedidos. Esto valida el scoping
+# por tenant_id + RBAC supervisor->subordinados.
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: sup-pedidos-presets-06-no-leak
+
+# ---- FASE 10: Cierre suave ----
+# No hacemos logout para mantener la sesion estable y permitir encadenar
+# este flow con suite-supervisor-mobile-flow.yaml sin re-login.
+- tapOn: "Equipo"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: sup-pedidos-presets-07-cierre-equipo

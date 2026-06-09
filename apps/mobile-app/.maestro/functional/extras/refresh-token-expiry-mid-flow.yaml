@@ -1,0 +1,359 @@
+appId: host.exp.exponent
+name: "Vendedor: refresh token expiry mid-flow no rompe sesion"
+tags:
+  - functional
+  - vendedor
+  - extras
+  - auth
+  - refresh-token
+  - mid-flow
+  - session
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: ext-refresh-token-mid-flow
+#
+# OBJETIVO:
+# Verificar que cuando un VENDEDOR esta en medio de un flujo de
+# negocio (crear pedido) y el cliente Axios debe renovar el access
+# token contra POST /api/mobile/auth/refresh, el flujo NO se rompe:
+#   - No aparece banner "Tu sesion expiro" (SessionExpiredBanner)
+#   - No salta a /login automaticamente
+#   - El stepper Preventa avanza Cliente -> Productos
+#   - El usuario sigue en estado autenticado (chip "Vendedor" en Mas)
+#
+# COBERTURA REAL (no solo navegacion):
+#   - Tab Vender -> FAB Nuevo Pedido -> Preventa
+#   - Step 1 Cliente: seleccionar cliente (dispara load API)
+#   - Sync forzado: tab Mas -> Sincronizar (POST/GET varios)
+#   - assertNotVisible: "Tu sesion expiro" (banner soft 401)
+#   - assertNotVisible: "Iniciar sesion" (banner CTA)
+#   - Volver a Vender step Productos: buscar producto + Agregar
+#   - assertVisible: "Revisar pedido" (CartBar coalescing OK)
+#   - Tab Mas: chip "Vendedor" sigue presente (sesion intacta)
+#
+# DISENO DE PRUEBA:
+# Maestro no puede manipular el reloj del backend para forzar el
+# expiry del access token literal. Lo que SI valida este flow:
+#
+#  1. Si HAY un refresh en vuelo (race entre login fresh y request
+#     con token viejo), el guard de _staleTokens en client.ts:271
+#     NO debe disparar 'sessionRevoked'.
+#  2. Si el coalesceRefresh resuelve OK (ver client.ts:399), el
+#     retry de la request original (originalRequest.headers
+#     Authorization = `Bearer ${newToken}`) regresa data y la
+#     UI continua sin mostrar el banner.
+#  3. authEventEmitter.emit('sessionRevoked') NUNCA debe dispararse
+#     en happy path. Si dispara, el SessionExpiredBanner monta
+#     y vemos "Tu sesion expiro" + "Iniciar sesion" — los
+#     assertNotVisible cazan ese estado defectuoso.
+#
+# Regresiones cubiertas:
+#   - vendedor@jeyma 2026-05-19: dual /refresh -> orphan tokens ->
+#     refresh fail -> banner inesperado mid-flow.
+#   - vendedor@jeyma 2026-05-05 (Mazatlan 6:38pm): logout automatico
+#     ~1s post-login por race del refreshPromise viejo.
+#   - audit 2026-06-01 v4: SESSION_REVOKED enmascarado en
+#     /change-password debe ser ahora visible, pero NO en happy path.
+#
+# Pantalla bajo prueba:
+#   apps/mobile-app/src/api/client.ts (interceptors + coalesceRefresh)
+#   apps/mobile-app/src/components/ui/SessionExpiredBanner.tsx
+#   apps/mobile-app/app/(tabs)/vender/crear/*
+#   apps/mobile-app/app/(tabs)/mas.tsx
+#
+# PREREQ:
+#   - Sesion VENDEDOR activa (correr antes auth/01-login-vendedor.yaml)
+#   - Seed Jeyma con cliente "Abarrotes Don Pancho" y al menos 1
+#     producto que matchee "coca"
+#   - Conectividad de red activa (no offline)
+# =================================================================
+
+- launchApp:
+    clearState: false
+
+# ----------------------------------------------------------------
+# 0) Dismiss modales opcionales (permisos / aviso de privacidad /
+#    upsells de evaluacion). Maestro acepta runFlow when:visible
+#    para skipear ramas no presentes.
+# ----------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+
+# ----------------------------------------------------------------
+# 1) Sanity: vendedor esta en sesion (tab "Hoy" visible). Si no
+#    esta logueado, este flow no aplica — el caller del suite debe
+#    correr auth/01-login-vendedor.yaml antes.
+# ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: refresh-mid-flow-00-dashboard
+
+# El banner de sesion expirada NO debe estar visible al iniciar
+# el flow — sesion fresh.
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Tu sesion expiro"
+
+# ----------------------------------------------------------------
+# 2) Entrar a Vender — dispara cargas API (clientes, productos)
+#    que pasan por el interceptor; cualquier refresh in-flight
+#    se ejercita aqui.
+# ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 15000
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+# Banner NO debe haber aparecido por la navegacion (sesion sigue
+# valida; refresh coalescing OK).
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Iniciar sesión"
+
+- takeScreenshot: refresh-mid-flow-01-vender-hub
+
+# ----------------------------------------------------------------
+# 3) Abrir BottomSheet "Tipo de Venta" via FAB y elegir Preventa
+# ----------------------------------------------------------------
+- runFlow:
+    when:
+      visible:
+        id: "fab-nuevo-pedido"
+    commands:
+      - tapOn:
+          id: "fab-nuevo-pedido"
+- runFlow:
+    when:
+      visible: "Nuevo Pedido"
+    commands:
+      - tapOn: "Nuevo Pedido"
+- runFlow:
+    when:
+      visible: "Nuevo pedido"
+    commands:
+      - tapOn: "Nuevo pedido"
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Tipo de Venta"
+    timeout: 10000
+- assertVisible: "Preventa"
+- tapOn: "Preventa"
+- waitForAnimationToEnd
+
+# ----------------------------------------------------------------
+# 4) Step 1 — Cliente (load clientes API).
+#    Si el access token expira durante este fetch, el interceptor
+#    debe coalescer refresh y retry transparente. UI NO debe mostrar
+#    "Tu sesion expiro" ni redirigir a login.
+# ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- assertVisible: "Cliente"
+- assertVisible: "Productos"
+- assertVisible: "Revisar"
+
+# Banner NO aparece a media carga de clientes.
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Iniciar sesión"
+
+- takeScreenshot: refresh-mid-flow-02-step1-cliente
+
+- tapOn: "Buscar cliente..."
+- inputText: "a"
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- runFlow:
+    when:
+      visible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn: "Abarrotes Don Pancho"
+- runFlow:
+    when:
+      notVisible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn:
+          point: "50%,55%"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Continuar"
+    timeout: 10000
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# ----------------------------------------------------------------
+# 5) Step 2 — Productos: cargar catalogo (load productos API).
+#    Otro punto de refresh potencial. Validamos banner ausente.
+# ----------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Buscar producto..."
+    timeout: 15000
+
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Iniciar sesión"
+
+- takeScreenshot: refresh-mid-flow-03-step2-productos
+
+- tapOn: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: "Agregar"
+    timeout: 15000
+- tapOn: "Agregar"
+
+# QuantityNumericSheet: confirmar cantidad por defecto
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Aceptar"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+- runFlow:
+    when:
+      visible: "Aceptar"
+    commands:
+      - tapOn: "Aceptar"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# CartBar visible -> item agregado a pesar de cualquier refresh
+# que haya ocurrido mid-flow. Si el banner hubiera disparado,
+# el draft store se hubiera mantenido (WDB intacto) pero la UI
+# estaria detras del banner — assertNotVisible lo descarta.
+- extendedWaitUntil:
+    visible: "Revisar pedido"
+    timeout: 10000
+- assertVisible: "Revisar pedido"
+- assertNotVisible: "Tu sesión expiró"
+
+- takeScreenshot: refresh-mid-flow-04-cart-con-item
+
+# ----------------------------------------------------------------
+# 6) Mid-flow: salir a tab Mas -> Sincronizacion. La sync forzada
+#    dispara multiples GET/POST contra /api/mobile/sync/* todos
+#    pasando por el interceptor. Mejor estresador de refresh
+#    coalescing disponible desde el UI.
+# ----------------------------------------------------------------
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedor"
+    timeout: 15000
+
+# Chip "Vendedor" presente -> rol hidratado -> token sigue valido
+- assertVisible: "Vendedor"
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Iniciar sesión"
+
+- takeScreenshot: refresh-mid-flow-05-mas-vendedor-chip
+
+# Buscar entry de sincronizacion. El label varia entre versiones
+# del menu Mas: "Sincronización", "Sincronizar", "Sync".
+- runFlow:
+    when:
+      visible: "Sincronización"
+    commands:
+      - tapOn: "Sincronización"
+- runFlow:
+    when:
+      visible: "Sincronizacion"
+    commands:
+      - tapOn: "Sincronizacion"
+- runFlow:
+    when:
+      visible: "Sincronizar"
+    commands:
+      - tapOn: "Sincronizar"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- takeScreenshot: refresh-mid-flow-06-sync-screen
+
+# Pantalla de sync abierta — si banner aparece aqui durante el
+# pull/push masivo, es la regresion vendedor@jeyma 2026-05-19.
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Iniciar sesión"
+
+# ----------------------------------------------------------------
+# 7) Volver al tab Hoy: la sesion sobrevivio todos los refresh
+#    potenciales mid-flow. Outcome final: dashboard render y
+#    banner ausente.
+# ----------------------------------------------------------------
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 15000
+
+- assertNotVisible: "Tu sesión expiró"
+- assertNotVisible: "Iniciar sesión"
+
+# Sanity: vendedor sigue viendo dashboard de su rol (no admin).
+- assertVisible:
+    text: "Mi Rendimiento|Mis Ventas|Mis Pedidos|Mis Visitas|Mis Clientes|Hoy"
+    optional: true
+
+- takeScreenshot: refresh-mid-flow-07-outcome-dashboard

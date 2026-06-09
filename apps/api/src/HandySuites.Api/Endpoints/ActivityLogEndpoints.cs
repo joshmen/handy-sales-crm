@@ -36,8 +36,11 @@ public static class ActivityLogEndpoints
         [FromQuery] string? search = null,
         [FromQuery] int? tenantId = null)
     {
-        // Only Admin and SuperAdmin can see activity logs
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        // Sprint pre-prod #11 audit 2026-06-07: el comentario decia "Admin y
+        // SuperAdmin" pero IsAdminOrAbove incluye SUPERVISOR. Activity logs
+        // contienen acciones sensibles (login, impersonation, billing, etc.)
+        // — SUPERVISOR no debe verlas. Cambiado a IsStrictAdmin.
+        if (!currentTenant.IsStrictAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -109,7 +112,8 @@ public static class ActivityLogEndpoints
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+        // Sprint pre-prod #11 audit 2026-06-07: idem GetActivityLogs.
+        if (!currentTenant.IsStrictAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var tenantId = currentTenant.TenantId;

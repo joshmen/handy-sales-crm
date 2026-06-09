@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Inventario.DTOs;
 using HandySuites.Application.Inventario.Interfaces;
 using HandySuites.Shared.Multitenancy;
@@ -8,11 +9,13 @@ public class InventarioService
 {
     private readonly IInventarioRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITransactionManager _transactionManager;
 
-    public InventarioService(IInventarioRepository repo, ICurrentTenant tenant)
+    public InventarioService(IInventarioRepository repo, ICurrentTenant tenant, ITransactionManager transactionManager)
     {
         _repo = repo;
         _tenant = tenant;
+        _transactionManager = transactionManager;
     }
 
     public Task<List<InventarioDto>> ObtenerInventarioAsync()
@@ -35,15 +38,24 @@ public class InventarioService
                 Error: "El producto seleccionado no existe o no pertenece a tu empresa.",
                 ErrorKind: CrearInventarioErrorKind.ProductoNoExiste);
 
-        // Validar que no exista inventario para este producto
-        var existente = await _repo.ObtenerPorProductoIdAsync(dto.ProductoId, _tenant.TenantId);
-        if (existente != null)
-            return new CrearInventarioResult(false,
-                Error: "Este producto ya tiene un registro de inventario. Edítalo en lugar de crear uno nuevo.",
-                ErrorKind: CrearInventarioErrorKind.Duplicado);
+        // M-12: serializar check-then-create con advisory lock por producto+tenant para
+        // evitar duplicados en carreras concurrentes (oversell del mismo producto en
+        // dos requests paralelas). `pg_advisory_xact_lock` se libera al cerrar la
+        // transacción; en SQLite/otros providers el lock es no-op silencioso.
+        return await _transactionManager.ExecuteInTransactionAsync<CrearInventarioResult>(async () =>
+        {
+            await _repo.AcquireProductoLockAsync(_tenant.TenantId, dto.ProductoId);
 
-        var id = await _repo.CrearAsync(dto, _tenant.TenantId);
-        return new CrearInventarioResult(true, id);
+            // Validar que no exista inventario para este producto
+            var existente = await _repo.ObtenerPorProductoIdAsync(dto.ProductoId, _tenant.TenantId);
+            if (existente != null)
+                return new CrearInventarioResult(false,
+                    Error: "Este producto ya tiene un registro de inventario. Edítalo en lugar de crear uno nuevo.",
+                    ErrorKind: CrearInventarioErrorKind.Duplicado);
+
+            var id = await _repo.CrearAsync(dto, _tenant.TenantId);
+            return new CrearInventarioResult(true, id);
+        });
     }
 
     public Task<bool> ActualizarInventarioAsync(int id, InventarioUpdateDto dto)

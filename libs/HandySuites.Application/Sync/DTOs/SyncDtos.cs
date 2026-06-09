@@ -520,6 +520,12 @@ public class SyncCobroDto
     public DateTime? ActualizadoEn { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Create;
     public bool IsDeleted { get; set; }
+    /// <summary>
+    /// 2026-06-08 PR 4 plan eager-drifting cobros: modo derivado por el mobile mapper
+    /// (0=PorPedido, 1=AbonoFifo, 2=Anticipo). Default 0 retrocompat con clientes WDB
+    /// que aún no envíen el campo (sincronización con backend pre-PR1).
+    /// </summary>
+    public int Modo { get; set; } = 0;
 }
 
 /// <summary>

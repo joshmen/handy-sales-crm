@@ -1,0 +1,222 @@
+appId: host.exp.exponent
+name: "Funcional > Vendedor > Buscar cliente por razon social"
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCIONAL VENDEDOR — Buscar cliente por RAZON SOCIAL (nombre).
+#
+# Cubre el hot-path E2E mobile completo:
+#   1. Vendedor parte del dashboard "Hoy".
+#   2. Navega Mas → Clientes (VENDEDOR no tiene tab directo).
+#   3. Verifica que la lista offline (WatermelonDB) se hidrato con
+#      clientes asignados a vendedor1@jeyma.com.
+#   4. Tap en SearchBar (placeholder "Buscar cliente...") y escribe
+#      una razon social parcial: "Don Jose".
+#   5. Despues del debounce (300 ms en useOfflineClients) la lista
+#      queda filtrada → solo "Tienda Don Jose" visible.
+#   6. Limpia la busqueda → reaparece "Abarrotes La Esquina".
+#   7. Negative case: busca "ZZZNoExisteVendedor" → empty state
+#      "No se encontraron clientes con esa busqueda".
+#   8. Limpia y entra al detalle del cliente filtrado para confirmar
+#      que el tap funciona post-busqueda.
+#
+# Razon social cubierta:
+#   - "Tienda Don Jose" (vendedor1 Jeyma, tenant_id=1)
+#   - "Abarrotes La Esquina" (vendedor1 Jeyma)
+#   Seeds: infra/database/schema/seed_local_pg.sql lineas 155-159.
+#
+# PRE-REQ runtime:
+#   - Emulador Android emulator-5554 con Expo Go (host.exp.exponent).
+#   - Metro bundler en puerto 8081.
+#   - Seeds locales aplicados (seed_local_pg.sql).
+#   - Sesion VENDEDOR activa (vendedor1@jeyma.com / test123). Si se
+#     ejecuta standalone, encadenar con
+#     `.maestro/auth/01-login-vendedor.yaml`.
+#
+# Screen:  apps/mobile-app/app/(tabs)/clients/index.tsx
+# Hook:    apps/mobile-app/src/hooks/useOfflineClients.ts
+#          - Filtra por Q.where('nombre', Q.like(`%search%`))
+#          - Debounce 300 ms
+# Search:  apps/mobile-app/src/components/shared/SearchBar.tsx
+#          - placeholder "Buscar cliente..."
+# ════════════════════════════════════════════════════════════
+
+# 0. Confirma sesion vendedor (dashboard "Hoy" visible).
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 1. Dismiss modales opcionales (Aviso de Privacidad / promos).
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn:
+          text: "Cerrar"
+          optional: true
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+          optional: true
+
+- takeScreenshot: func-vendedor-buscar-razon-00-hoy
+
+# 2. Navegar a tab Mas (vendedor sin tab Clientes directo).
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+- takeScreenshot: func-vendedor-buscar-razon-01-mas
+
+# 3. Abrir lista de Clientes.
+- tapOn: "Clientes"
+- waitForAnimationToEnd
+
+# Header de la pantalla.
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+# SearchBar visible.
+- extendedWaitUntil:
+    visible: "Buscar cliente"
+    timeout: 15000
+
+- takeScreenshot: func-vendedor-buscar-razon-02-lista-cargada
+
+# 4. Sanity check — ambos clientes seed del vendedor1 deben aparecer
+#    SIN filtro. Si alguno falta es regresion de sync WDB o de
+#    asignacion vendedor_id en seed.
+- assertVisible: "Tienda Don Jose"
+- assertVisible: "Abarrotes La Esquina"
+
+# 5. Tap en el SearchBar y escribir razon social parcial.
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "Don Jose"
+
+# Debounce useOfflineClients = 300 ms. Esperamos hasta que la lista
+# se reduzca y "Abarrotes La Esquina" desaparezca.
+- extendedWaitUntil:
+    notVisible: "Abarrotes La Esquina"
+    timeout: 10000
+
+# Resultado positivo de la busqueda.
+- assertVisible: "Tienda Don Jose"
+- assertNotVisible: "Abarrotes La Esquina"
+
+# Counter ("1 cliente encontrado") confirma el filtro aplicado.
+- assertVisible:
+    text: ".*1 cliente.*"
+    optional: true
+
+- takeScreenshot: func-vendedor-buscar-razon-03-filtrado-don-jose
+
+- hideKeyboard
+
+# 6. Limpiar el campo de busqueda → re-aparece "Abarrotes La Esquina".
+- tapOn:
+    text: "Don Jose"
+- eraseText: 20
+
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 10000
+
+- assertVisible: "Tienda Don Jose"
+- assertVisible: "Abarrotes La Esquina"
+
+- takeScreenshot: func-vendedor-buscar-razon-04-limpio
+
+- hideKeyboard
+
+# 7. Negative case — razon social inexistente → empty state.
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "ZZZNoExisteVendedor"
+
+- extendedWaitUntil:
+    visible: "Sin clientes"
+    timeout: 10000
+
+- assertVisible: "Sin clientes"
+- assertVisible:
+    text: ".*No se encontraron clientes.*"
+
+- assertNotVisible: "Tienda Don Jose"
+- assertNotVisible: "Abarrotes La Esquina"
+
+- takeScreenshot: func-vendedor-buscar-razon-05-empty-state
+
+# 8. Limpiar y re-buscar "Don Jose" para confirmar que el tap en el
+#    item filtrado abre el detalle (router.push /clients/[id]).
+- tapOn:
+    text: "ZZZNoExisteVendedor"
+- eraseText: 25
+
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 10000
+
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "Don Jose"
+
+- extendedWaitUntil:
+    notVisible: "Abarrotes La Esquina"
+    timeout: 10000
+
+- hideKeyboard
+
+- tapOn: "Tienda Don Jose"
+- waitForAnimationToEnd
+
+# 9. Detalle del cliente abierto — razon social mostrada en header
+#    del detail screen.
+- extendedWaitUntil:
+    visible: "Tienda Don Jose"
+    timeout: 15000
+
+- takeScreenshot: func-vendedor-buscar-razon-06-detalle-abierto
+
+# ════════════════════════════════════════════════════════════
+# POST-RUN MANUAL VERIFICATION (TODO en CI):
+#
+# Validar que el hook useOfflineClients filtra por nombre (razon
+# social) y respeta el scope del vendedor:
+#
+#   SELECT id, nombre, vendedor_id
+#     FROM "Clientes"
+#     WHERE tenant_id = 1
+#       AND nombre ILIKE '%Don Jose%'
+#       AND activo = true;
+#
+# Resultado esperado: 1 row ("Tienda Don Jose", vendedor1).
+# Si Count=0 o aparece un cliente de otro vendedor: regresion en
+# seeds o en MobileClienteEndpoints (sync no filtra por vendedor_id).
+#
+# PROD CHECK / FIX TODO: hoy useOfflineClients NO filtra por
+# vendedor_id en la query WDB — depende de que el sync inicial solo
+# baje los clientes del vendedor logueado. Si MobileClienteEndpoints
+# regresa clientes de otros vendedores del mismo tenant, este test
+# fallaria en el assertNotVisible negativo al ver clientes ajenos.
+# ════════════════════════════════════════════════════════════

@@ -87,7 +87,7 @@ test.describe('Audit Fix: No Dead Breadcrumbs', () => {
       return;
     }
     await cargarBtn.click();
-    await expect(page).toHaveURL(/\/routes\/manage\/\d+\/load/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/routes\/(\d+\?tab=carga|manage\/\d+\/load)/, { timeout: 10000 });
     await waitForPageLoad(page);
 
     // "Rutas" breadcrumb should link to /routes
@@ -147,7 +147,7 @@ test.describe('Audit Fix: Load Page Read-Only', () => {
       return;
     }
     await cargarBtn.click();
-    await expect(page).toHaveURL(/\/routes\/manage\/\d+\/load/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/routes\/(\d+\?tab=carga|manage\/\d+\/load)/, { timeout: 10000 });
     await waitForPageLoad(page);
 
     // "Enviar a carga" button should be visible for Planificada routes
@@ -179,7 +179,7 @@ test.describe('Audit Fix: Load Page Read-Only', () => {
       return;
     }
     await verCargaBtn.click();
-    await expect(page).toHaveURL(/\/routes\/manage\/\d+\/load/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/routes\/(\d+\?tab=carga|manage\/\d+\/load)/, { timeout: 10000 });
     await waitForPageLoad(page);
 
     // "Enviar a carga" button should NOT be visible (only for Planificada/PendienteAceptar)

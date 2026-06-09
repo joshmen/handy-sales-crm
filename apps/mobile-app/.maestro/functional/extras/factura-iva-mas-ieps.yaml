@@ -1,0 +1,223 @@
+# =============================================================================
+# Maestro E2E - VENDEDOR: Factura con desglose IVA + IEPS (mobile)
+# -----------------------------------------------------------------------------
+# Use case: ext-factura-iva-ieps
+# Role: VENDEDOR
+# Layer: mobile (React Native + Expo Go)
+#
+# OBJETIVO FUNCIONAL:
+#   Validar el desglose visual de impuestos (IVA + IEPS) en una factura CFDI
+#   desde el detalle mobile, asegurando que el VENDEDOR pueda confirmar los
+#   impuestos trasladados cuando emite una venta de productos gravados
+#   con IEPS (cerveza, refresco, tabaco, combustibles, etc.).
+#
+# HALLAZGOS DEL CODIGO (PROD BEHAVIOR):
+#
+#   1. RBAC del menu "Mas" - apps/mobile-app/app/(tabs)/mas.tsx:84
+#        canSeeFacturas = facturacionEnabled
+#                         && (role === 'ADMIN' || 'SUPER_ADMIN' || 'SUPERVISOR')
+#      => El rol VENDEDOR NUNCA ve la opcion "Facturas" en el menu "Mas".
+#      Por lo tanto, el VENDEDOR no tiene punto de entrada a la lista de
+#      facturas desde mobile.
+#
+#   2. Detalle de factura - apps/mobile-app/app/(tabs)/facturas/[id].tsx:254-268
+#      La seccion "TOTALES" muestra UNICAMENTE:
+#         - Subtotal
+#         - IVA   (= factura.totalImpuestosTrasladados)
+#         - TOTAL
+#      NO existe linea separada para IEPS. El campo
+#      totalImpuestosTrasladados suma IVA + IEPS bajo la etiqueta "IVA",
+#      lo cual es incorrecto fiscalmente (SAT requiere desglose por
+#      impuesto, ver Anexo 20 4.0 nodos Impuestos/Traslados con Impuesto
+#      002=IVA y 003=IEPS).
+#
+#   PROD BUG / FIX TODO #1 (RBAC):
+#     Si la regla de negocio es que el VENDEDOR pueda revisar las facturas
+#     de sus propias ventas timbradas, hay que:
+#       - Incluir 'VENDEDOR' en canSeeFacturas en (tabs)/mas.tsx
+#       - Filtrar server-side por vendedor_id = currentUser
+#
+#   PROD BUG / FIX TODO #2 (desglose):
+#     Agregar fila "IEPS" en la tarjeta TOTALES de facturas/[id].tsx
+#     leyendo factura.totalIeps o iterando impuestos[] por Impuesto=='003'.
+#     El campo ya existe en el backend (FacturaTicketData.items[i].impuestos
+#     trae { impuesto, tasaOCuota, base, importe }) pero el screen lo
+#     ignora en el resumen.
+#
+# ESTRATEGIA DEL TEST (cobertura REAL del estado actual):
+#   1. Login VENDEDOR (subflow existente 01-login-vendedor.yaml).
+#   2. Dismiss de modales opcionales (privacidad, permisos).
+#   3. Abrir tab "Mas" y verificar que el chip "Vendedor" cargo.
+#   4. ASSERT RBAC negativo: "Facturas" NO debe estar en el menu.
+#   5. Scroll defensivo para confirmar la ausencia.
+#   6. Verificar que SI aparecen items propios del vendedor (Clientes,
+#      Pedidos, Productos) para descartar que el menu este roto.
+#   7. Confirmar terminologia correcta: "Configuracion", "Mi Perfil".
+#   8. Volver al dashboard limpio.
+#
+# Cuando ambos prod bugs se corrijan, este test debera reescribirse al
+# happy path:
+#   Mas -> Facturas -> primer item TIMBRADA con IEPS -> assert filas
+#   "Subtotal", "IVA", "IEPS", "TOTAL" todas visibles con valores
+#   numericos no nulos. (Seed Jeyma incluye productos con IEPS en
+#   refrescos/cerveza.)
+#
+# PREREQ:
+#   - Emulador Android con Expo Go en Metro :8081
+#   - docker-compose -f docker-compose.dev.yml up -d
+#   - Seed Jeyma con vendedor1@jeyma.com / test123
+# =============================================================================
+appId: host.exp.exponent
+name: "Vendedor: Factura IVA+IEPS desglose - RBAC negativo + visibilidad menu"
+tags:
+  - vendedor
+  - facturas
+  - iva
+  - ieps
+  - rbac
+  - mobile
+  - extras
+---
+
+# -----------------------------------------------------------------------------
+# Paso 1 - Iniciar app sin limpiar estado (reusa sesion si existe)
+# -----------------------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+# -----------------------------------------------------------------------------
+# Paso 2 - Login VENDEDOR (subflow ya existente)
+# -----------------------------------------------------------------------------
+- runFlow: ../../auth/01-login-vendedor.yaml
+
+# -----------------------------------------------------------------------------
+# Paso 3 - Dismiss de modales opcionales post-login
+# -----------------------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar|Continuar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mientras uso la app"
+    commands:
+      - tapOn: "Mientras uso la app"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------------------------------------
+# Paso 4 - Confirmar que el dashboard del vendedor cargo
+# -----------------------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: factura-ieps-vendedor-01-dashboard
+
+# -----------------------------------------------------------------------------
+# Paso 5 - Navegar a tab "Mas" (con tilde correcta en "Mas")
+# -----------------------------------------------------------------------------
+- tapOn: "Mas"
+- waitForAnimationToEnd
+
+# El chip "Vendedor" confirma que el rol esta hidratado en (tabs)/mas.tsx
+- extendedWaitUntil:
+    visible: "Vendedor"
+    timeout: 15000
+
+- assertVisible: "Vendedor"
+
+- takeScreenshot: factura-ieps-vendedor-02-mas-menu
+
+# -----------------------------------------------------------------------------
+# Paso 6 - Verificar que items propios del vendedor SI aparecen
+# (descarta que el menu este roto / no es un falso positivo)
+# -----------------------------------------------------------------------------
+- assertVisible: "Clientes"
+- assertVisible: "Pedidos"
+- assertVisible: "Productos"
+
+# -----------------------------------------------------------------------------
+# Paso 7 - ASSERT RBAC: "Facturas" NO debe estar visible para VENDEDOR
+# -----------------------------------------------------------------------------
+# Contrato actual: canSeeFacturas excluye VENDEDOR (mas.tsx:84).
+# Si esto falla, significa que alguien expuso facturacion al vendedor
+# sin actualizar el test ni el modelo de permisos.
+- assertNotVisible: "Facturas"
+
+# Scroll defensivo: verificar que tampoco aparece mas abajo en el menu
+- scroll
+- waitForAnimationToEnd
+
+- assertNotVisible: "Facturas"
+
+- takeScreenshot: factura-ieps-vendedor-03-sin-facturas
+
+# -----------------------------------------------------------------------------
+# Paso 8 - Verificar items que SI debe ver el vendedor en "Mas" (estado
+# saludable del menu y terminologia correcta)
+# -----------------------------------------------------------------------------
+- assertVisible: "Impresora"
+- assertVisible: "Mi Perfil"
+- assertVisible: "Configuracion"
+
+# -----------------------------------------------------------------------------
+# Paso 9 - Volver al dashboard para dejar state limpio para flows downstream
+# -----------------------------------------------------------------------------
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 10000
+
+- takeScreenshot: factura-ieps-vendedor-04-back-dashboard
+
+# =============================================================================
+# NOTA PARA EL HAPPY PATH FUTURO (cuando se arreglen ambos prod bugs):
+# -----------------------------------------------------------------------------
+# Reemplazar pasos 7-8 con:
+#
+#   - tapOn: "Facturas"
+#   - waitForAnimationToEnd
+#   - extendedWaitUntil:
+#       visible: "Facturas"
+#       timeout: 15000
+#   - assertVisible: "TIMBRADA"
+#   - tapOn:
+#       text: "TIMBRADA"
+#       index: 0
+#   - waitForAnimationToEnd
+#   - extendedWaitUntil:
+#       visible: "TOTALES"
+#       timeout: 10000
+#   - assertVisible: "Subtotal"
+#   - assertVisible: "IVA"
+#   - assertVisible: "IEPS"     # <-- HOY FALLA: la fila no existe
+#   - assertVisible: "TOTAL"
+#   - takeScreenshot: factura-ieps-vendedor-happy-desglose
+# =============================================================================

@@ -35,7 +35,7 @@ public class RutaVendedorService
     // Admin, SuperAdmin y Supervisor pueden operar cualquier ruta del tenant.
     private void EnsureRutaOperable(RutaVendedor ruta)
     {
-        if (_tenant.IsAdmin || _tenant.IsSuperAdmin || _tenant.IsSupervisor) return;
+        if (_tenant.IsAdminOrAbove || _tenant.IsSuperAdmin || _tenant.IsSupervisor) return;
         if (int.TryParse(_tenant.UserId, out var currentUserId) && ruta.UsuarioId == currentUserId) return;
         throw new UnauthorizedAccessException("No tienes permisos para operar esta ruta.");
     }
@@ -43,7 +43,7 @@ public class RutaVendedorService
     public async Task<int> CrearAsync(RutaVendedorCreateDto dto)
     {
         // RBAC: vendedor/viewer solo puede crear rutas para sí mismo.
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
             && !dto.EsTemplate
             && int.TryParse(_tenant.UserId, out var currentUserId)
             && dto.UsuarioId != currentUserId)
@@ -156,7 +156,7 @@ public class RutaVendedorService
             throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta");
 
         // RBAC: vendedor/viewer solo ve sus propias rutas (consistente con ObtenerPorFiltroAsync).
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
             && int.TryParse(_tenant.UserId, out var currentUserId)
             && entidad?.UsuarioId != currentUserId)
         {
@@ -169,7 +169,7 @@ public class RutaVendedorService
     public async Task<(List<RutaListaDto> Items, int TotalCount)> ObtenerPorFiltroAsync(RutaFiltroDto filtro)
     {
         // RBAC: Vendedor solo ve sus rutas
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 filtro.UsuarioId = vendedorId;
@@ -223,7 +223,7 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
         // RBAC: vendedor/viewer solo puede editar sus propias rutas y no puede reasignarlas.
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
             && int.TryParse(_tenant.UserId, out var currentUserId))
         {
             if (ruta.UsuarioId != currentUserId)
@@ -296,7 +296,7 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
         // RBAC: vendedor/viewer solo puede eliminar sus propias rutas.
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
             && int.TryParse(_tenant.UserId, out var currentUserId)
             && ruta.UsuarioId != currentUserId)
         {
@@ -319,7 +319,7 @@ public class RutaVendedorService
 
         // Validar que es el vendedor asignado
         var usuarioId = int.Parse(_tenant.UserId);
-        if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
+        if (ruta.UsuarioId != usuarioId && !_tenant.IsAdminOrAbove)
             throw new UnauthorizedAccessException("Solo el vendedor asignado puede iniciar esta ruta");
 
         // BR-RUTA-Iniciar (defensa en profundidad): la validación principal está en
@@ -355,7 +355,7 @@ public class RutaVendedorService
             return new CambiarEstadoRutaResult { Success = false, Message = "Ruta no encontrada" };
 
         var usuarioId = int.Parse(_tenant.UserId);
-        if (ruta.UsuarioId != usuarioId && !_tenant.IsAdmin)
+        if (ruta.UsuarioId != usuarioId && !_tenant.IsAdminOrAbove)
             throw new UnauthorizedAccessException("Solo el vendedor asignado puede aceptar esta ruta");
 
         var ok = await _repo.AceptarRutaAsync(id, DateTime.UtcNow);
@@ -428,7 +428,7 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
         // Solo el vendedor asignado, admin/super_admin o supervisor pueden completar.
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
             && int.TryParse(_tenant.UserId, out var currentUserId)
             && ruta.UsuarioId != currentUserId)
         {
@@ -456,7 +456,7 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return (false, null, null);
 
         // Solo el vendedor asignado, admin/super_admin o supervisor pueden cancelar.
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin && !_tenant.IsSupervisor
             && int.TryParse(_tenant.UserId, out var currentUserId)
             && ruta.UsuarioId != currentUserId)
         {
@@ -1036,8 +1036,16 @@ public class RutaVendedorService
         // Atomico: cambiar estado ruta + cambiar estado batch de los pedidos asignados.
         // Reportado 2026-04-27: el admin tenia que cambiar el estado de cada pedido
         // uno por uno desde /pedidos. Ahora "Send to Load" lo hace automatico.
+        // M-2 fix: envolver en ExecuteInTransactionAsync — el repo modifica ruta + N
+        // pedidos y hace un solo SaveChangesAsync, pero con EnableRetryOnFailure la
+        // transaccion implicita puede partirse en reintentos. La estrategia de
+        // ejecucion garantiza atomicidad o rollback completo. Mismo patron que
+        // CerrarRutaAsync (H-3) y PedidoService.CrearAsync (BR-002).
         var pedidoIds = pedidosAsignados.Select(p => p.PedidoId).ToList();
-        await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId, pedidoIds);
+        await _transactions.ExecuteInTransactionAsync(async () =>
+        {
+            await _repo.EnviarACargaAsync(rutaId, _tenant.TenantId, pedidoIds);
+        });
 
         return new EnviarACargaResumen
         {
@@ -1090,16 +1098,25 @@ public class RutaVendedorService
         if (ruta.Estado != EstadoRuta.Completada)
             throw new InvalidOperationException("Solo se pueden cerrar rutas completadas/terminadas");
 
-        // Update retornos if provided
-        if (dto.Retornos?.Any() == true)
+        // Atomic: actualizar todos los retornos y cerrar la ruta en una sola transaccion.
+        // Antes esto eran N+1 SaveChangesAsync calls (uno por cada retorno + uno por el
+        // cierre), de modo que si la app crasheaba o la conexion se interrumpia entre
+        // calls, la ruta quedaba con retornos parcialmente aplicados pero sin cerrar
+        // (estado inconsistente: faltante de inventario que no cuadra contra el cierre).
+        // Con la transaccion, o se aplica todo o nada.
+        await _transactions.ExecuteInTransactionAsync(async () =>
         {
-            foreach (var retorno in dto.Retornos)
+            // Update retornos if provided
+            if (dto.Retornos?.Any() == true)
             {
-                await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, retorno.RecargaExterna, _tenant.TenantId);
+                foreach (var retorno in dto.Retornos)
+                {
+                    await _repo.ActualizarRetornoAsync(rutaId, retorno.ProductoId, retorno.Mermas, retorno.RecAlmacen, retorno.CargaVehiculo, retorno.RecargaExterna, _tenant.TenantId);
+                }
             }
-        }
 
-        await _repo.CerrarRutaAsync(rutaId, dto.MontoRecibido, _tenant.UserId, _tenant.TenantId);
+            await _repo.CerrarRutaAsync(rutaId, dto.MontoRecibido, _tenant.UserId, _tenant.TenantId);
+        });
     }
 
     /// <summary>

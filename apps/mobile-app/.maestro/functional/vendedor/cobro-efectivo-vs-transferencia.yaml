@@ -1,0 +1,329 @@
+appId: host.exp.exponent
+name: "Vendedor - Cobro Efectivo vs Transferencia (selector removido)"
+tags:
+  - vendedor
+  - cobranza
+  - metodo-pago
+  - regression
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCTIONAL TEST — VENDEDOR
+# Use case: vend-cobro-efectivo-transfer
+#
+# Compara los dos caminos historicos del flow de Registrar Cobro:
+#   PATH A) Efectivo (metodoPago=0)        → cobro se registra
+#   PATH B) Transferencia (metodoPago=1)   → DEBERIA ofrecer un
+#                                            campo "Referencia" y
+#                                            permitir registrar
+#
+# ─── PROD BUG (regresion conocida, audit 2026-05-07, "Bug #4-mobile") ───
+# El selector de metodo de pago fue ELIMINADO de la UI mobile en:
+#   apps/mobile-app/app/(tabs)/cobrar/registrar.tsx (lineas 325-338)
+# Ahora la UI siempre muestra solo el badge "Pago en efectivo" y el
+# state `metodoPago` queda fijo en 0. El backend sigue aceptando los
+# otros metodos (METODO_PAGO 0..5 declarado en src/types/cobro.ts),
+# pero el vendedor NO puede registrar transferencias ni cheques
+# desde el cliente movil.
+#
+# Hallazgo cliente real: un vendedor que cobra por SPEI/transferencia
+# tiene que marcarlo como efectivo + escribir "fue transferencia,
+# referencia XXX" en notas. Esto rompe el reporte de cobranza por
+# metodo y oculta una linea de negocio entera del dashboard backoffice.
+#
+# Este test cubre dos cosas:
+#   1) Happy path EFECTIVO continua funcionando (cobertura real).
+#   2) Documenta el bug: aserta que NO existe boton "Transferencia"
+#      ni campo "Referencia", lo cual es comportamiento ESPERADO hoy
+#      pero NO DESEADO para el vendedor. Si alguien restaura el
+#      selector, este test rompera y obligara a actualizar el assert.
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/cobrar/registrar.tsx
+#   apps/mobile-app/src/types/cobro.ts
+#
+# Pre-condicion: seed Jeyma con vendedor1@jeyma.com / test123 y al
+# menos un cliente con saldo > 100 MXN ("Abarrotes Don Pancho").
+# ════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR (subflow compartido)
+- runFlow: ../../auth/01-login-vendedor.yaml
+
+# 2. Dismiss modales opcionales post-login
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mientras uso la app"
+    commands:
+      - tapOn: "Mientras uso la app"
+      - waitForAnimationToEnd
+
+# 3. Confirmar dashboard hidratado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 4. Navegar a tab Cobrar
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: efectivo-vs-transfer-01-dashboard
+
+# ════════════════════════════════════════════════════════════
+# PATH A: COBRO EN EFECTIVO (camino real disponible)
+# ════════════════════════════════════════════════════════════
+
+# 5. Abrir formulario Registrar Cobro (FAB del hub)
+- tapOn:
+    id: "btn-registrar-cobro"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Registrar Cobro"
+    timeout: 10000
+
+- takeScreenshot: efectivo-vs-transfer-02-form-empty
+
+# 6. Layout del formulario: las cuatro secciones canonicas
+- assertVisible:
+    text: "Monto a Cobrar"
+    optional: true
+- assertVisible:
+    text: "Notas (opcional)"
+    optional: true
+- assertVisible:
+    text: "Comprobante (opcional)"
+    optional: true
+
+# 7. CRITICO — el badge "Pago en efectivo" reemplaza al selector
+#    multi-metodo. Es la huella visible del Bug #4-mobile.
+- assertVisible: "Pago en efectivo"
+
+# ─── ASSERTS DE REGRESION (PROD BUG documentation) ───
+# Si alguno de estos elementos REAPARECE, el selector volvio a la UI
+# y este test debe actualizarse para ejercer la transferencia real.
+
+# 7a. NO debe existir un boton/tab "Transferencia" como opcion
+- assertNotVisible: "Transferencia"
+
+# 7b. NO debe existir un boton/tab "Cheque"
+- assertNotVisible: "Cheque"
+
+# 7c. NO debe existir el campo "Referencia" (oculto cuando solo efectivo)
+- assertNotVisible: "Referencia"
+
+# 7d. NO debe existir un selector con "Metodo de pago" / "Método de pago"
+- assertNotVisible:
+    text: "Método de pago"
+- assertNotVisible:
+    text: "Metodo de pago"
+
+# PROD BUG / FIX TODO: restaurar selector multi-metodo en
+# apps/mobile-app/app/(tabs)/cobrar/registrar.tsx (lineas 325-338 fueron
+# reemplazadas por <efectivoInfoCard>). Si se restaura, eliminar los
+# 4 assertNotVisible de arriba y reemplazar por tap("Transferencia") +
+# inputText en el campo Referencia.
+
+# 8. Seleccionar cliente via picker
+- tapOn: "Seleccionar cliente"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Buscar cliente por nombre"
+    timeout: 5000
+
+- tapOn: "Buscar cliente por nombre"
+- inputText: "Abarrotes"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+- takeScreenshot: efectivo-vs-transfer-03-cliente-listo
+
+# 9. Ingresar monto en efectivo
+- tapOn:
+    text: "0.00"
+- inputText: "150"
+- hideKeyboard
+
+# 10. Notas: documentar metodologia del test para el QA reviewer
+- tapOn: "Observaciones adicionales"
+- inputText: "E2E vend-cobro-efectivo-transfer (efectivo path)"
+- hideKeyboard
+
+- takeScreenshot: efectivo-vs-transfer-04-listo-confirmar
+
+# 11. Confirmar cobro (boton del footer)
+- tapOn:
+    text: "Confirmar Cobro.*"
+- waitForAnimationToEnd
+
+# 12. ConfirmModal — body "Registrar cobro de $X para CLIENTE"
+- extendedWaitUntil:
+    visible: "Registrar cobro de"
+    timeout: 5000
+
+- takeScreenshot: efectivo-vs-transfer-05-modal
+
+# 13. Tap "Confirmar" del modal (index:1 porque el header repite el texto)
+- tapOn:
+    text: "Confirmar"
+    index: 1
+- waitForAnimationToEnd
+
+# 14. Recibo del cobro efectivo
+- extendedWaitUntil:
+    visible: "Cobro Registrado"
+    timeout: 15000
+
+- takeScreenshot: efectivo-vs-transfer-06-recibo-efectivo
+
+- assertVisible: "Cobro Registrado"
+
+# 15. Asegurar que no hay toast de error
+- assertNotVisible: "No se pudo registrar el cobro"
+- assertNotVisible:
+    text: "Error"
+
+# ════════════════════════════════════════════════════════════
+# PATH B: COBRO POR TRANSFERENCIA (camino BLOQUEADO por bug)
+# ════════════════════════════════════════════════════════════
+
+# 16. Volver al hub de cobranza
+- tapOn: "Cobrar"
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+# 17. Reabrir el formulario Registrar Cobro
+- tapOn:
+    id: "btn-registrar-cobro"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Registrar Cobro"
+    timeout: 10000
+
+- takeScreenshot: efectivo-vs-transfer-07-form-segundo-intento
+
+# 18. Re-asserts del bug — confirmamos el estado en una SEGUNDA
+#     navegacion (no es un glitch de cache del primer mount).
+- assertVisible: "Pago en efectivo"
+- assertNotVisible: "Transferencia"
+- assertNotVisible: "Referencia"
+
+# 19. Workaround actual del vendedor: registrar como efectivo y
+#     documentar la transferencia en notas. Este es el "happy path"
+#     real hoy y debemos validar que al menos eso no rompe.
+- tapOn: "Seleccionar cliente"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Buscar cliente por nombre"
+    timeout: 5000
+
+- tapOn: "Buscar cliente por nombre"
+- inputText: "Abarrotes"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "0.00"
+- inputText: "200"
+- hideKeyboard
+
+# 20. En notas, el vendedor tiene que escribir "transferencia + ref"
+#     porque la UI no le da otra opcion. Esto es el sintoma del bug
+#     desde el punto de vista del usuario final.
+- tapOn: "Observaciones adicionales"
+- inputText: "SPEI Banorte ref 99887766 (workaround: registrado como efectivo)"
+- hideKeyboard
+
+- takeScreenshot: efectivo-vs-transfer-08-workaround-transferencia-en-notas
+
+# 21. Confirmar
+- tapOn:
+    text: "Confirmar Cobro.*"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Registrar cobro de"
+    timeout: 5000
+
+- tapOn:
+    text: "Confirmar"
+    index: 1
+- waitForAnimationToEnd
+
+# 22. Segundo recibo
+- extendedWaitUntil:
+    visible: "Cobro Registrado"
+    timeout: 15000
+
+- takeScreenshot: efectivo-vs-transfer-09-recibo-workaround
+
+- assertVisible: "Cobro Registrado"
+- assertNotVisible: "No se pudo registrar el cobro"
+
+# ════════════════════════════════════════════════════════════
+# VERIFICACION FINAL — sesion limpia, tab bar VENDEDOR intacta
+# ════════════════════════════════════════════════════════════
+
+- tapOn: "Cobrar"
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- assertVisible: "Cobranza"
+- assertVisible: "Facturado"
+- assertVisible: "Cobrado"
+
+# Tab bar del rol vendedor intacta
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Ruta"
+- assertVisible: "Más"
+
+- takeScreenshot: efectivo-vs-transfer-10-flow-completo

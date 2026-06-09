@@ -91,8 +91,9 @@ namespace HandySuites.Tests.Application.Supervisores
         {
             var client = CreateAuthenticatedClient("200", "1", "SUPERVISOR");
             var response = await client.GetAsync("/api/supervisores/dashboard");
-            // IsSupervisor claim depends on exact CurrentTenant implementation
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+            // Sprint correctivo 2026-06-06: el 500 se arreglo (SumAsync(decimal)
+            // SQLite-incompatible reemplazado por Select+Sum in-memory).
+            response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Forbidden);
         }
 
         [Fact]

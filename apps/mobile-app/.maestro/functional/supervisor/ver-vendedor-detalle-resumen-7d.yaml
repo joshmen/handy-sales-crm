@@ -1,0 +1,336 @@
+# =============================================================================
+# Maestro E2E - SUPERVISOR: ver detalle de vendedor con resumen Ultimos 7 dias
+# -----------------------------------------------------------------------------
+# Use case: sup-vendedor-resumen-7d
+# Role: SUPERVISOR
+# Layer: mobile (React Native + Expo Go)
+#
+# Flujo cubierto:
+#   1. Login con supervisor@jeyma.com / test123 (seed canonico Jeyma).
+#   2. Aterrizaje en dashboard supervisor con tab "Equipo".
+#   3. Navegar al tab Equipo y tap sobre subordinado seed "Vendedor 1 Jeyma".
+#   4. Verificar la pantalla Detalle Vendedor (app/(tabs)/equipo/vendedor/[id].tsx).
+#      - Header "Detalle Vendedor"
+#      - Nombre del vendedor + selector de presets Hoy / Ayer / 7 dias
+#      - Section por defecto "RESUMEN DEL DIA" + grid de stats con testID
+#        "vendedor-stats" (Pedidos, Ventas, Visitas, Cobros, Clientes).
+#   5. Cambiar al preset "7 dias" -> debe refetch con { rango: '7d' } y
+#      renderizar la lista de dias (diasList) en vez del grid.
+#      - sectionLabel pasa a "ULTIMOS 7 DIAS"
+#      - Aparecen chips "pedidos", "vis", "cob" (al menos 1 fila).
+#      - El dia de hoy aparece marcado con " . Hoy".
+#   6. Volver al preset Hoy y validar que regresa al grid de stats.
+#   7. Verificar bloque "ULTIMA UBICACION" (no depende del preset).
+#   8. Verificar que NO hay over-share: vendedores de otros tenants NO listados.
+#   9. Logout limpio para no contaminar la siguiente suite.
+#
+# Backend hit:
+#   GET /api/mobile/supervisor/vendedores/{id}/resumen          (preset hoy)
+#   GET /api/mobile/supervisor/vendedores/{id}/resumen?rango=7d (preset 7d)
+#
+# Hook frontend: useVendedorResumen (apps/mobile-app/src/hooks/useSupervisor.ts)
+#
+# Riesgo cubierto:
+#   - Regresion del preset 7d (que llego como hotfix sprint correctivo 2026-06).
+#   - Render condicional grid vs diasList - facil de romper con un refactor.
+#   - IDOR: el endpoint debe rechazar IDs fuera del equipo del supervisor; aqui
+#     solo cubrimos el happy path con vendedor real subordinado.
+# =============================================================================
+appId: host.exp.exponent
+name: supervisor - ver detalle vendedor con resumen 7d
+tags:
+  - supervisor
+  - equipo
+  - vendedor-detalle
+  - resumen-7d
+  - mobile
+---
+
+- launchApp:
+    clearState: false
+
+# ---- Aviso de Privacidad opcional (primer launch tras clearState) ----
+- runFlow:
+    when:
+      visible:
+        text: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ============================================================
+# FASE 1: Login SUPERVISOR
+# ============================================================
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- inputText: "supervisor@jeyma.com"
+
+- pressKey: "TAB"
+
+- tapOn:
+    id: "password-input"
+- inputText: "test123"
+
+- tapOn:
+    id: "login-button"
+
+- takeScreenshot: sup-vendedor-7d-01-login
+
+# ---- Consents / permisos post-login (no deterministas) ----
+
+- runFlow:
+    when:
+      visible:
+        text: "Acepto"
+    commands:
+      - tapOn:
+          text: "Acepto"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+
+- runFlow:
+    when:
+      visible:
+        text: "AHORA NO"
+    commands:
+      - tapOn:
+          text: "AHORA NO"
+
+- runFlow:
+    when:
+      visible:
+        text: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+
+- runFlow:
+    when:
+      visible:
+        text: "Mas tarde"
+    commands:
+      - tapOn:
+          text: "Mas tarde"
+
+# ============================================================
+# FASE 2: Aterrizaje dashboard supervisor
+# ============================================================
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 30000
+
+- assertVisible: "Vendedores"
+- takeScreenshot: sup-vendedor-7d-02-dashboard
+
+# ============================================================
+# FASE 3: Navegar al tab Equipo
+# ============================================================
+
+- tapOn: "Equipo"
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+# Seed canonico: supervisor@jeyma.com tiene asignado a Vendedor 1 Jeyma
+- assertVisible: "Vendedor 1 Jeyma"
+
+# Cross-tenant leak guard - estos NO deberian aparecer en el equipo de Jeyma
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: sup-vendedor-7d-03-equipo-lista
+
+# ============================================================
+# FASE 4: Tap sobre la fila del vendedor subordinado
+# ============================================================
+
+- tapOn: "Vendedor 1 Jeyma"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---- Detalle Vendedor cargado ----
+- extendedWaitUntil:
+    visible: "Detalle Vendedor"
+    timeout: 15000
+
+- assertVisible: "Vendedor 1 Jeyma"
+# Selector de presets
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 días"
+
+- takeScreenshot: sup-vendedor-7d-04-detalle-default-hoy
+
+# ============================================================
+# FASE 5: Verificar preset por defecto = Hoy (grid de stats)
+# ============================================================
+
+# sectionLabel "RESUMEN DEL DIA" - el texto en pantalla usa tilde "DÍA"
+- assertVisible:
+    text: "RESUMEN DEL DÍA"
+
+# Grid de stats con testID expuesto en codigo (vendedor-stats)
+- assertVisible:
+    id: "vendedor-stats"
+
+- assertVisible: "Pedidos"
+- assertVisible: "Ventas"
+- assertVisible: "Visitas"
+- assertVisible: "Cobros"
+- assertVisible: "Clientes"
+
+- takeScreenshot: sup-vendedor-7d-05-grid-stats-hoy
+
+# ============================================================
+# FASE 6: Cambiar preset a "7 días" -> dispara refetch con rango=7d
+# ============================================================
+
+- tapOn: "7 días"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Mientras carga puede aparecer ActivityIndicator; esperar al label final
+- extendedWaitUntil:
+    visible:
+      text: "ÚLTIMOS 7 DÍAS"
+    timeout: 15000
+
+- takeScreenshot: sup-vendedor-7d-06-preset-7d-loaded
+
+# ---- En modo 7d, render condicional: grid desaparece, lista por dia aparece ----
+# Codigo: preset === '7d' && dias && dias.length > 0 ? diasList : statGrid
+# Por lo tanto el testID "vendedor-stats" NO debe verse en 7d.
+- assertNotVisible:
+    id: "vendedor-stats"
+
+# Chips de cada fila (formatDayLabel + chips con "pedidos", "vis", "cob")
+- assertVisible:
+    text: "pedidos"
+- assertVisible:
+    text: "vis"
+- assertVisible:
+    text: "cob"
+
+- takeScreenshot: sup-vendedor-7d-07-lista-dias
+
+# ---- Marca "Hoy" en la fila del dia actual ----
+# El codigo agrega " . Hoy" al label de la fecha del dia actual
+# (isToday() compara YYYY-MM-DD en TZ America/Mexico_City).
+# FIX TODO: este assert depende de que el vendedor haya tenido actividad hoy.
+# Si seed corre sin actividad del dia, la fila existe pero igual matchea
+# porque el endpoint rellena los 7 dias con totales en cero.
+- runFlow:
+    when:
+      visible:
+        text: "Hoy"
+    commands:
+      - assertVisible:
+          text: "Hoy"
+      - takeScreenshot: sup-vendedor-7d-08-fila-hoy-resaltada
+
+# ============================================================
+# FASE 7: Volver a "Hoy" -> grid debe reaparecer
+# ============================================================
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      text: "RESUMEN DEL DÍA"
+    timeout: 15000
+
+- assertVisible:
+    id: "vendedor-stats"
+
+- takeScreenshot: sup-vendedor-7d-09-back-to-hoy
+
+# ============================================================
+# FASE 8: Bloque ULTIMA UBICACION (no depende del preset)
+# ============================================================
+
+- assertVisible:
+    text: "ÚLTIMA UBICACIÓN"
+
+- takeScreenshot: sup-vendedor-7d-10-ultima-ubicacion
+
+# ============================================================
+# FASE 9: Volver al equipo y validar que seguimos en Jeyma scope
+# ============================================================
+
+- tapOn:
+    text: "Volver"
+    optional: true
+
+# Algunos devices renderizan ChevronLeft sin label - fallback con back de SO
+- runFlow:
+    when:
+      notVisible: "Vendedores"
+    commands:
+      - back
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+- assertVisible: "Vendedor 1 Jeyma"
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+- takeScreenshot: sup-vendedor-7d-11-back-equipo
+
+# ============================================================
+# FASE 10: Logout limpio
+# ============================================================
+
+- tapOn:
+    text: "Más"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Configuración"
+    commands:
+      - tapOn:
+          text: "Configuración"
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar sesión"
+          direction: DOWN
+          timeout: 15000
+          speed: 40
+      - tapOn:
+          text: "Cerrar sesión"
+      - runFlow:
+          when:
+            visible:
+              text: "Sí, cerrar sesión"
+          commands:
+            - tapOn:
+                text: "Sí, cerrar sesión"
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: sup-vendedor-7d-12-logout

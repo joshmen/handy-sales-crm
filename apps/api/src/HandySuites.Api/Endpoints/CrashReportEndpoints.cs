@@ -47,8 +47,18 @@ public static class CrashReportEndpoints
 
             await repo.CreateAsync(report);
 
-            logger.LogError("MOBILE_CRASH [{Severity}] {DeviceName} ({AppVersion}/{OsVersion}): {ErrorMessage}",
-                dto.Severity, dto.DeviceName, dto.AppVersion, dto.OsVersion, dto.ErrorMessage);
+            // Severity-aware logging — eventos INFO/WARNING NO deben inflar
+            // metricas Error en Seq. Funnel events (restore_database_*, etc.)
+            // se loguean como Information para separarlos de crashes reales.
+            var logLevel = report.Severity switch
+            {
+                "INFO" => LogLevel.Information,
+                "WARNING" => LogLevel.Warning,
+                _ => LogLevel.Error,
+            };
+            logger.Log(logLevel,
+                "MOBILE_CRASH [{Severity}] {DeviceName} ({AppVersion}/{OsVersion}): {ErrorMessage}",
+                report.Severity, report.DeviceName, report.AppVersion, report.OsVersion, report.ErrorMessage);
 
             // Broadcast to superadmin group only
             await hubContext.Clients.Group("superadmin").SendAsync("CrashReportCreated", new

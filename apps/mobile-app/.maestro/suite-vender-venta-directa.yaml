@@ -1,0 +1,224 @@
+appId: host.exp.exponent
+name: "Vender > Venta Directa > flow completo"
+---
+
+# E2E Maestro - Nuevo Pedido tipo Venta Directa (cobrada en el momento).
+#
+# PRE-REQUISITOS:
+# - Vendedor logged in (dashboard "Hoy" visible).
+# - WatermelonDB sincronizado: clientes + productos disponibles.
+# - Plan/empresa modoVentaDefault = 'Preguntar' (sino auto-skip a productos).
+#
+# FLUJO:
+#   Tab Vender -> + Nueva venta -> modo Venta Directa -> Cliente -> Productos
+#   -> Revisar -> Confirmar -> pantalla Venta Completada.
+#
+# NOTAS:
+# - tipoVenta=1 (Venta Directa). Metodo pago hardcoded a Efectivo.
+# - Si modoDefault esta forzado a VentaDirecta o Preventa, la pantalla
+#   modo.tsx auto-avanza; manejamos eso con runFlow when:visible.
+
+# 1. Esperar dashboard cargado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: 01-dashboard-listo
+
+# 2. Ir al tab Vender
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 30000
+
+- takeScreenshot: 02-hub-vender
+
+# 3. Tap en la accion principal para iniciar nueva venta.
+#    El hub Vender expone un boton Nueva venta / Nuevo pedido o un FAB +.
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+
+- runFlow:
+    when:
+      visible: "Nuevo pedido"
+    commands:
+      - tapOn: "Nuevo pedido"
+
+- waitForAnimationToEnd
+
+# 4. Pantalla "Nuevo Pedido" - seleccionar modo Venta Directa.
+#    Si admin ya configuro un modoDefault, esta pantalla se auto-skipea.
+- runFlow:
+    when:
+      visible: "Selecciona el modo de venta"
+    commands:
+      - assertVisible: "Preventa"
+      - assertVisible: "Venta Directa"
+      - takeScreenshot: 03-modo-venta
+      - tapOn: "Venta Directa"
+      - waitForAnimationToEnd
+
+# 5. Paso 1 - Seleccionar Cliente. Header azul + ProgressSteps.
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 30000
+
+- assertVisible: "Cliente"
+- assertVisible: "Productos"
+- assertVisible: "Revisar"
+- assertVisible: "Buscar cliente..."
+- assertVisible: "Continuar"
+
+- takeScreenshot: 04-step1-cliente
+
+# Manejo de permission GPS (cercanos por GPS) si pide permisos
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# Buscar un cliente generico (cualquier letra que tenga seed).
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "a"
+- waitForAnimationToEnd
+- takeScreenshot: 05-buscar-cliente
+
+# Eliminar el texto buscado para ver la lista completa
+- eraseText
+- waitForAnimationToEnd
+
+# Tap en el primer cliente visible
+- tapOn:
+    point: "50%,55%"
+
+- waitForAnimationToEnd
+- takeScreenshot: 06-cliente-seleccionado
+
+# Continuar al paso 2
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# 6. Paso 2 - Productos. ProgressSteps con currentStep=1.
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 30000
+
+- takeScreenshot: 07-step2-productos
+
+# Tap en el boton + del primer producto (QuantityStepper +)
+- tapOn:
+    text: "+"
+- waitForAnimationToEnd
+- takeScreenshot: 08-producto-agregado
+
+# Agregar dos unidades mas para validar incremento
+- tapOn:
+    text: "+"
+- waitForAnimationToEnd
+- tapOn:
+    text: "+"
+- waitForAnimationToEnd
+
+- takeScreenshot: 09-cantidad-3
+
+# Validar CartBar visible con total y boton Revisar/Continuar
+- runFlow:
+    when:
+      visible: "Revisar"
+    commands:
+      - tapOn: "Revisar"
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+
+- waitForAnimationToEnd
+
+# 7. Paso 3 - Revision. ProgressSteps currentStep=2.
+- extendedWaitUntil:
+    visible: "Revisar"
+    timeout: 30000
+
+- assertVisible: "Total"
+- takeScreenshot: 10-step3-revision
+
+# Scroll para ver notas/observaciones y boton final
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+
+# Para Venta Directa el boton final dice algo como "Cobrar y entregar"
+# o "Confirmar venta". Manejamos ambos.
+- runFlow:
+    when:
+      visible: "Cobrar y entregar"
+    commands:
+      - tapOn: "Cobrar y entregar"
+
+- runFlow:
+    when:
+      visible: "Confirmar venta"
+    commands:
+      - tapOn: "Confirmar venta"
+
+- runFlow:
+    when:
+      visible: "Enviar pedido"
+    commands:
+      - tapOn: "Enviar pedido"
+
+- waitForAnimationToEnd
+
+# Confirmar modal (ConfirmModal)
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+
+- waitForAnimationToEnd
+
+# 8. Pantalla de Exito - Venta Completada
+- extendedWaitUntil:
+    visible: "Venta Completada"
+    timeout: 30000
+
+- assertVisible: "Venta cobrada y entregada exitosamente"
+
+# No deberia haber regresado a login
+- assertNotVisible:
+    id: "login-button"
+
+- takeScreenshot: 11-venta-exito
+
+# Boton final para volver al inicio / nueva venta
+- runFlow:
+    when:
+      visible: "Volver al inicio"
+    commands:
+      - tapOn: "Volver al inicio"
+
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+
+- waitForAnimationToEnd
+- takeScreenshot: 12-flow-completo-cerrado
+

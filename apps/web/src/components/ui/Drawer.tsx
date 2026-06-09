@@ -96,19 +96,57 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
   useEffect(() => {
     if (visible) {
       document.body.style.overflow = 'hidden';
+
+      // Sprint pre-prod #58 audit 2026-06-06: focus trap. Sin esto, Tab
+      // desde el ultimo elemento focuseable del drawer salta a la pagina
+      // de abajo (con el drawer aun visible). Implementacion minima:
+      // captura Tab/Shift+Tab y lo wrap dentro del drawer ref.
+      const drawerEl = document.getElementById(titleId.replace(/[^a-zA-Z0-9-]/g, '') + '-root');
+
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') handleRequestClose();
+        if (e.key === 'Escape') {
+          handleRequestClose();
+          return;
+        }
+        if (e.key !== 'Tab' || !drawerEl) return;
+
+        const focusables = drawerEl.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
       };
       document.addEventListener('keydown', handleKeyDown);
+
+      // Move focus into drawer on open + restore on close.
+      const previouslyFocused = document.activeElement as HTMLElement | null;
+      setTimeout(() => {
+        const focusables = drawerEl?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
+        );
+        focusables?.[0]?.focus();
+      }, 50);
+
       return () => {
         document.body.style.overflow = 'unset';
         document.removeEventListener('keydown', handleKeyDown);
+        previouslyFocused?.focus();
       };
     } else {
       document.body.style.overflow = 'unset';
       setShowUnsaved(false);
     }
-  }, [visible, handleRequestClose]);
+  }, [visible, handleRequestClose, titleId]);
 
   if (!visible || !mounted) return null;
 
@@ -125,6 +163,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
 
       {/* Panel */}
       <div
+        id={titleId.replace(/[^a-zA-Z0-9-]/g, '') + '-root'}
         data-drawer-panel
         role="dialog"
         aria-modal="true"

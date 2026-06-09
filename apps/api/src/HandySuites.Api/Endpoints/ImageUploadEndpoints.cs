@@ -261,7 +261,7 @@ public static class ImageUploadEndpoints
                 // SECURITY: gate logo/company uploads a ADMIN+. Antes el upload
                 // a Cloudinary procedía y solo el DB write se gateaba — un
                 // VENDEDOR podía spamear /logos/ con 5MB cada uno (storage abuse).
-                if ((request.Type == "logo" || request.Type == "company") && !usuario.IsAdminOrAbove)
+                if ((request.Type == "logo" || request.Type == "company") && !usuario.IsStrictAdmin)
                     return Results.Forbid();
 
                 var tenantFolder = cloudinaryService.GenerateTenantFolder(usuario.TenantId, usuario.Tenant.NombreEmpresa);
@@ -294,7 +294,7 @@ public static class ImageUploadEndpoints
                     usuario.AvatarUrl = result.SecureUrl;
                     await dbContext.SaveChangesAsync();
                 }
-                else if (request.Type == "logo" && usuario.IsAdminOrAbove)
+                else if (request.Type == "logo" && usuario.IsStrictAdmin)
                 {
                     var companySetting = await dbContext.CompanySettings
                         .FirstOrDefaultAsync(cs => cs.TenantId == usuario.TenantId);

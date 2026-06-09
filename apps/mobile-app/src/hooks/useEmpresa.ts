@@ -23,6 +23,10 @@ export interface DatosEmpresa {
   /** Reliability Sprint Fase 3: true si subscription.incluye_tracking_vendedor.
    *  Gateia el toggle "Tracking GPS background" en configuracion.tsx. */
   trackingGpsEnabled?: boolean;
+  /** PR 5 cobros 3 modos: true si plan.permitir_anticipos_en_campo. Gateia el
+   *  selector "Anticipo" en registrar.tsx — sin esto el backend retorna 403
+   *  FeatureNotInPlanException. Default false (fail-closed). */
+  permitirAnticiposEnCampo?: boolean;
   timezone: string;           // IANA tz, ej "America/Mexico_City"
   currency: string;           // ej "MXN"
   language: string;           // ej "es"

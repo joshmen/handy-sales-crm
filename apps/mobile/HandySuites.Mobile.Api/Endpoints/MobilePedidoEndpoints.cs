@@ -85,6 +85,31 @@ public static class MobilePedidoEndpoints
         .Produces<object>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest);
 
+        // B.1 eager-save (fix prod 2026-06-04). El vendedor mobile dispara este
+        // endpoint en fire-and-forget DESPUÉS de guardar el pedido en su SQLite
+        // local. El server crea Pedido con Estado=Borrador idempotentemente vía
+        // mobile_record_id (WDB local id). Garantiza durabilidad si el SQLite
+        // local se borra (uninstall, factory reset). NO afecta inventory ni
+        // RutasCarga — eso pasa al promover Estado vía sync push normal.
+        group.MapPost("/eager-save", async (
+            PedidoEagerSaveDto dto,
+            [FromServices] PedidoService servicio) =>
+        {
+            try
+            {
+                var result = await servicio.EagerSaveAsync(dto);
+                return Results.Ok(new { success = true, data = result });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { success = false, message = ex.Message });
+            }
+        })
+        .WithSummary("Eager-save de pedido (durabilidad server-side)")
+        .WithDescription("Idempotent via mobile_record_id. Crea Pedido en Estado=Borrador sin afectar inventario. Disparado en fire-and-forget desde mobile tras crear el pedido localmente.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
         group.MapGet("/mis-pedidos", async (
             [FromQuery] int? estado,
             [FromQuery] int? tipoVenta,

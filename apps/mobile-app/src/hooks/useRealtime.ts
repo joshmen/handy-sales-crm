@@ -70,12 +70,38 @@ export function useRealtime() {
           });
         }
       }),
-      signalR.on('ForceLogout', (...args: unknown[]) => {
-        const payload = args[0] as { reason?: string } | undefined;
+      signalR.on('ForceLogout', async (...args: unknown[]) => {
+        const payload = args[0] as { reason?: string; newDeviceId?: string; message?: string } | undefined;
+
+        // B.4 single-session: SESSION_REPLACED se emite a TODOS los clientes
+        // del usuario (incluido el que recién hizo login). El device nuevo
+        // tiene que ignorarlo — solo el viejo debe cerrar sesión. Filtro: si
+        // newDeviceId NO es null Y coincide con mi propio deviceId, soy el
+        // nuevo → ignore.
+        if (payload?.reason === 'SESSION_REPLACED' && payload?.newDeviceId) {
+          const { getDeviceId } = await import('@/api/client');
+          try {
+            const myDeviceId = await getDeviceId();
+            if (myDeviceId === payload.newDeviceId) {
+              // Soy el device que recién hizo login — ignore.
+              return;
+            }
+          } catch {
+            // Si no podemos resolver el deviceId, asumimos que es el device
+            // viejo (caso conservador — mejor cerrar de más que no cerrar).
+          }
+        }
+
+        const text2 = payload?.reason === 'SESSION_REPLACED'
+          ? (payload.message ?? 'Iniciaste sesión en otro dispositivo')
+          : payload?.reason === 'TENANT_DEACTIVATED'
+            ? 'Tu empresa fue desactivada'
+            : 'Sesión finalizada remotamente';
+
         Toast.show({
           type: 'error',
-          text1: 'Sesión cerrada por el sistema',
-          text2: payload?.reason === 'TENANT_DEACTIVATED' ? 'Tu empresa fue desactivada' : 'Sesión finalizada remotamente',
+          text1: 'Sesión cerrada',
+          text2,
           visibilityTime: 8000,
         });
         // Logout via store — el AuthGate redirige a /(auth)/login al cambiar isAuthenticated.

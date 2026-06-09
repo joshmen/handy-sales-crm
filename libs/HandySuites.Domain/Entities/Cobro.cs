@@ -13,6 +13,28 @@ public enum MetodoPago
     Otro = 5
 }
 
+/// <summary>
+/// Modo de cobro — define semantica del pago. Patron Aspel/Microsip/SAP +
+/// cumplimiento NIF D-1 / SAT MX (anticipo es pasivo, no ingreso).
+///
+/// PorPedido (default): cobro ligado a un Pedido especifico (PedidoId NOT NULL).
+///   Backend aplica overpayment guard atomico per-pedido. Caso 99%.
+///
+/// AbonoFifo: cobro generico a cliente, backend distribuye FIFO contra
+///   pedidos abiertos (saldo > 0) del cliente. PedidoId NULL en row root,
+///   pero se crean CobroAplicaciones[] children con PedidoId per-split.
+///
+/// Anticipo: cobro genera saldoFavor (credit balance) intencional.
+///   PedidoId NULL. Requiere SubscriptionPlan.PermitirAnticiposEnCampo=true
+///   para tenant. Aplicable posteriormente a futuras ventas del cliente.
+/// </summary>
+public enum ModoCobro
+{
+    PorPedido = 0,
+    AbonoFifo = 1,
+    Anticipo = 2
+}
+
 [Table("Cobros")]
 public class Cobro : AuditableEntity
 {
@@ -48,6 +70,22 @@ public class Cobro : AuditableEntity
 
     [Column("notas")]
     public string? Notas { get; set; }
+
+    /// <summary>
+    /// 2026-06-08: modo explicito de cobro (PorPedido / AbonoFifo / Anticipo).
+    /// Default PorPedido para retrocompat con rows historicos.
+    /// </summary>
+    [Column("modo")]
+    public ModoCobro Modo { get; set; } = ModoCobro.PorPedido;
+
+    /// <summary>
+    /// 2026-06-08: true SOLO cuando Modo == Anticipo. Genera saldoFavor
+    /// (credit balance) explicitamente. Requiere
+    /// SubscriptionPlan.PermitirAnticiposEnCampo=true del tenant.
+    /// Backend valida coherencia con Modo en CobroService.
+    /// </summary>
+    [Column("es_anticipo")]
+    public bool EsAnticipo { get; set; }
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;

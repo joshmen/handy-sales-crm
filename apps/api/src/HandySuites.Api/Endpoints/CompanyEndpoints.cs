@@ -57,7 +57,7 @@ namespace HandySuites.Api.Endpoints
                 try
                 {
                     // Solo ADMIN y SUPER_ADMIN pueden modificar configuración de la empresa
-                    if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -102,7 +102,7 @@ namespace HandySuites.Api.Endpoints
                 try
                 {
                     // Solo ADMIN y SUPER_ADMIN pueden subir logo de la empresa
-                    if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -160,7 +160,7 @@ namespace HandySuites.Api.Endpoints
                 try
                 {
                     // Solo ADMIN y SUPER_ADMIN pueden eliminar logo de la empresa
-                    if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -216,7 +216,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // Solo Super Admin o Admin pueden inicializar carpetas
-                    if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
                     }
@@ -284,9 +284,26 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // Solo Super Admin o Admin pueden crear datos de facturación
-                    if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
+                    }
+
+                    // Sprint pre-prod #11 audit 2026-06-07: Minimal API no ejecuta
+                    // DataAnnotations automaticamente. Validar manualmente todos los
+                    // [Required], [StringLength], [RegularExpression], [EmailAddress],
+                    // [Phone], [Url], [Range] del DTO. Antes se podia crear con
+                    // RFC corto, CodigoPostal no-numerico, RegimenFiscal cualquier
+                    // longitud, etc.
+                    var validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(request);
+                    var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+                    if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+                        request, validationContext, validationResults, validateAllProperties: true))
+                    {
+                        var errors = validationResults
+                            .GroupBy(r => r.MemberNames.FirstOrDefault() ?? "")
+                            .ToDictionary(g => g.Key, g => g.Select(r => r.ErrorMessage ?? "Validacion fallida").ToArray());
+                        return Results.ValidationProblem(errors);
                     }
 
                     var result = await billingService.CreateAsync(tenantId, userId, request);
@@ -323,9 +340,23 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // Solo Super Admin o Admin pueden actualizar datos de facturación
-                    if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                    if (!currentTenant.IsStrictAdmin)
                     {
                         return Results.Forbid();
+                    }
+
+                    // Sprint pre-prod #11 audit 2026-06-07: validar DataAnnotations
+                    // del UpdateDatosFacturacionRequest (mismo patron que el POST
+                    // arriba — Minimal API no las ejecuta automaticamente).
+                    var validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(request);
+                    var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+                    if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+                        request, validationContext, validationResults, validateAllProperties: true))
+                    {
+                        var errors = validationResults
+                            .GroupBy(r => r.MemberNames.FirstOrDefault() ?? "")
+                            .ToDictionary(g => g.Key, g => g.Select(r => r.ErrorMessage ?? "Validacion fallida").ToArray());
+                        return Results.ValidationProblem(errors);
                     }
 
                     var result = await billingService.UpdateAsync(tenantId, userId, request);
@@ -436,7 +467,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // ADMIN solo puede ver su propia empresa
-                    if (currentTenant.IsAdmin && company.TenantId == currentTenant.TenantId)
+                    if (currentTenant.IsStrictAdmin && company.TenantId == currentTenant.TenantId)
                     {
                         return Results.Ok(company);
                     }
@@ -525,7 +556,7 @@ namespace HandySuites.Api.Endpoints
                     }
 
                     // ADMIN solo puede actualizar su propia empresa
-                    if (currentTenant.IsAdmin && company.TenantId == currentTenant.TenantId)
+                    if (currentTenant.IsStrictAdmin && company.TenantId == currentTenant.TenantId)
                     {
                         var result = await companyService.UpdateAsync(id, userId, request);
                         return result != null

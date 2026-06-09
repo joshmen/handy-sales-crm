@@ -5,6 +5,7 @@ export { Badge } from './Badge';
 export { LoadingSpinner } from './LoadingSpinner';
 export { EmptyState } from './EmptyState';
 export { ConfirmModal } from './ConfirmModal';
+export { TypeToConfirmModal } from './TypeToConfirmModal';
 export { BottomSheet } from './BottomSheet';
 export { OfflineBanner } from './OfflineBanner';
 export { SessionExpiredBanner } from './SessionExpiredBanner';

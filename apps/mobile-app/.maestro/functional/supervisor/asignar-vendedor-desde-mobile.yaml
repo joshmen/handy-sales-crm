@@ -1,0 +1,231 @@
+appId: host.exp.exponent
+name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del equipo asignado)"
+---
+
+# ═══════════════════════════════════════════════════════════════════════
+# PROD FINDING / FIX TODO:
+#   La asignación de vendedores a un supervisor NO existe como acción en
+#   apps/mobile-app — se realiza únicamente desde el portal web (admin).
+#   En mobile el supervisor solo VE su equipo ya asignado vía
+#   GET /api/mobile/supervisor/mis-vendedores (MobileSupervisorEndpoints.cs).
+#
+#   Por lo tanto, este test funcional cubre el contrato real del feature
+#   "asignar vendedor desde mobile" tal como existe hoy: el supervisor
+#   inicia sesión en la app y verifica que SU equipo asignado aparece
+#   correctamente (KPIs, lista de vendedores y detalle de un vendedor
+#   asignado). Si los vendedores no estuvieran correctamente asignados
+#   en backend, este flujo fallaría — por lo que es la verificación
+#   end-to-end de la asignación efectiva.
+#
+#   Si en el futuro se agrega UI in-app para asignar (botón "Asignar
+#   vendedor" en /equipo o en el modal de Más), reemplazar la FASE 5
+#   por el tap real + assertVisible del toast "Vendedor asignado".
+# ═══════════════════════════════════════════════════════════════════════
+
+- launchApp:
+    clearState: false
+
+# ═══════════════════════════════════════════
+# FASE 1: ONBOARDING (si aplica) + LOGIN SUPERVISOR
+# ═══════════════════════════════════════════
+
+# Saltar onboarding si está visible (3 slides con botón estable por testID)
+- runFlow:
+    when:
+      visible: "Siguiente"
+    commands:
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+
+# Aviso de Privacidad / permisos opcionales
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+
+# Si ya hay sesión activa (clearState:false), saltar login
+- runFlow:
+    when:
+      notVisible:
+        id: "login-button"
+    commands:
+      - assertVisible: "Hoy"
+
+# Si vemos el botón de login, autenticar como supervisor
+- runFlow:
+    when:
+      visible:
+        id: "login-button"
+    commands:
+      - tapOn:
+          id: "email-input"
+      - eraseText
+      - inputText: "supervisor@jeyma.com"
+      - tapOn:
+          id: "password-input"
+      - eraseText
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          id: "login-button"
+      - extendedWaitUntil:
+          visible: "Hoy"
+          timeout: 45000
+
+# Cerrar modal "iniciaste sesión en otro dispositivo" si aparece
+- runFlow:
+    when:
+      visible: "iniciaste sesión"
+    commands:
+      - tapOn: "Continuar"
+
+- takeScreenshot: "asignar-01-dashboard-supervisor"
+
+# ═══════════════════════════════════════════
+# FASE 2: DASHBOARD — banner "Mi Equipo" debe estar visible
+# ═══════════════════════════════════════════
+
+# El banner solo aparece para roles SUPERVISOR/ADMIN — confirma que el
+# backend respeta el rol asignado al usuario autenticado.
+- assertVisible: "Mi Equipo"
+- assertVisible: "Equipo"
+
+- takeScreenshot: "asignar-02-banner-mi-equipo"
+
+# ═══════════════════════════════════════════
+# FASE 3: NAVEGAR A TAB EQUIPO — VER KPIs + LISTA ASIGNADA
+# ═══════════════════════════════════════════
+
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+# KPIs del supervisor (testID estable agregado en equipo/index.tsx)
+- assertVisible:
+    id: "supervisor-kpis"
+
+# Botones de header del equipo
+- assertVisible:
+    id: "ver-mapa"
+- assertVisible:
+    id: "ver-actividad"
+
+- takeScreenshot: "asignar-03-equipo-kpis"
+
+# ═══════════════════════════════════════════
+# FASE 4: VERIFICAR QUE EL EQUIPO ASIGNADO TIENE >= 1 VENDEDOR
+# ═══════════════════════════════════════════
+# Si la asignación supervisor→vendedor funciona, esperamos al menos
+# "Vendedor 1 Jeyma" (seed local). Si la lista está vacía aparecería
+# "No tienes vendedores asignados" — caso negativo abajo.
+
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - assertVisible: "Vendedor 1 Jeyma"
+      - takeScreenshot: "asignar-04-vendedor-asignado-visible"
+
+# Caso negativo controlado: si el seed no asignó vendedores al supervisor,
+# documentar y fallar visualmente con screenshot.
+- runFlow:
+    when:
+      visible: "No tienes vendedores asignados"
+    commands:
+      - takeScreenshot: "asignar-04b-PROD-BUG-sin-vendedores-asignados"
+      # FIX TODO: si esto aparece, revisar seed_local_pg.sql /
+      # tabla Usuarios.SupervisorId — el supervisor@jeyma.com debe tener
+      # vendedores con SupervisorId apuntando a su Id.
+      - assertVisible: "Vendedor 1 Jeyma"
+
+# ═══════════════════════════════════════════
+# FASE 5: ABRIR DETALLE DEL VENDEDOR ASIGNADO
+# ═══════════════════════════════════════════
+# Cobertura end-to-end real: tap → navegación → assert efecto
+# (vendedor-stats grid renderizado con datos del backend).
+
+- tapOn: "Vendedor 1 Jeyma"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Detalle Vendedor"
+    timeout: 15000
+
+# El grid de stats solo se renderiza si el backend respondió 200 con
+# datos válidos del vendedor asignado al supervisor autenticado.
+- assertVisible:
+    id: "vendedor-stats"
+
+# Preset selector debe existir (Hoy / Ayer / 7 días)
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 días"
+
+- takeScreenshot: "asignar-05-detalle-vendedor-stats"
+
+# Probar cambio de preset → confirma que el supervisor puede consultar
+# histórico del vendedor asignado (no solo el día actual).
+- tapOn: "7 días"
+- waitForAnimationToEnd
+- assertVisible: "ÚLTIMOS 7 DÍAS"
+- takeScreenshot: "asignar-06-detalle-7dias"
+
+# Regresar al equipo
+- back
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 10000
+
+# ═══════════════════════════════════════════
+# FASE 6: TAB "Más" — VERIFICAR BADGE "Supervisor"
+# ═══════════════════════════════════════════
+# Confirma que el rol resuelto por el backend (vía JWT) llega al cliente
+# y se refleja en la UI. Sin rol SUPERVISOR resuelto correctamente, el
+# endpoint mis-vendedores devolvería 403 y la FASE 4 hubiera fallado.
+
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- assertVisible: "Supervisor"
+- assertVisible: "Configuración"
+
+- takeScreenshot: "asignar-07-mas-badge-supervisor"
+
+# ═══════════════════════════════════════════
+# FASE 7: VOLVER A "Hoy" — INTEGRIDAD DE SESIÓN
+# ═══════════════════════════════════════════
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- assertVisible: "Mi Equipo"
+
+- takeScreenshot: "asignar-08-dashboard-final"

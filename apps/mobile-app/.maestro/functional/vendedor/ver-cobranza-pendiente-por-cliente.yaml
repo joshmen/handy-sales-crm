@@ -1,0 +1,160 @@
+appId: host.exp.exponent
+name: "Vendedor - Ver cobranza pendiente por cliente (read-only)"
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCTIONAL TEST — VENDEDOR
+# Use case: ver-cobranza-pendiente-por-cliente
+#
+# Flujo read-only: el vendedor abre el tab Cobrar, revisa el resumen
+# agregado (Facturado / Cobrado / Pendiente de Cobro), filtra por
+# periodo "Todo" para asegurar visibilidad de saldos historicos,
+# verifica que aparezca la seccion "SALDOS POR CLIENTE", abre el
+# Estado de Cuenta de un cliente y regresa. NO registra cobro,
+# NO modifica datos.
+#
+# Pre-condicion: ejecutar antes
+#   apps/mobile-app/.maestro/auth/01-login-vendedor.yaml
+# para dejar sesion VENDEDOR (vendedor1@jeyma.com) activa.
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx
+#   apps/mobile-app/app/(tabs)/cobrar/estado-cuenta/[clienteId].tsx
+# ════════════════════════════════════════════════════════════
+
+# 1. Confirmar que el dashboard "Hoy" del vendedor esta hidratado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 2. Dismiss de modales emergentes opcionales (permisos GPS, sync, etc.)
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Continuar"
+    commands:
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+# 3. Navegar al tab Cobrar
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: cobrar-vista-inicial
+
+# 4. Verificar los 3 indicadores agregados del header
+- assertVisible: "Facturado"
+- assertVisible: "Cobrado"
+- assertVisible: "Pendiente de Cobro"
+
+# 5. Verificar que los botones principales son tappables (sin ejecutar)
+- assertVisible:
+    text: "Registrar Cobro"
+    optional: true
+- assertVisible:
+    text: "Historial"
+    optional: true
+
+# 6. Asegurar filtro "Todo" para incluir historial completo de saldos
+- tapOn:
+    text: "Todo"
+    optional: true
+- waitForAnimationToEnd
+
+- takeScreenshot: cobrar-filtro-todo
+
+# 7. Scroll para revelar SALDOS POR CLIENTE
+- scroll
+
+- assertVisible: "SALDOS POR CLIENTE"
+
+# 8. Segundo scroll para ver mas tarjetas de cliente
+- scroll
+
+- takeScreenshot: cobrar-saldos-lista
+
+# 9. Tap en la primera tarjeta de cliente con saldo.
+#    Las tarjetas exponen accessibilityLabel:
+#      "Estado de cuenta de {cliente}, saldo {monto}"
+#    Usamos regex contra el id (Maestro usa accessibilityLabel/testID
+#    como id en RN) para hacer match con cualquier tarjeta visible.
+- tapOn:
+    id: "Estado de cuenta de.*"
+    optional: true
+
+# 10. Fallback: si el match por id no funciono, tap por el texto comun
+#     "Facturado:" que aparece en la meta de cada tarjeta de cliente
+- runFlow:
+    when:
+      visible: "Facturado:"
+    commands:
+      - tapOn:
+          text: "Facturado:"
+          index: 0
+          optional: true
+
+# 11. Confirmar navegacion al Estado de Cuenta del cliente
+- extendedWaitUntil:
+    visible: "Estado de Cuenta"
+    timeout: 15000
+
+- takeScreenshot: cobrar-estado-cuenta-cliente
+
+# 12. Verificar elementos del detalle
+- assertVisible:
+    text: "Saldo Pendiente"
+    optional: true
+- assertVisible:
+    text: "Facturado"
+    optional: true
+- assertVisible:
+    text: "Cobrado"
+    optional: true
+
+# 13. Verificar que NO hay toast de error en pantalla
+- assertNotVisible:
+    text: "Sin conexion"
+- assertNotVisible:
+    text: "Failed"
+
+# 14. Volver a la lista de saldos via boton "Volver"
+- tapOn:
+    text: "Volver"
+    optional: true
+
+# Fallback al back nativo si el ChevronLeft no respondio
+- runFlow:
+    when:
+      visible: "Estado de Cuenta"
+    commands:
+      - back
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 10000
+
+# 15. Confirmar que la sesion vendedor sigue activa: el tab bar de
+#     vendedor incluye "Hoy / Vender / Cobrar / Ruta / Mas" — si
+#     viera "Configuracion" o "Administracion" seria rol admin.
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Ruta"
+
+- takeScreenshot: cobrar-flow-completo

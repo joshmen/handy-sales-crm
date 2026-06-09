@@ -129,6 +129,48 @@ public static class InternalEndpoints
             return Results.Ok(new { success = true });
         });
 
+        // B.4 (fix prod 2026-06-03 post-incidente Rodrigo): single-session
+        // revocation broadcast. Cuando el cliente mobile fuerza login en device B,
+        // el mobile API llama este endpoint para que el device A se entere AL
+        // INSTANTE via SignalR (sin esperar al próximo request HTTP 401).
+        // El payload incluye el deviceId nuevo — el mobile listener compara
+        // con su propio deviceId; si NO coincide, es el device A → logout local.
+        group.MapPost("/session-replaced", async (
+            SessionReplacedRequest request,
+            IHubContext<NotificationHub> hubContext,
+            IConfiguration configuration,
+            HttpContext context,
+            ILogger<Program> logger) =>
+        {
+            var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
+            var expectedKey = configuration["InternalApiKey"] ?? throw new InvalidOperationException("InternalApiKey is not configured");
+            if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
+            {
+                logger.LogWarning("session-replaced: Invalid or missing API key");
+                return Results.Unauthorized();
+            }
+
+            if (request.UserId <= 0)
+                return Results.BadRequest(new { message = "UserId invalido" });
+
+            logger.LogInformation(
+                "Session replaced broadcast: userId={UserId}, newDeviceId={NewDeviceId}",
+                request.UserId, request.NewDeviceId);
+
+            // ForceLogout es el evento que el cliente ya escucha (useRealtime.ts).
+            // Agregamos reason=SESSION_REPLACED para diferenciar del tenant-deactivated.
+            // Incluimos newDeviceId para que el cliente compare y solo se cierre si
+            // NO es el device que recién hizo login.
+            await hubContext.Clients.Group($"user:{request.UserId}").SendAsync("ForceLogout", new
+            {
+                reason = "SESSION_REPLACED",
+                newDeviceId = request.NewDeviceId,
+                message = "Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo"
+            });
+
+            return Results.Ok(new { success = true });
+        });
+
         // BILL-1 (2026-05-26): Resolver emails de admins de un tenant. Llamado
         // desde Billing API tras alta/fallo de registro Finkok para notificar
         // a todos los admins del tenant.
@@ -170,6 +212,22 @@ public class DashboardNotifyRequest
     public string Tipo { get; set; } = "";
     public int Id { get; set; }
     public int TenantId { get; set; }
+}
+
+/// <summary>
+/// B.4 — Payload del session-replaced broadcast (single-session enforcement).
+/// </summary>
+public class SessionReplacedRequest
+{
+    /// <summary>UsuarioId cuya sesión fue reemplazada.</summary>
+    public int UserId { get; set; }
+
+    /// <summary>
+    /// DeviceId del device NUEVO que acaba de loguearse. El cliente mobile
+    /// listener compara con su propio deviceId: si NO coincide, es el device
+    /// VIEJO → logout. Si coincide, es el nuevo → ignore.
+    /// </summary>
+    public string? NewDeviceId { get; set; }
 }
 
 public class SyncNotifyRequest

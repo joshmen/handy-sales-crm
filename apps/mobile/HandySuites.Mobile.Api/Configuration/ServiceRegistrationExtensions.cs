@@ -73,7 +73,7 @@ public static class ServiceRegistrationExtensions
     public static IServiceCollection AddMobileServices(this IServiceCollection services, IConfiguration config)
     {
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        Console.WriteLine($"[Mobile API] Entorno actual: {environment}");
+        Serilog.Log.Information("[Mobile API] Entorno actual: {Environment}", environment);
 
         // HttpContextAccessor es necesario para ITenantContextService
         services.AddHttpContextAccessor();
@@ -174,6 +174,12 @@ public static class ServiceRegistrationExtensions
         // Sync Service (for offline sync)
         services.AddScoped<ISyncRepository, SyncRepository>();
         services.AddScoped<SyncService>();
+
+        // B.2 — Telemetría heartbeat (post-incidente Rodrigo 2026-06-03)
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryRepository,
+                            HandySuites.Infrastructure.Repositories.SyncTelemetryRepository>();
+        services.AddScoped<HandySuites.Application.Telemetry.Interfaces.ISyncTelemetryService,
+                            HandySuites.Application.Telemetry.Services.SyncTelemetryService>();
 
         // Precios y Listas de Precios
         services.AddScoped<IListaPrecioRepository, ListaPrecioRepository>();

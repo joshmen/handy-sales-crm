@@ -1,0 +1,65 @@
+appId: host.exp.exponent
+name: "Cobrar - Modo Abono a cuenta FIFO"
+---
+
+# PR 5 cobros 3 modos: valida modo AbonoFifo (selector + ConfirmModal con
+# titulo "Abono a cuenta" + mensaje de distribucion automatica).
+
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- tapOn:
+    text: "Registrar Cobro"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Tipo de cobro"
+    timeout: 10000
+
+# Tap en boton modo AbonoFifo (testID="cobro-modo-1")
+- tapOn:
+    id: "cobro-modo-1"
+
+- takeScreenshot: cobrar-modo-fifo-selected
+
+# Modo AbonoFifo filtra clientes con saldo>0 (igual que PorPedido).
+- tapOn:
+    text: "Seleccionar cliente"
+    optional: true
+
+- tapOn:
+    index: 0
+    optional: true
+
+- tapOn:
+    text: "0.00"
+    optional: true
+- inputText: "200"
+- hideKeyboard
+
+- takeScreenshot: cobrar-modo-fifo-filled
+
+# Tap Confirmar → ConfirmModal con titulo "Abono a cuenta" + mensaje FIFO
+- tapOn:
+    text: "Confirmar Cobro"
+
+- extendedWaitUntil:
+    visible: "Abono a cuenta"
+    timeout: 5000
+
+- assertVisible:
+    text: "Abono a cuenta"
+- assertVisible:
+    text: "distribuira automaticamente"
+
+- takeScreenshot: cobrar-modo-fifo-confirmmodal
+
+# Cancelar modal y volver
+- tapOn:
+    text: "Cancelar"
+    optional: true
+- back
+- tapOn: "Cobrar"

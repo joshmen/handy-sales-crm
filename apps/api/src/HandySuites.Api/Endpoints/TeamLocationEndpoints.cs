@@ -55,11 +55,18 @@ public static class TeamLocationEndpoints
             ? await ubicacionRepo.ObtenerUltimasAsync(tenantId)
             : new List<Application.Tracking.DTOs.UltimaUbicacionDto>();
 
+        // Sprint pre-prod #68 audit 2026-06-06: full table scan sin date filter.
+        // Las "ultimas ubicaciones" del equipo solo necesitan las activities
+        // del ultimo dia — si filtramos antes del materializar (.ToListAsync()),
+        // bajamos el dataset de potencialmente millones a decenas/cientos.
+        var sinceUtc = DateTime.UtcNow.AddDays(-1);
+
         var visitas = db.ClienteVisitas.AsNoTracking()
             .Where(v => v.TenantId == tenantId
                         && v.Activo
                         && v.LatitudInicio != null
-                        && v.LongitudInicio != null)
+                        && v.LongitudInicio != null
+                        && (v.FechaHoraInicio ?? v.CreadoEn) >= sinceUtc)
             .Select(v => new RawActivity(
                 v.UsuarioId, v.LatitudInicio!.Value, v.LongitudInicio!.Value,
                 v.FechaHoraInicio ?? v.CreadoEn, "visita", v.ClienteId, v.Id));
@@ -69,6 +76,7 @@ public static class TeamLocationEndpoints
             join r in db.Set<RutaVendedor>().AsNoTracking() on d.RutaId equals r.Id
             where r.TenantId == tenantId && r.UsuarioId != null
                   && d.Latitud != null && d.Longitud != null && d.HoraLlegadaReal != null
+                  && d.HoraLlegadaReal >= sinceUtc
             select new RawActivity(
                 r.UsuarioId!.Value, d.Latitud!.Value, d.Longitud!.Value,
                 d.HoraLlegadaReal!.Value, "parada", d.ClienteId, d.Id));
@@ -77,7 +85,8 @@ public static class TeamLocationEndpoints
             .Where(p => p.TenantId == tenantId
                         && p.Activo
                         && p.Latitud != null
-                        && p.Longitud != null)
+                        && p.Longitud != null
+                        && p.CreadoEn >= sinceUtc)
             .Select(p => new RawActivity(
                 p.UsuarioId, p.Latitud!.Value, p.Longitud!.Value,
                 p.CreadoEn, "pedido", p.ClienteId, p.Id));

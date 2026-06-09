@@ -88,7 +88,7 @@ export function SessionExpiredBanner() {
     >
       <AlertCircle size={16} color="#ffffff" />
       <Text style={styles.text} numberOfLines={1}>
-        Tu sesión necesita renovarse
+        Tu sesión expiró
       </Text>
       <TouchableOpacity
         onPress={() => router.replace('/(auth)/login')}

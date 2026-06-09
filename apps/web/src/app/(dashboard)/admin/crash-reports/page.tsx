@@ -300,11 +300,11 @@ function LogLevelControls() {
               </div>
 
               {hasVerboseLevel && (
-                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800">
-                  <WarningCircle size={16} weight="fill" className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2.5 text-xs text-amber-900 dark:text-amber-100">
+                  <WarningCircle size={16} weight="fill" className="text-amber-600 shrink-0 mt-0.5" />
                   <span>
-                    Niveles Info o Debug activos — genera mas logs y aumenta costos de CloudWatch.
-                    Revertir a Errores cuando termine el diagnostico.
+                    Niveles Info o Debug activos: genera más logs y aumenta costos de CloudWatch.
+                    Revertir a Errores cuando termine el diagnóstico.
                   </span>
                 </div>
               )}
@@ -314,7 +314,7 @@ function LogLevelControls() {
                   size="sm"
                   onClick={handleApply}
                   disabled={!hasChanges || applying}
-                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                  className="bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
                 >
                   {applying ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-1.5" />

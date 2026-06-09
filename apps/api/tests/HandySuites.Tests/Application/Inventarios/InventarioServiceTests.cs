@@ -1,7 +1,9 @@
+using System;
 using Xunit;
 using Moq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Inventario.DTOs;
 using HandySuites.Application.Inventario.Interfaces;
 using HandySuites.Application.Inventario.Services;
@@ -13,6 +15,7 @@ namespace HandySuites.Tests.Application.Inventario
     {
         private readonly Mock<IInventarioRepository> _repoMock;
         private readonly Mock<ICurrentTenant> _tenantMock;
+        private readonly Mock<ITransactionManager> _txMock;
         private readonly InventarioService _service;
 
         public InventarioServiceTests()
@@ -22,7 +25,12 @@ namespace HandySuites.Tests.Application.Inventario
             _tenantMock.Setup(t => t.TenantId).Returns(1);
             // Producto existe por defecto (happy path).
             _repoMock.Setup(r => r.ExisteProductoEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
-            _service = new InventarioService(_repoMock.Object, _tenantMock.Object);
+            // TransactionManager passthrough: ejecuta el delegate sin crear transacción real.
+            _txMock = new Mock<ITransactionManager>();
+            _txMock
+                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<InventarioService.CrearInventarioResult>>>()))
+                .Returns<Func<Task<InventarioService.CrearInventarioResult>>>(op => op());
+            _service = new InventarioService(_repoMock.Object, _tenantMock.Object, _txMock.Object);
         }
 
         [Fact]

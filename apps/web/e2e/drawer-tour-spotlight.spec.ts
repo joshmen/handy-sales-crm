@@ -1,6 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
+// Audit (2026-06-05): tour interactivo con animaciones requiere mas tiempo.
+test.use({ navigationTimeout: 60000, actionTimeout: 30000 });
+
 async function advanceTourToStep(page: Page, targetStep: number) {
   for (let i = 1; i < targetStep; i++) {
     const nextBtn = page.locator('.driver-popover-navigation-btns button:has-text("Siguiente")');
@@ -33,13 +36,23 @@ async function setupTour(page: Page, path: string) {
   await fab.click({ force: true });
   await page.waitForTimeout(300);
 
-  const startBtn = page.getByRole('button', { name: 'Iniciar tour', exact: true });
+  // Tras click en FAB "Tour disponible" se abre modal popup con su propio botón
+  // "Iniciar tour interactivo". También hay otro botón con texto similar en el
+  // panel de ayuda lateral. Tomamos el último (modal aparece después).
+  const startBtn = page.getByRole('button', { name: /Iniciar tour( interactivo)?/i }).last();
   await startBtn.waitFor({ state: 'visible', timeout: 3000 });
   await startBtn.click();
   await page.waitForTimeout(500);
 }
 
-test('Orders tour: drawer spotlight on steps 8-10', async ({ page }) => {
+test('Orders tour: drawer spotlight on steps 8-10', async ({ page }, testInfo) => {
+  // El flujo via TourPrompt FAB existe en mobile pero la driver.js popover de
+  // ancho fijo (~360px) se sale del viewport Pixel 5 (393px) y los spotlights
+  // se encogen sobre los drawers que ya ocupan toda la pantalla, por lo que el
+  // test no aporta señal estable. Para validar tours en mobile se usa
+  // tour-mobile-via-help.spec.ts que ejerce el path canónico: Ayuda (siempre
+  // visible en header) → HelpPanel → "Empezar tour interactivo".
+  if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
   await setupTour(page, '/orders');
 
   // Advance to step 7 (create button, opens drawer)
@@ -67,7 +80,14 @@ test('Orders tour: drawer spotlight on steps 8-10', async ({ page }) => {
   await page.screenshot({ path: 'test-results/orders-spotlight-step10.png', fullPage: true });
 });
 
-test('Cobranza tour: drawer spotlight on steps 4-6', async ({ page }) => {
+test('Cobranza tour: drawer spotlight on steps 4-6', async ({ page }, testInfo) => {
+  // El flujo via TourPrompt FAB existe en mobile pero la driver.js popover de
+  // ancho fijo (~360px) se sale del viewport Pixel 5 (393px) y los spotlights
+  // se encogen sobre los drawers que ya ocupan toda la pantalla, por lo que el
+  // test no aporta señal estable. Para validar tours en mobile se usa
+  // tour-mobile-via-help.spec.ts que ejerce el path canónico: Ayuda (siempre
+  // visible en header) → HelpPanel → "Empezar tour interactivo".
+  if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
   await setupTour(page, '/cobranza');
 
   // Advance to step 3 (new cobro button)

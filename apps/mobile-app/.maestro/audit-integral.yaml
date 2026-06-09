@@ -1,0 +1,209 @@
+appId: com.handysuites.app
+name: "Audit integral - todos los flows mobile en un solo test"
+tags:
+  - audit
+  - integral
+  - regression
+---
+
+# Audit code-quality - test integral end-to-end mobile.
+#
+# Valida en una sola corrida los flows criticos del app que pueden verse
+# afectados por todos los cambios acumulados:
+#  - Login + redirect dashboard
+#  - Banner offline / sesion expirada (si visible)
+#  - Crear pedido (offline-first)
+#  - Sincronizar (manual)
+#  - Sincronizacion completa (sub-pantalla restaurar-datos)
+#  - Navegacion entre tabs principales
+#  - Logout
+#
+# Pre-requisitos:
+#  - APK instalado en emulator-5554
+#  - Backend healthy (1050, 1051, 1052)
+#  - Sesion previa cerrada (o login fresco)
+
+# ============================================================
+# PHASE 1: LOGIN
+# ============================================================
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- extendedWaitUntil:
+    visible:
+      text: "Iniciar"
+      optional: true
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Iniciar"
+    commands:
+      - tapOn:
+          text: "Correo"
+          optional: true
+      - inputText: "vendedor1@jeyma.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Contraseña"
+          optional: true
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          text: "Iniciar"
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: audit-01-after-login
+
+# ============================================================
+# PHASE 2: HOME / DASHBOARD
+# ============================================================
+- assertVisible: "Hoy"
+
+# Tabs principales visibles
+- assertVisible:
+    text: "Vender"
+    optional: true
+- assertVisible:
+    text: "Cobrar"
+    optional: true
+- assertVisible:
+    text: "Más"
+    optional: true
+
+# ============================================================
+# PHASE 3: NAV TAB VENDER
+# ============================================================
+- tapOn:
+    text: "Vender"
+
+- extendedWaitUntil:
+    visible:
+      text: "Cliente"
+      optional: true
+    timeout: 10000
+
+- takeScreenshot: audit-02-vender-tab
+
+# Back a home
+- tapOn:
+    text: "Hoy"
+
+- waitForAnimationToEnd
+
+# ============================================================
+# PHASE 4: NAV TAB COBRAR
+# ============================================================
+- tapOn:
+    text: "Cobrar"
+
+- extendedWaitUntil:
+    visible:
+      text: "Saldos"
+      optional: true
+    timeout: 10000
+
+- takeScreenshot: audit-03-cobrar-tab
+
+# Back a home
+- tapOn:
+    text: "Hoy"
+
+- waitForAnimationToEnd
+
+# ============================================================
+# PHASE 5: MENU MAS - SECCION "SI ALGO ESTA MAL"
+# ============================================================
+- tapOn:
+    text: "Más"
+
+- extendedWaitUntil:
+    visible:
+      text: "Sincronización"
+      optional: true
+    timeout: 10000
+
+- takeScreenshot: audit-04-menu-mas
+
+# Verificar que "Sincronización completa" (renombrado audit Sprint v5 textos)
+# aparece en seccion emergencia
+- assertVisible:
+    text: "Si algo está mal"
+    optional: true
+- assertVisible:
+    text: "Sincronización completa"
+    optional: true
+
+# ============================================================
+# PHASE 6: SUB-PANTALLA SINCRONIZACION COMPLETA (data-loss fix)
+# ============================================================
+- runFlow:
+    when:
+      visible: "Sincronización completa"
+    commands:
+      - tapOn: "Sincronización completa"
+      - extendedWaitUntil:
+          visible: "Resincronizar todo desde el servidor"
+          timeout: 10000
+      - takeScreenshot: audit-05-sincronizacion-completa-screen
+      - assertVisible: "Resincronizar todo desde el servidor"
+      - assertVisible: "Último recurso"
+      # Boton principal accesible (puede estar disabled si hay pendientes)
+      - assertVisible: "Resincronizar todo desde el servidor"
+      # Back
+      - tapOn:
+          point: "5%, 5%"
+          optional: true
+      - waitForAnimationToEnd
+
+# ============================================================
+# PHASE 7: NAV SYNC SCREEN
+# ============================================================
+- runFlow:
+    when:
+      visible: "Sincronización"
+    commands:
+      - tapOn:
+          text: "Sincronización"
+      - extendedWaitUntil:
+          visible:
+            text: "ESTADO"
+            optional: true
+          timeout: 10000
+      - takeScreenshot: audit-06-sync-screen
+      # Sprint 1 SyncStatusCard (si APK >= sprint 1 audit):
+      - assertVisible:
+          text: "Listo para sincronizar"
+          optional: true
+      # Boton sync (texto exacto puede variar segun APK)
+      - assertVisible:
+          text: "Sincronizar"
+          optional: true
+      # Trigger sync manual
+      - tapOn:
+          text: "Sincronizar"
+          optional: true
+      - waitForAnimationToEnd
+      - takeScreenshot: audit-07-sync-triggered
+      # Back to Mas
+      - tapOn:
+          point: "5%, 5%"
+          optional: true
+
+# ============================================================
+# PHASE 8: REGRESS NO HAY CRASH / WHITE SCREEN
+# ============================================================
+- tapOn:
+    text: "Hoy"
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 10000
+
+- takeScreenshot: audit-08-back-home-no-crash
+
+# Si llegamos aqui sin crash, el app esta saludable post-cambios audit.

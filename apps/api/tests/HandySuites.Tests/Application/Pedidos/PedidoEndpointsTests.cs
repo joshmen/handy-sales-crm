@@ -38,9 +38,12 @@ public class PedidoEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 
         var response = await _client.PostAsJsonAsync("/pedidos", dto);
 
-        // Si no hay cliente/producto, aceptamos BadRequest
-        if (response.StatusCode == HttpStatusCode.BadRequest) return;
-
+        // Sprint pre-prod #29 audit 2026-06-06: el assert previo hacia
+        // `if (response.StatusCode == BadRequest) return;` que daba la
+        // impresion de validar la creacion sin hacerlo (todo BadRequest = pass
+        // sin assertion). El seeder en HandySuitesTestSeeder.cs garantiza
+        // cliente 1 + producto 1 con precio 100; cualquier BadRequest es ahora
+        // un fallo legitimo (regression de validators, mappers, o seeder).
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
         Assert.True(result!.ContainsKey("id"));

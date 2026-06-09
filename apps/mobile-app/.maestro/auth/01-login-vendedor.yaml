@@ -1,0 +1,117 @@
+appId: host.exp.exponent
+name: "Login Vendedor Jeyma - entrypoint hot-path VENDEDOR"
+---
+
+# ════════════════════════════════════════════════════════════
+# AUTH ENTRYPOINT — Login VENDEDOR para hot-path mobile E2E.
+#
+# Antes de este flow: no existía login Maestro dedicado a VENDEDOR.
+# Solo había 01-login-admin.yaml y login-supervisor.yaml. Los flows
+# de .maestro/vendedor/ asumían sesión activa pero nadie la creaba.
+#
+# Credenciales: vendedor1@jeyma.com / test123 (vendedor seed Jeyma).
+#
+# Endpoint backend: POST /api/auth/login (200 OK + JWT con rol=VENDEDOR).
+# Screen: LoginScreen (apps/mobile-app/app/login.tsx).
+# ════════════════════════════════════════════════════════════
+
+# 1. Esperar la pantalla de login.
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- takeScreenshot: login-vendedor-screen
+
+# 2. Email vendedor por testID.
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+
+- hideKeyboard
+
+# 3. Password (compartido seed).
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+
+- hideKeyboard
+- takeScreenshot: login-vendedor-filled
+
+# 4. Submit.
+- tapOn:
+    id: "login-button"
+
+# 5. Esperar dashboard. Tab "Hoy" es el root del vendedor.
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+# 5b. Dismiss privacy consent modal si aparece (primer login)
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn: "Entendido"
+      - waitForAnimationToEnd
+
+# 5c. Dismiss permission dialog Android si aparece
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+# 5d. Dismiss announcement banner (AHORA NO)
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- takeScreenshot: login-vendedor-dashboard
+
+# 6. Verificar que NO es admin: dashboard del vendedor muestra KPIs
+#    personales (Mis Ventas / Mi Rendimiento), no la vista administrativa.
+#    Algún texto personal debe estar presente.
+- assertVisible:
+    text: "Mi Rendimiento|Mis Ventas|Mis Pedidos|Mis Visitas|Mis Clientes"
+    optional: true
+
+# 7. Verificar tab bar de vendedor — debe incluir Vender / Cobrar / Mapa / Más.
+#    (Ruta NO es tab principal; vive bajo Mas o se navega via deeplink). Si
+#    alguna no aparece es regresión de menú por rol.
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Más"
+
+# 8. Ir a tab "Más" y validar el chip "Vendedor" — confirma que el rol
+#    se hidrató correctamente en (tabs)/mas.tsx.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedor"
+    timeout: 15000
+
+- takeScreenshot: login-vendedor-mas-chip
+
+- assertVisible: "Vendedor"
+
+# 9. Volver a Hoy — deja el state limpio para los flows downstream.
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- takeScreenshot: login-vendedor-success

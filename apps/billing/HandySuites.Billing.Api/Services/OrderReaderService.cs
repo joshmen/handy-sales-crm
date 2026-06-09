@@ -65,9 +65,12 @@ public class OrderReaderService : IOrderReaderService
             await using var conn = new NpgsqlConnection(_mainConnectionString);
             await conn.OpenAsync();
 
-            // Build exclusion clause for already-invoiced pedidos
+            // Build exclusion clause for already-invoiced pedidos.
+            // Use PostgreSQL array + `<> ALL(@excludedIds)` to keep the value parameterized
+            // (string-interpolating a comma-joined id list would be SQL injection-prone if the
+            // ids ever came from an untrusted source).
             var excludeClause = excludedPedidoIds.Count > 0
-                ? $"AND p.id NOT IN ({string.Join(",", excludedPedidoIds)})"
+                ? "AND p.id <> ALL(@excludedIds)"
                 : "";
 
             var sql = $"""
@@ -92,6 +95,10 @@ public class OrderReaderService : IOrderReaderService
             cmd.Parameters.AddWithValue("tenantId", tenantIdInt);
             cmd.Parameters.AddWithValue("fechaInicio", fechaInicio);
             cmd.Parameters.AddWithValue("fechaFin", fechaFin);
+            if (excludedPedidoIds.Count > 0)
+            {
+                cmd.Parameters.AddWithValue("excludedIds", excludedPedidoIds.ToArray());
+            }
 
             var orders = new List<OrderForInvoice>();
             await using var reader = await cmd.ExecuteReaderAsync();

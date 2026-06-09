@@ -1,0 +1,186 @@
+appId: host.exp.exponent
+name: "Supervisor: tap pin vendedor en mapa muestra bottom card y navega a detalle"
+---
+
+# ═══════════════════════════════════════════
+# OBJETIVO FUNCIONAL
+# Verificar el flujo: Equipo → Ver mapa → tap marker vendedor →
+#   bottom card con nombre/visita aparece → tap en card → detalle vendedor.
+#
+# COBERTURA:
+#   - Pantalla: app/(tabs)/equipo/mapa.tsx (MapaEquipoScreen)
+#   - Hook:     useUbicacionesEquipo  → GET /api/team/ubicaciones-recientes
+#   - Estado:   setSelectedId(usuarioId) → renderiza bottomCard
+#   - Nav:      router.push('/(tabs)/equipo/vendedor/{id}')
+#
+# PRE-REQUISITOS:
+#   - Tenant Jeyma con incluye_tracking_vendedor=true
+#   - Al menos un vendedor con ubicacion reciente en UbicacionesVendedor
+#     (seed_supervisor_gps.sql) — "Vendedor 1 Jeyma"
+#
+# LIMITACION CONOCIDA (Expo Go):
+#   - Sin Google Maps API key, isGoogleMapsConfigured()=false y la pantalla
+#     muestra placeholder "Mapas no disponibles en esta version". En ese caso
+#     no se pueden tapear pins. El test detecta ambos escenarios:
+#       a) Build con Maps configurado → ejerce tap pin + bottom card real.
+#       b) Expo Go sin Maps → valida que el placeholder existe y termina con
+#          assert documentado (cobertura UI mínima sin crashear).
+# ═══════════════════════════════════════════
+
+# ═══════════════════════════════════════════
+# FASE 0: ARRANQUE — preserva sesion supervisor
+# ═══════════════════════════════════════════
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+# Dismiss optional modals (Aviso de Privacidad, permisos, banner update)
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn: "Aceptar"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+      - waitForAnimationToEnd
+
+# ═══════════════════════════════════════════
+# FASE 1: NAVEGAR A EQUIPO
+# ═══════════════════════════════════════════
+- tapOn:
+    text: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 15000
+
+- assertVisible:
+    id: "supervisor-kpis"
+
+- takeScreenshot: "pin-01-equipo-cargado"
+
+# ═══════════════════════════════════════════
+# FASE 2: ABRIR MAPA DEL EQUIPO
+# ═══════════════════════════════════════════
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 15000
+
+- takeScreenshot: "pin-02-mapa-abierto"
+
+# ═══════════════════════════════════════════
+# FASE 3-A: ESCENARIO Expo Go (Maps NO configurado)
+# Verifica placeholder y termina sin crashear.
+# ═══════════════════════════════════════════
+- runFlow:
+    when:
+      visible: "Mapas no disponibles en esta versión"
+    commands:
+      - assertVisible: "Mapas no disponibles en esta versión"
+      - assertVisible: "El administrador debe configurar"
+      - takeScreenshot: "pin-03a-placeholder-sin-maps"
+      # Salimos del mapa: regresar a equipo
+      - tapOn:
+          text: "Volver"
+      - waitForAnimationToEnd
+      - assertVisible: "Mi Equipo"
+
+# ═══════════════════════════════════════════
+# FASE 3-B: ESCENARIO build con Maps configurado.
+# Tap en el marker del vendedor → bottom card aparece → tap card → detalle.
+# react-native-maps NO expone testID por marker; el tap se hace por title
+# (el componente Marker pasa title={u.nombre}).
+# ═══════════════════════════════════════════
+- runFlow:
+    when:
+      notVisible: "Mapas no disponibles en esta versión"
+    commands:
+      # Si no hay ubicaciones aun, el empty overlay aparece. Validar el flujo
+      # solo si hay vendedores.
+      - runFlow:
+          when:
+            visible: "Sin ubicaciones"
+          commands:
+            - assertVisible: "Los vendedores"
+            - takeScreenshot: "pin-03b-mapa-vacio"
+            - tapOn:
+                text: "Volver"
+            - waitForAnimationToEnd
+
+      - runFlow:
+          when:
+            notVisible: "Sin ubicaciones"
+          commands:
+            # Tap el pin del vendedor seed. El callout/title del Marker
+            # incluye el nombre del vendedor (u.nombre).
+            - tapOn: "Vendedor 1 Jeyma"
+            - waitForAnimationToEnd
+
+            - takeScreenshot: "pin-03b-pin-tapped"
+
+            # Bottom card: el render usa accessibilityLabel
+            # "Ver detalle de {nombre}". assertVisible busca por contenido.
+            - extendedWaitUntil:
+                visible: "Ver detalle de Vendedor 1 Jeyma"
+                timeout: 8000
+
+            - takeScreenshot: "pin-04-bottom-card-visible"
+
+            # Tap en el bottom card → navega a detalle vendedor
+            - tapOn: "Ver detalle de Vendedor 1 Jeyma"
+            - waitForAnimationToEnd
+
+            # Pantalla de detalle: el StatCard y el header del vendedor
+            # deberian estar visibles. Estadisticas KPI son la marca.
+            - extendedWaitUntil:
+                visible: "Vendedor 1 Jeyma"
+                timeout: 12000
+
+            - takeScreenshot: "pin-05-detalle-vendedor"
+
+            # Verificar que estamos en la pantalla de detalle (no en el mapa)
+            - assertNotVisible: "Mapa del Equipo"
+
+            # Volver al mapa
+            - back
+            - waitForAnimationToEnd
+
+            # Volver a equipo
+            - back
+            - waitForAnimationToEnd
+            - assertVisible: "Mi Equipo"
+
+# ═══════════════════════════════════════════
+# FASE 4: INTEGRIDAD — no debe haber kick a login
+# ═══════════════════════════════════════════
+- assertNotVisible:
+    id: "login-button"
+
+- takeScreenshot: "pin-06-fin-equipo"

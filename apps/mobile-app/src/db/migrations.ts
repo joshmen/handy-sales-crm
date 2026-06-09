@@ -608,5 +608,21 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v24 (PR 5 cobros 3 modos, 2026-06-08): columna `modo` en cobros para
+      // que el vendedor pueda elegir explicitamente entre PorPedido(0)/
+      // AbonoFifo(1)/Anticipo(2) ANTES del sync. Rows pre-v24 quedan con
+      // modo=null; el mapper rawToCobroDto deriva el valor al sync time
+      // (presencia de pedidoId → PorPedido, sin pedidoId → Anticipo).
+      toVersion: 24,
+      steps: [
+        addColumns({
+          table: 'cobros',
+          columns: [
+            { name: 'modo', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

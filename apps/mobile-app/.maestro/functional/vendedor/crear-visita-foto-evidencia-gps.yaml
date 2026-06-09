@@ -1,0 +1,371 @@
+appId: host.exp.exponent
+name: "Funcional > Vendedor > Visita con foto de evidencia + GPS"
+tags:
+  - functional
+  - vendedor
+  - ruta
+  - visita
+  - gps
+  - foto
+  - evidencia
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCIONAL VENDEDOR — Crear visita con foto de evidencia + GPS.
+#
+# Cubre hot-path E2E mobile completo:
+#   1. Vendedor entra al tab "Ruta" y ve su ruta del día.
+#   2. Si la ruta está pendiente: acepta la ruta (botón "Aceptar Ruta")
+#      → estado pasa a "En Progreso".
+#   3. Abre la primera parada Pendiente del listado.
+#   4. ParadaDetailScreen monta → useEffect dispara
+#      `stop.arrive(lat, lng)` automáticamente con el GPS actual
+#      (apps/mobile-app/app/(tabs)/ruta/parada/[detalleId].tsx:111).
+#      Esto graba `latitudLlegada` / `longitudLlegada` en WDB
+#      `ruta_detalles` → estado=1 (En Progreso).
+#   5. Vendedor inicia visita → router push a /(tabs)/ruta/visita-activa.
+#   6. VisitaActivaScreen muestra:
+#         - Timer corriendo (Clock icon)
+#         - 4 botones de Resultado (Con Venta / Sin Venta / No Encontrado /
+#           Reagendada)
+#         - Notas multiline
+#         - PhotoEvidence (0/5) con botones "Cámara" + "Galería"
+#         - Botón "Capturar Firma"
+#         - Botón "Terminar Visita" rojo
+#   7. Vendedor selecciona "Con Venta", escribe notas, agrega foto
+#      desde galería (PhotoEvidence → onAdd pushea uri al state photos[]).
+#   8. Tap "Terminar Visita" → ConfirmModal "¿Estás seguro de terminar...?"
+#      → confirmar → updateVisitaCheckout(visita.id, resultado, notas)
+#      + saveAttachmentRecord({eventType:'visita', tipo:'photo'}) por cada
+#      foto + performSync() async (apps/mobile-app/app/(tabs)/ruta/visita-activa.tsx:80).
+#   9. router.back() → vuelve a parada → estado debería ser Completada.
+#
+# Endpoints/services backend tocados al sincronizar:
+#   - POST /api/mobile/rutas/{rutaId}/aceptar (al aceptar ruta)
+#   - PATCH /api/mobile/rutas/detalles/{detalleId} (arrive + visita)
+#   - POST /api/mobile/attachments (push de evidence WDB → server)
+#
+# Screens:
+#   - apps/mobile-app/app/(tabs)/ruta/index.tsx           (RutaScreen)
+#   - apps/mobile-app/app/(tabs)/ruta/parada/[detalleId].tsx (ParadaDetail)
+#   - apps/mobile-app/app/(tabs)/ruta/visita-activa.tsx   (VisitaActiva)
+#   - apps/mobile-app/src/components/evidence/PhotoEvidence.tsx
+#
+# WDB models tocados: rutas, ruta_detalles, visitas, attachments.
+#
+# PRE-REQ runtime:
+#   - Emulador Android emulator-5554 con Expo Go (host.exp.exponent).
+#   - Metro bundler en puerto 8081 (`npx expo start --go --port 8081`).
+#   - Seeds locales aplicados (seed_local_pg.sql + seed_e2e_pg.sql).
+#   - Ruta del día sembrada para vendedor1@jeyma.com con al menos
+#     una parada Pendiente y cliente con coordenadas GPS válidas.
+#   - Permiso GPS y CAMERA/MEDIA otorgados al emulador (sino
+#     PhotoEvidence -> capturePhoto retorna null sin avisar).
+#
+# PRE-REQ flow: este test asume sesión VENDEDOR activa
+# (vendedor1@jeyma.com / test123). Encadenar con
+# `.maestro/auth/01-login-vendedor.yaml` si se ejecuta standalone.
+#
+# PROD BUG / FIX TODO: si la ruta del día no está sembrada, el banner
+# de "Aceptar Ruta" no aparece y este test cae al fallback de
+# "No hay ruta para hoy" → assertVisible final fallaría. El seed
+# `seed_e2e_pg.sql` debe garantizar una ruta activa para
+# vendedor1@jeyma.com con fecha = CURRENT_DATE.
+# ════════════════════════════════════════════════════════════
+
+- launchApp:
+    clearState: false
+
+# 0. Dashboard 'Hoy' visible — confirma sesión vendedor activa.
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+# 1. Dismiss modales opcionales (Aviso de Privacidad / promos / permisos).
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn:
+          text: "Cerrar"
+          optional: true
+
+# 2. Navegar al tab Ruta — entrypoint del flujo.
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*([Rr]uta|[Pp]aradas).*"
+    timeout: 20000
+
+- takeScreenshot: func-vend-visita-01-ruta
+
+# 3. Si la ruta está pendiente, aceptarla. El botón solo aparece
+#    cuando hay ruta sin iniciar. Si ya está en progreso, este runFlow
+#    es no-op y seguimos derecho a la lista de paradas.
+- runFlow:
+    when:
+      visible: "Aceptar Ruta"
+    commands:
+      - tapOn: "Aceptar Ruta"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "En Progreso"
+          timeout: 15000
+      - takeScreenshot: func-vend-visita-02-ruta-aceptada
+
+# 4. Abrir primera parada Pendiente (tap sobre el chip de estado o nombre).
+#    Estrategia robusta: buscar por texto "Pendiente" y tapear el contenedor.
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - tapOn: "Pendiente"
+      - waitForAnimationToEnd
+
+# Fallback: si no hay paradas Pendiente (todas atendidas), abrir la
+# primera parada por su orden visible "Parada #1".
+- runFlow:
+    when:
+      notVisible: "Parada #"
+    commands:
+      - runFlow:
+          when:
+            visible:
+              text: "Parada #1"
+          commands:
+            - tapOn:
+                text: "Parada #1"
+
+# 5. ParadaDetailScreen montada — header azul "Parada #N" + Badge estado.
+- extendedWaitUntil:
+    visible:
+      text: "Parada #"
+    timeout: 20000
+
+- takeScreenshot: func-vend-visita-03-parada-detalle
+
+# 6. Auto check-in GPS — el useEffect grabó latitudLlegada/longitudLlegada
+#    y movió estado de 0 (Pendiente) a 1 (En Progreso). Validamos que el
+#    badge cambió. Si el cliente no tiene GPS sembrado aparece banner rojo
+#    "Este cliente no tiene ubicación GPS" — eso es OK, no bloquea.
+- extendedWaitUntil:
+    visible:
+      text: ".*(En Progreso|En progreso).*"
+    timeout: 20000
+
+# 7. Iniciar visita — botón disponible cuando la parada está En Progreso.
+#    Puede llamarse "Iniciar Visita" o "Comenzar Visita" según versión UI.
+- runFlow:
+    when:
+      visible: "Iniciar Visita"
+    commands:
+      - tapOn: "Iniciar Visita"
+- runFlow:
+    when:
+      visible: "Comenzar Visita"
+    commands:
+      - tapOn: "Comenzar Visita"
+- runFlow:
+    when:
+      visible: "Iniciar visita"
+    commands:
+      - tapOn: "Iniciar visita"
+
+# 8. VisitaActivaScreen — header azul "Visita Activa" + timer corriendo.
+- extendedWaitUntil:
+    visible: "Visita Activa"
+    timeout: 20000
+
+- assertVisible: "Visita Activa"
+- assertVisible: "Resultado de la Visita"
+- assertVisible: "Notas de la Visita"
+- assertVisible:
+    text: "Evidencia fotogr"
+
+- takeScreenshot: func-vend-visita-04-visita-activa
+
+# 9. Seleccionar resultado "Con Venta" — chip se marca con check verde.
+- assertVisible: "Con Venta"
+- tapOn: "Con Venta"
+- waitForAnimationToEnd
+
+- takeScreenshot: func-vend-visita-05-resultado-con-venta
+
+# 10. Escribir notas — confirma el textInput multiline acepta input.
+- tapOn:
+    text: "Escribe observaciones de la visita"
+- inputText: "Cliente recibido OK. Foto de fachada como evidencia."
+- hideKeyboard
+
+- takeScreenshot: func-vend-visita-06-notas
+
+# 11. Agregar foto desde galería. Usamos "Galería" en vez de "Cámara" porque
+#     el emulador no tiene cámara real → expo-image-picker abre el selector
+#     del sistema y el primer asset del emulador (wallpaper sample) sirve
+#     como evidencia. PhotoEvidence.onAdd pushea uri al state photos[].
+- scrollUntilVisible:
+    element:
+      text: "Galería"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: "Galería"
+- waitForAnimationToEnd
+
+# 12. Selector de galería del sistema (varía por Android version).
+#     Intentamos varios paths: "Allow" para permisos, "Photos" tab, primer
+#     thumbnail. Si nada matchea seguimos — al menos validamos que el
+#     botón funcionó sin crash.
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "Photos"
+    commands:
+      - tapOn: "Photos"
+
+# Tap en la primera imagen disponible (selector usa grid de thumbnails sin
+# texto). Coordenada relativa: ~15% width, ~30% height = primer item del grid.
+- runFlow:
+    when:
+      visible:
+        text: ".*(Recientes|Recent|Photos|Galer).*"
+    commands:
+      - tapOn:
+          point: "15%,30%"
+      - waitForAnimationToEnd
+
+# Algunas versiones requieren confirmar la selección con un botón Done/Listo.
+- runFlow:
+    when:
+      visible: "Listo"
+    commands:
+      - tapOn: "Listo"
+- runFlow:
+    when:
+      visible: "Done"
+    commands:
+      - tapOn: "Done"
+- runFlow:
+    when:
+      visible: "Add"
+    commands:
+      - tapOn: "Add"
+
+# 13. Verificar que el contador del PhotoEvidence subió a 1/5.
+- extendedWaitUntil:
+    visible:
+      text: ".*1/5.*"
+    timeout: 15000
+
+- takeScreenshot: func-vend-visita-07-foto-agregada
+
+# 14. Terminar visita — tap botón rojo "Terminar Visita".
+- scrollUntilVisible:
+    element:
+      text: "Terminar Visita"
+    direction: DOWN
+    timeout: 15000
+
+- assertVisible: "Terminar Visita"
+- tapOn: "Terminar Visita"
+
+# 15. ConfirmModal — "¿Estás seguro de terminar esta visita?".
+- extendedWaitUntil:
+    visible: "Terminar Visita"
+    timeout: 10000
+
+- assertVisible:
+    text: ".*([Ee]st.s seguro|terminar).*"
+
+- takeScreenshot: func-vend-visita-08-confirm-terminar
+
+# 16. Confirmar — botón "Terminar" en ConfirmModal (variant destructive).
+- tapOn:
+    text: "^Terminar$"
+
+# 17. Navegación back tras checkout: visita-activa.tsx:108 hace router.back().
+#     Volvemos a ParadaDetailScreen. El badge debería pasar a Completada
+#     (estado=2) una vez WDB observable refresca.
+- extendedWaitUntil:
+    visible:
+      text: ".*(Parada|Ruta|Completada).*"
+    timeout: 30000
+
+- takeScreenshot: func-vend-visita-09-visita-terminada
+
+# 18. Verificación final: la parada quedó Completada O ya no aparece
+#     "Visita Activa" (la visita se cerró correctamente).
+- assertNotVisible: "Visita Activa"
+
+- takeScreenshot: func-vend-visita-10-final
+
+# ════════════════════════════════════════════════════════════
+# POST-RUN MANUAL VERIFICATION (TODO en CI):
+#
+# Validar que el checkout grabó la visita + attachment en WDB y se
+# sincronizó:
+#
+#   SELECT v.id, v.resultado, v.notas, v.check_in_at, v.check_out_at,
+#          v.latitud_llegada, v.longitud_llegada
+#     FROM "Visitas" v
+#     JOIN "Usuarios" u ON u.id = v.usuario_id
+#    WHERE u.email = 'vendedor1@jeyma.com'
+#      AND v.check_out_at > now() - interval '5 min';
+#
+#   SELECT a.id, a.tipo, a.event_type, a.local_uri
+#     FROM "Attachments" a
+#    WHERE a.event_type = 'visita'
+#      AND a.creado_en > now() - interval '5 min';
+#
+# Resultado esperado:
+#   - 1 row en Visitas con resultado=1 (Con Venta) y check_out_at set.
+#   - latitud_llegada/longitud_llegada NO NULL (auto GPS arrive funcionó).
+#   - >=1 row en Attachments con tipo='photo' y event_type='visita'.
+#
+# Si latitud_llegada IS NULL: regresión en useEffect de arrive()
+# en parada/[detalleId].tsx:111 o permiso GPS denegado al runtime.
+# Si Attachments count=0: regresión en saveAttachmentRecord o en
+# evidenceManager.capturePhoto/pickFromGallery.
+# ════════════════════════════════════════════════════════════

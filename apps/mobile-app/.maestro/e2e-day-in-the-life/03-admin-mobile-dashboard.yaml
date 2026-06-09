@@ -1,0 +1,310 @@
+appId: host.exp.exponent
+name: "Day-in-the-life Admin — login, dashboard equipo, supervisores, top vendedores, mapa, logout"
+---
+
+# ════════════════════════════════════════════════════════════
+# E2E DAY-IN-THE-LIFE — ADMIN
+#
+# Perfil:        ADMIN
+# Email:         admin@jeyma.com
+# Password:      test123
+#
+# Flujo corto del día del admin en mobile:
+#   1. Login admin + dismiss modales opcionales
+#   2. Dashboard "Hoy" con saludo "Administrador"
+#   3. Sección SUPERVISORES + TOP VENDEDORES en dashboard
+#   4. ACCIONES RÁPIDAS → tap "Equipo"
+#   5. Validar lista equipo completa
+#   6. Volver a "Hoy" y abrir tab "Más"
+#   7. Logout exitoso
+#
+# Referencias de strings:
+#   apps/mobile-app/src/components/dashboard/AdminDashboard.tsx (SUPERVISORES, TOP VENDEDORES, Equipo, Mapa)
+#   apps/mobile-app/app/(tabs)/equipo/index.tsx                  (lista equipo + KPIs)
+#   apps/mobile-app/app/(tabs)/mas.tsx                           (Cerrar Sesión)
+# ════════════════════════════════════════════════════════════
+
+# Mantener sesión limpia entre runs
+- launchApp:
+    clearState: false
+
+# ════════════════════════════════════════════════════════════
+# FASE 1: ONBOARDING + LOGIN
+# ════════════════════════════════════════════════════════════
+
+# Skip onboarding por testID (primer arranque)
+- runFlow:
+    when:
+      visible:
+        id: "skip-onboarding"
+    commands:
+      - tapOn:
+          id: "skip-onboarding"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Skip onboarding fallback por texto "Siguiente"
+- runFlow:
+    when:
+      visible: "Siguiente"
+    commands:
+      - tapOn:
+          id: "onboarding-action"
+          optional: true
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+          optional: true
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+          optional: true
+      - waitForAnimationToEnd
+
+# Login si la pantalla de login está visible
+- runFlow:
+    when:
+      visible:
+        id: "login-button"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - takeScreenshot: "admin-day-00-login-screen"
+      - tapOn:
+          id: "email-input"
+      - eraseText: 50
+      - inputText: "admin@jeyma.com"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+          retryTapIfNoChange: true
+      - eraseText: 50
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          id: "login-button"
+
+# ════════════════════════════════════════════════════════════
+# FASE 2: DISMISS MODALES OPCIONALES
+# ════════════════════════════════════════════════════════════
+
+# Single-session strict: kick previous session
+- runFlow:
+    when:
+      visible: "Límite de sesiones"
+    commands:
+      - tapOn:
+          text: "Chrome en Windows"
+          optional: true
+      - tapOn:
+          text: "Desconectar y continuar aquí"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# GPS consent modal post-login
+- runFlow:
+    when:
+      visible: "Sobre tu ubicación"
+    commands:
+      - tapOn:
+          text: "Entendido"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+          optional: true
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn: "Entendido"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn:
+          text: "While using the app"
+          optional: true
+      - waitForAnimationToEnd
+
+# Permiso de ubicación (Android system dialog)
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn:
+          text: "Permitir"
+          optional: true
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 60000
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+      - waitForAnimationToEnd
+
+- takeScreenshot: "admin-day-01-dashboard-hoy"
+
+# ════════════════════════════════════════════════════════════
+# FASE 3: VALIDAR DASHBOARD "HOY" CON SECCIONES ADMIN
+# ════════════════════════════════════════════════════════════
+
+# Saludo "Administrador" (rol badge / greeting)
+- assertVisible:
+    text: "Administrador"
+
+# Sección SUPERVISORES en el dashboard del admin
+- scrollUntilVisible:
+    element:
+      text: "SUPERVISORES"
+    direction: DOWN
+    timeout: 10000
+
+- assertVisible:
+    text: "SUPERVISORES"
+
+- takeScreenshot: "admin-day-02-seccion-supervisores"
+
+# Sección TOP VENDEDORES (visible al hacer scroll)
+- scrollUntilVisible:
+    element:
+      text: "TOP VENDEDORES"
+    direction: DOWN
+    timeout: 10000
+
+- assertVisible:
+    text: "TOP VENDEDORES"
+
+- takeScreenshot: "admin-day-03-seccion-top-vendedores"
+
+# ════════════════════════════════════════════════════════════
+# FASE 4: ACCIONES RÁPIDAS — TAP EQUIPO
+# ════════════════════════════════════════════════════════════
+
+- scrollUntilVisible:
+    element:
+      text: "ACCIONES RÁPIDAS"
+    direction: DOWN
+    timeout: 10000
+
+- assertVisible:
+    text: "ACCIONES RÁPIDAS"
+
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+# ════════════════════════════════════════════════════════════
+# FASE 5: VALIDAR LISTA EQUIPO COMPLETA
+# ════════════════════════════════════════════════════════════
+
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 20000
+
+- assertVisible:
+    text: "VENDEDORES"
+
+# Verificar que no crashea (ErrorBoundary fallback)
+- assertNotVisible:
+    text: "Algo salió mal"
+
+- takeScreenshot: "admin-day-04-lista-equipo"
+
+# ════════════════════════════════════════════════════════════
+# FASE 6: VOLVER A "HOY" Y ABRIR TAB "MÁS"
+# ════════════════════════════════════════════════════════════
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Administrador"
+    timeout: 15000
+
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Administrador"
+
+- takeScreenshot: "admin-day-05-mas-menu"
+
+# ════════════════════════════════════════════════════════════
+# FASE 7: LOGOUT
+# ════════════════════════════════════════════════════════════
+
+- scrollUntilVisible:
+    element:
+      text: "Cerrar Sesión"
+    direction: DOWN
+    timeout: 15000
+    speed: 40
+
+- tapOn: "Cerrar Sesión"
+- waitForAnimationToEnd
+
+# Confirmar dialog si aparece (algunos builds piden confirmar)
+- runFlow:
+    when:
+      visible: "Sí, cerrar sesión"
+    commands:
+      - tapOn:
+          text: "Sí, cerrar sesión"
+          optional: true
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn:
+          text: "Confirmar"
+          optional: true
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Sí"
+    commands:
+      - tapOn:
+          text: "Sí"
+          optional: true
+      - waitForAnimationToEnd
+
+# ════════════════════════════════════════════════════════════
+# FASE 8: VALIDAR LOGOUT EXITOSO
+# ════════════════════════════════════════════════════════════
+
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 30000
+
+- assertVisible:
+    id: "login-button"
+
+- takeScreenshot: "admin-day-06-logout-exitoso"

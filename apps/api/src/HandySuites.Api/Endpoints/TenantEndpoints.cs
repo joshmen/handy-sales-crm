@@ -315,7 +315,7 @@ public static class TenantEndpoints
             // Send deactivation email to admin users
             var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
             var tenantName = tenant?.NombreEmpresa ?? "Empresa";
-            var adminEmails = tenantUsers.Where(u => u.IsAdminOrAbove).Select(u => u.Email).ToList();
+            var adminEmails = tenantUsers.Where(u => u.IsStrictAdmin).Select(u => u.Email).ToList();
             if (adminEmails.Count > 0)
             {
                 var html = EmailTemplates.TenantDeactivated(tenantName);

@@ -1,8 +1,10 @@
 using HandySuites.Application.Common.Interfaces;
+using HandySuites.Application.Tracking.Interfaces;
 using HandySuites.Application.Usuarios.DTOs;
 using HandySuites.Domain.Common;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace HandySuites.Mobile.Api.Endpoints;
@@ -21,7 +23,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -32,7 +34,7 @@ public static class MobileSupervisorEndpoints
                 .AsNoTracking()
                 .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null);
 
-            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
             {
                 // Excluir a uno mismo y a otros admins; mostrar supervisores y vendedores
                 baseQuery = baseQuery.Where(u =>
@@ -94,7 +96,7 @@ public static class MobileSupervisorEndpoints
             ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -109,7 +111,7 @@ public static class MobileSupervisorEndpoints
             var mesEndUtc = await tenantTzSvc.ConvertTenantDateToUtcAsync(mesEnd);
 
             List<int> allIds;
-            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
             {
                 allIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null && u.Activo)
@@ -194,65 +196,120 @@ public static class MobileSupervisorEndpoints
         .Produces<object>(StatusCodes.Status200OK);
 
         // GET /api/mobile/supervisor/ubicaciones
+        // Sprint pre-prod #11 audit 2026-06-07: BUG fix mapa equipo sin pins.
+        // Antes solo leia ClienteVisitas (check-ins manuales) ignorando los pings
+        // GPS background de UbicacionesVendedor. Ahora replica la fusion del
+        // endpoint web /api/team/ubicaciones-recientes: pings tracking (feature
+        // guard) tienen prioridad, fallback a check-ins de visita.
         group.MapGet("/ubicaciones", async (
             ICurrentTenant tenant,
-            HandySuitesDbContext db) =>
+            HandySuitesDbContext db,
+            [FromServices] IUbicacionVendedorRepository ubicacionRepo,
+            [FromServices] ISubscriptionFeatureGuard featureGuard) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
 
-            var subordinadoIds = await db.Usuarios
-                .AsNoTracking()
-                .Where(u => u.SupervisorId == supervisorId
-                         && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
-                .Select(u => u.Id)
-                .ToListAsync();
+            // Subordinados: SUPERVISOR ve solo los suyos; ADMIN/SA ven todos los
+            // vendedores+supervisores del tenant.
+            List<int> targetIds;
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
+            {
+                targetIds = await db.Usuarios
+                    .AsNoTracking()
+                    .Where(u => u.TenantId == tenant.TenantId
+                             && u.EliminadoEn == null
+                             && u.Activo
+                             && (u.RolExplicito == RoleNames.Vendedor
+                                 || u.RolExplicito == RoleNames.Supervisor))
+                    .Select(u => u.Id)
+                    .ToListAsync();
+            }
+            else
+            {
+                targetIds = await db.Usuarios
+                    .AsNoTracking()
+                    .Where(u => u.SupervisorId == supervisorId
+                             && u.TenantId == tenant.TenantId
+                             && u.EliminadoEn == null)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+            }
 
-            if (subordinadoIds.Count == 0)
+            if (targetIds.Count == 0)
                 return Results.Ok(new { success = true, data = Array.Empty<object>(), count = 0 });
 
-            // Get most recent visit with GPS per vendedor
-            var ubicaciones = await db.ClienteVisitas
+            // Fuente PRIMARIA: pings de tracking GPS (UbicacionesVendedor) — solo
+            // si el plan del tenant incluye la feature.
+            var hasTracking = await featureGuard.HasFeatureAsync(tenant.TenantId, "tracking_vendedor");
+            var ubicacionesTracking = hasTracking
+                ? await ubicacionRepo.ObtenerUltimasAsync(tenant.TenantId, targetIds)
+                : new List<Application.Tracking.DTOs.UltimaUbicacionDto>();
+
+            // Fuente FALLBACK: check-ins de visita con GPS (ClienteVisitas).
+            var sinceUtc = DateTime.UtcNow.AddDays(-1);
+            var visitasGps = await db.ClienteVisitas
                 .AsNoTracking()
                 .Include(v => v.Cliente)
-                .Where(v => subordinadoIds.Contains(v.UsuarioId)
+                .Where(v => targetIds.Contains(v.UsuarioId)
                     && v.TenantId == tenant.TenantId
                     && v.LatitudInicio != null
-                    && v.LongitudInicio != null)
+                    && v.LongitudInicio != null
+                    && (v.FechaHoraInicio ?? v.CreadoEn) >= sinceUtc)
                 .GroupBy(v => v.UsuarioId)
-                .Select(g => g.OrderByDescending(v => v.FechaHoraInicio).First())
+                .Select(g => g.OrderByDescending(v => v.FechaHoraInicio ?? v.CreadoEn).First())
                 .ToListAsync();
 
-            var userIds = ubicaciones.Select(u => u.UsuarioId).ToList();
             var usuarios = await db.Usuarios
                 .AsNoTracking()
-                .Where(u => userIds.Contains(u.Id) && u.Activo)
+                .Where(u => targetIds.Contains(u.Id) && u.Activo)
                 .Select(u => new { u.Id, u.Nombre, u.AvatarUrl })
                 .ToListAsync();
-
             var userMap = usuarios.ToDictionary(u => u.Id);
 
-            var result = ubicaciones
-                .Where(u => userMap.ContainsKey(u.UsuarioId))
-                .Select(u => new
+            // Fusion: comparar timestamps y quedarse con el mas reciente por user.
+            var byUsuario = new Dictionary<int, (DateTime Cuando, double Lat, double Lon, string? ClienteNombre)>();
+            foreach (var v in visitasGps)
+            {
+                byUsuario[v.UsuarioId] = (
+                    v.FechaHoraInicio ?? v.CreadoEn,
+                    v.LatitudInicio!.Value,
+                    v.LongitudInicio!.Value,
+                    v.Cliente?.Nombre);
+            }
+            foreach (var ping in ubicacionesTracking)
+            {
+                var existing = byUsuario.GetValueOrDefault(ping.UsuarioId);
+                if (existing == default || ping.CapturadoEn > existing.Cuando)
                 {
-                    usuarioId = u.UsuarioId,
-                    nombre = userMap[u.UsuarioId].Nombre,
-                    avatarUrl = userMap[u.UsuarioId].AvatarUrl,
-                    latitud = u.LatitudInicio!.Value,
-                    longitud = u.LongitudInicio!.Value,
-                    fechaUbicacion = u.FechaHoraInicio,
-                    clienteNombre = u.Cliente?.Nombre
+                    byUsuario[ping.UsuarioId] = (
+                        ping.CapturadoEn,
+                        (double)ping.Latitud,
+                        (double)ping.Longitud,
+                        existing.ClienteNombre);
+                }
+            }
+
+            var result = byUsuario
+                .Where(kv => userMap.ContainsKey(kv.Key))
+                .Select(kv => new
+                {
+                    usuarioId = kv.Key,
+                    nombre = userMap[kv.Key].Nombre,
+                    avatarUrl = userMap[kv.Key].AvatarUrl,
+                    latitud = kv.Value.Lat,
+                    longitud = kv.Value.Lon,
+                    fechaUbicacion = kv.Value.Cuando,
+                    clienteNombre = kv.Value.ClienteNombre
                 })
                 .ToList();
 
             return Results.Ok(new { success = true, data = result, count = result.Count });
         })
         .WithSummary("Ubicaciones del equipo")
-        .WithDescription("Última ubicación GPS conocida de cada vendedor del equipo (basado en check-ins de visitas).")
+        .WithDescription("Última ubicación GPS conocida de cada vendedor del equipo. Fusiona pings tracking background (UbicacionesVendedor) con check-ins de visita (ClienteVisitas).")
         .Produces<object>(StatusCodes.Status200OK);
 
         // GET /api/mobile/supervisor/actividad
@@ -261,7 +318,7 @@ public static class MobileSupervisorEndpoints
             ITenantTimeZoneService tenantTzSvc,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -269,7 +326,7 @@ public static class MobileSupervisorEndpoints
             var (hoyStartUtc, hoyEndUtc) = await tenantTzSvc.GetTenantDayWindowUtcAsync();
 
             List<int> allIds;
-            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            if (tenant.IsAdminOrAbove || tenant.IsSuperAdmin)
             {
                 allIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null && u.Activo)
@@ -381,7 +438,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -411,12 +468,18 @@ public static class MobileSupervisorEndpoints
             }
 
             // ADMIN/SUPER_ADMIN ven a cualquier vendedor del tenant; SUPERVISOR solo a sus subordinados.
+            // Sprint pre-prod #11 audit 2026-06-07: BUG fix detectado por
+            // MobileSupervisorSABranchTests.ResumenVendedor_Supervisor_NoVeVendedorAjeno.
+            // Antes: `!IsAdminOrAbove && !IsSuperAdmin` permitia al SUPERVISOR
+            // (que tiene IsAdminOrAbove=true) saltar el filtro de subordinado y
+            // ver datos de cualquier vendedor del tenant — IDOR cross-supervisor.
+            // Cambiado a `IsStrictAdmin` que es Admin/SA solamente (excluye SUPERVISOR).
             var vendedorQuery = db.Usuarios
                 .AsNoTracking()
                 .Where(u => u.Id == id
                          && u.TenantId == tenant.TenantId
                          && u.EliminadoEn == null);
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsStrictAdmin && !tenant.IsSuperAdmin)
                 vendedorQuery = vendedorQuery.Where(u => u.SupervisorId == supervisorId);
 
             var vendedorBase = await vendedorQuery
@@ -657,7 +720,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             // Calcular ventana UTC del día local del tenant (TZ-aware).
@@ -750,7 +813,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -800,7 +863,7 @@ public static class MobileSupervisorEndpoints
                           && pe.FechaPedido >= startUtc && pe.FechaPedido < endUtc
                           && pe.Activo);
 
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
             {
                 var subordinadosIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)
@@ -851,7 +914,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySuitesDbContext db) =>
         {
-            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsSupervisor && !tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -895,7 +958,7 @@ public static class MobileSupervisorEndpoints
                           && co.FechaCobro >= startUtc && co.FechaCobro < endUtc
                           && co.Activo);
 
-            if (!tenant.IsAdmin && !tenant.IsSuperAdmin)
+            if (!tenant.IsAdminOrAbove && !tenant.IsSuperAdmin)
             {
                 var subordinadosIds = await db.Usuarios.AsNoTracking()
                     .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)

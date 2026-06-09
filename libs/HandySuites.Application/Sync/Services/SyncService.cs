@@ -37,30 +37,55 @@ public class SyncService
         // commit partial/corrupt state if SaveChangesAsync happened to succeed.
         // With a transaction, either everything commits cleanly or everything rolls
         // back — no divergence between mobile and server.
+        //
+        // 2026-06-07 (post-MEDIUM-1 iteration): switched to per-entity SAVEPOINTS
+        // (the EF Core best practice for batch processing with partial failure
+        // tolerance — see https://learn.microsoft.com/en-us/ef/core/saving/transactions#using-savepoints).
+        //
+        // Each entity in the push loop runs inside its own savepoint via
+        // ISavepointScope.TryRunInSavepointAsync. The savepoint commits SaveChangesAsync
+        // for that entity. On failure the savepoint is rolled back AND the failed
+        // entity's change tracker entries are detached, so:
+        //  - Surviving entities commit normally (mobile marks them synced, no loop)
+        //  - The failed entity reports its real error to response.Errors[]
+        //  - No dirty change tracker leakage between iterations or into the final commit
+        //
+        // Pull runs OUTSIDE the savepoint transaction because it is read-only
+        // (only populates response.ServerChanges from queries). A pull failure does not
+        // affect the already-committed push savepoints.
+        if (request.ClientChanges != null)
+        {
+            try
+            {
+                await _transactions.ExecuteWithSavepointsAsync(sp =>
+                    PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId, sp));
+            }
+            catch (Exception ex)
+            {
+                // ExecuteWithSavepointsAsync only re-throws on outer transaction failure
+                // (e.g., commit failed). Per-entity errors are handled inside via TryRunInSavepointAsync.
+                response.Errors.Add(new SyncErrorDto
+                {
+                    EntityType = "sync",
+                    Operation = "push_transaction",
+                    Message = "Push transaction failed",
+                    Details = ex.Message
+                });
+                response.Summary.ErrorsFound++;
+            }
+        }
+
         try
         {
-            await _transactions.ExecuteInTransactionAsync(async () =>
-            {
-                // 1. Push client changes to server
-                if (request.ClientChanges != null)
-                {
-                    await PushClientChangesAsync(request.ClientChanges, response, tenantId, usuarioId);
-                }
-
-                // 2. Pull server changes to client
-                await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
-
-                // 3. Save all changes atomically
-                await _repo.SaveChangesAsync();
-            });
+            await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
         }
         catch (Exception ex)
         {
             response.Errors.Add(new SyncErrorDto
             {
                 EntityType = "sync",
-                Operation = "sync",
-                Message = "Error during sync operation",
+                Operation = "pull",
+                Message = "Pull failed",
                 Details = ex.Message
             });
             response.Summary.ErrorsFound++;
@@ -69,7 +94,7 @@ public class SyncService
         return response;
     }
 
-    private async Task PushClientChangesAsync(SyncChangesDto clientChanges, SyncResponseDto response, int tenantId, int usuarioId)
+    private async Task PushClientChangesAsync(SyncChangesDto clientChanges, SyncResponseDto response, int tenantId, int usuarioId, ISavepointScope sp)
     {
         var userId = _tenant.UserId;
 
@@ -78,9 +103,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.Clientes)
             {
-                try
+                var spName = $"sp_cliente_{(dto.LocalId ?? dto.Id.ToString())}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertClienteAsync(tenantId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -101,15 +128,15 @@ public class SyncService
                             response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "clientes", LocalId = dto.LocalId, ServerId = entity.Id });
                         }
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Cliente",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -121,9 +148,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.Pedidos)
             {
-                try
+                var spName = $"sp_pedido_{(dto.LocalId ?? dto.Id.ToString())}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertPedidoAsync(tenantId, usuarioId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -152,15 +181,15 @@ public class SyncService
                             });
                         }
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Pedido",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -172,9 +201,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.Visitas)
             {
-                try
+                var spName = $"sp_visita_{(dto.LocalId ?? dto.Id.ToString())}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertVisitaAsync(tenantId, usuarioId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -195,15 +226,15 @@ public class SyncService
                             response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "visitas", LocalId = dto.LocalId, ServerId = entity.Id });
                         }
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Visita",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -215,9 +246,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.Rutas.Where(r => r.Operation == SyncOperation.Update))
             {
-                try
+                var spName = $"sp_ruta_{dto.Id}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertRutaAsync(tenantId, usuarioId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -234,15 +267,15 @@ public class SyncService
                     {
                         response.Summary.RutasPushed++;
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Ruta",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -254,9 +287,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.Cobros)
             {
-                try
+                var spName = $"sp_cobro_{(dto.LocalId ?? dto.Id.ToString())}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertCobroAsync(tenantId, usuarioId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -277,15 +312,15 @@ public class SyncService
                             response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "cobros", LocalId = dto.LocalId, ServerId = entity.Id });
                         }
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Cobro",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -297,9 +332,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.Gastos)
             {
-                try
+                var spName = $"sp_gasto_{(dto.LocalId ?? dto.Id.ToString())}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertGastoAsync(tenantId, usuarioId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -320,15 +357,15 @@ public class SyncService
                             response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "gastos", LocalId = dto.LocalId, ServerId = entity.Id });
                         }
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Gasto",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -340,9 +377,11 @@ public class SyncService
         {
             foreach (var dto in clientChanges.DevolucionesPedido)
             {
-                try
+                var spName = $"sp_devolucion_{(dto.LocalId ?? dto.Id.ToString())}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var (entity, wasConflict) = await _repo.UpsertDevolucionAsync(tenantId, usuarioId, dto, userId);
+                    await _repo.SaveChangesAsync();
                     if (wasConflict)
                     {
                         response.Conflicts.Add(new SyncConflictDto
@@ -363,10 +402,15 @@ public class SyncService
                             response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "devoluciones_pedido", LocalId = dto.LocalId, ServerId = entity.Id });
                         }
                         // Map children created IDs por LocalId
-                        for (int i = 0; i < dto.Detalles.Count && i < entity.Detalles.Count; i++)
+                        // MEDIUM-7 (2026-06-06): materialize Detalles once outside the loop.
+                        // entity.Detalles is ICollection; ElementAt(i) on a non-indexed
+                        // ICollection enumerates from the start every call (O(N) per access,
+                        // O(N^2) total). Cast to List<T> once for O(1) indexed access.
+                        var detallesList = entity.Detalles.ToList();
+                        for (int i = 0; i < dto.Detalles.Count && i < detallesList.Count; i++)
                         {
                             var childDto = dto.Detalles[i];
-                            var childEntity = entity.Detalles.ElementAt(i);
+                            var childEntity = detallesList[i];
                             if (!string.IsNullOrEmpty(childDto.LocalId) && childDto.Id == 0 && childEntity.Id > 0)
                             {
                                 response.CreatedIdMappings.Add(new IdMappingDto
@@ -378,15 +422,15 @@ public class SyncService
                             }
                         }
                     }
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "DevolucionPedido",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }
@@ -398,20 +442,22 @@ public class SyncService
         {
             foreach (var dto in clientChanges.RutaDetalles.Where(rd => rd.Operation == SyncOperation.Update))
             {
-                try
+                var spName = $"sp_ruta_detalle_{dto.Id}";
+                var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
                     var success = await _repo.UpsertRutaDetalleAsync(tenantId, usuarioId, dto);
+                    await _repo.SaveChangesAsync();
                     if (success)
                         response.Summary.RutaDetallesPushed++;
-                }
-                catch (Exception ex)
+                });
+                if (!committed)
                 {
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "RutaDetalle",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
-                        Message = ex.Message
+                        Message = error?.Message ?? "Unknown error"
                     });
                     response.Summary.ErrorsFound++;
                 }

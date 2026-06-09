@@ -55,8 +55,8 @@ test.describe('Clients CRUD', () => {
   });
 
   test('should edit a client', async ({ page }) => {
-    // Click edit button on first row
-    const editButton = page.getByRole('button', { name: /editar|edit/i }).first();
+    // Click edit button on first row (data-testid="edit-client-{id}")
+    const editButton = page.locator('[data-testid^="edit-client-"]').first();
     if (await editButton.isVisible()) {
       await editButton.click();
 
@@ -77,19 +77,19 @@ test.describe('Clients CRUD', () => {
   });
 
   test('should delete a client', async ({ page }) => {
-    // Click delete button on first row
-    const deleteButton = page.getByRole('button', { name: /eliminar|delete|borrar/i }).first();
+    // Soft-delete via ActiveToggle (data-testid="delete-client-{id}")
+    const deleteButton = page.locator('[data-testid^="delete-client-"]').first();
     if (await deleteButton.isVisible()) {
       await deleteButton.click();
 
-      // Confirm deletion
+      // Confirm deletion (modal opens for some flows; toggle is immediate for active state)
       const confirmButton = page.getByRole('button', { name: /confirmar|confirm|sí|yes/i });
-      if (await confirmButton.isVisible()) {
+      if (await confirmButton.isVisible().catch(() => false)) {
         await confirmButton.click();
       }
 
-      // Should show success
-      await expect(page.getByText(/eliminado|deleted|borrado/i)).toBeVisible({ timeout: 10000 });
+      // Should show success (toast text matches activate/deactivate variants)
+      await expect(page.getByText(/desactivado|inactivo|eliminado|deleted|borrado/i)).toBeVisible({ timeout: 10000 });
     }
   });
 

@@ -1,5 +1,18 @@
 'use client';
 
+/**
+ * TourPrompt — FAB flotante (bottom-6 right-6) que sugiere iniciar el tour
+ * de la ruta actual. Auto-prompt limitado a 3 visualizaciones por tour-id
+ * (counter en localStorage `handy-tours-prompt`).
+ *
+ * Audit code-quality 2026-06-06 (Bug #11): este FAB se renderiza en TODOS los
+ * viewports (sin media query — visibilidad 100% JS). En Mobile (Pixel 5 393px)
+ * el popover de driver.js puede salirse del viewport por su ancho fijo, así
+ * que el flujo canónico mobile es:
+ *   Header → botón "Ayuda" (siempre visible) → HelpPanel → "Empezar tour"
+ * Ver e2e/tour-mobile-via-help.spec.ts y drawer-tour-spotlight.spec.ts.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Play, X } from 'lucide-react';
 import { useTour } from '@/hooks/useTour';

@@ -1,0 +1,338 @@
+appId: host.exp.exponent
+name: "Vendedor: Crear pedido PREVENTA completo (stepper 3 pasos)"
+tags:
+  - functional
+  - vendedor
+  - vender
+  - preventa
+  - stepper
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: crear-pedido-preventa-completo-stepper-3-pasos
+#
+# Flujo completo Stepper 3 pasos:
+#   tab Vender -> FAB Nuevo Pedido -> BottomSheet "Tipo de Venta"
+#   -> Preventa -> Step1 Cliente -> Step2 Productos
+#   -> Step3 Revision -> ConfirmModal -> pantalla exito.tsx
+#
+# PREREQ tecnico:
+#   - Emulador Android con Expo Go (host.exp.exponent)
+#   - Metro bundler activo (puerto 8081)
+#   - docker-compose.dev.yml: api_main + api_billing + postgres
+#   - Seed Jeyma cargado (vendedor1@jeyma.com / test123)
+#   - Cliente seed "Abarrotes Don Pancho"
+#   - Producto seed "Coca-Cola 2L" (o cualquiera por busqueda "coca")
+#   - Catalogo sincronizado offline en WatermelonDB
+#
+# PREREQ flow:
+#   Ejecutar antes en la suite: .maestro/auth/01-login-vendedor.yaml
+#   Este flow asume sesion VENDEDOR activa y dashboard tab "Hoy" accesible.
+# =================================================================
+
+# ---------------------------------------------------------------
+# 0) Dismiss modales opcionales (banners, anuncios, permisos GPS,
+#    KeepAwake) — runFlow when:visible no rompe si no existen.
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+- runFlow:
+    when:
+      visible: "Más tarde"
+    commands:
+      - tapOn: "Más tarde"
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# ---------------------------------------------------------------
+# 1) Reset navigation y entrar a tab "Vender"
+#    Doble tap "Hoy" -> root del stack, luego tap "Vender".
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - tapOn: "Hoy"
+      - tapOn: "Hoy"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vender"
+    timeout: 30000
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+- assertVisible: "Pedidos"
+- takeScreenshot: preventa-00-hub-vender
+
+# ---------------------------------------------------------------
+# 2) Abrir BottomSheet "Tipo de Venta" via FAB
+#    Fallback: tap por texto "Nuevo Pedido" / "Nueva venta" /
+#    "Crear pedido" si el FAB id no aparece.
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible:
+        id: "fab-nuevo-pedido"
+    commands:
+      - tapOn:
+          id: "fab-nuevo-pedido"
+
+- runFlow:
+    when:
+      visible: "Nuevo Pedido"
+    commands:
+      - tapOn: "Nuevo Pedido"
+- runFlow:
+    when:
+      visible: "Nuevo pedido"
+    commands:
+      - tapOn: "Nuevo pedido"
+- runFlow:
+    when:
+      visible: "Crear pedido"
+    commands:
+      - tapOn: "Crear pedido"
+- runFlow:
+    when:
+      visible: "Nueva venta"
+    commands:
+      - tapOn: "Nueva venta"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Tipo de Venta"
+    timeout: 10000
+- assertVisible: "Tipo de Venta"
+- assertVisible: "Preventa"
+- takeScreenshot: preventa-01-tipo-venta-sheet
+
+# ---------------------------------------------------------------
+# 3) Seleccionar modo PREVENTA -> Step1 del stepper
+# ---------------------------------------------------------------
+- tapOn: "Preventa"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+# ProgressSteps con 3 pasos visibles
+- assertVisible: "Seleccionar Cliente"
+- assertVisible: "Cliente"
+- assertVisible: "Productos"
+- assertVisible: "Revisar"
+- assertVisible: "Buscar cliente..."
+- assertVisible: "Continuar"
+- takeScreenshot: preventa-02-step1-clientes
+
+# ---------------------------------------------------------------
+# 4) Step 1 — Buscar y seleccionar cliente
+# ---------------------------------------------------------------
+- tapOn: "Buscar cliente..."
+- inputText: "a"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Limpiar busqueda para ver lista completa
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Preferir cliente seed Jeyma "Abarrotes Don Pancho";
+# fallback: tap primer item visible en lista (~50%,55%).
+- runFlow:
+    when:
+      visible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn: "Abarrotes Don Pancho"
+- runFlow:
+    when:
+      notVisible: "Abarrotes Don Pancho"
+    commands:
+      - tapOn:
+          point: "50%,55%"
+
+- waitForAnimationToEnd
+- takeScreenshot: preventa-03-cliente-seleccionado
+
+# CTA Continuar debe estar habilitado tras seleccion
+- assertVisible: "Continuar"
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------------
+# 5) Step 2 — Productos
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- assertVisible: "Productos"
+- assertVisible: "Buscar producto..."
+- assertVisible: "Todos"
+- takeScreenshot: preventa-04-step2-productos
+
+# Buscar producto (Coca-Cola 2L del seed Jeyma)
+- tapOn: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preventa-05-busqueda-producto
+
+# Tap "Agregar" en la primera card de producto disponible
+- extendedWaitUntil:
+    visible: "Agregar"
+    timeout: 15000
+- assertVisible: "Agregar"
+- tapOn: "Agregar"
+
+# ---------------------------------------------------------------
+# 6) QuantityNumericSheet — confirmar cantidad por defecto (1)
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Confirmar|Aceptar"
+    timeout: 15000
+- takeScreenshot: preventa-06-qty-sheet
+
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+- runFlow:
+    when:
+      visible: "Aceptar"
+    commands:
+      - tapOn: "Aceptar"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ---------------------------------------------------------------
+# 7) CartBar visible con item agregado -> ir a Revision
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Revisar pedido"
+    timeout: 15000
+- assertVisible: "Revisar pedido"
+- takeScreenshot: preventa-07-cartbar-con-item
+
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------------
+# 8) Step 3 — Revision
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Revisar|Resumen|Subtotal|Total"
+    timeout: 15000
+
+- assertVisible:
+    text: "Revisar|Resumen"
+- assertVisible:
+    text: "Subtotal|Total"
+- takeScreenshot: preventa-08-step3-revision
+
+# Cliente persistido a traves de los 3 pasos (best-effort,
+# si el nombre fue el seed Jeyma).
+- runFlow:
+    when:
+      visible: "Abarrotes Don Pancho"
+    commands:
+      - assertVisible: "Abarrotes Don Pancho"
+
+# Agregar notas opcionales (si el campo existe)
+- runFlow:
+    when:
+      visible: "Notas"
+    commands:
+      - tapOn: "Notas"
+      - inputText: "Pedido E2E funcional preventa stepper 3 pasos"
+      - hideKeyboard
+- takeScreenshot: preventa-09-revision-con-notas
+
+# ---------------------------------------------------------------
+# 9) Enviar pedido (CTA primario del Step3)
+# ---------------------------------------------------------------
+- runFlow:
+    when:
+      visible: "Levantar Pedido"
+    commands:
+      - tapOn: "Levantar Pedido"
+- runFlow:
+    when:
+      visible: "Enviar pedido"
+    commands:
+      - tapOn: "Enviar pedido"
+- runFlow:
+    when:
+      visible: "Guardar pedido"
+    commands:
+      - tapOn: "Guardar pedido"
+- runFlow:
+    when:
+      visible: "Confirmar pedido"
+    commands:
+      - tapOn: "Confirmar pedido"
+
+# ---------------------------------------------------------------
+# 10) ConfirmModal — aceptar envio definitivo
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "ENVIAR|Confirmar|Aceptar|Si"
+    timeout: 10000
+- takeScreenshot: preventa-10-confirm-modal
+
+- runFlow:
+    when:
+      visible: "ENVIAR"
+    commands:
+      - tapOn: "ENVIAR"
+- runFlow:
+    when:
+      visible: "Enviar"
+    commands:
+      - tapOn: "Enviar"
+- runFlow:
+    when:
+      visible: "Confirmar"
+    commands:
+      - tapOn: "Confirmar"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------------
+# 11) Pantalla exito.tsx — pedido persistido (offline-first WDB)
+# ---------------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Pedido Levantado|Pedido enviado|Pedido creado|Listo|exito"
+    timeout: 30000
+
+- assertVisible:
+    text: "Pedido Levantado|Pedido enviado|Pedido creado|Listo|exito"
+- takeScreenshot: preventa-11-exito-final

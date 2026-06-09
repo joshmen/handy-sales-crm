@@ -1,0 +1,59 @@
+appId: host.exp.exponent
+name: "Cobrar - Modo Pago de pedido (default)"
+---
+
+# PR 5 cobros 3 modos: valida que el selector default es PorPedido + el
+# ConfirmModal sea "Confirmar Cobro" normal (NO saldo a favor).
+
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- tapOn:
+    text: "Registrar Cobro"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Tipo de cobro"
+    timeout: 10000
+
+# Verificar que PorPedido es el default (selected state)
+- assertVisible:
+    text: "Pago de pedido"
+
+- takeScreenshot: cobrar-modo-por-pedido-default
+
+# Modo PorPedido filtra clientes con saldo>0. Tap en cliente picker.
+- tapOn:
+    text: "Seleccionar cliente"
+    optional: true
+
+# Seleccionar el primero (asumimos seed tiene al menos uno con saldo)
+- tapOn:
+    index: 0
+    optional: true
+
+- tapOn:
+    text: "0.00"
+    optional: true
+- inputText: "50"
+- hideKeyboard
+
+- takeScreenshot: cobrar-modo-por-pedido-filled
+
+# Tap Confirmar → ConfirmModal con titulo "Confirmar Cobro" (NO saldo a favor)
+- tapOn:
+    text: "Confirmar Cobro"
+
+- extendedWaitUntil:
+    visible: "Confirmar Cobro"
+    timeout: 5000
+
+# Cancelar modal y volver
+- tapOn:
+    text: "Cancelar"
+    optional: true
+- back
+- tapOn: "Cobrar"

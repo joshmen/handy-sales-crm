@@ -33,13 +33,15 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
-import { database } from '@/db/database';
+import { database, getDatabase, isDatabaseEncrypted, verifyDatabaseEncryption } from '@/db/database';
+import type { Database } from '@nozbe/watermelondb';
 import Toast from 'react-native-toast-message';
 import { ConfirmModal } from '@/components/ui';
 import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
 import { useRealtime, useMe } from '@/hooks';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { useHorarioLaboralWatcher } from '@/hooks/useHorarioLaboralWatcher';
+import { useTrackingGpsEnabled } from '@/hooks/useTrackingGpsEnabled';
 import { useRutaJornadaWatcher } from '@/hooks/useRutaJornadaWatcher';
 import { useInactividadJornadaWatcher } from '@/hooks/useInactividadJornadaWatcher';
 import { PrivacyConsentModal } from '@/components/shared/PrivacyConsentModal';
@@ -109,6 +111,14 @@ function LocationTrackingBridge() {
   const jornadaActiva = useJornadaStore(s => s.activa);
   const hidratada = useJornadaStore(s => s.hidratada);
   const hidratarDesdeStorage = useJornadaStore(s => s.hidratarDesdeStorage);
+  // 2026-06-08: gate del background foreground service por feature de plan.
+  // Sin esto, planes sin `tracking_vendedor` igual encendian el foreground
+  // service notification "HandySuites · jornada activa" y mandaban pings
+  // que el backend rechaza con 403 (waste bateria + bandwidth). Con el gate,
+  // solo planes pagos arrancan el tracking continuo. Los `recordPing` event-
+  // driven (Venta/Cobro/Visita) siguen disparandose; el backend los rechaza
+  // con 403 → mobile `disableTracking()` se auto-aplica.
+  const trackingEnabled = useTrackingGpsEnabled();
 
   // Hidratar el estado persistido al primer mount tras login
   useEffect(() => {
@@ -122,10 +132,12 @@ function LocationTrackingBridge() {
     }
   }, [isAuthenticated, hidratada, hidratarDesdeStorage]);
 
-  // Arranca/para el timer cuando jornada cambia
+  // Arranca/para el timer cuando jornada cambia.
+  // 2026-06-08: agregado `trackingEnabled` dependency — sin el feature flag
+  // del plan, NO encendemos el foreground service (capa 5 plan eager-drifting).
   useEffect(() => {
     let cancelled = false;
-    if (!isAuthenticated || !user?.id || !jornadaActiva) {
+    if (!isAuthenticated || !user?.id || !jornadaActiva || !trackingEnabled) {
       // Cualquier transición a "no debería estar tracking" → stop
       import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
       return;
@@ -140,7 +152,7 @@ function LocationTrackingBridge() {
       cancelled = true;
       import('@/services/locationCheckpoint').then(mod => mod.stopCheckpointTimer()).catch(() => {});
     };
-  }, [isAuthenticated, user?.id, jornadaActiva]);
+  }, [isAuthenticated, user?.id, jornadaActiva, trackingEnabled]);
 
   // Watchers que disparan transiciones de jornada
   useHorarioLaboralWatcher();
@@ -209,18 +221,18 @@ const INITIAL_SYNC_KEY = 'initial_sync_complete';
 
 function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   const { isAuthenticated, isLoading, restoreSession, user } = useAuthStore();
-  // Audit 2026-06-01 (rev 3) — MINIMAL bounce loop fix preservando el
-  // diseño soft-logout (audit 2026-05-18). El listener 'sessionRevoked'
-  // ahora SOLO levanta `sessionExpired=true` (no toca `isAuthenticated`).
-  // Eso mantiene (tabs) montado → SessionExpiredBanner visible, GPS/SignalR/
-  // queries vivos, draft data intacta. Pero el effect de abajo seguía
-  // redirigiéndo a (tabs) cuando el user navegaba a /(auth)/login desde
-  // el banner (sessionExpired=true + isAuthenticated=true). El fix es
-  // simplemente gatear la rama de redirect-to-tabs con `!sessionExpired`:
-  // así el user puede llegar al login screen y re-loguear (login()
-  // resetea sessionExpired:false → AuthGate vuelve al flow normal).
-  // NO agregamos un redirect-to-login automático cuando sessionExpired
-  // se levanta — el contrato es que el banner pinte y el user decida.
+  // Hardening 2026-06-05 (fix data-loss critico reportado por usuario):
+  // Cambio de contrato vs audit 2026-06-01. Antes: "el banner pinta y el
+  // user decide". Resultado: app autenticado dejaba crear pedidos, llenar
+  // formularios y tap Finalizar, donde eager-save + sync push fallaban
+  // 401 silente -> pedidos quedaban en WDB local solo -> data loss si user
+  // wipea o desinstala.
+  //
+  // Nuevo contrato: sessionExpired=true + inTabsGroup -> redirect automatico
+  // a /(auth)/login. JWT preservado en SecureStore (soft-logout sigue),
+  // WDB intacto, pero el user NO puede tocar nada mutativo hasta re-login.
+  // login() resetea sessionExpired -> false y el sync engine drena
+  // automaticamente los pendings que quedaron en WDB.
   const sessionExpired = useAuthStore(s => s.sessionExpired);
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const segments = useSegments();
@@ -272,6 +284,11 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
       } else {
         router.replace('/(auth)/login');
       }
+    } else if (isAuthenticated && sessionExpired && inTabsGroup) {
+      // Hardening 2026-06-05: sesion revocada server-side. Forzar login
+      // antes de que el user pueda mutar nada. JWT y WDB preservados;
+      // login() reseteara sessionExpired -> sync engine drena pendings.
+      router.replace('/(auth)/login');
     } else if (isAuthenticated && !sessionExpired && user?.mustChangePassword && !onCambiarPasswordScreen) {
       // Force-redirect a cambiar-password — el usuario fue creado con password
       // temporal por un admin (caso vendedor de campo MX sin email). No puede
@@ -311,13 +328,11 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   // muestre los pickers con datos.
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Import dinámico para evitar ciclo de módulos en startup
+    // Sprint 3 audit: DRY con useAuth via helper compartido prefetchCatalogos.
+    // Import dinámico para evitar ciclo de módulos en startup.
     import('@/providers/QueryProvider').then(({ queryClient }) => {
-      import('@/api').then(({ catalogosApi }) => {
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'zonas'], queryFn: () => catalogosApi.getZonas() });
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-cliente'], queryFn: () => catalogosApi.getCategoriasCliente() });
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'categorias-producto'], queryFn: () => catalogosApi.getCategoriasProducto() });
-        queryClient.prefetchQuery({ queryKey: ['catalogos', 'familias-producto'], queryFn: () => catalogosApi.getFamiliasProducto() });
+      import('@/api/prefetchCatalogos').then(({ prefetchCatalogos }) => {
+        prefetchCatalogos(queryClient);
       });
     });
   }, [isAuthenticated]);
@@ -338,11 +353,68 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [needsInitialSync, setNeedsInitialSync] = useState(false);
 
+  // Audit 2026-06-07: gate todo el JSX detras de dbInstance state. La WDB se
+  // inicializa de forma asincronica (passphrase SQLCipher resuelve via SecureStore)
+  // y los 37 modulos que importan `{ database }` reciben el Proxy que delega
+  // al singleton real una vez resuelto. PERO DatabaseProvider hace brand check
+  // `instanceof Database` que el Proxy no pasa → debe recibir la instancia REAL
+  // via state (no el Proxy). SplashScreen.preventAutoHideAsync() mantiene el
+  // splash nativo visible hasta que dbInstance esta listo; entonces hideAsync.
+  // Pattern oficial Expo SDK 54: docs.expo.dev/versions/latest/sdk/splash-screen
+  const [dbInstance, setDbInstance] = useState<Database | null>(null);
+  const [dbInitError, setDbInitError] = useState<string | null>(null);
+
   // Cableado AppState → focusManager para que `refetchOnWindowFocus: true`
   // funcione en RN. Una sola registración por sesión de app.
   useEffect(() => {
     return setupTanStackFocusBridge();
   }, []);
+
+  // Audit 2026-06-07: lazy-init de la WDB (reemplaza top-level await que Hermes
+  // Expo SDK 54 NO soporta). Llama getDatabase() — resuelve la passphrase
+  // SQLCipher en background, construye el SQLiteAdapter cifrado y deja el
+  // Database singleton listo. Guarda la instancia REAL en state para pasarla
+  // al DatabaseProvider (el Proxy `database` NO pasa el brand check de WDB).
+  useEffect(() => {
+    void (async () => {
+      try {
+        const db = await getDatabase();
+        setDbInstance(db);
+      } catch (err: any) {
+        const msg = err?.message ?? String(err);
+        if (__DEV__) console.error('[RootLayout] getDatabase fallo:', msg);
+        crashReporter.reportCrash(err, 'db_init', 'CRASH');
+        setDbInitError(msg);
+      }
+    })();
+  }, []);
+
+  // Sprint pre-prod #7+#8 audit 2026-06-06: verificacion SQLCipher post-init.
+  //
+  // Tras getDatabase() resolver, confirmamos que la WDB abre con la passphrase
+  // nueva (caso normal) o, si el archivo era plaintext de un build previo,
+  // ejecutamos el reset one-shot + full sync (migracion plaintext->encrypted).
+  //
+  // Reporta el estado de encryption via crashReporter para tracking de
+  // adoption en field — sin esto, no podemos confirmar que builds EAS
+  // tengan SQLCipher activo.
+  useEffect(() => {
+    if (!dbInstance) return;
+    void (async () => {
+      try {
+        const ok = await verifyDatabaseEncryption();
+        crashReporter.reportEvent('db_encryption_status', {
+          encrypted: isDatabaseEncrypted(),
+          reset_needed: !ok,
+        });
+        if (!ok && __DEV__) {
+          console.warn('[RootLayout] WDB reset por migracion plaintext->encrypted; full sync requerido en proximo login');
+        }
+      } catch (err: any) {
+        crashReporter.reportCrash(err, 'db_encryption_verify', 'ERROR');
+      }
+    })();
+  }, [dbInstance]);
 
   const handleAppReady = useCallback((firstSync?: boolean) => {
     if (!appReady) {
@@ -361,10 +433,42 @@ export default function RootLayout() {
     // Sync completed — data is ready for offline use
   }, []);
 
+  // Audit 2026-06-07: si la DB no esta lista, retornamos null para mantener
+  // el native splash visible (SplashScreen.preventAutoHideAsync() lo bloquea
+  // al top del modulo). En cuanto dbInstance esta seteado, hideAsync se llama
+  // y el arbol React monta — los 37 modulos que importan { database } reciben
+  // el Proxy que ahora delega al singleton real.
+  useEffect(() => {
+    if (dbInstance || dbInitError) {
+      SplashScreen.hideAsync().catch(() => {
+        // Silencioso — splash ya pudo haber sido hidden por AnimatedSplash legacy.
+      });
+    }
+  }, [dbInstance, dbInitError]);
+
+  if (dbInitError) {
+    // Fallback minimal cuando el init de WDB falla irrecuperablemente. No
+    // bloqueamos la app entera — el user puede al menos ver el mensaje y
+    // reinstalar. Sin Toast/SafeAreaProvider aqui porque no tenemos DB.
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  if (!dbInstance) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <DatabaseProvider database={database}>
+        {/* DatabaseProvider necesita la instancia REAL (no el Proxy) por brand
+            check `instanceof Database`. Los 37 callers que hacen
+            `import { database }` siguen usando el Proxy — ese delega al mismo
+            singleton y los metodos funcionan via .bind(_database). */}
+        <DatabaseProvider database={dbInstance}>
           <QueryProvider>
             <StatusBar style={showSplash ? 'light' : 'dark'} />
             <AuthGate onReady={handleAppReady} />

@@ -24,7 +24,7 @@ namespace HandySuites.Tests.Application.Clientes
             _tenantMock = new Mock<ICurrentTenant>();
             _usuarioRepoMock = new Mock<IUsuarioRepository>();
             _tenantMock.Setup(t => t.TenantId).Returns(1);
-            _tenantMock.Setup(t => t.IsAdmin).Returns(true);
+            _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(true);
             // Default: FKs del tenant existen para Crear/Actualizar happy paths.
             _repoMock.Setup(r => r.ExisteZonaEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
             _repoMock.Setup(r => r.ExisteCategoriaEnTenantAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
@@ -129,7 +129,7 @@ namespace HandySuites.Tests.Application.Clientes
         public async Task ObtenerPorIdAsync_VendedorRegular_NoVeClienteDeOtroVendedor()
         {
             // Vendedor con id=5 intenta leer cliente asignado a vendedor id=99
-            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(false);
             _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
             _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
             _tenantMock.Setup(t => t.UserId).Returns("5");
@@ -144,7 +144,7 @@ namespace HandySuites.Tests.Application.Clientes
         [Fact]
         public async Task ObtenerPorIdAsync_VendedorRegular_VeClienteAsignadoAEl()
         {
-            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(false);
             _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
             _tenantMock.Setup(t => t.IsSupervisor).Returns(false);
             _tenantMock.Setup(t => t.UserId).Returns("5");
@@ -160,7 +160,7 @@ namespace HandySuites.Tests.Application.Clientes
         [Fact]
         public async Task ObtenerPorIdAsync_Supervisor_VeClienteDeSubordinado()
         {
-            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(false);
             _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
             _tenantMock.Setup(t => t.IsSupervisor).Returns(true);
             _tenantMock.Setup(t => t.UserId).Returns("7");
@@ -176,7 +176,7 @@ namespace HandySuites.Tests.Application.Clientes
         [Fact]
         public async Task ObtenerPorIdAsync_Supervisor_NoVeClienteDeOtroEquipo()
         {
-            _tenantMock.Setup(t => t.IsAdmin).Returns(false);
+            _tenantMock.Setup(t => t.IsAdminOrAbove).Returns(false);
             _tenantMock.Setup(t => t.IsSuperAdmin).Returns(false);
             _tenantMock.Setup(t => t.IsSupervisor).Returns(true);
             _tenantMock.Setup(t => t.UserId).Returns("7");

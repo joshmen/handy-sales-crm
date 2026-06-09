@@ -1,0 +1,341 @@
+appId: host.exp.exponent
+name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
+---
+
+# ════════════════════════════════════════════════════════════
+# FUNCTIONAL TEST - SUPERVISOR (EXTRAS)
+# Use case: ext-mapa-tiempo-real
+#
+# Objetivo: validar que la pantalla "Mapa del Equipo" (mapa
+# tiempo real de ubicaciones GPS de vendedores) refresca sus
+# datos correctamente cuando:
+#   (a) el supervisor entra a la pantalla por primera vez
+#       (fetch inicial via useUbicacionesEquipo)
+#   (b) el supervisor vuelve a entrar después de salir
+#       (refetch on focus / staleTime de 60s)
+#   (c) la query corre en intervalo (refetchInterval = 60s)
+#
+# Cubre:
+#   - Login real con supervisor@jeyma.com
+#   - Navegación Hoy -> Equipo -> Mapa (entrada inicial)
+#   - Estado de carga "Cargando ubicaciones..." OR mapa hidratado
+#   - Renderizado sin crash del ErrorBoundary
+#   - Ciclo: salir del mapa -> esperar -> volver -> refresh
+#   - Sesión supervisor intacta tras múltiples navegaciones
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/equipo/mapa.tsx
+#     - Header "Mapa del Equipo"
+#     - Loading "Cargando ubicaciones..."
+#     - Empty "Sin ubicaciones"
+#     - No-key "Mapas no disponibles en esta versión"
+#   apps/mobile-app/src/hooks/useSupervisor.ts (useUbicacionesEquipo)
+#     - staleTime: 60_000
+#     - refetchInterval: 60_000
+#   apps/mobile-app/app/(tabs)/equipo/index.tsx
+#     - testID="ver-mapa"
+#     - testID="supervisor-kpis"
+#     - "VENDEDORES" section
+#
+# Backend endpoint que se refetcha:
+#   GET /api/team/ubicaciones-recientes
+#   (UbicacionVendedor[]: usuarioId, nombre, lat, lng,
+#    fechaUbicacion, clienteNombre?)
+# ════════════════════════════════════════════════════════════
+
+# NO clearState: mantiene sesión y caches React Query si existen.
+# Esto permite validar el comportamiento de staleness real entre
+# entradas sucesivas al mapa.
+- launchApp:
+    clearState: false
+
+# 1. Saltar onboarding si aparece (primer arranque)
+- runFlow:
+    when:
+      visible: "Siguiente"
+    commands:
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "onboarding-action"
+      - waitForAnimationToEnd
+
+# 2. Login como supervisor si la pantalla de login está visible
+- runFlow:
+    when:
+      visible:
+        id: "login-button"
+    commands:
+      - tapOn:
+          id: "email-input"
+      - eraseText
+      - inputText: "supervisor@jeyma.com"
+      - tapOn:
+          id: "password-input"
+      - eraseText
+      - inputText: "test123"
+      - hideKeyboard
+      - tapOn:
+          id: "login-button"
+
+# 3. Esperar al dashboard "Hoy" hidratado
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 60000
+
+# 4. Dismiss de modales opcionales (permisos, privacidad, sync)
+- runFlow:
+    when:
+      visible: "Aviso de Privacidad"
+    commands:
+      - tapOn:
+          text: "Aceptar"
+          optional: true
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Permitir"
+    commands:
+      - tapOn: "Permitir"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "AHORA NO"
+    commands:
+      - tapOn: "AHORA NO"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Mas tarde"
+    commands:
+      - tapOn: "Mas tarde"
+      - waitForAnimationToEnd
+
+# 5. Validar contexto supervisor (tab Equipo disponible)
+- assertVisible: "Mi Equipo"
+- assertVisible: "Equipo"
+
+- takeScreenshot: refresh-mapa-01-dashboard-supervisor
+
+# ════════════════════════════════════════════════════════════
+# FASE A: PRIMERA ENTRADA AL MAPA - FETCH INICIAL
+# Se espera que useUbicacionesEquipo dispare el primer queryFn
+# y muestre uno de tres estados terminales:
+#   (i) mapa con pins, (ii) estado vacío, (iii) sin API key.
+# ════════════════════════════════════════════════════════════
+
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 20000
+
+- assertVisible:
+    id: "supervisor-kpis"
+
+- assertVisible:
+    id: "ver-mapa"
+
+- takeScreenshot: refresh-mapa-02-equipo-pre-mapa
+
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd
+
+# El header de mapa.tsx siempre se renderiza incluso si carga
+# o si Google Maps no está configurado.
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 20000
+
+# El ErrorBoundary mostraría un mensaje distinto si crasheó.
+- assertNotVisible:
+    text: "Algo salió mal"
+- assertNotVisible:
+    text: "Failed"
+
+- takeScreenshot: refresh-mapa-03-fetch-inicial
+
+# Asegurar que el fetch terminó: ya no debería verse el spinner
+# de "Cargando ubicaciones..." después de un wait razonable.
+# Aceptamos cualquiera de los 3 estados terminales del componente:
+#   - lista de pins (mapa hidratado)
+#   - "Sin ubicaciones" (empty state)
+#   - "Mapas no disponibles en esta versión" (sin API key)
+- runFlow:
+    when:
+      visible: "Cargando ubicaciones..."
+    commands:
+      - extendedWaitUntil:
+          notVisible: "Cargando ubicaciones..."
+          timeout: 15000
+
+- takeScreenshot: refresh-mapa-04-estado-terminal-1
+
+# ════════════════════════════════════════════════════════════
+# FASE B: SALIR DEL MAPA - CACHE STALENESS WINDOW
+# Al volver atrás, React Query mantiene el cache. El staleTime
+# es 60s, así que un retorno inmediato no debería disparar
+# refetch — los datos ya son frescos.
+# ════════════════════════════════════════════════════════════
+
+- tapOn:
+    text: "Volver"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Mapa del Equipo"
+    commands:
+      - back
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 15000
+
+- assertVisible:
+    id: "supervisor-kpis"
+
+- takeScreenshot: refresh-mapa-05-back-a-equipo
+
+# ════════════════════════════════════════════════════════════
+# FASE C: SEGUNDA ENTRADA AL MAPA - REUSO DE CACHE FRESH
+# Volver al mapa inmediatamente. Como staleTime=60_000 y no han
+# pasado 60s, los datos del cache son "fresh" y NO debe verse
+# spinner de carga inicial (la query reutiliza el cache).
+# Esto valida que el cache de React Query funciona.
+# ════════════════════════════════════════════════════════════
+
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 20000
+
+# El componente NO debería crashear en la segunda entrada
+- assertNotVisible:
+    text: "Algo salió mal"
+
+- takeScreenshot: refresh-mapa-06-segunda-entrada-cache
+
+# Validar que el estado terminal sigue siendo consistente:
+# debe estar uno de los 3 outcomes (pins, vacío o sin-key).
+# Si vemos "Cargando ubicaciones..." persistente sería bug.
+- runFlow:
+    when:
+      visible: "Cargando ubicaciones..."
+    commands:
+      - extendedWaitUntil:
+          notVisible: "Cargando ubicaciones..."
+          timeout: 15000
+
+# ════════════════════════════════════════════════════════════
+# FASE D: VALIDAR ESTADO TERMINAL POST-REFRESH
+# Tras el ciclo de navegación, capturamos cuál outcome aplica
+# al entorno actual y lo afirmamos explícitamente.
+# ════════════════════════════════════════════════════════════
+
+# Caso A: Hay pins GPS - se ve algún marker o el bottom card
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - tapOn:
+          text: "Vendedor 1 Jeyma"
+          optional: true
+      - waitForAnimationToEnd
+      - takeScreenshot: refresh-mapa-07a-pin-vendedor-visible
+
+# Caso B: Empty state estable tras refresh
+- runFlow:
+    when:
+      visible: "Sin ubicaciones"
+    commands:
+      - assertVisible: "Sin ubicaciones"
+      - assertVisible: "Los vendedores apareceran aqui cuando registren visitas con GPS"
+      - takeScreenshot: refresh-mapa-07b-empty-stable
+
+# Caso C: Build sin Google Maps API key (Expo Go)
+- runFlow:
+    when:
+      visible: "Mapas no disponibles en esta versión"
+    commands:
+      - assertVisible: "Mapas no disponibles en esta versión"
+      - takeScreenshot: refresh-mapa-07c-sin-api-key-stable
+
+# ════════════════════════════════════════════════════════════
+# FASE E: ESPERA EXTENDIDA PARA SIMULAR refetchInterval
+# El hook tiene refetchInterval=60_000. No vamos a esperar 60s
+# completos en CI, pero validamos que tras una espera breve la
+# pantalla sigue estable (no crashea por re-render).
+# ════════════════════════════════════════════════════════════
+
+# Espera breve mientras la pantalla está visible. Si el
+# refetchInterval dispara, debe re-pintar sin tirar errores.
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 8000
+
+- assertNotVisible:
+    text: "Algo salió mal"
+- assertNotVisible:
+    text: "Failed"
+
+- takeScreenshot: refresh-mapa-08-post-interval-window
+
+# ════════════════════════════════════════════════════════════
+# FASE F: VOLVER Y CONFIRMAR SESIÓN SUPERVISOR INTACTA
+# ════════════════════════════════════════════════════════════
+
+- tapOn:
+    text: "Volver"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Mapa del Equipo"
+    commands:
+      - back
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 15000
+
+- assertVisible:
+    id: "supervisor-kpis"
+
+- takeScreenshot: refresh-mapa-09-back-equipo-final
+
+# El tab "Más" muestra el badge "Supervisor" cuando el rol es SUPERVISOR
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- assertVisible: "Supervisor"
+
+# Confirmar que no hubo logout silencioso por refetches en background
+- assertNotVisible:
+    text: "Iniciar sesión"
+- assertNotVisible:
+    text: "Sesión expirada"
+
+- takeScreenshot: refresh-mapa-10-mas-rol-supervisor
+
+# Volver al dashboard para dejar la app en estado neutro
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- assertVisible: "Mi Equipo"
+
+- takeScreenshot: refresh-mapa-11-flow-completo

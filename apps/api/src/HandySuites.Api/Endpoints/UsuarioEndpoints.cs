@@ -98,7 +98,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al obtener usuarios");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al obtener usuarios"); return Results.Problem("Error al obtener usuarios");
         }
     }
 
@@ -115,7 +115,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al obtener usuario");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al obtener usuario"); return Results.Problem("Error al obtener usuario");
         }
     }
 
@@ -132,7 +132,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al buscar usuarios");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al buscar usuarios"); return Results.Problem("Error al buscar usuarios");
         }
     }
 
@@ -213,7 +213,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al actualizar usuario");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al actualizar usuario"); return Results.Problem("Error al actualizar usuario");
         }
     }
 
@@ -231,8 +231,9 @@ public static class UsuarioEndpoints
         {
             return Results.Forbid();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al eliminar usuario");
             return Results.Problem("Error al eliminar usuario");
         }
     }
@@ -253,7 +254,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al activar usuario");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al activar usuario"); return Results.Problem("Error al activar usuario");
         }
     }
 
@@ -273,10 +274,12 @@ public static class UsuarioEndpoints
         }
         catch (InvalidOperationException ex)
         {
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Warning(ex, "Invalid operation al desactivar usuario");
             return Results.BadRequest(new { error = "No se pudo completar la operación." });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "Error al desactivar usuario");
             return Results.Problem("Error al desactivar usuario");
         }
     }
@@ -297,7 +300,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al asignar rol");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al asignar rol"); return Results.Problem("Error al asignar rol");
         }
     }
 
@@ -326,7 +329,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al subir avatar");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al subir avatar"); return Results.Problem("Error al subir avatar");
         }
     }
 
@@ -346,7 +349,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al eliminar avatar");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al eliminar avatar"); return Results.Problem("Error al eliminar avatar");
         }
     }
 
@@ -366,7 +369,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al cambiar estado de usuarios");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al cambiar estado de usuarios"); return Results.Problem("Error al cambiar estado de usuarios");
         }
     }
 
@@ -383,7 +386,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem("Error al obtener ubicaciones");
+            Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al obtener ubicaciones"); return Results.Problem("Error al obtener ubicaciones");
         }
     }
 
