@@ -344,7 +344,7 @@ export default function CobranzaPage() {
     } else if (modo === ModoCobro.Anticipo) {
       // Anticipo: confirmacion bloqueante (genera saldo a favor).
       const ok = window.confirm(
-        `Este cobro de ${formatCurrency(data.monto)} quedara como saldo a favor del cliente. ¿Confirmar?`
+        t('modes.advance.confirmMessage', { monto: formatCurrency(data.monto) })
       );
       if (!ok) return;
     }
@@ -1445,12 +1445,12 @@ export default function CobranzaPage() {
         <div className="p-6 space-y-4">
           {/* 2026-06-08 PR 3 plan eager-drifting cobros: selector de modo */}
           <div data-tour="cobro-modo-selector">
-            <label className="block text-xs font-medium text-foreground/70 mb-2">Tipo de cobro *</label>
+            <label className="block text-xs font-medium text-foreground/70 mb-2">{t('modes.label')} *</label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: ModoCobro.PorPedido, label: 'Pago de pedido', hint: 'Aplicar a una factura específica' },
-                { value: ModoCobro.AbonoFifo, label: 'Abono a cuenta', hint: 'Distribuye automático FIFO' },
-                { value: ModoCobro.Anticipo, label: 'Anticipo', hint: 'Genera saldo a favor' },
+                { value: ModoCobro.PorPedido, label: t('modes.byOrder.label'), hint: t('modes.byOrder.hint') },
+                { value: ModoCobro.AbonoFifo, label: t('modes.fifo.label'), hint: t('modes.fifo.hint') },
+                { value: ModoCobro.Anticipo, label: t('modes.advance.label'), hint: t('modes.advance.hint') },
               ].map(opt => {
                 const selected = (watch('modo') ?? ModoCobro.PorPedido) === opt.value;
                 return (
@@ -1479,7 +1479,7 @@ export default function CobranzaPage() {
             </div>
             {(watch('modo') ?? ModoCobro.PorPedido) === ModoCobro.Anticipo && (
               <div className="mt-2 p-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded-md text-xs text-amber-900 dark:text-amber-200">
-                Este cobro generará saldo a favor del cliente, aplicable a futuros pedidos. Confirma el monto antes de continuar.
+                {t('modes.advance.warning')}
               </div>
             )}
           </div>

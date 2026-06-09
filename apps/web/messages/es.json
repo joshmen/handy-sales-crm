@@ -1578,6 +1578,23 @@
       "creating": "Guardando...",
       "create": "Crear Cobro"
     },
+    "modes": {
+      "label": "Tipo de cobro",
+      "byOrder": {
+        "label": "Pago de pedido",
+        "hint": "Aplicar a una factura específica"
+      },
+      "fifo": {
+        "label": "Abono a cuenta",
+        "hint": "Distribuye automático FIFO"
+      },
+      "advance": {
+        "label": "Anticipo",
+        "hint": "Genera saldo a favor",
+        "warning": "Este cobro generará saldo a favor del cliente, aplicable a futuros pedidos. Confirma el monto antes de continuar.",
+        "confirmMessage": "Este cobro de {monto} quedará como saldo a favor del cliente. ¿Confirmar?"
+      }
+    },
     "datePresets": {
       "today": "Hoy",
       "thisWeek": "Esta semana",

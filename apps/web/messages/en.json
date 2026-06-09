@@ -1578,6 +1578,23 @@
       "creating": "Saving...",
       "create": "Create Payment"
     },
+    "modes": {
+      "label": "Payment type",
+      "byOrder": {
+        "label": "Order payment",
+        "hint": "Apply to a specific invoice"
+      },
+      "fifo": {
+        "label": "Account credit",
+        "hint": "Auto-distribute FIFO"
+      },
+      "advance": {
+        "label": "Advance",
+        "hint": "Generates credit balance",
+        "warning": "This payment will generate a credit balance for the client, applicable to future orders. Confirm the amount before continuing.",
+        "confirmMessage": "This payment of {monto} will become a credit balance for the client. Confirm?"
+      }
+    },
     "datePresets": {
       "today": "Today",
       "thisWeek": "This week",
