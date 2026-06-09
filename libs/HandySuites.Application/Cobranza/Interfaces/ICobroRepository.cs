@@ -9,7 +9,7 @@ public interface ICobroRepository
     Task<int> CrearAsync(CobroCreateDto dto, int tenantId, int usuarioId);
     Task<bool> ActualizarAsync(int id, CobroUpdateDto dto, int tenantId);
     Task<bool> AnularAsync(int id, int tenantId);
-    Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null);
+    Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null, bool soloConSaldo = true);
     Task<ResumenCarteraDto> ObtenerResumenCarteraAsync(int tenantId);
     Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId, int tenantId, bool historico = false);
 }

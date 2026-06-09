@@ -338,7 +338,7 @@ public class CobroRepository : ICobroRepository
         }); // end strategy.ExecuteAsync
     }
 
-    public async Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null)
+    public async Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null, bool soloConSaldo = true)
     {
         // Get delivered/confirmed pedidos from the last 12 months
         var unAnoAtras = DateTime.UtcNow.AddYears(-1);
@@ -394,7 +394,7 @@ public class CobroRepository : ICobroRepository
 
         var cobrosDict = cobrosPorPedido.ToDictionary(c => c.ClienteId, c => c.TotalCobrado);
 
-        return pedidosPorCliente.Select(p =>
+        var resultado = pedidosPorCliente.Select(p =>
         {
             var cobrado = cobrosDict.GetValueOrDefault(p.ClienteId, 0m);
             return new SaldoClienteDto
@@ -407,21 +407,29 @@ public class CobroRepository : ICobroRepository
                 PedidosPendientes = p.CantidadPedidos,
             };
         })
-        .Where(s => s.SaldoPendiente > 0)
-        .OrderByDescending(s => s.SaldoPendiente)
         .ToList();
+
+        if (soloConSaldo)
+        {
+            resultado = resultado.Where(s => s.SaldoPendiente > 0).ToList();
+        }
+
+        return resultado.OrderByDescending(s => s.SaldoPendiente).ToList();
     }
 
     public async Task<ResumenCarteraDto> ObtenerResumenCarteraAsync(int tenantId)
     {
-        var saldos = await ObtenerSaldosAsync(tenantId);
+        // Pasar soloConSaldo=false: necesitamos TODOS los clientes con actividad
+        // para calcular Total vendido + Cobrado correctos. Solo "ClientesConSaldo"
+        // cuenta los que efectivamente deben.
+        var todosLosSaldos = await ObtenerSaldosAsync(tenantId, soloConSaldo: false);
 
         return new ResumenCarteraDto
         {
-            TotalFacturado = saldos.Sum(s => s.TotalFacturado),
-            TotalCobrado = saldos.Sum(s => s.TotalCobrado),
-            TotalPendiente = saldos.Sum(s => s.SaldoPendiente),
-            ClientesConSaldo = saldos.Count,
+            TotalFacturado = todosLosSaldos.Sum(s => s.TotalFacturado),
+            TotalCobrado = todosLosSaldos.Sum(s => s.TotalCobrado),
+            TotalPendiente = todosLosSaldos.Sum(s => s.SaldoPendiente),
+            ClientesConSaldo = todosLosSaldos.Count(s => s.SaldoPendiente > 0),
         };
     }
 

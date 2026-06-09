@@ -187,15 +187,15 @@ public class MobileCobroAdminScopeTests
     {
         var tenant = BuildTenantMock(tenantId: 3, userId: "10", role: "ADMIN");
         var repo = new Mock<ICobroRepository>();
-        repo.Setup(r => r.ObtenerSaldosAsync(3, null))
+        repo.Setup(r => r.ObtenerSaldosAsync(3, null, It.IsAny<bool>()))
             .ReturnsAsync(new List<SaldoClienteDto>());
 
         var service = new CobroService(repo.Object, tenant.Object, Mock.Of<IClienteRepository>(), Mock.Of<IPedidoRepository>(), Mock.Of<ISubscriptionFeatureGuard>());
 
         await service.ObtenerSaldosAsync();
 
-        repo.Verify(r => r.ObtenerSaldosAsync(3, null), Times.Once);
-        repo.Verify(r => r.ObtenerSaldosAsync(It.Is<int>(t => t != 3), It.IsAny<int?>()), Times.Never);
+        repo.Verify(r => r.ObtenerSaldosAsync(3, null, It.IsAny<bool>()), Times.Once);
+        repo.Verify(r => r.ObtenerSaldosAsync(It.Is<int>(t => t != 3), It.IsAny<int?>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
