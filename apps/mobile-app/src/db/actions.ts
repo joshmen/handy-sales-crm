@@ -470,7 +470,10 @@ export async function createCobroOffline(
   metodoPago: number,
   referencia?: string,
   notas?: string,
-  pedidoId?: string | null
+  pedidoId?: string | null,
+  // PR 5 cobros 3 modos: 0=PorPedido, 1=AbonoFifo, 2=Anticipo. Si undefined,
+  // el mapper rawToCobroDto lo derivara al sync time desde presencia de pedidoId.
+  modo?: number
 ): Promise<Cobro> {
   return database.write(async () => {
     return database.get<Cobro>('cobros').create((record: any) => {
@@ -485,6 +488,7 @@ export async function createCobroOffline(
       record.notas = notas || null;
       record.activo = true;
       record.version = 1;
+      record.modo = typeof modo === 'number' ? modo : null;
       record.updatedAt = new Date();
     });
   });

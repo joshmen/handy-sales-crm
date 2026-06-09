@@ -15,6 +15,9 @@ export default class Cobro extends Model {
   @text('notas') notas!: string | null;
   @field('activo') activo!: boolean;
   @field('version') version!: number;
+  // v24 (PR 5 cobros 3 modos): 0=PorPedido, 1=AbonoFifo, 2=Anticipo. null en
+  // rows pre-v24 → mapper deriva al sync time.
+  @field('modo') modo!: number | null;
   @readonly @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
 }

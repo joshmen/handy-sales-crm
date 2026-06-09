@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -12,8 +12,9 @@ import { performSync } from '@/sync/syncEngine';
 import { Button, ConfirmModal } from '@/components/ui';
 import { withErrorBoundary } from '@/components/shared/withErrorBoundary';
 import { useTenantLocale } from '@/hooks';
+import { useEmpresa } from '@/hooks/useEmpresa';
 import { round2 } from '@/utils/money';
-import { METODO_PAGO } from '@/types/cobro';
+import { METODO_PAGO, ModoCobro } from '@/types/cobro';
 import type Cliente from '@/db/models/Cliente';
 import type RutaDetalleModel from '@/db/models/RutaDetalle';
 import {
@@ -50,6 +51,15 @@ function RegistrarCobroScreen() {
   const paramClienteNombre = decodeURIComponent(params.clienteNombre || '');
   const paramSaldo = Number(params.saldo || 0);
 
+  // PR 5 cobros 3 modos: state del selector + flag del plan (gate Anticipo).
+  // Si el flow viene via deep link con pedidoId, fuerza PorPedido (el pedido
+  // padre define el modo) — el selector queda hidden en ese caso.
+  const { data: empresa } = useEmpresa();
+  const permiteAnticipos = empresa?.permitirAnticiposEnCampo === true;
+  const [modo, setModo] = useState<ModoCobro>(
+    params.pedidoId ? ModoCobro.PorPedido : ModoCobro.PorPedido
+  );
+
   // Client picker state (when no clienteId passed via params)
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -61,7 +71,17 @@ function RegistrarCobroScreen() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  const { data: clientesSearch } = useOfflineClients(debouncedSearch);
+  const { data: clientesSearchRaw } = useOfflineClients(debouncedSearch);
+
+  // PR 5: cuando el modo es PorPedido o AbonoFifo, el cobro debe ir contra
+  // saldo existente — filtramos clientes sin saldo. Anticipo permite cualquier
+  // cliente. Si el debouncedSearch esta activo, el filtro se aplica DESPUES
+  // del search (vendedor busca por nombre, ve solo los relevantes al modo).
+  const clientesSearch = useMemo(() => {
+    if (!clientesSearchRaw) return clientesSearchRaw;
+    if (modo === ModoCobro.Anticipo) return clientesSearchRaw;
+    return clientesSearchRaw.filter((c: any) => Number(c.saldo ?? 0) > 0);
+  }, [clientesSearchRaw, modo]);
 
   // Resolve the effective client (from params OR from picker)
   const effectiveClienteId = paramClienteId || selectedClient?.id;
@@ -122,6 +142,9 @@ function RegistrarCobroScreen() {
     setShowConfirmCobro(false);
     setSending(true);
     try {
+      // PR 5 cobros 3 modos: pasamos modo explicito al store local. El sync
+      // mapper rawToCobroDto respeta raw.modo si esta presente, sino deriva
+      // del pedidoId (retrocompat con cobros pre-PR5).
       const cobro = await createCobroOffline(
         effectiveClienteId || '',
         cliente?.serverId ?? null,
@@ -130,7 +153,8 @@ function RegistrarCobroScreen() {
         metodoPago,
         referencia || undefined,
         notas || undefined,
-        params.pedidoId || null
+        params.pedidoId || null,
+        modo
       );
 
       // Save receipt photo attachment
@@ -212,6 +236,96 @@ function RegistrarCobroScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* PR 5 cobros 3 modos: selector visible solo si NO viene via deep
+            link con pedidoId (en ese caso el modo es PorPedido forzado por el
+            pedido padre — mostrar el selector seria confuso). Espejo del web
+            con testID="cobro-modo-{0|1|2}" para Maestro flows. */}
+        {!params.pedidoId ? (
+          <View style={styles.modoSection}>
+            <Text style={styles.modoSectionLabel}>Tipo de cobro</Text>
+            <View style={styles.modoTabsRow}>
+              <TouchableOpacity
+                testID="cobro-modo-0"
+                onPress={() => setModo(ModoCobro.PorPedido)}
+                style={[styles.modoTab, modo === ModoCobro.PorPedido && styles.modoTabActive]}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: modo === ModoCobro.PorPedido }}
+                accessibilityLabel="Modo Pago de pedido"
+              >
+                <Text style={[styles.modoTabTitle, modo === ModoCobro.PorPedido && styles.modoTabTitleActive]}>
+                  Pago de pedido
+                </Text>
+                <Text style={[styles.modoTabHint, modo === ModoCobro.PorPedido && styles.modoTabHintActive]} numberOfLines={2}>
+                  Aplicar a una factura
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="cobro-modo-1"
+                onPress={() => setModo(ModoCobro.AbonoFifo)}
+                style={[styles.modoTab, modo === ModoCobro.AbonoFifo && styles.modoTabActive]}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: modo === ModoCobro.AbonoFifo }}
+                accessibilityLabel="Modo Abono a cuenta"
+              >
+                <Text style={[styles.modoTabTitle, modo === ModoCobro.AbonoFifo && styles.modoTabTitleActive]}>
+                  Abono a cuenta
+                </Text>
+                <Text style={[styles.modoTabHint, modo === ModoCobro.AbonoFifo && styles.modoTabHintActive]} numberOfLines={2}>
+                  FIFO automatico
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="cobro-modo-2"
+                onPress={() => {
+                  if (!permiteAnticipos) {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Plan no incluye Anticipos',
+                      text2: 'Pide a tu admin habilitar la funcion de anticipos en campo.',
+                      visibilityTime: 3500,
+                    });
+                    return;
+                  }
+                  setModo(ModoCobro.Anticipo);
+                }}
+                style={[
+                  styles.modoTab,
+                  modo === ModoCobro.Anticipo && styles.modoTabActive,
+                  !permiteAnticipos && styles.modoTabDisabled,
+                ]}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: modo === ModoCobro.Anticipo, disabled: !permiteAnticipos }}
+                accessibilityLabel="Modo Anticipo"
+              >
+                <Text style={[
+                  styles.modoTabTitle,
+                  modo === ModoCobro.Anticipo && styles.modoTabTitleActive,
+                  !permiteAnticipos && styles.modoTabTitleDisabled,
+                ]}>
+                  Anticipo
+                </Text>
+                <Text style={[
+                  styles.modoTabHint,
+                  modo === ModoCobro.Anticipo && styles.modoTabHintActive,
+                  !permiteAnticipos && styles.modoTabHintDisabled,
+                ]} numberOfLines={2}>
+                  Saldo a favor
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {modo === ModoCobro.Anticipo ? (
+              <View style={styles.modoAnticipoWarning}>
+                <Text style={styles.modoAnticipoWarningText}>
+                  Este cobro generara saldo a favor del cliente, aplicable a futuros pedidos. Confirma el monto antes de continuar.
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         {/* Client Section (picker — only when no client pre-selected) */}
         {paramClienteId ? null : selectedClient && !pickerOpen ? (
           /* Client selected from picker — show card with change button */
@@ -396,18 +510,27 @@ function RegistrarCobroScreen() {
       <ConfirmModal
         visible={showConfirmCobro}
         title={
-          // 2026-06-08 PR 4 plan eager-drifting cobros: titulo dinamico segun
-          // si el cobro va a generar saldo a favor (Anticipo de facto).
-          (!params.pedidoId && (effectiveSaldo === 0 || montoNum > saldoRounded))
+          // PR 5 cobros 3 modos: prioriza el modo explicito si el vendedor lo
+          // eligio en el selector. Fallback al derive-by-saldo de PR 4 (para
+          // deep links con pedidoId que no muestran selector).
+          modo === ModoCobro.Anticipo
             ? 'Cobro como saldo a favor'
-            : 'Confirmar Cobro'
+            : modo === ModoCobro.AbonoFifo
+              ? 'Abono a cuenta'
+              : (!params.pedidoId && (effectiveSaldo === 0 || montoNum > saldoRounded))
+                ? 'Cobro como saldo a favor'
+                : 'Confirmar Cobro'
         }
         message={
-          (!params.pedidoId && effectiveSaldo === 0)
-            ? `Este cliente no tiene saldo pendiente. El cobro de ${formatCurrency(montoNum)} quedara como saldo a favor (anticipo) aplicable a futuros pedidos. ¿Confirmar?`
-            : (!params.pedidoId && montoNum > saldoRounded && saldoRounded > 0)
-              ? `Se cobrara ${formatCurrency(montoNum)}: ${formatCurrency(saldoRounded)} aplica a saldo pendiente, ${formatCurrency(montoNum - saldoRounded)} queda como saldo a favor. ¿Confirmar?`
-              : `¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`
+          modo === ModoCobro.Anticipo
+            ? `Este cobro de ${formatCurrency(montoNum)} quedara como saldo a favor del cliente, aplicable a futuros pedidos. ¿Confirmar?`
+            : modo === ModoCobro.AbonoFifo
+              ? `El monto de ${formatCurrency(montoNum)} se distribuira automaticamente FIFO contra los pedidos abiertos del cliente. ¿Confirmar?`
+              : (!params.pedidoId && effectiveSaldo === 0)
+                ? `Este cliente no tiene saldo pendiente. El cobro de ${formatCurrency(montoNum)} quedara como saldo a favor (anticipo) aplicable a futuros pedidos. ¿Confirmar?`
+                : (!params.pedidoId && montoNum > saldoRounded && saldoRounded > 0)
+                  ? `Se cobrara ${formatCurrency(montoNum)}: ${formatCurrency(saldoRounded)} aplica a saldo pendiente, ${formatCurrency(montoNum - saldoRounded)} queda como saldo a favor. ¿Confirmar?`
+                  : `¿Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`
         }
         confirmText="Confirmar"
         onConfirm={executeConfirmarCobro}
@@ -543,6 +666,76 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginHorizontal: 16,
     marginBottom: 20,
+  },
+  // PR 5 cobros 3 modos: selector tabs (espejo del web cobro-modo-{0|1|2}).
+  modoSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  modoSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+    marginBottom: 8,
+  },
+  modoTabsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  modoTab: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+  },
+  modoTabActive: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#16a34a',
+  },
+  modoTabDisabled: {
+    opacity: 0.4,
+  },
+  modoTabTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  modoTabTitleActive: {
+    color: '#166534',
+  },
+  modoTabTitleDisabled: {
+    color: '#94a3b8',
+  },
+  modoTabHint: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  modoTabHintActive: {
+    color: '#15803d',
+  },
+  modoTabHintDisabled: {
+    color: '#cbd5e1',
+  },
+  modoAnticipoWarning: {
+    marginTop: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    borderRadius: 10,
+    padding: 10,
+  },
+  modoAnticipoWarningText: {
+    fontSize: 12,
+    color: '#92400e',
+    lineHeight: 16,
   },
   efectivoInfoText: {
     fontSize: 14,

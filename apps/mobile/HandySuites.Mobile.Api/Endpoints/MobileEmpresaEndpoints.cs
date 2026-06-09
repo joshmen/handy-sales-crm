@@ -39,6 +39,10 @@ public static class MobileEmpresaEndpoints
             // depende de este flag. HasFeatureAsync no-throw + per-request cache.
             // Returns false sin SubscriptionPlanId (tenant en free trial sin plan).
             var trackingGpsEnabled = await featureGuard.HasFeatureAsync(tenantId, "tracking_vendedor");
+            // PR 5 cobros 3 modos: el selector de Anticipo en mobile registrar.tsx
+            // se gate por este flag para reflejar plan del tenant antes de que el
+            // backend rechace con 403 FeatureNotInPlanException.
+            var permitirAnticiposEnCampo = await featureGuard.HasFeatureAsync(tenantId, "anticipos_en_campo");
 
             return Results.Ok(new
             {
@@ -62,6 +66,7 @@ public static class MobileEmpresaEndpoints
                     country,
                     billingEnabled = BillingCountrySupport.IsSupported(country),
                     trackingGpsEnabled,
+                    permitirAnticiposEnCampo,
                     timezone = settings?.Timezone ?? "America/Mexico_City",
                     currency = settings?.Currency ?? "MXN",
                     language = settings?.Language ?? "es",

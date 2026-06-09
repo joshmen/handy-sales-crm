@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 23,
+  version: 24,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -270,6 +270,10 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number', isIndexed: true },
         { name: 'updated_at', type: 'number' },
+        // v24 (PR 5 cobros 3 modos): selector explicito 0=PorPedido, 1=AbonoFifo,
+        // 2=Anticipo. Optional para retrocompat con rows v23 que se backfill al
+        // valor derivado por rawToCobroDto al sync time.
+        { name: 'modo', type: 'number', isOptional: true },
       ],
     }),
 

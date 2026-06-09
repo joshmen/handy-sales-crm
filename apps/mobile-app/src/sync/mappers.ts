@@ -1104,14 +1104,14 @@ function rawToDetalleDevolucionDto(raw: DirtyRaw): any {
 }
 
 function rawToCobroDto(raw: DirtyRaw, operation: number): any {
-  // 2026-06-08 PR 4 plan eager-drifting cobros: derivar modo explicito basado
-  // en presencia de pedidoId. Backend exige `modo` campo a partir de PR 1.
-  //  - pedidoId resolvable (server_id o id local numerico) → PorPedido (0)
-  //  - sin pedidoId → Anticipo (2) por defecto. Mobile NO usa AbonoFifo aun
-  //    (UX futura: vendedor escoge en registrar.tsx). Anticipo cubre el
-  //    caso historico de "cobro sin pedido" que ya hacia mobile antes del PR.
-  // Si raw.modo existe (futura WDB v20 con columna persistida), respeta el
-  // valor explicito del user.
+  // 2026-06-08 PR 4/PR 5 plan eager-drifting cobros: derivar modo basado en
+  // el valor persistido (PR 5 WDB v24 columna `modo` set explicitamente por
+  // el selector de registrar.tsx) o sino derivar de la presencia de pedidoId
+  // como fallback retrocompat con cobros pre-PR5.
+  //  - raw.modo number → respeta el explicito (PR 5).
+  //  - pedidoId resolvable (server_id o id local numerico) → PorPedido (0).
+  //  - sin pedidoId ni raw.modo → Anticipo (2) por defecto (cubre el caso
+  //    historico de cobros pre-PR5 que iban siempre sin pedido).
   const hasPedido = !!raw.pedido_server_id
     || (raw.pedido_id && /^\d+$/.test(String(raw.pedido_id)))
     || (raw.pedido_id && !/^\d+$/.test(String(raw.pedido_id))); // localId queue
