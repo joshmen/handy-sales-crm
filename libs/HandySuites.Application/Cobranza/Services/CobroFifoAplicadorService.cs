@@ -51,13 +51,47 @@ public class CobroFifoAplicadorService : ICobroFifoAplicadorService
         string? referencia,
         string? notas)
     {
+        // 2026-06-09 PR 6: la lógica de cálculo FIFO se extrajo a
+        // CalcularSinPersistirAsync para reuso del endpoint /cobros/fifo-preview.
+        // Aquí solo persistimos cada aplicación via _repo.CrearAsync.
+        var planeadas = await CalcularSinPersistirAsync(clienteId, monto);
+
+        var userId = int.Parse(_tenant.UserId);
+        var aplicaciones = new List<FifoAplicacionDto>(planeadas.Count);
+
+        foreach (var planeada in planeadas)
+        {
+            // Crea un cobro per-pedido con PedidoId asignado. El repo aplica
+            // advisory lock + overpayment guard. Modo=PorPedido (default OK).
+            var dto = new CobroCreateDto(
+                PedidoId: planeada.PedidoId,
+                ClienteId: clienteId,
+                Monto: planeada.MontoAplicado,
+                MetodoPago: metodoPago,
+                FechaCobro: fechaCobro,
+                Referencia: referencia,
+                Notas: notas != null ? $"{notas} (FIFO aplicacion)" : "Aplicacion FIFO");
+
+            var cobroId = await _repo.CrearAsync(dto, _tenant.TenantId, userId);
+            aplicaciones.Add(new FifoAplicacionDto(cobroId, planeada.PedidoId, planeada.NumeroPedido, planeada.MontoAplicado));
+
+            _logger.LogInformation(
+                "CobroFifoAplicador: aplicado {Aplicar} a pedido {PedidoId} ({Numero}) cliente {ClienteId}. CobroId={CobroId}.",
+                planeada.MontoAplicado, planeada.PedidoId, planeada.NumeroPedido, clienteId, cobroId);
+        }
+
+        return aplicaciones;
+    }
+
+    public async Task<List<FifoAplicacionDto>> CalcularSinPersistirAsync(int clienteId, decimal monto)
+    {
         if (monto <= 0)
             throw new InvalidOperationException("El monto debe ser mayor a cero.");
 
         var estadoCuenta = await _repo.ObtenerEstadoCuentaAsync(clienteId, _tenant.TenantId, historico: false);
         if (estadoCuenta == null)
         {
-            _logger.LogWarning("CobroFifoAplicador.DistribuirAsync: cliente {ClienteId} no existe en tenant {TenantId}", clienteId, _tenant.TenantId);
+            _logger.LogWarning("CobroFifoAplicador.CalcularSinPersistirAsync: cliente {ClienteId} no existe en tenant {TenantId}", clienteId, _tenant.TenantId);
             throw new InvalidOperationException("El cliente no existe o no pertenece a tu empresa.");
         }
 
@@ -70,7 +104,7 @@ public class CobroFifoAplicadorService : ICobroFifoAplicadorService
         if (pedidosAbiertos.Count == 0)
         {
             _logger.LogInformation(
-                "CobroFifoAplicador.DistribuirAsync: cliente {ClienteId} no tiene pedidos abiertos. Sugiere modo Anticipo.",
+                "CobroFifoAplicador.CalcularSinPersistirAsync: cliente {ClienteId} no tiene pedidos abiertos. Sugiere modo Anticipo.",
                 clienteId);
             throw new InvalidOperationException(
                 "El cliente no tiene pedidos pendientes para aplicar. Usa el modo 'Anticipo' si quieres registrar el cobro como saldo a favor.");
@@ -80,14 +114,14 @@ public class CobroFifoAplicadorService : ICobroFifoAplicadorService
         if (monto > saldoTotalCliente)
         {
             _logger.LogWarning(
-                "CobroFifoAplicador.DistribuirAsync: monto={Monto} excede saldo total cliente={Saldo} (cliente {ClienteId})",
+                "CobroFifoAplicador.CalcularSinPersistirAsync: monto={Monto} excede saldo total cliente={Saldo} (cliente {ClienteId})",
                 monto, saldoTotalCliente, clienteId);
             throw new InvalidOperationException(
                 $"El monto ({monto:C}) excede el saldo total pendiente del cliente ({saldoTotalCliente:C}). " +
                 $"Reduce el monto o usa el modo 'Anticipo' para la diferencia.");
         }
 
-        var userId = int.Parse(_tenant.UserId);
+        // Calcula la distribución FIFO sin tocar DB. CobroId=0 en preview.
         var aplicaciones = new List<FifoAplicacionDto>();
         var restante = monto;
 
@@ -96,25 +130,8 @@ public class CobroFifoAplicadorService : ICobroFifoAplicadorService
             if (restante <= 0) break;
 
             var aplicar = Math.Min(restante, pedido.Saldo);
-
-            // Crea un cobro per-pedido con PedidoId asignado. El repo aplica
-            // advisory lock + overpayment guard. Modo=PorPedido (default OK).
-            var dto = new CobroCreateDto(
-                PedidoId: pedido.PedidoId,
-                ClienteId: clienteId,
-                Monto: aplicar,
-                MetodoPago: metodoPago,
-                FechaCobro: fechaCobro,
-                Referencia: referencia,
-                Notas: notas != null ? $"{notas} (FIFO aplicacion)" : "Aplicacion FIFO");
-
-            var cobroId = await _repo.CrearAsync(dto, _tenant.TenantId, userId);
-            aplicaciones.Add(new FifoAplicacionDto(cobroId, pedido.PedidoId, pedido.NumeroPedido, aplicar));
+            aplicaciones.Add(new FifoAplicacionDto(0, pedido.PedidoId, pedido.NumeroPedido, aplicar));
             restante -= aplicar;
-
-            _logger.LogInformation(
-                "CobroFifoAplicador: aplicado {Aplicar} a pedido {PedidoId} ({Numero}) cliente {ClienteId}. CobroId={CobroId}. Restante={Restante}",
-                aplicar, pedido.PedidoId, pedido.NumeroPedido, clienteId, cobroId, restante);
         }
 
         return aplicaciones;

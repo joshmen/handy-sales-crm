@@ -1586,13 +1586,17 @@
       },
       "fifo": {
         "label": "Account credit",
-        "hint": "Auto-distribute FIFO"
+        "hint": "Auto-distribute FIFO",
+        "previewTitle": "FIFO distribution preview",
+        "previewCalculating": "Calculating distribution...",
+        "previewEmpty": "No pending orders to apply"
       },
       "advance": {
         "label": "Advance",
         "hint": "Generates credit balance",
         "warning": "This payment will generate a credit balance for the client, applicable to future orders. Confirm the amount before continuing.",
-        "confirmMessage": "This payment of {monto} will become a credit balance for the client. Confirm?"
+        "confirmMessage": "This payment of {monto} will become a credit balance for the client. Confirm?",
+        "disabledTooltip": "Available on PRO plan"
       }
     },
     "datePresets": {

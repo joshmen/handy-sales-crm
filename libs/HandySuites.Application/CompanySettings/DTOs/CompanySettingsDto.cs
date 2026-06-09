@@ -82,6 +82,13 @@ namespace HandySuites.Application.CompanySettings.DTOs
         // Modo default de venta para mobile. "Preventa" | "VentaDirecta" | "Preguntar".
         [JsonPropertyName("modoVentaDefault")]
         public string ModoVentaDefault { get; set; } = "Preguntar";
+
+        // PR 6 plan gating cobros 3 modos (web): true si plan.permitir_anticipos_en_campo.
+        // Gateia el boton "Anticipo" del selector de modos en cobranza/page.tsx
+        // espejo del flag mobile en useEmpresa.ts. Default false (fail-closed)
+        // si el tenant esta en free trial sin plan o el endpoint omite el campo.
+        [JsonPropertyName("permitirAnticiposEnCampo")]
+        public bool PermitirAnticiposEnCampo { get; set; } = false;
     }
 
     public class UpdateCompanySettingsRequest

@@ -1586,13 +1586,17 @@
       },
       "fifo": {
         "label": "Abono a cuenta",
-        "hint": "Distribuye automático FIFO"
+        "hint": "Distribuye automático FIFO",
+        "previewTitle": "Preview de distribución FIFO",
+        "previewCalculating": "Calculando distribución...",
+        "previewEmpty": "Sin pedidos pendientes para aplicar"
       },
       "advance": {
         "label": "Anticipo",
         "hint": "Genera saldo a favor",
         "warning": "Este cobro generará saldo a favor del cliente, aplicable a futuros pedidos. Confirma el monto antes de continuar.",
-        "confirmMessage": "Este cobro de {monto} quedará como saldo a favor del cliente. ¿Confirmar?"
+        "confirmMessage": "Este cobro de {monto} quedará como saldo a favor del cliente. ¿Confirmar?",
+        "disabledTooltip": "Disponible en plan PRO"
       }
     },
     "datePresets": {

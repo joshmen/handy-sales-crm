@@ -31,6 +31,21 @@ public interface ICobroFifoAplicadorService
         DateTime? fechaCobro,
         string? referencia,
         string? notas);
+
+    /// <summary>
+    /// 2026-06-09 PR 6 plan eager-drifting cobros (FIFO preview).
+    /// Calcula la distribución FIFO SIN persistir en DB. Solo aplica la
+    /// lógica de cálculo + validación para que la UI pueda mostrar un
+    /// preview ("Aplicará $X a PED-001, $Y a PED-002 …") antes del submit.
+    ///
+    /// Throws si:
+    /// - Cliente no existe en el tenant actual.
+    /// - Cliente sin pedidos abiertos.
+    /// - Monto &gt; suma de saldos pendientes.
+    ///
+    /// Retorna lista con CobroId=0 (el preview no genera cobros).
+    /// </summary>
+    Task<List<FifoAplicacionDto>> CalcularSinPersistirAsync(int clienteId, decimal monto);
 }
 
 /// <summary>

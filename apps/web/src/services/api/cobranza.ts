@@ -105,6 +105,18 @@ export interface CobroResumen {
   referencia: string | null;
 }
 
+/**
+ * 2026-06-09 PR 6 plan eager-drifting cobros (FIFO preview).
+ * Resultado del endpoint /cobros/fifo-preview — calculo SIN persistir.
+ * `cobroId` siempre es 0 en preview (no se ha creado).
+ */
+export interface FifoAplicacion {
+  cobroId: number;
+  pedidoId: number;
+  numeroPedido: string;
+  montoAplicado: number;
+}
+
 // ═══════════════════════════════════════════════════════
 // METODO PAGO OPTIONS
 // ═══════════════════════════════════════════════════════
@@ -199,6 +211,24 @@ export async function getEstadoCuenta(clienteId: number, historico = false): Pro
   try {
     const qs = historico ? '?historico=true' : '';
     const res = await api.get<EstadoCuenta>(`/cobros/cliente/${clienteId}/estado-cuenta${qs}`);
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+/**
+ * 2026-06-09 PR 6: preview de la distribución FIFO sin persistir.
+ * Llama a POST /cobros/fifo-preview con { clienteId, monto } y retorna
+ * la lista de aplicaciones (PED-XXX → $monto) que se generarían si el
+ * usuario hiciera submit del cobro en modo AbonoFifo.
+ *
+ * Throws (con mensaje del backend) si el cliente no tiene pedidos
+ * abiertos o si el monto excede el saldo total pendiente.
+ */
+export async function getFifoPreview(clienteId: number, monto: number): Promise<FifoAplicacion[]> {
+  try {
+    const res = await api.post<FifoAplicacion[]>('/cobros/fifo-preview', { clienteId, monto });
     return res.data;
   } catch (error) {
     throw handleApiError(error);
