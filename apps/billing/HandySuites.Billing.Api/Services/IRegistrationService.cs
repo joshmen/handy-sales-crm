@@ -49,4 +49,10 @@ public interface IRegistrationService
     /// Decisión comercial — solo SuperAdmin HandySales.
     /// </summary>
     Task<RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default);
+
+    /// <summary>
+    /// Consulta el saldo REAL de timbres en Finkok (utilities `report_credit`) para un emisor.
+    /// Refleja el consumo en vivo, a diferencia del valor cacheado al asignar.
+    /// </summary>
+    Task<CreditReportResult> GetCreditReportAsync(string rfc, CancellationToken ct = default);
 }

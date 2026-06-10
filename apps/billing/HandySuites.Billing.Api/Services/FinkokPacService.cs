@@ -20,6 +20,8 @@ public class FinkokPacService : IPacService
     private const string ProductionStampUrl = "https://facturacion.finkok.com/servicios/soap/stamp";
     private const string SandboxCancelUrl = "https://demo-facturacion.finkok.com/servicios/soap/cancel";
     private const string ProductionCancelUrl = "https://facturacion.finkok.com/servicios/soap/cancel";
+    private const string SandboxUtilitiesUrl = "https://demo-facturacion.finkok.com/servicios/soap/utilities";
+    private const string ProductionUtilitiesUrl = "https://facturacion.finkok.com/servicios/soap/utilities";
 
     public FinkokPacService(HttpClient httpClient, ILogger<FinkokPacService> logger)
     {
@@ -51,6 +53,89 @@ public class FinkokPacService : IPacService
                 ErrorCode = "PAC_ERROR",
                 ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword)
             };
+        }
+    }
+
+    public async Task<TimbradoResult> StampedAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+    {
+        var url = GetStampUrl(config.PacAmbiente);
+        var soapBody = BuildStampOperationEnvelope("stamped", xmlPreFirmado, config.PacUsuario!, config.PacPassword!);
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "stamped");
+            return ParseTimbradoResponse(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en stamped (recuperación de timbrado) con Finkok ({Ambiente})", config.PacAmbiente);
+            return new TimbradoResult
+            {
+                Success = false,
+                ErrorCode = "PAC_ERROR",
+                ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword)
+            };
+        }
+    }
+
+    public async Task<TimbradoResult> QuickStampAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+    {
+        var url = GetStampUrl(config.PacAmbiente);
+        var soapBody = BuildStampOperationEnvelope("quick_stamp", xmlPreFirmado, config.PacUsuario!, config.PacPassword!);
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "quick_stamp");
+            return ParseTimbradoResponse(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en quick_stamp con Finkok ({Ambiente})", config.PacAmbiente);
+            return new TimbradoResult
+            {
+                Success = false,
+                ErrorCode = "PAC_ERROR",
+                ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword)
+            };
+        }
+    }
+
+    public async Task<GetXmlResult> GetXmlFromFinkokAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config)
+    {
+        var url = GetUtilitiesUrl(config.PacAmbiente);
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:uti=""http://facturacion.finkok.com/utilities"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <uti:get_xml>
+      <uti:username>{EscapeXml(config.PacUsuario!)}</uti:username>
+      <uti:password>{EscapeXml(config.PacPassword!)}</uti:password>
+      <uti:uuid>{EscapeXml(uuid)}</uti:uuid>
+      <uti:taxpayer_id>{EscapeXml(rfcEmisor)}</uti:taxpayer_id>
+      <uti:invoice_type>I</uti:invoice_type>
+    </uti:get_xml>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "get_xml");
+            if (LooksLikeHtml(response))
+                return new GetXmlResult { Success = false, ErrorMessage = "Servicio Finkok no disponible" };
+
+            var doc = XDocument.Parse(response);
+            var xml = ExtractElementValue(doc, "xml");
+            var error = ExtractElementValue(doc, "error");
+            if (string.IsNullOrWhiteSpace(xml))
+                return new GetXmlResult { Success = false, ErrorMessage = string.IsNullOrWhiteSpace(error) ? "Finkok no devolvió el XML para este UUID." : error };
+
+            return new GetXmlResult { Success = true, Xml = xml };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en get_xml (recuperación XML) para UUID {Uuid}", uuid);
+            return new GetXmlResult { Success = false, ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword) };
         }
     }
 
@@ -156,6 +241,201 @@ public class FinkokPacService : IPacService
             _logger.LogError(ex, "Error consultando get_sat_status para UUID {Uuid}", uuid);
             return new SatStatusResult { Success = false, ErrorMessage = ex.Message };
         }
+    }
+
+    // ─── Cancelación bilateral (Fase A) — WSDL cancel, ns http://facturacion.finkok.com/cancel ───
+
+    public async Task<PendingCancellationsResult> GetPendingCancellationsAsync(string rfcReceptor, ConfiguracionFiscal config)
+    {
+        var url = GetCancelUrl(config.PacAmbiente);
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:cancel=""http://facturacion.finkok.com/cancel"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <cancel:get_pending>
+      <cancel:username>{EscapeXml(config.PacUsuario!)}</cancel:username>
+      <cancel:password>{EscapeXml(config.PacPassword!)}</cancel:password>
+      <cancel:rtaxpayer_id>{EscapeXml(rfcReceptor)}</cancel:rtaxpayer_id>
+    </cancel:get_pending>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "get_pending");
+            if (LooksLikeHtml(response))
+                return new PendingCancellationsResult { Success = false, ErrorMessage = "Servicio de cancelación del PAC no disponible." };
+
+            var doc = XDocument.Parse(response);
+            // El response lista los UUID pendientes; extraemos defensivamente todos los valores
+            // que tengan forma de UUID (la estructura exacta se valida contra el sandbox).
+            var uuids = ExtractAllUuids(doc);
+            return new PendingCancellationsResult { Success = true, Uuids = uuids };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en get_pending para receptor {Rfc}", rfcReceptor);
+            return new PendingCancellationsResult { Success = false, ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword) };
+        }
+    }
+
+    public async Task<AcceptRejectResult> AcceptRejectCancellationAsync(string uuid, bool aceptar, string rfcReceptor,
+        byte[] cerBytes, byte[] keyBytes, ConfiguracionFiscal config)
+    {
+        var url = GetCancelUrl(config.PacAmbiente);
+        // SAT/Finkok: respuesta = "Aceptacion" | "Rechazo" (validar valor exacto contra sandbox).
+        var respuesta = aceptar ? "Aceptacion" : "Rechazo";
+        var cerB64 = Convert.ToBase64String(cerBytes);
+        var keyB64 = Convert.ToBase64String(keyBytes);
+
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:cancel=""http://facturacion.finkok.com/cancel"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <cancel:accept_reject>
+      <cancel:UUIDS_AR>
+        <cancel:uuids_ar>
+          <cancel:UUID_AR>
+            <cancel:uuid>{EscapeXml(uuid)}</cancel:uuid>
+            <cancel:respuesta>{respuesta}</cancel:respuesta>
+          </cancel:UUID_AR>
+        </cancel:uuids_ar>
+      </cancel:UUIDS_AR>
+      <cancel:username>{EscapeXml(config.PacUsuario!)}</cancel:username>
+      <cancel:password>{EscapeXml(config.PacPassword!)}</cancel:password>
+      <cancel:rtaxpayer_id>{EscapeXml(rfcReceptor)}</cancel:rtaxpayer_id>
+      <cancel:cer>{cerB64}</cancel:cer>
+      <cancel:key>{keyB64}</cancel:key>
+    </cancel:accept_reject>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "accept_reject");
+            if (LooksLikeHtml(response))
+                return new AcceptRejectResult { Success = false, ErrorMessage = "Servicio de cancelación del PAC no disponible." };
+
+            var doc = XDocument.Parse(response);
+            var estatus = ExtractElementValue(doc, "EstatusUUID") ?? ExtractElementValue(doc, "Estatus") ?? ExtractElementValue(doc, "CodEstatus");
+            var acuse = ExtractElementValue(doc, "Acuse");
+            // Éxito si no hay un código de error explícito y/o el estatus indica aceptación/rechazo aplicado.
+            var ok = string.IsNullOrEmpty(ExtractElementValue(doc, "CodigoError"))
+                     && !string.IsNullOrEmpty(estatus);
+            _logger.LogInformation("accept_reject UUID={Uuid} aceptar={Aceptar} estatus={Estatus}", uuid, aceptar, estatus);
+            return new AcceptRejectResult { Success = ok, Estatus = estatus, AcuseXml = acuse, ErrorMessage = ok ? null : estatus };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en accept_reject UUID {Uuid}", uuid);
+            return new AcceptRejectResult { Success = false, ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword) };
+        }
+    }
+
+    public async Task<ReceiptResult> GetReceiptAsync(string uuid, string rfcEmisor, string type, ConfiguracionFiscal config)
+    {
+        var url = GetCancelUrl(config.PacAmbiente);
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:cancel=""http://facturacion.finkok.com/cancel"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <cancel:get_receipt>
+      <cancel:username>{EscapeXml(config.PacUsuario!)}</cancel:username>
+      <cancel:password>{EscapeXml(config.PacPassword!)}</cancel:password>
+      <cancel:taxpayer_id>{EscapeXml(rfcEmisor)}</cancel:taxpayer_id>
+      <cancel:uuid>{EscapeXml(uuid)}</cancel:uuid>
+      <cancel:type>{EscapeXml(type)}</cancel:type>
+    </cancel:get_receipt>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "get_receipt");
+            if (LooksLikeHtml(response))
+                return new ReceiptResult { Success = false, ErrorMessage = "Servicio de cancelación del PAC no disponible." };
+
+            var doc = XDocument.Parse(response);
+            var receipt = ExtractElementValue(doc, "receipt") ?? ExtractElementValue(doc, "Acuse") ?? ExtractElementValue(doc, "xml");
+            return new ReceiptResult { Success = !string.IsNullOrEmpty(receipt), Receipt = receipt, ErrorMessage = string.IsNullOrEmpty(receipt) ? "Acuse no disponible." : null };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en get_receipt UUID {Uuid}", uuid);
+            return new ReceiptResult { Success = false, ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword) };
+        }
+    }
+
+    public async Task<RelatedResult> GetRelatedAsync(string uuid, string rfcEmisor, string rfcReceptor,
+        byte[] cerBytes, byte[] keyBytes, ConfiguracionFiscal config)
+    {
+        var url = GetCancelUrl(config.PacAmbiente);
+        var cerB64 = Convert.ToBase64String(cerBytes);
+        var keyB64 = Convert.ToBase64String(keyBytes);
+
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:cancel=""http://facturacion.finkok.com/cancel"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <cancel:get_related>
+      <cancel:username>{EscapeXml(config.PacUsuario!)}</cancel:username>
+      <cancel:password>{EscapeXml(config.PacPassword!)}</cancel:password>
+      <cancel:taxpayer_id>{EscapeXml(rfcEmisor)}</cancel:taxpayer_id>
+      <cancel:rtaxpayer_id>{EscapeXml(rfcReceptor)}</cancel:rtaxpayer_id>
+      <cancel:uuid>{EscapeXml(uuid)}</cancel:uuid>
+      <cancel:cer>{cerB64}</cancel:cer>
+      <cancel:key>{keyB64}</cancel:key>
+    </cancel:get_related>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "get_related");
+            if (LooksLikeHtml(response))
+                return new RelatedResult { Success = false, ErrorMessage = "Servicio de cancelación del PAC no disponible." };
+
+            var doc = XDocument.Parse(response);
+            var relacionados = ExtractAllUuids(doc).Where(u => !string.Equals(u, uuid, StringComparison.OrdinalIgnoreCase)).ToList();
+            return new RelatedResult { Success = true, Relacionados = relacionados };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en get_related UUID {Uuid}", uuid);
+            return new RelatedResult { Success = false, ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword) };
+        }
+    }
+
+    private static bool LooksLikeHtml(string response)
+    {
+        var t = response.TrimStart();
+        return t.StartsWith("<html", StringComparison.OrdinalIgnoreCase) || t.StartsWith("<!DOCTYPE", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex UuidRegex =
+        new(@"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Extrae defensivamente todos los UUID que aparecen como valor de elemento en el response
+    /// (la estructura exacta del response de get_pending/get_related se valida contra el sandbox).
+    /// </summary>
+    private static List<string> ExtractAllUuids(XDocument doc)
+    {
+        var found = new List<string>();
+        foreach (var el in doc.Descendants())
+        {
+            var v = el.Value;
+            if (string.IsNullOrWhiteSpace(v)) continue;
+            var m = UuidRegex.Match(v.Trim());
+            if (m.Success && !found.Contains(m.Value, StringComparer.OrdinalIgnoreCase))
+                found.Add(m.Value);
+        }
+        return found;
     }
 
     private async Task<string> SendSoapRequest(string url, string soapEnvelope, string soapAction)
@@ -339,6 +619,13 @@ public class FinkokPacService : IPacService
     // --- SOAP envelope builders ---
 
     private static string BuildStampSoapEnvelope(string xml, string usuario, string password)
+        => BuildStampOperationEnvelope("stamp", xml, usuario, password);
+
+    /// <summary>
+    /// Envelope para las operaciones del servicio `stamp` que comparten contrato
+    /// (xml base64 + username + password): stamp, quick_stamp, stamped.
+    /// </summary>
+    private static string BuildStampOperationEnvelope(string operation, string xml, string usuario, string password)
     {
         // Finkok stamp expects the XML as a Base64-encoded string inside the SOAP body
         var xmlBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(xml));
@@ -348,11 +635,11 @@ public class FinkokPacService : IPacService
                   xmlns:stamp=""http://facturacion.finkok.com/stamp"">
   <soapenv:Header/>
   <soapenv:Body>
-    <stamp:stamp>
+    <stamp:{operation}>
       <stamp:xml>{xmlBase64}</stamp:xml>
       <stamp:username>{EscapeXml(usuario)}</stamp:username>
       <stamp:password>{EscapeXml(password)}</stamp:password>
-    </stamp:stamp>
+    </stamp:{operation}>
   </soapenv:Body>
 </soapenv:Envelope>";
     }
@@ -420,6 +707,13 @@ public class FinkokPacService : IPacService
         return ambiente?.ToLowerInvariant() == "production"
             ? ProductionCancelUrl
             : SandboxCancelUrl;
+    }
+
+    private static string GetUtilitiesUrl(string ambiente)
+    {
+        return ambiente?.ToLowerInvariant() == "production"
+            ? ProductionUtilitiesUrl
+            : SandboxUtilitiesUrl;
     }
 
     private static string? ExtractElementValue(XDocument doc, string localName)

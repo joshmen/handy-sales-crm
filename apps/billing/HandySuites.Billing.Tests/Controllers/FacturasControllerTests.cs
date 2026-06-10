@@ -56,6 +56,26 @@ internal class StubPacService : IPacService
         });
     }
 
+    public Task<TimbradoResult> StampedAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new TimbradoResult
+        {
+            Success = true,
+            Uuid = Guid.NewGuid().ToString(),
+            XmlTimbrado = xmlPreFirmado,
+            SelloSat = "STUB_SELLO_SAT",
+            NoCertificadoSat = "00001000000412345678",
+            FechaTimbrado = DateTime.UtcNow,
+            CadenaOriginalSat = "||1.1|test||"
+        });
+    }
+
+    public Task<TimbradoResult> QuickStampAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+        => TimbrarAsync(xmlPreFirmado, config);
+
+    public Task<GetXmlResult> GetXmlFromFinkokAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config)
+        => Task.FromResult(new GetXmlResult { Success = true, Xml = "<cfdi:Comprobante/>" });
+
     public Task<ConsultaResult> ConsultarEstatusAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config)
     {
         return Task.FromResult(new ConsultaResult { Success = true, Estado = "Vigente" });
@@ -64,6 +84,28 @@ internal class StubPacService : IPacService
     public Task<SatStatusResult> GetSatStatusAsync(string uuid, string rfcEmisor, string rfcReceptor, decimal total, ConfiguracionFiscal config)
     {
         return Task.FromResult(new SatStatusResult { Success = true, Estado = "Vigente", EsCancelable = "Cancelable sin aceptación" });
+    }
+
+    public Task<PendingCancellationsResult> GetPendingCancellationsAsync(string rfcReceptor, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new PendingCancellationsResult { Success = true });
+    }
+
+    public Task<AcceptRejectResult> AcceptRejectCancellationAsync(string uuid, bool aceptar, string rfcReceptor,
+        byte[] cerBytes, byte[] keyBytes, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new AcceptRejectResult { Success = true, Estatus = "201" });
+    }
+
+    public Task<ReceiptResult> GetReceiptAsync(string uuid, string rfcEmisor, string type, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new ReceiptResult { Success = true, Receipt = "<acuse/>" });
+    }
+
+    public Task<RelatedResult> GetRelatedAsync(string uuid, string rfcEmisor, string rfcReceptor,
+        byte[] cerBytes, byte[] keyBytes, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new RelatedResult { Success = true });
     }
 }
 
@@ -148,6 +190,9 @@ internal class StubRegistrationService : HandySuites.Billing.Api.Services.IRegis
 
     public Task<HandySuites.Billing.Api.DTOs.RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default)
         => Task.FromResult(new HandySuites.Billing.Api.DTOs.RegisterEmitterResult { Success = true });
+
+    public Task<HandySuites.Billing.Api.DTOs.CreditReportResult> GetCreditReportAsync(string rfc, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.CreditReportResult { Success = true, Credit = 42 });
 }
 
 internal class StubTenantInfoService : HandySuites.Billing.Api.Services.ITenantInfoService
@@ -879,12 +924,28 @@ public class FacturasControllerTests : IDisposable
     // ────────────────────────── GetXml ──────────────────────────
 
     [Fact]
-    public async Task GetXml_ReturnsNotFoundWhenNoXml()
+    public async Task GetXml_ReturnsNotFoundWhenNoXmlAndNoUuid()
     {
-        // Factura 1 está TIMBRADA pero no tiene XmlContent ni XmlBlobUrl → 404
+        // Sin XmlContent/Blob Y sin UUID (no se puede recuperar de Finkok) → 404
+        var f = await _context.Facturas.FindAsync(1L);
+        f!.Uuid = null;
+        await _context.SaveChangesAsync();
+
         var result = await _controller.GetXml(1);
 
         result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetXml_RecuperaDeFinkok_CuandoNoHayXmlLocalPeroSiUuid()
+    {
+        // Factura 1 está TIMBRADA (tiene UUID) pero sin XmlContent/Blob → fallback get_xml.
+        // El StubPacService devuelve un XML, así que debe servirlo y re-cachearlo.
+        var result = await _controller.GetXml(1);
+
+        result.Should().BeOfType<FileContentResult>();
+        var f = await _context.Facturas.FindAsync(1L);
+        f!.XmlContent.Should().NotBeNullOrEmpty();
     }
 
     [Fact]

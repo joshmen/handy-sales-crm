@@ -145,6 +145,134 @@ public class FinkokPacServiceTests
         Assert.Equal("NO_UUID", result.ErrorCode);
     }
 
+    // ========== StampedAsync / QuickStampAsync (Fase B: resiliencia) ==========
+
+    [Fact]
+    public async Task StampedAsync_DeberiaRecuperarUuid_CuandoFinkokYaTimbro()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <stampedResponse>
+      <stampedResult>
+        <UUID>99999999-8888-7777-6666-555555555555</UUID>
+        <Fecha>2026-06-09T10:00:00</Fecha>
+        <SatSeal>SELLO_RECUPERADO</SatSeal>
+        <NoCertificadoSAT>00001000000500003456</NoCertificadoSAT>
+        <xml>&lt;cfdi:Comprobante/&gt;</xml>
+      </stampedResult>
+    </stampedResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, captured) = CreateService(soap);
+        var result = await service.StampedAsync("<cfdi:Comprobante/>", SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Equal("99999999-8888-7777-6666-555555555555", result.Uuid);
+        var body = await captured[0].Content!.ReadAsStringAsync();
+        Assert.Contains("<stamp:stamped>", body);
+        Assert.Equal("stamped", captured[0].Headers.GetValues("SOAPAction").First());
+    }
+
+    [Fact]
+    public async Task StampedAsync_DeberiaRetornarNoUuid_CuandoNoExisteTimbrado()
+    {
+        // Finkok responde sin UUID cuando el documento NO fue timbrado previamente.
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <stampedResponse>
+      <stampedResult>
+        <xml></xml>
+      </stampedResult>
+    </stampedResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, _) = CreateService(soap);
+        var result = await service.StampedAsync("<cfdi/>", SandboxConfig());
+
+        Assert.False(result.Success);
+        Assert.Equal("NO_UUID", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task QuickStampAsync_DeberiaTimbrar_CuandoRespuestaValida()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <quick_stampResponse>
+      <quick_stampResult>
+        <UUID>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</UUID>
+        <Fecha>2026-06-09T11:00:00</Fecha>
+        <SatSeal>SELLO_QUICK</SatSeal>
+        <NoCertificadoSAT>00001000000500003456</NoCertificadoSAT>
+        <xml>&lt;cfdi:Comprobante/&gt;</xml>
+      </quick_stampResult>
+    </quick_stampResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, captured) = CreateService(soap);
+        var result = await service.QuickStampAsync("<cfdi:Comprobante/>", SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Equal("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", result.Uuid);
+        var body = await captured[0].Content!.ReadAsStringAsync();
+        Assert.Contains("<stamp:quick_stamp>", body);
+    }
+
+    // ========== GetXmlFromFinkokAsync (Fase C: utilerías) ==========
+
+    [Fact]
+    public async Task GetXmlFromFinkok_DeberiaDevolverXml_CuandoFinkokLoTiene()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <get_xmlResponse>
+      <get_xmlResult>
+        <xml>&lt;cfdi:Comprobante Version=""4.0""/&gt;</xml>
+        <error></error>
+      </get_xmlResult>
+    </get_xmlResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, captured) = CreateService(soap);
+        var result = await service.GetXmlFromFinkokAsync("11111111-2222-3333-4444-555555555555", "EKU9003173C9", SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Contains("cfdi:Comprobante", result.Xml);
+        var body = await captured[0].Content!.ReadAsStringAsync();
+        Assert.Contains("utilities", captured[0].RequestUri!.ToString());
+        Assert.Contains("<uti:get_xml>", body);
+    }
+
+    [Fact]
+    public async Task GetXmlFromFinkok_DeberiaFallar_CuandoNoHayXml()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <get_xmlResponse>
+      <get_xmlResult>
+        <xml></xml>
+        <error>UUID not found</error>
+      </get_xmlResult>
+    </get_xmlResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, _) = CreateService(soap);
+        var result = await service.GetXmlFromFinkokAsync("00000000-0000-0000-0000-000000000000", "EKU9003173C9", SandboxConfig());
+
+        Assert.False(result.Success);
+        Assert.Contains("not found", result.ErrorMessage ?? "");
+    }
+
     [Fact]
     public async Task TimbrarAsync_DeberiaUsarUrlSandbox_CuandoAmbienteEsSandbox()
     {
@@ -316,5 +444,123 @@ public class FinkokPacServiceTests
         Assert.DoesNotContain("test-pass", result.ErrorMessage ?? "");
         Assert.DoesNotContain("test-user", result.ErrorMessage ?? "");
         Assert.Contains("[REDACTED]", result.ErrorMessage ?? "");
+    }
+
+    // ========== Cancelación bilateral (Fase A) ==========
+
+    [Fact]
+    public async Task GetPendingCancellations_DeberiaExtraerUuids_YUsarUrlCancel()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <get_pendingResponse>
+      <get_pendingResult>
+        <uuids>
+          <string>11111111-2222-3333-4444-555555555555</string>
+          <string>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</string>
+        </uuids>
+      </get_pendingResult>
+    </get_pendingResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, captured) = CreateService(soap);
+        var result = await service.GetPendingCancellationsAsync("XAXX010101000", SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.Uuids.Count);
+        Assert.Contains("11111111-2222-3333-4444-555555555555", result.Uuids);
+        Assert.Contains("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", result.Uuids);
+        Assert.Contains("/servicios/soap/cancel", captured[0].RequestUri!.ToString());
+        Assert.Contains("get_pending", captured[0].Headers.GetValues("SOAPAction").First());
+    }
+
+    [Fact]
+    public async Task GetPendingCancellations_DeberiaDetectarHtml()
+    {
+        var (service, _, _) = CreateService("<!DOCTYPE html><html></html>");
+        var result = await service.GetPendingCancellationsAsync("XAXX010101000", SandboxConfig());
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task AcceptReject_DeberiaEnviarRespuestaAceptacion_YRetornarSuccess()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <accept_rejectResponse>
+      <accept_rejectResult>
+        <Folios><Folio><EstatusUUID>201</EstatusUUID></Folio></Folios>
+        <Acuse>&lt;acuse/&gt;</Acuse>
+      </accept_rejectResult>
+    </accept_rejectResponse>
+  </S:Body>
+</S:Envelope>";
+
+        var (service, _, captured) = CreateService(soap);
+        var result = await service.AcceptRejectCancellationAsync(
+            "11111111-2222-3333-4444-555555555555", aceptar: true, "XAXX010101000",
+            new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 }, SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Equal("201", result.Estatus);
+        var body = await captured[0].Content!.ReadAsStringAsync();
+        Assert.Contains("accept_reject", body);
+        Assert.Contains("Aceptacion", body);
+    }
+
+    [Fact]
+    public async Task AcceptReject_DeberiaEnviarRespuestaRechazo_CuandoNoAcepta()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body><accept_rejectResponse><accept_rejectResult><Folios><Folio><EstatusUUID>201</EstatusUUID></Folio></Folios></accept_rejectResult></accept_rejectResponse></S:Body>
+</S:Envelope>";
+
+        var (service, _, captured) = CreateService(soap);
+        await service.AcceptRejectCancellationAsync("uuid", aceptar: false, "XAXX010101000",
+            new byte[] { 1 }, new byte[] { 2 }, SandboxConfig());
+
+        var body = await captured[0].Content!.ReadAsStringAsync();
+        Assert.Contains("Rechazo", body);
+    }
+
+    [Fact]
+    public async Task GetReceipt_DeberiaParsearAcuse()
+    {
+        var soap = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body><get_receiptResponse><get_receiptResult><receipt>ACUSE_BASE64</receipt></get_receiptResult></get_receiptResponse></S:Body>
+</S:Envelope>";
+
+        var (service, _, _) = CreateService(soap);
+        var result = await service.GetReceiptAsync("uuid", "EKU9003173C9", "C", SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Equal("ACUSE_BASE64", result.Receipt);
+    }
+
+    [Fact]
+    public async Task GetRelated_DeberiaExtraerRelacionados_ExcluyendoElPropio()
+    {
+        var self = "11111111-2222-3333-4444-555555555555";
+        var related = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        var soap = $@"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body><get_relatedResponse><get_relatedResult>
+    <Padres><string>{related}</string></Padres>
+    <uuid>{self}</uuid>
+  </get_relatedResult></get_relatedResponse></S:Body>
+</S:Envelope>";
+
+        var (service, _, _) = CreateService(soap);
+        var result = await service.GetRelatedAsync(self, "EKU9003173C9", "XAXX010101000",
+            new byte[] { 1 }, new byte[] { 2 }, SandboxConfig());
+
+        Assert.True(result.Success);
+        Assert.Contains(related, result.Relacionados);
+        Assert.DoesNotContain(self, result.Relacionados);
     }
 }

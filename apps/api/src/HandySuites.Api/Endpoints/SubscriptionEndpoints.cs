@@ -424,7 +424,9 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         if (string.IsNullOrEmpty(pkg.StripePriceId))
             return Results.BadRequest(new { error = "Stripe Price ID no configurado para este paquete." });
 
-        // Validate tenant has billing-enabled plan
+        // Validate tenant has billing-enabled plan. La facturación es exclusiva del
+        // plan PRO PAGADO: un tenant en Trial tiene subscription_plan_id NULL y queda
+        // bloqueado aquí hasta que contrate PRO (lo cual fija el FK SubscriptionPlan).
         var tenant2 = await db.Tenants.AsNoTracking()
             .Include(t => t.SubscriptionPlan)
             .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);

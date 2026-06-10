@@ -65,3 +65,11 @@ export async function assignCredits(rfc: string, credits: number): Promise<{ cre
   );
   return data;
 }
+
+/** Saldo REAL de timbres en Finkok (report_credit). Refleja consumo en vivo, re-cachea el valor local. */
+export async function getCreditReport(rfc: string): Promise<{ rfc: string; credit: number | null; date: string | null }> {
+  const { data } = await billingApi.get<{ rfc: string; credit: number | null; date: string | null }>(
+    `/api/admin/finkok/emitters/${rfc}/credit-report`,
+  );
+  return data;
+}

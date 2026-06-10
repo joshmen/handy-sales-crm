@@ -12,6 +12,7 @@ import { toast } from '@/hooks/useToast';
 import {
   getFacturas,
   timbrarFactura,
+  recuperarTimbrado,
   downloadFacturaPdf,
   downloadFacturaXml,
   type GetFacturasParams,
@@ -43,6 +44,7 @@ export default function InvoicesPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timbrando, setTimbrando] = useState<number | null>(null);
+  const [recuperando, setRecuperando] = useState<number | null>(null);
   const [timbresModalOpen, setTimbresModalOpen] = useState(false);
   const [timbresError, setTimbresError] = useState('');
   const [page, setPage] = useState(1);
@@ -111,6 +113,24 @@ export default function InvoicesPage() {
       }
     } finally {
       setTimbrando(null);
+    }
+  };
+
+  const handleRecuperar = async (id: number) => {
+    setRecuperando(id);
+    try {
+      const r = await recuperarTimbrado(id);
+      if (r.recuperado) {
+        toast({ title: tInv('recoverSuccess', { uuid: r.uuid ?? '' }) });
+        loadFacturas();
+      } else {
+        toast({ title: tInv('recoverNotFound'), description: r.message });
+      }
+    } catch (err) {
+      const billingErr = extractBillingError(err);
+      toast({ title: tInv('recoverError'), description: billingErr.message, variant: 'destructive' });
+    } finally {
+      setRecuperando(null);
     }
   };
 
@@ -233,6 +253,18 @@ export default function InvoicesPage() {
                         {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : tInv('stamp')}
                       </Button>
                     )}
+                    {f.estado === 'ERROR' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRecuperar(f.id)}
+                        disabled={recuperando === f.id}
+                        title={tInv('recoverHint')}
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs"
+                      >
+                        {recuperando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : tInv('recover')}
+                      </Button>
+                    )}
                     {f.estado === 'TIMBRADA' && (
                       <>
                         <button
@@ -297,6 +329,18 @@ export default function InvoicesPage() {
               >
                 {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 {tInv('stamp')}
+              </Button>
+            )}
+            {f.estado === 'ERROR' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleRecuperar(f.id)}
+                disabled={recuperando === f.id}
+                className="mt-3 w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 text-xs"
+              >
+                {recuperando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                {tInv('recover')}
               </Button>
             )}
           </div>

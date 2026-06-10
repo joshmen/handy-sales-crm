@@ -225,4 +225,62 @@ public class FinkokRegistrationServiceTests
 
         Assert.True(result.Success);
     }
+
+    // ========== GetCreditReportAsync (Fase C: utilerías report_credit) ==========
+
+    [Fact]
+    public async Task GetCreditReport_DeberiaParsearSaldo_DelNodoQueCoincideConRfc()
+    {
+        var soapResponse = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <report_creditResponse>
+      <report_creditResult>
+        <result>
+          <ReportTotalCredit>
+            <taxpayer_id>OTRORFC000000</taxpayer_id>
+            <credit>10</credit>
+            <date>2026-06-01</date>
+          </ReportTotalCredit>
+          <ReportTotalCredit>
+            <taxpayer_id>EKU9003173C9</taxpayer_id>
+            <credit>250</credit>
+            <date>2026-06-09</date>
+          </ReportTotalCredit>
+        </result>
+        <error></error>
+      </report_creditResult>
+    </report_creditResponse>
+  </S:Body>
+</S:Envelope>";
+        var service = CreateService(soapResponse);
+
+        var result = await service.GetCreditReportAsync("EKU9003173C9");
+
+        Assert.True(result.Success);
+        Assert.Equal(250, result.Credit);
+        Assert.Equal("2026-06-09", result.Date);
+    }
+
+    [Fact]
+    public async Task GetCreditReport_DeberiaFallar_CuandoNoHaySaldo()
+    {
+        var soapResponse = @"<?xml version=""1.0""?>
+<S:Envelope xmlns:S=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <S:Body>
+    <report_creditResponse>
+      <report_creditResult>
+        <result></result>
+        <error>taxpayer not found</error>
+      </report_creditResult>
+    </report_creditResponse>
+  </S:Body>
+</S:Envelope>";
+        var service = CreateService(soapResponse);
+
+        var result = await service.GetCreditReportAsync("NOEXISTE000000");
+
+        Assert.False(result.Success);
+        Assert.Contains("not found", result.Message ?? "");
+    }
 }

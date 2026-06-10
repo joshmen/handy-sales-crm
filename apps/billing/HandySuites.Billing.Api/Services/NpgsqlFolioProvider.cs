@@ -33,6 +33,16 @@ public class NpgsqlFolioProvider : IFolioProvider
 
         var tx = _context.Database.CurrentTransaction?.GetDbTransaction() as Npgsql.NpgsqlTransaction;
 
+        // Este comando es SQL crudo sobre la conexión EF; el BillingTenantRlsInterceptor
+        // NO lo intercepta. Si el folio es la primera operación de la transacción,
+        // `app.tenant_id` aún no está fijado y RLS rechaza el INSERT en
+        // numeracion_documentos. Lo fijamos explícito (parametrizado, anti-inyección).
+        await using (var setCtx = new Npgsql.NpgsqlCommand("SELECT set_config('app.tenant_id', @tid, false)", conn, tx))
+        {
+            setCtx.Parameters.AddWithValue("tid", tenantId);
+            await setCtx.ExecuteNonQueryAsync();
+        }
+
         const string sql = @"INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual, activo, created_at, updated_at)
                     VALUES (@tid, 'FACTURA', @serie, 1, 1, true, NOW(), NOW())
                     ON CONFLICT (tenant_id, tipo_documento, serie)

@@ -1,5 +1,21 @@
 # Lessons Learned
 
+## NO "arreglar" comportamiento sin confirmar el MODELO DE NEGOCIO (2026-06-10)
+- **Regla doble**: (1) en E2E "desde cero" NO parchar con `UPDATE` a la BD para forzar estado — esconde bugs y no prueba el flujo real; (2) NO asumir que un comportamiento es un "bug" y cambiarlo: PREGUNTAR el modelo de producto primero.
+- **Caso real**: el checkout de timbres devolvía 400 "plan no incluye facturación" para un tenant nuevo (en Trial). Primero lo parcheé con `UPDATE subscription_plan_id=3` (mal). Luego lo "arreglé" haciendo el check trial-aware (peor: cambié comportamiento sin preguntar).
+- **La verdad**: el bloqueo ERA INTENCIONAL. Modelo confirmado por el usuario: **el trial NO incluye facturación; facturar es exclusivo del PRO PAGADO**. El check original (`plan == null` por FK null en Trial → 400) era correcto. Reverti todo.
+- **Lección**: cuando el código hace algo que parece inconsistente (trial con `plan_tipo='PRO'` pero FK null), puede ser diseño. Preguntar "¿cuál es el comportamiento esperado?" ANTES de tocar. El usuario lo pidió explícito: "preguntame primero".
+- **Dato del modelo**: alta nueva = Trial limitado (`subscription_status='Trial'`, `plan_tipo='PRO'` pero acceso limitado, `subscription_plan_id=NULL`). Para facturar/comprar timbres hay que **pagar PRO** (fija el FK `subscription_plan_id`). El E2E real debe pagar la suscripción PRO con Stripe.
+
+## Bug real: webhook timbres leía result set equivocado (2026-06-10)
+- `StripeService.HandleCheckoutCompleted` (compra de timbres) batcheaba `SELECT set_config('app.tenant_id',...)` + `UPDATE "TimbrePurchases" ... RETURNING cantidad, tenant_id` en un mismo comando Npgsql.
+- `ExecuteReader` queda en el PRIMER result set (el de `set_config`, que devuelve TEXT) → `reader.GetInt32(0)` lanza `InvalidCastException: Reading as Int32 ... DataTypeName 'text'`. La compra se cobraba en Stripe pero los timbres NUNCA se acreditaban.
+- Fix: `await reader.NextResultAsync()` antes de leer (avanza al result set del UPDATE). Encontrado probando el flujo completo con Stripe CLId reenviando webhooks — nunca se había testeado end-to-end.
+- **Lección**: comandos multi-statement con set_config + RETURNING necesitan NextResult, o separar set_config en su propio comando.
+
+## UI: texto debe sonar HUMANO, no IA (2026-06-10)
+- El usuario nota texto que "suena a IA" en pantallas. Evitar em-dashes (` — `, `–`), frases robóticas, relleno. Ver `memory/feedback_no_em_dashes_no_pastels.md`. Revisar strings visibles de las pantallas tocadas.
+
 ## Token Efficiency
 - **Don't run Playwright with unlimited workers** — saturates CPU, wastes tokens in retry loops. Always use `--workers=4` or less.
 - **Don't loop on test results** — if tests pass individually but fail in bulk, it's a resource issue, not a code bug. Diagnose once, fix once.

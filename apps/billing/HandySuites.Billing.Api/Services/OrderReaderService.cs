@@ -13,6 +13,19 @@ public class OrderReaderService : IOrderReaderService
         _logger = logger;
     }
 
+    /// <summary>
+    /// handy_erp aplica RLS por tenant al usuario de la app (handy_app). Esta conexión cruda
+    /// (fuera de EF Core, sin el BillingTenantRlsInterceptor) DEBE fijar `app.tenant_id` o RLS
+    /// filtra TODAS las filas → el pedido nunca se encuentra y el flujo Pedido→Factura devuelve 404.
+    /// set_config parametrizado para evitar inyección por el value.
+    /// </summary>
+    private static async Task SetRlsTenantContextAsync(NpgsqlConnection conn, int tenantId)
+    {
+        await using var cmd = new NpgsqlCommand("SELECT set_config('app.tenant_id', @tid, false)", conn);
+        cmd.Parameters.AddWithValue("tid", tenantId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task<OrderForInvoice?> GetOrderForInvoiceAsync(string tenantId, int pedidoId)
     {
         if (string.IsNullOrEmpty(_mainConnectionString))
@@ -31,6 +44,7 @@ public class OrderReaderService : IOrderReaderService
         {
             await using var conn = new NpgsqlConnection(_mainConnectionString);
             await conn.OpenAsync();
+            await SetRlsTenantContextAsync(conn, tenantIdInt);
 
             var order = await ReadOrderWithClientAsync(conn, tenantIdInt, pedidoId);
             if (order == null) return null;
@@ -64,6 +78,7 @@ public class OrderReaderService : IOrderReaderService
         {
             await using var conn = new NpgsqlConnection(_mainConnectionString);
             await conn.OpenAsync();
+            await SetRlsTenantContextAsync(conn, tenantIdInt);
 
             // Build exclusion clause for already-invoiced pedidos.
             // Use PostgreSQL array + `<> ALL(@excludedIds)` to keep the value parameterized

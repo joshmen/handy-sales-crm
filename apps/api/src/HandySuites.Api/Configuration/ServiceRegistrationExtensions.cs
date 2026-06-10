@@ -361,8 +361,12 @@ public static class ServiceRegistrationExtensions
         // reCAPTCHA v3 validation
         services.AddSingleton<RecaptchaService>();
 
-        // Email Service (SendGrid)
-        services.AddSingleton<IEmailService, SendGridEmailService>();
+        // Email Service: SMTP local (Mailpit) en dev/test si SMTP_HOST está configurado;
+        // si no, SendGrid. Permite E2E reales de verificación de email sin bandeja real.
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SMTP_HOST")))
+            services.AddSingleton<IEmailService, SmtpEmailService>();
+        else
+            services.AddSingleton<IEmailService, SendGridEmailService>();
 
         // Stripe Payment Service
         services.AddScoped<IStripeService, StripeService>();

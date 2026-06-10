@@ -414,6 +414,51 @@ public class CatalogosControllerTests : IDisposable
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
+    [Fact]
+    public async Task DeleteCertificado_ClearsCsdAndSuspends_WhenCsdExists()
+    {
+        // Arrange: dar al config (id=1) un CSD + emisor registrado en Finkok
+        var cfg = await _context.ConfiguracionesFiscales.FindAsync(1);
+        cfg!.CertificadoSat = "ZmFrZS1jZXI=";
+        cfg.LlavePrivada = "ZmFrZS1rZXk=";
+        cfg.PasswordCertificado = "ZmFrZS1wd2Q=";
+        cfg.EncryptedDek = "ZmFrZS1kZWs=";
+        cfg.EncryptionVersion = 2;
+        cfg.FinkokEmisorRegistrado = true;
+        cfg.FinkokStatus = "active";
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _controller.DeleteCertificado(1);
+
+        // Assert — 200 + el CSD local borrado + emisor deshabilitado
+        result.Should().BeOfType<OkObjectResult>();
+        var updated = await _context.ConfiguracionesFiscales.FindAsync(1);
+        updated!.CertificadoSat.Should().BeNull();
+        updated.LlavePrivada.Should().BeNull();
+        updated.PasswordCertificado.Should().BeNull();
+        updated.EncryptedDek.Should().BeNull();
+        updated.EncryptionVersion.Should().Be((short)0);
+        updated.FinkokEmisorRegistrado.Should().BeFalse();
+        updated.FinkokStatus.Should().Be("suspended");
+    }
+
+    [Fact]
+    public async Task DeleteCertificado_ReturnsBadRequest_WhenNoCsd()
+    {
+        // El config sembrado (id=1) no tiene CSD cargado → nada que eliminar
+        var result = await _controller.DeleteCertificado(1);
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteCertificado_ReturnsNotFound_WhenIdMismatch()
+    {
+        // id 9999 no pertenece al tenant actual (ownership tenant-scoped)
+        var result = await _controller.DeleteCertificado(9999);
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
     public void Dispose()
     {
         _context.Dispose();

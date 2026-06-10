@@ -507,4 +507,15 @@ internal class RecordingStubRegistrationService : IRegistrationService
 
     public Task<RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default)
         => Task.FromResult(new RegisterEmitterResult { Success = true });
+
+    public bool CreditReportShouldSucceed { get; set; } = true;
+    public int? CreditReportToReturn { get; set; } = 250;
+
+    public Task<CreditReportResult> GetCreditReportAsync(string rfc, CancellationToken ct = default)
+        => Task.FromResult(new CreditReportResult
+        {
+            Success = CreditReportShouldSucceed,
+            Credit = CreditReportShouldSucceed ? CreditReportToReturn : null,
+            Message = CreditReportShouldSucceed ? null : "stub-finkok-error",
+        });
 }

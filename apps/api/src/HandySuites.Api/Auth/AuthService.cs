@@ -314,9 +314,9 @@ public class AuthService
                     <p>Este código expira en <strong>15 minutos</strong>.</p>
                     <p style='color: #64748b; font-size: 14px;'>Si no solicitaste este código, puedes ignorar este correo.</p>
                     <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
-                    <p style='color: #94a3b8; font-size: 12px;'>Handy Suites&reg; — Gestiona tu negocio desde cualquier lugar</p>
+                    <p style='color: #94a3b8; font-size: 12px;'>Handy Suites&reg;. Gestiona tu negocio desde cualquier lugar.</p>
                 </div>";
-            await _emailService.SendAsync(email, "Verifica tu cuenta — Handy Suites", html);
+            await _emailService.SendAsync(email, "Verifica tu cuenta de Handy Suites", html);
         }
         catch (Exception ex)
         {
