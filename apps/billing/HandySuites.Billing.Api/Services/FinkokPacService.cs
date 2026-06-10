@@ -647,8 +647,12 @@ public class FinkokPacService : IPacService
     private static string BuildCancelSoapEnvelope(string uuid, string rfcEmisor, string motivo,
         string? folioSustitucion, string usuario, string password)
     {
-        var folioTag = !string.IsNullOrEmpty(folioSustitucion)
-            ? $"<cancel:FolioSustitucion>{EscapeXml(folioSustitucion)}</cancel:FolioSustitucion>"
+        // Según el WSDL de cancelación (UUIDArray -> UUID), el elemento <UUID> va DIRECTO
+        // dentro de <UUIDS> (sin wrapper intermedio) y expone UUID/Motivo/FolioSustitucion
+        // como ATRIBUTOS, no como elementos hijo. Armarlo como elementos hace que el
+        // deserializador de Finkok reviente con un 500 HTML (no un SOAP fault).
+        var folioAttr = !string.IsNullOrEmpty(folioSustitucion)
+            ? $@" FolioSustitucion=""{EscapeXml(folioSustitucion)}"""
             : "";
 
         // Use sign_cancel method — CSD must be pre-loaded in Finkok panel
@@ -660,11 +664,7 @@ public class FinkokPacService : IPacService
   <soapenv:Body>
     <cancel:sign_cancel>
       <cancel:UUIDS>
-        <cancel:uuids>
-          <cancel:UUID>{EscapeXml(uuid)}</cancel:UUID>
-          <cancel:Motivo>{EscapeXml(motivo)}</cancel:Motivo>
-          {folioTag}
-        </cancel:uuids>
+        <cancel:UUID UUID=""{EscapeXml(uuid)}"" Motivo=""{EscapeXml(motivo)}""{folioAttr}/>
       </cancel:UUIDS>
       <cancel:username>{EscapeXml(usuario)}</cancel:username>
       <cancel:password>{EscapeXml(password)}</cancel:password>
