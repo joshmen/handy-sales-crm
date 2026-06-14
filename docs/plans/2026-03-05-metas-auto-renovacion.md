@@ -6,7 +6,7 @@
 
 **Architecture:** New auto_renovar column on MetaVendedor entity, propagated through DTOs/repo/service/endpoint/frontend. New MetaAutoRenovacionHandler registered in the AutomationEngine that runs daily via cron, queries expired active metas with autoRenovar=true, creates successor metas, and deactivates the old ones.
 
-**Tech Stack:** .NET 8, EF Core (MySQL/Pomelo), Next.js 15 + React 19 + TypeScript, Playwright E2E
+**Tech Stack:** .NET 8, EF Core (PostgreSQL/Npgsql), Next.js 15 + React 19 + TypeScript, Playwright E2E
 
 ---
 

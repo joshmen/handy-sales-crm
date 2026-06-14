@@ -68,4 +68,10 @@ public class OrderLineForInvoice
     /// </summary>
     public decimal CantidadBonificada { get; set; }
     public string? Notas { get; set; }
+
+    /// <summary>
+    /// CFDI 4.0 ObjetoImp: 02 = objeto de impuesto (desglosa IVA), 01 = no objeto (exento).
+    /// Derivado del impuesto por línea del pedido.
+    /// </summary>
+    public string ObjetoImp { get; set; } = "02";
 }

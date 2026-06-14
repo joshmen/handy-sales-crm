@@ -75,6 +75,57 @@ export async function cancelarFactura(id: number, request: CancelarFacturaReques
   return data;
 }
 
+export interface RecuperarTimbradoResult {
+  recuperado: boolean;
+  uuid?: string;
+  message?: string;
+}
+
+/** Recupera un timbrado huérfano vía `stamped` (si el stamp falló por red pero Finkok sí timbró). */
+export async function recuperarTimbrado(id: number): Promise<RecuperarTimbradoResult> {
+  const { data } = await billingApi.post<RecuperarTimbradoResult>(`/api/facturas/${id}/recuperar-timbrado`);
+  return data;
+}
+
+// ─── Cancelación bilateral (el tenant como RECEPTOR) ───
+
+export interface CancelacionesPendientes {
+  uuids: string[];
+}
+
+export interface ResponderCancelacionResult {
+  uuid: string;
+  aceptado: boolean;
+  estatus?: string;
+}
+
+/** Lista los UUID de CFDI donde este tenant es receptor y tiene una cancelación pendiente de resolver. */
+export async function getCancelacionesPendientes(): Promise<CancelacionesPendientes> {
+  const { data } = await billingApi.get<CancelacionesPendientes>('/api/facturas/cancelaciones-pendientes');
+  return data;
+}
+
+/** El receptor acepta (true) o rechaza (false) una solicitud de cancelación. */
+export async function responderCancelacion(uuid: string, aceptar: boolean): Promise<ResponderCancelacionResult> {
+  const { data } = await billingApi.post<ResponderCancelacionResult>(
+    `/api/facturas/cancelaciones/${encodeURIComponent(uuid)}/responder`,
+    { aceptar },
+  );
+  return data;
+}
+
+/** Acuse de cancelación (get_receipt type "C") de una factura. */
+export async function getAcuseCancelacion(id: number): Promise<{ uuid: string; acuse?: string }> {
+  const { data } = await billingApi.get<{ uuid: string; acuse?: string }>(`/api/facturas/${id}/acuse`);
+  return data;
+}
+
+/** UUIDs relacionados (sustituciones) de una factura. */
+export async function getFacturaRelacionados(id: number): Promise<{ uuid: string; relacionados: string[] }> {
+  const { data } = await billingApi.get<{ uuid: string; relacionados: string[] }>(`/api/facturas/${id}/relacionados`);
+  return data;
+}
+
 export async function getFacturaPdf(id: number): Promise<Blob> {
   const { data } = await billingApi.get<Blob>(`/api/facturas/${id}/pdf`, {
     responseType: 'blob',
@@ -246,6 +297,23 @@ export async function uploadCertificado(configId: number, formData: FormData): P
 export async function retryFinkokRegistration(configId: number): Promise<UploadCertificadoResult> {
   const { data } = await billingApi.post<UploadCertificadoResult>(
     `/api/catalogos/configuracion-fiscal/${configId}/retry-finkok-registration`,
+  );
+  return data;
+}
+
+export interface DeleteCertificadoResult {
+  message: string;
+  finkokSuspendido: boolean;
+  finkokError?: string | null;
+}
+
+/**
+ * Elimina/cancela el CSD del tenant: borra el certificado guardado y suspende el
+ * emisor en Finkok (best-effort). El tenant queda sin poder facturar hasta subir uno nuevo.
+ */
+export async function deleteCertificado(configId: number): Promise<DeleteCertificadoResult> {
+  const { data } = await billingApi.delete<DeleteCertificadoResult>(
+    `/api/catalogos/configuracion-fiscal/${configId}/certificado`,
   );
   return data;
 }

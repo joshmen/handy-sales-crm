@@ -15,6 +15,17 @@ services:
     networks:
       - handysuites_dev_network
 
+  # Mailpit - captura de emails SMTP para E2E reales de verificación de email (dev)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: handysuites_mailpit_dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"   # SMTP
+      - "127.0.0.1:8025:8025"   # Web UI + API
+    networks:
+      - handysuites_dev_network
+
   # PostgreSQL Database (single instance with multiple databases)
   # Using PostGIS image for spatial queries (ST_Distance, etc.) — same PostgreSQL 16, adds extensions
   postgres:
@@ -65,6 +76,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:1050
+      # Email local: enviar a Mailpit (captura SMTP) para E2E reales de verificación.
+      SMTP_HOST: "mailpit"
+      SMTP_PORT: "1025"
+      SMTP_FROM_EMAIL: "no-reply@handysuites.local"
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_app;Password=handy_app_pass;Pooling=true;Minimum Pool Size=5;Maximum Pool Size=50;Connection Lifetime=300;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
       SocialLogin__SharedSecret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"

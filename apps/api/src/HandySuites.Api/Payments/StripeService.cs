@@ -412,6 +412,10 @@ public class StripeService : IStripeService
                     cmd.Parameters.Add(pPaymentIntent);
 
                     using var reader = await cmd.ExecuteReaderAsync();
+                    // El comando batchea `SELECT set_config(...)` + `UPDATE ... RETURNING`.
+                    // El primer result set es el de set_config (devuelve TEXT); hay que avanzar
+                    // al result set del UPDATE antes de leer cantidad/tenant_id (integers).
+                    await reader.NextResultAsync();
                     if (await reader.ReadAsync())
                     {
                         var cantidad = reader.GetInt32(0);

@@ -82,6 +82,10 @@ railway/
 # ── Claude Code ───────────────────────────
 .claude/
 
+# ── Agent skills (instaladas con `npx skills add`; tooling de dev, re-instalable) ──
+.agents/
+skills-lock.json
+
 # ── Old/legacy folders ────────────────────
 HandySales/
 

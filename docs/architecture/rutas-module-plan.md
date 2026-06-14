@@ -482,7 +482,7 @@ El módulo de Rutas es el corazón operativo de HandySuites. Conecta la administ
 ┌─────────────────────▼───────────────────────────────────────┐
 │                    BACKEND .NET 8                             │
 │                                                              │
-│  Endpoints → Service → Repository → MySQL                    │
+│  Endpoints → Service → Repository → PostgreSQL               │
 │                                                              │
 │  Tablas: RutasVendedor, RutasDetalle, RutasCarga,           │
 │          RutasPedidos, RutasRetornoInventario                │

@@ -476,6 +476,78 @@ public class CatalogosController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Elimina/cancela el CSD del tenant: borra el certificado guardado localmente y,
+    /// si el emisor estaba registrado en Finkok, lo suspende (best-effort) para detener
+    /// el timbrado/cobro bajo la cuenta partner. El tenant queda sin poder facturar hasta
+    /// volver a subir un CSD. Operacion del propio tenant (ADMIN/SUPER_ADMIN, tenant-scoped).
+    /// </summary>
+    [HttpDelete("configuracion-fiscal/{id}/certificado")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
+    public async Task<ActionResult> DeleteCertificado(int id)
+    {
+        var tenantId = GetTenantId();
+
+        var config = await _context.ConfiguracionesFiscales
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+
+        if (config == null)
+            return NotFound();
+
+        if (string.IsNullOrEmpty(config.CertificadoSat) && string.IsNullOrEmpty(config.LlavePrivada))
+            return BadRequest(new { error = "No hay un CSD cargado para eliminar." });
+
+        // 1) Suspender el emisor en Finkok (best-effort). El borrado local es la fuente de
+        //    verdad: si Finkok falla, igual borramos local y avisamos.
+        var finkokSuspendido = false;
+        string? finkokError = null;
+        if (config.FinkokEmisorRegistrado && !string.IsNullOrEmpty(config.Rfc))
+        {
+            try
+            {
+                var suspendResult = await _registrationService.UpdateEmitterAsync(
+                    new DTOs.UpdateEmitterRequest(config.Rfc, "suspended", null, null, null));
+                finkokSuspendido = suspendResult.Success;
+                if (!suspendResult.Success)
+                {
+                    finkokError = suspendResult.Message;
+                    _logger.LogWarning("CSD_AUDIT: Finkok no suspendio el emisor {Rfc} al eliminar CSD: {Message}",
+                        config.Rfc, suspendResult.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                finkokError = "No se pudo contactar a Finkok.";
+                _logger.LogWarning(ex, "CSD_AUDIT: Excepcion al suspender {Rfc} en Finkok durante delete CSD", config.Rfc);
+            }
+        }
+
+        // 2) Borrar el CSD local (la .key estaba cifrada; el .cer es publico).
+        config.CertificadoSat = null;
+        config.LlavePrivada = null;
+        config.PasswordCertificado = null;
+        config.EncryptedDek = null;
+        config.EncryptionVersion = (short)0;
+
+        // 3) El emisor ya no esta habilitado para facturar.
+        config.FinkokEmisorRegistrado = false;
+        config.FinkokStatus = "suspended";
+        config.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _logger.LogInformation("CSD_AUDIT: Certificado eliminado para tenant {TenantId} por usuario {UserId} (finkokSuspendido={Suspendido})",
+            tenantId, userId, finkokSuspendido);
+
+        return Ok(new
+        {
+            message = "Certificado eliminado. Tu emisor quedo deshabilitado para facturar hasta que subas un CSD nuevo.",
+            finkokSuspendido,
+            finkokError,
+        });
+    }
+
     [HttpGet("numeracion")]
     public async Task<ActionResult<IEnumerable<NumeracionDocumento>>> GetNumeracion([FromQuery] bool incluirInactivos = false)
     {

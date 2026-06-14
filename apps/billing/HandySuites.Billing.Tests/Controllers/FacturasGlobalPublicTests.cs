@@ -58,6 +58,10 @@ public class FacturasGlobalPublicTests : IDisposable
 
         var options = new DbContextOptionsBuilder<BillingDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            // GenerarFacturaGlobal wraps folio + insert in BeginTransactionAsync (BR-010).
+            // The InMemory provider does not support transactions; suppress the
+            // warning so the no-op transaction does not throw under tests.
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         var httpContext = new DefaultHttpContext();

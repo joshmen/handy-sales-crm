@@ -79,6 +79,24 @@ public record AssignCreditsResult
 }
 
 /// <summary>
+/// Saldo REAL de timbres en Finkok para un emisor (operación utilities `report_credit`).
+/// A diferencia de `FinkokCreditosRestantes` (cacheado al asignar), esto refleja el
+/// consumo en vivo. Solo aplica a emisores en modo prepago ('P').
+/// </summary>
+public record CreditReportResult
+{
+    public bool Success { get; init; }
+
+    /// <summary>Créditos restantes reales en Finkok. Null si no se pudo obtener.</summary>
+    public int? Credit { get; init; }
+
+    /// <summary>Fecha del corte/saldo según Finkok (texto crudo).</summary>
+    public string? Date { get; init; }
+
+    public string? Message { get; init; }
+}
+
+/// <summary>
 /// Resultado de listar todos los emisores bajo la cuenta partner (operación `customers`).
 /// Finkok pagina los resultados — caller puede iterar pasando `page` incremental.
 /// </summary>

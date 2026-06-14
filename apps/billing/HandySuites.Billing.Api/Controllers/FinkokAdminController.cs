@@ -224,6 +224,34 @@ public class FinkokAdminController : ControllerBase
         return Ok(new { rfc, creditsAssigned = req.Credits, creditsTotal = result.CreditsTotal });
     }
 
+    // ─── GET /api/admin/finkok/emitters/{rfc}/credit-report ───────────────────
+    // Saldo REAL de timbres en Finkok (report_credit), refleja consumo en vivo.
+    [HttpGet("emitters/{rfc}/credit-report")]
+    public async Task<IActionResult> GetCreditReport(string rfc)
+    {
+        if (!IsSuperAdmin()) return Forbid();
+
+        var result = await _registrationService.GetCreditReportAsync(rfc);
+        if (!result.Success)
+            return BadRequest(new { error = result.Message ?? "Finkok no devolvió el saldo" });
+
+        // Re-cachear el saldo real en BD local (corrige drift vs. el valor de asignación)
+        if (result.Credit.HasValue)
+        {
+            var config = await _context.ConfiguracionesFiscales
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Rfc == rfc);
+            if (config != null)
+            {
+                config.FinkokCreditosRestantes = result.Credit.Value;
+                config.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        return Ok(new { rfc, credit = result.Credit, date = result.Date });
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private async Task UpdateLocalFinkokStatus(string rfc, string newStatus)

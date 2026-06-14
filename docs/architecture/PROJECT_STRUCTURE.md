@@ -38,7 +38,7 @@ HandySuites/                          # Root
 ├── libs/                            # Shared Libraries (NuGet packages)
 │   ├── HandySuites.Domain/           # 14 entities, business rules, aggregates
 │   ├── HandySuites.Application/      # DTOs, validators, services, use cases
-│   ├── HandySuites.Infrastructure/   # EF Core, MySQL, repositories, UoW
+│   ├── HandySuites.Infrastructure/   # EF Core, PostgreSQL (Npgsql), repositories, UoW
 │   └── HandySuites.Shared/           # Utilities, constants, extensions, exceptions
 │
 ├── infra/                           # Infrastructure

@@ -56,6 +56,26 @@ internal class StubPacService : IPacService
         });
     }
 
+    public Task<TimbradoResult> StampedAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new TimbradoResult
+        {
+            Success = true,
+            Uuid = Guid.NewGuid().ToString(),
+            XmlTimbrado = xmlPreFirmado,
+            SelloSat = "STUB_SELLO_SAT",
+            NoCertificadoSat = "00001000000412345678",
+            FechaTimbrado = DateTime.UtcNow,
+            CadenaOriginalSat = "||1.1|test||"
+        });
+    }
+
+    public Task<TimbradoResult> QuickStampAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+        => TimbrarAsync(xmlPreFirmado, config);
+
+    public Task<GetXmlResult> GetXmlFromFinkokAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config)
+        => Task.FromResult(new GetXmlResult { Success = true, Xml = "<cfdi:Comprobante/>" });
+
     public Task<ConsultaResult> ConsultarEstatusAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config)
     {
         return Task.FromResult(new ConsultaResult { Success = true, Estado = "Vigente" });
@@ -64,6 +84,28 @@ internal class StubPacService : IPacService
     public Task<SatStatusResult> GetSatStatusAsync(string uuid, string rfcEmisor, string rfcReceptor, decimal total, ConfiguracionFiscal config)
     {
         return Task.FromResult(new SatStatusResult { Success = true, Estado = "Vigente", EsCancelable = "Cancelable sin aceptación" });
+    }
+
+    public Task<PendingCancellationsResult> GetPendingCancellationsAsync(string rfcReceptor, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new PendingCancellationsResult { Success = true });
+    }
+
+    public Task<AcceptRejectResult> AcceptRejectCancellationAsync(string uuid, bool aceptar, string rfcReceptor,
+        byte[] cerBytes, byte[] keyBytes, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new AcceptRejectResult { Success = true, Estatus = "201" });
+    }
+
+    public Task<ReceiptResult> GetReceiptAsync(string uuid, string rfcEmisor, string type, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new ReceiptResult { Success = true, Receipt = "<acuse/>" });
+    }
+
+    public Task<RelatedResult> GetRelatedAsync(string uuid, string rfcEmisor, string rfcReceptor,
+        byte[] cerBytes, byte[] keyBytes, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new RelatedResult { Success = true });
     }
 }
 
@@ -148,6 +190,9 @@ internal class StubRegistrationService : HandySuites.Billing.Api.Services.IRegis
 
     public Task<HandySuites.Billing.Api.DTOs.RegisterEmitterResult> SwitchTypeUserAsync(string rfc, char newTypeUser, CancellationToken ct = default)
         => Task.FromResult(new HandySuites.Billing.Api.DTOs.RegisterEmitterResult { Success = true });
+
+    public Task<HandySuites.Billing.Api.DTOs.CreditReportResult> GetCreditReportAsync(string rfc, CancellationToken ct = default)
+        => Task.FromResult(new HandySuites.Billing.Api.DTOs.CreditReportResult { Success = true, Credit = 42 });
 }
 
 internal class StubTenantInfoService : HandySuites.Billing.Api.Services.ITenantInfoService
@@ -879,12 +924,28 @@ public class FacturasControllerTests : IDisposable
     // ────────────────────────── GetXml ──────────────────────────
 
     [Fact]
-    public async Task GetXml_ReturnsNotFoundWhenNoXml()
+    public async Task GetXml_ReturnsNotFoundWhenNoXmlAndNoUuid()
     {
-        // Factura 1 está TIMBRADA pero no tiene XmlContent ni XmlBlobUrl → 404
+        // Sin XmlContent/Blob Y sin UUID (no se puede recuperar de Finkok) → 404
+        var f = await _context.Facturas.FindAsync(1L);
+        f!.Uuid = null;
+        await _context.SaveChangesAsync();
+
         var result = await _controller.GetXml(1);
 
         result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetXml_RecuperaDeFinkok_CuandoNoHayXmlLocalPeroSiUuid()
+    {
+        // Factura 1 está TIMBRADA (tiene UUID) pero sin XmlContent/Blob → fallback get_xml.
+        // El StubPacService devuelve un XML, así que debe servirlo y re-cachearlo.
+        var result = await _controller.GetXml(1);
+
+        result.Should().BeOfType<FileContentResult>();
+        var f = await _context.Facturas.FindAsync(1L);
+        f!.XmlContent.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -994,6 +1055,287 @@ public class FacturasControllerTests : IDisposable
         var result = await _controller.GenerarFacturaGlobal(request);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerarFacturaGlobal_HappyPath_CreaFacturaConFolioYEstadoPendiente()
+    {
+        // Arrange — stub reader returns one order with one line item
+        _orderReader.GlobalOrders = new List<OrderForInvoice>
+        {
+            new OrderForInvoice
+            {
+                PedidoId = 200,
+                NumeroPedido = "PED-200",
+                Estado = 5,
+                Subtotal = 1000m,
+                Descuento = 0m,
+                Impuestos = 160m,
+                Total = 1160m,
+                ClienteRfc = "XAXX010101000",
+                ClienteNombre = "PUBLICO EN GENERAL",
+                Detalles = new List<OrderLineForInvoice>
+                {
+                    new OrderLineForInvoice
+                    {
+                        ProductoId = 10,
+                        ProductoNombre = "Producto Global",
+                        ProductoClaveSat = "50211502",
+                        UnidadNombre = "Pieza",
+                        UnidadClaveSat = "H87",
+                        Cantidad = 4,
+                        PrecioUnitario = 250m,
+                        Subtotal = 1000m,
+                        Descuento = 0m,
+                        Impuesto = 160m,
+                        Total = 1160m
+                    }
+                }
+            }
+        };
+
+        var request = new FacturaGlobalRequest
+        {
+            FechaInicio = DateTime.UtcNow.AddDays(-30),
+            FechaFin = DateTime.UtcNow,
+            Periodicidad = "04" // Mensual
+        };
+
+        // Act
+        var result = await _controller.GenerarFacturaGlobal(request);
+
+        // Assert
+        var createdResult = result.Result as CreatedAtActionResult;
+        createdResult.Should().NotBeNull("GenerarFacturaGlobal debe retornar 201 Created");
+        createdResult!.StatusCode.Should().Be(201);
+
+        var dto = createdResult.Value as FacturaDto;
+        dto.Should().NotBeNull();
+        dto!.ReceptorRfc.Should().Be("XAXX010101000");
+        dto.ReceptorNombre.Should().Be("PUBLICO EN GENERAL");
+        dto.Estado.Should().Be("PENDIENTE");
+        dto.Serie.Should().Be("A");
+        // StubFolioProvider returns 1 (first call for this tenant+serie)
+        dto.Folio.Should().BeGreaterThan(0);
+        dto.Subtotal.Should().Be(1000m);
+        dto.Total.Should().Be(1160m);
+        dto.Detalles.Should().NotBeNullOrEmpty();
+        dto.Detalles!.Count.Should().Be(1);
+
+        // TODO: caso de rollback requiere harness con fallo de SaveChanges (InMemory no lo soporta)
+    }
+
+    // ────────────────────────── ObjetoImp derivation (Plan 004) ──────────────────────────
+
+    /// <summary>
+    /// Línea con impuesto > 0 debe producir ObjetoImp = "02" (objeto, desglosa IVA).
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_SetsObjetoImp02_WhenLineHasImpuesto()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 201,
+            NumeroPedido = "PED-201",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Gravado",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Gravado SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 1,
+                    ProductoNombre = "Producto Gravado",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 16m,  // IVA 16%
+                    Total = 116m,
+                    ObjetoImp = "02",
+                }
+            }
+        };
+
+        var result2 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest { PedidoId = 201 });
+
+        var created = result2.Result as CreatedAtActionResult;
+        created.Should().NotBeNull("una línea gravada debe crear factura exitosamente");
+
+        // Verify the detalle persisted has ObjetoImp == "02"
+        var factura = await _context.Facturas
+            .Include(f => f.Detalles)
+            .OrderByDescending(f => f.Id)
+            .FirstAsync();
+        factura.Detalles.Should().NotBeEmpty();
+        factura.Detalles.First().ObjetoImp.Should().Be("02");
+    }
+
+    /// <summary>
+    /// Línea con impuesto == 0 debe producir ObjetoImp = "01" (no objeto, exento).
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_SetsObjetoImp01_WhenLineIsExento()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 202,
+            NumeroPedido = "PED-202",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Exento",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Exento SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 100m,
+            Impuestos = 0m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 2,
+                    ProductoNombre = "Producto Exento",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 0m,   // exento
+                    Total = 100m,
+                    ObjetoImp = "01",
+                }
+            }
+        };
+
+        var result3 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest { PedidoId = 202 });
+
+        var created3 = result3.Result as CreatedAtActionResult;
+        created3.Should().NotBeNull("una línea exenta debe crear factura exitosamente");
+
+        var factura2 = await _context.Facturas
+            .Include(f => f.Detalles)
+            .OrderByDescending(f => f.Id)
+            .FirstAsync();
+        factura2.Detalles.Should().NotBeEmpty();
+        factura2.Detalles.First().ObjetoImp.Should().Be("01");
+    }
+
+    /// <summary>
+    /// Override de ObjetoImp en la pre-factura sobreescribe el valor derivado de la línea.
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_OverrideObjetoImp_TakesPriorityOverDerived()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 203,
+            NumeroPedido = "PED-203",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Override",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Override SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 3,
+                    ProductoNombre = "Producto",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 16m,
+                    Total = 116m,
+                    ObjetoImp = "02",  // derived says 02
+                }
+            }
+        };
+
+        // Override forces "03" (objeto sin desglose)
+        var result4 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest
+            {
+                PedidoId = 203,
+                Overrides = new List<FiscalCodeOverride>
+                {
+                    new FiscalCodeOverride { ProductoId = 3, ObjetoImp = "03" }
+                }
+            });
+
+        var created4 = result4.Result as CreatedAtActionResult;
+        created4.Should().NotBeNull("override de ObjetoImp válido debe crear factura");
+
+        var factura3 = await _context.Facturas
+            .Include(f => f.Detalles)
+            .OrderByDescending(f => f.Id)
+            .FirstAsync();
+        factura3.Detalles.First().ObjetoImp.Should().Be("03");
+    }
+
+    /// <summary>
+    /// Override con ObjetoImp inválido ("99") debe rechazar con 400.
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_ReturnsBadRequest_WhenObjetoImpOverrideIsInvalid()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 204,
+            NumeroPedido = "PED-204",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Invalido",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Invalido SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 4,
+                    ProductoNombre = "Producto",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 16m,
+                    Total = 116m,
+                    ObjetoImp = "02",
+                }
+            }
+        };
+
+        var result5 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest
+            {
+                PedidoId = 204,
+                Overrides = new List<FiscalCodeOverride>
+                {
+                    new FiscalCodeOverride { ProductoId = 4, ObjetoImp = "99" }  // invalid
+                }
+            });
+
+        result5.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     public void Dispose()

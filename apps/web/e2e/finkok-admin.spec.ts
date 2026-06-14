@@ -92,6 +92,49 @@ test.describe('Finkok admin — SuperAdmin happy path', () => {
     const hasStatusFilter = /Todos|Activo|Suspendido|Frozen/i.test(bodyText);
     expect(hasStatusFilter).toBeTruthy();
   });
+
+  // Fase C — report_credit: botón "Saldo real en Finkok" para emisores prepago.
+  test('SA consulta el saldo real (report_credit) de un emisor prepago', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
+    await loginAsSuperAdmin(page);
+
+    const rfc = 'EKU9003173C9';
+    await page.route('**/api/admin/finkok/emitters?*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          page: 1,
+          items: [{
+            rfc, razonSocial: 'Demo Prepago SA', status: 'active',
+            typeUser: 'P', creditsRemaining: 50, registeredAt: '2026-01-01T00:00:00Z', tenantId: '1',
+          }],
+        }),
+      }),
+    );
+    await page.route(`**/api/admin/finkok/emitters/${rfc}/credit-report`, route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ rfc, credit: 777, date: '2026-06-09' }),
+      }),
+    );
+
+    await page.goto('/admin/finkok');
+    await page.waitForLoadState('domcontentloaded');
+
+    const creditBtn = page.getByTestId(`credit-report-${rfc}`);
+    await expect(creditBtn).toBeVisible({ timeout: 15000 });
+
+    // La celda de créditos muestra el valor inicial (50) antes de consultar
+    const row = page.getByTestId(`emitter-${rfc}`);
+    await expect(row).toContainText('50');
+
+    await creditBtn.click();
+
+    // Tras consultar, el saldo real (777) reemplaza al cacheado
+    await expect(row).toContainText('777', { timeout: 10000 });
+  });
 });
 
 test.describe('Finkok admin — RBAC negativo', () => {

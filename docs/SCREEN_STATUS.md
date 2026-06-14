@@ -7,7 +7,7 @@
 - **Iconos coloridos**: Todos los iconos de accion ahora tienen colores semanticos (Search=blue, Filter=violet, Export=emerald, Edit=amber, Delete=red, etc.)
 - **Mobile cards**: Todas las paginas de lista tienen vista de tarjetas para pantallas pequenas
 - **AsNoTracking**: Agregado a 107 queries de lectura en 21 repositories
-- **MySQL tuning**: InnoDB buffer pool, flush settings, connection pooling
+- **DB tuning** (pre-migración MySQL): InnoDB buffer pool, flush settings, connection pooling — migrado a PostgreSQL 16 (marzo 2026)
 - **Encoding fixes**: UTF-8 puro en frontend, charset=utf-8 en API, double-encoding corregido en BD
 - **SignalR real-time**: Hub self-hosted con camelCase JSON, frontend context con auto-reconnect y subscriber registry
 - **Anuncios sistema**: CRUD SuperAdmin, banners con gradientes por tipo/prioridad, animaciones suaves enter/exit, delivery instantaneo via SignalR

@@ -25,6 +25,9 @@ public class FinkokRegistrationService : IRegistrationService
     private const string SandboxUrl = "https://demo-facturacion.finkok.com/servicios/soap/registration";
     private const string ProductionUrl = "https://facturacion.finkok.com/servicios/soap/registration";
     private const string Namespace = "http://facturacion.finkok.com/registration";
+    private const string SandboxUtilitiesUrl = "https://demo-facturacion.finkok.com/servicios/soap/utilities";
+    private const string ProductionUtilitiesUrl = "https://facturacion.finkok.com/servicios/soap/utilities";
+    private const string UtilitiesNamespace = "http://facturacion.finkok.com/utilities";
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<FinkokRegistrationService> _logger;
@@ -107,6 +110,19 @@ public class FinkokRegistrationService : IRegistrationService
     public async Task<RegisterEmitterResult> UpdateEmitterAsync(UpdateEmitterRequest request, CancellationToken ct = default)
     {
         if (!CredentialsConfigured) return MissingCredentialsResult();
+
+        // Finkok es asimetrico con el status: el WS `customers`/`get` DEVUELVE la palabra
+        // completa ("active"/"suspended"), pero el WS `edit` ACEPTA solo el codigo de una
+        // letra ('A'=active, 'S'=suspended). Mandar la palabra completa hace que Finkok
+        // responda "Invalid Status for the User" (HTTP 400 en el panel). Mapeamos aqui.
+        // Ref: libreria phpcfdi/finkok, CustomerStatus (active=>'A', suspended=>'S').
+        var finkokStatus = (request.Status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "active" or "a" => "A",
+            "suspended" or "s" => "S",
+            _ => request.Status ?? string.Empty,
+        };
+
         // Si vienen bytes nuevos del CSD, los pasamos; sino, vacío (Finkok mantiene el actual).
         var cerTag = request.CerBytes != null
             ? $"<apps:cer>{Convert.ToBase64String(request.CerBytes)}</apps:cer>"
@@ -127,7 +143,7 @@ public class FinkokRegistrationService : IRegistrationService
       <apps:reseller_username>{EscapeXml(_resellerUsername)}</apps:reseller_username>
       <apps:reseller_password>{EscapeXml(_resellerPassword)}</apps:reseller_password>
       <apps:taxpayer_id>{EscapeXml(request.Rfc)}</apps:taxpayer_id>
-      <apps:status>{EscapeXml(request.Status)}</apps:status>
+      <apps:status>{EscapeXml(finkokStatus)}</apps:status>
       {cerTag}
       {keyTag}
       {passTag}
@@ -289,18 +305,93 @@ public class FinkokRegistrationService : IRegistrationService
         }
     }
 
+    public async Task<CreditReportResult> GetCreditReportAsync(string rfc, CancellationToken ct = default)
+    {
+        if (!CredentialsConfigured)
+            return new CreditReportResult { Success = false, Message = "Credenciales Finkok no configuradas" };
+
+        var utilitiesUrl = _isProduction ? ProductionUtilitiesUrl : SandboxUtilitiesUrl;
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:uti=""{UtilitiesNamespace}"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <uti:report_credit>
+      <uti:username>{EscapeXml(_resellerUsername)}</uti:username>
+      <uti:password>{EscapeXml(_resellerPassword)}</uti:password>
+      <uti:taxpayer_id>{EscapeXml(rfc)}</uti:taxpayer_id>
+    </uti:report_credit>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(soapBody, "report_credit", ct, utilitiesUrl);
+            return ParseCreditReportResponse(response, rfc);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error consultando report_credit para {Rfc}", rfc);
+            return new CreditReportResult { Success = false, Message = SanitizeErrorMessage(ex.Message) };
+        }
+    }
+
+    private CreditReportResult ParseCreditReportResponse(string soapResponse, string rfc)
+    {
+        try
+        {
+            if (LooksLikeHtml(soapResponse))
+                return new CreditReportResult { Success = false, Message = "Servicio Finkok no disponible" };
+
+            var doc = XDocument.Parse(soapResponse);
+            var error = ExtractElementValue(doc, "error");
+
+            // El response trae un array de ReportTotalCredit {taxpayer_id, credit, date}.
+            // Tomamos el nodo cuyo taxpayer_id coincide con el RFC; si no, el primero.
+            var nodes = doc.Descendants().Where(e => e.Name.LocalName == "ReportTotalCredit").ToList();
+            var node = nodes.FirstOrDefault(n =>
+                string.Equals(ChildValue(n, "taxpayer_id"), rfc, StringComparison.OrdinalIgnoreCase))
+                ?? nodes.FirstOrDefault();
+
+            // Fallback: algunos ambientes devuelven los campos planos sin el wrapper.
+            var creditRaw = node != null ? ChildValue(node, "credit") : ExtractElementValue(doc, "credit");
+            var dateRaw = node != null ? ChildValue(node, "date") : ExtractElementValue(doc, "date");
+
+            if (string.IsNullOrWhiteSpace(creditRaw))
+            {
+                return new CreditReportResult
+                {
+                    Success = false,
+                    Message = string.IsNullOrWhiteSpace(error) ? "Finkok no devolvió saldo para este RFC." : error,
+                };
+            }
+
+            return new CreditReportResult
+            {
+                Success = true,
+                Credit = int.TryParse(creditRaw, out var c) ? c : null,
+                Date = dateRaw,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error parseando respuesta Finkok utilities.report_credit");
+            return new CreditReportResult { Success = false, Message = ex.Message };
+        }
+    }
+
     // ─── HTTP + Parsing ────────────────────────────────────────────────────────
 
-    private async Task<string> SendSoapRequest(string soapEnvelope, string soapAction, CancellationToken ct)
+    private async Task<string> SendSoapRequest(string soapEnvelope, string soapAction, CancellationToken ct, string? url = null)
     {
         var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
         content.Headers.ContentType = new MediaTypeHeaderValue("text/xml") { CharSet = "utf-8" };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, Url);
+        var request = new HttpRequestMessage(HttpMethod.Post, url ?? Url);
         request.Content = content;
         request.Headers.Add("SOAPAction", soapAction);
 
-        _logger.LogDebug("Finkok registration SOAP {Action} to {Url}", soapAction, Url);
+        _logger.LogDebug("Finkok registration SOAP {Action} to {Url}", soapAction, url ?? Url);
 
         var response = await _httpClient.SendAsync(request, ct);
         var responseBody = await response.Content.ReadAsStringAsync(ct);
@@ -376,7 +467,7 @@ public class FinkokRegistrationService : IRegistrationService
             var doc = XDocument.Parse(soapResponse);
 
             // El response de `get` viene con un array de ResellerUser. Tomamos el primero.
-            var status = ExtractElementValue(doc, "status") ?? ExtractElementValue(doc, "Status");
+            var status = NormalizeStatus(ExtractElementValue(doc, "status") ?? ExtractElementValue(doc, "Status"));
             var typeUser = ExtractElementValue(doc, "type_user") ?? ExtractElementValue(doc, "TypeUser");
             var creditsRemaining = ExtractElementValue(doc, "credit") ?? ExtractElementValue(doc, "credits");
             var consumed = ExtractElementValue(doc, "consumed") ?? ExtractElementValue(doc, "stamps_consumed");
@@ -413,7 +504,7 @@ public class FinkokRegistrationService : IRegistrationService
                 {
                     var rfc = ChildValue(node, "taxpayer_id") ?? ChildValue(node, "rfc") ?? "";
                     var razonSocial = ChildValue(node, "name") ?? ChildValue(node, "razon_social");
-                    var status = ChildValue(node, "status");
+                    var status = NormalizeStatus(ChildValue(node, "status"));
                     var typeUserStr = ChildValue(node, "type_user") ?? ChildValue(node, "TypeUser");
                     var credit = ChildValue(node, "credit") ?? ChildValue(node, "credits");
                     var registeredAtStr = ChildValue(node, "added") ?? ChildValue(node, "registered_at") ?? ChildValue(node, "created_at");
@@ -485,6 +576,26 @@ public class FinkokRegistrationService : IRegistrationService
         return doc.Descendants()
             .FirstOrDefault(e => e.Name.LocalName.Equals(localName, StringComparison.OrdinalIgnoreCase))?
             .Value;
+    }
+
+    /// <summary>
+    /// Finkok devuelve el status de forma inconsistente: a veces el codigo de una
+    /// letra ('A'/'S'/'F') y a veces la palabra completa ("active"/"suspended"/"frozen").
+    /// El panel web decide que accion mostrar (Suspender vs Reactivar) en base a la
+    /// palabra canonica, asi que normalizamos aqui en el adaptador para que el resto
+    /// del sistema SIEMPRE vea "active"/"suspended"/"frozen" sin importar como respondio
+    /// Finkok. Espejo del mapeo de escritura en UpdateEmitterAsync (palabra -> codigo).
+    /// </summary>
+    private static string? NormalizeStatus(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return raw;
+        return raw.Trim().ToUpperInvariant() switch
+        {
+            "A" or "ACTIVE" => "active",
+            "S" or "SUSPENDED" => "suspended",
+            "F" or "FROZEN" => "frozen",
+            _ => raw.Trim().ToLowerInvariant(),
+        };
     }
 
     /// <summary>

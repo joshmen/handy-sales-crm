@@ -1,0 +1,47 @@
+name: Web Checks
+
+# Gate de calidad para apps/web (Next.js). El CI de backend (deploy-apis.yml)
+# solo cubre los servicios .NET; este workflow corre type-check + lint para
+# que un error de TypeScript o lint no llegue a Vercel sin detectarse.
+#
+# Nota: npm ci requiere --legacy-peer-deps por conflicto de peer deps entre
+# @testing-library/react y React 19. El lockfile fue generado con esta bandera.
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'apps/web/**'
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - 'apps/web/**'
+
+permissions:
+  contents: read
+
+jobs:
+  web-checks:
+    name: Type-check & Lint (apps/web)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint

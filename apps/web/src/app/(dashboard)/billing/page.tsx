@@ -12,6 +12,7 @@ import {
   SbAlert,
 } from '@/components/layout/DashboardIcons';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PendingCancellationsCard } from '@/components/billing/PendingCancellationsCard';
 import { Button } from '@/components/ui/Button';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
@@ -122,6 +123,9 @@ export default function BillingDashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Solicitudes de cancelación pendientes (tenant como receptor) */}
+      <PendingCancellationsCard />
 
       {/* Timbres Balance */}
       {timbres && (

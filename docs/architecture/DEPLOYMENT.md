@@ -17,7 +17,7 @@
 │   Auto-deploy   │     │  └────┬─────┘  └──────┬───────┘  │
 │   from GitHub   │     │       │                │          │
 │                 │     │  ┌────┴────┐   ┌──────┴───────┐  │
-│                 │     │  │Mobile   │   │   MySQL 8.0  │  │
+│                 │     │  │Mobile   │   │ PostgreSQL 16│  │
 │                 │     │  │API .NET8│   │  handy_erp   │  │
 │                 │     │  │:$PORT   │   │  handy_billing│  │
 │                 │     │  └─────────┘   └──────────────┘  │
@@ -53,7 +53,7 @@ GOOGLE_CLIENT_SECRET=<from Google Cloud Console>           # Optional — enable
 ```
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:${PORT}
-ConnectionStrings__DefaultConnection=Server=<railway-mysql>;Port=3306;Database=handy_erp;User=root;Password=<auto>;
+ConnectionStrings__DefaultConnection=Host=<railway-pg-host>;Port=5432;Database=handy_erp;Username=postgres;Password=<auto>;Pooling=true;SSL Mode=Require;Trust Server Certificate=true;
 JWT__SecretKey=<openssl rand -base64 64>
 JWT__Issuer=HandySuites
 JWT__Audience=HandySuitesUsers
@@ -67,8 +67,8 @@ SENDGRID_FROM_NAME=Handy Suites
 ```
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:${PORT}
-ConnectionStrings__BillingConnection=Server=<railway-mysql>;Port=3306;Database=handy_billing;...
-ConnectionStrings__MainConnection=Server=<railway-mysql>;Port=3306;Database=handy_erp;...
+ConnectionStrings__BillingConnection=Host=<railway-pg-host>;Port=5432;Database=handy_billing;Username=postgres;Password=<auto>;Pooling=true;SSL Mode=Require;Trust Server Certificate=true;
+ConnectionStrings__MainConnection=Host=<railway-pg-host>;Port=5432;Database=handy_erp;Username=postgres;Password=<auto>;Pooling=true;SSL Mode=Require;Trust Server Certificate=true;
 JWT__SecretKey=<same as main>
 ```
 
@@ -100,7 +100,7 @@ docker build -f infra/docker/Dockerfile.Mobile.Prod -t handysuites-mobile .
 |---------|----------|------------|
 | Frontend | Vercel Free | $0 |
 | 3 APIs (.NET) | Railway Pro | $15-25 |
-| MySQL 8.0 | Railway | $10-15 |
+| PostgreSQL 16 | Railway | $10-15 |
 | **Total** | | **$25-40** |
 
 ### Future Migration to Azure
@@ -111,12 +111,12 @@ When reaching 1,000+ active users, migrate for lower latency in Mexico:
 |---------|----------|------------|
 | Frontend | Vercel (stays) | $0-20 |
 | 3 APIs | Azure Container Apps (Queretaro) | $60-100 |
-| MySQL | Azure Flexible Server (Queretaro) | $15-20 |
+| PostgreSQL | Azure Flexible Server (Queretaro) | $15-20 |
 | **Total** | | **$75-140** |
 
 Files ready for Azure:
 - `infra/azure/container-apps.bicep` — IaC for Container Apps
-- `infra/azure/mysql-database.bicep` — MySQL Flexible Server
+- `infra/azure/postgres-database.bicep` — PostgreSQL Flexible Server (formerly mysql-database.bicep, pre-migration)
 - `infra/nginx/nginx.prod.conf` — Reverse proxy for Azure
 - `docs/deployment/AZURE_MIGRATION.md` — Step-by-step migration guide
 

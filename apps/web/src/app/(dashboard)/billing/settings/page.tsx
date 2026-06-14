@@ -3,14 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink, RefreshCw } from 'lucide-react';
+import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { toast } from '@/hooks/useToast';
-import { getConfigFiscal, saveConfigFiscal, uploadCertificado, retryFinkokRegistration, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
+import { getConfigFiscal, saveConfigFiscal, uploadCertificado, retryFinkokRegistration, deleteCertificado, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
 import type { ConfiguracionFiscal, NumeracionDocumento } from '@/types/billing';
 import { REGIMENES_FISCALES, formatRegimenLabel } from '@/lib/sat/regimenes-fiscales';
 
@@ -26,6 +27,8 @@ export default function BillingSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [retryingFinkok, setRetryingFinkok] = useState(false);
+  const [showDeleteCsdModal, setShowDeleteCsdModal] = useState(false);
+  const [deletingCsd, setDeletingCsd] = useState(false);
 
   // CSD upload state
   const [cerFile, setCerFile] = useState<File | null>(null);
@@ -179,6 +182,32 @@ export default function BillingSettingsPage() {
       toast({ title: msg, variant: 'destructive' });
     } finally {
       setRetryingFinkok(false);
+    }
+  };
+
+  const handleDeleteCsd = async () => {
+    if (!config.id) return;
+    setDeletingCsd(true);
+    try {
+      const result = await deleteCertificado(config.id);
+      toast({
+        title: t('deleteCsdSuccess'),
+        description: result.finkokError ? t('deleteCsdFinkokWarn') : undefined,
+      });
+      setShowDeleteCsdModal(false);
+      const updated = await getConfigFiscal();
+      setConfig(updated);
+      setCerFile(null);
+      setKeyFile(null);
+      setCertPassword('');
+      if (cerInputRef.current) cerInputRef.current.value = '';
+      if (keyInputRef.current) keyInputRef.current.value = '';
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        || t('deleteCsdError');
+      toast({ title: msg, variant: 'destructive' });
+    } finally {
+      setDeletingCsd(false);
     }
   };
 
@@ -368,7 +397,7 @@ export default function BillingSettingsPage() {
           {/* Certificados CSD */}
           <section className="bg-card border border-border rounded-xl p-5">
             <h2 className="text-sm font-semibold text-foreground mb-4">{t('csdCertificates')}</h2>
-            <div className="flex items-center gap-2 mb-5">
+            <div className="flex items-center justify-between gap-2 mb-5">
               {hasCertificates ? (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <CheckCircle className="w-4 h-4" />
@@ -379,6 +408,17 @@ export default function BillingSettingsPage() {
                   <AlertCircle className="w-4 h-4" />
                   <span className="text-sm font-medium">{t('certsNeeded')}</span>
                 </div>
+              )}
+              {hasCertificates && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteCsdModal(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  data-testid="delete-csd-btn"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t('deleteCsd')}
+                </button>
               )}
             </div>
 
@@ -472,6 +512,43 @@ export default function BillingSettingsPage() {
               <p className="text-xs text-muted-foreground">{t('saveFiscalFirst')}</p>
             )}
           </section>
+
+          {/* Modal: confirmar eliminar CSD */}
+          <Modal
+            isOpen={showDeleteCsdModal}
+            onClose={() => setShowDeleteCsdModal(false)}
+            title={t('deleteCsdConfirmTitle')}
+            size="sm"
+          >
+            <div className="p-6">
+              <div className="flex items-start gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+                  {t('deleteCsdConfirmBody')}
+                </p>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteCsdModal(false)}
+                  disabled={deletingCsd}
+                  className="px-4 py-2 text-sm font-medium text-foreground/80 bg-background border border-border hover:bg-muted rounded-lg disabled:opacity-50"
+                >
+                  {tCommon('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteCsd}
+                  disabled={deletingCsd}
+                  className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                  data-testid="confirm-delete-csd"
+                >
+                  {deletingCsd && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('deleteCsdConfirmBtn')}
+                </button>
+              </div>
+            </div>
+          </Modal>
         </div>
       )}
 

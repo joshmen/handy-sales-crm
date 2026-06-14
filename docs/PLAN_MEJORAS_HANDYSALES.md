@@ -205,7 +205,7 @@ RequireExpirationTime = false
 - Arquitectura cost-effective (~$35/mes)
 - Container Instances bien configurados
 - Dockerfiles optimizados (multi-stage, non-root)
-- Bicep template para MySQL
+- Bicep template para PostgreSQL (archivo era mysql-database.bicep, pendiente actualizar para Azure PG Flexible Server)
 
 ### 🔴 Problemas CRÍTICOS
 
@@ -300,7 +300,7 @@ RequireExpirationTime = false
 ### Infraestructura
 ```
 🔴 CRÍTICO:
-- azure/infrastructure/mysql-server.bicep (firewall)
+- azure/infrastructure/postgres-server.bicep (firewall) [era mysql-server.bicep — pendiente renombrar para PG]
 - nginx/nginx.dev.conf (CORS)
 - docker-compose.dev.yml (credenciales)
 ```

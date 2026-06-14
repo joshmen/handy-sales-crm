@@ -21,6 +21,7 @@ import {
   reactivateEmitter,
   switchEmitterMode,
   assignCredits,
+  getCreditReport,
   type EmitterRow,
 } from '@/services/api/finkokAdmin';
 
@@ -89,6 +90,24 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al reactivar',
+        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoadingRfc(null);
+    }
+  };
+
+  const handleCreditReport = async (rfc: string) => {
+    setActionLoadingRfc(rfc);
+    try {
+      const r = await getCreditReport(rfc);
+      // Refrescar el saldo mostrado con el valor real de Finkok
+      setEmitters(prev => prev.map(e => (e.rfc === rfc ? { ...e, creditsRemaining: r.credit } : e)));
+      toast({ title: t('creditReportToast', { credit: r.credit?.toLocaleString('es-MX') ?? '?' }) });
+    } catch (err) {
+      toast({
+        title: t('creditReportError'),
         description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
         variant: 'destructive',
       });
@@ -301,15 +320,27 @@ export default function FinkokAdminPage() {
                             </button>
                           )}
                           {e.typeUser === 'P' && (
-                            <button
-                              onClick={() => { setCreditsModalRfc(e.rfc); setCreditsInput('100'); }}
-                              title={t('actions.assignCredits')}
-                              aria-label={t('actions.assignCredits')}
-                              className="p-1.5 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-600"
-                              data-testid={`assign-credits-${e.rfc}`}
-                            >
-                              <Coins className="w-4 h-4" />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleCreditReport(e.rfc)}
+                                disabled={actionLoadingRfc === e.rfc}
+                                title={t('actions.creditReport')}
+                                aria-label={t('actions.creditReport')}
+                                className="p-1.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 disabled:opacity-50"
+                                data-testid={`credit-report-${e.rfc}`}
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => { setCreditsModalRfc(e.rfc); setCreditsInput('100'); }}
+                                title={t('actions.assignCredits')}
+                                aria-label={t('actions.assignCredits')}
+                                className="p-1.5 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-600"
+                                data-testid={`assign-credits-${e.rfc}`}
+                              >
+                                <Coins className="w-4 h-4" />
+                              </button>
+                            </>
                           )}
                           <button
                             onClick={() => { setSwitchModalRfc(e.rfc); setSwitchNewMode(e.typeUser === 'O' ? 'P' : 'O'); }}

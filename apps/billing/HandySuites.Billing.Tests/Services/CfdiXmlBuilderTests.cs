@@ -278,6 +278,108 @@ public class CfdiXmlBuilderTests
     }
 
     // ---- Test 10
+    /// <summary>
+    /// Regression: with multiple lines whose per-line rounding produces a fractional-cent
+    /// discrepancy vs. the stored factura.TotalImpuestosTrasladados, the XML header
+    /// TotalImpuestosTrasladados must equal the sum of the <Traslado> Importe children —
+    /// not the stored field — so the SAT does not reject with CFDI40135.
+    /// </summary>
+    [Fact]
+    public void BuildXml_TotalImpuestosTrasladados_MatchesSumOfTrasladoNodes_WhenRoundingDrifts()
+    {
+        // 3 lines at amounts whose IVA rounds inconsistently at the line level.
+        // e.g. 33.33 * 0.16 = 5.3328 → rounds to 5.33; 33.33+33.34 = 66.67 * 0.16 = 10.6672 → 10.67
+        // Stored total (order-level): 100.00 * 0.16 = 16.00
+        // Per-line sum: 5.33 + 5.33 + 5.34 = 16.00  (this specific split happens to match, but the
+        // structure guarantees it regardless — the test asserts header == desglose, not a hardcoded value)
+        // We force a known discrepancy: use 3 lines of 10.001 each, so per-line IVA = 1.60 * 3 = 4.80,
+        // but if the stored field is set to 4.81 (simulating the saved-at-order-level value), the header
+        // must still output 4.80 (from the desglose).
+        var sut = new CfdiXmlBuilder();
+
+        // Amounts: 10.00 each line → IVA per line = Math.Round(10.00 * 0.16, 2) = 1.60 × 3 = 4.80
+        // Deliberately set TotalImpuestosTrasladados to a slightly different value (as if calculated upstream)
+        var (factura, config) = BuildMinimalValidPair(f =>
+        {
+            f.Detalles = new List<DetalleFactura>
+            {
+                new DetalleFactura { Id = 1, NumeroLinea = 1, ClaveProdServ = "01010101", ClaveUnidad = "H87",
+                    Cantidad = 1m, Descripcion = "Linea 1", ValorUnitario = 10.00m, Importe = 10.00m,
+                    Descuento = 0m, ObjetoImp = "02" },
+                new DetalleFactura { Id = 2, NumeroLinea = 2, ClaveProdServ = "01010101", ClaveUnidad = "H87",
+                    Cantidad = 1m, Descripcion = "Linea 2", ValorUnitario = 10.00m, Importe = 10.00m,
+                    Descuento = 0m, ObjetoImp = "02" },
+                new DetalleFactura { Id = 3, NumeroLinea = 3, ClaveProdServ = "01010101", ClaveUnidad = "H87",
+                    Cantidad = 1m, Descripcion = "Linea 3", ValorUnitario = 10.00m, Importe = 10.00m,
+                    Descuento = 0m, ObjetoImp = "02" }
+            };
+            f.Impuestos = new List<ImpuestoFactura>(); // empty → builder generates IVA per line
+            f.Subtotal = 30.00m;
+            f.Total = 34.81m; // intentionally reflects the "stored" wrong total
+            f.TotalImpuestosTrasladados = 4.81m; // stored value differs from per-line sum (4.80)
+            f.TotalImpuestosRetenidos = 0m;
+        });
+
+        var xml = sut.BuildXml(factura, config);
+        var doc = LoadXml(xml);
+        var nsmgr = NsMgr(doc);
+
+        // 1. Read the header TotalImpuestosTrasladados attribute
+        var impuestosNode = doc.SelectSingleNode("//cfdi:Impuestos[not(parent::cfdi:Concepto)]", nsmgr) as XmlElement;
+        Assert.NotNull(impuestosNode);
+        var headerTotal = impuestosNode!.GetAttribute("TotalImpuestosTrasladados");
+        Assert.False(string.IsNullOrEmpty(headerTotal), "TotalImpuestosTrasladados attribute must exist");
+
+        // 2. Sum the Importe attributes of each <Traslado> child node (the desglose)
+        var trasladoNodes = doc.SelectNodes(
+            "//cfdi:Impuestos[not(parent::cfdi:Concepto)]/cfdi:Traslados/cfdi:Traslado",
+            nsmgr);
+        Assert.NotNull(trasladoNodes);
+        Assert.True(trasladoNodes!.Count > 0, "At least one Traslado node must exist in header Impuestos");
+
+        var desgloseSum = 0m;
+        foreach (XmlElement traslado in trasladoNodes)
+        {
+            var importeStr = traslado.GetAttribute("Importe");
+            Assert.False(string.IsNullOrEmpty(importeStr));
+            desgloseSum += decimal.Parse(importeStr, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        // 3. Header must equal desglose sum (not the stored 4.81)
+        Assert.Equal(desgloseSum.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), headerTotal);
+        // Confirm header is 4.80, not 4.81
+        Assert.Equal("4.80", headerTotal);
+    }
+
+    // ---- Test 11
+    /// <summary>
+    /// Simple single-line case: TotalImpuestosTrasladados still matches the desglose (no regression).
+    /// </summary>
+    [Fact]
+    public void BuildXml_TotalImpuestosTrasladados_MatchesSumOfTrasladoNodes_SingleLine()
+    {
+        var sut = new CfdiXmlBuilder();
+        var (factura, config) = BuildMinimalValidPair(); // 1 line, 100.00, IVA 16.00, stored = 16.00
+
+        var xml = sut.BuildXml(factura, config);
+        var doc = LoadXml(xml);
+        var nsmgr = NsMgr(doc);
+
+        var impuestosNode = doc.SelectSingleNode("//cfdi:Impuestos[not(parent::cfdi:Concepto)]", nsmgr) as XmlElement;
+        Assert.NotNull(impuestosNode);
+        var headerTotal = impuestosNode!.GetAttribute("TotalImpuestosTrasladados");
+        Assert.Equal("16.00", headerTotal);
+
+        var trasladoNodes = doc.SelectNodes(
+            "//cfdi:Impuestos[not(parent::cfdi:Concepto)]/cfdi:Traslados/cfdi:Traslado",
+            nsmgr);
+        Assert.NotNull(trasladoNodes);
+        Assert.Equal(1, trasladoNodes!.Count);
+        var importeStr = ((XmlElement)trasladoNodes[0]!).GetAttribute("Importe");
+        Assert.Equal(headerTotal, importeStr);
+    }
+
+    // ---- Test 12
     [Fact]
     public void BuildXml_UsesLugarExpedicionFromConfigCodigoPostal_AndFallsBackTo00000()
     {
