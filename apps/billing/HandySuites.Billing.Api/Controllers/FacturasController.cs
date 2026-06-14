@@ -823,8 +823,10 @@ public class FacturasController : ControllerBase
             return BadRequest("No se encontraron pedidos entregados sin factura para público general en el rango de fechas indicado.");
 
         // Build the Factura Global
+        // BR-010: folio reservation + factura INSERT must share a transaction so that if
+        // SaveChanges fails the folio increment rolls back — no gap in the SAT series.
+        // Wrapped via CreateExecutionStrategy() because DbContext has EnableRetryOnFailure.
         var serie = config.SerieFactura ?? "A";
-        var folio = await _folioProvider.GetNextFolioAsync(tenantId, serie);
 
         var subtotal = orders.Sum(o => o.Subtotal);
         var descuento = orders.Sum(o => o.Descuento);
@@ -836,72 +838,83 @@ public class FacturasController : ControllerBase
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
         var periodoDesc = $"{request.FechaInicio:yyyy-MM-dd} al {request.FechaFin:yyyy-MM-dd}";
 
-        var factura = new Factura
+        var strategy = _context.Database.CreateExecutionStrategy();
+        var factura = await strategy.ExecuteAsync(async () =>
         {
-            TenantId = tenantId,
-            Serie = serie,
-            Folio = folio,
-            FechaEmision = DateTime.UtcNow,
-            TipoComprobante = "I", // Ingreso
-            MetodoPago = "PUE",
-            FormaPago = "01", // Efectivo (default for público general)
-            UsoCfdi = "S01", // Sin efectos fiscales (público general)
-            EmisorRfc = config.Rfc ?? "",
-            EmisorNombre = config.RazonSocial ?? "",
-            EmisorRegimenFiscal = config.RegimenFiscal,
-            ReceptorRfc = "XAXX010101000",
-            ReceptorNombre = "PUBLICO EN GENERAL",
-            ReceptorUsoCfdi = "S01",
-            ReceptorDomicilioFiscal = config.CodigoPostal,
-            Subtotal = subtotal,
-            Descuento = descuento,
-            TotalImpuestosTrasladados = impuestos,
-            TotalImpuestosRetenidos = 0,
-            Total = total,
-            Moneda = "MXN",
-            TipoCambio = 1,
-            Observaciones = $"Factura Global — Periodicidad: {request.Periodicidad}, Periodo: {periodoDesc}, Pedidos: {orders.Count}",
-            CreatedBy = userId,
-            Estado = "PENDIENTE"
-        };
+            await using var folioTx = await _context.Database.BeginTransactionAsync();
 
-        // Add all order line items as factura detalles
-        var lineNum = 1;
-        foreach (var order in orders)
-        {
-            foreach (var line in order.Detalles)
+            var folio = await _folioProvider.GetNextFolioAsync(tenantId, serie);
+
+            var f = new Factura
             {
-                factura.Detalles.Add(new DetalleFactura
+                TenantId = tenantId,
+                Serie = serie,
+                Folio = folio,
+                FechaEmision = DateTime.UtcNow,
+                TipoComprobante = "I", // Ingreso
+                MetodoPago = "PUE",
+                FormaPago = "01", // Efectivo (default for público general)
+                UsoCfdi = "S01", // Sin efectos fiscales (público general)
+                EmisorRfc = config.Rfc ?? "",
+                EmisorNombre = config.RazonSocial ?? "",
+                EmisorRegimenFiscal = config.RegimenFiscal,
+                ReceptorRfc = "XAXX010101000",
+                ReceptorNombre = "PUBLICO EN GENERAL",
+                ReceptorUsoCfdi = "S01",
+                ReceptorDomicilioFiscal = config.CodigoPostal,
+                Subtotal = subtotal,
+                Descuento = descuento,
+                TotalImpuestosTrasladados = impuestos,
+                TotalImpuestosRetenidos = 0,
+                Total = total,
+                Moneda = "MXN",
+                TipoCambio = 1,
+                Observaciones = $"Factura Global — Periodicidad: {request.Periodicidad}, Periodo: {periodoDesc}, Pedidos: {orders.Count}",
+                CreatedBy = userId,
+                Estado = "PENDIENTE"
+            };
+
+            // Add all order line items as factura detalles
+            var lineNum = 1;
+            foreach (var order in orders)
+            {
+                foreach (var line in order.Detalles)
                 {
-                    NumeroLinea = lineNum++,
-                    ClaveProdServ = line.ProductoClaveSat ?? "01010101",
-                    NoIdentificacion = line.ProductoCodigoBarra,
-                    Descripcion = $"{line.ProductoNombre} (Pedido {order.NumeroPedido})",
-                    Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
-                    ClaveUnidad = line.UnidadClaveSat ?? "H87",
-                    Cantidad = line.Cantidad,
-                    // CFDI 4.0: ValorUnitario e Importe son pre-impuestos. Para productos con
-                    // precio IVA incluido, line.PrecioUnitario viene en bruto mientras line.Subtotal
-                    // ya es neto; derivamos el valor unitario neto desde el subtotal para que
-                    // Importe == Cantidad x ValorUnitario y el SAT no rechace con CFDI40167.
-                    ValorUnitario = line.Cantidad != 0 ? line.Subtotal / line.Cantidad : line.PrecioUnitario,
-                    Importe = line.Subtotal,
-                    Descuento = line.Descuento,
-                    ProductoId = line.ProductoId,
-                });
+                    f.Detalles.Add(new DetalleFactura
+                    {
+                        NumeroLinea = lineNum++,
+                        ClaveProdServ = line.ProductoClaveSat ?? "01010101",
+                        NoIdentificacion = line.ProductoCodigoBarra,
+                        Descripcion = $"{line.ProductoNombre} (Pedido {order.NumeroPedido})",
+                        Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
+                        ClaveUnidad = line.UnidadClaveSat ?? "H87",
+                        Cantidad = line.Cantidad,
+                        // CFDI 4.0: ValorUnitario e Importe son pre-impuestos. Para productos con
+                        // precio IVA incluido, line.PrecioUnitario viene en bruto mientras line.Subtotal
+                        // ya es neto; derivamos el valor unitario neto desde el subtotal para que
+                        // Importe == Cantidad x ValorUnitario y el SAT no rechace con CFDI40167.
+                        ValorUnitario = line.Cantidad != 0 ? line.Subtotal / line.Cantidad : line.PrecioUnitario,
+                        Importe = line.Subtotal,
+                        Descuento = line.Descuento,
+                        ProductoId = line.ProductoId,
+                    });
+                }
             }
-        }
 
-        _context.Facturas.Add(factura);
-        await _context.SaveChangesAsync();
+            _context.Facturas.Add(f);
+            await _context.SaveChangesAsync();
 
-        // Link all pedidos to this factura for tracking (via observaciones since PedidoId is single)
-        // The PedidoId field is nullable/single — for global invoices we leave it null
-        // and track the relationship in the audit log
-        var pedidoIds = string.Join(", ", orders.Select(o => o.PedidoId));
-        RegistrarAuditoria(tenantId, factura.Id, "CREAR",
-            $"Factura Global creada. Periodicidad: {request.Periodicidad}, Periodo: {periodoDesc}, Pedidos incluidos: [{pedidoIds}]", userId);
-        await _context.SaveChangesAsync();
+            // Link all pedidos to this factura for tracking (via observaciones since PedidoId is single)
+            // The PedidoId field is nullable/single — for global invoices we leave it null
+            // and track the relationship in the audit log
+            var pedidoIds = string.Join(", ", orders.Select(o => o.PedidoId));
+            RegistrarAuditoria(tenantId, f.Id, "CREAR",
+                $"Factura Global creada. Periodicidad: {request.Periodicidad}, Periodo: {periodoDesc}, Pedidos incluidos: [{pedidoIds}]", userId);
+            await _context.SaveChangesAsync();
+
+            await folioTx.CommitAsync();
+            return f;
+        });
 
         _logger.LogInformation(
             "Factura Global {Serie}-{Folio} created for tenant {TenantId}: {OrderCount} orders, total ${Total}",

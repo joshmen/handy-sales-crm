@@ -1057,6 +1057,74 @@ public class FacturasControllerTests : IDisposable
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
+    [Fact]
+    public async Task GenerarFacturaGlobal_HappyPath_CreaFacturaConFolioYEstadoPendiente()
+    {
+        // Arrange — stub reader returns one order with one line item
+        _orderReader.GlobalOrders = new List<OrderForInvoice>
+        {
+            new OrderForInvoice
+            {
+                PedidoId = 200,
+                NumeroPedido = "PED-200",
+                Estado = 5,
+                Subtotal = 1000m,
+                Descuento = 0m,
+                Impuestos = 160m,
+                Total = 1160m,
+                ClienteRfc = "XAXX010101000",
+                ClienteNombre = "PUBLICO EN GENERAL",
+                Detalles = new List<OrderLineForInvoice>
+                {
+                    new OrderLineForInvoice
+                    {
+                        ProductoId = 10,
+                        ProductoNombre = "Producto Global",
+                        ProductoClaveSat = "50211502",
+                        UnidadNombre = "Pieza",
+                        UnidadClaveSat = "H87",
+                        Cantidad = 4,
+                        PrecioUnitario = 250m,
+                        Subtotal = 1000m,
+                        Descuento = 0m,
+                        Impuesto = 160m,
+                        Total = 1160m
+                    }
+                }
+            }
+        };
+
+        var request = new FacturaGlobalRequest
+        {
+            FechaInicio = DateTime.UtcNow.AddDays(-30),
+            FechaFin = DateTime.UtcNow,
+            Periodicidad = "04" // Mensual
+        };
+
+        // Act
+        var result = await _controller.GenerarFacturaGlobal(request);
+
+        // Assert
+        var createdResult = result.Result as CreatedAtActionResult;
+        createdResult.Should().NotBeNull("GenerarFacturaGlobal debe retornar 201 Created");
+        createdResult!.StatusCode.Should().Be(201);
+
+        var dto = createdResult.Value as FacturaDto;
+        dto.Should().NotBeNull();
+        dto!.ReceptorRfc.Should().Be("XAXX010101000");
+        dto.ReceptorNombre.Should().Be("PUBLICO EN GENERAL");
+        dto.Estado.Should().Be("PENDIENTE");
+        dto.Serie.Should().Be("A");
+        // StubFolioProvider returns 1 (first call for this tenant+serie)
+        dto.Folio.Should().BeGreaterThan(0);
+        dto.Subtotal.Should().Be(1000m);
+        dto.Total.Should().Be(1160m);
+        dto.Detalles.Should().NotBeNullOrEmpty();
+        dto.Detalles!.Count.Should().Be(1);
+
+        // TODO: caso de rollback requiere harness con fallo de SaveChanges (InMemory no lo soporta)
+    }
+
     public void Dispose()
     {
         _context.Dispose();
