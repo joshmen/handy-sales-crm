@@ -53,6 +53,18 @@ public class NpgsqlFolioProvider : IFolioProvider
         cmd.Parameters.AddWithValue("tid", tenantId);
         cmd.Parameters.AddWithValue("serie", serie);
         var folio = await cmd.ExecuteScalarAsync();
-        return folio is int f ? f : 1;
+        return ParseFolioResult(folio, tenantId, serie);
+    }
+
+    /// <summary>
+    /// Converts the scalar result of RETURNING folio_actual to int.
+    /// Extracted for unit-testability (the full method requires a real Postgres connection).
+    /// </summary>
+    public static int ParseFolioResult(object? folio, string tenantId, string serie)
+    {
+        if (folio is null or System.DBNull)
+            throw new InvalidOperationException(
+                $"FolioProvider: numeracion_documentos.RETURNING devolvió NULL para tenant {tenantId}, serie {serie}");
+        return Convert.ToInt32(folio);
     }
 }
