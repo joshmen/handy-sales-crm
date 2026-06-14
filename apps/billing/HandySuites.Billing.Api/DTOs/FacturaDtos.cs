@@ -230,7 +230,13 @@ public class CreateDetalleFacturaRequest
     public decimal Importe { get; set; }
     
     public decimal Descuento { get; set; } = 0;
-    
+
+    /// <summary>
+    /// CFDI 4.0 ObjetoImp: 01=no objeto, 02=sí objeto con desglose (default), 03=sí objeto sin desglose.
+    /// Default conservador "02" para facturas creadas manualmente.
+    /// </summary>
+    public string? ObjetoImp { get; set; }
+
     public int? ProductoId { get; set; }
 }
 
@@ -280,6 +286,12 @@ public class FiscalCodeOverride
     public int ProductoId { get; set; }
     public string? ClaveProdServ { get; set; }
     public string? ClaveUnidad { get; set; }
+
+    /// <summary>
+    /// Override manual de ObjetoImp para esta línea (01=exento, 02=gravado con desglose, 03=gravado sin desglose).
+    /// Si no se especifica, se deriva del impuesto por línea del pedido.
+    /// </summary>
+    public string? ObjetoImp { get; set; }
 }
 
 // ─── Pre-Factura (Preview) DTOs ────────────────────────────────────────

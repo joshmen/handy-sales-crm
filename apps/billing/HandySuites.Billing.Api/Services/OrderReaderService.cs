@@ -226,6 +226,7 @@ public class OrderReaderService : IOrderReaderService
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
+            var impuesto = reader.GetDecimal(5);
             lines.Add(new OrderLineForInvoice
             {
                 ProductoId = reader.GetInt32(0),
@@ -233,7 +234,7 @@ public class OrderReaderService : IOrderReaderService
                 PrecioUnitario = reader.GetDecimal(2),
                 Descuento = reader.GetDecimal(3),
                 Subtotal = reader.GetDecimal(4),
-                Impuesto = reader.GetDecimal(5),
+                Impuesto = impuesto,
                 Total = reader.GetDecimal(6),
                 ProductoNombre = reader.GetString(7),
                 ProductoCodigoBarra = reader.IsDBNull(8) ? null : reader.GetString(8),
@@ -243,6 +244,8 @@ public class OrderReaderService : IOrderReaderService
                 UnidadClaveSat = reader.IsDBNull(12) ? null : reader.GetString(12),
                 CantidadBonificada = reader.IsDBNull(13) ? 0m : reader.GetDecimal(13),
                 Notas = reader.IsDBNull(14) ? null : reader.GetString(14),
+                // CFDI 4.0 ObjetoImp: 02 = objeto de impuesto (desglosa IVA), 01 = no objeto (exento). Derivado del impuesto por línea del pedido.
+                ObjetoImp = impuesto > 0m ? "02" : "01",
             });
         }
 

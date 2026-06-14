@@ -471,7 +471,8 @@ public class FacturasController : ControllerBase
                         ValorUnitario = detalle.ValorUnitario,
                         Importe = detalle.Importe,
                         Descuento = detalle.Descuento,
-                        ProductoId = detalle.ProductoId
+                        ProductoId = detalle.ProductoId,
+                        ObjetoImp = detalle.ObjetoImp ?? "02",
                     });
                 }
             }
@@ -686,6 +687,13 @@ public class FacturasController : ControllerBase
             // Apply overrides from pre-factura review (if any)
             var overrides = request.Overrides?.ToDictionary(o => o.ProductoId) ?? new();
 
+            // Validate ObjetoImp overrides — must be one of the SAT-valid values
+            var validObjetoImp = new HashSet<string> { "01", "02", "03" };
+            var invalidOverride = overrides.Values
+                .FirstOrDefault(o => !string.IsNullOrEmpty(o.ObjetoImp) && !validObjetoImp.Contains(o.ObjetoImp));
+            if (invalidOverride != null)
+                return (BadRequest($"ObjetoImp '{invalidOverride.ObjetoImp}' no es válido. Valores permitidos: 01 (no objeto), 02 (objeto con desglose), 03 (objeto sin desglose)."), null);
+
             var lineNum = 1;
             foreach (var line in order.Detalles)
             {
@@ -697,6 +705,8 @@ public class FacturasController : ControllerBase
                     ? ov.ClaveProdServ : fiscal.ClaveProdServ;
                 var claveUnidad = overrides.TryGetValue(line.ProductoId, out var ovU) && !string.IsNullOrEmpty(ovU.ClaveUnidad)
                     ? ovU.ClaveUnidad : fiscal.ClaveUnidad;
+                var objetoImp = overrides.TryGetValue(line.ProductoId, out var ovO) && !string.IsNullOrEmpty(ovO.ObjetoImp)
+                    ? ovO.ObjetoImp : line.ObjetoImp;
 
                 factura.Detalles.Add(new DetalleFactura
                 {
@@ -715,6 +725,7 @@ public class FacturasController : ControllerBase
                     Importe = line.Subtotal,
                     Descuento = line.Descuento,
                     ProductoId = line.ProductoId,
+                    ObjetoImp = objetoImp,
                 });
             }
 
@@ -897,6 +908,7 @@ public class FacturasController : ControllerBase
                         Importe = line.Subtotal,
                         Descuento = line.Descuento,
                         ProductoId = line.ProductoId,
+                        ObjetoImp = line.ObjetoImp,
                     });
                 }
             }

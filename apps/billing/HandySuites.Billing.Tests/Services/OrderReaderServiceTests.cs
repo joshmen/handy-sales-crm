@@ -159,4 +159,31 @@ public class OrderReaderServiceTests
         Assert.NotNull(result);
         Assert.Empty(result);
     }
+
+    // ─── OrderLineForInvoice.ObjetoImp derivation ────────────────────────────
+
+    [Fact]
+    public void OrderLineForInvoice_ObjetoImp_DefaultIs02()
+    {
+        // Default constructor must be "02" (gravado) so any line that doesn't
+        // go through ReadOrderLinesAsync is safe by convention.
+        var line = new OrderLineForInvoice();
+        Assert.Equal("02", line.ObjetoImp);
+    }
+
+    [Fact]
+    public void OrderLineForInvoice_ObjetoImp_CanBeSetTo01()
+    {
+        // Simula lo que ReadOrderLinesAsync hace para una linea exenta
+        var line = new OrderLineForInvoice { Impuesto = 0m, ObjetoImp = "01" };
+        Assert.Equal("01", line.ObjetoImp);
+    }
+
+    [Fact]
+    public void OrderLineForInvoice_ObjetoImp_CanBeSetTo02()
+    {
+        // Simula lo que ReadOrderLinesAsync hace para una linea gravada
+        var line = new OrderLineForInvoice { Impuesto = 16m, ObjetoImp = "02" };
+        Assert.Equal("02", line.ObjetoImp);
+    }
 }

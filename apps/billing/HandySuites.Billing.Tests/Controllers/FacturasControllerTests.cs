@@ -1125,6 +1125,219 @@ public class FacturasControllerTests : IDisposable
         // TODO: caso de rollback requiere harness con fallo de SaveChanges (InMemory no lo soporta)
     }
 
+    // ────────────────────────── ObjetoImp derivation (Plan 004) ──────────────────────────
+
+    /// <summary>
+    /// Línea con impuesto > 0 debe producir ObjetoImp = "02" (objeto, desglosa IVA).
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_SetsObjetoImp02_WhenLineHasImpuesto()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 201,
+            NumeroPedido = "PED-201",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Gravado",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Gravado SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 1,
+                    ProductoNombre = "Producto Gravado",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 16m,  // IVA 16%
+                    Total = 116m,
+                    ObjetoImp = "02",
+                }
+            }
+        };
+
+        var result2 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest { PedidoId = 201 });
+
+        var created = result2.Result as CreatedAtActionResult;
+        created.Should().NotBeNull("una línea gravada debe crear factura exitosamente");
+
+        // Verify the detalle persisted has ObjetoImp == "02"
+        var factura = await _context.Facturas
+            .Include(f => f.Detalles)
+            .OrderByDescending(f => f.Id)
+            .FirstAsync();
+        factura.Detalles.Should().NotBeEmpty();
+        factura.Detalles.First().ObjetoImp.Should().Be("02");
+    }
+
+    /// <summary>
+    /// Línea con impuesto == 0 debe producir ObjetoImp = "01" (no objeto, exento).
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_SetsObjetoImp01_WhenLineIsExento()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 202,
+            NumeroPedido = "PED-202",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Exento",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Exento SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 100m,
+            Impuestos = 0m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 2,
+                    ProductoNombre = "Producto Exento",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 0m,   // exento
+                    Total = 100m,
+                    ObjetoImp = "01",
+                }
+            }
+        };
+
+        var result3 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest { PedidoId = 202 });
+
+        var created3 = result3.Result as CreatedAtActionResult;
+        created3.Should().NotBeNull("una línea exenta debe crear factura exitosamente");
+
+        var factura2 = await _context.Facturas
+            .Include(f => f.Detalles)
+            .OrderByDescending(f => f.Id)
+            .FirstAsync();
+        factura2.Detalles.Should().NotBeEmpty();
+        factura2.Detalles.First().ObjetoImp.Should().Be("01");
+    }
+
+    /// <summary>
+    /// Override de ObjetoImp en la pre-factura sobreescribe el valor derivado de la línea.
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_OverrideObjetoImp_TakesPriorityOverDerived()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 203,
+            NumeroPedido = "PED-203",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Override",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Override SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 3,
+                    ProductoNombre = "Producto",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 16m,
+                    Total = 116m,
+                    ObjetoImp = "02",  // derived says 02
+                }
+            }
+        };
+
+        // Override forces "03" (objeto sin desglose)
+        var result4 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest
+            {
+                PedidoId = 203,
+                Overrides = new List<FiscalCodeOverride>
+                {
+                    new FiscalCodeOverride { ProductoId = 3, ObjetoImp = "03" }
+                }
+            });
+
+        var created4 = result4.Result as CreatedAtActionResult;
+        created4.Should().NotBeNull("override de ObjetoImp válido debe crear factura");
+
+        var factura3 = await _context.Facturas
+            .Include(f => f.Detalles)
+            .OrderByDescending(f => f.Id)
+            .FirstAsync();
+        factura3.Detalles.First().ObjetoImp.Should().Be("03");
+    }
+
+    /// <summary>
+    /// Override con ObjetoImp inválido ("99") debe rechazar con 400.
+    /// </summary>
+    [Fact]
+    public async Task CreateFacturaFromOrder_ReturnsBadRequest_WhenObjetoImpOverrideIsInvalid()
+    {
+        _orderReader.NextOrder = new OrderForInvoice
+        {
+            PedidoId = 204,
+            NumeroPedido = "PED-204",
+            Estado = 5,
+            ClienteId = 7,
+            ClienteFacturable = true,
+            ClienteNombre = "Cliente Invalido",
+            ClienteRfc = "ABC010101AAA",
+            ClienteRazonSocial = "Cliente Invalido SA",
+            ClienteRegimenFiscal = "601",
+            ClienteCodigoPostalFiscal = "12345",
+            Subtotal = 100m,
+            Total = 116m,
+            Impuestos = 16m,
+            Detalles = new List<OrderLineForInvoice>
+            {
+                new OrderLineForInvoice
+                {
+                    ProductoId = 4,
+                    ProductoNombre = "Producto",
+                    Cantidad = 1,
+                    PrecioUnitario = 100m,
+                    Subtotal = 100m,
+                    Impuesto = 16m,
+                    Total = 116m,
+                    ObjetoImp = "02",
+                }
+            }
+        };
+
+        var result5 = await _controller.CreateFacturaFromOrder(
+            new CreateFacturaFromOrderRequest
+            {
+                PedidoId = 204,
+                Overrides = new List<FiscalCodeOverride>
+                {
+                    new FiscalCodeOverride { ProductoId = 4, ObjetoImp = "99" }  // invalid
+                }
+            });
+
+        result5.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
     public void Dispose()
     {
         _context.Dispose();
