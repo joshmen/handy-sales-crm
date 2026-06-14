@@ -564,11 +564,13 @@ public class SyncRepository : ISyncRepository
                 // cuando un vendedor cierra ventas directas offline.
                 if (pedido.TipoVenta == TipoVenta.VentaDirecta && pedido.Estado == EstadoPedido.Entregado)
                 {
+                    var productoIds = newDetalles.Select(d => d.ProductoId).Distinct().ToList();
+                    var invByProducto = await _db.Inventarios
+                        .Where(i => i.TenantId == tenantId && productoIds.Contains(i.ProductoId))
+                        .ToDictionaryAsync(i => i.ProductoId);
                     foreach (var detalle in newDetalles)
                     {
-                        var inv = await _db.Inventarios
-                            .FirstOrDefaultAsync(i => i.TenantId == tenantId && i.ProductoId == detalle.ProductoId);
-                        if (inv == null) continue; // producto sin inventario — no bloquear la venta
+                        if (!invByProducto.TryGetValue(detalle.ProductoId, out var inv)) continue; // producto sin inventario — no bloquear la venta
                         var anterior = inv.CantidadActual;
                         var nueva = anterior - detalle.Cantidad;
                         inv.CantidadActual = nueva;
@@ -1900,11 +1902,13 @@ public class SyncRepository : ISyncRepository
         // MovimientoInventario por cada producto. Análogo a PedidoService.CrearAsync.
         if (pedido.TipoVenta == TipoVenta.VentaDirecta && pedido.Estado == EstadoPedido.Entregado)
         {
+            var productoIds = detalles.Select(d => d.ProductoId).Distinct().ToList();
+            var invByProducto = await _db.Inventarios
+                .Where(i => i.TenantId == tenantId && productoIds.Contains(i.ProductoId))
+                .ToDictionaryAsync(i => i.ProductoId);
             foreach (var detalle in detalles)
             {
-                var inv = await _db.Inventarios
-                    .FirstOrDefaultAsync(i => i.TenantId == tenantId && i.ProductoId == detalle.ProductoId);
-                if (inv == null) continue; // producto sin inventario — no bloquear la venta
+                if (!invByProducto.TryGetValue(detalle.ProductoId, out var inv)) continue; // producto sin inventario — no bloquear la venta
                 var anterior = inv.CantidadActual;
                 var nueva = anterior - detalle.Cantidad;
                 inv.CantidadActual = nueva;
