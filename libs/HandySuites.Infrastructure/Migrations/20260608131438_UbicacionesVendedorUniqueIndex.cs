@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -24,28 +24,31 @@ namespace HandySuites.Infrastructure.Migrations
                   AND a.capturado_en = b.capturado_en;
             ");
 
-            migrationBuilder.DropIndex(
-                name: "IX_UbicacionesVendedor_tenant_usuario_capturado",
-                table: "UbicacionesVendedor");
-
-            migrationBuilder.CreateIndex(
-                name: "UQ_UbicacionesVendedor_tenant_usuario_capturado",
-                table: "UbicacionesVendedor",
-                columns: new[] { "tenant_id", "usuario_id", "capturado_en" },
-                unique: true);
+            // 2026-06-14: DropIndex/CreateIndex de EF NO emiten IF [NOT] EXISTS,
+            // lo que rompe en entornos frescos o con drift (DB cuyo schema esta
+            // adelantado respecto a __EFMigrationsHistory). Visto en local: el
+            // indice unico UQ ya existia y el IX no, asi que el DROP del IX
+            // inexistente abortaba la migration (42704) y, de pasarlo, el CREATE
+            // del UQ ya-existente fallaba (42P07). SQL crudo idempotente cubre
+            // ambos casos: swap del indice no-unico por el unico, sin asumir
+            // estado previo. Columnas en snake_case (sin comillas); tabla en
+            // PascalCase entrecomillada.
+            migrationBuilder.Sql(@"DROP INDEX IF EXISTS ""IX_UbicacionesVendedor_tenant_usuario_capturado"";");
+            migrationBuilder.Sql(@"
+                CREATE UNIQUE INDEX IF NOT EXISTS ""UQ_UbicacionesVendedor_tenant_usuario_capturado""
+                ON ""UbicacionesVendedor"" (tenant_id, usuario_id, capturado_en);
+            ");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "UQ_UbicacionesVendedor_tenant_usuario_capturado",
-                table: "UbicacionesVendedor");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UbicacionesVendedor_tenant_usuario_capturado",
-                table: "UbicacionesVendedor",
-                columns: new[] { "tenant_id", "usuario_id", "capturado_en" });
+            // Reversa idempotente simetrica al Up.
+            migrationBuilder.Sql(@"DROP INDEX IF EXISTS ""UQ_UbicacionesVendedor_tenant_usuario_capturado"";");
+            migrationBuilder.Sql(@"
+                CREATE INDEX IF NOT EXISTS ""IX_UbicacionesVendedor_tenant_usuario_capturado""
+                ON ""UbicacionesVendedor"" (tenant_id, usuario_id, capturado_en);
+            ");
         }
     }
 }
