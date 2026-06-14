@@ -152,18 +152,11 @@ public class UsuarioRepository : IUsuarioRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var entities = await _db.Usuarios
+        return await _db.Usuarios
             .Where(u => ids.Contains(u.Id) && u.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var entity in entities)
-        {
-            entity.Activo = activo;
-            entity.ActualizadoEn = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
-        return entities.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     public async Task<Role?> ObtenerRolPorNombreAsync(string nombre)

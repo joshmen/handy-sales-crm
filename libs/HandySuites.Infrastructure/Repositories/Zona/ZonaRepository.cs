@@ -135,18 +135,11 @@ public class ZonaRepository : IZonaRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var entities = await _db.Zonas
+        return await _db.Zonas
             .Where(z => ids.Contains(z.Id) && z.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var entity in entities)
-        {
-            entity.Activo = activo;
-            entity.ActualizadoEn = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
-        return entities.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     public async Task<List<(int Id, string Nombre, double Lat, double Lng, double RadioKm)>> ObtenerZonasConCoordenadasAsync(int tenantId, int? excludeId = null)

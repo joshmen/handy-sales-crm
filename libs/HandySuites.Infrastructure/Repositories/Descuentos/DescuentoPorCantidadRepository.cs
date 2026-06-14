@@ -157,19 +157,12 @@ public class DescuentoPorCantidadRepository : IDescuentoPorCantidadRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId, string? usuarioActual = null)
     {
-        var entities = await _db.DescuentosPorCantidad
+        return await _db.DescuentosPorCantidad
             .Where(d => ids.Contains(d.Id) && d.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var entity in entities)
-        {
-            entity.Activo = activo;
-            entity.ActualizadoEn = DateTime.UtcNow;
-            entity.ActualizadoPor = usuarioActual;
-        }
-
-        await _db.SaveChangesAsync();
-        return entities.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow)
+                .SetProperty(e => e.ActualizadoPor, usuarioActual));
     }
 
     public async Task<bool> ExisteCantidadMinimaAsync(int? productoId, decimal cantidadMinima, int tenantId, int? excludeId = null)

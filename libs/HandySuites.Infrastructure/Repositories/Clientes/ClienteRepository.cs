@@ -272,18 +272,11 @@ public class ClienteRepository : IClienteRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var entities = await _db.Clientes
+        return await _db.Clientes
             .Where(c => ids.Contains(c.Id) && c.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var entity in entities)
-        {
-            entity.Activo = activo;
-            entity.ActualizadoEn = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
-        return entities.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     public async Task<int> TransferirCarteraAsync(int fromUsuarioId, int toUsuarioId, int tenantId, bool soloActivos)

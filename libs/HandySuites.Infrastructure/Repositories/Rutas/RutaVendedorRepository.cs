@@ -683,12 +683,11 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var rutas = await _db.RutasVendedor
+        return await _db.RutasVendedor
             .Where(r => ids.Contains(r.Id) && r.TenantId == tenantId)
-            .ToListAsync();
-        foreach (var r in rutas) r.Activo = activo;
-        await _db.SaveChangesAsync();
-        return rutas.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     // === Carga de inventario ===
