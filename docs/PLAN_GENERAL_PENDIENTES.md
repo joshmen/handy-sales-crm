@@ -27,7 +27,7 @@
 
 | ID | Tarea | Estado | Esfuerzo | Detalle |
 |----|-------|--------|----------|---------|
-| MOB-6a | Crash reporting propio | 0% | 4-6h | Tabla `CrashReports` en MySQL + endpoint `POST /api/crash-reports` + handler en app movil (ErrorUtils.setGlobalHandler) + pantalla SuperAdmin para ver crashes. Futuro: bot Telegram para alertas al celular. Sin costo extra — usa infraestructura existente (Railway MySQL). |
+| MOB-6a | Crash reporting propio | 0% | 4-6h | Tabla `CrashReports` en PostgreSQL + endpoint `POST /api/crash-reports` + handler en app movil (ErrorUtils.setGlobalHandler) + pantalla SuperAdmin para ver crashes. Futuro: bot Telegram para alertas al celular. Sin costo extra — usa infraestructura existente (Railway PostgreSQL). |
 | MOB-6b | Error boundaries por tab | 80% | 2h | Ya existe `ErrorBoundary.tsx` wrapeando el root. Falta: wrapear cada tab individualmente para recovery parcial sin tumbar toda la app. |
 | MOB-6c | Zod validation API responses | 50% | 4-6h | Zod ya instalado (`^4.3.6`) pero solo para forms. Falta: crear schemas para ~10 tipos principales (Cliente, Pedido, Producto, etc.) y validar en interceptor de respuesta. Previene bugs silenciosos cuando backend cambia un campo. |
 

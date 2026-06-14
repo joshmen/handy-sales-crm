@@ -37,8 +37,8 @@ dotnet-ef migrations list \
 
 | Environment | Strategy | Details |
 |-------------|----------|---------|
-| **Dev (Docker)** | Auto-apply on startup | `DatabaseMigrator.MigrateAsync()` in `Program.cs`, MySQL advisory lock prevents concurrent runs |
-| **Production (CI/CD)** | `efbundle` before deploy | GitHub Actions builds bundle, applies to Railway/Azure MySQL, then deploys APIs |
+| **Dev (Docker)** | Auto-apply on startup | `DatabaseMigrator.MigrateAsync()` in `Program.cs`, PostgreSQL advisory lock (`pg_try_advisory_lock`) prevents concurrent runs |
+| **Production (CI/CD)** | `efbundle` before deploy | GitHub Actions builds bundle, applies to Railway/Azure PostgreSQL, then deploys APIs |
 | **Mobile API** | Skips migrations | `RUN_MIGRATIONS=false` — shares same DB as Main API |
 
 ## Key Files

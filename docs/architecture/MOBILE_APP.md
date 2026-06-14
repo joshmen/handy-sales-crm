@@ -112,7 +112,7 @@ eas update --channel production --message "Fix order total"
 
 ## Observability
 
-- Crash reporting propio: tabla CrashReports en MySQL, endpoint POST /api/crash-reports, handler en mobile
+- Crash reporting propio: tabla CrashReports en PostgreSQL, endpoint POST /api/crash-reports, handler en mobile
 - Custom metrics: sync_duration_ms, sync_records_pushed, sync_conflicts
 - MMKV counters: offline_orders_created, offline_duration_seconds
 
