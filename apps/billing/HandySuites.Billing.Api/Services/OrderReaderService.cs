@@ -191,7 +191,7 @@ public class OrderReaderService : IOrderReaderService
             VendedorId = reader.GetInt32(7),
             ClienteId = reader.GetInt32(8),
             ClienteNombre = reader.GetString(9),
-            ClienteRfc = reader.GetString(10),
+            ClienteRfc = reader.IsDBNull(10) ? "XAXX010101000" : reader.GetString(10),
             ClienteRazonSocial = reader.IsDBNull(11) ? null : reader.GetString(11),
             ClienteRegimenFiscal = reader.IsDBNull(12) ? null : reader.GetString(12),
             ClienteCodigoPostalFiscal = reader.IsDBNull(13) ? null : reader.GetString(13),
