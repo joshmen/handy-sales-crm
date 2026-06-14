@@ -3,17 +3,22 @@ namespace HandySuites.Application.Sync.DTOs;
 /// <summary>
 /// Paginacion OPCIONAL en el pull. Cuando MaxRecords es null el comportamiento es
 /// identico al pull completo actual (sin limite). Cuando se provee, el servidor
-/// devuelve como maximo MaxRecords registros por entidad con Id > AfterId, y
-/// rellena SyncResponseDto.PaginationInfo para que el cliente pueda seguir
-/// paginando con el cursor retornado.
+/// devuelve como maximo MaxRecords registros por entidad con Id > cursor-de-esa-entidad,
+/// y rellena SyncResponseDto.PaginationInfo para que el cliente pueda seguir paginando.
 /// </summary>
 public class SyncPaginationOptions
 {
     /// <summary>Maximo de registros por entidad paginable. Null = sin limite (full pull).</summary>
     public int? MaxRecords { get; set; }
 
-    /// <summary>Cursor: ultimo Id recibido. Solo retorna registros con Id > AfterId.</summary>
-    public int? AfterId { get; set; }
+    /// <summary>
+    /// Cursor POR ENTIDAD: ultimo Id recibido de cada entidad paginable
+    /// ("clientes", "productos", "pedidos"). Solo retorna registros con Id > cursor.
+    /// Clave ausente = empezar desde el inicio (Id > 0). Cada entidad tiene su PROPIO
+    /// espacio de Id, por eso el cursor NO puede ser un escalar compartido: usar el Id
+    /// mas alto de una entidad como cursor de otra se saltaria registros (perdida de datos).
+    /// </summary>
+    public Dictionary<string, int>? AfterIds { get; set; }
 }
 
 /// <summary>
@@ -22,15 +27,16 @@ public class SyncPaginationOptions
 /// </summary>
 public class SyncPullPageInfo
 {
-    /// <summary>True si hay mas registros disponibles despues del cursor.</summary>
+    /// <summary>True si CUALQUIER entidad paginable tiene mas registros despues de esta pagina.</summary>
     public bool HasMore { get; set; }
 
     /// <summary>
-    /// Id del ultimo registro devuelto en esta pagina. Usar como AfterId
-    /// en la siguiente solicitud para continuar la paginacion.
-    /// Null cuando HasMore es false.
+    /// Cursor POR ENTIDAD devuelto por el servidor: ultimo Id entregado de cada entidad
+    /// paginable en esta pagina. El cliente lo reenvia como AfterIds en la siguiente
+    /// solicitud. Se conserva el cursor previo cuando la entidad no devolvio nada en esta
+    /// pagina, para que el cursor nunca retroceda. Claves: "clientes", "productos", "pedidos".
     /// </summary>
-    public int? NextCursor { get; set; }
+    public Dictionary<string, int> NextCursors { get; set; } = new();
 }
 
 /// <summary>

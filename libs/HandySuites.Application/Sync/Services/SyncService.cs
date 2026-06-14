@@ -470,13 +470,21 @@ public class SyncService
         response.ServerChanges = new SyncChangesDto();
 
         var maxRecords = pagination?.MaxRecords;
-        var afterId = pagination?.AfterId;
+        var afterIds = pagination?.AfterIds;
 
-        // Cuando paginacion esta activa: rastrear si CUALQUIER entidad paginable tiene
-        // mas registros disponibles, y el cursor mas alto devuelto (para que el cliente
-        // use el mismo cursor para todas las entidades en la siguiente pagina).
-        bool hasMore = false;
-        int nextCursor = afterId ?? 0;
+        // Cursor POR ENTIDAD: cada entidad paginable (clientes/productos/pedidos) tiene su
+        // PROPIO espacio de Id, asi que se rastrea su cursor por separado. Un cursor escalar
+        // compartido (el Id mas alto entre todas) saltaria registros de las entidades con Ids
+        // mas bajos -> perdida de datos. anyHasMore = true si ALGUNA entidad tiene mas paginas.
+        bool anyHasMore = false;
+        var nextCursors = new Dictionary<string, int>();
+
+        // afterId de una entidad: su cursor (0 = desde el inicio). null cuando no hay paginacion
+        // (maxRecords null) -> el repo no aplica filtro Id> y devuelve todo, identico a hoy.
+        int? AfterFor(string key) =>
+            maxRecords.HasValue
+                ? (afterIds != null && afterIds.TryGetValue(key, out var v) ? v : 0)
+                : (int?)null;
 
         // Pull Clientes (read-only for vendors to view customer list)
         if (syncAll || entityTypes.Contains("clientes", StringComparer.OrdinalIgnoreCase))
@@ -484,17 +492,18 @@ public class SyncService
             // Cuando maxRecords esta activo, pedimos maxRecords+1 para detectar hasMore
             // sin necesitar un COUNT(*) extra. Si llegaron maxRecords+1 resultados, hay mas;
             // devolvemos solo los primeros maxRecords.
+            int? clientesAfter = AfterFor("clientes");
             int? fetchLimit = maxRecords.HasValue ? maxRecords.Value + 1 : null;
-            var clientes = await _repo.GetClientesModifiedSinceAsync(tenantId, since, fetchLimit, afterId);
+            var clientes = await _repo.GetClientesModifiedSinceAsync(tenantId, since, fetchLimit, clientesAfter);
 
-            if (maxRecords.HasValue && clientes.Count > maxRecords.Value)
+            if (maxRecords.HasValue)
             {
-                hasMore = true;
-                clientes = clientes.Take(maxRecords.Value).ToList();
+                bool clientesHasMore = clientes.Count > maxRecords.Value;
+                if (clientesHasMore) clientes = clientes.Take(maxRecords.Value).ToList();
+                anyHasMore |= clientesHasMore;
+                // cursor de clientes: ultimo Id entregado, o el cursor previo si no hubo registros (no retrocede)
+                nextCursors["clientes"] = clientes.Count > 0 ? clientes[^1].Id : (clientesAfter ?? 0);
             }
-
-            if (clientes.Count > 0)
-                nextCursor = Math.Max(nextCursor, clientes[^1].Id);
             response.ServerChanges.Clientes = clientes.Select(c => new SyncClienteDto
             {
                 Id = c.Id,
@@ -541,17 +550,17 @@ public class SyncService
         // Pull Productos (read-only for mobile)
         if (syncAll || entityTypes.Contains("productos", StringComparer.OrdinalIgnoreCase))
         {
+            int? productosAfter = AfterFor("productos");
             int? fetchLimitProductos = maxRecords.HasValue ? maxRecords.Value + 1 : null;
-            var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since, fetchLimitProductos, afterId);
+            var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since, fetchLimitProductos, productosAfter);
 
-            if (maxRecords.HasValue && productos.Count > maxRecords.Value)
+            if (maxRecords.HasValue)
             {
-                hasMore = true;
-                productos = productos.Take(maxRecords.Value).ToList();
+                bool productosHasMore = productos.Count > maxRecords.Value;
+                if (productosHasMore) productos = productos.Take(maxRecords.Value).ToList();
+                anyHasMore |= productosHasMore;
+                nextCursors["productos"] = productos.Count > 0 ? productos[^1].Id : (productosAfter ?? 0);
             }
-
-            if (productos.Count > 0)
-                nextCursor = Math.Max(nextCursor, productos[^1].Id);
             var stockMap = await _repo.GetStockMapAsync(tenantId);
 
             // Resolver tasas por producto: lookup de TasaImpuesto FK + default tenant.
@@ -595,17 +604,17 @@ public class SyncService
         // Pull Pedidos for this user
         if (syncAll || entityTypes.Contains("pedidos", StringComparer.OrdinalIgnoreCase))
         {
+            int? pedidosAfter = AfterFor("pedidos");
             int? fetchLimitPedidos = maxRecords.HasValue ? maxRecords.Value + 1 : null;
-            var pedidos = await _repo.GetPedidosModifiedSinceAsync(tenantId, usuarioId, since, fetchLimitPedidos, afterId);
+            var pedidos = await _repo.GetPedidosModifiedSinceAsync(tenantId, usuarioId, since, fetchLimitPedidos, pedidosAfter);
 
-            if (maxRecords.HasValue && pedidos.Count > maxRecords.Value)
+            if (maxRecords.HasValue)
             {
-                hasMore = true;
-                pedidos = pedidos.Take(maxRecords.Value).ToList();
+                bool pedidosHasMore = pedidos.Count > maxRecords.Value;
+                if (pedidosHasMore) pedidos = pedidos.Take(maxRecords.Value).ToList();
+                anyHasMore |= pedidosHasMore;
+                nextCursors["pedidos"] = pedidos.Count > 0 ? pedidos[^1].Id : (pedidosAfter ?? 0);
             }
-
-            if (pedidos.Count > 0)
-                nextCursor = Math.Max(nextCursor, pedidos[^1].Id);
             response.ServerChanges.Pedidos = pedidos.Select(p => new SyncPedidoDto
             {
                 Id = p.Id,
@@ -1039,13 +1048,14 @@ public class SyncService
 
         // Rellenar PaginationInfo solo cuando se solicito paginacion.
         // El cliente puede detectar si el servidor soporta paginacion verificando
-        // que PaginationInfo no sea null en la respuesta.
+        // que PaginationInfo no sea null en la respuesta. El cliente reenvia NextCursors
+        // como AfterIds en la siguiente ronda y termina cuando HasMore es false.
         if (maxRecords.HasValue)
         {
             response.PaginationInfo = new SyncPullPageInfo
             {
-                HasMore = hasMore,
-                NextCursor = hasMore ? nextCursor : null
+                HasMore = anyHasMore,
+                NextCursors = nextCursors
             };
         }
     }

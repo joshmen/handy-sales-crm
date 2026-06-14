@@ -636,4 +636,67 @@ public class SyncServiceUnitTests
         result.ServerChanges.DatosEmpresa!.RazonSocial.Should().Be("Acme");
         result.Summary.DatosEmpresaPulled.Should().BeTrue();
     }
+
+    // ============================================================
+    // 21. Paginacion multi-entidad: cursor POR ENTIDAD no pierde ni duplica (Plan 018)
+    // ============================================================
+    [Fact]
+    public async Task SyncAsync_PaginacionMultiEntidad_NoPierdeNiDuplica_ConRangosDeIdDisjuntos()
+    {
+        // Rangos de Id DISJUNTOS a proposito: clientes [1..5], productos [100,200,300].
+        // Este es el escenario que un cursor escalar compartido (Math.Max entre entidades)
+        // rompe: tras la 1a pagina el cursor saltaria a 200 (de productos) y se saltaria
+        // clientes 3,4,5 (Id <= 200 ya "pasados"). El cursor POR ENTIDAD debe entregar
+        // todos los registros de cada entidad sin perder ni duplicar.
+        var clientesAll = Enumerable.Range(1, 5)
+            .Select(i => new Cliente { Id = i, TenantId = 1, Nombre = $"C{i}", Activo = true }).ToList();
+        var productosAll = new[] { 100, 200, 300 }
+            .Select(i => new Producto { Id = i, TenantId = 1, Nombre = $"P{i}", CodigoBarra = "X", Descripcion = "d", Activo = true }).ToList();
+
+        // Mock == comportamiento real del repo: filtra Id>afterId, ordena por Id, toma maxRecords.
+        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync((int t, DateTime? s, int? max, int? after) =>
+                clientesAll.Where(c => c.Id > (after ?? 0)).OrderBy(c => c.Id).Take(max ?? int.MaxValue).ToList());
+        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync((int t, DateTime? s, int? max, int? after) =>
+                productosAll.Where(p => p.Id > (after ?? 0)).OrderBy(p => p.Id).Take(max ?? int.MaxValue).ToList());
+
+        var clientesVistos = new List<int>();
+        var productosVistos = new List<int>();
+        var cursors = new Dictionary<string, int>();
+        SyncResponseDto res = null!;
+
+        // Caminar las paginas siguiendo el cursor POR ENTIDAD hasta HasMore == false.
+        // Bound de 20 rondas: con el bug del cursor compartido el walk terminaria temprano
+        // dejando registros sin entregar (la asercion de abajo lo detecta).
+        int ronda = 0;
+        for (; ronda < 20; ronda++)
+        {
+            var request = new SyncRequestDto
+            {
+                EntityTypes = new List<string> { "clientes", "productos" },
+                Pagination = new SyncPaginationOptions { MaxRecords = 2, AfterIds = new Dictionary<string, int>(cursors) }
+            };
+
+            res = await _service.SyncAsync(request);
+
+            clientesVistos.AddRange(res.ServerChanges.Clientes!.Select(c => c.Id));
+            productosVistos.AddRange(res.ServerChanges.Productos!.Select(p => p.Id));
+
+            res.PaginationInfo.Should().NotBeNull("se solicito paginacion (MaxRecords != null)");
+            cursors = res.PaginationInfo!.NextCursors;
+
+            if (!res.PaginationInfo.HasMore) break;
+        }
+
+        res.PaginationInfo!.HasMore.Should().BeFalse("el walk debe terminar cuando ya no hay mas registros");
+        ronda.Should().BeLessThan(19, "no debe iterar indefinidamente");
+
+        // Sin perdida: la union de cada entidad debe ser el set completo.
+        // Sin duplicados: cada Id aparece exactamente una vez.
+        clientesVistos.Should().BeEquivalentTo(new[] { 1, 2, 3, 4, 5 });
+        clientesVistos.Should().OnlyHaveUniqueItems();
+        productosVistos.Should().BeEquivalentTo(new[] { 100, 200, 300 });
+        productosVistos.Should().OnlyHaveUniqueItems();
+    }
 }
