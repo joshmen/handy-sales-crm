@@ -3516,7 +3516,10 @@
     "stampsUsedLabel": "Stamps used: {used} of {max}",
     "pendingCancellations": {
       "title": "Cancellation requests ({count})",
+      "titleSection": "Pending cancellations (recipient)",
       "subtitle": "An issuer requested to cancel a CFDI where you are the recipient. You have 72 hours to accept or reject; if you do not respond, the SAT cancels it automatically.",
+      "subtitleInfo": "The SAT allows 72 hours to accept or reject when you are the recipient of a cancelled CFDI. Without a response, it is accepted automatically.",
+      "zeroState": "No pending requests to review.",
       "accept": "Accept",
       "reject": "Reject",
       "cancel": "Cancel",
