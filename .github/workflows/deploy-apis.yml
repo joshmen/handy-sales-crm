@@ -162,7 +162,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
       # Sprint 5 audit: cache NuGet + dotnet-ef global tool para acelerar
       # el build del efbundle. ~2 min de ahorro por run de migration.
@@ -176,7 +176,7 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Install EF Core tools
-        run: dotnet tool install --global dotnet-ef --version 8.0.11
+        run: dotnet tool install --global dotnet-ef --version 9.0.8
 
       - name: Build efbundle
         run: |
