@@ -267,13 +267,19 @@ public class CfdiXmlBuilder : ICfdiXmlBuilder
             }
         }
 
+        // Calculate totals from the same collection that feeds the breakdown nodes,
+        // so the header attribute always matches the sum of <Traslado>/<Retencion> Importe values
+        // (avoids SAT rejection CFDI40135 when per-line rounding causes a 1-cent discrepancy).
+        var totalTrasladado = allTaxes.Where(i => i.Tipo == "TRASLADO").Sum(i => i.Importe ?? 0);
+        var totalRetenido   = allTaxes.Where(i => i.Tipo == "RETENCION").Sum(i => i.Importe ?? 0);
+
         w.WriteStartElement("cfdi", "Impuestos", CfdiNamespace);
 
-        if (factura.TotalImpuestosRetenidos > 0)
-            w.WriteAttributeString("TotalImpuestosRetenidos", FormatDecimal(factura.TotalImpuestosRetenidos));
+        if (totalRetenido > 0)
+            w.WriteAttributeString("TotalImpuestosRetenidos", FormatDecimal(totalRetenido));
 
-        if (factura.TotalImpuestosTrasladados > 0)
-            w.WriteAttributeString("TotalImpuestosTrasladados", FormatDecimal(factura.TotalImpuestosTrasladados));
+        if (totalTrasladado > 0)
+            w.WriteAttributeString("TotalImpuestosTrasladados", FormatDecimal(totalTrasladado));
 
         // Aggregate traslados by (Impuesto, TipoFactor, TasaOCuota)
         var allTraslados = allTaxes
