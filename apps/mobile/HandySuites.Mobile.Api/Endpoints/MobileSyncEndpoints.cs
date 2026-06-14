@@ -103,7 +103,8 @@ public static class MobileSyncEndpoints
             {
                 LastSyncTimestamp = request?.LastSyncTimestamp,
                 EntityTypes = request?.EntityTypes ?? new List<string>(),
-                ClientChanges = null
+                ClientChanges = null,
+                Pagination = request?.Pagination
             };
 
             var response = await servicio.SyncAsync(syncRequest);
@@ -112,7 +113,8 @@ public static class MobileSyncEndpoints
                 success = true,
                 data = response.ServerChanges,
                 summary = response.Summary,
-                serverTimestamp = response.ServerTimestamp
+                serverTimestamp = response.ServerTimestamp,
+                paginationInfo = response.PaginationInfo
             });
         })
         .WithSummary("Descargar cambios del servidor")
@@ -179,4 +181,9 @@ public class SyncPullRequest
 {
     public DateTime? LastSyncTimestamp { get; set; }
     public List<string>? EntityTypes { get; set; }
+
+    /// <summary>
+    /// Paginacion OPCIONAL. Null = pull completo (comportamiento default sin cambios).
+    /// </summary>
+    public SyncPaginationOptions? Pagination { get; set; }
 }

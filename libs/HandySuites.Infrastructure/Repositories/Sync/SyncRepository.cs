@@ -17,7 +17,7 @@ public class SyncRepository : ISyncRepository
         _db = db;
     }
 
-    public async Task<List<Cliente>> GetClientesModifiedSinceAsync(int tenantId, DateTime? since)
+    public async Task<List<Cliente>> GetClientesModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null)
     {
         var query = _db.Clientes.AsNoTracking().Where(c => c.TenantId == tenantId);
 
@@ -26,10 +26,21 @@ public class SyncRepository : ISyncRepository
             query = query.Where(c => c.ActualizadoEn > since || c.CreadoEn > since);
         }
 
-        return await query.OrderBy(c => c.Id).ToListAsync();
+        // Paginacion OPCIONAL: solo aplica cuando maxRecords viene en la request.
+        // Sin maxRecords el comportamiento es identico al pull completo actual.
+        if (afterId.HasValue)
+        {
+            query = query.Where(c => c.Id > afterId.Value);
+        }
+
+        var ordered = query.OrderBy(c => c.Id);
+
+        return maxRecords.HasValue
+            ? await ordered.Take(maxRecords.Value).ToListAsync()
+            : await ordered.ToListAsync();
     }
 
-    public async Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since)
+    public async Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null)
     {
         // Include UnidadMedida para que el sync mande Nombre al mobile sin catálogo separado.
         var query = _db.Productos.AsNoTracking()
@@ -56,7 +67,18 @@ public class SyncRepository : ISyncRepository
                 || productosConInventarioModificado.Contains(p.Id));
         }
 
-        return await query.OrderBy(p => p.Id).ToListAsync();
+        // Paginacion OPCIONAL: solo aplica cuando maxRecords viene en la request.
+        // Sin maxRecords el comportamiento es identico al pull completo actual.
+        if (afterId.HasValue)
+        {
+            query = query.Where(p => p.Id > afterId.Value);
+        }
+
+        var ordered = query.OrderBy(p => p.Id);
+
+        return maxRecords.HasValue
+            ? await ordered.Take(maxRecords.Value).ToListAsync()
+            : await ordered.ToListAsync();
     }
 
     public async Task<Dictionary<int, (decimal cantidad, decimal minimo)>> GetStockMapAsync(int tenantId)
@@ -69,7 +91,7 @@ public class SyncRepository : ISyncRepository
                 i => (i.CantidadActual, i.StockMinimo));
     }
 
-    public async Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
+    public async Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since, int? maxRecords = null, int? afterId = null)
     {
         var query = _db.Pedidos
             .AsNoTracking()
@@ -82,7 +104,18 @@ public class SyncRepository : ISyncRepository
             query = query.Where(p => p.ActualizadoEn > since || p.CreadoEn > since);
         }
 
-        return await query.OrderBy(p => p.Id).ToListAsync();
+        // Paginacion OPCIONAL: solo aplica cuando maxRecords viene en la request.
+        // Sin maxRecords el comportamiento es identico al pull completo actual.
+        if (afterId.HasValue)
+        {
+            query = query.Where(p => p.Id > afterId.Value);
+        }
+
+        var ordered = query.OrderBy(p => p.Id);
+
+        return maxRecords.HasValue
+            ? await ordered.Take(maxRecords.Value).ToListAsync()
+            : await ordered.ToListAsync();
     }
 
     public async Task<List<ClienteVisita>> GetVisitasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)

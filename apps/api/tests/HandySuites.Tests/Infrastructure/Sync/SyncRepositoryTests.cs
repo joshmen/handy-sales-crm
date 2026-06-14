@@ -528,6 +528,129 @@ public class SyncRepositoryTests : IDisposable
         result.Should().BeNull();
     }
 
+    // === Paginacion OPCIONAL en Get*ModifiedSinceAsync (Plan 018) ===
+    // Estos tests verifican que:
+    // (a) sin maxRecords devuelve todo (igual que hoy — backward-compatible)
+    // (b) con maxRecords devuelve N y permite detectar hasMore via N+1 truco
+    // (c) seguir el cursor con afterId trae el resto sin duplicar ni perder
+
+    [Fact]
+    public async Task GetClientesPaginado_SinMaxRecords_DeberiaRetornarTodos()
+    {
+        // Seed 3 clientes adicionales (1 ya existe = ClienteId)
+        _db.Clientes.Add(new Cliente { Id = 1100, TenantId = TenantId, Nombre = "C1", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        _db.Clientes.Add(new Cliente { Id = 1101, TenantId = TenantId, Nombre = "C2", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        _db.Clientes.Add(new Cliente { Id = 1102, TenantId = TenantId, Nombre = "C3", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        await _db.SaveChangesAsync();
+
+        // maxRecords=null → comportamiento identico al pull completo actual
+        var result = await _sut.GetClientesModifiedSinceAsync(TenantId, since: null, maxRecords: null, afterId: null);
+
+        result.Should().HaveCount(4); // ClienteId (300) + 3 nuevos
+        result.Select(c => c.Id).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task GetClientesPaginado_ConMaxRecords_DeberiaRetornarSolicitado()
+    {
+        _db.Clientes.Add(new Cliente { Id = 1200, TenantId = TenantId, Nombre = "P1", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        _db.Clientes.Add(new Cliente { Id = 1201, TenantId = TenantId, Nombre = "P2", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        _db.Clientes.Add(new Cliente { Id = 1202, TenantId = TenantId, Nombre = "P3", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        await _db.SaveChangesAsync();
+
+        // Usar maxRecords=2+1=3 (truco N+1 del SyncService para detectar hasMore).
+        // Hay 4 registros totales — devuelve 3, permitiendo al servicio detectar hasMore=true.
+        var pagina1 = await _sut.GetClientesModifiedSinceAsync(TenantId, since: null, maxRecords: 3, afterId: null);
+
+        pagina1.Should().HaveCount(3);
+        // Todos los ids devueltos deben ser menores al maximo (hay uno mas despues)
+        pagina1.Select(c => c.Id).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task GetClientesPaginado_ConAfterIdYMaxRecords_DeberiaTraerSiguientePagina()
+    {
+        // Seed 4 clientes con IDs conocidos
+        _db.Clientes.Add(new Cliente { Id = 1300, TenantId = TenantId, Nombre = "R1", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        _db.Clientes.Add(new Cliente { Id = 1301, TenantId = TenantId, Nombre = "R2", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        _db.Clientes.Add(new Cliente { Id = 1302, TenantId = TenantId, Nombre = "R3", RFC = "X", Correo = "x", Telefono = "0", Direccion = "", Activo = true, Version = 1 });
+        await _db.SaveChangesAsync();
+
+        // Total: ClienteId(300), 1300, 1301, 1302 — 4 registros
+
+        // Pagina 1: maxRecords=2, sin afterId → trae [300, 1300]
+        var pagina1 = await _sut.GetClientesModifiedSinceAsync(TenantId, since: null, maxRecords: 2, afterId: null);
+        pagina1.Should().HaveCount(2);
+        pagina1[0].Id.Should().Be(ClienteId); // 300
+        pagina1[1].Id.Should().Be(1300);
+
+        // Cursor = ultimo id de pagina 1 = 1300
+        int cursor1 = pagina1[^1].Id;
+
+        // Pagina 2: afterId=1300 → trae [1301, 1302]
+        var pagina2 = await _sut.GetClientesModifiedSinceAsync(TenantId, since: null, maxRecords: 2, afterId: cursor1);
+        pagina2.Should().HaveCount(2);
+        pagina2[0].Id.Should().Be(1301);
+        pagina2[1].Id.Should().Be(1302);
+
+        // Cursor = ultimo id de pagina 2 = 1302
+        int cursor2 = pagina2[^1].Id;
+
+        // Pagina 3: afterId=1302 → no hay mas
+        var pagina3 = await _sut.GetClientesModifiedSinceAsync(TenantId, since: null, maxRecords: 2, afterId: cursor2);
+        pagina3.Should().BeEmpty();
+
+        // Sin duplicados ni perdidos: union de todas las paginas = todos los ids
+        var todos = pagina1.Concat(pagina2).Concat(pagina3).Select(c => c.Id).ToList();
+        todos.Should().BeEquivalentTo(new[] { ClienteId, 1300, 1301, 1302 });
+    }
+
+    [Fact]
+    public async Task GetProductosPaginado_SinMaxRecords_DeberiaRetornarTodos()
+    {
+        // UnidadMedida es requerida por GetProductosModifiedSinceAsync (Include).
+        // Cuando UnidadMedidaId es int (non-nullable) y no existe la FK, el Include
+        // puede generar INNER JOIN que filtra todo. Se siembra una UdM con id=1.
+        _db.Set<UnidadMedida>().Add(new UnidadMedida { Id = 1, TenantId = TenantId, Nombre = "PZA" });
+        _db.Productos.Add(new Producto { Id = 2200, TenantId = TenantId, UnidadMedidaId = 1, Nombre = "Q1", CodigoBarra = "Q1", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        _db.Productos.Add(new Producto { Id = 2201, TenantId = TenantId, UnidadMedidaId = 1, Nombre = "Q2", CodigoBarra = "Q2", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        // El ProductoId(200) del seed también necesita UnidadMedidaId válido para aparecer.
+        await _db.Productos
+            .Where(p => p.Id == ProductoId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.UnidadMedidaId, 1));
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetProductosModifiedSinceAsync(TenantId, since: null, maxRecords: null, afterId: null);
+
+        // ProductoId(200) + 2 nuevos = 3
+        result.Should().HaveCount(3);
+        result.Select(p => p.Id).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task GetProductosPaginado_ConCursor_NoDuplicaNiPierde()
+    {
+        _db.Set<UnidadMedida>().Add(new UnidadMedida { Id = 2, TenantId = TenantId, Nombre = "KG" });
+        _db.Productos.Add(new Producto { Id = 2300, TenantId = TenantId, UnidadMedidaId = 2, Nombre = "S1", CodigoBarra = "S1", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        _db.Productos.Add(new Producto { Id = 2301, TenantId = TenantId, UnidadMedidaId = 2, Nombre = "S2", CodigoBarra = "S2", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        // El ProductoId(200) del seed también necesita UnidadMedidaId válido para aparecer.
+        await _db.Productos
+            .Where(p => p.Id == ProductoId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.UnidadMedidaId, 2));
+        await _db.SaveChangesAsync();
+
+        // ProductoId(200) + 2 nuevos = 3 totales
+        var pagina1 = await _sut.GetProductosModifiedSinceAsync(TenantId, since: null, maxRecords: 2, afterId: null);
+        pagina1.Should().HaveCount(2);
+        var cursor = pagina1[^1].Id;
+
+        var pagina2 = await _sut.GetProductosModifiedSinceAsync(TenantId, since: null, maxRecords: 2, afterId: cursor);
+        pagina2.Should().HaveCount(1);
+
+        var todos = pagina1.Concat(pagina2).Select(p => p.Id).ToList();
+        todos.Should().BeEquivalentTo(new[] { ProductoId, 2300, 2301 });
+    }
+
     public void Dispose()
     {
         _db.Dispose();

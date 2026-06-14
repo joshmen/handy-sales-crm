@@ -70,15 +70,15 @@ public class SyncServiceUnitTests
 
     private void SetupEmptyPulls()
     {
-        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Cliente>());
-        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Producto>());
         _repo.Setup(r => r.GetStockMapAsync(It.IsAny<int>()))
             .ReturnsAsync(new Dictionary<int, (decimal cantidad, decimal minimo)>());
         _repo.Setup(r => r.GetTasasImpuestoModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
             .ReturnsAsync(new List<TasaImpuesto>());
-        _repo.Setup(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Pedido>());
         _repo.Setup(r => r.GetVisitasModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
             .ReturnsAsync(new List<ClienteVisita>());
@@ -472,7 +472,7 @@ public class SyncServiceUnitTests
     [Fact]
     public async Task SyncAsync_DeberiaPullClientes_CuandoEntityTypesContieneClientes()
     {
-        _repo.Setup(r => r.GetClientesModifiedSinceAsync(1, It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetClientesModifiedSinceAsync(1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Cliente>
             {
                 new Cliente { Id = 1, Nombre = "A", Activo = true },
@@ -483,7 +483,7 @@ public class SyncServiceUnitTests
 
         var result = await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.GetClientesModifiedSinceAsync(1, It.IsAny<DateTime?>()), Times.Once);
+        _repo.Verify(r => r.GetClientesModifiedSinceAsync(1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
         result.Summary.ClientesPulled.Should().Be(2);
         result.ServerChanges.Clientes.Should().HaveCount(2);
     }
@@ -509,7 +509,7 @@ public class SyncServiceUnitTests
             new TasaImpuesto { Id = 5, Tasa = 0.08m, Activo = true, EsDefault = false, Nombre = "Frontera" },
             new TasaImpuesto { Id = 6, Tasa = 0.16m, Activo = true, EsDefault = true, Nombre = "Default" }
         };
-        _repo.Setup(r => r.GetProductosModifiedSinceAsync(1, It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetProductosModifiedSinceAsync(1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Producto> { producto });
         _repo.Setup(r => r.GetTasasImpuestoModifiedSinceAsync(1, It.IsAny<DateTime?>()))
             .ReturnsAsync(tasas);
@@ -543,7 +543,7 @@ public class SyncServiceUnitTests
         {
             new TasaImpuesto { Id = 6, Tasa = 0.16m, Activo = true, EsDefault = true, Nombre = "Default" }
         };
-        _repo.Setup(r => r.GetProductosModifiedSinceAsync(1, It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetProductosModifiedSinceAsync(1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Producto> { producto });
         _repo.Setup(r => r.GetTasasImpuestoModifiedSinceAsync(1, It.IsAny<DateTime?>()))
             .ReturnsAsync(tasas);
@@ -566,9 +566,9 @@ public class SyncServiceUnitTests
 
         await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.GetClientesModifiedSinceAsync(1, It.IsAny<DateTime?>()), Times.Once);
-        _repo.Verify(r => r.GetProductosModifiedSinceAsync(1, It.IsAny<DateTime?>()), Times.Once);
-        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
+        _repo.Verify(r => r.GetClientesModifiedSinceAsync(1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
+        _repo.Verify(r => r.GetProductosModifiedSinceAsync(1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
+        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(1, 1, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
         _repo.Verify(r => r.GetVisitasModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetRutasModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetCobrosModifiedSinceAsync(1, 1, It.IsAny<DateTime?>()), Times.Once);

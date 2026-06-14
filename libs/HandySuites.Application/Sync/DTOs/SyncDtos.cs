@@ -1,6 +1,39 @@
 namespace HandySuites.Application.Sync.DTOs;
 
 /// <summary>
+/// Paginacion OPCIONAL en el pull. Cuando MaxRecords es null el comportamiento es
+/// identico al pull completo actual (sin limite). Cuando se provee, el servidor
+/// devuelve como maximo MaxRecords registros por entidad con Id > AfterId, y
+/// rellena SyncResponseDto.PaginationInfo para que el cliente pueda seguir
+/// paginando con el cursor retornado.
+/// </summary>
+public class SyncPaginationOptions
+{
+    /// <summary>Maximo de registros por entidad paginable. Null = sin limite (full pull).</summary>
+    public int? MaxRecords { get; set; }
+
+    /// <summary>Cursor: ultimo Id recibido. Solo retorna registros con Id > AfterId.</summary>
+    public int? AfterId { get; set; }
+}
+
+/// <summary>
+/// Informacion de paginacion devuelta por el servidor en la respuesta pull.
+/// Solo se incluye cuando se solicito paginacion (MaxRecords != null).
+/// </summary>
+public class SyncPullPageInfo
+{
+    /// <summary>True si hay mas registros disponibles despues del cursor.</summary>
+    public bool HasMore { get; set; }
+
+    /// <summary>
+    /// Id del ultimo registro devuelto en esta pagina. Usar como AfterId
+    /// en la siguiente solicitud para continuar la paginacion.
+    /// Null cuando HasMore es false.
+    /// </summary>
+    public int? NextCursor { get; set; }
+}
+
+/// <summary>
 /// Request to sync data from mobile device
 /// </summary>
 public class SyncRequestDto
@@ -19,6 +52,11 @@ public class SyncRequestDto
     /// Changes from client to push to server
     /// </summary>
     public SyncChangesDto? ClientChanges { get; set; }
+
+    /// <summary>
+    /// Paginacion OPCIONAL para el pull. Null = pull completo (comportamiento default).
+    /// </summary>
+    public SyncPaginationOptions? Pagination { get; set; }
 }
 
 /// <summary>
@@ -91,6 +129,12 @@ public class SyncResponseDto
     /// True when any errors occurred during sync (for callers to return appropriate HTTP status)
     /// </summary>
     public bool HasErrors => Errors.Count > 0;
+
+    /// <summary>
+    /// Informacion de paginacion. Solo presente cuando se solicito paginacion (MaxRecords != null).
+    /// Null = pull completo (comportamiento default sin paginacion).
+    /// </summary>
+    public SyncPullPageInfo? PaginationInfo { get; set; }
 }
 
 public class SyncSummaryDto

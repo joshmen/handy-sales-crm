@@ -77,7 +77,7 @@ public class SyncService
 
         try
         {
-            await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll);
+            await PullServerChangesAsync(response, tenantId, usuarioId, since, entityTypes, syncAll, request.Pagination);
         }
         catch (Exception ex)
         {
@@ -465,14 +465,36 @@ public class SyncService
         }
     }
 
-    private async Task PullServerChangesAsync(SyncResponseDto response, int tenantId, int usuarioId, DateTime? since, List<string> entityTypes, bool syncAll)
+    private async Task PullServerChangesAsync(SyncResponseDto response, int tenantId, int usuarioId, DateTime? since, List<string> entityTypes, bool syncAll, SyncPaginationOptions? pagination = null)
     {
         response.ServerChanges = new SyncChangesDto();
+
+        var maxRecords = pagination?.MaxRecords;
+        var afterId = pagination?.AfterId;
+
+        // Cuando paginacion esta activa: rastrear si CUALQUIER entidad paginable tiene
+        // mas registros disponibles, y el cursor mas alto devuelto (para que el cliente
+        // use el mismo cursor para todas las entidades en la siguiente pagina).
+        bool hasMore = false;
+        int nextCursor = afterId ?? 0;
 
         // Pull Clientes (read-only for vendors to view customer list)
         if (syncAll || entityTypes.Contains("clientes", StringComparer.OrdinalIgnoreCase))
         {
-            var clientes = await _repo.GetClientesModifiedSinceAsync(tenantId, since);
+            // Cuando maxRecords esta activo, pedimos maxRecords+1 para detectar hasMore
+            // sin necesitar un COUNT(*) extra. Si llegaron maxRecords+1 resultados, hay mas;
+            // devolvemos solo los primeros maxRecords.
+            int? fetchLimit = maxRecords.HasValue ? maxRecords.Value + 1 : null;
+            var clientes = await _repo.GetClientesModifiedSinceAsync(tenantId, since, fetchLimit, afterId);
+
+            if (maxRecords.HasValue && clientes.Count > maxRecords.Value)
+            {
+                hasMore = true;
+                clientes = clientes.Take(maxRecords.Value).ToList();
+            }
+
+            if (clientes.Count > 0)
+                nextCursor = Math.Max(nextCursor, clientes[^1].Id);
             response.ServerChanges.Clientes = clientes.Select(c => new SyncClienteDto
             {
                 Id = c.Id,
@@ -519,7 +541,17 @@ public class SyncService
         // Pull Productos (read-only for mobile)
         if (syncAll || entityTypes.Contains("productos", StringComparer.OrdinalIgnoreCase))
         {
-            var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since);
+            int? fetchLimitProductos = maxRecords.HasValue ? maxRecords.Value + 1 : null;
+            var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since, fetchLimitProductos, afterId);
+
+            if (maxRecords.HasValue && productos.Count > maxRecords.Value)
+            {
+                hasMore = true;
+                productos = productos.Take(maxRecords.Value).ToList();
+            }
+
+            if (productos.Count > 0)
+                nextCursor = Math.Max(nextCursor, productos[^1].Id);
             var stockMap = await _repo.GetStockMapAsync(tenantId);
 
             // Resolver tasas por producto: lookup de TasaImpuesto FK + default tenant.
@@ -563,7 +595,17 @@ public class SyncService
         // Pull Pedidos for this user
         if (syncAll || entityTypes.Contains("pedidos", StringComparer.OrdinalIgnoreCase))
         {
-            var pedidos = await _repo.GetPedidosModifiedSinceAsync(tenantId, usuarioId, since);
+            int? fetchLimitPedidos = maxRecords.HasValue ? maxRecords.Value + 1 : null;
+            var pedidos = await _repo.GetPedidosModifiedSinceAsync(tenantId, usuarioId, since, fetchLimitPedidos, afterId);
+
+            if (maxRecords.HasValue && pedidos.Count > maxRecords.Value)
+            {
+                hasMore = true;
+                pedidos = pedidos.Take(maxRecords.Value).ToList();
+            }
+
+            if (pedidos.Count > 0)
+                nextCursor = Math.Max(nextCursor, pedidos[^1].Id);
             response.ServerChanges.Pedidos = pedidos.Select(p => new SyncPedidoDto
             {
                 Id = p.Id,
@@ -993,6 +1035,18 @@ public class SyncService
                 };
                 response.Summary.DatosEmpresaPulled = true;
             }
+        }
+
+        // Rellenar PaginationInfo solo cuando se solicito paginacion.
+        // El cliente puede detectar si el servidor soporta paginacion verificando
+        // que PaginationInfo no sea null en la respuesta.
+        if (maxRecords.HasValue)
+        {
+            response.PaginationInfo = new SyncPullPageInfo
+            {
+                HasMore = hasMore,
+                NextCursor = hasMore ? nextCursor : null
+            };
         }
     }
 }
