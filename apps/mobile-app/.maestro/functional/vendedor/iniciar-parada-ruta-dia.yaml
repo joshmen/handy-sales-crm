@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Iniciar parada de la Ruta del Dia"
 tags:
   - functional
@@ -113,7 +113,7 @@ launchApp:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "RUTA DEL DÍA"
     timeout: 15000
 
 - takeScreenshot: iniciar-parada-01-ruta-del-dia
@@ -223,7 +223,7 @@ launchApp:
 
 # 12) Confirmar regreso a "Ruta del Dia"
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "RUTA DEL DÍA"
     timeout: 10000
 
 - takeScreenshot: iniciar-parada-07-vuelta-lista

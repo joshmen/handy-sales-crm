@@ -1,8 +1,8 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Screenshots Vendedor"
 ---
 - tapOn: "Hoy"
 - tapOn: "Cobrar"
 - tapOn: "Vender"
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn: "Hoy"

@@ -30,7 +30,7 @@
 #        WHERE email = 'vendedor-temp@jeyma.com';
 #   - Tras correr el test, re-aplicar el SQL para permitir re-runs
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: vendedor - cambiar contrasena forzada desde AuthGate
 tags:
   - vendedor

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: refresh token expiry mid-flow no rompe sesion"
 tags:
   - functional
@@ -317,9 +317,9 @@ tags:
       - tapOn: "Sincronización"
 - runFlow:
     when:
-      visible: "Sincronizacion"
+      visible: "Sincronización"
     commands:
-      - tapOn: "Sincronizacion"
+      - tapOn: "Sincronización"
 - runFlow:
     when:
       visible: "Sincronizar"

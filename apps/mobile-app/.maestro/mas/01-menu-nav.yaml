@@ -1,70 +1,36 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Mas - Menu y Navegacion"
 ---
 
-# Ir al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+# Ir al tab "Más" (con acento — antes el flow buscaba "Mas"/tab-mas inexistentes)
+- tapOn: "Más"
 
 - extendedWaitUntil:
-    visible: "Navegaci"
+    visible: "NAVEGACIÓN"
     timeout: 15000
 
-# Verificar items del menu principal
+# Items del menú NAVEGACIÓN (estructura actual de la app)
 - assertVisible: "Clientes"
 - assertVisible: "Pedidos"
-- assertVisible: "Ruta del D"
-- assertVisible: "Sincronizaci"
-
-# Verificar items de cuenta
-- assertVisible: "Mi Perfil"
-- assertVisible: "Configuraci"
+- assertVisible: "Productos"
+- assertVisible: "Inventario"
+- assertVisible: "Historial de Rutas"
+- assertVisible: "Sincronización"
 
 - takeScreenshot: mas-menu-full
 
-# Navegar a Configuracion
-- tapOn: "Configuraci"
+# Navegar a Sincronización
+- tapOn: "Sincronización"
 
 - extendedWaitUntil:
-    visible: "Configuraci"
+    visible: "Sincronización"
     timeout: 15000
-
-- assertVisible: "Notificaciones push"
-- assertVisible: "Sincronizaci"
-
-- takeScreenshot: configuracion-screen
-
-# Volver al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
-
-- extendedWaitUntil:
-    visible: "Navegaci"
-    timeout: 15000
-
-# Navegar a Sincronizacion
-- tapOn: "Sincronizaci"
-
-- extendedWaitUntil:
-    visible: "Sincronizaci"
-    timeout: 15000
-
-- assertVisible: "Sincronizar Ahora"
 
 - takeScreenshot: sync-screen
 
-# Volver al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+# Volver al tab Más
+- tapOn: "Más"
+
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 15000

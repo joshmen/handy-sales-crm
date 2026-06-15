@@ -56,7 +56,7 @@
 #   - Cross-tenant leak: ADMIN de Jeyma NO ve vendedores de Huichol/Centro.
 #   - Seccion "HOY EN TODA LA EMPRESA" solo visible a admin (no a supervisor).
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: admin - tap vendedor ver detalle stats
 tags:
   - admin

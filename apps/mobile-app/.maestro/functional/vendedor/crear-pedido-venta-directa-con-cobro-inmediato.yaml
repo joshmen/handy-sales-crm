@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Funcional VENDEDOR > Crear pedido Venta Directa con cobro inmediato"
 tags:
   - functional

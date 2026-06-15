@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Suite 01: Login + onboarding + force-logout + privacy + dashboard"
 # Sprint correctivo 2026-06-06 — exhaustive mobile validation
 # Prerequisito de TODOS los demas flows

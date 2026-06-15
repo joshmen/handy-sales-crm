@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Quick Navigation Screenshots"
 ---
 
@@ -8,7 +8,7 @@ name: "Quick Navigation Screenshots"
 - takeScreenshot: nav-02-cobrar
 - tapOn: "Equipo"
 - takeScreenshot: nav-03-equipo
-- tapOn: "Mas"
+- tapOn: "Más"
 - takeScreenshot: nav-04-mas
 - tapOn: "Hoy"
 - takeScreenshot: nav-05-hoy

@@ -42,7 +42,7 @@
 #   - Emulador Android con Expo Go en Metro :8081
 #   - Backend docker-compose up (seed Jeyma con vendedor1@jeyma.com)
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: descargar PDF de factura - RBAC negativo (Facturas oculto)"
 tags:
   - vendedor
@@ -111,7 +111,7 @@ tags:
 # -----------------------------------------------------------------------------
 # Paso 4 - Navegar a tab "Mas" (con tilde correcta)
 # -----------------------------------------------------------------------------
-- tapOn: "Mas"
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 # El chip "Vendedor" confirma que el rol esta hidratado en (tabs)/mas.tsx

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: vender-preventa-e2e
 ---
 # E2E: Nuevo Pedido > Preventa > Cliente > Productos > Revision > Guardar

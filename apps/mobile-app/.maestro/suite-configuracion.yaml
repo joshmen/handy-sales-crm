@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: configuracion-accesos-completos
 ---
 # Modulo: Tab Configuracion > opciones (impresora, sync, jornada, perfil) > validar accesos
@@ -19,9 +19,9 @@ name: configuracion-accesos-completos
 
 # 2) Navegar al tab Mas (entry point para configuracion)
 - extendedWaitUntil:
-    visible: "Más"
+    visible: "Mï¿½s"
     timeout: 30000
-- tapOn: "Más"
+- tapOn: "Mï¿½s"
 
 # 3) Verificar hub Mas cargado
 - extendedWaitUntil:

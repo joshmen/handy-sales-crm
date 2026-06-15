@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor - Cobro en plan de pagos / cuotas (workaround multi-cobro parcial)"
 tags:
   - vendedor

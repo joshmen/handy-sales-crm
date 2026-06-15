@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Rutas con multiples paradas + cierre del dia"
 tags:
   - functional
@@ -133,7 +133,7 @@ launchApp:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "RUTA DEL DÍA"
     timeout: 15000
 
 - takeScreenshot: rutas-multi-01-ruta-del-dia
@@ -232,7 +232,7 @@ launchApp:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "RUTA DEL DÍA"
     timeout: 10000
 
 - takeScreenshot: rutas-multi-06-back-a-lista
@@ -289,7 +289,7 @@ launchApp:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "RUTA DEL DÍA"
     timeout: 10000
 
 - takeScreenshot: rutas-multi-08-progreso-multi-stop
@@ -303,27 +303,18 @@ launchApp:
 #    lista de paradas). Es el cierre efectivo de la jornada/ruta
 #    desde la UI vendedor.
 # -----------------------------------------------------------------
-- tapOn:
-    id: "tab-mas"
-    optional: true
-
-- runFlow:
-    when:
-      visible: "Mas"
-    commands:
-      - tapOn:
-          text: "Mas|Más"
+- tapOn: "Más"
 
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Resumen del D"
+    visible: "RESUMEN DEL DÍA"
     timeout: 15000
 
 - takeScreenshot: rutas-multi-09-mas-menu
 
 - tapOn:
-    text: "Resumen del D"
+    text: "RESUMEN DEL DÍA"
 
 - waitForAnimationToEnd
 
@@ -337,7 +328,7 @@ launchApp:
 #       - Si hay ruta: "Paradas completadas X/TOTAL"
 # -----------------------------------------------------------------
 - extendedWaitUntil:
-    visible: "Resumen del D"
+    visible: "RESUMEN DEL DÍA"
     timeout: 15000
 
 - assertVisible: "Efectividad del D"

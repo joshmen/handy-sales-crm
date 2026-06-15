@@ -1,4 +1,4 @@
-appId: com.handysuites.mobile
+appId: com.handysuites.app
 ---
 # Test: Verify back navigation is prevented during order creation flow
 # Prerequisite: User logged in, on Vender tab

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: sync offline-first (pull/push scoping)"
 ---
 # ============================================================
@@ -128,7 +128,7 @@ name: "Supervisor: sync offline-first (pull/push scoping)"
       notVisible: "Sincronización"
     commands:
       - tapOn:
-          text: "Mas"
+          text: "Más"
           optional: true
 
 - extendedWaitUntil:

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Crear pedido PREVENTA completo (stepper 3 pasos)"
 tags:
   - functional

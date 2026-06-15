@@ -34,7 +34,7 @@
 #   - Backend mobile-api en :1052
 #   - Usuario admin@jeyma.com debe existir con rol ADMIN y plan PRO/BUSINESS
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: admin - cambiar configuracion empresa desde mobile
 tags:
   - admin

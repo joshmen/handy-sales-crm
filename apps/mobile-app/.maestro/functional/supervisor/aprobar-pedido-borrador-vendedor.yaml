@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: Aprobar (confirmar) un pedido en estado Borrador creado por vendedor"
 tags:
   - functional

@@ -36,7 +36,7 @@
 #   - IDOR: el endpoint debe rechazar IDs fuera del equipo del supervisor; aqui
 #     solo cubrimos el happy path con vendedor real subordinado.
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: supervisor - ver detalle vendedor con resumen 7d
 tags:
   - supervisor

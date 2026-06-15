@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Plan eager-drifting-journal — E2E (B.1+B.3+C.2)"
 ---
 
@@ -112,12 +112,7 @@ name: "Plan eager-drifting-journal — E2E (B.1+B.3+C.2)"
 # PASO 2: B.3 — intentar logout con pendings
 # (esperando que el sync push no termine instant)
 # ═══════════════════════════════════════════
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -151,10 +146,10 @@ name: "Plan eager-drifting-journal — E2E (B.1+B.3+C.2)"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Mas"
+    visible: "Más"
     timeout: 10000
 
-- tapOn: "Sincronizaci"
+- tapOn: "Sincronización"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 ---
 
@@ -23,8 +23,8 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - assertVisible: "Vendedores"
 - assertVisible: "Ventas mes"
 - assertVisible: "Mi Actividad Personal"
-- assertVisible: "Ruta del Día"
-- assertVisible: "Acciones Rápidas"
+- assertVisible: "RUTA DEL DÍA"
+- assertVisible: "ACCIONES RÁPIDAS"
 
 - takeScreenshot: "dia-01-dashboard"
 

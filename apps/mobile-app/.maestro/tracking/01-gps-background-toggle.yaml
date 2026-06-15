@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "GPS background toggle visible y funcional"
 ---
 
@@ -20,7 +20,7 @@ name: "GPS background toggle visible y funcional"
     timeout: 30000
 
 # Tab Mas → Configuracion
-- tapOn: "Mas"
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 - tapOn: "Configuración"

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: jornada-lifecycle
 ---
 # ============================================================
@@ -64,9 +64,9 @@ name: jornada-lifecycle
 # --- Paso 3: navegar a Configuracion y validar toggle GPS ---
 - runFlow:
     when:
-      visible: "Más"
+      visible: "Mï¿½s"
     commands:
-      - tapOn: "Más"
+      - tapOn: "Mï¿½s"
 
 - extendedWaitUntil:
     visible:

@@ -67,7 +67,7 @@
 #   - docker-compose -f docker-compose.dev.yml up -d
 #   - Seed Jeyma con vendedor1@jeyma.com / test123
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Factura IVA+IEPS desglose - RBAC negativo + visibilidad menu"
 tags:
   - vendedor
@@ -141,7 +141,7 @@ tags:
 # -----------------------------------------------------------------------------
 # Paso 5 - Navegar a tab "Mas" (con tilde correcta en "Mas")
 # -----------------------------------------------------------------------------
-- tapOn: "Mas"
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 # El chip "Vendedor" confirma que el rol esta hidratado en (tabs)/mas.tsx

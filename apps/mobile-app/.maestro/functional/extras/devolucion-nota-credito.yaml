@@ -48,7 +48,7 @@
 # pedido + estar Completada. El test seed (Jeyma) cumple esto; si la seed
 # cambia, este test falla y hay que revisar el seed antes que el codigo.
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: devolucion con saldo a favor (NC funcional)"
 tags:
   - vendedor

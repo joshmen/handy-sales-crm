@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Full Design Audit v2"
 ---
 
@@ -16,7 +16,7 @@ name: "Full Design Audit v2"
 - tapOn: "Equipo"
 - takeScreenshot: 04-equipo
 
-- tapOn: "Mas"
+- tapOn: "Más"
 - takeScreenshot: 05-mas
 
 - tapOn:

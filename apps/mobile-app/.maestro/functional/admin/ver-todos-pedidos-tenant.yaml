@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/Ayer/7d/30d"
 ---
 # ============================================================

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Plan eager-drifting — desde dashboard (skip login)"
 ---
 
@@ -91,12 +91,7 @@ name: "Plan eager-drifting — desde dashboard (skip login)"
 # ═══════════════════════════════════════════
 # PASO 2: B.3 — intentar logout
 # ═══════════════════════════════════════════
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -126,7 +121,7 @@ name: "Plan eager-drifting — desde dashboard (skip login)"
 - waitForAnimationToEnd
 
 - tapOn:
-    text: "Sincronizaci"
+    text: "Sincronización"
     optional: true
 
 - extendedWaitUntil:
