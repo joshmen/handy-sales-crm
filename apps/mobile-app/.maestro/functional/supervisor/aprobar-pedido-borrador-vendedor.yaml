@@ -57,7 +57,10 @@ tags:
 #    que el rol cargado es SUPERVISOR — SupervisorDashboard.tsx).
 #    "Mi Equipo" es el titulo del TAB Equipo, no del dashboard.
 # ---------------------------------------------------------------
-- assertVisible: "Vendedores activos"
+# El KPI carga del backend con latencia (mis-vendedores); esperar amplio.
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
 - takeScreenshot: sup-aprobar-00-dashboard
 
 # ---------------------------------------------------------------

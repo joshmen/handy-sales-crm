@@ -65,10 +65,9 @@ tags:
     visible: "Vendedores activos"
     timeout: 30000
 
-# FIXME assert "Vendedores" sobre el dashboard: el KPI real es
-# "Vendedores activos" (no hay nodo exacto "Vendedores" en SupervisorDashboard).
-# Si Maestro hace match completo, este assert falla aqui. Verificar en emulador.
-- assertVisible: "Vendedores"
+# El KPI del dashboard supervisor es "Vendedores activos" (no nodo exacto
+# "Vendedores"); Maestro hace match completo del texto.
+- assertVisible: "Vendedores activos"
 - takeScreenshot: sup-vendedor-7d-02-dashboard
 
 # ============================================================

@@ -119,8 +119,13 @@ tags:
 
 # Seed canonico Jeyma: admin@jeyma.com ve a vendedor1@jeyma.com como
 # "Vendedor 1 Jeyma" (infra/database/schema/seed_local_pg.sql L108).
-# ADMIN ve a TODOS los vendedores del tenant (no solo subordinados).
-- assertVisible: "Vendedor 1 Jeyma"
+# ADMIN ve a TODOS los vendedores del tenant. La lista carga del backend con
+# latencia y puede quedar debajo del fold → scroll/espera.
+- scrollUntilVisible:
+    element:
+      text: "Vendedor 1 Jeyma"
+    direction: DOWN
+    timeout: 15000
 
 # Cross-tenant guard — vendedores de otros tenants no deben filtrar
 - assertNotVisible: "Admin Huichol"

@@ -45,17 +45,18 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
 # FASE 3: VALIDAR DASHBOARD "HOY" CON SALUDO SUPERVISOR
 # ════════════════════════════════════════════════════════════
 
-# Saludo "Supervisor" (rol badge / greeting)
+# Saludo "Buenos días, Supervisor" es un solo nodo → comodín (match completo).
 - assertVisible:
-    text: "Supervisor"
+    text: ".*Supervisor.*"
 
 # Sección EQUIPO en el dashboard del supervisor
 - assertVisible:
     text: "EQUIPO"
 
-# Métrica "25 Vendedores activos"
+# El conteo y la etiqueta "Vendedores activos" son nodos separados; el conteo
+# varía con el seed. Anclar solo a la etiqueta.
 - assertVisible:
-    text: "25 Vendedores activos"
+    text: "Vendedores activos"
 
 - takeScreenshot: "supervisor-day-02-equipo-section"
 

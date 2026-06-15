@@ -40,7 +40,9 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 # El KPI "Vendedores activos" solo aparece en el dashboard supervisor —
 # confirma que el backend respeta el rol asignado al usuario autenticado.
 # ("Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy.)
-- assertVisible: "Vendedores activos"
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 15000
 - assertVisible: "Equipo"
 
 - takeScreenshot: "asignar-02-banner-mi-equipo"
@@ -146,7 +148,12 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 - waitForAnimationToEnd
 
 - assertVisible: "Supervisor"
-- assertVisible: "Configuración"
+# "Configuración" esta debajo del fold en el menu Más → scroll.
+- scrollUntilVisible:
+    element:
+      text: "Configuración"
+    direction: DOWN
+    timeout: 10000
 
 - takeScreenshot: "asignar-07-mas-badge-supervisor"
 

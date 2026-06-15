@@ -51,8 +51,14 @@ name: "Supervisor: vista agregada de pedidos y cobros del equipo"
     visible: "Vendedores"
     timeout: 15000
 
-# Seed garantizado: supervisor@jeyma.com supervisa Vendedor 1 Jeyma
-- assertVisible: "Vendedor 1 Jeyma"
+# Seed garantizado: supervisor@jeyma.com supervisa Vendedor 1 Jeyma.
+# La lista carga del backend (mis-vendedores) con latencia y puede quedar
+# debajo del fold → scroll con espera amplia.
+- scrollUntilVisible:
+    element:
+      text: "Vendedor 1 Jeyma"
+    direction: DOWN
+    timeout: 30000
 - takeScreenshot: supervisor-pedcob-03-equipo-mis-vendedores
 
 # ---- FASE 5: Tab Vender = vista agregada de Pedidos del equipo ----

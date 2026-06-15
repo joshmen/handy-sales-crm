@@ -20,15 +20,14 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
+# Dashboard supervisor real (SupervisorDashboard): KPI "Vendedores activos",
+# seccion EQUIPO y ACCIONES RAPIDAS. ("Mi Equipo" es el titulo del TAB Equipo.)
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 15000
 
-# KPIs del equipo
-- assertVisible: "Vendedores"
+- assertVisible: "Pedidos hoy"
 - assertVisible: "Ventas mes"
-- assertVisible: "Mi Actividad Personal"
-- assertVisible: "RUTA DEL DÍA"
 - assertVisible: "ACCIONES RÁPIDAS"
 
 - takeScreenshot: "dia-01-dashboard"
@@ -81,20 +80,16 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - waitForAnimationToEnd
 
 # ═══════════════════════════════════════════
-# FASE 5: COBRAR — verificar dashboard de cobranza
+# FASE 5: COBRAR — vista AGREGADA del equipo (CobrarAdminContent para supervisor;
+# "Facturado"/"Cobrado"/"Registrar Cobro" son de la vista VENDEDOR, no aplican).
 # ═══════════════════════════════════════════
 - tapOn: "Cobrar"
 - tapOn: "Cobrar"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Facturado"
+    visible: ".*Cobros.*"
     timeout: 10000
-
-- assertVisible: "Cobrado"
-- assertVisible: "Pendiente de Cobro"
-- assertVisible: "Registrar Cobro"
-- assertVisible: "Historial"
 
 - takeScreenshot: "dia-05-cobranza-dashboard"
 
@@ -131,6 +126,8 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 15000
 
 - takeScreenshot: "dia-08-dashboard-final"
