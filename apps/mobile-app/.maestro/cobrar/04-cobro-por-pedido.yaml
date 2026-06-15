@@ -25,30 +25,46 @@ name: "Cobrar - Modo Pago de pedido (default)"
 
 - takeScreenshot: cobrar-modo-por-pedido-default
 
-# Modo PorPedido filtra clientes con saldo>0. Tap en cliente picker.
+# Modo PorPedido filtra clientes con saldo>0. Abrir picker y tap por nombre
+# (Abarrotes La Esquina tiene saldo en el seed; index 0 no era confiable).
 - tapOn:
     text: "Seleccionar cliente"
-    optional: true
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 8000
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
 
-# Seleccionar el primero (asumimos seed tiene al menos uno con saldo)
+# Modo PorPedido EXIGE seleccionar un pedido con saldo del cliente. Abrir el
+# picker y tap al primer pedido (regex "Pedido .*" → no depende del folio/fecha
+# del seed). Sin pedido el botón Confirmar queda disabled y no abre el modal.
 - tapOn:
-    index: 0
-    optional: true
+    text: "Seleccionar pedido"
+- extendedWaitUntil:
+    visible: "Seleccionar Pedido"
+    timeout: 8000
+- tapOn:
+    text: "Pedido .*"
+- waitForAnimationToEnd
 
+# Monto pequeño (<= saldo de cualquier pedido del cliente) para no exceder y
+# dejar el botón Confirmar habilitado.
 - tapOn:
     text: "0.00"
     optional: true
-- inputText: "50"
+- inputText: "10"
 - hideKeyboard
 
 - takeScreenshot: cobrar-modo-por-pedido-filled
 
-# Tap Confirmar → ConfirmModal con titulo "Confirmar Cobro" (NO saldo a favor)
+# Tap Confirmar (botón = "Confirmar Cobro · $X" → regex con comodín)
 - tapOn:
-    text: "Confirmar Cobro"
+    text: "Confirmar Cobro.*"
 
+# El modal de confirmación expone botones "Cancelar"/"Confirmar" (elemento
+# estable en los 3 modos); su título varía por modo.
 - extendedWaitUntil:
-    visible: "Confirmar Cobro"
+    visible: "Cancelar"
     timeout: 5000
 
 # Cancelar modal y volver

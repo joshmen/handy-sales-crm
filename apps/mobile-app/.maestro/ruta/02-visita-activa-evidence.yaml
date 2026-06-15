@@ -9,11 +9,11 @@ name: "Ruta - Visita Activa con Evidencia"
     visible: "NAVEGACIÓN"
     timeout: 15000
 
-# Navegar a Historial de Rutas
+# Navegar a Historial de Rutas (la pantalla, no la sección "RUTA DEL DÍA" del dashboard)
 - tapOn: "Historial de Rutas"
 
 - extendedWaitUntil:
-    visible: "RUTA DEL DÍA"
+    visible: "Historial de Rutas"
     timeout: 15000
 
 - takeScreenshot: ruta-pre-visita

@@ -51,8 +51,10 @@ name: "Vendedor: Jornada auto-stop por horario laboral"
 # ────────────────────────────────────────────
 # PASO 4: Verificar JornadaCard muestra estado correcto
 # ────────────────────────────────────────────
+# Estado de jornada en el dashboard: "Cerrar jornada" (activa), "Iniciar jornada"
+# (inactiva) o "Fuera de horario". Maestro hace match completo del action.
 - assertVisible:
-    text: "Iniciar jornada|Jornada iniciada|Fuera de horario"
+    text: "Cerrar jornada|Iniciar jornada|Fuera de horario"
     optional: false
 
 - takeScreenshot: "jr-03-jornada-card"
@@ -72,12 +74,9 @@ name: "Vendedor: Jornada auto-stop por horario laboral"
     id: "fab-nuevo-pedido"
 - waitForAnimationToEnd
 
-- runFlow:
-    when:
-      visible: "Tipo de Venta"
-    commands:
-      - tapOn: "Preventa"
-      - waitForAnimationToEnd
+# Selector de modo (header "¿Qué tipo de pedido?") → Preventa
+- tapOn: "Preventa"
+- waitForAnimationToEnd
 
 - extendedWaitUntil:
     visible: "Cliente"

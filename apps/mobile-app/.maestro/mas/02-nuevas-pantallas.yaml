@@ -1,29 +1,46 @@
 appId: com.handysuites.app
 ---
-# Test: Navigate to new screens from Más tab
-# Prerequisite: User logged in as admin@jeyma.com
+# Navegar a pantallas de la sección CUENTA bajo el tab "Más". Tras cada
+# sub-pantalla re-tapeamos el tab "Más" (pop al root del menú) para volver de
+# forma confiable — el doble-back anterior sobre-navegaba al dashboard.
 
 - tapOn: "Más"
 - assertVisible: "Clientes"
 
-# Navigate to Notificaciones
+# Notificaciones (sección CUENTA, bajo el fold → scroll)
+- scrollUntilVisible:
+    element:
+      text: "Notificaciones"
+    direction: DOWN
 - tapOn: "Notificaciones"
 - assertVisible: "Notificaciones"
-- tapOn:
-    id: "back-button"
-    optional: true
-- back
 
-# Navigate to Ayuda
+# Volver al menú Más → Ayuda
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Ayuda"
+    direction: DOWN
 - tapOn: "Ayuda"
 - assertVisible: "PREGUNTAS FRECUENTES"
 - assertVisible: "CONTACTO"
-- back
 
-# Navigate to Acerca de
+# Volver al menú Más → Acerca de
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Acerca de"
+    direction: DOWN
 - tapOn: "Acerca de"
-- assertVisible: "Handy Suites"
+# El título real es "Handy Suites®"; Maestro hace match completo → comodín.
+- assertVisible:
+    text: ".*Handy Suites.*"
 - assertVisible: "Términos de Servicio"
-- back
 
-- assertVisible: "Clientes"
+# Volver al menú Más. El menú retiene el scroll de "Acerca de" (abajo), así que
+# subimos hasta "Clientes" (arriba) para confirmar el regreso al root.
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Clientes"
+    direction: UP

@@ -6,18 +6,20 @@ appId: com.handysuites.app
 - tapOn: "Vender"
 - assertVisible: "Pedidos"
 
-# Start new order via FAB
+# Start new order via FAB (id real: fab-nuevo-pedido, no "fab-button")
 - tapOn:
-    id: "fab-button"
-    optional: true
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
 
-# If mode selection appears
+# Mode selection: Preventa
 - tapOn:
     text: "Preventa"
-    optional: true
+- waitForAnimationToEnd
 
-# Select client step - try back gesture (should be blocked)
-- assertVisible: "Cliente"
+# Select client step (permisos ya otorgados → sin dialogo de ubicacion)
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 15000
 
 # Select first client
 - tapOn:
