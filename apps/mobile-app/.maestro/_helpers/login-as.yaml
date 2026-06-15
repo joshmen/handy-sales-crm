@@ -1,5 +1,5 @@
 appId: com.handysuites.app
-name: "Helper: login robusto por rol (parametros EMAIL/PASSWORD)"
+name: "Helper login por rol"
 ---
 
 # Subflow reutilizable que deja la app logueada con el rol indicado, sea cual sea
