@@ -62,15 +62,13 @@ name: "Helper: login robusto por rol (parametros EMAIL/PASSWORD)"
       - tapOn:
           text: "Cerrar Sesión"
       - waitForAnimationToEnd
-      # Confirmar dentro del ConfirmModal. "Cerrar Sesión" aparece como titulo
-      # (Text no tappable, arriba) y como boton confirmar (clickable, abajo); el
-      # match #1 (index 1) es el boton confirmar. (ConfirmModal.tsx:83-91)
+      # Confirmar dentro del ConfirmModal por testID estable (el texto "Cerrar
+      # Sesión" colisiona con el titulo del modal y el item del menu).
       - extendedWaitUntil:
           visible: "¿Estás seguro que deseas cerrar sesión?"
           timeout: 8000
       - tapOn:
-          text: "Cerrar Sesión"
-          index: 1
+          id: "confirm-modal-confirm"
       - waitForAnimationToEnd
 
 # 3) En la pantalla de login: ingresar credenciales del rol.
