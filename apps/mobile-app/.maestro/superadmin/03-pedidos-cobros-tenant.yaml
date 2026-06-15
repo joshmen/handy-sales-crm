@@ -1,0 +1,176 @@
+appId: com.handysuites.app
+name: superadmin-pedidos-cobros-tenant
+---
+# ============================================================
+# CASO: sa-pedidos-cobros-tenant
+# Rol: SUPER_ADMIN (xjoshmenx@gmail.com — único SA del sistema)
+# Capa: mobile
+# Use-case (kebab): pedidos-cobros-tenant
+#
+# Prereq / estado:
+#   - SUPER_ADMIN comparte branch con ADMIN: el tab Vender renderiza
+#     AdminTenantPedidosList y el tab Cobrar AdminTenantCobrosList (mismas
+#     vistas tenant-wide que el admin). Este flow es el espejo SA de
+#     adm-pedidos-tenant-presets-detalle + adm-cobros-tenant-presets-detalle.
+#   - Read-only: solo recorre presets y valida agregados. No abre detalle ni
+#     muta datos (la cobertura de detalle ya la dan los flows ADMIN).
+#
+# Pantallas RN:
+#   apps/mobile-app/src/components/admin/AdminTenantPedidosList.tsx
+#     -> Header "Pedidos hoy/ayer/últimos N días" + "{N} pedidos en toda la empresa".
+#   apps/mobile-app/src/components/admin/AdminTenantCobrosList.tsx
+#     -> Header "Cobros hoy/ayer/últimos N días" + "{N} cobros en toda la empresa".
+#   Chips testID filtro-rango-{hoy,ayer,7d,30d}.
+#
+# Endpoints backend tocados:
+#   GET /api/mobile/supervisor/pedidos?rango=7d|30d|?dia=YYYY-MM-DD  (useTenantPedidos)
+#   GET /api/mobile/supervisor/cobros?rango=7d|30d|?dia=YYYY-MM-DD   (useTenantCobros)
+#   GET /api/mobile/empresa  (useTenantLocale)
+#
+# Cobertura funcional REAL (read-only):
+#   1. Login SUPER_ADMIN via helper.
+#   2. Tab Vender -> presets Hoy/Ayer/7d/30d (header + ".*en toda la empresa.*").
+#   3. Tab Cobrar -> presets Hoy/Ayer/7d/30d (header + ".*en toda la empresa.*").
+#   4. No-leak cross-tenant en ambas listas.
+# ============================================================
+
+# ---- FASE 1: Login SUPER_ADMIN robusto via helper ----
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "xjoshmenx@gmail.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard admin cargado (SA comparte branch) ----
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 30000
+- assertVisible: "Vendedores"
+
+# ============================================================
+# BLOQUE A: PEDIDOS TENANT-WIDE (tab Vender)
+# ============================================================
+
+# Doble tap resetea el stack del tab Vender.
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 30000
+- assertVisible: "Pedidos hoy"
+- assertVisible: ".*en toda la empresa.*"
+
+- assertVisible:
+    id: "filtro-rango-hoy"
+- assertVisible:
+    id: "filtro-rango-7d"
+- takeScreenshot: sa-tenant-01-pedidos-hoy
+
+# Preset Ayer
+- tapOn:
+    id: "filtro-rango-ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos ayer"
+    timeout: 30000
+- assertVisible: "Pedidos ayer"
+
+# Preset 7 días
+- tapOn:
+    id: "filtro-rango-7d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos últimos 7 días"
+    timeout: 30000
+- assertVisible: "Pedidos últimos 7 días"
+
+# Preset 30 días
+- tapOn:
+    id: "filtro-rango-30d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos últimos 30 días"
+    timeout: 30000
+- assertVisible: "Pedidos últimos 30 días"
+- takeScreenshot: sa-tenant-02-pedidos-30d
+
+# No-leak cross-tenant en pedidos.
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+# Volver a Hoy (estado determinista del tab).
+- tapOn:
+    id: "filtro-rango-hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 30000
+
+# ============================================================
+# BLOQUE B: COBROS TENANT-WIDE (tab Cobrar)
+# ============================================================
+
+- tapOn: "Cobrar"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: ".*Cobros.*"
+    timeout: 30000
+- assertVisible: ".*Cobros.*"
+- assertNotVisible: "Pendiente de Cobro"
+- assertVisible: ".*en toda la empresa.*"
+- takeScreenshot: sa-tenant-03-cobros-hoy
+
+# Preset Ayer
+- tapOn:
+    id: "filtro-rango-ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros ayer"
+    timeout: 30000
+- assertVisible: "Cobros ayer"
+
+# Preset 7 días
+- tapOn:
+    id: "filtro-rango-7d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros últimos 7 días"
+    timeout: 30000
+- assertVisible: "Cobros últimos 7 días"
+
+# Preset 30 días
+- tapOn:
+    id: "filtro-rango-30d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros últimos 30 días"
+    timeout: 30000
+- assertVisible: "Cobros últimos 30 días"
+- takeScreenshot: sa-tenant-04-cobros-30d
+
+# No-leak cross-tenant en cobros.
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+# Volver a Hoy (estado determinista).
+- tapOn:
+    id: "filtro-rango-hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros hoy"
+    timeout: 30000
+
+- takeScreenshot: sa-tenant-05-cierre

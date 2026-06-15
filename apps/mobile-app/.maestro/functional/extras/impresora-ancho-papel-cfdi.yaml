@@ -1,0 +1,115 @@
+appId: com.handysuites.app
+name: "Funcional > Extras > Impresora: ancho de papel 58 vs 80mm y soporte CFDI"
+---
+
+# ════════════════════════════════════════════════════════════
+# rol: VENDEDOR (vendedor1@jeyma.com)
+# use-case: impresora-ancho-papel-cfdi
+# prereq:
+#   - APK NATIVO (no Expo Go). En Expo Go isNativeAvailable()===false y la
+#     pantalla renderiza "No disponible en Expo Go" SIN el toggle de ancho
+#     (papel-58 / papel-80 no existen). Este flow valida el APK con el modulo
+#     nativo de impresion → el toggle SI se renderiza. Ver impresora.tsx L183.
+#   - Estado limpio: SIN impresora conectada ni guardada (savedDevice=null).
+#     handleWidthChange L140 dispara un Alert de confirmacion SOLO si hay
+#     connectedDevice||savedDevice. En install fresco no hay → cambia directo.
+#     El flow incluye una rama when:visible para confirmar el Alert si llegara
+#     a aparecer (degradacion segura).
+# endpoints backend tocados: ninguno (toggle local, persistido en printerStore).
+#
+# Strings validados contra app/(tabs)/impresora.tsx:
+#   - 58mm L307: "Solo soporta notas de venta y recibos. Las facturas CFDI requieren 80mm."
+#   - 80mm L306: "✓ Soporta notas de venta, recibos y CFDI (factura electrónica)"
+#   - Alert L142-143: titulo "Confirmar cambio de ancho", boton "Sí, es 80mm".
+# ════════════════════════════════════════════════════════════
+
+# 0. Login VENDEDOR via helper (deja la app en el dashboard "Hoy").
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: impresora-00-dashboard
+
+# 1. Abrir el tab Mas → Impresora.
+- tapOn:
+    text: "Más"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Impresora"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    text: "Impresora"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Impresora"
+    timeout: 15000
+
+# 2. RAMA DEGRADADA — corriendo en Expo Go (sin modulo nativo): el toggle
+#    no existe. Documentar y salir sin fallar.
+- runFlow:
+    when:
+      visible: "No disponible en Expo Go"
+    commands:
+      - assertVisible: "No disponible en Expo Go"
+      - takeScreenshot: impresora-99-expo-go-sin-toggle
+      # KNOWN-LIMITATION: ejecutar este flow contra el APK nativo
+      # (eas build --profile preview), no Expo Go.
+
+# 3. RAMA NATIVA (APK) — el toggle de ancho de papel esta presente.
+- runFlow:
+    when:
+      visible:
+        id: "papel-58"
+    commands:
+      - assertVisible: "Ancho de papel"
+
+      # 3a. Seleccionar 58mm → asserta la restriccion CFDI.
+      - tapOn:
+          id: "papel-58"
+      - waitForAnimationToEnd
+      # Si hubiese impresora guardada, aparece el Alert de confirmacion.
+      # En install fresco no aparece; degradamos por si acaso.
+      - runFlow:
+          when:
+            visible: "Confirmar cambio de ancho"
+          commands:
+            - tapOn:
+                text: ".*Sí, es 58mm.*"
+            - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Ss]olo soporta notas de venta y recibos.*"
+          timeout: 10000
+      - assertVisible:
+          text: ".*[Ss]olo soporta notas de venta y recibos.*"
+      - assertVisible:
+          text: ".*facturas CFDI requieren 80mm.*"
+      - takeScreenshot: impresora-01-58mm-sin-cfdi
+
+      # 3b. Seleccionar 80mm → asserta que SI soporta CFDI.
+      - tapOn:
+          id: "papel-80"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Confirmar cambio de ancho"
+          commands:
+            - tapOn:
+                text: ".*Sí, es 80mm.*"
+            - waitForAnimationToEnd
+      # El texto exacto es "✓ Soporta notas de venta, recibos y CFDI
+      # (factura electrónica)". Validamos por substring tolerante.
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Ss]oporta notas de venta, recibos y CFDI.*"
+          timeout: 10000
+      - assertVisible:
+          text: ".*[Ss]oporta notas de venta, recibos y CFDI.*"
+      - assertVisible:
+          text: ".*factura electrónica.*"
+      - takeScreenshot: impresora-02-80mm-con-cfdi

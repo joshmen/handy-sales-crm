@@ -1,0 +1,125 @@
+appId: com.handysuites.app
+name: "Supervisor: feed de actividad del equipo (scroll + pull-to-refresh)"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-actividad-feed-scroll
+# Rol: SUPERVISOR (supervisor@jeyma.com)
+# Capa: mobile (read-only, no muta datos)
+#
+# Objetivo: Abrir el feed "Actividad" del equipo (desde el boton
+# "Actividad" del tab Equipo), validar que renderiza el feed
+# (items de pedido/visita/cobro) o el empty state, hacer scroll
+# para ejercitar el FlatList virtualizado y un pull-to-refresh
+# para forzar el refetch del hook.
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/actividad
+#       (devuelve { data: ActividadItem[], usuarios: {id->nombre} })
+#   GET /api/mobile/supervisor/dashboard / mis-vendedores (hooks del tab)
+#
+# Pantalla RN:
+#   apps/mobile-app/app/(tabs)/equipo/actividad.tsx
+#   Header "Actividad". Empty state: titulo "Sin actividad reciente"
+#   + mensaje "Aquí verás la actividad del equipo en tiempo real".
+#   Acceso: equipo/index.tsx -> boton testID "ver-actividad".
+#
+# Prereq seed: supervisor@jeyma.com supervisa "Vendedor 1 Jeyma".
+# El feed puede venir vacio si no hay actividad reciente; el flow
+# degrada con runFlow:when:visible (no falla duro en seed vacio).
+# ============================================================
+
+# ---- FASE 1: Login SUPERVISOR ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard supervisor cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
+- takeScreenshot: sup-actividad-01-dashboard
+
+# ---- FASE 3: Tab Equipo (testID) ----
+- tapOn:
+    id: "tab-equipo"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 30000
+
+# ---- FASE 4: Abrir feed "Actividad" via boton del header (testID estable) ----
+- tapOn:
+    id: "ver-actividad"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Header de la pantalla de actividad.
+- extendedWaitUntil:
+    visible: "Actividad"
+    timeout: 20000
+- assertVisible: "Actividad"
+- takeScreenshot: sup-actividad-02-feed-abierto
+
+# ---- FASE 5: Feed con datos o empty state ----
+# Si hay actividad del equipo, suele aparecer el nombre del subordinado
+# y/o un estado (Entregado/Confirmado/Registrado, etc). Si no, el empty.
+- runFlow:
+    when:
+      visible: "Sin actividad reciente"
+    commands:
+      - assertVisible: "Sin actividad reciente"
+      - assertVisible: "Aquí verás la actividad del equipo en tiempo real"
+      - takeScreenshot: sup-actividad-03b-empty-state
+
+- runFlow:
+    when:
+      notVisible: "Sin actividad reciente"
+    commands:
+      # Feed con items: ejercitar scroll del FlatList virtualizado.
+      - takeScreenshot: sup-actividad-03-feed-con-items
+      - swipe:
+          direction: UP
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - swipe:
+          direction: UP
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: sup-actividad-04-post-scroll
+      # Volver arriba antes del pull-to-refresh.
+      - swipe:
+          direction: DOWN
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---- FASE 6: Pull-to-refresh (refetch del feed) ----
+- swipe:
+    direction: DOWN
+    duration: 900
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "Actividad"
+- takeScreenshot: sup-actividad-05-post-refresh
+
+# ---- FASE 7: No-leak cross-tenant ----
+# Usuarios de OTROS tenants no deben figurar como autores en el feed.
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- assertNotVisible: "Admin Rutas Norte"
+- takeScreenshot: sup-actividad-06-no-leak
+
+# ---- FASE 8: Volver al tab Equipo (cierre suave) ----
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 15000
+- assertVisible: "VENDEDORES"
+- takeScreenshot: sup-actividad-07-cierre-equipo

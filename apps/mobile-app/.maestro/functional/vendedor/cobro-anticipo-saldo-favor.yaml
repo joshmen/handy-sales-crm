@@ -1,0 +1,151 @@
+appId: com.handysuites.app
+name: "Vendedor: Cobro modo Anticipo genera saldo a favor"
+tags:
+  - functional
+  - vendedor
+  - cobrar
+  - anticipo
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: cobro-anticipo-saldo-favor
+# Rol: VENDEDOR (vendedor1@jeyma.com)
+#
+# Flujo:
+#   login helper -> tab "Cobrar" -> "Registrar Cobro"
+#   -> "Tipo de cobro" -> tap testID cobro-modo-2 (Anticipo)
+#   -> assert warning "Saldo a favor" -> seleccionar cliente
+#   -> escribir monto -> "Confirmar Cobro · $X"
+#   -> ConfirmModal titulo "Cobro como saldo a favor"
+#      + body ".*quedara como saldo a favor.*"
+#   -> CANCELAR el modal (idempotente: NO crea cobro real)
+#
+# Cobertura REAL: ejercita el selector de 3 modos (cobro-modo-2), el gate
+# del plan (si permiteAnticipos === false sale un toast informativo y el
+# modo NO cambia), la captura de monto y el ConfirmModal con copy de
+# anticipo. Tap real en cada paso + asserts del texto que pinta cada
+# estado.
+#
+# IDEMPOTENCIA: NO se confirma el cobro. Tras ver el ConfirmModal con el
+# copy de saldo a favor, se cancela (confirm-modal-cancel) y se sale de la
+# pantalla. Asi el re-run no contamina la cartera con cobros de prueba.
+# Si el plan NO permite anticipos, el flujo degrada: detecta el toast
+# "Plan no incluye Anticipos" y termina verde documentando el gate.
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx
+#     - testID "btn-registrar-cobro" / texto "Registrar Cobro"
+#   apps/mobile-app/app/(tabs)/cobrar/registrar.tsx
+#     - "Tipo de cobro", testID "cobro-modo-2", titulo "Anticipo",
+#       hint "Saldo a favor", warning ".*generara saldo a favor.*"
+#     - toast gate "Plan no incluye Anticipos"
+#     - "Seleccionar cliente"
+#     - boton footer "Confirmar Cobro · {monto}"
+#     - ConfirmModal titulo Anticipo -> "Cobro como saldo a favor"
+#       body -> ".*quedara como saldo a favor del cliente.*"
+#       confirmText "Confirmar"  (testID confirm-modal-confirm)
+#
+# Endpoints backend implicados (solo si se confirmara — aqui NO):
+#   POST /api/mobile/cobros  con modo=Anticipo (createCobroOffline -> sync)
+#
+# Prereq: seed Jeyma con "Abarrotes La Esquina". El plan del tenant Jeyma
+#   debe tener permitirAnticiposEnCampo=true para el happy path; si no,
+#   el flujo degrada con el contrato negativo del gate.
+# =================================================================
+
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Tab Cobrar -> Registrar Cobro.
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- tapOn:
+    id: "btn-registrar-cobro"
+
+- extendedWaitUntil:
+    visible: "Tipo de cobro"
+    timeout: 15000
+
+- takeScreenshot: cobro-anticipo-00-selector
+
+# 2) Activar modo Anticipo (testID cobro-modo-2). El boton dispara un toast
+#    de gate si el plan no lo incluye; cubrimos ambos casos.
+- tapOn:
+    id: "cobro-modo-2"
+- waitForAnimationToEnd
+
+# 2a) GATE: plan sin anticipos -> toast + modo NO cambia. Contrato negativo.
+- runFlow:
+    when:
+      visible: "Plan no incluye Anticipos"
+    commands:
+      - assertVisible: "Plan no incluye Anticipos"
+      - takeScreenshot: cobro-anticipo-01b-gate-plan
+      # Salir limpio: volver a Cobrar.
+      - back
+      - tapOn: "Cobrar"
+
+# 2b) HAPPY PATH: el warning de saldo a favor aparece -> el modo se activo.
+- runFlow:
+    when:
+      visible: "Saldo a favor"
+    commands:
+      - assertVisible:
+          text: ".*generara saldo a favor.*"
+      - takeScreenshot: cobro-anticipo-01-modo-activo
+
+      # 3) Seleccionar cliente desde el picker.
+      - tapOn:
+          text: "Seleccionar cliente"
+      - extendedWaitUntil:
+          visible: "Abarrotes La Esquina"
+          timeout: 8000
+      - tapOn: "Abarrotes La Esquina"
+      - waitForAnimationToEnd
+
+      # 4) Capturar monto.
+      - tapOn:
+          text: "0.00"
+          optional: true
+      - inputText: "150"
+      - hideKeyboard
+
+      - takeScreenshot: cobro-anticipo-02-form-lleno
+
+      # 5) Confirmar Cobro -> abre ConfirmModal. El boton es
+      #    "Confirmar Cobro · $X" -> regex con comodin.
+      - tapOn:
+          text: "Confirmar Cobro.*"
+
+      # 6) ConfirmModal con copy de anticipo / saldo a favor.
+      - extendedWaitUntil:
+          visible: "Cobro como saldo a favor"
+          timeout: 8000
+      - assertVisible:
+          text: "Cobro como saldo a favor"
+      - assertVisible:
+          text: ".*quedara como saldo a favor.*"
+
+      - takeScreenshot: cobro-anticipo-03-confirm-modal
+
+      # 7) IDEMPOTENCIA: cancelar el modal (NO crear cobro real).
+      - tapOn:
+          id: "confirm-modal-cancel"
+      - waitForAnimationToEnd
+
+      # 8) Salir de la pantalla sin registrar nada.
+      - back
+      - tapOn: "Cobrar"
+      - extendedWaitUntil:
+          visible: "Cobranza"
+          timeout: 10000
+
+- takeScreenshot: cobro-anticipo-04-flow-completo

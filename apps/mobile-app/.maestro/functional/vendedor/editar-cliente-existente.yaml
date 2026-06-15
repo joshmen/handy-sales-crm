@@ -1,0 +1,163 @@
+appId: com.handysuites.app
+name: "Vendedor: Editar cliente existente y guardar"
+tags:
+  - functional
+  - vendedor
+  - clientes
+  - editar
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: editar-cliente-existente
+# Rol: VENDEDOR (vendedor1@jeyma.com)
+#
+# Flujo:
+#   login helper -> tab "Mas" -> "Clientes" -> tap "Abarrotes La Esquina"
+#   -> detalle del cliente -> "Editar Cliente" -> pantalla "Editar Cliente"
+#   -> editar el campo Telefono (10 digitos) -> "Actualizar Cliente"
+#   -> assert toast "Cliente actualizado" + regreso al detalle
+#
+# Cobertura REAL: navega + escribe en un input + tap submit real + assert
+# del toast de exito. El campo Telefono valida 10 digitos (regex en
+# crear.tsx via ClienteCreateRequestSchema), por eso usamos un numero
+# de 10 digitos.
+#
+# IDEMPOTENCIA: editar un cliente del seed es naturalmente re-ejecutable —
+# escribimos un telefono fijo y valido (5512345678). El re-run vuelve a
+# escribir el mismo valor; no acumula estado sucio. Si el campo trae un
+# valor previo, clearText lo limpia antes de escribir.
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/clients/[id].tsx
+#     - boton "Editar Cliente" (navega a crear?editId=)
+#   apps/mobile-app/app/(tabs)/clients/crear.tsx
+#     - header isEditing -> "Editar Cliente"
+#     - label "Teléfono", accessibilityLabel "Teléfono"
+#     - submit isEditing -> "Actualizar Cliente"
+#     - onSuccess toast text1 isEditing -> "Cliente actualizado"
+#   apps/mobile-app/app/(tabs)/mas.tsx  (item "Clientes")
+#
+# Endpoints backend implicados:
+#   GET   /api/clientes/{id}      -> carga datos existentes (load effect)
+#   PUT   /api/clientes/{id}      -> clientesApi.update (guardar)
+#   (fallback offline: WatermelonDB updateFields si ERR_NETWORK)
+#
+# Prereq: seed Jeyma con cliente "Abarrotes La Esquina" sincronizado.
+# =================================================================
+
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Abrir el menu "Mas" y entrar a Clientes.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+- tapOn: "Clientes"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 15000
+
+- takeScreenshot: editar-cliente-01-lista
+
+# 2) Abrir el detalle del cliente seed.
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+
+# El detalle muestra el nombre como header + "Información de Contacto".
+- extendedWaitUntil:
+    visible: "Información de Contacto"
+    timeout: 15000
+
+- assertVisible:
+    text: "Editar Cliente"
+
+- takeScreenshot: editar-cliente-02-detalle
+
+# 3) Entrar al formulario de edicion.
+- tapOn:
+    text: "Editar Cliente"
+- waitForAnimationToEnd
+
+# Header en modo edicion + carga de datos existentes.
+- extendedWaitUntil:
+    visible: "Editar Cliente"
+    timeout: 15000
+
+# El campo Telefono esta en "INFORMACIÓN GENERAL"; aseguramos que sea visible.
+# Hay un <Text> label "Teléfono" justo encima del <TextInput> (placeholder
+# "10 dígitos (opcional)", accessibilityLabel "Teléfono"). El input solo
+# muestra el placeholder cuando esta vacio; al editar suele venir con valor.
+- scrollUntilVisible:
+    element:
+      text: "Teléfono"
+    direction: DOWN
+    timeout: 8000
+
+- takeScreenshot: editar-cliente-03-form-editar
+
+# 4) Editar el telefono.
+#    Caso A — el campo trae valor del seed: el placeholder NO esta visible.
+#       Tapeamos el input por su accessibilityLabel "Teléfono". El primer
+#       nodo con ese texto es el <Text> label (no editable); el segundo es
+#       el TextInput. Usamos index:1 para caer en el input editable.
+#    Caso B — el campo viene vacio: el placeholder "10 dígitos (opcional)"
+#       es visible y tapeable directamente.
+- runFlow:
+    when:
+      visible: "10 dígitos (opcional)"
+    commands:
+      - tapOn:
+          text: "10 dígitos (opcional)"
+      - inputText: "5512345678"
+      - hideKeyboard
+- runFlow:
+    when:
+      notVisible: "10 dígitos (opcional)"
+    commands:
+      - tapOn:
+          text: "Teléfono"
+          index: 1
+      - eraseText: 15
+      - inputText: "5512345678"
+      - hideKeyboard
+
+- takeScreenshot: editar-cliente-04-telefono-editado
+
+# 5) Guardar — boton "Actualizar Cliente" en el footer.
+- scrollUntilVisible:
+    element:
+      text: "Actualizar Cliente"
+    direction: DOWN
+    timeout: 8000
+
+- tapOn:
+    text: "Actualizar Cliente"
+
+# 6) Assert del toast de exito. onSuccess hace router.back() casi inmediato,
+#    asi que el toast "Cliente actualizado" puede ser breve -> extendedWaitUntil.
+- extendedWaitUntil:
+    visible: "Cliente actualizado"
+    timeout: 12000
+
+- takeScreenshot: editar-cliente-05-toast-exito
+
+# 7) Confirmar regreso al detalle (header con nombre + acciones).
+- extendedWaitUntil:
+    visible: "Información de Contacto"
+    timeout: 12000
+    optional: true
+
+- assertNotVisible: "No se pudo crear el cliente"
+- assertNotVisible: "No se pudo cargar el cliente"
+
+- takeScreenshot: editar-cliente-06-vuelta-detalle

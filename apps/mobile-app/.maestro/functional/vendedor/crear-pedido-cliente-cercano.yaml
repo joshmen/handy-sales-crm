@@ -1,0 +1,114 @@
+appId: com.handysuites.app
+name: "Funcional > Vendedor > Crear pedido cliente cercano"
+---
+
+# ════════════════════════════════════════════════════════════
+# ROL:       Vendedor (vendedor1@jeyma.com)
+# USE-CASE:  crear-pedido-cliente-cercano
+# PREREQ:    La seccion "Cercanos a ti" (useNearbyClients, Haversine local)
+#            SOLO aparece si: (a) el dispositivo otorgo permiso GPS, y
+#            (b) los clientes del vendedor tienen lat/lng poblados y estan a
+#            <= 0.5 km. En el emulador sin GPS fijado o con clientes sin
+#            coordenadas, la seccion NO se renderiza. Por eso el flow DEGRADA:
+#            todo el camino "cercano" va envuelto en when:visible
+#            "Cercanos a ti"; si no hay cercanos, cae a un fallback por
+#            busqueda de texto para igual probar el avance a Productos.
+# ENDPOINTS: Ninguno backend en este flow (solo navegacion + WDB read).
+#            handleSelectAndContinue: 1 tap selecciona Y avanza a Productos.
+#
+# FLUJO:
+#   1. Login vendedor (helper) → dashboard "Hoy".
+#   2. Tab Vender → FAB → "Preventa" (degrada si sheet auto-skip).
+#   3. Paso Cliente: si visible seccion "Cercanos a ti" → tap primer card
+#      cercano (1 tap = seleccionar + avanzar).
+#   4. Assert que llegamos al paso "Productos".
+#   5. Fallback sin cercanos: seleccionar cliente seed por busqueda +
+#      Continuar, y assert "Productos" igual.
+#
+# Screen: vender/crear/index.tsx (seccion "Cercanos a ti", nearbyCard,
+#         handleSelectAndContinue), vender/crear/productos.tsx.
+# ════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR.
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: func-cercano-00-hoy
+
+# 2. Tab Vender → FAB.
+- tapOn:
+    id: "tab-vender"
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# BottomSheet tipo de venta — degrada si auto-skip.
+- runFlow:
+    when:
+      visible: "Preventa"
+    commands:
+      - tapOn:
+          text: "Preventa"
+      - waitForAnimationToEnd
+
+# 3. Paso 1 — Seleccionar Cliente.
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- takeScreenshot: func-cercano-01-cliente
+
+# CAMINO A — Cercanos a ti disponible. handleSelectAndContinue: tap en el
+# primer card cercano selecciona Y avanza directo a Productos (1 tap).
+- runFlow:
+    when:
+      visible: "Cercanos a ti"
+    commands:
+      - takeScreenshot: func-cercano-02-seccion-cercanos
+      # El primer nearbyCard es el primer card horizontal bajo el header
+      # "Cercanos a ti". Tocamos el primer texto de cliente cercano. Como
+      # no conocemos el nombre exacto del cercano, tapeamos el card cuyo
+      # accessibilityLabel arranca con "Vender a" (nearbyCard).
+      - tapOn:
+          text: ".*Vender a.*"
+          index: 0
+      - waitForAnimationToEnd
+      # handleSelectAndContinue navega a Productos automaticamente.
+      - extendedWaitUntil:
+          visible: "Productos"
+          timeout: 15000
+      - assertVisible: "Productos"
+      - takeScreenshot: func-cercano-03-productos-desde-cercano
+
+# CAMINO B — Fallback sin GPS/cercanos: seleccionar cliente seed por
+# busqueda y Continuar manualmente. Solo si la seccion "Cercanos a ti" no
+# aparecio (seguimos en "Seleccionar Cliente").
+- runFlow:
+    when:
+      visible: "Seleccionar Cliente"
+    commands:
+      - takeScreenshot: func-cercano-02b-sin-cercanos
+      - tapOn:
+          text: "Buscar cliente..."
+      - inputText: "Abarrotes La Esquina"
+      - waitForAnimationToEnd
+      - hideKeyboard
+      - extendedWaitUntil:
+          visible: "Abarrotes La Esquina"
+          timeout: 10000
+      - tapOn: "Abarrotes La Esquina"
+      - waitForAnimationToEnd
+      - tapOn: "Continuar"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Productos"
+          timeout: 15000
+      - assertVisible: "Productos"
+      - takeScreenshot: func-cercano-03b-productos-desde-busqueda

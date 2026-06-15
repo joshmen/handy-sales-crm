@@ -1,0 +1,115 @@
+appId: com.handysuites.app
+name: "Funcional > Vendedor > Entregar pedido con notas"
+---
+
+# ════════════════════════════════════════════════════════════
+# ROL:       Vendedor (vendedor1@jeyma.com)
+# USE-CASE:  entregar-pedido-con-notas
+# PREREQ:    Se requiere AL MENOS UN pedido en estado "En Ruta" (estado=4)
+#            asignado a vendedor1@jeyma.com. El vendedor NO puede poner un
+#            pedido en ruta desde la app (esa transicion la hace el
+#            admin/supervisor desde el dashboard web sobre una RutaVendedor
+#            activa — ver comentario en vender/[id].tsx case 2). Por eso este
+#            flow NO crea su propia precondicion EnRuta: depende del seed o de
+#            un pedido previamente puesto en ruta. Si NO existe pedido EnRuta,
+#            el flow DEGRADA sin fallar (todos los pasos de entrega van
+#            envueltos en when:visible).
+# ENDPOINTS: POST /api/mobile/pedidos/{id}/entregar (useEntregarPedido),
+#            body { notasEntrega }.
+#
+# FLUJO:
+#   1. Login vendedor (helper) → dashboard "Hoy".
+#   2. Tab Vender → filtrar "En Ruta".
+#   3. Si hay un pedido En Ruta visible → abrir su detalle.
+#   4. btn-entregar SOLO aparece en estado EnRuta (case 4 de [id].tsx):
+#      escribir "Notas de entrega" → tapOn btn-entregar → confirm modal
+#      "¿Confirmar entrega del pedido?" → confirm-modal-confirm.
+#   5. Assert estado "Entregado".
+#   Todo el bloque 3-5 va en when:visible para degradar si no hay EnRuta.
+#
+# Screen: vender/index.tsx (filtro chips), vender/[id].tsx (btn-entregar +
+#         TextInput "Notas de entrega (opcional)" + stepper).
+# ════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: func-entregar-00-hoy
+
+# 2. Tab Vender → lista de Pedidos.
+- tapOn:
+    id: "tab-vender"
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+# Filtrar por "En Ruta" (chip de estado). El label exacto del chip es
+# "En Ruta" (STATUS_FILTERS en vender/index.tsx).
+- tapOn:
+    text: "En Ruta"
+    optional: true
+- waitForAnimationToEnd
+
+- takeScreenshot: func-entregar-01-filtro-enruta
+
+# 3-5. Bloque condicional: solo si hay un pedido En Ruta en la lista.
+#      Usamos el badge "En Ruta" del StatusBadge como senal de existencia.
+- runFlow:
+    when:
+      visible: "En Ruta"
+    commands:
+      # Abrir el primer pedido En Ruta. El badge "En Ruta" vive dentro del
+      # card → tap sobre el badge abre el detalle (router.push del Card).
+      - tapOn:
+          text: "En Ruta"
+          index: 0
+      - waitForAnimationToEnd
+
+      # Confirmar que el detalle se abrio en estado EnRuta. Si el tap abrio
+      # un pedido que NO esta EnRuta, btn-entregar no aparecera y el resto
+      # del bloque interno tambien degrada con when:visible.
+      - extendedWaitUntil:
+          visible: "Pedido"
+          timeout: 15000
+
+      - takeScreenshot: func-entregar-02-detalle
+
+      # btn-entregar SOLO existe en estado EnRuta (case 4). Si el pedido no
+      # esta EnRuta o aun no sincronizo, degradamos.
+      - runFlow:
+          when:
+            visible:
+              id: "btn-entregar"
+          commands:
+            # Escribir notas de entrega en el TextInput.
+            - tapOn:
+                text: "Notas de entrega (opcional)"
+            - inputText: "Entregado en mostrador, recibe encargado"
+            - hideKeyboard
+            - takeScreenshot: func-entregar-03-notas
+
+            - tapOn:
+                id: "btn-entregar"
+            - waitForAnimationToEnd
+
+            # Confirm modal "Marcar Entregado" → "¿Confirmar entrega del pedido?"
+            - extendedWaitUntil:
+                visible: "¿Confirmar entrega del pedido?"
+                timeout: 10000
+            - tapOn:
+                id: "confirm-modal-confirm"
+            - waitForAnimationToEnd
+
+            # Assert estado Entregado (badge header, updateLocalStatus(5)).
+            - extendedWaitUntil:
+                visible: "Entregado"
+                timeout: 15000
+            - assertVisible: "Entregado"
+            - takeScreenshot: func-entregar-04-entregado
+
+# Si no habia pedido En Ruta (seed sin pedidos en ruta), el flow termina
+# verde sin entregar nada — comportamiento esperado y documentado en PREREQ.

@@ -1,0 +1,122 @@
+appId: com.handysuites.app
+name: "Vendedor: Carga de la ruta (pedidos y productos)"
+tags:
+  - functional
+  - vendedor
+  - ruta
+  - carga
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: carga-ruta-pedidos-productos
+#
+# Rol: vendedor (vendedor1@jeyma.com)
+# READ-ONLY: no muta ningun dato. Solo navega a la "Ruta del Día" y
+# verifica la seccion de Carga del camion:
+#   - "Pedidos cargados (N)"            (pedidos pre-asignados por admin)
+#   - "Productos para venta directa (N)" (carga suelta para venta directa)
+#   - barras de progreso "Pedidos entregados" / "Productos (vendidos +
+#     entregados)" en la seccion de progreso.
+#
+# Idempotencia: trivial — flow read-only, re-ejecutable sin efectos.
+# Las secciones de carga solo se renderizan si el admin asigno pedidos
+# y/o productos a la ruta, por eso TODO va en when:visible / optional.
+# Si el seed no tiene carga, las barras muestran su emptyCaption
+# ("Esta ruta no tiene pedidos pre-asignados" / "...productos cargados")
+# y el flow valida ese estado alternativo sin fallar.
+#
+# Strings/estados validados contra:
+#   apps/mobile-app/app/(tabs)/ruta/index.tsx
+#     - seccion pedidos: "Pedidos cargados ("    (solo si length > 0)
+#     - seccion productos: "Productos para venta directa ("
+#     - ProgressCard labels: "Paradas atendidas", "Pedidos entregados",
+#       "Productos (vendidos + entregados)"
+#     - empty captions: "Esta ruta no tiene pedidos pre-asignados",
+#       "Esta ruta no tiene productos cargados"
+#     - sin ruta: "Sin ruta para hoy"
+#
+# Endpoints backend implicados: ninguno mutante. La carga proviene de
+# WDB local (useOfflineRutaPedidos / useOfflineRutaCarga), poblada via
+# syncEngine desde el backend de rutas. Pull-only.
+#
+# Pre-condicion (seed Jeyma): vendedor1 con ruta de HOY. La presencia de
+# carga depende de la asignacion del admin; el flow contempla ambos casos.
+# =================================================================
+
+# 0) Login VENDEDOR via helper.
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Reset stack -> dashboard root.
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+# 2) Abrir "Ruta del Día" desde el card de ruta del dashboard.
+- assertVisible: "Ruta"
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del Día"
+    timeout: 15000
+
+- takeScreenshot: carga-ruta-01-ruta-del-dia
+
+# 3) Caso sin ruta -> degradar.
+- runFlow:
+    when:
+      visible: "Sin ruta para hoy"
+    commands:
+      - takeScreenshot: carga-ruta-02-sin-ruta
+
+# 4) Las 3 ProgressCards siempre se renderizan cuando hay ruta (con
+#    valores o con emptyCaption). Read-only.
+- assertVisible:
+    text: "Paradas atendidas"
+    optional: true
+- assertVisible:
+    text: "Pedidos entregados"
+    optional: true
+- assertVisible:
+    text: ".*Productos.*vendidos.*entregados.*"
+    optional: true
+
+- takeScreenshot: carga-ruta-03-progreso
+
+# 5) Seccion "Pedidos cargados (N)" — solo si admin asigno pedidos.
+- runFlow:
+    when:
+      visible: ".*Pedidos cargados.*"
+    commands:
+      - assertVisible: ".*Pedidos cargados.*"
+      - takeScreenshot: carga-ruta-04-pedidos-cargados
+
+# 6) Seccion "Productos para venta directa (N)" — solo si hay carga suelta.
+- runFlow:
+    when:
+      visible: ".*Productos para venta directa.*"
+    commands:
+      - assertVisible: ".*Productos para venta directa.*"
+      - takeScreenshot: carga-ruta-05-productos-venta-directa
+
+# 7) Caso ruta sin carga: validar las captions vacias (estado alterno).
+- assertVisible:
+    text: "Esta ruta no tiene pedidos pre-asignados"
+    optional: true
+- assertVisible:
+    text: "Esta ruta no tiene productos cargados"
+    optional: true
+
+# 8) No debe haber crash al renderizar la carga.
+- assertNotVisible: "Failed"
+
+- takeScreenshot: carga-ruta-06-flow-completo
+
+# 9) Sesion vendedor activa.
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Hoy"

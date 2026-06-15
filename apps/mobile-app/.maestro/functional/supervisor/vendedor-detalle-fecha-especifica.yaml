@@ -1,0 +1,112 @@
+appId: com.handysuites.app
+name: "Supervisor: detalle vendedor por preset de fecha (Hoy/Ayer/7 dias)"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-vendedor-detalle-fecha
+# Rol: SUPERVISOR (supervisor@jeyma.com)
+# Capa: mobile (read-only, no muta datos)
+#
+# Objetivo: Desde el tab Equipo, abrir el detalle de
+# "Vendedor 1 Jeyma" y recorrer los presets de fecha. La pantalla
+# NO tiene date picker libre (equipo/vendedor/[id].tsx solo expone
+# presets Hoy / Ayer / 7 dias), asi que se selecciona el preset y
+# se valida que el label de seccion del resumen cambia en sincronia:
+#   Hoy   -> "RESUMEN DEL DIA"  (+ grid testID vendedor-stats)
+#   Ayer  -> "RESUMEN DE AYER"  (+ grid testID vendedor-stats)
+#   7 dias-> "ULTIMOS 7 DIAS"   (lista por dia, sin grid)
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/vendedores/{id}/resumen
+#       (sin params = hoy; ?fecha=YYYY-MM-DD = ayer; ?rango=7d)
+#   GET /api/mobile/supervisor/mis-vendedores (consumido por el hook de lista)
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/equipo/index.tsx
+#   apps/mobile-app/app/(tabs)/equipo/vendedor/[id].tsx
+#
+# Prereq seed (suite-supervisor-mobile-flow):
+#   supervisor@jeyma.com supervisa "Vendedor 1 Jeyma". El detalle
+#   carga aunque el vendedor no tenga actividad (stats en 0).
+# ============================================================
+
+# ---- FASE 1: Login SUPERVISOR (helper robusto: onboarding/consent/logout) ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard supervisor cargado ----
+# El dashboard supervisor expone el KPI "Vendedores activos".
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
+- takeScreenshot: sup-vend-fecha-01-dashboard
+
+# ---- FASE 3: Ir al tab Equipo (por testID, "EQUIPO" colisiona con header) ----
+- tapOn:
+    id: "tab-equipo"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# La lista de vendedores carga con latencia; esperar al subordinado.
+- extendedWaitUntil:
+    visible: "Vendedor 1 Jeyma"
+    timeout: 30000
+- assertVisible: "VENDEDORES"
+- takeScreenshot: sup-vend-fecha-02-lista-equipo
+
+# ---- FASE 4: Abrir detalle de "Vendedor 1 Jeyma" ----
+- tapOn: "Vendedor 1 Jeyma"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Header de la pantalla de detalle.
+- extendedWaitUntil:
+    visible: "Detalle Vendedor"
+    timeout: 20000
+- assertVisible: "Detalle Vendedor"
+
+# ---- FASE 5: Preset por defecto = Hoy -> "RESUMEN DEL DIA" + grid de stats ----
+# El grid hoy/ayer renderiza testID vendedor-stats (Pedidos/Ventas/Visitas/Cobros/Clientes).
+- extendedWaitUntil:
+    visible: ".*RESUMEN DEL D.*A.*"
+    timeout: 20000
+- assertVisible:
+    id: "vendedor-stats"
+- assertVisible: "Hoy"
+- assertVisible: "Ayer"
+- assertVisible: "7 días"
+- takeScreenshot: sup-vend-fecha-03-preset-hoy
+
+# ---- FASE 6: Preset "Ayer" -> "RESUMEN DE AYER" (mismo grid) ----
+- tapOn: "Ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: ".*RESUMEN DE AYER.*"
+    timeout: 20000
+- assertVisible: ".*RESUMEN DE AYER.*"
+- assertVisible:
+    id: "vendedor-stats"
+- takeScreenshot: sup-vend-fecha-04-preset-ayer
+
+# ---- FASE 7: Preset "7 días" -> "ULTIMOS 7 DIAS" (lista por dia, sin grid) ----
+- tapOn: "7 días"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: ".*LTIMOS 7 D.*AS.*"
+    timeout: 20000
+- assertVisible: ".*LTIMOS 7 D.*AS.*"
+- takeScreenshot: sup-vend-fecha-05-preset-7d
+
+# ---- FASE 8: Volver a "Hoy" (estado idempotente para encadenar suites) ----
+- tapOn: "Hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: ".*RESUMEN DEL D.*A.*"
+    timeout: 20000
+- assertVisible: ".*RESUMEN DEL D.*A.*"
+- takeScreenshot: sup-vend-fecha-06-vuelta-hoy

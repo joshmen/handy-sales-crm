@@ -1,0 +1,142 @@
+appId: com.handysuites.app
+name: "Funcional > Vendedor > Browse productos y filtro"
+---
+
+# ════════════════════════════════════════════════════════════
+# ROL:       Vendedor (vendedor1@jeyma.com)
+# USE-CASE:  browse-productos-filtro
+# PREREQ:    Seed Jeyma (producto "Coca-Cola 2L" buscable por "coca", con
+#            campo stockDisponible → badge "Stock: N"). Categorias del tenant
+#            (useCategoriasProducto): los chips de categoria SOLO se renderizan
+#            si categorias.data.length > 0 → el paso de filtro por categoria va
+#            envuelto en when:visible para degradar si el tenant no tiene
+#            categorias. READ-ONLY: este flow no muta datos (no agrega al
+#            carrito ni crea pedido), por lo que es idempotente por naturaleza.
+# ENDPOINTS: Ninguno backend (WDB read via useOfflineProducts +
+#            useCategoriasProducto). Busqueda con debounce.
+#
+# FLUJO:
+#   1. Login vendedor (helper) → dashboard "Hoy".
+#   2. Tab Vender → FAB → "Preventa" → Cliente seed → Continuar
+#      (para entrar al STEP "Productos" del stepper de creacion, que es el
+#       que el prompt pide ejercitar; alli viven busqueda + chips + stock).
+#   3. Step Productos: buscar "coca" → assert "Coca-Cola 2L".
+#   4. Assert badge de stock ("Stock:" o "Sin stock") en el resultado.
+#   5. Filtro de categoria: si hay chips, tap "Todos" (siempre presente) y un
+#      chip de categoria si existe → re-assert que la lista responde.
+#   6. Limpiar busqueda → re-assert que reaparecen mas productos.
+#
+# Screen: vender/crear/productos.tsx (Step 2: search "Buscar producto...",
+#         chips "Todos"+categorias, stockLabel "Stock: N"/"Sin stock").
+#         Tambien aplica a vender/productos.tsx (lista standalone misma UI).
+# ════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR.
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: func-browse-prod-00-hoy
+
+# 2. Tab Vender → FAB → tipo de venta → cliente → entrar al step Productos.
+- tapOn:
+    id: "tab-vender"
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Preventa"
+    commands:
+      - tapOn:
+          text: "Preventa"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 10000
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# 3. Step Productos del stepper.
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- takeScreenshot: func-browse-prod-01-step-productos
+
+# Buscar "coca" → debe aparecer "Coca-Cola 2L".
+- tapOn:
+    text: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Coca-Cola 2L.*"
+    timeout: 10000
+- assertVisible:
+    text: ".*Coca-Cola 2L.*"
+
+- takeScreenshot: func-browse-prod-02-busqueda-coca
+
+# 4. Badge de stock en el resultado — "Stock: N" (con stock) o "Sin stock".
+#    Cualquiera de los dos confirma que el stockLabel se renderiza.
+- assertVisible:
+    text: ".*Stock:.*|.*Sin stock.*"
+
+# 5. Filtro de categoria — chips solo si el tenant tiene categorias.
+#    "Todos" siempre esta presente cuando el bloque de chips se renderiza.
+- runFlow:
+    when:
+      visible: "Todos"
+    commands:
+      - takeScreenshot: func-browse-prod-03-chips-categoria
+      # Tap "Todos" (sin filtro) — debe mantener Coca-Cola visible.
+      - tapOn:
+          text: "Todos"
+      - waitForAnimationToEnd
+      - assertVisible:
+          text: ".*Coca-Cola 2L.*"
+          optional: true
+
+# 6. Limpiar busqueda → reaparecen mas productos (sin filtro de texto).
+- tapOn:
+    text: "coca"
+- eraseText: 8
+- waitForAnimationToEnd
+- hideKeyboard
+
+# Coca-Cola sigue en el catalogo sin filtro de texto.
+- extendedWaitUntil:
+    visible:
+      text: ".*Coca-Cola 2L.*"
+    timeout: 10000
+- assertVisible:
+    text: ".*Coca-Cola 2L.*"
+
+- takeScreenshot: func-browse-prod-04-sin-filtro
+
+# READ-ONLY: salimos sin agregar al carrito ni crear pedido. Back para no
+# dejar un draft a medias (reset lo maneja el store en el siguiente FAB).
+- back
+- waitForAnimationToEnd
