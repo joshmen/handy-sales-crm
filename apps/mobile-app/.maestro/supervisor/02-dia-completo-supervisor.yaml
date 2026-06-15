@@ -104,8 +104,10 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
     visible: "Pedidos"
     timeout: 10000
 
-# Verificar que la pantalla de pedidos cargó (lista o vacía)
-- assertVisible: "Todos"
+# Vista agregada del equipo (AdminTenantPedidosList): el chip de rango "Hoy"
+# (testID filtro-rango-hoy) confirma que cargó. No existe filtro "Todos".
+- assertVisible:
+    id: "filtro-rango-hoy"
 
 - takeScreenshot: "dia-06-pedidos-lista"
 

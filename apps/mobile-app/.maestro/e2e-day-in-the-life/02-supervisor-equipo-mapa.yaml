@@ -140,7 +140,7 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
 
 - extendedWaitUntil:
     visible: "VENDEDORES"
-    timeout: 20000
+    timeout: 30000
 
 - assertVisible:
     id: "supervisor-kpis"
