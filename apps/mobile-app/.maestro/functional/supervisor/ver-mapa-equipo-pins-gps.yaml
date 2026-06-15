@@ -31,78 +31,12 @@ name: "Supervisor - Ver mapa del equipo con pins GPS de vendedores"
 #    fechaUbicacion, clienteNombre?)
 # ════════════════════════════════════════════════════════════
 
-# NO clearState: mantiene sesión y caches si existen
-- launchApp:
-    clearState: false
-
-# 1. Saltar onboarding si aparece (primer arranque)
+# 1. LOGIN SUPERVISOR (helper robusto: onboarding/consent/logout)
 - runFlow:
-    when:
-      visible: "Siguiente"
-    commands:
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-
-# 2. Login como supervisor si la pantalla de login está visible
-- runFlow:
-    when:
-      visible:
-        id: "login-button"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: "supervisor@jeyma.com"
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-
-# 3. Esperar al dashboard "Hoy" hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 60000
-
-# 4. Dismiss de modales opcionales (permisos, privacidad, sync)
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-          optional: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # 5. Verificar que el dashboard supervisor cargo (KPI "Vendedores activos")
 #    (rol supervisor = tab Equipo presente). "Mi Equipo" es el titulo del
@@ -116,7 +50,8 @@ name: "Supervisor - Ver mapa del equipo con pins GPS de vendedores"
 # FASE A: NAVEGAR AL TAB EQUIPO
 # ════════════════════════════════════════════════════════════
 
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 # Esperar a que la pantalla Equipo cargue KPIs y la sección VENDEDORES

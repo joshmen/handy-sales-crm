@@ -21,77 +21,12 @@ name: "Supervisor: vista agregada de pedidos y cobros del equipo"
 #                 (alineado con suite-supervisor-mobile-flow.yaml).
 # ============================================================
 
-- launchApp:
-    clearState: true
-
-# ---- Aviso de Privacidad opcional ----
+# ---- FASE 1: Login SUPERVISOR (helper robusto: onboarding/consent/logout) ----
 - runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# ---- FASE 1: Login SUPERVISOR ----
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "supervisor@jeyma.com"
-
-- pressKey: "TAB"
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: supervisor-pedcob-01-login
-
-# ---- FASE 2: Consents / permisos post-login ----
-
-- runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ---- FASE 3: Dashboard SUPERVISOR loaded ----
 # "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy.
@@ -108,8 +43,8 @@ name: "Supervisor: vista agregada de pedidos y cobros del equipo"
 # /api/mobile/supervisor/mis-vendedores. Capturamos ese state para
 # usarlo como referencia visual contra las pantallas /pedidos y /cobros.
 
-- tapOn: "Equipo"
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -165,7 +100,8 @@ name: "Supervisor: vista agregada de pedidos y cobros del equipo"
     when:
       visible: "Hoy"
     commands:
-      - tapOn: "Hoy"
+      - tapOn:
+          id: "filtro-rango-hoy"
       - waitForAnimationToEnd:
           timeout: 3000
       - takeScreenshot: supervisor-pedcob-06-filtro-hoy
@@ -262,7 +198,8 @@ name: "Supervisor: vista agregada de pedidos y cobros del equipo"
     when:
       visible: "Hoy"
     commands:
-      - tapOn: "Hoy"
+      - tapOn:
+          id: "filtro-rango-hoy"
       - waitForAnimationToEnd:
           timeout: 3000
       - takeScreenshot: supervisor-pedcob-14-cobros-filtro-hoy
@@ -287,42 +224,7 @@ name: "Supervisor: vista agregada de pedidos y cobros del equipo"
 
 # ---- FASE 7: Screenshot final consolidado ----
 
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 - takeScreenshot: supervisor-pedcob-17-cierre-equipo
-
-# ---- FASE 8: Logout limpio (deja device estable para siguiente suite) ----
-# FIXME logout vive en tab Más, no en Configuración. El boton real es
-# "Cerrar Sesión" (mas.tsx) y el ConfirmModal confirma con "Cerrar Sesión".
-# La navegacion (entrar a Configuración para buscar logout) es incorrecta;
-# reestructurar para tapear logout directo en el tab Más. Verificar en emulador.
-
-- tapOn:
-    text: "Más"
-    optional: true
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar Sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar Sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Cerrar Sesión"
-          commands:
-            - tapOn:
-                text: "Cerrar Sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: supervisor-pedcob-18-logout

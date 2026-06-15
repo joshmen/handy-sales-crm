@@ -32,83 +32,12 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 #   - Over-share de pedidos de otro tenant (Huichol / Centro).
 # ============================================================
 
-- launchApp:
-    clearState: false
-
-# ---- Aviso de Privacidad opcional ----
+# ---- FASE 1: Login SUPERVISOR (helper robusto: onboarding/consent/logout) ----
 - runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# ---- FASE 1: Login SUPERVISOR ----
-# Si ya hay sesion (clearState:false), el email-input no aparece y saltamos.
-- runFlow:
-    when:
-      visible:
-        id: "email-input"
-    commands:
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - tapOn:
-          id: "email-input"
-      - inputText: "supervisor@jeyma.com"
-      - pressKey: "TAB"
-      - tapOn:
-          id: "password-input"
-      - inputText: "test123"
-      - tapOn:
-          id: "login-button"
-
-# ---- FASE 2: Consents post-login (opcionales) ----
-- runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Mas tarde"
-    commands:
-      - tapOn:
-          text: "Mas tarde"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ---- FASE 3: Dashboard supervisor cargado ----
 # "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy. El
@@ -141,7 +70,8 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 - takeScreenshot: sup-pedidos-presets-02-default-hoy
 
 # ---- FASE 5: Preset "Ayer" ----
-- tapOn: "Ayer"
+- tapOn:
+    id: "filtro-rango-ayer"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -153,7 +83,8 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 - takeScreenshot: sup-pedidos-presets-03-ayer
 
 # ---- FASE 6: Preset "7 días" ----
-- tapOn: "7 días"
+- tapOn:
+    id: "filtro-rango-7d"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -165,7 +96,8 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 - takeScreenshot: sup-pedidos-presets-04-7d
 
 # ---- FASE 7: Preset "30 días" ----
-- tapOn: "30 días"
+- tapOn:
+    id: "filtro-rango-30d"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -177,7 +109,8 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 - takeScreenshot: sup-pedidos-presets-05-30d
 
 # ---- FASE 8: Vuelta a "Hoy" (estado idempotente para siguiente suite) ----
-- tapOn: "Hoy"
+- tapOn:
+    id: "filtro-rango-hoy"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -200,7 +133,8 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 # ---- FASE 10: Cierre suave ----
 # No hacemos logout para mantener la sesion estable y permitir encadenar
 # este flow con suite-supervisor-mobile-flow.yaml sin re-login.
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: sup-pedidos-presets-07-cierre-equipo

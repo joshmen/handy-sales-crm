@@ -41,24 +41,12 @@ name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 # WatermelonDB: clients table con pending_sync=true en modo offline.
 # ════════════════════════════════════════════════════════════
 
-# 0. Dashboard 'Hoy' visible — confirma sesión vendedor activa.
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
-# 1. Dismiss modales opcionales (Aviso de Privacidad / promos).
+# 0. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Cerrar"
-    commands:
-      - tapOn:
-          text: "Cerrar"
-          optional: true
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # 2. Navegar a tab Más (vendedor sin tab Clientes directo).
 - tapOn: "Más"

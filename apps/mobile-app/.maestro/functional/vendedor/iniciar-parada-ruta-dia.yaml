@@ -42,65 +42,14 @@ tags:
 # asignada para el dia con al menos una parada Pendiente.
 # =================================================================
 
-launchApp:
-  clearState: false
-
-# 0) Dismiss modales opcionales (permisos GPS, banners, KeepAwake,
-#    Aviso de Privacidad). runFlow when:visible no rompe si no existen.
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Continuar"
-    commands:
-      - tapOn: "Continuar"
-      - waitForAnimationToEnd
-
-# 1) Esperar dashboard "Hoy" hidratado tras login y resetear stack
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
+# 1) Resetear el stack de navegacion (doble tap "Hoy" -> root).
 - tapOn: "Hoy"
 - tapOn: "Hoy"
 - waitForAnimationToEnd

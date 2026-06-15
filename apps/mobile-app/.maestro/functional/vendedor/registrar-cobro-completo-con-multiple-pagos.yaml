@@ -25,35 +25,12 @@ tags:
 #   - Sesión inicial NO requerida: este flow ejecuta login subflow
 # ════════════════════════════════════════════════════════════════════
 
-# 1. Login VENDEDOR (subflow)
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# 2. Dismiss de modales opcionales post-login (permisos, recordatorios)
+# 1. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# 3. Verificar dashboard cargado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ════════════════════════════════════════════════════════════════════
 # HUB DE COBRANZA
@@ -154,8 +131,7 @@ tags:
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 # Recibo del Cobro #1
 - extendedWaitUntil:
@@ -239,8 +215,7 @@ tags:
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 # Recibo del Cobro #2
 - extendedWaitUntil:

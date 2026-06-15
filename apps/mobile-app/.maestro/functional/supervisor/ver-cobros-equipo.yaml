@@ -42,122 +42,14 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 # migrarse a esos selectores para hacerlo determinista en CI.
 # ============================================================
 
-- launchApp:
-    clearState: false
-
-# ---- Aviso de Privacidad opcional (primer arranque del device) ----
-- runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# Si quedó una sesión previa abierta, cerrarla para no contaminar el caso.
-# FIXME logout vive en tab Más, no en Configuración. Boton real
-# "Cerrar Sesión" (mas.tsx); el ConfirmModal confirma con "Cerrar Sesión".
-# Reestructurar la navegacion (tapear logout directo en Más). Emulador.
-- runFlow:
-    when:
-      visible:
-        text: "Más"
-    commands:
-      - tapOn:
-          text: "Más"
-      - runFlow:
-          when:
-            visible: "Configuración"
-          commands:
-            - tapOn:
-                text: "Configuración"
-            - scrollUntilVisible:
-                element:
-                  text: "Cerrar Sesión"
-                direction: DOWN
-                timeout: 15000
-                speed: 40
-            - tapOn:
-                text: "Cerrar Sesión"
-            - runFlow:
-                when:
-                  visible:
-                    text: "Cerrar Sesión"
-                commands:
-                  - tapOn:
-                      text: "Cerrar Sesión"
-
 # ============================================================
-# FASE 1: Login SUPERVISOR
+# FASE 1: Login SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ============================================================
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 45000
-
-- tapOn:
-    id: "email-input"
-- eraseText
-- inputText: "supervisor@jeyma.com"
-
-- pressKey: "TAB"
-
-- tapOn:
-    id: "password-input"
-- eraseText
-- inputText: "test123"
-- hideKeyboard
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: sup-cobros-equipo-01-login
-
-# ---- Permisos / consents post-login (opcionales) ----
 - runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Más tarde"
-    commands:
-      - tapOn:
-          text: "Más tarde"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ============================================================
 # FASE 2: Dashboard SUPERVISOR cargado
@@ -199,7 +91,8 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
     when:
       visible: "Hoy"
     commands:
-      - tapOn: "Hoy"
+      - tapOn:
+          id: "filtro-rango-hoy"
       - waitForAnimationToEnd:
           timeout: 4000
       - takeScreenshot: sup-cobros-equipo-04-filtro-hoy
@@ -208,7 +101,8 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
     when:
       visible: "Ayer"
     commands:
-      - tapOn: "Ayer"
+      - tapOn:
+          id: "filtro-rango-ayer"
       - waitForAnimationToEnd:
           timeout: 4000
       - takeScreenshot: sup-cobros-equipo-05-filtro-ayer
@@ -217,7 +111,8 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
     when:
       visible: "7 días"
     commands:
-      - tapOn: "7 días"
+      - tapOn:
+          id: "filtro-rango-7d"
       - waitForAnimationToEnd:
           timeout: 4000
       - takeScreenshot: sup-cobros-equipo-06-filtro-7d
@@ -226,7 +121,8 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
     when:
       visible: "30 días"
     commands:
-      - tapOn: "30 días"
+      - tapOn:
+          id: "filtro-rango-30d"
       - waitForAnimationToEnd:
           timeout: 4000
       - takeScreenshot: sup-cobros-equipo-07-filtro-30d
@@ -236,7 +132,8 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
     when:
       visible: "Hoy"
     commands:
-      - tapOn: "Hoy"
+      - tapOn:
+          id: "filtro-rango-hoy"
       - waitForAnimationToEnd:
           timeout: 4000
 
@@ -290,7 +187,8 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
     when:
       visible: "Vendedor 1 Jeyma"
     commands:
-      - tapOn: "Vendedor 1 Jeyma"
+      - tapOn:
+          id: "cobro-row-0"
       - waitForAnimationToEnd:
           timeout: 5000
       # Header esperado en detalle de cobro (apps/mobile-app/app/(tabs)/cobrar/detalle-cobro/[cobroId].tsx)
@@ -317,39 +215,3 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 
 - assertVisible: ".*Cobros.*"
 - takeScreenshot: sup-cobros-equipo-11-post-refresh
-
-# ============================================================
-# FASE 9: Logout limpio (deja device estable para siguiente suite)
-# FIXME logout vive en tab Más, no en Configuración. Boton real
-# "Cerrar Sesión" (mas.tsx); el ConfirmModal confirma con "Cerrar Sesión".
-# Reestructurar la navegacion (tapear logout directo en Más). Emulador.
-# ============================================================
-
-- tapOn:
-    text: "Más"
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar Sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar Sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Cerrar Sesión"
-          commands:
-            - tapOn:
-                text: "Cerrar Sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: sup-cobros-equipo-12-logout

@@ -67,87 +67,15 @@ tags:
   - mobile
 ---
 
-- launchApp:
-    clearState: false
-
-# ---- Aviso de Privacidad opcional (primer launch tras clearState) ----
-- runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
 # ============================================================
-# FASE 1: Login ADMIN
+# FASE 1: Login ADMIN robusto via helper
 # ============================================================
 
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "admin@jeyma.com"
-
-- pressKey: "TAB"
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: adm-vendedor-stats-01-login
-
-# ---- Consents / permisos post-login (no deterministas) ----
-
 - runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-
-- runFlow:
-    when:
-      visible:
-        text: "Mas tarde"
-    commands:
-      - tapOn:
-          text: "Mas tarde"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
 
 # ============================================================
 # FASE 2: Aterrizaje dashboard ADMIN diferenciado
@@ -167,7 +95,7 @@ tags:
 # ============================================================
 
 - tapOn:
-    text: "Equipo"
+    id: "tab-equipo"
 - waitForAnimationToEnd:
     timeout: 5000
 
@@ -358,40 +286,3 @@ tags:
 - assertNotVisible: "Admin Centro"
 
 - takeScreenshot: adm-vendedor-stats-12-back-equipo
-
-# ============================================================
-# FASE 11: Logout limpio
-# ============================================================
-
-- tapOn:
-    text: "Más"
-    optional: true
-
-# FIXME logout vive en tab Más, no en Configuración (botón "Cerrar Sesión"
-# directo en mas.tsx). La reestructuración de navegación se verifica en emulador.
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar Sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar Sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Cerrar Sesión"
-          commands:
-            - tapOn:
-                text: "Cerrar Sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: adm-vendedor-stats-13-logout

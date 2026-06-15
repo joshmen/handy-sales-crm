@@ -27,68 +27,15 @@ name: superadmin-admin-dashboard-routing
 #   5. Tab "Mas" -> chip "Super Admin" visible (validacion ROLE_LABELS)
 # ============================================================
 
-# ---- FASE 0: Launch + privacy consent ----
-
-- launchApp:
-    clearState: false
+# ---- FASE 0+1+2: Login SUPER_ADMIN via helper robusto ----
 
 - runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# ---- FASE 1: Login SUPER_ADMIN ----
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "xjoshmenx@gmail.com"
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-
-- tapOn:
-    id: "login-button"
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "xjoshmenx@gmail.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: sa-01-login-submitted
-
-# ---- FASE 2: Consent + permisos opcionales ----
-
-- runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
 
 # ---- FASE 3: Asserción CRITICA — AdminDashboard renderizado ----
 # Estos 3 labels existen SOLO en AdminDashboard.tsx (ver kpiLabel lines
@@ -145,35 +92,3 @@ name: superadmin-admin-dashboard-routing
     text: "Super Admin"
 
 - takeScreenshot: sa-05-chip-super-admin-visible
-
-# ---- FASE 6: Logout limpio ----
-
-- scrollUntilVisible:
-    element:
-      text: "Cerrar Sesión"
-    direction: DOWN
-    timeout: 15000
-    speed: 40
-
-- tapOn:
-    text: "Cerrar Sesión"
-
-# Modal de confirmación (ConfirmModal en mas.tsx): confirma con botón "Cerrar Sesión".
-# Anclamos el when al mensaje del modal (string único) para no re-matchear el botón del menú.
-- runFlow:
-    when:
-      visible:
-        text: "¿Estás seguro que deseas cerrar sesión?"
-    commands:
-      - tapOn:
-          text: "Cerrar Sesión"
-
-- waitForAnimationToEnd:
-    timeout: 5000
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- takeScreenshot: sa-06-logout-success

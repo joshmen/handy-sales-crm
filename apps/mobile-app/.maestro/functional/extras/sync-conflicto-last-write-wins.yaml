@@ -83,50 +83,12 @@ name: "Funcional > Extras > Sync conflicto WDB last-write-wins (cobros)"
 #     banner ámbar no aparece — el test se degrada graciosamente.
 # ════════════════════════════════════════════════════════════
 
-# 0. NO clearState — preservar sesión VENDEDOR del flow previo.
-
-# 1. Esperar dashboard "Hoy" hidratado tras login.
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
-# 2. Dismiss modales opcionales post-login (permisos, aviso de privacidad).
+# 0. Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy").
 - runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Cerrar"
-          optional: true
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: sync-conflicto-00-dashboard
 

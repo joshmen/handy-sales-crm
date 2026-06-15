@@ -46,49 +46,12 @@ tags:
 # menos un cliente con saldo > 100 MXN ("Abarrotes Don Pancho").
 # ════════════════════════════════════════════════════════════
 
-# 1. Login VENDEDOR (subflow compartido)
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# 2. Dismiss modales opcionales post-login
+# 1. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# 3. Confirmar dashboard hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # 4. Navegar a tab Cobrar
 - tapOn: "Cobrar"
@@ -198,10 +161,9 @@ tags:
 
 - takeScreenshot: efectivo-vs-transfer-05-modal
 
-# 13. Tap "Confirmar" del modal (index:1 porque el header repite el texto)
+# 13. Tap confirmar del ConfirmModal (testID estable)
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 - waitForAnimationToEnd
 
 # 14. Recibo del cobro efectivo
@@ -290,8 +252,7 @@ tags:
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 - waitForAnimationToEnd
 
 # 22. Segundo recibo

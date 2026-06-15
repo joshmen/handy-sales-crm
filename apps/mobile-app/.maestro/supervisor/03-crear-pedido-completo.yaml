@@ -3,13 +3,18 @@ name: "Supervisor: Crear Preventa completa end-to-end"
 ---
 
 # ═══════════════════════════════════════════
-# PREREQ: Ya logueado como supervisor@jeyma.com
+# LOGIN COMO VENDEDOR (helper robusto: onboarding/consent/logout)
 # ═══════════════════════════════════════════
-# FIXME estructural: para SUPERVISOR el tab Vender renderiza
-# VenderAdminContent (AdminTenantPedidosList) — NO existe el FAB
-# "fab-nuevo-pedido" ni el flujo de crear pedido (solo en
-# VenderVendedorContent, ver app/(tabs)/vender/index.tsx). Este flow
-# de creacion requiere sesion VENDEDOR. Verificar en emulador.
+# Para SUPERVISOR el tab Vender renderiza VenderAdminContent
+# (AdminTenantPedidosList) — NO existe el FAB "fab-nuevo-pedido" ni el
+# flujo de crear pedido (solo en VenderVendedorContent, ver
+# app/(tabs)/vender/index.tsx). Este flow de creacion requiere sesion
+# VENDEDOR.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # Reset navigation: doble-tap Hoy para forzar root, luego Vender
 - tapOn: "Hoy"

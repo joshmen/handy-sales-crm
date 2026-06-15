@@ -53,58 +53,13 @@ tags:
 ---
 
 # -----------------------------------------------------------------------------
-# Paso 1 - Login VENDEDOR (subflow ya existente)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Dismiss de modales opcionales post-login
+# Paso 1 - Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar|Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Dashboard del vendedor cargado
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: factura-pdf-vendedor-01-dashboard
 

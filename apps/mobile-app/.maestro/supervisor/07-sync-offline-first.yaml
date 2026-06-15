@@ -37,77 +37,12 @@ name: "Supervisor: sync offline-first (pull/push scoping)"
 #   ticket — NO modificar backend desde este test.
 # ============================================================
 
-- launchApp:
-    clearState: true
-
-# ---- Aviso de Privacidad opcional ----
+# ---- FASE 1: Login SUPERVISOR (helper robusto: onboarding/consent/logout) ----
 - runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# ---- FASE 1: Login SUPERVISOR ----
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "supervisor@jeyma.com"
-
-- pressKey: "TAB"
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: supervisor-sync-01-login
-
-# ---- FASE 2: Consents / permisos ----
-
-- runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ---- FASE 3: Dashboard SUPERVISOR loaded ----
 
@@ -289,8 +224,8 @@ name: "Supervisor: sync offline-first (pull/push scoping)"
           id: "Volver"
           optional: true
 
-- tapOn: "Equipo"
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -299,36 +234,3 @@ name: "Supervisor: sync offline-first (pull/push scoping)"
 
 - assertVisible: "Vendedor 1 Jeyma"
 - takeScreenshot: supervisor-sync-16-equipo-server-side-ok
-
-# ---- FASE 16: Logout limpio ----
-
-- tapOn:
-    text: "Más"
-    optional: true
-
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Sí, cerrar sesión"
-          commands:
-            - tapOn:
-                text: "Sí, cerrar sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: supervisor-sync-17-logout

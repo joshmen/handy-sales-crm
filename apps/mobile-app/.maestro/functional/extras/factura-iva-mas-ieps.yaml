@@ -80,61 +80,13 @@ tags:
 ---
 
 # -----------------------------------------------------------------------------
-# Paso 1 - Iniciar app sin limpiar estado (reusa sesion si existe)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Login VENDEDOR (subflow ya existente)
-# -----------------------------------------------------------------------------
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Dismiss de modales opcionales post-login
+# Paso 1 - Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar|Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 4 - Confirmar que el dashboard del vendedor cargo
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: factura-ieps-vendedor-01-dashboard
 

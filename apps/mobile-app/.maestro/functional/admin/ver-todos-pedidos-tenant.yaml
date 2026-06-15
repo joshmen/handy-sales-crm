@@ -46,82 +46,12 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
 #     fetch — si se pierde el copy, sabemos que se cambio la fuente de datos.
 # ============================================================
 
-- launchApp:
-    clearState: false
-
-# ---- FASE 0: Aviso de Privacidad opcional ----
+# ---- FASE 1: Login ADMIN robusto via helper ----
 - runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# ---- FASE 1: Login ADMIN (skip si ya hay sesion por clearState:false) ----
-- runFlow:
-    when:
-      visible:
-        id: "email-input"
-    commands:
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - tapOn:
-          id: "email-input"
-      - inputText: "admin@jeyma.com"
-      - pressKey: "TAB"
-      - tapOn:
-          id: "password-input"
-      - inputText: "test123"
-      - tapOn:
-          id: "login-button"
-
-# ---- FASE 2: Consents y permisos post-login (opcionales) ----
-- runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Mas tarde"
-    commands:
-      - tapOn:
-          text: "Mas tarde"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
 
 # ---- FASE 3: Dashboard ADMIN cargado ----
 # El dashboard ADMIN NO renderiza "Administrador" (el saludo es dinamico:
@@ -157,15 +87,20 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
 - assertVisible: ".*en toda la empresa.*"
 
 # Chips de preset (con tilde correcto: "días")
-- assertVisible: "Hoy"
-- assertVisible: "Ayer"
-- assertVisible: "7 días"
-- assertVisible: "30 días"
+- assertVisible:
+    id: "filtro-rango-hoy"
+- assertVisible:
+    id: "filtro-rango-ayer"
+- assertVisible:
+    id: "filtro-rango-7d"
+- assertVisible:
+    id: "filtro-rango-30d"
 
 - takeScreenshot: adm-todos-pedidos-02-default-hoy
 
 # ---- FASE 5: Preset "Ayer" -> header "Pedidos ayer" ----
-- tapOn: "Ayer"
+- tapOn:
+    id: "filtro-rango-ayer"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -178,7 +113,8 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
 
 # ---- FASE 6: Preset "7 dias" -> header "Pedidos ultimos 7 dias" ----
 # Texto en componente: "Pedidos últimos 7 días" (con tildes, AdminTenantPedidosList.tsx:106)
-- tapOn: "7 días"
+- tapOn:
+    id: "filtro-rango-7d"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -190,7 +126,8 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
 - takeScreenshot: adm-todos-pedidos-04-7d
 
 # ---- FASE 7: Preset "30 dias" -> header "Pedidos ultimos 30 dias" ----
-- tapOn: "30 días"
+- tapOn:
+    id: "filtro-rango-30d"
 - waitForAnimationToEnd:
     timeout: 4000
 
@@ -212,7 +149,8 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
 - takeScreenshot: adm-todos-pedidos-06-no-leak
 
 # ---- FASE 9: Volver a "Hoy" para dejar estado idempotente ----
-- tapOn: "Hoy"
+- tapOn:
+    id: "filtro-rango-hoy"
 - waitForAnimationToEnd:
     timeout: 4000
 

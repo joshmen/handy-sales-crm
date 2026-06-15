@@ -28,49 +28,19 @@ name: "Supervisor: tap pin vendedor en mapa muestra bottom card y navega a detal
 # ═══════════════════════════════════════════
 
 # ═══════════════════════════════════════════
-# FASE 0: ARRANQUE — preserva sesion supervisor
+# FASE 0: LOGIN SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ═══════════════════════════════════════════
-- launchApp:
-    clearState: false
-
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
-
-# Dismiss optional modals (Aviso de Privacidad, permisos, banner update)
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ═══════════════════════════════════════════
 # FASE 1: NAVEGAR A EQUIPO
 # ═══════════════════════════════════════════
 - tapOn:
-    text: "Equipo"
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:

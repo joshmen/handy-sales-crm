@@ -58,68 +58,18 @@ tags:
 #     boton explicito "Finalizar Ruta" actualizar este test.
 # =================================================================
 
-launchApp:
-  clearState: false
-
 # -----------------------------------------------------------------
-# 0) Dismiss modales opcionales — privacidad, permisos GPS, banners.
+# 0) Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy").
 # -----------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Continuar"
-    commands:
-      - tapOn: "Continuar"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # -----------------------------------------------------------------
-# 1) Esperar dashboard "Hoy" hidratado tras login y limpiar stack.
+# 1) Limpiar stack del dashboard "Hoy".
 # -----------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 

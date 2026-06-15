@@ -30,64 +30,12 @@ name: "EXT — Feature flag tracking GPS deshabilitado oculta toggle en Configur
 # Datos, Acerca de — PERO NO aparece "Tracking GPS en segundo plano".
 # ════════════════════════════════════════════════════════════
 
-- launchApp:
-    clearState: false
-
-# 1. Esperar login screen.
-- extendedWaitUntil:
-    visible: "Iniciar Sesi"
-    timeout: 30000
-
-# 2. Login VENDEDOR.
-- tapOn:
-    id: "email-input"
-- eraseText: 50
-- inputText: "vendedor1@jeyma.com"
-- hideKeyboard
-
-- tapOn:
-    id: "password-input"
-    retryTapIfNoChange: true
-- eraseText: 50
-- inputText: "test123"
-- hideKeyboard
-
-- tapOn:
-    id: "login-button"
-
-# 3. Modales opcionales post-login (Aviso de Privacidad / permisos).
+# 1. Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy").
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-# 4. Esperar dashboard "Hoy".
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: ext-flag-tracking-dashboard
 

@@ -46,7 +46,7 @@ tags:
       visible: "Hoy"
     commands:
       - tapOn:
-          text: "Más"
+          id: "tab-mas"
           optional: true
       - waitForAnimationToEnd
       - scroll
@@ -56,7 +56,7 @@ tags:
       - waitForAnimationToEnd
       # Confirmación del ConfirmModal de logout
       - tapOn:
-          text: "Cerrar Sesión"
+          id: "confirm-modal-confirm"
           optional: true
       - waitForAnimationToEnd
 

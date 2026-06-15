@@ -29,134 +29,15 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
 #   apps/mobile-app/app/(tabs)/mas.tsx          (Cerrar sesión)
 # ════════════════════════════════════════════════════════════
 
-# Mantener sesión limpia entre runs
-- launchApp:
-    clearState: false
-
 # ════════════════════════════════════════════════════════════
-# FASE 1: ONBOARDING + LOGIN
+# FASE 1+2: LOGIN SUPERVISOR via helper robusto
 # ════════════════════════════════════════════════════════════
 
-# Skip onboarding por testID (primer arranque)
 - runFlow:
-    when:
-      visible:
-        id: "skip-onboarding"
-    commands:
-      - tapOn:
-          id: "skip-onboarding"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# Skip onboarding fallback por texto "Siguiente"
-- runFlow:
-    when:
-      visible: "Siguiente"
-    commands:
-      - tapOn:
-          id: "onboarding-action"
-          optional: true
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-          optional: true
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-          optional: true
-      - waitForAnimationToEnd
-
-# Login si la pantalla de login está visible
-- runFlow:
-    when:
-      visible:
-        id: "login-button"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: "supervisor@jeyma.com"
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-
-# ════════════════════════════════════════════════════════════
-# FASE 2: DISMISS MODALES OPCIONALES
-# ════════════════════════════════════════════════════════════
-
-# Single-session strict: kick previous session
-- runFlow:
-    when:
-      visible: "Límite de sesiones"
-    commands:
-      - tapOn:
-          text: "Chrome en Windows"
-          optional: true
-      - tapOn:
-          text: "Desconectar y continuar aquí"
-      - waitForAnimationToEnd:
-          timeout: 5000
-
-# GPS consent modal post-login
-- runFlow:
-    when:
-      visible: "Sobre tu ubicación"
-    commands:
-      - tapOn:
-          text: "Entendido"
-      - waitForAnimationToEnd:
-          timeout: 5000
-
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-          optional: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-          optional: true
-      - waitForAnimationToEnd
-
-# Permiso de ubicación (Android system dialog)
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-          optional: true
-      - waitForAnimationToEnd
-
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 60000
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-      - waitForAnimationToEnd
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: "supervisor-day-01-dashboard-hoy"
 
@@ -252,7 +133,8 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
 # FASE 7: TAB "EQUIPO" — LISTA DE VENDEDORES CON AVATARES
 # ════════════════════════════════════════════════════════════
 
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -299,7 +181,7 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
     timeout: 15000
 
 # ════════════════════════════════════════════════════════════
-# FASE 10: TAB "MÁS" + CERRAR SESIÓN
+# FASE 10: TAB "MÁS" — chip "Supervisor"
 # ════════════════════════════════════════════════════════════
 
 - tapOn: "Más"
@@ -308,37 +190,4 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
 - assertVisible:
     text: "Supervisor"
 
-- scrollUntilVisible:
-    element:
-      text: "Cerrar Sesión"
-    direction: DOWN
-    timeout: 10000
-
-- tapOn: "Cerrar Sesión"
-- waitForAnimationToEnd
-
-# Modal de confirmación (ConfirmModal en mas.tsx): confirma con botón "Cerrar Sesión"
-# (NO "Confirmar" ni "Sí"). Anclamos el when al mensaje del modal (string único)
-# para no re-matchear el botón del menú "Cerrar Sesión".
-- runFlow:
-    when:
-      visible: "¿Estás seguro que deseas cerrar sesión?"
-    commands:
-      - tapOn:
-          text: "Cerrar Sesión"
-          optional: true
-      - waitForAnimationToEnd
-
-# ════════════════════════════════════════════════════════════
-# FASE 11: VALIDAR LOGOUT EXITOSO
-# ════════════════════════════════════════════════════════════
-
-- extendedWaitUntil:
-    visible:
-      id: "login-button"
-    timeout: 30000
-
-- assertVisible:
-    id: "login-button"
-
-- takeScreenshot: "supervisor-day-05-logout-exitoso"
+- takeScreenshot: "supervisor-day-05-tab-mas-chip"

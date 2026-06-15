@@ -60,77 +60,13 @@ tags:
 ---
 
 # -----------------------------------------------------------------------------
-# Paso 1 - Launch sin reset (preserva sesion previa para velocidad de suite)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Dismiss de onboarding si esta visible (cold start)
+# Paso 1 - Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Omitir"
-    commands:
-      - tapOn: "Omitir"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Login VENDEDOR via subflow ya validado
-#   Si la sesion ya esta viva (clearState:false), este subflow falla suave
-#   porque ya estamos en "Hoy"; lo envolvemos en runFlow when:visible para
-#   ser idempotente.
-# -----------------------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "Iniciar Sesi"
-    file: ../../auth/01-login-vendedor.yaml
-
-# -----------------------------------------------------------------------------
-# Paso 4 - Dismiss de modales opcionales post-login
-# -----------------------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar|Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 5 - Llegar al dashboard vendedor
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: devnc-01-dashboard
 

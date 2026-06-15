@@ -3,10 +3,15 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 ---
 
 # ═══════════════════════════════════════════
-# PREREQ: Ya logueado como supervisor@jeyma.com
+# LOGIN COMO SUPERVISOR (helper robusto: onboarding/consent/logout)
 # Tests 03, 04, 05 cubren vender/cobrar completos.
 # Este test verifica navegación integral del supervisor.
 # ═══════════════════════════════════════════
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ═══════════════════════════════════════════
 # FASE 1: DASHBOARD — verificar KPIs de equipo
@@ -31,8 +36,8 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 # ═══════════════════════════════════════════
 # FASE 2: EQUIPO — KPIs + lista vendedores
 # ═══════════════════════════════════════════
-- tapOn: "Equipo"
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:

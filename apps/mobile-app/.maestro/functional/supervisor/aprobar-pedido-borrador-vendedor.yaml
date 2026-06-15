@@ -44,80 +44,19 @@ tags:
 # =================================================================
 
 # ---------------------------------------------------------------
-# 0) Launch app preservando estado (sesion supervisor previa)
-#    Suite supervisor: requiere correr antes 01-login-supervisor.yaml
-# ---------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-# ---------------------------------------------------------------
-# 1) Dismiss modales opcionales (onboarding, permisos, KeepAwake,
-#    Aviso de Privacidad). runFlow when:visible es no-op si no aparece.
+# 0) LOGIN SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ---------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-
-# ---------------------------------------------------------------
-# 1.5) Si no hay sesion activa (caso ejecutar solo, sin suite),
-#      hacer login supervisor.
-# ---------------------------------------------------------------
-- runFlow:
-    when:
-      visible:
-        id: "login-button"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: "supervisor@jeyma.com"
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-      - extendedWaitUntil:
-          visible: "Hoy"
-          timeout: 45000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ---------------------------------------------------------------
 # 2) Verificar dashboard supervisor (KPI "Vendedores activos" indica
 #    que el rol cargado es SUPERVISOR — SupervisorDashboard.tsx).
 #    "Mi Equipo" es el titulo del TAB Equipo, no del dashboard.
 # ---------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
 - assertVisible: "Vendedores activos"
 - takeScreenshot: sup-aprobar-00-dashboard
 
@@ -149,7 +88,8 @@ tags:
 #    pedidos en Borrador del dia. Empezamos con 7 dias para
 #    aumentar probabilidad de encontrar un Borrador.
 # ---------------------------------------------------------------
-- tapOn: "7 días"
+- tapOn:
+    id: "filtro-rango-7d"
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible: "Pedidos últimos 7 días"
@@ -168,7 +108,8 @@ tags:
       notVisible: "borrador"
     commands:
       # Fallback: ampliar a 30 dias para hallar Borrador historico
-      - tapOn: "30 días"
+      - tapOn:
+          id: "filtro-rango-30d"
       - waitForAnimationToEnd
       - extendedWaitUntil:
           visible: "Pedidos últimos 30 días"
@@ -221,29 +162,15 @@ tags:
       - waitForAnimationToEnd
 
       # 6.5) ConfirmModal con titulo "Confirmar Pedido" y mensaje
-      #      "¿Confirmar este pedido?". Fallback: cualquiera de los
-      #      CTAs estandar Aceptar/Confirmar/Si.
+      #      "¿Confirmar este pedido?". Confirmar via testID estable.
       - extendedWaitUntil:
           visible:
             text: "Confirmar Pedido|¿Confirmar este pedido?|Aceptar|Confirmar|Si"
           timeout: 10000
       - takeScreenshot: sup-aprobar-06-confirm-modal
 
-      - runFlow:
-          when:
-            visible: "Aceptar"
-          commands:
-            - tapOn: "Aceptar"
-      - runFlow:
-          when:
-            visible: "Confirmar"
-          commands:
-            - tapOn: "Confirmar"
-      - runFlow:
-          when:
-            visible: "Sí"
-          commands:
-            - tapOn: "Sí"
+      - tapOn:
+          id: "confirm-modal-confirm"
 
       - waitForAnimationToEnd
 

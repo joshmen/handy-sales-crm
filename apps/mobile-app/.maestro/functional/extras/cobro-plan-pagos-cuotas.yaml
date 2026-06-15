@@ -45,52 +45,12 @@ tags:
 #   - Sesion vendedor: el flow ejecuta login subflow
 # ════════════════════════════════════════════════════════════════════
 
-- launchApp:
-    clearState: false
-
-# 1. Login VENDEDOR (subflow)
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# 2. Dismiss de modales opcionales post-login
+# 1. Login VENDEDOR (helper robusto)
 - runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-# 3. Esperar dashboard "Hoy" hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ════════════════════════════════════════════════════════════════════
 # CUOTA #1 — primer pago del plan (100 MXN)
@@ -183,8 +143,7 @@ tags:
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 # Recibo de Cuota #1
 - extendedWaitUntil:
@@ -305,8 +264,7 @@ tags:
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 - extendedWaitUntil:
     visible: "Cobro Registrado"
