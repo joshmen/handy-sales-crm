@@ -282,6 +282,7 @@ export default function OrderDetailScreen() {
         {renderActionButton()}
         {canCancel && (
           <TouchableOpacity
+            testID="btn-cancelar-pedido"
             style={styles.cancelBtn}
             onPress={handleCancelar}
             disabled={cancelarMutation.isPending}

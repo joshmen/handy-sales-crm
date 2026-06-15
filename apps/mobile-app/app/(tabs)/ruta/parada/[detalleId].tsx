@@ -524,6 +524,7 @@ function ParadaDetailScreen() {
             fullWidth
           />
           <Button
+            testID="btn-no-visito"
             title="No se visitó"
             onPress={() => setShowNoVisito(true)}
             variant="outline"

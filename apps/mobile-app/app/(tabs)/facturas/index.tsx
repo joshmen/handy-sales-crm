@@ -30,11 +30,12 @@ function FacturasListScreenContent() {
   const facturas: FacturaListItem[] = Array.isArray(data) ? data : [];
 
   const renderItem = useCallback(
-    ({ item }: { item: FacturaListItem }) => {
+    ({ item, index }: { item: FacturaListItem; index: number }) => {
       const color = ESTADO_COLORS[item.estado] ?? '#94a3b8';
       const label = item.serie && item.folio ? `${item.serie}-${item.folio}` : `#${item.id}`;
       return (
         <TouchableOpacity
+          testID={`factura-row-${index}`}
           style={styles.card}
           onPress={() => router.push(`/(tabs)/facturas/${item.id}` as any)}
           activeOpacity={0.7}
