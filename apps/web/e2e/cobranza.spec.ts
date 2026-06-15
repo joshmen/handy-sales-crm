@@ -112,7 +112,7 @@ test.describe('Cobranza — ADMIN registrar cobro', () => {
     expect(hasDialog || hasFields).toBeTruthy();
 
     // Cleanup
-    const cancel = page.getByRole('button', { name: /Cancelar|Cerrar/i }).first();
+    const cancel = page.locator('[data-drawer-panel]').getByRole('button', { name: /Cancelar|Cerrar/i }).first();
     if (await cancel.isVisible({ timeout: 1500 }).catch(() => false)) await cancel.click();
   });
 
@@ -171,12 +171,12 @@ test.describe('Cobranza — ADMIN registrar cobro', () => {
     // requiere fixture seeded.
     await newBtn.click();
     await page.waitForTimeout(1200);
-    const submit = page.getByRole('button', { name: /Guardar|Registrar|Aceptar/i }).first();
+    const submit = page.locator('[data-drawer-panel]').getByRole('button', { name: /Crear Cobro|Guardar|Registrar/i }).first();
     const submitVisible = await submit.isVisible({ timeout: 3000 }).catch(() => false);
     expect(submitVisible).toBeTruthy();
 
     // Cleanup
-    const cancel = page.getByRole('button', { name: /Cancelar|Cerrar/i }).first();
+    const cancel = page.locator('[data-drawer-panel]').getByRole('button', { name: /Cancelar|Cerrar/i }).first();
     if (await cancel.isVisible({ timeout: 1500 }).catch(() => false)) await cancel.click();
     void testInfo;
   });

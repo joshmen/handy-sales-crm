@@ -59,7 +59,7 @@ test.describe('Subscription plans — SuperAdmin happy path', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
 
-    const refreshBtn = page.getByRole('button', { name: /Refrescar|Refresh/i }).first();
+    const refreshBtn = page.getByRole('button', { name: /Actualizar|Refrescar|Refresh/i }).first();
     await expect(refreshBtn).toBeVisible({ timeout: 8000 });
 
     // Boton "Nuevo Plan" / "Crear plan" — texto depende de i18n key newPlan.
