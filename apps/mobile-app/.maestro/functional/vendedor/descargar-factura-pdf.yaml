@@ -154,7 +154,7 @@ tags:
 # -----------------------------------------------------------------------------
 - assertVisible: "Impresora"
 - assertVisible: "Mi Perfil"
-- assertVisible: "Configuracion"
+- assertVisible: "Configuración"
 
 # -----------------------------------------------------------------------------
 # Paso 8 - Volver al dashboard para dejar el state limpio para flows downstream

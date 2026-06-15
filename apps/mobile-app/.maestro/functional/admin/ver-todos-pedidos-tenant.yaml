@@ -124,10 +124,12 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
           text: "Permitir"
 
 # ---- FASE 3: Dashboard ADMIN cargado ----
-# El chip "Administrador" confirma que el rol fue detectado correctamente y
-# que se rendera el branch admin del tab Vender (no el vendedor offline).
+# El dashboard ADMIN NO renderiza "Administrador" (el saludo es dinamico:
+# "{greeting}, {nombre}"). Los KPI reales del AdminDashboard.tsx ("Vendedores"
+# + "Pedidos hoy") confirman que el rol fue detectado y se rendera el branch
+# admin del tab Vender (no el vendedor offline).
 - extendedWaitUntil:
-    visible: "Administrador"
+    visible: "Vendedores"
     timeout: 30000
 
 - assertVisible: "Vendedores"
@@ -151,7 +153,8 @@ name: "Admin: ver TODOS los pedidos del tenant (cross-vendedor) con presets Hoy/
 
 # Smoking gun de la fix admin@jeyma 2026-05-04:
 # Si este copy desaparece, la fuente de datos volvio a WatermelonDB local.
-- assertVisible: "en toda la empresa"
+# El texto real es "{N} pedidos en toda la empresa"; Maestro ancla, usar comodines.
+- assertVisible: ".*en toda la empresa.*"
 
 # Chips de preset (con tilde correcto: "días")
 - assertVisible: "Hoy"

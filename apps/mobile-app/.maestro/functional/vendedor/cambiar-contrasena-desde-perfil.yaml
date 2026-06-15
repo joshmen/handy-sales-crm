@@ -71,13 +71,13 @@ tags:
 # Paso 2 — Login con vendedor que tiene mustChangePassword=true
 # -----------------------------------------------------------------------------
 - tapOn:
-    id: "input-email"
+    id: "email-input"
     optional: true
 - inputText: "vendedor-temp@jeyma.com"
 - hideKeyboard
 
 - tapOn:
-    id: "input-password"
+    id: "password-input"
     optional: true
 - inputText: "Temp123!"
 - hideKeyboard

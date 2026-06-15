@@ -120,7 +120,9 @@ tags:
           text: "Cerrar"
           optional: true
 
-# 2. Navegar al tab Ruta — entrypoint del flujo.
+# 2. Navegar a la pantalla Ruta — entrypoint del flujo.
+# FIXME nav: vendedor no tiene tab Ruta (href:null en (tabs)/_layout.tsx);
+# abrir desde card de ruta del dashboard Hoy. Navegacion pendiente de verificar en emulador.
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 

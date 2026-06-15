@@ -138,8 +138,14 @@ name: "EXT — Feature flag tracking GPS deshabilitado oculta toggle en Configur
 # (incluye tracking), este test no cubrirá el flag-OFF path. Hay que
 # crear un seed `vendedor1@huichol.com` o `vendedor1@centro.com` en plan
 # FREE/BASIC explícito y migrar este test a esa credencial.
+# El toggle de tracking GPS (label "Tracking GPS en segundo plano",
+# accessibilityLabel "Tracking GPS background" en configuracion.tsx) solo
+# se renderiza si el plan incluye tracking_vendedor.
 - assertNotVisible: "Tracking GPS en segundo plano"
-- assertNotVisible: "Privacidad"
+- assertNotVisible: "Tracking GPS background"
+# Nota: NO se asserta assertNotVisible "Privacidad" — configuracion.tsx tiene
+# una fila PERMANENTE "Privacidad" (Política de privacidad) dentro de "Acerca de"
+# (línea 212), por lo que ese assert sería un falso negativo.
 
 # 9. Verificar que las secciones de "Acerca de" siguen visibles tras
 #    el scroll — confirma que el toggle ausente NO es consecuencia de

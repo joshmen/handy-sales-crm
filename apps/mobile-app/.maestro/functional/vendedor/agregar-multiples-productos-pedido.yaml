@@ -120,7 +120,7 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Tipo de Venta"
+    visible: "¿Qué tipo de pedido?"
     timeout: 10000
 - assertVisible: "Preventa"
 - tapOn: "Preventa"

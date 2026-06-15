@@ -317,22 +317,15 @@ name: "Day-in-the-life Supervisor — login, equipo, mapa con pins, vendedor det
 - tapOn: "Cerrar Sesión"
 - waitForAnimationToEnd
 
-# Confirmar dialog si aparece (algunos builds piden confirmar)
+# Modal de confirmación (ConfirmModal en mas.tsx): confirma con botón "Cerrar Sesión"
+# (NO "Confirmar" ni "Sí"). Anclamos el when al mensaje del modal (string único)
+# para no re-matchear el botón del menú "Cerrar Sesión".
 - runFlow:
     when:
-      visible: "Confirmar"
+      visible: "¿Estás seguro que deseas cerrar sesión?"
     commands:
       - tapOn:
-          text: "Confirmar"
-          optional: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Sí"
-    commands:
-      - tapOn:
-          text: "Sí"
+          text: "Cerrar Sesión"
           optional: true
       - waitForAnimationToEnd
 

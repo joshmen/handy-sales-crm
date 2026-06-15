@@ -5,6 +5,11 @@ name: "Supervisor: Crear Preventa completa end-to-end"
 # ═══════════════════════════════════════════
 # PREREQ: Ya logueado como supervisor@jeyma.com
 # ═══════════════════════════════════════════
+# FIXME estructural: para SUPERVISOR el tab Vender renderiza
+# VenderAdminContent (AdminTenantPedidosList) — NO existe el FAB
+# "fab-nuevo-pedido" ni el flujo de crear pedido (solo en
+# VenderVendedorContent, ver app/(tabs)/vender/index.tsx). Este flow
+# de creacion requiere sesion VENDEDOR. Verificar en emulador.
 
 # Reset navigation: doble-tap Hoy para forzar root, luego Vender
 - tapOn: "Hoy"
@@ -24,8 +29,8 @@ name: "Supervisor: Crear Preventa completa end-to-end"
     id: "fab-nuevo-pedido"
 - waitForAnimationToEnd
 
-# Verificar que llegamos a Tipo de Venta
-- assertVisible: "Tipo de Venta"
+# Verificar que llegamos al sheet de tipo de pedido
+- assertVisible: "¿Qué tipo de pedido?"
 - takeScreenshot: "preventa-01-tipo-venta"
 
 # ═══════════════════════════════════════════

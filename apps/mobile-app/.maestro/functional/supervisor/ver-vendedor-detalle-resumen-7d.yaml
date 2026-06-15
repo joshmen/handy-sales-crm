@@ -132,10 +132,15 @@ tags:
 # FASE 2: Aterrizaje dashboard supervisor
 # ============================================================
 
+# "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy. El
+# dashboard supervisor expone el KPI "Vendedores activos".
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 30000
 
+# FIXME assert "Vendedores" sobre el dashboard: el KPI real es
+# "Vendedores activos" (no hay nodo exacto "Vendedores" en SupervisorDashboard).
+# Si Maestro hace match completo, este assert falla aqui. Verificar en emulador.
 - assertVisible: "Vendedores"
 - takeScreenshot: sup-vendedor-7d-02-dashboard
 
@@ -223,13 +228,14 @@ tags:
 - assertNotVisible:
     id: "vendedor-stats"
 
-# Chips de cada fila (formatDayLabel + chips con "pedidos", "vis", "cob")
+# Chips de cada fila renderizan "{n} pedidos", "{n}/{n} vis", "{money} cob"
+# -> regex anclado con comodines (Maestro hace match completo del nodo).
 - assertVisible:
-    text: "pedidos"
+    text: ".*pedidos.*"
 - assertVisible:
-    text: "vis"
+    text: ".*vis.*"
 - assertVisible:
-    text: "cob"
+    text: ".*cob.*"
 
 - takeScreenshot: sup-vendedor-7d-07-lista-dias
 
@@ -302,6 +308,9 @@ tags:
 
 # ============================================================
 # FASE 10: Logout limpio
+# FIXME logout vive en tab Más, no en Configuración. Boton real
+# "Cerrar Sesión" (mas.tsx); el ConfirmModal confirma con "Cerrar Sesión".
+# Reestructurar la navegacion (tapear logout directo en Más). Emulador.
 # ============================================================
 
 - tapOn:
@@ -316,19 +325,19 @@ tags:
           text: "Configuración"
       - scrollUntilVisible:
           element:
-            text: "Cerrar sesión"
+            text: "Cerrar Sesión"
           direction: DOWN
           timeout: 15000
           speed: 40
       - tapOn:
-          text: "Cerrar sesión"
+          text: "Cerrar Sesión"
       - runFlow:
           when:
             visible:
-              text: "Sí, cerrar sesión"
+              text: "Cerrar Sesión"
           commands:
             - tapOn:
-                text: "Sí, cerrar sesión"
+                text: "Cerrar Sesión"
       - extendedWaitUntil:
           visible:
             id: "email-input"

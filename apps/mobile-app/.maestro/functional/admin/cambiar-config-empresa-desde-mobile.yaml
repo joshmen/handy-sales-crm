@@ -80,11 +80,11 @@ tags:
       - waitForAnimationToEnd
       - scroll
       - tapOn:
-          text: "Cerrar sesión"
+          text: "Cerrar Sesión"
           optional: true
       - waitForAnimationToEnd
       - tapOn:
-          text: "Sí, cerrar sesión"
+          text: "Cerrar Sesión"
           optional: true
       - waitForAnimationToEnd
 

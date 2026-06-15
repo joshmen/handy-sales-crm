@@ -119,7 +119,10 @@ name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
       - waitForAnimationToEnd
 
 # 5. Validar contexto supervisor (tab Equipo disponible)
-- assertVisible: "Mi Equipo"
+# "Mi Equipo" es el título de la pantalla del TAB Equipo, no del dashboard Hoy.
+# En el dashboard supervisor el KPI real es "Vendedores activos"
+# (src/components/dashboard/SupervisorDashboard.tsx línea 83).
+- assertVisible: "Vendedores activos"
 - assertVisible: "Equipo"
 
 - takeScreenshot: refresh-mapa-01-dashboard-supervisor
@@ -336,6 +339,7 @@ name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+# KPI real del dashboard supervisor (no "Mi Equipo", que es el tab Equipo).
+- assertVisible: "Vendedores activos"
 
 - takeScreenshot: refresh-mapa-11-flow-completo

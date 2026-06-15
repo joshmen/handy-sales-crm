@@ -76,7 +76,7 @@ tags:
 # ──────────────────────────────────────────────────────────────────────
 - runFlow:
     when:
-      visible: "Tipo de Venta"
+      visible: "¿Qué tipo de pedido?"
     commands:
       - assertVisible: "Preventa"
       - assertVisible: "Venta Directa"

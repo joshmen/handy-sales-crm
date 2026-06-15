@@ -53,9 +53,11 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
 # FASE 2: VERIFICAR DASHBOARD CON BANNER EQUIPO
 # ═══════════════════════════════════════════
 
-# Verify the supervisor team banner is visible on Hoy dashboard
+# Verify the supervisor dashboard KPI is visible on Hoy dashboard
+# (SupervisorDashboard.tsx renders KPI "Vendedores activos"; "Mi Equipo" is the
+#  Equipo TAB title, not the dashboard.)
 - assertVisible:
-    text: "Mi Equipo"
+    text: "Vendedores activos"
 
 # Verify Equipo tab is in the tab bar
 - assertVisible:
@@ -150,8 +152,8 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
     text: "Hoy"
 - waitForAnimationToEnd
 
-# Dashboard should still show team banner
+# Dashboard should still show the supervisor KPI
 - assertVisible:
-    text: "Mi Equipo"
+    text: "Vendedores activos"
 
 - takeScreenshot: "07-dashboard-final"

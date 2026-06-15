@@ -173,9 +173,10 @@ name: "Day-in-the-life Admin — login, dashboard equipo, supervisores, top vend
 # FASE 3: VALIDAR DASHBOARD "HOY" CON SECCIONES ADMIN
 # ════════════════════════════════════════════════════════════
 
-# Saludo "Administrador" (rol badge / greeting)
+# El dashboard ADMIN NO renderiza "Administrador" (saludo dinamico
+# "{greeting}, {nombre}"). KPI real del AdminDashboard.tsx = "Vendedores".
 - assertVisible:
-    text: "Administrador"
+    text: "Vendedores"
 
 # Sección SUPERVISORES en el dashboard del admin
 - scrollUntilVisible:
@@ -241,13 +242,16 @@ name: "Day-in-the-life Admin — login, dashboard equipo, supervisores, top vend
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
+# De vuelta en el dashboard "Hoy": KPI real "Vendedores" (no "Administrador",
+# que es saludo dinamico y no renderiza).
 - extendedWaitUntil:
-    visible: "Administrador"
+    visible: "Vendedores"
     timeout: 15000
 
 - tapOn: "Más"
 - waitForAnimationToEnd
 
+# Ya en el tab Más: ROLE_LABELS['ADMIN'] = 'Administrador' (mas.tsx) SÍ renderiza.
 - assertVisible:
     text: "Administrador"
 
@@ -267,31 +271,14 @@ name: "Day-in-the-life Admin — login, dashboard equipo, supervisores, top vend
 - tapOn: "Cerrar Sesión"
 - waitForAnimationToEnd
 
-# Confirmar dialog si aparece (algunos builds piden confirmar)
+# Confirmar el ConfirmModal de logout. El botón de confirmación real es
+# "Cerrar Sesión" (mas.tsx ConfirmModal confirmText), NO "Sí, cerrar sesión".
 - runFlow:
     when:
-      visible: "Sí, cerrar sesión"
+      visible: "Cerrar Sesión"
     commands:
       - tapOn:
-          text: "Sí, cerrar sesión"
-          optional: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Confirmar"
-    commands:
-      - tapOn:
-          text: "Confirmar"
-          optional: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Sí"
-    commands:
-      - tapOn:
-          text: "Sí"
+          text: "Cerrar Sesión"
           optional: true
       - waitForAnimationToEnd
 

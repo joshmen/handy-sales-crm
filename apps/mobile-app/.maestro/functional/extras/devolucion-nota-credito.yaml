@@ -139,11 +139,14 @@ tags:
 #   La primera parada del seed Jeyma deberia estar Completada (estado=2) con
 #   pedido entregado para que aparezca el CTA "Registrar devolucion".
 # -----------------------------------------------------------------------------
+# FIXME nav: vendedor no tiene tab Ruta (app/(tabs)/_layout.tsx -> ruta href:null).
+# La ruta del día se abre desde el card de ruta del dashboard Hoy, no desde un tab.
+# Reestructuración de navegación pendiente de verificación en emulador.
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del día"
+    visible: "Ruta del Día"
     timeout: 15000
 
 - takeScreenshot: devnc-02-ruta-list

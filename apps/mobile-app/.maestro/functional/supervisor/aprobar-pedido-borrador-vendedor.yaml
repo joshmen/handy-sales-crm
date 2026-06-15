@@ -110,14 +110,15 @@ tags:
           timeout: 45000
 
 # ---------------------------------------------------------------
-# 2) Verificar dashboard supervisor (banner "Mi Equipo" indica
-#    que el rol cargado es SUPERVISOR — ver dashboard/index.tsx).
+# 2) Verificar dashboard supervisor (KPI "Vendedores activos" indica
+#    que el rol cargado es SUPERVISOR — SupervisorDashboard.tsx).
+#    "Mi Equipo" es el titulo del TAB Equipo, no del dashboard.
 # ---------------------------------------------------------------
 - extendedWaitUntil:
     visible: "Hoy"
     timeout: 30000
 
-- assertVisible: "Mi Equipo"
+- assertVisible: "Vendedores activos"
 - takeScreenshot: sup-aprobar-00-dashboard
 
 # ---------------------------------------------------------------
@@ -278,7 +279,7 @@ tags:
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 15000
-- assertVisible: "Mi Equipo"
+- assertVisible: "Vendedores activos"
 - takeScreenshot: sup-aprobar-09-final-dashboard

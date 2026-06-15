@@ -143,10 +143,10 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "Abarrotes"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -179,7 +179,7 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
@@ -301,7 +301,7 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
@@ -354,9 +354,11 @@ tags:
     optional: true
 
 # Sesion vendedor sigue activa (tab bar intacto)
+# Fix: el tab real del vendedor es "Mapa", no "Ruta" (app/(tabs)/_layout.tsx
+# expone Mapa para VENDEDOR; ruta tiene href:null y no aparece en el tab bar).
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 - assertVisible: "Más"
 
 - takeScreenshot: cuotas-09-plan-incompleto-saldo-restante

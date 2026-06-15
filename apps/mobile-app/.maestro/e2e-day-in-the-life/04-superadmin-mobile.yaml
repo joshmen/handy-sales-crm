@@ -198,22 +198,24 @@ name: "Day in the life — SUPER_ADMIN mobile (xjoshmenx)"
 
 - scrollUntilVisible:
     element:
-      text: "Cerrar sesión"
+      text: "Cerrar Sesión"
     direction: DOWN
     timeout: 15000
     speed: 40
 
 - tapOn:
-    text: "Cerrar sesión"
+    text: "Cerrar Sesión"
     optional: true
 - waitForAnimationToEnd
 
+# Modal de confirmación (ConfirmModal en mas.tsx): confirma con botón "Cerrar Sesión".
+# Anclamos el when al mensaje del modal (string único) para no re-matchear el botón del menú.
 - runFlow:
     when:
-      visible: "Sí, cerrar sesión"
+      visible: "¿Estás seguro que deseas cerrar sesión?"
     commands:
       - tapOn:
-          text: "Sí, cerrar sesión"
+          text: "Cerrar Sesión"
       - waitForAnimationToEnd:
           timeout: 5000
 

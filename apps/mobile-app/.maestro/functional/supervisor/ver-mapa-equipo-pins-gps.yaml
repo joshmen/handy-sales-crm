@@ -104,9 +104,10 @@ name: "Supervisor - Ver mapa del equipo con pins GPS de vendedores"
       - tapOn: "Mas tarde"
       - waitForAnimationToEnd
 
-# 5. Verificar que el banner "Mi Equipo" del dashboard supervisor existe
-#    (rol supervisor = tab Equipo presente)
-- assertVisible: "Mi Equipo"
+# 5. Verificar que el dashboard supervisor cargo (KPI "Vendedores activos")
+#    (rol supervisor = tab Equipo presente). "Mi Equipo" es el titulo del
+#    TAB Equipo, no del dashboard Hoy.
+- assertVisible: "Vendedores activos"
 - assertVisible: "Equipo"
 
 - takeScreenshot: mapa-pins-01-dashboard-supervisor
@@ -240,6 +241,6 @@ name: "Supervisor - Ver mapa del equipo con pins GPS de vendedores"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+- assertVisible: "Vendedores activos"
 
 - takeScreenshot: mapa-pins-07-flow-completo

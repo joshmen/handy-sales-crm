@@ -57,6 +57,9 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
           timeout: 3000
 
 # Si quedó una sesión previa abierta, cerrarla para no contaminar el caso.
+# FIXME logout vive en tab Más, no en Configuración. Boton real
+# "Cerrar Sesión" (mas.tsx); el ConfirmModal confirma con "Cerrar Sesión".
+# Reestructurar la navegacion (tapear logout directo en Más). Emulador.
 - runFlow:
     when:
       visible:
@@ -72,19 +75,19 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
                 text: "Configuración"
             - scrollUntilVisible:
                 element:
-                  text: "Cerrar sesión"
+                  text: "Cerrar Sesión"
                 direction: DOWN
                 timeout: 15000
                 speed: 40
             - tapOn:
-                text: "Cerrar sesión"
+                text: "Cerrar Sesión"
             - runFlow:
                 when:
                   visible:
-                    text: "Sí, cerrar sesión"
+                    text: "Cerrar Sesión"
                 commands:
                   - tapOn:
-                      text: "Sí, cerrar sesión"
+                      text: "Cerrar Sesión"
 
 # ============================================================
 # FASE 1: Login SUPERVISOR
@@ -160,11 +163,13 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 # FASE 2: Dashboard SUPERVISOR cargado
 # ============================================================
 
+# "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy. El
+# dashboard supervisor expone el KPI "Vendedores activos".
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 45000
 
-- assertVisible: "Mi Equipo"
+- assertVisible: "Vendedores activos"
 - takeScreenshot: sup-cobros-equipo-02-dashboard
 
 # ============================================================
@@ -177,11 +182,12 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 # El componente para SUPERVISOR/ADMIN renderiza un header con título "Cobros"
 # (CobrarAdminContent -> AdminTenantCobrosList). Si el rol fuera VENDEDOR,
 # el header sería el dashboard con KPIs "Facturado / Cobrado / Pendiente de Cobro".
+# Header screenTitle "Cobros" + header de lista "Cobros hoy" -> regex .*Cobros.*
 - extendedWaitUntil:
-    visible: "Cobros"
+    visible: ".*Cobros.*"
     timeout: 20000
 
-- assertVisible: "Cobros"
+- assertVisible: ".*Cobros.*"
 - takeScreenshot: sup-cobros-equipo-03-vista-cobros-equipo
 
 # ============================================================
@@ -209,18 +215,18 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 
 - runFlow:
     when:
-      visible: "7d"
+      visible: "7 días"
     commands:
-      - tapOn: "7d"
+      - tapOn: "7 días"
       - waitForAnimationToEnd:
           timeout: 4000
       - takeScreenshot: sup-cobros-equipo-06-filtro-7d
 
 - runFlow:
     when:
-      visible: "30d"
+      visible: "30 días"
     commands:
-      - tapOn: "30d"
+      - tapOn: "30 días"
       - waitForAnimationToEnd:
           timeout: 4000
       - takeScreenshot: sup-cobros-equipo-07-filtro-30d
@@ -253,7 +259,7 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 # documentar el estado vacío del componente para auditoría visual.
 - runFlow:
     when:
-      visible: "Sin cobros"
+      visible: ".*Sin cobros.*"
     commands:
       - takeScreenshot: sup-cobros-equipo-08b-empty-state
 
@@ -289,14 +295,14 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
           timeout: 5000
       # Header esperado en detalle de cobro (apps/mobile-app/app/(tabs)/cobrar/detalle-cobro/[cobroId].tsx)
       - extendedWaitUntil:
-          visible: "Detalle"
+          visible: "Detalle de Cobro"
           timeout: 15000
       - takeScreenshot: sup-cobros-equipo-10-detalle-cobro
       - back
       - waitForAnimationToEnd:
           timeout: 3000
       - extendedWaitUntil:
-          visible: "Cobros"
+          visible: ".*Cobros.*"
           timeout: 15000
 
 # ============================================================
@@ -309,11 +315,14 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
 - waitForAnimationToEnd:
     timeout: 5000
 
-- assertVisible: "Cobros"
+- assertVisible: ".*Cobros.*"
 - takeScreenshot: sup-cobros-equipo-11-post-refresh
 
 # ============================================================
 # FASE 9: Logout limpio (deja device estable para siguiente suite)
+# FIXME logout vive en tab Más, no en Configuración. Boton real
+# "Cerrar Sesión" (mas.tsx); el ConfirmModal confirma con "Cerrar Sesión".
+# Reestructurar la navegacion (tapear logout directo en Más). Emulador.
 # ============================================================
 
 - tapOn:
@@ -326,19 +335,19 @@ name: "Supervisor: ver cobros agregados del equipo (tab Cobrar)"
           text: "Configuración"
       - scrollUntilVisible:
           element:
-            text: "Cerrar sesión"
+            text: "Cerrar Sesión"
           direction: DOWN
           timeout: 15000
           speed: 40
       - tapOn:
-          text: "Cerrar sesión"
+          text: "Cerrar Sesión"
       - runFlow:
           when:
             visible:
-              text: "Sí, cerrar sesión"
+              text: "Cerrar Sesión"
           commands:
             - tapOn:
-                text: "Sí, cerrar sesión"
+                text: "Cerrar Sesión"
       - extendedWaitUntil:
           visible:
             id: "email-input"

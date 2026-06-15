@@ -111,8 +111,10 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
           text: "Permitir"
 
 # ---- FASE 3: Dashboard supervisor cargado ----
+# "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy. El
+# dashboard supervisor expone el KPI "Vendedores activos".
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 30000
 
 - takeScreenshot: sup-pedidos-presets-01-dashboard
@@ -133,8 +135,8 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 
 - assertVisible: "Hoy"
 - assertVisible: "Ayer"
-- assertVisible: "7 dias"
-- assertVisible: "30 dias"
+- assertVisible: "7 días"
+- assertVisible: "30 días"
 
 - takeScreenshot: sup-pedidos-presets-02-default-hoy
 
@@ -150,28 +152,28 @@ name: "Supervisor: ver pedidos del equipo con presets Hoy/Ayer/7 dias/30 dias"
 - assertVisible: "Pedidos ayer"
 - takeScreenshot: sup-pedidos-presets-03-ayer
 
-# ---- FASE 6: Preset "7 dias" ----
-- tapOn: "7 dias"
+# ---- FASE 6: Preset "7 días" ----
+- tapOn: "7 días"
 - waitForAnimationToEnd:
     timeout: 4000
 
 - extendedWaitUntil:
-    visible: "Pedidos ultimos 7 dias"
+    visible: "Pedidos últimos 7 días"
     timeout: 15000
 
-- assertVisible: "Pedidos ultimos 7 dias"
+- assertVisible: "Pedidos últimos 7 días"
 - takeScreenshot: sup-pedidos-presets-04-7d
 
-# ---- FASE 7: Preset "30 dias" ----
-- tapOn: "30 dias"
+# ---- FASE 7: Preset "30 días" ----
+- tapOn: "30 días"
 - waitForAnimationToEnd:
     timeout: 4000
 
 - extendedWaitUntil:
-    visible: "Pedidos ultimos 30 dias"
+    visible: "Pedidos últimos 30 días"
     timeout: 15000
 
-- assertVisible: "Pedidos ultimos 30 dias"
+- assertVisible: "Pedidos últimos 30 días"
 - takeScreenshot: sup-pedidos-presets-05-30d
 
 # ---- FASE 8: Vuelta a "Hoy" (estado idempotente para siguiente suite) ----

@@ -110,10 +110,10 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "Abarrotes"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -150,7 +150,7 @@ tags:
 # ConfirmModal — el título se repite "Confirmar Cobro" y el body trae
 # "Registrar cobro de $X a CLIENTE". Tap el botón "Confirmar" del modal.
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
@@ -201,12 +201,12 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
 # Búsqueda genérica para listar varios clientes; tomamos el primer
 # chevron-right (primer cliente con saldo en la lista).
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "a"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -235,7 +235,7 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:

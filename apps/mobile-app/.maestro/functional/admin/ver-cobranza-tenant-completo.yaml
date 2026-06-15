@@ -162,11 +162,11 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
     visible: "Hoy"
     timeout: 45000
 
-# Saludo "Administrador" + KPI "Vendedores" confirma que el rol cargó
-# como ADMIN y no como VENDEDOR (cuyo dashboard solo dice "Hoy" +
-# "Mis Pedidos" / "Mis Cobros").
+# El dashboard ADMIN NO renderiza "Administrador" (saludo dinamico). Los KPI
+# reales del AdminDashboard.tsx son "Vendedores" y "Pedidos hoy"; confirman que
+# el rol cargó como ADMIN y no como VENDEDOR (cuyo dashboard dice "Mis Pedidos").
 - assertVisible:
-    text: "Administrador"
+    text: "Pedidos hoy"
     optional: true
 - assertVisible:
     text: "Vendedores"
@@ -185,12 +185,13 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # CRITICAL ASSERT: si el ADMIN viera "Cobranza" (header vendedor con
 # "Facturado/Cobrado/Pendiente de Cobro") significaría que la rama
 # isAdminOrSupervisor no detectó el rol y cayó al CobrarVendedorContent.
-# El header correcto admin es "Cobros".
+# El header correcto admin es "Cobros hoy" (AdminTenantCobrosList labelByPreset).
+# Maestro hace match anclado, usar comodines para el sufijo del preset.
 - extendedWaitUntil:
-    visible: "Cobros"
+    visible: ".*Cobros.*"
     timeout: 25000
 
-- assertVisible: "Cobros"
+- assertVisible: ".*Cobros.*"
 
 # Confirmar que NO está renderizando la vista de vendedor.
 # "Pendiente de Cobro" es exclusivo de CobrarVendedorContent.
@@ -206,8 +207,9 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # La frase "en toda la empresa" es UNICA de la vista admin y prueba
 # que el endpoint devolvió un agregado tenant-wide.
 
+# El texto real es "{N} cobros en toda la empresa"; Maestro ancla, usar comodines.
 - assertVisible:
-    text: "en toda la empresa"
+    text: ".*en toda la empresa.*"
     optional: true
 
 - takeScreenshot: adm-cobranza-tenant-04-subtitulo-empresa
@@ -225,7 +227,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
       - tapOn: "Ayer"
       - waitForAnimationToEnd:
           timeout: 4000
-      - assertVisible: "Cobros"
+      - assertVisible: ".*Cobros.*"
       - takeScreenshot: adm-cobranza-tenant-05-filtro-ayer
 
 - runFlow:
@@ -235,7 +237,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
       - tapOn: "7 días"
       - waitForAnimationToEnd:
           timeout: 4000
-      - assertVisible: "Cobros"
+      - assertVisible: ".*Cobros.*"
       - takeScreenshot: adm-cobranza-tenant-06-filtro-7d
 
 - runFlow:
@@ -245,7 +247,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
       - tapOn: "30 días"
       - waitForAnimationToEnd:
           timeout: 4000
-      - assertVisible: "Cobros"
+      - assertVisible: ".*Cobros.*"
       - takeScreenshot: adm-cobranza-tenant-07-filtro-30d
 
 # Volver a "Hoy" para dejar estado determinista.
@@ -277,7 +279,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # documentar el estado vacío del componente.
 - runFlow:
     when:
-      visible: "Sin cobros"
+      visible: ".*Sin cobros.*"
     commands:
       - takeScreenshot: adm-cobranza-tenant-09b-empty-state
 
@@ -311,7 +313,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
       - waitForAnimationToEnd:
           timeout: 5000
       - extendedWaitUntil:
-          visible: "Detalle"
+          visible: "Detalle de Cobro"
           timeout: 15000
       - takeScreenshot: adm-cobranza-tenant-11-detalle-cobro
       # Verificar que NO hay error/toast de "Failed" / "Sin conexión"
@@ -322,7 +324,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
       - waitForAnimationToEnd:
           timeout: 3000
       - extendedWaitUntil:
-          visible: "Cobros"
+          visible: ".*Cobros.*"
           timeout: 15000
 
 # ============================================================
@@ -336,7 +338,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 - waitForAnimationToEnd:
     timeout: 5000
 
-- assertVisible: "Cobros"
+- assertVisible: ".*Cobros.*"
 - takeScreenshot: adm-cobranza-tenant-12-post-refresh
 
 # ============================================================
@@ -348,6 +350,8 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 - waitForAnimationToEnd:
     timeout: 2000
 
+# FIXME logout vive en tab Más, no en Configuración (botón "Cerrar Sesión"
+# directo en mas.tsx). La reestructuración de navegación se verifica en emulador.
 - runFlow:
     when:
       visible: "Configuración"
@@ -356,19 +360,19 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
           text: "Configuración"
       - scrollUntilVisible:
           element:
-            text: "Cerrar sesión"
+            text: "Cerrar Sesión"
           direction: DOWN
           timeout: 15000
           speed: 40
       - tapOn:
-          text: "Cerrar sesión"
+          text: "Cerrar Sesión"
       - runFlow:
           when:
             visible:
-              text: "Sí, cerrar sesión"
+              text: "Cerrar Sesión"
           commands:
             - tapOn:
-                text: "Sí, cerrar sesión"
+                text: "Cerrar Sesión"
       - extendedWaitUntil:
           visible:
             id: "email-input"

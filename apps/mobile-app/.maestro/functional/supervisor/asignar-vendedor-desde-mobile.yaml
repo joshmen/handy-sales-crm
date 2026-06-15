@@ -108,9 +108,10 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 # FASE 2: DASHBOARD — banner "Mi Equipo" debe estar visible
 # ═══════════════════════════════════════════
 
-# El banner solo aparece para roles SUPERVISOR/ADMIN — confirma que el
-# backend respeta el rol asignado al usuario autenticado.
-- assertVisible: "Mi Equipo"
+# El KPI "Vendedores activos" solo aparece en el dashboard supervisor —
+# confirma que el backend respeta el rol asignado al usuario autenticado.
+# ("Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy.)
+- assertVisible: "Vendedores activos"
 - assertVisible: "Equipo"
 
 - takeScreenshot: "asignar-02-banner-mi-equipo"
@@ -226,6 +227,6 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+- assertVisible: "Vendedores activos"
 
 - takeScreenshot: "asignar-08-dashboard-final"

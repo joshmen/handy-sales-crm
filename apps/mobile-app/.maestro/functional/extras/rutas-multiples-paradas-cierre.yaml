@@ -128,12 +128,15 @@ launchApp:
 # -----------------------------------------------------------------
 # 2) Navegar al tab Ruta (visible en tab bar VENDEDOR).
 # -----------------------------------------------------------------
+# FIXME nav: vendedor no tiene tab Ruta (app/(tabs)/_layout.tsx -> ruta href:null;
+# el tab real del vendedor es "Mapa"). La ruta del día se abre desde el card de
+# ruta del dashboard Hoy, no desde un tab. Reestructuración pendiente de emulador.
 - assertVisible: "Ruta"
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "RUTA DEL DÍA"
+    visible: "Ruta del Día"
     timeout: 15000
 
 - takeScreenshot: rutas-multi-01-ruta-del-dia
@@ -232,7 +235,7 @@ launchApp:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "RUTA DEL DÍA"
+    visible: "Ruta del Día"
     timeout: 10000
 
 - takeScreenshot: rutas-multi-06-back-a-lista
@@ -289,7 +292,7 @@ launchApp:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "RUTA DEL DÍA"
+    visible: "Ruta del Día"
     timeout: 10000
 
 - takeScreenshot: rutas-multi-08-progreso-multi-stop
@@ -303,6 +306,10 @@ launchApp:
 #    lista de paradas). Es el cierre efectivo de la jornada/ruta
 #    desde la UI vendedor.
 # -----------------------------------------------------------------
+# FIXME nav: el menú "Más" NO tiene un item "RESUMEN DEL DÍA"/"Resumen del Día"
+# (app/(tabs)/mas.tsx — el item "Ruta del Día" fue removido y no hay item de
+# resumen). La pantalla resumen.tsx se alcanza por otra navegación (desde el
+# flujo de ruta). Reestructuración pendiente de verificación en emulador.
 - tapOn: "Más"
 
 - waitForAnimationToEnd
@@ -327,8 +334,9 @@ launchApp:
 #       - Desglose: completadas, con venta, canceladas, tasa conversion
 #       - Si hay ruta: "Paradas completadas X/TOTAL"
 # -----------------------------------------------------------------
+# El header de resumen.tsx (línea 32) es "Resumen del Día", no mayúsculas.
 - extendedWaitUntil:
-    visible: "RESUMEN DEL DÍA"
+    visible: "Resumen del Día"
     timeout: 15000
 
 - assertVisible: "Efectividad del D"
@@ -368,9 +376,11 @@ launchApp:
 # -----------------------------------------------------------------
 # 12) Verificar que la sesion vendedor sigue activa (tab bar intacta).
 # -----------------------------------------------------------------
+# El tab real del vendedor es "Mapa", no "Ruta" (app/(tabs)/_layout.tsx,
+# ruta tiene href:null y no aparece en el tab bar).
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 - assertVisible: "Hoy"
 
 - takeScreenshot: rutas-multi-12-flow-completo

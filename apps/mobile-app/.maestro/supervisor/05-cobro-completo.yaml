@@ -6,6 +6,12 @@ name: "Supervisor: Registrar cobro completo end-to-end"
 # PREREQ: Ya logueado como supervisor@jeyma.com
 # Con pedidos creados previamente (hay saldo pendiente)
 # ═══════════════════════════════════════════
+# FIXME estructural: para SUPERVISOR el tab Cobrar renderiza
+# CobrarAdminContent (header "Cobros" + AdminTenantCobrosList), NO el
+# dashboard de cobranza del vendedor. Por tanto "Facturado", "Cobrado",
+# "Registrar Cobro" y el testID "btn-registrar-cobro" NO existen en
+# esta sesion (ver app/(tabs)/cobrar/index.tsx -> CobrarScreenContent).
+# Registrar un cobro requiere sesion VENDEDOR. Verificar en emulador.
 
 # Reset navigation
 - tapOn: "Hoy"

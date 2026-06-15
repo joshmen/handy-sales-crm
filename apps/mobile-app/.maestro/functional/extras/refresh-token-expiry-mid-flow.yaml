@@ -179,8 +179,10 @@ tags:
 
 - waitForAnimationToEnd
 
+# El título real del BottomSheet de modo de venta es "¿Qué tipo de pedido?"
+# (src/hooks/useCreateOrderFlow.tsx línea 91), no "Tipo de Venta".
 - extendedWaitUntil:
-    visible: "Tipo de Venta"
+    visible: "¿Qué tipo de pedido?"
     timeout: 10000
 - assertVisible: "Preventa"
 - tapOn: "Preventa"

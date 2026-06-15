@@ -5,6 +5,11 @@ name: "Supervisor: Venta Directa completa end-to-end"
 # ═══════════════════════════════════════════
 # PREREQ: Ya logueado como supervisor@jeyma.com
 # ═══════════════════════════════════════════
+# FIXME estructural: para SUPERVISOR el tab Vender renderiza
+# VenderAdminContent (AdminTenantPedidosList) — NO existe el FAB
+# "fab-nuevo-pedido" ni el flujo de crear pedido (solo en
+# VenderVendedorContent, ver app/(tabs)/vender/index.tsx). Este flow
+# de venta directa requiere sesion VENDEDOR. Verificar en emulador.
 
 # Reset navigation: doble-tap fuerza reset al root del tab
 - tapOn: "Hoy"
@@ -24,7 +29,7 @@ name: "Supervisor: Venta Directa completa end-to-end"
 - tapOn:
     id: "fab-nuevo-pedido"
 - waitForAnimationToEnd
-- assertVisible: "Tipo de Venta"
+- assertVisible: "¿Qué tipo de pedido?"
 
 # ═══════════════════════════════════════════
 # PASO 2: Seleccionar Venta Directa

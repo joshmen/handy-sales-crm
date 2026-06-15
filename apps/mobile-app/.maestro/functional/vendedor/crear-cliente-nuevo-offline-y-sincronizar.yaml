@@ -114,9 +114,9 @@ name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 - takeScreenshot: func-vendedor-crear-cliente-03-form
 
 # 6. Validar estructura del form (4 secciones esperadas).
-- assertVisible: "UBICACION"
-- assertVisible: "DIRECCION"
-- assertVisible: "INFORMACION GENERAL"
+- assertVisible: "UBICACIÓN"
+- assertVisible: "DIRECCIÓN"
+- assertVisible: "INFORMACIÓN GENERAL"
 - assertVisible: "DATOS FISCALES"
 
 # 7. DIRECCION — calle + número exterior (requeridos).
@@ -164,10 +164,10 @@ name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 
 - runFlow:
     when:
-      visible: "10 digitos (opcional)"
+      visible: "10 dígitos (opcional)"
     commands:
       - tapOn:
-          text: "10 digitos (opcional)"
+          text: "10 dígitos (opcional)"
       - inputText: "5598765432"
       - hideKeyboard
 

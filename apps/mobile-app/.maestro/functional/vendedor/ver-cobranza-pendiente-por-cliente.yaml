@@ -153,8 +153,9 @@ name: "Vendedor - Ver cobranza pendiente por cliente (read-only)"
 # 15. Confirmar que la sesion vendedor sigue activa: el tab bar de
 #     vendedor incluye "Hoy / Vender / Cobrar / Ruta / Mas" — si
 #     viera "Configuracion" o "Administracion" seria rol admin.
+#     Tab bar VENDEDOR real: Hoy, Mapa, Vender, Cobrar, Mas (NO existe tab "Ruta").
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 
 - takeScreenshot: cobrar-flow-completo
