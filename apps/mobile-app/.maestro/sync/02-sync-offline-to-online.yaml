@@ -2,6 +2,14 @@ appId: com.handysuites.app
 name: "Sync offline -> online (push pending + pull catalogos)"
 ---
 
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
 # ════════════════════════════════════════════════════════════
 # HOT-PATH: VENDEDOR offline-first.
 #

@@ -56,7 +56,11 @@ tags:
 - waitForAnimationToEnd
 
 # 2) Abrir "Ruta del Día" desde el card de ruta del dashboard.
-- assertVisible: "Ruta"
+- scrollUntilVisible:
+    element:
+      text: "Ruta"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 
