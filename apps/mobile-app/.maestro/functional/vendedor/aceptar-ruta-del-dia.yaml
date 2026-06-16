@@ -60,7 +60,11 @@ tags:
 
 # 2) Abrir la Ruta del Día desde el card de ruta del dashboard.
 #    VENDEDOR no tiene tab "Ruta": se entra por el card "Ruta".
-- assertVisible: "Ruta"
+- scrollUntilVisible:
+    element:
+      text: "Ruta"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 

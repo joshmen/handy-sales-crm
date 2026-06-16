@@ -39,12 +39,15 @@ name: "EXT — Feature flag tracking GPS deshabilitado oculta toggle en Configur
 
 - takeScreenshot: ext-flag-tracking-dashboard
 
-# 5. Navegar Más → Configuración.
+# 5. Navegar Más → Configuración. "Configuración" puede quedar bajo el fold en
+#    el menú Más → scroll hasta verla antes de tapear (extendedWaitUntil no scrollea).
 - tapOn: "Más"
 - waitForAnimationToEnd
 
-- extendedWaitUntil:
-    visible: "Configuración"
+- scrollUntilVisible:
+    element:
+      text: "Configuración"
+    direction: DOWN
     timeout: 15000
 
 - tapOn: "Configuración"

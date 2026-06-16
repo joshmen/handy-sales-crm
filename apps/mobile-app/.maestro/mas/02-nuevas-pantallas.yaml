@@ -1,5 +1,13 @@
 appId: com.handysuites.app
 ---
+
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 # Navegar a pantallas de la sección CUENTA bajo el tab "Más". Tras cada
 # sub-pantalla re-tapeamos el tab "Más" (pop al root del menú) para volver de
 # forma confiable — el doble-back anterior sobre-navegaba al dashboard.

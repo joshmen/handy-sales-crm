@@ -60,7 +60,11 @@ tags:
 # FIXME nav: vendedor no tiene tab Ruta (Tabs.Screen name="ruta" href:null en
 # (tabs)/_layout.tsx). La ruta del dia se abre desde el card de ruta del
 # dashboard Hoy, no desde la tab bar. Navegacion pendiente de verificar en emulador.
-- assertVisible: "Ruta"
+- scrollUntilVisible:
+    element:
+      text: "Ruta"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 

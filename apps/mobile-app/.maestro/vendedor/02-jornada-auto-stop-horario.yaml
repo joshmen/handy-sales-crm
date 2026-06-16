@@ -2,6 +2,14 @@ appId: com.handysuites.app
 name: "Vendedor: Jornada auto-stop por horario laboral"
 ---
 
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
 # ════════════════════════════════════════════════════════════
 # PREREQ: ya logueado como vendedor1@jeyma.com
 # Tenant Jeyma con horario L-S (1,2,3,4,5,6) — domingo NO laboral

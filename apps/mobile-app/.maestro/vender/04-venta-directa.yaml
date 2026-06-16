@@ -2,6 +2,14 @@ appId: com.handysuites.app
 name: "Vender > Venta Directa (cobro inmediato contado) - vendedor"
 ---
 
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
 # ════════════════════════════════════════════════════════════
 # HOT-PATH VENDEDOR: Venta Directa.
 #
