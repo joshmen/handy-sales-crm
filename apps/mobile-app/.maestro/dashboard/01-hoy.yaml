@@ -1,30 +1,31 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Dashboard - Tab Hoy"
 ---
 
-# Ya estamos en Hoy despues del login
+# Ir al tab Hoy (bottom tab)
 - tapOn: "Hoy"
 
+# Header del dashboard (mayúsculas/acento como renderea la app actual)
 - extendedWaitUntil:
-    visible: "Resumen del D"
+    visible: "RESUMEN DEL DÍA"
     timeout: 15000
 
 - takeScreenshot: hoy-dashboard
 
-# Verificar KPIs
-- assertVisible: "Ventas"
+# KPIs del día
+- assertVisible: "Ventas hoy"
 - assertVisible: "Completadas"
 - assertVisible: "Pendiente"
 
-# Verificar seccion Ruta
-- assertVisible: "Ruta del D"
+# Sección Ruta del día
+- assertVisible: "RUTA DEL DÍA"
 
-# Scroll para ver acciones rapidas
+# Scroll para ver acciones rápidas
 - scroll
 
-- assertVisible: "Acciones R"
+- assertVisible: "ACCIONES RÁPIDAS"
 - assertVisible: "Nuevo Pedido"
 - assertVisible: "Registrar Cobro"
-- assertVisible: "Ver Mapa"
+- assertVisible: "Cerrar jornada"
 
 - takeScreenshot: hoy-scrolled

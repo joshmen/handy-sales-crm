@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Full Design Audit"
 ---
 
@@ -23,7 +23,7 @@ name: "Full Design Audit"
 - takeScreenshot: 04-equipo
 
 # 5. Más tab
-- tapOn: "Mas"
+- tapOn: "Más"
 - takeScreenshot: 05-mas-tab
 
 # 6. Navigate to Configuración

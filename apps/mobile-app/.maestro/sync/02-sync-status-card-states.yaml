@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Sync Status Card - 6 estados visuales (Sprint 1 audit)"
 tags:
   - audit
@@ -22,12 +22,7 @@ tags:
 # (icon RefreshCcw visible durante syncing) pero no su animacion.
 
 # === ESTADO 1: IDLE (entrada normal a la pantalla) ===
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Más"
-    optional: true
+- tapOn: "Más"
 
 - extendedWaitUntil:
     visible: "Sincronización"

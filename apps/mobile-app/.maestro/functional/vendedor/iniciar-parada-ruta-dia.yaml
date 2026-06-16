@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Iniciar parada de la Ruta del Dia"
 tags:
   - functional
@@ -42,78 +42,30 @@ tags:
 # asignada para el dia con al menos una parada Pendiente.
 # =================================================================
 
-launchApp:
-  clearState: false
-
-# 0) Dismiss modales opcionales (permisos GPS, banners, KeepAwake,
-#    Aviso de Privacidad). runFlow when:visible no rompe si no existen.
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Continuar"
-    commands:
-      - tapOn: "Continuar"
-      - waitForAnimationToEnd
-
-# 1) Esperar dashboard "Hoy" hidratado tras login y resetear stack
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
+# 1) Resetear el stack de navegacion (doble tap "Hoy" -> root).
 - tapOn: "Hoy"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
 - takeScreenshot: iniciar-parada-00-dashboard
 
-# 2) Navegar al tab Ruta (visible en tab bar VENDEDOR)
+# 2) Navegar a la pantalla Ruta
+# FIXME nav: vendedor no tiene tab Ruta (Tabs.Screen name="ruta" href:null en
+# (tabs)/_layout.tsx). La ruta del dia se abre desde el card de ruta del
+# dashboard Hoy, no desde la tab bar. Navegacion pendiente de verificar en emulador.
 - assertVisible: "Ruta"
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "Ruta del Día"
     timeout: 15000
 
 - takeScreenshot: iniciar-parada-01-ruta-del-dia
@@ -223,7 +175,7 @@ launchApp:
 
 # 12) Confirmar regreso a "Ruta del Dia"
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "Ruta del Día"
     timeout: 10000
 
 - takeScreenshot: iniciar-parada-07-vuelta-lista
@@ -234,9 +186,10 @@ launchApp:
     text: "En Progreso|Pendiente"
 
 # 14) Verificar que la sesion vendedor sigue activa (tab bar)
+# Tab bar VENDEDOR real: Hoy, Mapa, Vender, Cobrar, Mas. NO existe tab "Ruta".
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 - assertVisible: "Hoy"
 
 - takeScreenshot: iniciar-parada-08-flow-completo

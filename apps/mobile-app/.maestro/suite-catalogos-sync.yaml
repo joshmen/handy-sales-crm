@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: catalogos-sync-validation
 ---
 # Validacion exhaustiva de catalogos sincronizados
@@ -165,9 +165,9 @@ name: catalogos-sync-validation
 
 - runFlow:
     when:
-      visible: "Más"
+      visible: "Mï¿½s"
     commands:
-      - tapOn: "Más"
+      - tapOn: "Mï¿½s"
 
 - extendedWaitUntil:
     visible:

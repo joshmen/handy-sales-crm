@@ -42,7 +42,7 @@
 #   - Emulador Android con Expo Go en Metro :8081
 #   - Backend docker-compose up (seed Jeyma con vendedor1@jeyma.com)
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: descargar PDF de factura - RBAC negativo (Facturas oculto)"
 tags:
   - vendedor
@@ -53,65 +53,20 @@ tags:
 ---
 
 # -----------------------------------------------------------------------------
-# Paso 1 - Login VENDEDOR (subflow ya existente)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Dismiss de modales opcionales post-login
+# Paso 1 - Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar|Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Dashboard del vendedor cargado
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: factura-pdf-vendedor-01-dashboard
 
 # -----------------------------------------------------------------------------
 # Paso 4 - Navegar a tab "Mas" (con tilde correcta)
 # -----------------------------------------------------------------------------
-- tapOn: "Mas"
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 # El chip "Vendedor" confirma que el rol esta hidratado en (tabs)/mas.tsx
@@ -154,7 +109,7 @@ tags:
 # -----------------------------------------------------------------------------
 - assertVisible: "Impresora"
 - assertVisible: "Mi Perfil"
-- assertVisible: "Configuracion"
+- assertVisible: "Configuración"
 
 # -----------------------------------------------------------------------------
 # Paso 8 - Volver al dashboard para dejar el state limpio para flows downstream

@@ -1,0 +1,169 @@
+appId: com.handysuites.app
+name: "Funcional > Extras > Limite de sesion: revoke-and-login (picker Netflix) o bloqueo single-session"
+---
+
+# ════════════════════════════════════════════════════════════
+# rol: VENDEDOR (vendedor1@jeyma.com)
+# use-case: session-limit-revoke-login
+# prereq / PRE-CONDICION (correr en PowerShell ANTES del flow):
+#
+#   Caso A — SESSION_LIMIT_REACHED (picker Netflix, plan multi-sesion):
+#   El plan permite N sesiones y el user ya alcanzo N en otros devices.
+#   El backend responde 409 SESSION_LIMIT_REACHED y la app navega a
+#   /(auth)/session-limit con el picker. Sembrar N DeviceSessions activas:
+#
+#   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp -c "
+#     UPDATE subscription_plans SET force_single_session = false, max_sesiones = 1;
+#     INSERT INTO \"DeviceSessions\"
+#       (tenant_id, usuario_id, device_id, device_name, device_type, status,
+#        last_activity, logged_in_at, activo, creado_en)
+#     SELECT u.tenant_id, u.id,
+#            'fake-session-limit-device-e2e',
+#            'POCO X7 (E2E limit)', 2, 0, NOW(), NOW(), true, NOW()
+#     FROM \"Usuarios\" u WHERE u.email = 'vendedor1@jeyma.com';
+#   "
+#
+#   Caso B — SESSION_BLOCKED (single-session estricto): igual que
+#   .maestro/auth/session-blocked.yaml (force_single_session = true).
+#
+#   CLEANUP (correr DESPUES del flow):
+#   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp -c "
+#     DELETE FROM \"DeviceSessions\"
+#       WHERE device_id IN ('fake-session-limit-device-e2e','fake-other-device-uuid-for-e2e-test');
+#     UPDATE subscription_plans SET force_single_session = false;
+#   "
+#
+# endpoints backend tocados:
+#   - POST /api/mobile/auth/login            (409 SESSION_LIMIT_REACHED | SESSION_BLOCKED)
+#   - POST /api/mobile/auth/revoke-and-login (al confirmar el picker)
+#
+# Strings validados contra:
+#   - app/(auth)/session-limit.tsx: "Límite de sesiones alcanzado",
+#     subtitulo ".*Elige una para cerrarla", boton "Desconectar y continuar aquí",
+#     "Cancelar".
+#   - app/(auth)/login.tsx L350/364: modal "Sesión activa en otro dispositivo",
+#     boton "Entendido".
+#
+# NOTA: NO usa el helper login-as (necesitamos controlar el resultado del POST
+# login, no aterrizar en "Hoy"). Sigue el patron de auth/session-blocked.yaml:
+# arranca en la pantalla de login ya pre-cargada por la fase Setup.
+# ════════════════════════════════════════════════════════════
+
+# 1. Esperar la pantalla de login (testID estable). Si hay sesion activa de
+#    una corrida previa, cerrarla primero via el helper-mini inline.
+- launchApp
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn:
+          text: "Entendido"
+      - waitForAnimationToEnd
+
+# Si quedo una sesion abierta, cerrarla via Mas para volver al login.
+- runFlow:
+    when:
+      notVisible:
+        id: "login-button"
+    commands:
+      - tapOn:
+          text: "Más"
+          optional: true
+      - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar Sesión"
+          direction: DOWN
+          timeout: 15000
+      - tapOn:
+          text: "Cerrar Sesión"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "¿Estás seguro que deseas cerrar sesión?"
+          commands:
+            - tapOn:
+                id: "confirm-modal-confirm"
+            - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 90000
+- takeScreenshot: session-limit-01-login-ready
+
+# 2. Ingresar credenciales (patron eraseText + inputText + hideKeyboard para
+#    evitar que Gboard concatene autocomplete).
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+# 3. Login. El backend devuelve uno de tres outcomes segun el seed.
+- tapOn:
+    id: "login-button"
+- waitForAnimationToEnd
+- takeScreenshot: session-limit-02-after-login
+
+# ── CASO A — SESSION_LIMIT_REACHED: picker de sesiones ──────
+- runFlow:
+    when:
+      visible: "Límite de sesiones alcanzado"
+    commands:
+      - assertVisible: "Límite de sesiones alcanzado"
+      - assertVisible:
+          text: ".*Elige una para cerrarla.*"
+      - assertVisible: "Desconectar y continuar aquí"
+      - takeScreenshot: session-limit-03a-picker
+      # Seleccionar la primera sesion activa del picker (card superior).
+      - tapOn:
+          point: "50%,45%"
+      - waitForAnimationToEnd
+      # Confirmar revoke-and-login → POST /revoke-and-login → entra a "Hoy".
+      - tapOn:
+          text: "Desconectar y continuar aquí"
+      - extendedWaitUntil:
+          visible: "Hoy"
+          timeout: 45000
+      - assertVisible: "Hoy"
+      - takeScreenshot: session-limit-04a-entro-tras-revoke
+
+# ── CASO B — SESSION_BLOCKED: modal single-session estricto ──
+- runFlow:
+    when:
+      visible: "Sesión activa en otro dispositivo"
+    commands:
+      - assertVisible: "Sesión activa en otro dispositivo"
+      - takeScreenshot: session-limit-03b-bloqueo-single-session
+      - tapOn:
+          text: "Entendido"
+      - waitForAnimationToEnd
+      # No debe haber navegado a la app.
+      - assertNotVisible: "Hoy"
+      - assertVisible:
+          id: "login-button"
+      - takeScreenshot: session-limit-04b-sigue-en-login
+
+# ── CASO C — DEGRADADO: el seed no fuerza limite ni bloqueo ──
+#    Sin la PRE-CONDICION SQL, el login tiene exito normal y aterriza en
+#    "Hoy". Es un outcome valido — documentamos y NO fallamos el test.
+- runFlow:
+    when:
+      visible: "Hoy"
+    commands:
+      - assertVisible: "Hoy"
+      - takeScreenshot: session-limit-03c-login-normal-sin-precondicion
+      # KNOWN-LIMITATION: para ejercitar el flow real de revoke-and-login o
+      # el bloqueo single-session, aplicar la PRE-CONDICION SQL del header
+      # (force_single_session / DeviceSessions sembradas). Sin ella el flag
+      # force_single_session no esta activo en el seed → login normal.

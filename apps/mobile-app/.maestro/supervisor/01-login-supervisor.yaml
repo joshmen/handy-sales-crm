@@ -1,51 +1,15 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashboard"
 ---
 
 # ═══════════════════════════════════════════
-# FASE 1: LOGIN COMO SUPERVISOR
+# FASE 1: LOGIN COMO SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ═══════════════════════════════════════════
-
-# Wait for app to fully load
-- extendedWaitUntil:
-    visible: "Siguiente"
-    timeout: 60000
-
-# Skip onboarding via action button (testID is stable, text changes per slide)
-- tapOn:
-    id: "onboarding-action"
-- waitForAnimationToEnd
-- tapOn:
-    id: "onboarding-action"
-- waitForAnimationToEnd
-- tapOn:
-    id: "onboarding-action"
-
-# Wait for login screen
-- extendedWaitUntil:
-    visible:
-      id: "login-button"
-    timeout: 30000
-
-# Fill supervisor credentials
-- tapOn:
-    id: "email-input"
-- eraseText
-- inputText: "supervisor@jeyma.com"
-
-- tapOn:
-    id: "password-input"
-- eraseText
-- inputText: "test123"
-- hideKeyboard
-
-- tapOn:
-    id: "login-button"
-
-# Wait for dashboard
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: "01-dashboard-supervisor"
 
@@ -53,9 +17,11 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
 # FASE 2: VERIFICAR DASHBOARD CON BANNER EQUIPO
 # ═══════════════════════════════════════════
 
-# Verify the supervisor team banner is visible on Hoy dashboard
+# Verify the supervisor dashboard KPI is visible on Hoy dashboard
+# (SupervisorDashboard.tsx renders KPI "Vendedores activos"; "Mi Equipo" is the
+#  Equipo TAB title, not the dashboard.)
 - assertVisible:
-    text: "Mi Equipo"
+    text: "Vendedores activos"
 
 # Verify Equipo tab is in the tab bar
 - assertVisible:
@@ -67,13 +33,17 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
 # FASE 3: NAVEGAR A EQUIPO — VER KPIs + VENDEDORES
 # ═══════════════════════════════════════════
 
+# Maestro hace match case-INSENSITIVE: tapOn text "Equipo" matchea el header de
+# seccion "EQUIPO" del dashboard (arriba, no interactivo) antes que el tab. El tab
+# Equipo no tiene testID; lo tapeamos por posicion (2do de 5 tabs, barra inferior).
 - tapOn:
-    text: "Equipo"
+    point: "30%,95%"
 - waitForAnimationToEnd
 
-# Should see "Mi Equipo" title and KPIs
+# El tab Equipo renderiza el titulo "Mi Equipo" de inmediato; las KPIs
+# ("Vendedores", etc.) llegan del backend con latencia. Anclamos al titulo.
 - extendedWaitUntil:
-    visible: "Vendedores"
+    visible: "Mi Equipo"
     timeout: 15000
 
 # Verify KPI section loaded
@@ -108,9 +78,9 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
 # FASE 5: VER DETALLE DE UN VENDEDOR
 # ═══════════════════════════════════════════
 
-# Wait for vendedores list to be visible again
+# Wait for the Equipo tab to be visible again (title renders immediately)
 - extendedWaitUntil:
-    visible: "Vendedores"
+    visible: "Mi Equipo"
     timeout: 10000
 
 # If there are vendedores, tap the first one
@@ -150,8 +120,8 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
     text: "Hoy"
 - waitForAnimationToEnd
 
-# Dashboard should still show team banner
+# Dashboard should still show the supervisor KPI
 - assertVisible:
-    text: "Mi Equipo"
+    text: "Vendedores activos"
 
 - takeScreenshot: "07-dashboard-final"

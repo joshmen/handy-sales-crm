@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del equipo asignado)"
 ---
 
@@ -22,85 +22,14 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 #   por el tap real + assertVisible del toast "Vendedor asignado".
 # ═══════════════════════════════════════════════════════════════════════
 
-- launchApp:
-    clearState: false
-
 # ═══════════════════════════════════════════
-# FASE 1: ONBOARDING (si aplica) + LOGIN SUPERVISOR
+# FASE 1: LOGIN SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ═══════════════════════════════════════════
-
-# Saltar onboarding si está visible (3 slides con botón estable por testID)
 - runFlow:
-    when:
-      visible: "Siguiente"
-    commands:
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-
-# Aviso de Privacidad / permisos opcionales
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-
-# Si ya hay sesión activa (clearState:false), saltar login
-- runFlow:
-    when:
-      notVisible:
-        id: "login-button"
-    commands:
-      - assertVisible: "Hoy"
-
-# Si vemos el botón de login, autenticar como supervisor
-- runFlow:
-    when:
-      visible:
-        id: "login-button"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: "supervisor@jeyma.com"
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-      - extendedWaitUntil:
-          visible: "Hoy"
-          timeout: 45000
-
-# Cerrar modal "iniciaste sesión en otro dispositivo" si aparece
-- runFlow:
-    when:
-      visible: "iniciaste sesión"
-    commands:
-      - tapOn: "Continuar"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: "asignar-01-dashboard-supervisor"
 
@@ -108,9 +37,12 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 # FASE 2: DASHBOARD — banner "Mi Equipo" debe estar visible
 # ═══════════════════════════════════════════
 
-# El banner solo aparece para roles SUPERVISOR/ADMIN — confirma que el
-# backend respeta el rol asignado al usuario autenticado.
-- assertVisible: "Mi Equipo"
+# El KPI "Vendedores activos" solo aparece en el dashboard supervisor —
+# confirma que el backend respeta el rol asignado al usuario autenticado.
+# ("Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy.)
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 15000
 - assertVisible: "Equipo"
 
 - takeScreenshot: "asignar-02-banner-mi-equipo"
@@ -119,7 +51,8 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 # FASE 3: NAVEGAR A TAB EQUIPO — VER KPIs + LISTA ASIGNADA
 # ═══════════════════════════════════════════
 
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -215,7 +148,12 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 - waitForAnimationToEnd
 
 - assertVisible: "Supervisor"
-- assertVisible: "Configuración"
+# "Configuración" esta debajo del fold en el menu Más → scroll.
+- scrollUntilVisible:
+    element:
+      text: "Configuración"
+    direction: DOWN
+    timeout: 10000
 
 - takeScreenshot: "asignar-07-mas-badge-supervisor"
 
@@ -226,6 +164,6 @@ name: "Supervisor: asignar vendedor desde mobile (visibilidad + cobertura del eq
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+- assertVisible: "Vendedores activos"
 
 - takeScreenshot: "asignar-08-dashboard-final"

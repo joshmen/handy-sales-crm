@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor - Cobro en plan de pagos / cuotas (workaround multi-cobro parcial)"
 tags:
   - vendedor
@@ -45,52 +45,12 @@ tags:
 #   - Sesion vendedor: el flow ejecuta login subflow
 # ════════════════════════════════════════════════════════════════════
 
-- launchApp:
-    clearState: false
-
-# 1. Login VENDEDOR (subflow)
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# 2. Dismiss de modales opcionales post-login
+# 1. Login VENDEDOR (helper robusto)
 - runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-# 3. Esperar dashboard "Hoy" hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ════════════════════════════════════════════════════════════════════
 # CUOTA #1 — primer pago del plan (100 MXN)
@@ -143,10 +103,10 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "Abarrotes"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -179,12 +139,11 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 # Recibo de Cuota #1
 - extendedWaitUntil:
@@ -301,12 +260,11 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 - extendedWaitUntil:
     visible: "Cobro Registrado"
@@ -354,9 +312,11 @@ tags:
     optional: true
 
 # Sesion vendedor sigue activa (tab bar intacto)
+# Fix: el tab real del vendedor es "Mapa", no "Ruta" (app/(tabs)/_layout.tsx
+# expone Mapa para VENDEDOR; ruta tiene href:null y no aparece en el tab bar).
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 - assertVisible: "Más"
 
 - takeScreenshot: cuotas-09-plan-incompleto-saldo-restante

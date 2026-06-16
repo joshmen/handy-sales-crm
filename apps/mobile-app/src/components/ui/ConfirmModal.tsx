@@ -70,6 +70,7 @@ export function ConfirmModal({
           <View style={styles.buttonRow}>
             {cancelText !== '' && (
               <TouchableOpacity
+                testID="confirm-modal-cancel"
                 style={styles.cancelButton}
                 onPress={onCancel}
                 activeOpacity={0.7}
@@ -81,6 +82,7 @@ export function ConfirmModal({
             )}
 
             <TouchableOpacity
+              testID="confirm-modal-confirm"
               style={[styles.confirmButton, { backgroundColor: confirmBg }, cancelText === '' && { flex: 1 }]}
               onPress={onConfirm}
               activeOpacity={0.7}

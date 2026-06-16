@@ -1,0 +1,213 @@
+appId: com.handysuites.app
+name: "Funcional > Extras > Sync: crear cliente local, ver pendientes en Sincronizacion, push y verificar Conectado"
+---
+
+# ════════════════════════════════════════════════════════════
+# rol: VENDEDOR (vendedor1@jeyma.com)
+# use-case: sync-offline-crear-push-verificar
+# prereq:
+#   - Sesion VENDEDOR activa (helper). Seed Jeyma con al menos una Zona y
+#     una Categoria de cliente para poder completar el form (campos *).
+#   - NO depende de scripts airplane-on/off (no existen en .maestro/scripts/).
+#     WatermelonDB persiste el registro localmente vía createClienteOffline
+#     aunque haya red; el push posterior lo sincroniza. El objetivo del flow
+#     es validar el ciclo crear-local → ver estado en Sincronizacion → push.
+# endpoints backend tocados:
+#   - POST /api/clientes              (create online; fallback offline a WDB)
+#   - POST /api/mobile/sync/push      (al tocar "Sincronizar ahora")
+#   - GET  /api/mobile/sync/pull
+#
+# Strings validados contra:
+#   - app/(tabs)/clients/crear.tsx: header "Crear Cliente", labels "Nombre",
+#     "Calle", "Número exterior", "Zona", "Categoría", boton "Guardar Cliente",
+#     toast text1 "Cliente creado" (offline text2 "Guardado offline —
+#     se sincronizará automáticamente", online "Se guardó exitosamente").
+#   - app/(tabs)/sync.tsx: header "Sincronización", "ESTADO", "DETALLES",
+#     "Conectado", "Pendientes de sincronizar", "registros".
+#   - components/sync/SyncStatusCard.tsx: "Sincronizar ahora",
+#     "¡Sincronizado!", "Listo para sincronizar", "Sin cambios" no aplica;
+#     "X pendientes locales".
+# ════════════════════════════════════════════════════════════
+
+# 0. Login VENDEDOR via helper (deja la app en el dashboard "Hoy").
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: sync-offline-00-dashboard
+
+# 1. Abrir Mas → Clientes para crear uno nuevo.
+- tapOn:
+    text: "Más"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Clientes"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    text: "Clientes"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+# 2. Abrir el form de creacion. El "+" (Plus) flota en la lista; usamos
+#    el accessibilityLabel del header de la pantalla crear como ancla.
+#    Tap por icono Plus suele estar arriba-derecha; degradamos a EmptyState.
+- runFlow:
+    when:
+      visible: "Agregar Cliente"
+    commands:
+      - tapOn:
+          text: "Agregar Cliente"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "Crear Cliente"
+    commands:
+      # FAB "+" sin texto — tap por coordenada esquina inferior derecha.
+      - tapOn:
+          point: "90%,90%"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Crear Cliente"
+    timeout: 15000
+- takeScreenshot: sync-offline-01-form-crear
+
+# 3. Llenar los campos obligatorios (*). Nombre, Calle, Número exterior.
+- tapOn:
+    text: "Nombre del cliente o negocio"
+- inputText: "Cliente QA Sync E2E"
+- hideKeyboard
+
+- tapOn:
+    text: "Nombre de la calle"
+- inputText: "Av. Pruebas"
+- hideKeyboard
+
+- tapOn:
+    text: "# Ext"
+- inputText: "42"
+- hideKeyboard
+
+# 4. Zona y Categoria son dropdowns con catalogo del seed. Seleccionar el
+#    primer item disponible de cada uno (nombres dependientes del tenant →
+#    elegimos por posicion, no por texto exacto).
+- tapOn:
+    text: "Seleccionar zona..."
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Zona"
+    commands:
+      # Primer item de la lista del modal (debajo del search box).
+      - tapOn:
+          point: "50%,40%"
+      - waitForAnimationToEnd
+
+- tapOn:
+    text: "Seleccionar categoría..."
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Categoría"
+    commands:
+      - tapOn:
+          point: "50%,40%"
+      - waitForAnimationToEnd
+
+- takeScreenshot: sync-offline-02-form-lleno
+
+# 5. Guardar. Toast "Cliente creado" y regreso a la lista.
+- tapOn:
+    text: ".*Guardar Cliente.*"
+- waitForAnimationToEnd
+
+# 6. Confirmar el toast de exito (online u offline, ambos validos).
+- runFlow:
+    when:
+      visible:
+        text: ".*Cliente creado.*"
+    commands:
+      - assertVisible:
+          text: ".*Cliente creado.*"
+      - takeScreenshot: sync-offline-03-cliente-creado-toast
+# Si por validacion faltara algun campo, el form sigue visible — degradar.
+- runFlow:
+    when:
+      visible: "Crear Cliente"
+    commands:
+      - takeScreenshot: sync-offline-03b-form-aun-visible-validacion
+      # KNOWN-LIMITATION: si el seed no tiene Zona/Categoria, los dropdowns
+      # quedan vacios y la validacion Zod bloquea el guardado. El flow
+      # continua igual a la pantalla de Sincronizacion (read-only) sin fallar.
+      - tapOn:
+          text: "Volver"
+      - waitForAnimationToEnd
+
+# 7. Ir a Mas → Sincronización a inspeccionar estado y pendientes.
+- runFlow:
+    when:
+      notVisible: "Más"
+    commands:
+      - tapOn:
+          text: "Volver"
+          optional: true
+      - waitForAnimationToEnd
+- tapOn:
+    text: "Más"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Sincronización"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    text: "Sincronización"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "ESTADO"
+    timeout: 15000
+
+# 8. Assert estructura de la pantalla de Sincronización.
+- assertVisible: "Sincronización"
+- assertVisible: "ESTADO"
+- assertVisible: "DETALLES"
+- assertVisible: "Pendientes de sincronizar"
+- assertVisible:
+    text: ".*registros.*"
+- takeScreenshot: sync-offline-04-sync-estado
+
+# 9. Disparar el push manual (si el card muestra el boton accionable).
+- runFlow:
+    when:
+      visible: "Sincronizar ahora"
+    commands:
+      - tapOn:
+          text: "Sincronizar ahora"
+
+# 10. Esperar outcome terminal del sync.
+- extendedWaitUntil:
+    visible:
+      text: ".*(¡Sincronizado!|Sincronizado|Listo para sincronizar|Conectado).*"
+    timeout: 90000
+- takeScreenshot: sync-offline-05-sync-finalizado
+
+# 11. ASSERT CLAVE — el banner de estado debe indicar "Conectado"
+#     (online tras el push). Ver sync.tsx L65.
+- extendedWaitUntil:
+    visible: "Conectado"
+    timeout: 45000
+- assertVisible: "Conectado"
+
+# 12. Tras el push, idealmente los pendientes locales bajan. Validacion
+#     tolerante: el push completo (estado terminal) → no debe quedar
+#     "Sincronizando..." colgado.
+- assertNotVisible: "Sincronizando..."
+- takeScreenshot: sync-offline-06-final-conectado

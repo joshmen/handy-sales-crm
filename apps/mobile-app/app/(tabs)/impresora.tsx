@@ -283,6 +283,7 @@ export default function ImpresoraScreen() {
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
+              testID="papel-58"
               style={[styles.widthChip, paperWidth === 58 && styles.widthChipActive]}
               onPress={() => handleWidthChange(58)}
               accessibilityLabel="Papel 58 milímetros"
@@ -291,6 +292,7 @@ export default function ImpresoraScreen() {
               <Text style={[styles.widthChipText, paperWidth === 58 && styles.widthChipTextActive]}>58mm</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="papel-80"
               style={[styles.widthChip, paperWidth === 80 && styles.widthChipActive]}
               onPress={() => handleWidthChange(80)}
               accessibilityLabel="Papel 80 milímetros"

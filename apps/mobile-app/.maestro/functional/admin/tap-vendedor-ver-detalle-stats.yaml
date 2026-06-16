@@ -56,7 +56,7 @@
 #   - Cross-tenant leak: ADMIN de Jeyma NO ve vendedores de Huichol/Centro.
 #   - Seccion "HOY EN TODA LA EMPRESA" solo visible a admin (no a supervisor).
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: admin - tap vendedor ver detalle stats
 tags:
   - admin
@@ -67,95 +67,25 @@ tags:
   - mobile
 ---
 
-- launchApp:
-    clearState: false
-
-# ---- Aviso de Privacidad opcional (primer launch tras clearState) ----
-- runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
 # ============================================================
-# FASE 1: Login ADMIN
+# FASE 1: Login ADMIN robusto via helper
 # ============================================================
 
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "admin@jeyma.com"
-
-- pressKey: "TAB"
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: adm-vendedor-stats-01-login
-
-# ---- Consents / permisos post-login (no deterministas) ----
-
 - runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-
-- runFlow:
-    when:
-      visible:
-        text: "Mas tarde"
-    commands:
-      - tapOn:
-          text: "Mas tarde"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
 
 # ============================================================
 # FASE 2: Aterrizaje dashboard ADMIN diferenciado
 # ============================================================
 
+# El dashboard ADMIN NO renderiza "Administrador" (el saludo es dinamico:
+# "{greeting}, {nombre}"). KPI real del AdminDashboard.tsx = "Vendedores".
 - extendedWaitUntil:
     visible:
-      text: "Administrador"
+      text: "Vendedores"
     timeout: 30000
 
 - takeScreenshot: adm-vendedor-stats-02-dashboard
@@ -165,7 +95,7 @@ tags:
 # ============================================================
 
 - tapOn:
-    text: "Equipo"
+    id: "tab-equipo"
 - waitForAnimationToEnd:
     timeout: 5000
 
@@ -189,8 +119,13 @@ tags:
 
 # Seed canonico Jeyma: admin@jeyma.com ve a vendedor1@jeyma.com como
 # "Vendedor 1 Jeyma" (infra/database/schema/seed_local_pg.sql L108).
-# ADMIN ve a TODOS los vendedores del tenant (no solo subordinados).
-- assertVisible: "Vendedor 1 Jeyma"
+# ADMIN ve a TODOS los vendedores del tenant. La lista carga del backend con
+# latencia y puede quedar debajo del fold → scroll/espera.
+- scrollUntilVisible:
+    element:
+      text: "Vendedor 1 Jeyma"
+    direction: DOWN
+    timeout: 15000
 
 # Cross-tenant guard — vendedores de otros tenants no deben filtrar
 - assertNotVisible: "Admin Huichol"
@@ -283,12 +218,13 @@ tags:
     id: "vendedor-stats"
 
 # Chips por fila (codigo L200-203): "{n} pedidos", "{n}/{m} vis", "{$} cob"
+# Maestro hace match anclado: los chips llevan prefijo numerico, usar comodines.
 - assertVisible:
-    text: "pedidos"
+    text: ".*pedidos.*"
 - assertVisible:
-    text: "vis"
+    text: ".*vis.*"
 - assertVisible:
-    text: "cob"
+    text: ".*cob.*"
 
 - takeScreenshot: adm-vendedor-stats-08-lista-dias
 
@@ -355,38 +291,3 @@ tags:
 - assertNotVisible: "Admin Centro"
 
 - takeScreenshot: adm-vendedor-stats-12-back-equipo
-
-# ============================================================
-# FASE 11: Logout limpio
-# ============================================================
-
-- tapOn:
-    text: "Más"
-    optional: true
-
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Sí, cerrar sesión"
-          commands:
-            - tapOn:
-                text: "Sí, cerrar sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: adm-vendedor-stats-13-logout

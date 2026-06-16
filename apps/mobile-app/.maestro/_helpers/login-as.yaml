@@ -1,0 +1,109 @@
+appId: com.handysuites.app
+name: "Helper login por rol"
+---
+
+# Subflow reutilizable que deja la app logueada con el rol indicado, sea cual sea
+# el estado inicial (onboarding fresco / sesion de otro rol / deslogueado).
+# Uso:
+#   - runFlow:
+#       file: ../_helpers/login-as.yaml
+#       env:
+#         EMAIL: "supervisor@jeyma.com"
+#         PASSWORD: "test123"
+# O standalone: maestro test -e EMAIL=... -e PASSWORD=... _helpers/login-as.yaml
+#
+# NO usa clearState (eso resetea los permisos runtime que el runner ya otorgo);
+# en su lugar cierra sesion via el tab Mas si hay una sesion activa.
+
+- launchApp
+- waitForAnimationToEnd
+
+# 0) Dismiss del consentimiento de ubicacion si la app arranca mostrandolo
+#    (modal "Sobre tu ubicación" + "Entendido"). Puede quedar pegado de una
+#    sesion previa y bloquea cualquier otra interaccion.
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn:
+          text: "Entendido"
+      - waitForAnimationToEnd
+
+# 1) Saltar onboarding si la app esta en estado fresco (testID estable).
+- runFlow:
+    when:
+      visible: "Siguiente"
+    commands:
+      - tapOn:
+          id: "onboarding-action"
+          optional: true
+      - tapOn:
+          id: "onboarding-action"
+          optional: true
+      - tapOn:
+          id: "onboarding-action"
+          optional: true
+      - waitForAnimationToEnd
+
+# 2) Si ya hay sesion activa (no se ve el boton de login), cerrar sesion via Mas.
+- runFlow:
+    when:
+      notVisible:
+        id: "login-button"
+    commands:
+      - tapOn:
+          text: "Más"
+      - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            text: "Cerrar Sesión"
+          direction: DOWN
+          timeout: 15000
+      - tapOn:
+          text: "Cerrar Sesión"
+      - waitForAnimationToEnd
+      # Confirmar dentro del ConfirmModal por testID estable (el texto "Cerrar
+      # Sesión" colisiona con el titulo del modal y el item del menu).
+      - extendedWaitUntil:
+          visible: "¿Estás seguro que deseas cerrar sesión?"
+          timeout: 8000
+      - tapOn:
+          id: "confirm-modal-confirm"
+      - waitForAnimationToEnd
+
+# 3) En la pantalla de login: ingresar credenciales del rol.
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 30000
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: "${EMAIL}"
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: "${PASSWORD}"
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+- waitForAnimationToEnd
+
+# 4) Consentimiento de ubicacion en el primer login (modal "Sobre tu ubicación"
+#    con boton "Entendido"). Aparece tras autenticar; dismiss si presente.
+- extendedWaitUntil:
+    visible: "Entendido|Hoy"
+    timeout: 45000
+- runFlow:
+    when:
+      visible: "Entendido"
+    commands:
+      - tapOn:
+          text: "Entendido"
+      - waitForAnimationToEnd
+
+# 5) Esperar el dashboard (tab inferior "Hoy" presente).
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+- waitForAnimationToEnd

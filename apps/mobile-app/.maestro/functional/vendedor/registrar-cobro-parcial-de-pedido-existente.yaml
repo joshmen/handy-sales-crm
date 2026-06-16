@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor - Registrar cobro PARCIAL de pedido existente"
 ---
 
@@ -33,39 +33,12 @@ name: "Vendedor - Registrar cobro PARCIAL de pedido existente"
 #   apps/mobile-app/app/(tabs)/cobrar/registrar.tsx
 # ════════════════════════════════════════════════════════════
 
-# 1. Esperar dashboard "Hoy" hidratado tras login
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
-# 2. Dismiss de modales opcionales (permisos GPS, sync, aviso)
+# 1. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 - runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Continuar"
-    commands:
-      - tapOn: "Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # 3. Reset navigation: doble tap "Hoy" para limpiar stack
 - tapOn: "Hoy"
@@ -174,15 +147,17 @@ name: "Vendedor - Registrar cobro PARCIAL de pedido existente"
     text: "Confirmar Cobro.*"
 - waitForAnimationToEnd
 
-# 17. Modal de confirmacion (ConfirmModal)
+# 17. Modal de confirmacion (ConfirmModal) — testID estable.
 - extendedWaitUntil:
-    visible: "CONFIRMAR"
+    visible:
+      id: "confirm-modal-confirm"
     timeout: 5000
 
 - takeScreenshot: parcial-05-modal-confirmacion
 
 # 18. Confirmar dentro del modal
-- tapOn: "CONFIRMAR"
+- tapOn:
+    id: "confirm-modal-confirm"
 - waitForAnimationToEnd
 
 # 19. Esperar recibo "Cobro Registrado"
@@ -232,8 +207,9 @@ name: "Vendedor - Registrar cobro PARCIAL de pedido existente"
     optional: true
 
 # 26. Confirmar que la sesion vendedor sigue activa (tab bar VENDEDOR)
+# Tab bar VENDEDOR: Hoy, Mapa, Vender, Cobrar, Mas (NO existe tab "Ruta").
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 
 - takeScreenshot: parcial-08-flow-completo

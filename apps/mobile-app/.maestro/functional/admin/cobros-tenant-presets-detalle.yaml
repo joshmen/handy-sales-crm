@@ -1,0 +1,158 @@
+appId: com.handysuites.app
+name: "Admin: cobros tenant-wide, recorrer presets Hoy/Ayer/7d/30d + abrir detalle"
+---
+# ============================================================
+# CASO: adm-cobros-tenant-presets-detalle
+# Rol: ADMIN (admin@jeyma.com)
+# Capa: mobile
+# Use-case (kebab): cobros-tenant-presets-detalle
+#
+# Prereq / estado:
+#   - Seed Jeyma con cobros registrados por vendedores del tenant. La presencia
+#     de filas depende del preset; el tap al detalle va envuelto en
+#     when:visible: cobro-row-0 (degrada si la lista está vacía).
+#   - Read-only: navega presets y abre un detalle, sin registrar cobros.
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx (branch ADMIN)
+#   apps/mobile-app/src/components/admin/AdminTenantCobrosList.tsx
+#     -> Header labelByPreset: "Cobros hoy" / "Cobros ayer" /
+#        "Cobros últimos 7 días" / "Cobros últimos 30 días".
+#     -> Subtítulo "{N} cobros en toda la empresa".
+#     -> Chips testID filtro-rango-{hoy,ayer,7d,30d}; filas cobro-row-{index}.
+#     -> Detalle navega a /(tabs)/cobrar/detalle-cobro/{id} ("Detalle de Cobro").
+#
+# Endpoints backend tocados:
+#   GET /api/mobile/supervisor/cobros?rango=7d|30d  o  ?dia=YYYY-MM-DD
+#     (hook useTenantCobros)
+#   GET /api/mobile/empresa  (useTenantLocale)
+#
+# Cobertura funcional REAL:
+#   1. Login ADMIN via helper.
+#   2. Tab Cobrar -> branch admin (AdminTenantCobrosList).
+#   3. Header ".*Cobros.*" + subtítulo ".*en toda la empresa.*" (tenant-wide).
+#   4. Asserción NEGATIVA: NO "Pendiente de Cobro" (header del vendedor).
+#   5. Recorrer presets Ayer / 7d / 30d.
+#   6. Volver a Hoy y abrir cobro-row-0 (si existe) -> "Detalle de Cobro".
+#   7. No-leak cross-tenant: NO "Admin Huichol" / "Admin Centro".
+# ============================================================
+
+# ---- FASE 1: Login ADMIN robusto via helper ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard ADMIN cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 30000
+- assertVisible: "Vendedores"
+
+# ---- FASE 3: Tab Cobrar -> branch ADMIN (AdminTenantCobrosList) ----
+- tapOn: "Cobrar"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Header admin "Cobros hoy"; Maestro ancla al string completo, usar comodín.
+# Si apareciera el header del vendedor (con "Pendiente de Cobro") el branch
+# de rol falló.
+- extendedWaitUntil:
+    visible: ".*Cobros.*"
+    timeout: 30000
+- assertVisible: ".*Cobros.*"
+- assertNotVisible: "Pendiente de Cobro"
+
+# Subtítulo tenant-wide.
+- assertVisible: ".*en toda la empresa.*"
+
+# Chips de preset presentes.
+- assertVisible:
+    id: "filtro-rango-hoy"
+- assertVisible:
+    id: "filtro-rango-ayer"
+- assertVisible:
+    id: "filtro-rango-7d"
+- assertVisible:
+    id: "filtro-rango-30d"
+
+- takeScreenshot: adm-cobros-presets-01-hoy
+
+# ---- FASE 4: Preset "Ayer" ----
+- tapOn:
+    id: "filtro-rango-ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros ayer"
+    timeout: 30000
+- assertVisible: "Cobros ayer"
+- takeScreenshot: adm-cobros-presets-02-ayer
+
+# ---- FASE 5: Preset "7 días" -> "Cobros últimos 7 días" ----
+- tapOn:
+    id: "filtro-rango-7d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros últimos 7 días"
+    timeout: 30000
+- assertVisible: "Cobros últimos 7 días"
+- takeScreenshot: adm-cobros-presets-03-7d
+
+# ---- FASE 6: Preset "30 días" -> "Cobros últimos 30 días" ----
+- tapOn:
+    id: "filtro-rango-30d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros últimos 30 días"
+    timeout: 30000
+- assertVisible: "Cobros últimos 30 días"
+- takeScreenshot: adm-cobros-presets-04-30d
+
+# ---- FASE 7: No-leak cross-tenant ----
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+# ---- FASE 8: Volver a Hoy y abrir un cobro (si existe) ----
+- tapOn:
+    id: "filtro-rango-hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros hoy"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible:
+        id: "cobro-row-0"
+    commands:
+      - tapOn:
+          id: "cobro-row-0"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - extendedWaitUntil:
+          visible: "Detalle de Cobro"
+          timeout: 20000
+      - assertVisible: "Detalle de Cobro"
+      - assertNotVisible: "Sin conexión"
+      - assertNotVisible: "Failed"
+      - takeScreenshot: adm-cobros-presets-05-detalle
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: "Cobros hoy"
+          timeout: 15000
+
+# Fallback: lista vacía en Hoy -> documentar empty state.
+- runFlow:
+    when:
+      visible: ".*Sin cobros.*"
+    commands:
+      - takeScreenshot: adm-cobros-presets-05b-empty
+
+- takeScreenshot: adm-cobros-presets-06-cierre

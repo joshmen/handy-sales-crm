@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor - Ver cobranza pendiente por cliente (read-only)"
 ---
 
@@ -22,32 +22,12 @@ name: "Vendedor - Ver cobranza pendiente por cliente (read-only)"
 #   apps/mobile-app/app/(tabs)/cobrar/estado-cuenta/[clienteId].tsx
 # ════════════════════════════════════════════════════════════
 
-# 1. Confirmar que el dashboard "Hoy" del vendedor esta hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
-# 2. Dismiss de modales emergentes opcionales (permisos GPS, sync, etc.)
+# 1. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 - runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Continuar"
-    commands:
-      - tapOn: "Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # 3. Navegar al tab Cobrar
 - tapOn: "Cobrar"
@@ -153,8 +133,9 @@ name: "Vendedor - Ver cobranza pendiente por cliente (read-only)"
 # 15. Confirmar que la sesion vendedor sigue activa: el tab bar de
 #     vendedor incluye "Hoy / Vender / Cobrar / Ruta / Mas" — si
 #     viera "Configuracion" o "Administracion" seria rol admin.
+#     Tab bar VENDEDOR real: Hoy, Mapa, Vender, Cobrar, Mas (NO existe tab "Ruta").
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 
 - takeScreenshot: cobrar-flow-completo

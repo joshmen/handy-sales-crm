@@ -1,10 +1,17 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Clientes - Lista"
 ---
 
-# Ir al tab Clientes
+# Clientes ya no es bottom tab — vive bajo el tab "Más" → NAVEGACIÓN
+- tapOn: "Más"
+
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 15000
+
 - tapOn: "Clientes"
 
+# Pantalla de Clientes cargada
 - extendedWaitUntil:
     visible: "Clientes"
     timeout: 15000

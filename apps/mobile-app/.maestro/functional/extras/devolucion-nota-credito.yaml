@@ -48,7 +48,7 @@
 # pedido + estar Completada. El test seed (Jeyma) cumple esto; si la seed
 # cambia, este test falla y hay que revisar el seed antes que el codigo.
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: devolucion con saldo a favor (NC funcional)"
 tags:
   - vendedor
@@ -60,77 +60,13 @@ tags:
 ---
 
 # -----------------------------------------------------------------------------
-# Paso 1 - Launch sin reset (preserva sesion previa para velocidad de suite)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Dismiss de onboarding si esta visible (cold start)
+# Paso 1 - Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Omitir"
-    commands:
-      - tapOn: "Omitir"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Login VENDEDOR via subflow ya validado
-#   Si la sesion ya esta viva (clearState:false), este subflow falla suave
-#   porque ya estamos en "Hoy"; lo envolvemos en runFlow when:visible para
-#   ser idempotente.
-# -----------------------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "Iniciar Sesi"
-    file: ../../auth/01-login-vendedor.yaml
-
-# -----------------------------------------------------------------------------
-# Paso 4 - Dismiss de modales opcionales post-login
-# -----------------------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar|Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 5 - Llegar al dashboard vendedor
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: devnc-01-dashboard
 
@@ -139,11 +75,14 @@ tags:
 #   La primera parada del seed Jeyma deberia estar Completada (estado=2) con
 #   pedido entregado para que aparezca el CTA "Registrar devolucion".
 # -----------------------------------------------------------------------------
+# FIXME nav: vendedor no tiene tab Ruta (app/(tabs)/_layout.tsx -> ruta href:null).
+# La ruta del día se abre desde el card de ruta del dashboard Hoy, no desde un tab.
+# Reestructuración de navegación pendiente de verificación en emulador.
 - tapOn: "Ruta"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Ruta del día"
+    visible: "Ruta del Día"
     timeout: 15000
 
 - takeScreenshot: devnc-02-ruta-list

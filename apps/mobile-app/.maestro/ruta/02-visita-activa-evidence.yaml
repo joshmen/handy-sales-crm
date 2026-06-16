@@ -1,24 +1,19 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Ruta - Visita Activa con Evidencia"
 ---
 
-# Ir al tab Mas para navegar a Ruta
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+# Ir al tab Más para navegar a Ruta
+- tapOn: "Más"
 
 - extendedWaitUntil:
-    visible: "Navegaci"
+    visible: "NAVEGACIÓN"
     timeout: 15000
 
-# Navegar a Ruta del Dia
-- tapOn: "Ruta del D"
+# Navegar a Historial de Rutas (la pantalla, no la sección "RUTA DEL DÍA" del dashboard)
+- tapOn: "Historial de Rutas"
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "Historial de Rutas"
     timeout: 15000
 
 - takeScreenshot: ruta-pre-visita
@@ -149,10 +144,5 @@ name: "Ruta - Visita Activa con Evidencia"
 # Volver atras
 - back
 
-# Volver al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+# Volver al tab Más
+- tapOn: "Más"

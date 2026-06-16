@@ -1,0 +1,128 @@
+appId: com.handysuites.app
+name: "Vendedor: Estado de cuenta de un cliente con saldo"
+tags:
+  - functional
+  - vendedor
+  - cobrar
+  - estado-cuenta
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: estado-cuenta-cliente-detalle
+# Rol: VENDEDOR (vendedor1@jeyma.com)
+#
+# Flujo:
+#   login helper -> tab "Cobrar" -> header "Cobranza"
+#   -> seccion "SALDOS POR CLIENTE" -> tap el primer cliente con saldo
+#   -> pantalla "Estado de Cuenta" -> assert summary (Facturado/Cobrado)
+#      + "Saldo Pendiente" + seccion "Movimientos (N)"
+#
+# Cobertura REAL: navega desde la cartera del vendedor hacia el estado de
+# cuenta de un cliente concreto (Card.onPress -> estado-cuenta/{clienteId}).
+# READ-ONLY: no registra cobros ni muta nada. Re-run 100% seguro.
+#
+# DEGRADACION SIN FALLAR: el seed puede no tener saldos pendientes en
+# ciertos entornos (cartera vacia -> EmptyState "Sin saldos pendientes").
+# En ese caso el tap a la tarjeta de cliente se envuelve en runFlow
+# when:visible "SALDOS POR CLIENTE" + la tarjeta; si no hay tarjeta el
+# flujo verifica el empty state y termina verde (contrato negativo).
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx
+#     - header "Cobranza", seccion "SALDOS POR CLIENTE"
+#     - empty "Sin saldos pendientes"
+#     - Card cliente -> push estado-cuenta/{clienteId}
+#   apps/mobile-app/app/(tabs)/cobrar/estado-cuenta/[clienteId].tsx
+#     - header "Estado de Cuenta"
+#     - cards "Facturado" / "Cobrado"
+#     - "Saldo Pendiente"
+#     - "Movimientos (N)"
+#
+# Endpoints backend implicados:
+#   GET /api/mobile/clientes/{id}/estado-cuenta  (useEstadoCuenta)
+#   (la cartera del index se calcula en local desde WDB; el detalle
+#   fetcha el estado de cuenta del servidor.)
+#
+# Prereq: seed Jeyma. Idealmente un cliente con saldo pendiente
+#   (pedido confirmado sin cobro completo).
+# =================================================================
+
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Ir al tab Cobrar.
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: estado-cuenta-00-cobranza
+
+# 2) Confirmar el resumen de cartera (lo pinta el header del FlatList).
+- assertVisible:
+    text: "Facturado"
+- assertVisible:
+    text: "Cobrado"
+- assertVisible:
+    text: "SALDOS POR CLIENTE"
+
+- takeScreenshot: estado-cuenta-01-cartera
+
+# 3) Tap en una tarjeta de cliente con saldo -> estado de cuenta.
+#    La tarjeta expone accessibilityLabel "Estado de cuenta de {nombre}, saldo {monto}".
+#    Caso A (con saldos): hay al menos una tarjeta -> entramos al detalle.
+#    Caso B (sin saldos): EmptyState "Sin saldos pendientes" -> contrato negativo.
+- runFlow:
+    when:
+      notVisible: "Sin saldos pendientes"
+    commands:
+      # Tap por el accessibilityLabel (regex comodin) del primer cliente.
+      - tapOn:
+          text: "Estado de cuenta de .*"
+          index: 0
+      - waitForAnimationToEnd
+
+      - extendedWaitUntil:
+          visible: "Estado de Cuenta"
+          timeout: 15000
+
+      - takeScreenshot: estado-cuenta-02-detalle
+
+      # Summary cards del estado de cuenta.
+      - assertVisible:
+          text: "Facturado"
+      - assertVisible:
+          text: "Cobrado"
+
+      # Saldo pendiente + seccion de movimientos.
+      - assertVisible:
+          text: "Saldo Pendiente"
+      - assertVisible:
+          text: ".*Movimientos.*"
+
+      # Confirmar que no hubo error de carga.
+      - assertNotVisible: "No se pudo"
+
+      - takeScreenshot: estado-cuenta-03-movimientos
+
+      # Volver a la cartera (header back).
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Cobranza"
+          timeout: 10000
+
+# 4) Caso B — sin saldos: verificar el empty state explicitamente.
+- runFlow:
+    when:
+      visible: "Sin saldos pendientes"
+    commands:
+      - assertVisible: "Sin saldos pendientes"
+      - takeScreenshot: estado-cuenta-02b-sin-saldos
+
+- takeScreenshot: estado-cuenta-04-flow-completo

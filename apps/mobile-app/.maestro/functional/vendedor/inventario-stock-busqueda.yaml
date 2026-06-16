@@ -1,0 +1,95 @@
+appId: com.handysuites.app
+name: "Vendedor: Inventario - buscar producto y ver badge de stock"
+tags:
+  - functional
+  - vendedor
+  - inventario
+  - stock
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: inventario-stock-busqueda
+# Rol: VENDEDOR (vendedor1@jeyma.com)
+#
+# Flujo:
+#   login helper -> tab "Mas" -> "Inventario" -> header "Inventario"
+#   -> buscar "coca" -> assert "Coca-Cola 2L" en la lista
+#   -> assert badge de stock (En stock | Bajo | Agotado)
+#
+# Cobertura REAL: navega + escribe en el buscador + assertVisible del
+# producto y de la etiqueta de stock que pinta el renderItem.
+# Read-only: no muta datos, re-run seguro.
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/inventario.tsx
+#     - header "Inventario"
+#     - placeholder "Buscar producto..."
+#     - stockLabel: "En stock" / "Bajo" / "Agotado"
+#     - empty: "Sin productos"
+#   apps/mobile-app/app/(tabs)/mas.tsx  (item "Inventario")
+#
+# Endpoints backend implicados:
+#   ninguno directo — useOfflineProducts lee WatermelonDB local (los
+#   productos llegaron via /api/mobile/catalogos en un sync previo).
+#
+# Prereq: seed Jeyma sincronizado (producto "Coca-Cola 2L" presente en
+#   el catalogo local). El helper login deja dashboard "Hoy" cargado.
+# =================================================================
+
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Abrir el tab "Mas" (con tilde — string real de la tab bar).
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Inventario"
+    timeout: 15000
+
+- takeScreenshot: inventario-00-mas-menu
+
+# 2) Entrar a Inventario.
+- tapOn: "Inventario"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Buscar producto..."
+    timeout: 15000
+
+- takeScreenshot: inventario-01-listado
+
+# 3) Buscar "coca" en el buscador.
+- tapOn: "Buscar producto..."
+- inputText: "coca"
+- hideKeyboard
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Coca-Cola 2L.*"
+    timeout: 10000
+
+- assertVisible:
+    text: ".*Coca-Cola 2L.*"
+
+- takeScreenshot: inventario-02-resultado-coca
+
+# 4) Verificar que aparece un badge de stock. El renderItem pinta uno de
+#    "En stock" / "Bajo" / "Agotado" segun stockDisponible vs stockMinimo.
+#    Comodin OR para tolerar cualquiera de los 3 estados del seed.
+- assertVisible:
+    text: "En stock|Bajo|Agotado"
+
+- takeScreenshot: inventario-03-badge-stock
+
+# 5) Confirmar que NO cayo en empty state ni error.
+- assertNotVisible: "Sin productos"
+
+# 6) Volver al dashboard para dejar el stack limpio.
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- takeScreenshot: inventario-04-flow-completo

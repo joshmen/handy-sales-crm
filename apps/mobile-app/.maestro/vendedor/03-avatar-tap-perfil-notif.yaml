@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: tap avatar → /profile → link Notificaciones → /notificaciones"
 ---
 
@@ -33,9 +33,11 @@ name: "Vendedor: tap avatar → /profile → link Notificaciones → /notificaci
 - extendedWaitUntil:
     visible: "Vendedor 1 Jeyma"
     timeout: 5000
-- assertVisible: "Notificaciones"
+# Card de notificaciones: header "NOTIFICACIONES" + contador. Maestro hace match
+# completo, así que el contador ("2 sin leer") necesita comodines en el regex.
+- assertVisible: "NOTIFICACIONES"
 - assertVisible:
-    text: "Estás al día|sin leer"
+    text: ".*sin leer.*|Estás al día"
     optional: false
 
 - takeScreenshot: "avatar-01-profile"
@@ -52,7 +54,7 @@ name: "Vendedor: tap avatar → /profile → link Notificaciones → /notificaci
 # ────────────────────────────────────────────
 # La pantalla muestra empty state si no hay notif, o una lista si las hay.
 - assertVisible:
-    text: "No tienes notificaciones|Notificaciones"
+    text: ".*[Nn]otificaciones.*|No tienes.*"
     optional: false
 
 - takeScreenshot: "avatar-02-notificaciones"

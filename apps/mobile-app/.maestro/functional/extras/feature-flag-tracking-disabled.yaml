@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "EXT — Feature flag tracking GPS deshabilitado oculta toggle en Configuración"
 ---
 
@@ -30,64 +30,12 @@ name: "EXT — Feature flag tracking GPS deshabilitado oculta toggle en Configur
 # Datos, Acerca de — PERO NO aparece "Tracking GPS en segundo plano".
 # ════════════════════════════════════════════════════════════
 
-- launchApp:
-    clearState: false
-
-# 1. Esperar login screen.
-- extendedWaitUntil:
-    visible: "Iniciar Sesi"
-    timeout: 30000
-
-# 2. Login VENDEDOR.
-- tapOn:
-    id: "email-input"
-- eraseText: 50
-- inputText: "vendedor1@jeyma.com"
-- hideKeyboard
-
-- tapOn:
-    id: "password-input"
-    retryTapIfNoChange: true
-- eraseText: 50
-- inputText: "test123"
-- hideKeyboard
-
-- tapOn:
-    id: "login-button"
-
-# 3. Modales opcionales post-login (Aviso de Privacidad / permisos).
+# 1. Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy").
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-# 4. Esperar dashboard "Hoy".
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: ext-flag-tracking-dashboard
 
@@ -138,8 +86,14 @@ name: "EXT — Feature flag tracking GPS deshabilitado oculta toggle en Configur
 # (incluye tracking), este test no cubrirá el flag-OFF path. Hay que
 # crear un seed `vendedor1@huichol.com` o `vendedor1@centro.com` en plan
 # FREE/BASIC explícito y migrar este test a esa credencial.
+# El toggle de tracking GPS (label "Tracking GPS en segundo plano",
+# accessibilityLabel "Tracking GPS background" en configuracion.tsx) solo
+# se renderiza si el plan incluye tracking_vendedor.
 - assertNotVisible: "Tracking GPS en segundo plano"
-- assertNotVisible: "Privacidad"
+- assertNotVisible: "Tracking GPS background"
+# Nota: NO se asserta assertNotVisible "Privacidad" — configuracion.tsx tiene
+# una fila PERMANENTE "Privacidad" (Política de privacidad) dentro de "Acerca de"
+# (línea 212), por lo que ese assert sería un falso negativo.
 
 # 9. Verificar que las secciones de "Acerca de" siguen visibles tras
 #    el scroll — confirma que el toggle ausente NO es consecuencia de

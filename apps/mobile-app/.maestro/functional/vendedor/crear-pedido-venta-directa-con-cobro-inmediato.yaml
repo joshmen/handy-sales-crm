@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Funcional VENDEDOR > Crear pedido Venta Directa con cobro inmediato"
 tags:
   - functional
@@ -42,11 +42,13 @@ tags:
 # ══════════════════════════════════════════════════════════════════════
 
 # ──────────────────────────────────────────────────────────────────────
-# 0. Dashboard del vendedor cargado tras login previo.
+# 0. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 # ──────────────────────────────────────────────────────────────────────
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ──────────────────────────────────────────────────────────────────────
 # 1. Navegar al tab "Vender".
@@ -76,7 +78,7 @@ tags:
 # ──────────────────────────────────────────────────────────────────────
 - runFlow:
     when:
-      visible: "Tipo de Venta"
+      visible: "¿Qué tipo de pedido?"
     commands:
       - assertVisible: "Preventa"
       - assertVisible: "Venta Directa"
@@ -183,19 +185,11 @@ tags:
       - waitForAnimationToEnd
 
 # ──────────────────────────────────────────────────────────────────────
-# 9. ConfirmModal Venta Directa — boton COBRAR (uppercase).
+# 9. ConfirmModal Venta Directa — boton confirmar (testID estable).
 # ──────────────────────────────────────────────────────────────────────
-- runFlow:
-    when:
-      visible: "COBRAR"
-    commands:
-      - tapOn: "COBRAR"
-- runFlow:
-    when:
-      visible: "Confirmar"
-    commands:
-      - tapOn: "Confirmar"
-      - waitForAnimationToEnd
+- tapOn:
+    id: "confirm-modal-confirm"
+- waitForAnimationToEnd
 
 # ──────────────────────────────────────────────────────────────────────
 # 10. Pantalla exito "Venta Completada".

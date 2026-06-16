@@ -1,0 +1,142 @@
+appId: com.handysuites.app
+name: "Vendedor: Impresora - toggle ancho de papel 58mm / 80mm"
+tags:
+  - functional
+  - vendedor
+  - impresora
+  - papel
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: imprimir-recibo-impresora (toggle ancho de papel)
+# Rol: VENDEDOR (vendedor1@jeyma.com)
+#
+# Flujo:
+#   login helper -> tab "Mas" -> "Impresora"
+#   -> seccion "Ancho de papel" -> tap testID papel-58
+#   -> assert "58mm" + nota de soporte de 58mm
+#   -> tap testID papel-80 -> assert "80mm" + nota CFDI/80mm
+#
+# Cobertura REAL: ejercita handleWidthChange en impresora.tsx. NO imprime
+# fisicamente — valida el toggle de ancho de papel y el texto contextual
+# que cambia con la seleccion. Tap real en ambos chips + asserts del copy.
+#
+# NOTA IMPORTANTE (entorno):
+#   La pantalla tiene 2 modos segun isNativeAvailable():
+#     - APK nativo: muestra el toggle con testID papel-58 / papel-80.
+#     - Expo Go: muestra "No disponible en Expo Go" (los testID NO existen).
+#   Este flow asume el APK que se esta compilando (con los testID). Para
+#   degradar sin fallar duro en Expo Go, el bloque del toggle se envuelve
+#   en runFlow when:visible "Ancho de papel". Si corre en Expo Go, detecta
+#   "No disponible en Expo Go" y termina verde (contrato del entorno).
+#
+# IDEMPOTENCIA: el toggle de ancho es un setting local (printerStore). Lo
+# dejamos en 80mm al final (estado recomendado: soporta CFDI). Re-run
+# seguro — no crea registros ni toca backend.
+#   GUARD: handleWidthChange muestra un Alert nativo de confirmacion si hay
+#   una impresora conectada/guardada ("¿Tu impresora fisica ... es de Xmm?").
+#   Como el emulador no tiene impresora conectada, el Alert no aparece y el
+#   cambio es directo. Por robustez, tras cada tap confirmamos el Alert si
+#   llegara a salir (boton "Sí, es 58mm" / "Sí, es 80mm").
+#
+# Strings reales validados contra:
+#   apps/mobile-app/app/(tabs)/impresora.tsx
+#     - header "Impresora"
+#     - "Ancho de papel"
+#     - testID "papel-58" -> texto "58mm"
+#     - testID "papel-80" -> texto "80mm"
+#     - nota 80mm: ".*Soporta notas de venta, recibos y CFDI.*"
+#     - nota 58mm: ".*Las facturas CFDI requieren 80mm.*"
+#     - alert confirm: "Sí, es 58mm" / "Sí, es 80mm"
+#     - Expo Go: "No disponible en Expo Go"
+#   apps/mobile-app/app/(tabs)/mas.tsx  (item "Impresora")
+#
+# Endpoints backend implicados: ninguno (setting local del device).
+#
+# Prereq: APK nativo instalado (Bluetooth/impresion). El helper login deja
+#   dashboard "Hoy" cargado.
+# =================================================================
+
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Abrir el menu "Mas" y entrar a Impresora.
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "Impresora"
+    direction: DOWN
+    timeout: 8000
+
+- tapOn: "Impresora"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Impresora"
+    timeout: 15000
+
+- takeScreenshot: impresora-00-pantalla
+
+# 2) Entorno Expo Go: la conexion a impresora no esta disponible y el
+#    toggle no se renderiza. Contrato del entorno -> termina verde.
+- runFlow:
+    when:
+      visible: "No disponible en Expo Go"
+    commands:
+      - assertVisible: "No disponible en Expo Go"
+      - takeScreenshot: impresora-01b-expo-go
+
+# 3) Entorno APK nativo: existe la seccion "Ancho de papel" con los chips.
+- runFlow:
+    when:
+      visible: "Ancho de papel"
+    commands:
+      - assertVisible: "Ancho de papel"
+      - takeScreenshot: impresora-01-ancho-papel
+
+      # 3a) Seleccionar 58mm (testID papel-58).
+      - tapOn:
+          id: "papel-58"
+      # Si hay impresora guardada, sale Alert de confirmacion -> aceptar.
+      - tapOn:
+          text: "Sí, es 58mm"
+          optional: true
+      - waitForAnimationToEnd
+
+      - assertVisible:
+          text: "58mm"
+      # Con 58mm seleccionado, la nota advierte que CFDI requiere 80mm.
+      - assertVisible:
+          text: ".*Las facturas CFDI requieren 80mm.*"
+
+      - takeScreenshot: impresora-02-papel-58
+
+      # 3b) Cambiar a 80mm (testID papel-80) — deja el estado recomendado.
+      - tapOn:
+          id: "papel-80"
+      - tapOn:
+          text: "Sí, es 80mm"
+          optional: true
+      - waitForAnimationToEnd
+
+      - assertVisible:
+          text: "80mm"
+      # Con 80mm la nota confirma soporte de CFDI.
+      - assertVisible:
+          text: ".*Soporta notas de venta, recibos y CFDI.*"
+
+      - takeScreenshot: impresora-03-papel-80
+
+# 4) Volver al dashboard para dejar el stack limpio.
+- back
+- waitForAnimationToEnd
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- takeScreenshot: impresora-04-flow-completo

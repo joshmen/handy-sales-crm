@@ -1,10 +1,10 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Final Design Audit"
 ---
 - tapOn: "Vender"
 - tapOn: "Cobrar"
 - tapOn: "Equipo"
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn:
     text: "Clientes"
 - back

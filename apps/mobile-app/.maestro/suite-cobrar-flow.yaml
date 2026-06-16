@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: cobrar-flow
 ---
 # Modulo: Cobrar tab > registrar cobro > seleccion cliente > metodo de pago > confirmar

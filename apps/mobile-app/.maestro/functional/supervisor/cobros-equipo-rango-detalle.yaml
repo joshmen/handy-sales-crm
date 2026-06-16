@@ -1,0 +1,119 @@
+appId: com.handysuites.app
+name: "Supervisor: cobros del equipo rango 7 dias + abrir detalle"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-cobros-rango-detalle
+# Rol: SUPERVISOR (supervisor@jeyma.com)
+# Capa: mobile (read-only, no muta datos)
+#
+# Objetivo: En el tab Cobrar (vista admin/supervisor =
+# CobrarAdminContent -> AdminTenantCobrosList), cambiar el filtro
+# de rango a "7 días" (testID filtro-rango-7d), y si hay cobros en
+# ese rango (cobro-row-0 visible) abrir el detalle del primer cobro
+# y validar el header "Detalle de Cobro". Degrada con
+# runFlow:when:visible cuando el seed no tiene cobros en 7d.
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/cobros?rango=7d  (lista agregada tenant)
+#   GET /api/mobile/supervisor/mis-vendedores
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/cobrar/index.tsx (rama isAdminOrSupervisor)
+#   apps/mobile-app/src/components/admin/AdminTenantCobrosList.tsx
+#     -> header de lista "Cobros últimos 7 días" en preset 7d;
+#        testIDs filtro-rango-{hoy,ayer,7d,30d} + cobro-row-{N}.
+#   apps/mobile-app/app/(tabs)/cobrar/detalle-cobro/[cobroId].tsx
+#     -> header "Detalle de Cobro".
+#
+# Prereq seed: supervisor@jeyma.com supervisa "Vendedor 1 Jeyma"
+# con cobros recientes. El detalle de cobro usa WatermelonDB local
+# (useOfflineCobroById); para un supervisor el cobro puede no estar
+# en el WDB local y mostrar "Cargando...", pero el header
+# "Detalle de Cobro" siempre se renderiza, por lo que el assert es robusto.
+# ============================================================
+
+# ---- FASE 1: Login SUPERVISOR ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard supervisor cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
+- takeScreenshot: sup-cobros-rango-01-dashboard
+
+# ---- FASE 3: Tab Cobrar (vista admin/supervisor) ----
+- tapOn: "Cobrar"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# El header screenTitle "Cobros" confirma la rama admin/supervisor.
+# La lista arranca en preset "hoy" -> header de lista "Cobros hoy".
+- extendedWaitUntil:
+    visible: ".*Cobros.*"
+    timeout: 20000
+- assertVisible: ".*Cobros.*"
+- assertVisible: "7 días"
+- takeScreenshot: sup-cobros-rango-02-vista-cobros
+
+# ---- FASE 4: Cambiar filtro de rango a "7 días" (testID estable) ----
+- tapOn:
+    id: "filtro-rango-7d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros últimos 7 días"
+    timeout: 20000
+- assertVisible: "Cobros últimos 7 días"
+- takeScreenshot: sup-cobros-rango-03-filtro-7d
+
+# ---- FASE 5: No-leak cross-tenant en el rango 7d ----
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- assertNotVisible: "Admin Rutas Norte"
+
+# ---- FASE 6: Si hay cobros en 7d, abrir detalle del primero ----
+- runFlow:
+    when:
+      visible:
+        id: "cobro-row-0"
+    commands:
+      - tapOn:
+          id: "cobro-row-0"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - extendedWaitUntil:
+          visible: "Detalle de Cobro"
+          timeout: 15000
+      - assertVisible: "Detalle de Cobro"
+      - takeScreenshot: sup-cobros-rango-04-detalle-cobro
+      # Volver a la lista; debe seguir en la vista de cobros.
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: ".*Cobros.*"
+          timeout: 15000
+      - assertVisible: ".*Cobros.*"
+
+# Fallback: seed sin cobros en 7d -> documentar empty state.
+- runFlow:
+    when:
+      visible: ".*Sin cobros.*"
+    commands:
+      - assertVisible: ".*Sin cobros.*"
+      - takeScreenshot: sup-cobros-rango-04b-empty-7d
+
+# ---- FASE 7: Volver a "Hoy" (estado idempotente para encadenar suites) ----
+- tapOn:
+    id: "filtro-rango-hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Cobros hoy"
+    timeout: 15000
+- assertVisible: "Cobros hoy"
+- takeScreenshot: sup-cobros-rango-05-vuelta-hoy

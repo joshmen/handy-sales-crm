@@ -3,12 +3,7 @@ name: "Sync - Pantalla con Pendientes"
 ---
 
 # Ir al tab Mas
-- tapOn:
-    text: "Más"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- tapOn: "Más"
 
 - extendedWaitUntil:
     visible:

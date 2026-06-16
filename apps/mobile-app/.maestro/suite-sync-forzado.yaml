@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: sync-forzado
 ---
 # Maestro flow: Pull-to-refresh + boton 'Sincronizar ahora' + manejo de error red
@@ -61,7 +61,7 @@ name: sync-forzado
       notVisible: "Sincronización"
     commands:
       - tapOn:
-          text: "M�s"
+          text: "M�s"
           optional: true
 - extendedWaitUntil:
     visible: "Sincronización"

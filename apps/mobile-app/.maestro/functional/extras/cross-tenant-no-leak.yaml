@@ -1,0 +1,127 @@
+appId: com.handysuites.app
+name: "Funcional > Extras > Aislamiento multi-tenant: admin Jeyma no ve datos de otros tenants"
+---
+
+# ════════════════════════════════════════════════════════════
+# rol: ADMIN (admin@jeyma.com) — tenant_id Jeyma
+# use-case: cross-tenant-no-leak
+# prereq:
+#   - Seed multi-tenant cargado: Jeyma (vendedores "Vendedor 1/2 Jeyma"),
+#     Huichol (admin "Administrador Huichol", "Vendedor 1/2 Huichol"),
+#     Centro (admin "Administrador Centro"). Ver seed_local_pg.sql L104-111.
+#   - Vista admin de Vender renderiza AdminTenantPedidosList → endpoint
+#     /api/mobile/supervisor/pedidos (tenant-scoped). Cada row muestra
+#     usuarioNombre (el vendedor que creo el pedido) + clienteNombre.
+#     Igual para Cobrar → AdminTenantCobrosList.
+# endpoints backend tocados:
+#   - GET /api/mobile/supervisor/pedidos  (lista tenant-wide del admin)
+#   - GET /api/mobile/supervisor/cobros
+#
+# READ-ONLY: este flow NO muta datos. Solo navega y asserta AUSENCIA de
+# nombres de usuarios/tenants ajenos en las listas agregadas del admin.
+# El backend filtra por tenant_id (global query filter EF Core); si hubiera
+# un leak cross-tenant, apareceria "Vendedor 1 Huichol" o "Administrador
+# Centro" en la lista de Jeyma.
+#
+# Strings validados contra AdminTenantPedidosList.tsx:
+#   header "Pedidos hoy" + subtitulo ".*en toda la empresa", filtro-rango-*.
+# ════════════════════════════════════════════════════════════
+
+# 0. Login ADMIN Jeyma via helper (deja la app en el dashboard "Hoy").
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: cross-tenant-00-dashboard-admin
+
+# ── VENDER (Pedidos agregados del tenant) ───────────────────
+- tapOn:
+    text: "Vender"
+- waitForAnimationToEnd
+
+# La vista admin muestra "Pedidos" como titulo + "en toda la empresa".
+- extendedWaitUntil:
+    visible:
+      text: ".*(Pedidos|en toda la empresa).*"
+    timeout: 20000
+- assertVisible:
+    text: ".*en toda la empresa.*"
+- takeScreenshot: cross-tenant-01-vender-admin
+
+# Ampliar el rango a 30 dias para maximizar la superficie de datos visibles
+# (mas pedidos historicos = mejor cobertura del assert de no-leak).
+- runFlow:
+    when:
+      visible:
+        id: "filtro-rango-30d"
+    commands:
+      - tapOn:
+          id: "filtro-rango-30d"
+      - waitForAnimationToEnd
+- takeScreenshot: cross-tenant-02-vender-30d
+
+# ASSERT NO-LEAK en Pedidos: ningun usuario/tenant ajeno debe aparecer.
+- assertNotVisible:
+    text: ".*Huichol.*"
+- assertNotVisible:
+    text: ".*Administrador Centro.*"
+- assertNotVisible:
+    text: ".*Vendedor 1 Huichol.*"
+- assertNotVisible:
+    text: ".*Vendedor 2 Huichol.*"
+- assertNotVisible:
+    text: ".*Admin Huichol.*"
+- assertNotVisible:
+    text: ".*Admin Centro.*"
+
+# ── COBRAR (Cobros agregados del tenant) ────────────────────
+- tapOn:
+    text: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*(Cobros|en toda la empresa|Cobranza).*"
+    timeout: 20000
+- takeScreenshot: cross-tenant-03-cobrar-admin
+
+# Ampliar rango si el filtro existe en la vista de cobros admin.
+- runFlow:
+    when:
+      visible:
+        id: "filtro-rango-30d"
+    commands:
+      - tapOn:
+          id: "filtro-rango-30d"
+      - waitForAnimationToEnd
+- takeScreenshot: cross-tenant-04-cobrar-30d
+
+# ASSERT NO-LEAK en Cobros.
+- assertNotVisible:
+    text: ".*Huichol.*"
+- assertNotVisible:
+    text: ".*Administrador Centro.*"
+- assertNotVisible:
+    text: ".*Vendedor 1 Huichol.*"
+- assertNotVisible:
+    text: ".*Vendedor 2 Huichol.*"
+- assertNotVisible:
+    text: ".*Admin Huichol.*"
+- assertNotVisible:
+    text: ".*Admin Centro.*"
+
+# Sanity check positivo: el admin de Jeyma SI debe poder ver al menos
+# su propio contexto de empresa (subtitulo agregado). No fallar si la
+# lista esta vacia (sin pedidos en el rango) — el no-leak ya se valido.
+- runFlow:
+    when:
+      visible:
+        text: ".*Vendedor 1 Jeyma.*"
+    commands:
+      - assertVisible:
+          text: ".*Vendedor 1 Jeyma.*"
+      - takeScreenshot: cross-tenant-05-sanity-jeyma-visible
+
+- takeScreenshot: cross-tenant-06-final

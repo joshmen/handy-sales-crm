@@ -1,9 +1,9 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor Flow"
 ---
 
 # First logout current user
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn: "Cerrar"
 - extendedWaitUntil:
     visible:

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor - Jornada Completa Day-in-the-Life"
 ---
 
@@ -325,12 +325,7 @@ name: "Vendedor - Jornada Completa Day-in-the-Life"
 # FASE 9: TAB MAS - VALIDAR MENU
 # ────────────────────────────────────────────
 
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:

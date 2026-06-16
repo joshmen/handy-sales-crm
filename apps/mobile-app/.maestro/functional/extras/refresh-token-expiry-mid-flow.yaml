@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: refresh token expiry mid-flow no rompe sesion"
 tags:
   - functional
@@ -69,54 +69,17 @@ tags:
 #   - Conectividad de red activa (no offline)
 # =================================================================
 
-- launchApp:
-    clearState: false
+# ----------------------------------------------------------------
+# 0) Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
+# ----------------------------------------------------------------
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ----------------------------------------------------------------
-# 0) Dismiss modales opcionales (permisos / aviso de privacidad /
-#    upsells de evaluacion). Maestro acepta runFlow when:visible
-#    para skipear ramas no presentes.
-# ----------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-
-# ----------------------------------------------------------------
-# 1) Sanity: vendedor esta en sesion (tab "Hoy" visible). Si no
-#    esta logueado, este flow no aplica — el caller del suite debe
-#    correr auth/01-login-vendedor.yaml antes.
+# 1) Sanity: vendedor esta en sesion (tab "Hoy" visible).
 # ----------------------------------------------------------------
 - extendedWaitUntil:
     visible: "Hoy"
@@ -179,8 +142,10 @@ tags:
 
 - waitForAnimationToEnd
 
+# El título real del BottomSheet de modo de venta es "¿Qué tipo de pedido?"
+# (src/hooks/useCreateOrderFlow.tsx línea 91), no "Tipo de Venta".
 - extendedWaitUntil:
-    visible: "Tipo de Venta"
+    visible: "¿Qué tipo de pedido?"
     timeout: 10000
 - assertVisible: "Preventa"
 - tapOn: "Preventa"
@@ -317,9 +282,9 @@ tags:
       - tapOn: "Sincronización"
 - runFlow:
     when:
-      visible: "Sincronizacion"
+      visible: "Sincronización"
     commands:
-      - tapOn: "Sincronizacion"
+      - tapOn: "Sincronización"
 - runFlow:
     when:
       visible: "Sincronizar"

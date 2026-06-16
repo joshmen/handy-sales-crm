@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Flow Completo - Todos los flujos"
 ---
 
@@ -11,7 +11,7 @@ name: "Flow Completo - Todos los flujos"
 - tapOn: "Vender"
 - tapOn: "Cobrar"
 - tapOn: "Equipo"
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn: "Hoy"
 
 # === FLUJO 2: Crear pedido (admin = BottomSheet) ===
@@ -24,7 +24,7 @@ name: "Flow Completo - Todos los flujos"
 - tapOn: "Cobrar"
 
 # === FLUJO 4: Más tab navegación ===
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn: "Clientes"
 - back
 - tapOn: "Hoy"

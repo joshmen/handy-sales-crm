@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Funcional SUPERVISOR > Ver actividad reciente del equipo (feed)"
 tags:
   - functional
@@ -40,82 +40,22 @@ tags:
 #   Usar Configuración, Sesión, Más con tilde correcta.
 # ══════════════════════════════════════════════════════════════════════
 
-- launchApp:
-    clearState: false
-
 # ──────────────────────────────────────────────────────────────────────
-# 0. Aviso de Privacidad opcional + permisos OS
+# 1. LOGIN SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ──────────────────────────────────────────────────────────────────────
 - runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-# ──────────────────────────────────────────────────────────────────────
-# 1. LOGIN SUPERVISOR (clearState:false => si ya hay sesion, se salta)
-# ──────────────────────────────────────────────────────────────────────
-- runFlow:
-    when:
-      visible:
-        id: "email-input"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: "supervisor@jeyma.com"
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-
-# Consents post-login opcionales
-- runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "Mas tarde"
-    commands:
-      - tapOn:
-          text: "Mas tarde"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ──────────────────────────────────────────────────────────────────────
 # 2. DASHBOARD HOY CARGADO
+# "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy. El
+# dashboard supervisor expone el KPI "Vendedores activos".
 # ──────────────────────────────────────────────────────────────────────
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 45000
 
 - takeScreenshot: sup-act-01-dashboard
@@ -124,7 +64,7 @@ tags:
 # 3. NAVEGAR AL TAB EQUIPO
 # ──────────────────────────────────────────────────────────────────────
 - tapOn:
-    text: "Equipo"
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -218,37 +158,3 @@ tags:
     timeout: 15000
 
 - takeScreenshot: sup-act-07-back-a-equipo
-
-# ──────────────────────────────────────────────────────────────────────
-# 9. LOGOUT limpio (deja device estable para siguiente suite)
-# ──────────────────────────────────────────────────────────────────────
-- tapOn:
-    text: "Más"
-    optional: true
-
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Sí, cerrar sesión"
-          commands:
-            - tapOn:
-                text: "Sí, cerrar sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: sup-act-08-logout

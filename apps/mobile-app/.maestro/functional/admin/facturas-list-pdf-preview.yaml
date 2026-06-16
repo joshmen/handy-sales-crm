@@ -1,0 +1,139 @@
+appId: com.handysuites.app
+name: "Admin: lista de Facturas + abrir detalle / vista previa Anexo 20 (CFDI)"
+---
+# ============================================================
+# CASO: adm-facturas-list-pdf-preview
+# Rol: ADMIN (admin@jeyma.com)
+# Capa: mobile
+# Use-case (kebab): facturas-list-pdf-preview
+#
+# Prereq / estado:
+#   - Tenant Jeyma con facturación habilitada (useFacturacionEnabled === true).
+#     El item "Facturas" en el menú Más solo aparece si canSeeFacturas
+#     (facturacionEnabled && rol ADMIN/SUPER_ADMIN/SUPERVISOR — mas.tsx:84).
+#   - Las facturas timbradas se generan desde el portal web; el seed puede o no
+#     traer facturas TIMBRADAS para Jeyma. Por eso el flow degrada con
+#     when:visible: si NO hay facturas, valida el empty state "Sin facturas".
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/facturas/index.tsx
+#     -> Header "Facturas", filas factura-row-{index}, empty "Sin facturas".
+#   apps/mobile-app/app/(tabs)/facturas/[id].tsx
+#     -> Header = folio, secciones RECEPTOR/COMPROBANTE/TOTALES,
+#        botón "Vista previa Anexo 20" (CFDI / PDF preview, solo TIMBRADA).
+#
+# Endpoints backend tocados:
+#   GET /api/mobile/facturas         (hook useFacturasList)
+#   GET /api/mobile/facturas/{id}    (detalle)
+#   GET /api/mobile/empresa          (useTenantLocale, moneda/fecha)
+#
+# Cobertura funcional REAL:
+#   1. Login ADMIN via helper.
+#   2. Dashboard admin cargado (KPI "Vendedores").
+#   3. Tab Más -> tocar "Facturas" -> header "Facturas".
+#   4. Si hay datos: abrir factura-row-0 -> detalle (RECEPTOR/COMPROBANTE/TOTALES)
+#      + tocar "Vista previa Anexo 20" cuando la factura está TIMBRADA.
+#   5. Si NO hay datos: assert empty state "Sin facturas".
+#   6. Idempotente: read-only, sin mutaciones; vuelve al menú Más.
+# ============================================================
+
+# ---- FASE 1: Login ADMIN robusto via helper ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard ADMIN cargado ----
+# KPI "Vendedores" es exclusivo del AdminDashboard.tsx — confirma el rol.
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 30000
+
+- assertVisible: "Vendedores"
+- takeScreenshot: adm-facturas-01-dashboard
+
+# ---- FASE 3: Tab Más -> abrir "Facturas" ----
+- tapOn: "Más"
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 15000
+
+# El item "Facturas" solo existe si facturación está habilitada para el tenant.
+# Si no aparece (tenant sin facturación), degradamos sin romper el flow.
+- runFlow:
+    when:
+      visible: "Facturas"
+    commands:
+      - tapOn: "Facturas"
+      - extendedWaitUntil:
+          visible: "Facturas"
+          timeout: 30000
+      - assertVisible: "Facturas"
+      - takeScreenshot: adm-facturas-02-lista
+
+      # ---- FASE 4a: Con datos -> abrir detalle + vista previa Anexo 20 ----
+      - runFlow:
+          when:
+            visible:
+              id: "factura-row-0"
+          commands:
+            - tapOn:
+                id: "factura-row-0"
+            - waitForAnimationToEnd:
+                timeout: 5000
+            # Anclas estables del detalle (facturas/[id].tsx:238/245/254).
+            - extendedWaitUntil:
+                visible: "RECEPTOR"
+                timeout: 20000
+            - assertVisible: "RECEPTOR"
+            - assertVisible: "COMPROBANTE"
+            - assertVisible: "TOTALES"
+            - takeScreenshot: adm-facturas-03-detalle
+
+            # Botón de vista previa CFDI (PDF/Anexo 20). Habilitado solo si la
+            # factura está TIMBRADA; si está PENDIENTE el botón está disabled.
+            - runFlow:
+                when:
+                  visible: "Vista previa Anexo 20"
+                commands:
+                  - tapOn: "Vista previa Anexo 20"
+                  - waitForAnimationToEnd:
+                      timeout: 6000
+                  - takeScreenshot: adm-facturas-04-preview-anexo20
+                  # No debe haber error de red al renderizar el preview.
+                  - assertNotVisible: "Sin conexión"
+                  - assertNotVisible: "Failed"
+                  - back
+                  - waitForAnimationToEnd:
+                      timeout: 3000
+
+            # Volver a la lista de facturas para dejar estado limpio.
+            - back
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - extendedWaitUntil:
+                visible: "Facturas"
+                timeout: 15000
+
+      # ---- FASE 4b: Sin datos -> empty state ----
+      - runFlow:
+          when:
+            visible: "Sin facturas"
+          commands:
+            - assertVisible: "Sin facturas"
+            - assertVisible: ".*portal web.*"
+            - takeScreenshot: adm-facturas-03b-empty
+
+      # ---- FASE 5: Volver al tab Más (cierre suave, sin logout) ----
+      - tapOn: "Más"
+      - extendedWaitUntil:
+          visible: "NAVEGACIÓN"
+          timeout: 15000
+
+# Fallback: si "Facturas" no estaba en el menú, documentamos el menú Más.
+- runFlow:
+    when:
+      notVisible: "Facturas"
+    commands:
+      - takeScreenshot: adm-facturas-02b-sin-item-facturacion-deshabilitada
