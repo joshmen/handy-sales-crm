@@ -1,17 +1,12 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Logout"
 ---
 
 # Ir al tab Mas (logout esta ahi)
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- tapOn: "Más"
 
 - extendedWaitUntil:
-    visible: "Navegaci"
+    visible: "NAVEGACIÓN"
     timeout: 15000
 
 - takeScreenshot: mas-before-logout

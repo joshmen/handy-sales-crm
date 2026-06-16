@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 ---
 # ============================================================
@@ -55,118 +55,25 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # migrarse a esos selectores para hacerlo determinista en CI.
 # ============================================================
 
-- launchApp:
-    clearState: false
-
-# ---- Aviso de Privacidad opcional (primer arranque del device) ----
-- runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# Si quedó una sesión previa abierta (no admin), cerrarla.
-- runFlow:
-    when:
-      visible:
-        text: "Más"
-    commands:
-      - runFlow:
-          when:
-            visible:
-              id: "email-input"
-          commands:
-            # Ya está en login screen, no hacer nada
-            - waitForAnimationToEnd:
-                timeout: 1000
-
 # ============================================================
-# FASE 1: Login ADMIN
+# FASE 1: Login ADMIN robusto via helper
 # ============================================================
 
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 45000
-
-- tapOn:
-    id: "email-input"
-- eraseText: 50
-- inputText: "admin@jeyma.com"
-- hideKeyboard
-
-- tapOn:
-    id: "password-input"
-    retryTapIfNoChange: true
-- eraseText: 50
-- inputText: "test123"
-- hideKeyboard
-
-- takeScreenshot: adm-cobranza-tenant-01-login-filled
-
-- tapOn:
-    id: "login-button"
-
-# ---- Permisos / consents post-login (opcionales) ----
 - runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Más tarde"
-    commands:
-      - tapOn:
-          text: "Más tarde"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
 
 # ============================================================
 # FASE 2: Dashboard ADMIN cargado
 # ============================================================
 
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 45000
-
-# Saludo "Administrador" + KPI "Vendedores" confirma que el rol cargó
-# como ADMIN y no como VENDEDOR (cuyo dashboard solo dice "Hoy" +
-# "Mis Pedidos" / "Mis Cobros").
+# El dashboard ADMIN NO renderiza "Administrador" (saludo dinamico). Los KPI
+# reales del AdminDashboard.tsx son "Vendedores" y "Pedidos hoy"; confirman que
+# el rol cargó como ADMIN y no como VENDEDOR (cuyo dashboard dice "Mis Pedidos").
 - assertVisible:
-    text: "Administrador"
+    text: "Pedidos hoy"
     optional: true
 - assertVisible:
     text: "Vendedores"
@@ -185,12 +92,13 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # CRITICAL ASSERT: si el ADMIN viera "Cobranza" (header vendedor con
 # "Facturado/Cobrado/Pendiente de Cobro") significaría que la rama
 # isAdminOrSupervisor no detectó el rol y cayó al CobrarVendedorContent.
-# El header correcto admin es "Cobros".
+# El header correcto admin es "Cobros hoy" (AdminTenantCobrosList labelByPreset).
+# Maestro hace match anclado, usar comodines para el sufijo del preset.
 - extendedWaitUntil:
-    visible: "Cobros"
+    visible: ".*Cobros.*"
     timeout: 25000
 
-- assertVisible: "Cobros"
+- assertVisible: ".*Cobros.*"
 
 # Confirmar que NO está renderizando la vista de vendedor.
 # "Pendiente de Cobro" es exclusivo de CobrarVendedorContent.
@@ -206,8 +114,9 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # La frase "en toda la empresa" es UNICA de la vista admin y prueba
 # que el endpoint devolvió un agregado tenant-wide.
 
+# El texto real es "{N} cobros en toda la empresa"; Maestro ancla, usar comodines.
 - assertVisible:
-    text: "en toda la empresa"
+    text: ".*en toda la empresa.*"
     optional: true
 
 - takeScreenshot: adm-cobranza-tenant-04-subtitulo-empresa
@@ -220,40 +129,48 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 
 - runFlow:
     when:
-      visible: "Ayer"
+      visible:
+        id: "filtro-rango-ayer"
     commands:
-      - tapOn: "Ayer"
+      - tapOn:
+          id: "filtro-rango-ayer"
       - waitForAnimationToEnd:
           timeout: 4000
-      - assertVisible: "Cobros"
+      - assertVisible: ".*Cobros.*"
       - takeScreenshot: adm-cobranza-tenant-05-filtro-ayer
 
 - runFlow:
     when:
-      visible: "7 días"
+      visible:
+        id: "filtro-rango-7d"
     commands:
-      - tapOn: "7 días"
+      - tapOn:
+          id: "filtro-rango-7d"
       - waitForAnimationToEnd:
           timeout: 4000
-      - assertVisible: "Cobros"
+      - assertVisible: ".*Cobros.*"
       - takeScreenshot: adm-cobranza-tenant-06-filtro-7d
 
 - runFlow:
     when:
-      visible: "30 días"
+      visible:
+        id: "filtro-rango-30d"
     commands:
-      - tapOn: "30 días"
+      - tapOn:
+          id: "filtro-rango-30d"
       - waitForAnimationToEnd:
           timeout: 4000
-      - assertVisible: "Cobros"
+      - assertVisible: ".*Cobros.*"
       - takeScreenshot: adm-cobranza-tenant-07-filtro-30d
 
 # Volver a "Hoy" para dejar estado determinista.
 - runFlow:
     when:
-      visible: "Hoy"
+      visible:
+        id: "filtro-rango-hoy"
     commands:
-      - tapOn: "Hoy"
+      - tapOn:
+          id: "filtro-rango-hoy"
       - waitForAnimationToEnd:
           timeout: 4000
 
@@ -277,7 +194,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 # documentar el estado vacío del componente.
 - runFlow:
     when:
-      visible: "Sin cobros"
+      visible: ".*Sin cobros.*"
     commands:
       - takeScreenshot: adm-cobranza-tenant-09b-empty-state
 
@@ -305,13 +222,15 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 
 - runFlow:
     when:
-      visible: "Vendedor 1 Jeyma"
+      visible:
+        id: "cobro-row-0"
     commands:
-      - tapOn: "Vendedor 1 Jeyma"
+      - tapOn:
+          id: "cobro-row-0"
       - waitForAnimationToEnd:
           timeout: 5000
       - extendedWaitUntil:
-          visible: "Detalle"
+          visible: "Detalle de Cobro"
           timeout: 15000
       - takeScreenshot: adm-cobranza-tenant-11-detalle-cobro
       # Verificar que NO hay error/toast de "Failed" / "Sin conexión"
@@ -322,7 +241,7 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
       - waitForAnimationToEnd:
           timeout: 3000
       - extendedWaitUntil:
-          visible: "Cobros"
+          visible: ".*Cobros.*"
           timeout: 15000
 
 # ============================================================
@@ -336,41 +255,5 @@ name: "Admin: ver cobranza tenant completo (tab Cobrar)"
 - waitForAnimationToEnd:
     timeout: 5000
 
-- assertVisible: "Cobros"
+- assertVisible: ".*Cobros.*"
 - takeScreenshot: adm-cobranza-tenant-12-post-refresh
-
-# ============================================================
-# FASE 10: Logout limpio
-# ============================================================
-
-- tapOn:
-    text: "Más"
-- waitForAnimationToEnd:
-    timeout: 2000
-
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Sí, cerrar sesión"
-          commands:
-            - tapOn:
-                text: "Sí, cerrar sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: adm-cobranza-tenant-13-logout

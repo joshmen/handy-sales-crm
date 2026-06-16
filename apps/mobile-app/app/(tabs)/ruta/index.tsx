@@ -221,6 +221,7 @@ export default function RutaScreen() {
                 <Text style={styles.acceptSub}>Acepta la ruta para comenzar tu jornada</Text>
               </View>
               <TouchableOpacity
+                testID="btn-aceptar-ruta"
                 style={styles.acceptBtn}
                 disabled={accepting}
                 activeOpacity={0.8}

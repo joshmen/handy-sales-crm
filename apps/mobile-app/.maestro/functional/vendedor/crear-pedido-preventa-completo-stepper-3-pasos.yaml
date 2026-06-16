@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Crear pedido PREVENTA completo (stepper 3 pasos)"
 tags:
   - functional
@@ -31,34 +31,13 @@ tags:
 # =================================================================
 
 # ---------------------------------------------------------------
-# 0) Dismiss modales opcionales (banners, anuncios, permisos GPS,
-#    KeepAwake) — runFlow when:visible no rompe si no existen.
+# 0) Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 # ---------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ---------------------------------------------------------------
 # 1) Reset navigation y entrar a tab "Vender"
@@ -121,9 +100,9 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Tipo de Venta"
+    visible: "¿Qué tipo de pedido?"
     timeout: 10000
-- assertVisible: "Tipo de Venta"
+- assertVisible: "¿Qué tipo de pedido?"
 - assertVisible: "Preventa"
 - takeScreenshot: preventa-01-tipo-venta-sheet
 
@@ -299,7 +278,7 @@ tags:
       - tapOn: "Confirmar pedido"
 
 # ---------------------------------------------------------------
-# 10) ConfirmModal — aceptar envio definitivo
+# 10) ConfirmModal — aceptar envio definitivo (testID estable)
 # ---------------------------------------------------------------
 - extendedWaitUntil:
     visible:
@@ -307,21 +286,8 @@ tags:
     timeout: 10000
 - takeScreenshot: preventa-10-confirm-modal
 
-- runFlow:
-    when:
-      visible: "ENVIAR"
-    commands:
-      - tapOn: "ENVIAR"
-- runFlow:
-    when:
-      visible: "Enviar"
-    commands:
-      - tapOn: "Enviar"
-- runFlow:
-    when:
-      visible: "Confirmar"
-    commands:
-      - tapOn: "Confirmar"
+- tapOn:
+    id: "confirm-modal-confirm"
 
 - waitForAnimationToEnd
 

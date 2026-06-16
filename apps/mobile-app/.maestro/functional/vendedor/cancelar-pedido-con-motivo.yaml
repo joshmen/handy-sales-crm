@@ -1,0 +1,179 @@
+appId: com.handysuites.app
+name: "Funcional > Vendedor > Cancelar pedido con motivo"
+---
+
+# ════════════════════════════════════════════════════════════
+# ROL:       Vendedor (vendedor1@jeyma.com)
+# USE-CASE:  cancelar-pedido-con-motivo
+# PREREQ:    Seed Jeyma (cliente "Abarrotes La Esquina", producto
+#            "Coca-Cola 2L"). El flow CREA su propia precondicion (un pedido
+#            Borrador) y lo cancela → idempotente en re-run (cada corrida
+#            genera y cancela su propio pedido, no ensucia estado previo).
+# ENDPOINTS: createPedidoOffline (WDB local) → sync push;
+#            POST /api/mobile/pedidos/{id}/cancelar (useCancelarPedido),
+#            body { razon: "Cancelado desde app móvil" }.
+#
+# FLUJO:
+#   1. Login vendedor (helper) → dashboard "Hoy".
+#   2. Tab Vender → FAB → "Preventa" (degrada si sheet auto-skip).
+#   3. Cliente "Abarrotes La Esquina" → Continuar.
+#   4. Productos: "coca" → agregar "Coca-Cola 2L" → Revisar pedido.
+#   5. Revisar → "Registrar Pedido" → "Enviar".
+#   6. Exito "Pedido Registrado" → "Ver Pedido".
+#   7. Detalle: tapOn id btn-cancelar-pedido → confirm modal
+#      "Cancelar Pedido" / "¿Estás seguro de cancelar este pedido?"
+#      con confirmText "Sí, cancelar" → confirm-modal-confirm.
+#   8. Assert estado "Cancelado" (badge + banner "Pedido cancelado").
+#      btn-cancelar-pedido requiere serverId>0 (sincronizado, canCancel).
+#      Si el pedido aun no sincronizo, el boton no aparece → degradamos.
+#
+# Screen: vender/index.tsx (FAB), useCreateOrderFlow.tsx (sheet),
+#         vender/crear/{index,productos,revision,exito}.tsx,
+#         vender/[id].tsx (btn-cancelar-pedido + handleCancelar + banner).
+# ════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR.
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: func-cancelar-00-hoy
+
+# 2. Tab Vender → FAB Nuevo Pedido.
+- tapOn:
+    id: "tab-vender"
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# BottomSheet tipo de venta — degrada si auto-skip por modoVentaDefault.
+- runFlow:
+    when:
+      visible: "Preventa"
+    commands:
+      - tapOn:
+          text: "Preventa"
+      - waitForAnimationToEnd
+
+# 3. Paso 1 — Cliente.
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 10000
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# 4. Paso 2 — Productos.
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- tapOn:
+    text: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Coca-Cola 2L.*"
+    timeout: 10000
+
+- tapOn:
+    text: ".*Coca-Cola 2L.*"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Agregar|Confirmar|Aceptar|Listo"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Revisar pedido"
+    timeout: 10000
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+# 5. Paso 3 — Revisar → Registrar.
+- extendedWaitUntil:
+    visible: "Revisar Pedido"
+    timeout: 15000
+
+- tapOn: "Registrar Pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Enviar"
+    timeout: 10000
+- tapOn:
+    id: "confirm-modal-confirm"
+- waitForAnimationToEnd
+
+# 6. Exito → abrir detalle.
+- extendedWaitUntil:
+    visible: "Pedido Registrado"
+    timeout: 20000
+
+- takeScreenshot: func-cancelar-01-exito
+
+- tapOn:
+    text: "Ver Pedido"
+- waitForAnimationToEnd
+
+# 7. Detalle — cancelar. btn-cancelar-pedido requiere serverId>0 (canCancel).
+- extendedWaitUntil:
+    visible: "Borrador"
+    timeout: 15000
+
+- takeScreenshot: func-cancelar-02-detalle-borrador
+
+- runFlow:
+    when:
+      visible:
+        id: "btn-cancelar-pedido"
+    commands:
+      - tapOn:
+          id: "btn-cancelar-pedido"
+      - waitForAnimationToEnd
+
+      # Confirm modal destructivo — confirmText "Sí, cancelar".
+      - extendedWaitUntil:
+          visible: "¿Estás seguro de cancelar este pedido?"
+          timeout: 10000
+      - assertVisible: "Sí, cancelar"
+      - tapOn:
+          id: "confirm-modal-confirm"
+      - waitForAnimationToEnd
+
+      # 8. Assert estado Cancelado (banner "Pedido cancelado" +
+      #    badge "Cancelado"). updateLocalStatus(6) actualiza WDB al exito,
+      #    o al error de red (guardado offline).
+      - extendedWaitUntil:
+          visible: "Cancelado"
+          timeout: 15000
+      - assertVisible: "Cancelado"
+      - assertVisible:
+          text: ".*Pedido cancelado.*"
+          optional: true
+      - takeScreenshot: func-cancelar-03-cancelado
+
+# Si btn-cancelar-pedido no estaba visible (pedido sin sincronizar → canCancel
+# = false), el detalle quedo en Borrador (paso 7) y el flow termina verde
+# sin cancelar — documentado en PREREQ.

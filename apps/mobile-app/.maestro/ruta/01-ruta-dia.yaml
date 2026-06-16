@@ -1,37 +1,31 @@
-appId: host.exp.exponent
-name: "Ruta del Dia"
+appId: com.handysuites.app
+name: "Historial de Rutas"
 ---
 
-# Ir al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# Rutas vive bajo el tab "Más" → NAVEGACIÓN → "Historial de Rutas"
+- tapOn: "Más"
 
 - extendedWaitUntil:
-    visible: "Navegaci"
+    visible: "NAVEGACIÓN"
     timeout: 15000
 
-# Tap en Ruta del Dia
-- tapOn: "Ruta del D"
+- tapOn: "Historial de Rutas"
 
 - extendedWaitUntil:
-    visible: "Ruta del D"
+    visible: "Historial de Rutas"
     timeout: 15000
 
-- takeScreenshot: ruta-dia
+- takeScreenshot: historial-rutas
 
-# Scroll para ver paradas
+# Scroll para ver el contenido
 - scroll
 
-- takeScreenshot: ruta-dia-scrolled
-
-# Volver al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- takeScreenshot: historial-rutas-scrolled

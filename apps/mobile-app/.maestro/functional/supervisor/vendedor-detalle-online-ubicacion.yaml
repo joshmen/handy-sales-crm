@@ -1,0 +1,111 @@
+appId: com.handysuites.app
+name: "Supervisor: detalle vendedor estado online + ultima ubicacion"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-vendedor-online-ubicacion
+# Rol: SUPERVISOR (supervisor@jeyma.com)
+# Capa: mobile (read-only, no muta datos)
+#
+# Objetivo: Abrir el detalle de "Vendedor 1 Jeyma" desde el tab
+# Equipo y validar tres bloques de la pantalla de detalle:
+#   1. Badge de presencia: "En línea" (GPS ping < 15 min) o
+#      "Desconectado" (sin ping reciente). Ambos son estados validos
+#      del seed, asi que el assert acepta cualquiera de los dos.
+#   2. Grid de stats del dia (testID vendedor-stats).
+#   3. Seccion "ÚLTIMA UBICACIÓN": ya sea una tarjeta con coords/cliente,
+#      o el placeholder "Sin ubicación registrada" si no hay ping GPS.
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/vendedores/{id}/resumen
+#       (devuelve vendedor.isOnline + ultimaUbicacion + hoy + totalClientes)
+#   GET /api/mobile/supervisor/mis-vendedores
+#
+# Pantalla RN:
+#   apps/mobile-app/app/(tabs)/equipo/vendedor/[id].tsx
+#   (badge isOnline -> "En línea"/"Desconectado";
+#    seccion "ÚLTIMA UBICACIÓN" -> tarjeta o "Sin ubicación registrada")
+#
+# Prereq seed: supervisor@jeyma.com supervisa "Vendedor 1 Jeyma".
+# El detalle abre aunque no haya ubicacion registrada (degrada al
+# placeholder), por lo que el flow es robusto a estado de seed.
+# ============================================================
+
+# ---- FASE 1: Login SUPERVISOR ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard supervisor cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
+- takeScreenshot: sup-vend-online-01-dashboard
+
+# ---- FASE 3: Tab Equipo (testID, "EQUIPO" colisiona con header de seccion) ----
+- tapOn:
+    id: "tab-equipo"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Vendedor 1 Jeyma"
+    timeout: 30000
+- takeScreenshot: sup-vend-online-02-lista-equipo
+
+# ---- FASE 4: Abrir detalle del vendedor ----
+- tapOn: "Vendedor 1 Jeyma"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Detalle Vendedor"
+    timeout: 20000
+- assertVisible: "Detalle Vendedor"
+# Nombre del vendedor en el header de perfil.
+- assertVisible: "Vendedor 1 Jeyma"
+
+# ---- FASE 5: Badge de presencia online/offline ----
+# isOnline = GPS ping en ultimos 15 min -> "En línea"; sin ping -> "Desconectado".
+# Ambos son estados validos del seed; el regex acepta cualquiera.
+- extendedWaitUntil:
+    visible: "En línea|Desconectado"
+    timeout: 20000
+- assertVisible: "En línea|Desconectado"
+- takeScreenshot: sup-vend-online-03-badge-presencia
+
+# ---- FASE 6: Grid de stats del dia (preset por defecto = Hoy) ----
+- assertVisible: ".*RESUMEN DEL D.*A.*"
+- assertVisible:
+    id: "vendedor-stats"
+
+# ---- FASE 7: Seccion "ÚLTIMA UBICACIÓN" ----
+# Siempre presente como label de seccion, independientemente de si hay ping.
+- extendedWaitUntil:
+    visible: ".*LTIMA UBICACI.*N.*"
+    timeout: 20000
+- assertVisible: ".*LTIMA UBICACI.*N.*"
+
+# Si hay ping GPS se muestra la tarjeta con tiempo relativo ("hace ... min");
+# si no, el placeholder "Sin ubicación registrada". Documentar cualquiera.
+- runFlow:
+    when:
+      visible: "Sin ubicación registrada"
+    commands:
+      - assertVisible: "Sin ubicación registrada"
+      - takeScreenshot: sup-vend-online-04b-sin-ubicacion
+
+- runFlow:
+    when:
+      notVisible: "Sin ubicación registrada"
+    commands:
+      - takeScreenshot: sup-vend-online-04-con-ubicacion
+
+# ---- FASE 8: Volver a la lista de equipo (cierre suave, read-only) ----
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 15000
+- assertVisible: "VENDEDORES"
+- takeScreenshot: sup-vend-online-05-cierre-equipo

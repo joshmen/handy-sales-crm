@@ -1,6 +1,45 @@
 namespace HandySuites.Application.Sync.DTOs;
 
 /// <summary>
+/// Paginacion OPCIONAL en el pull. Cuando MaxRecords es null el comportamiento es
+/// identico al pull completo actual (sin limite). Cuando se provee, el servidor
+/// devuelve como maximo MaxRecords registros por entidad con Id > cursor-de-esa-entidad,
+/// y rellena SyncResponseDto.PaginationInfo para que el cliente pueda seguir paginando.
+/// </summary>
+public class SyncPaginationOptions
+{
+    /// <summary>Maximo de registros por entidad paginable. Null = sin limite (full pull).</summary>
+    public int? MaxRecords { get; set; }
+
+    /// <summary>
+    /// Cursor POR ENTIDAD: ultimo Id recibido de cada entidad paginable
+    /// ("clientes", "productos", "pedidos"). Solo retorna registros con Id > cursor.
+    /// Clave ausente = empezar desde el inicio (Id > 0). Cada entidad tiene su PROPIO
+    /// espacio de Id, por eso el cursor NO puede ser un escalar compartido: usar el Id
+    /// mas alto de una entidad como cursor de otra se saltaria registros (perdida de datos).
+    /// </summary>
+    public Dictionary<string, int>? AfterIds { get; set; }
+}
+
+/// <summary>
+/// Informacion de paginacion devuelta por el servidor en la respuesta pull.
+/// Solo se incluye cuando se solicito paginacion (MaxRecords != null).
+/// </summary>
+public class SyncPullPageInfo
+{
+    /// <summary>True si CUALQUIER entidad paginable tiene mas registros despues de esta pagina.</summary>
+    public bool HasMore { get; set; }
+
+    /// <summary>
+    /// Cursor POR ENTIDAD devuelto por el servidor: ultimo Id entregado de cada entidad
+    /// paginable en esta pagina. El cliente lo reenvia como AfterIds en la siguiente
+    /// solicitud. Se conserva el cursor previo cuando la entidad no devolvio nada en esta
+    /// pagina, para que el cursor nunca retroceda. Claves: "clientes", "productos", "pedidos".
+    /// </summary>
+    public Dictionary<string, int> NextCursors { get; set; } = new();
+}
+
+/// <summary>
 /// Request to sync data from mobile device
 /// </summary>
 public class SyncRequestDto
@@ -19,6 +58,11 @@ public class SyncRequestDto
     /// Changes from client to push to server
     /// </summary>
     public SyncChangesDto? ClientChanges { get; set; }
+
+    /// <summary>
+    /// Paginacion OPCIONAL para el pull. Null = pull completo (comportamiento default).
+    /// </summary>
+    public SyncPaginationOptions? Pagination { get; set; }
 }
 
 /// <summary>
@@ -91,6 +135,12 @@ public class SyncResponseDto
     /// True when any errors occurred during sync (for callers to return appropriate HTTP status)
     /// </summary>
     public bool HasErrors => Errors.Count > 0;
+
+    /// <summary>
+    /// Informacion de paginacion. Solo presente cuando se solicito paginacion (MaxRecords != null).
+    /// Null = pull completo (comportamiento default sin paginacion).
+    /// </summary>
+    public SyncPullPageInfo? PaginationInfo { get; set; }
 }
 
 public class SyncSummaryDto

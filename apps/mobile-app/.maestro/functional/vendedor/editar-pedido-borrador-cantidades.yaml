@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Funcional VENDEDOR > Editar pedido BORRADOR (cantidades de lineas)"
 tags:
   - functional
@@ -61,44 +61,13 @@ tags:
 # ══════════════════════════════════════════════════════════════════════
 
 # ──────────────────────────────────────────────────────────────────────
-# 0. Dismiss banners y permisos opcionales que tapan controles.
+# 0. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 # ──────────────────────────────────────────────────────────────────────
-- launchApp:
-    clearState: false
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - runFlow:
-          when:
-            visible: "Aceptar"
-          commands:
-            - tapOn: "Aceptar"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ──────────────────────────────────────────────────────────────────────
 # 1. Reset navigation y entrar al tab "Vender" (lista de pedidos).
@@ -159,7 +128,7 @@ tags:
             - tapOn: "Nuevo Pedido"
       - waitForAnimationToEnd
       - extendedWaitUntil:
-          visible: "Tipo de Venta"
+          visible: "¿Qué tipo de pedido?"
           timeout: 10000
       - tapOn: "Preventa"
       - waitForAnimationToEnd
@@ -232,16 +201,8 @@ tags:
           visible:
             text: "ENVIAR|Confirmar|Aceptar"
           timeout: 10000
-      - runFlow:
-          when:
-            visible: "ENVIAR"
-          commands:
-            - tapOn: "ENVIAR"
-      - runFlow:
-          when:
-            visible: "Confirmar"
-          commands:
-            - tapOn: "Confirmar"
+      - tapOn:
+          id: "confirm-modal-confirm"
       - waitForAnimationToEnd
       - extendedWaitUntil:
           visible:

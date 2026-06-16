@@ -36,7 +36,7 @@
 #   - IDOR: el endpoint debe rechazar IDs fuera del equipo del supervisor; aqui
 #     solo cubrimos el happy path con vendedor real subordinado.
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: supervisor - ver detalle vendedor con resumen 7d
 tags:
   - supervisor
@@ -46,105 +46,36 @@ tags:
   - mobile
 ---
 
-- launchApp:
-    clearState: false
-
-# ---- Aviso de Privacidad opcional (primer launch tras clearState) ----
-- runFlow:
-    when:
-      visible:
-        text: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
 # ============================================================
-# FASE 1: Login SUPERVISOR
+# FASE 1: Login SUPERVISOR (helper robusto: onboarding/consent/logout)
 # ============================================================
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "supervisor@jeyma.com"
-
-- pressKey: "TAB"
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: sup-vendedor-7d-01-login
-
-# ---- Consents / permisos post-login (no deterministas) ----
-
 - runFlow:
-    when:
-      visible:
-        text: "Acepto"
-    commands:
-      - tapOn:
-          text: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible:
-        text: "While using the app"
-    commands:
-      - tapOn:
-          text: "While using the app"
-
-- runFlow:
-    when:
-      visible:
-        text: "AHORA NO"
-    commands:
-      - tapOn:
-          text: "AHORA NO"
-
-- runFlow:
-    when:
-      visible:
-        text: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-
-- runFlow:
-    when:
-      visible:
-        text: "Mas tarde"
-    commands:
-      - tapOn:
-          text: "Mas tarde"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ============================================================
 # FASE 2: Aterrizaje dashboard supervisor
 # ============================================================
 
+# "Mi Equipo" es el titulo del TAB Equipo, no del dashboard Hoy. El
+# dashboard supervisor expone el KPI "Vendedores activos".
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 30000
 
-- assertVisible: "Vendedores"
+# El KPI del dashboard supervisor es "Vendedores activos" (no nodo exacto
+# "Vendedores"); Maestro hace match completo del texto.
+- assertVisible: "Vendedores activos"
 - takeScreenshot: sup-vendedor-7d-02-dashboard
 
 # ============================================================
 # FASE 3: Navegar al tab Equipo
 # ============================================================
 
-- tapOn: "Equipo"
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -223,13 +154,14 @@ tags:
 - assertNotVisible:
     id: "vendedor-stats"
 
-# Chips de cada fila (formatDayLabel + chips con "pedidos", "vis", "cob")
+# Chips de cada fila renderizan "{n} pedidos", "{n}/{n} vis", "{money} cob"
+# -> regex anclado con comodines (Maestro hace match completo del nodo).
 - assertVisible:
-    text: "pedidos"
+    text: ".*pedidos.*"
 - assertVisible:
-    text: "vis"
+    text: ".*vis.*"
 - assertVisible:
-    text: "cob"
+    text: ".*cob.*"
 
 - takeScreenshot: sup-vendedor-7d-07-lista-dias
 
@@ -299,38 +231,3 @@ tags:
 - assertNotVisible: "Admin Centro"
 
 - takeScreenshot: sup-vendedor-7d-11-back-equipo
-
-# ============================================================
-# FASE 10: Logout limpio
-# ============================================================
-
-- tapOn:
-    text: "Más"
-    optional: true
-
-- runFlow:
-    when:
-      visible: "Configuración"
-    commands:
-      - tapOn:
-          text: "Configuración"
-      - scrollUntilVisible:
-          element:
-            text: "Cerrar sesión"
-          direction: DOWN
-          timeout: 15000
-          speed: 40
-      - tapOn:
-          text: "Cerrar sesión"
-      - runFlow:
-          when:
-            visible:
-              text: "Sí, cerrar sesión"
-          commands:
-            - tapOn:
-                text: "Sí, cerrar sesión"
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
-      - takeScreenshot: sup-vendedor-7d-12-logout

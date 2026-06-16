@@ -1,8 +1,8 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Navigate All Tabs"
 ---
 - tapOn: "Vender"
 - tapOn: "Cobrar"
 - tapOn: "Equipo"
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn: "Hoy"

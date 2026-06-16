@@ -1,0 +1,124 @@
+appId: com.handysuites.app
+name: "Vendedor: Aceptar la Ruta del Dia"
+tags:
+  - functional
+  - vendedor
+  - ruta
+  - aceptar
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: aceptar-ruta-del-dia
+#
+# Rol: vendedor (vendedor1@jeyma.com)
+# Flujo:
+#   dashboard "Hoy" -> abrir card de Ruta -> "Ruta del Día"
+#   -> si la ruta esta Planificada (estado 0) o PendienteAceptar
+#      (estado 4) se muestra el banner "Nueva ruta asignada" con el
+#      boton id btn-aceptar-ruta
+#   -> tapOn btn-aceptar-ruta -> assert que el estado cambio:
+#      toast "Ruta aceptada" y/o la seccion de Carga / "Registrar gasto"
+#      (la barra de gastos solo se renderiza cuando estado === 1 o 5).
+#
+# Idempotencia: TODO condicional (when:visible). Si la ruta ya fue
+# aceptada en una corrida previa, el banner no aparece y el flow degrada
+# sin fallar; igual valida que "Ruta del Día" cargo y que el progreso
+# es visible (read-only). NO muta nada si no hay banner.
+#
+# Strings/estados validados contra:
+#   apps/mobile-app/app/(tabs)/ruta/index.tsx
+#     - banner: route.estado === 0 || route.estado === 4
+#       -> "Nueva ruta asignada" / "Acepta la ruta para comenzar tu jornada"
+#     - boton: testID btn-aceptar-ruta, texto "Aceptar"
+#     - toast success: "Ruta aceptada"
+#     - barra gastos (estado 1|5): testID btn-registrar-gasto "+ Registrar gasto"
+#     - progreso: "Paradas atendidas"
+#
+# Endpoints backend implicados (boton Aceptar):
+#   POST /api/rutas/{id}/aceptar  -> transicion 0|4 -> 5
+#   POST /api/rutas/{id}/iniciar  -> transicion 5|0 -> 1 (En Progreso)
+#   (ademas ruta.startRoute() local en WDB; push via syncEngine)
+#
+# Pre-condicion (seed Jeyma): vendedor1 con una ruta asignada para HOY.
+# Si NO hay ruta, la pantalla muestra "Sin ruta para hoy" y el flow
+# degrada (assert optional). NO depende de estado sucio.
+# =================================================================
+
+# 0) Login VENDEDOR via helper (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Reset del stack de navegacion (doble tap "Hoy" -> root dashboard).
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- takeScreenshot: aceptar-ruta-00-dashboard
+
+# 2) Abrir la Ruta del Día desde el card de ruta del dashboard.
+#    VENDEDOR no tiene tab "Ruta": se entra por el card "Ruta".
+- scrollUntilVisible:
+    element:
+      text: "Ruta"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del Día"
+    timeout: 15000
+
+- takeScreenshot: aceptar-ruta-01-ruta-del-dia
+
+# 3) Caso sin ruta: si el seed no tiene ruta asignada para hoy, la
+#    pantalla muestra "Sin ruta para hoy". Degradamos sin fallar duro.
+- runFlow:
+    when:
+      visible: "Sin ruta para hoy"
+    commands:
+      - takeScreenshot: aceptar-ruta-02-sin-ruta
+      - assertVisible: "No tienes una ruta asignada para el día de hoy"
+
+# 4) Caso ruta pendiente de aceptar (estado 0 o 4): banner + boton.
+#    Esto dispara rutasApi.aceptar + rutasApi.iniciar + startRoute local.
+- runFlow:
+    when:
+      visible: "Nueva ruta asignada"
+    commands:
+      - assertVisible: "Acepta la ruta para comenzar tu jornada"
+      - takeScreenshot: aceptar-ruta-03-banner-aceptar
+      - tapOn:
+          id: "btn-aceptar-ruta"
+      # 4a) Confirmacion: toast success "Ruta aceptada".
+      - extendedWaitUntil:
+          visible: "Ruta aceptada"
+          timeout: 15000
+      - takeScreenshot: aceptar-ruta-04-ruta-aceptada
+      - waitForAnimationToEnd
+      # 4b) Tras aceptar, el banner debe desaparecer (estado ya no es 0|4).
+      - assertNotVisible: "Nueva ruta asignada"
+      # 4c) La barra de gastos solo se renderiza con estado 1|5 (aceptada/
+      #     iniciada). Su aparicion confirma la transicion de estado.
+      - assertVisible:
+          id: "btn-registrar-gasto"
+          optional: true
+
+# 5) Read-only: el bloque de progreso "Paradas atendidas" debe ser
+#    visible siempre que exista una ruta (haya o no banner). Optional
+#    para no fallar en el caso "Sin ruta para hoy".
+- assertVisible:
+    text: "Paradas atendidas"
+    optional: true
+
+- takeScreenshot: aceptar-ruta-05-progreso
+
+# 6) Sesion vendedor sigue activa (tab bar: Hoy, Mapa, Vender, Cobrar, Mas).
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Hoy"
+
+- takeScreenshot: aceptar-ruta-06-flow-completo

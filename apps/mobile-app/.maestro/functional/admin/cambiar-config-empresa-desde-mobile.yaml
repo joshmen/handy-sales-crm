@@ -34,7 +34,7 @@
 #   - Backend mobile-api en :1052
 #   - Usuario admin@jeyma.com debe existir con rol ADMIN y plan PRO/BUSINESS
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: admin - cambiar configuracion empresa desde mobile
 tags:
   - admin
@@ -43,107 +43,13 @@ tags:
   - functional
 ---
 # -----------------------------------------------------------------------------
-# Paso 0 - Launch sin limpiar estado (preservar onboarding ya visto)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-# -----------------------------------------------------------------------------
-# Paso 1 - Manejar modales opcionales (Aviso de Privacidad / permisos OS)
+# Paso 0-5 - Login ADMIN robusto via helper (onboarding + consents + sesion previa)
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-- runFlow:
-    when:
-      visible: "Acepto"
-    commands:
-      - tapOn: "Acepto"
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Logout defensivo si quedo sesion previa
-# -----------------------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "Hoy"
-    commands:
-      - tapOn:
-          text: "Más"
-          optional: true
-      - waitForAnimationToEnd
-      - scroll
-      - tapOn:
-          text: "Cerrar sesión"
-          optional: true
-      - waitForAnimationToEnd
-      - tapOn:
-          text: "Sí, cerrar sesión"
-          optional: true
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Login ADMIN
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-- tapOn:
-    id: "email-input"
-- inputText: "admin@jeyma.com"
-- hideKeyboard
-
-- tapOn:
-    id: "password-input"
-- inputText: "test123"
-- hideKeyboard
-
-- tapOn:
-    id: "login-button"
-
-- takeScreenshot: adm-config-01-login-submitted
-
-# -----------------------------------------------------------------------------
-# Paso 4 - Manejar permisos opcionales del OS post-login
-# -----------------------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-
-# -----------------------------------------------------------------------------
-# Paso 5 - Confirmar dashboard ADMIN cargo
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: adm-config-02-dashboard
 

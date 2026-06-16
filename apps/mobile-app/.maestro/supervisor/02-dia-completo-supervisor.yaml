@@ -1,12 +1,17 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 ---
 
 # ═══════════════════════════════════════════
-# PREREQ: Ya logueado como supervisor@jeyma.com
+# LOGIN COMO SUPERVISOR (helper robusto: onboarding/consent/logout)
 # Tests 03, 04, 05 cubren vender/cobrar completos.
 # Este test verifica navegación integral del supervisor.
 # ═══════════════════════════════════════════
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # ═══════════════════════════════════════════
 # FASE 1: DASHBOARD — verificar KPIs de equipo
@@ -15,24 +20,23 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
+# Dashboard supervisor real (SupervisorDashboard): KPI "Vendedores activos",
+# seccion EQUIPO y ACCIONES RAPIDAS. ("Mi Equipo" es el titulo del TAB Equipo.)
 - extendedWaitUntil:
-    visible: "Mi Equipo"
+    visible: "Vendedores activos"
     timeout: 15000
 
-# KPIs del equipo
-- assertVisible: "Vendedores"
+- assertVisible: "Pedidos hoy"
 - assertVisible: "Ventas mes"
-- assertVisible: "Mi Actividad Personal"
-- assertVisible: "Ruta del Día"
-- assertVisible: "Acciones Rápidas"
+- assertVisible: "ACCIONES RÁPIDAS"
 
 - takeScreenshot: "dia-01-dashboard"
 
 # ═══════════════════════════════════════════
 # FASE 2: EQUIPO — KPIs + lista vendedores
 # ═══════════════════════════════════════════
-- tapOn: "Equipo"
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -76,20 +80,16 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - waitForAnimationToEnd
 
 # ═══════════════════════════════════════════
-# FASE 5: COBRAR — verificar dashboard de cobranza
+# FASE 5: COBRAR — vista AGREGADA del equipo (CobrarAdminContent para supervisor;
+# "Facturado"/"Cobrado"/"Registrar Cobro" son de la vista VENDEDOR, no aplican).
 # ═══════════════════════════════════════════
 - tapOn: "Cobrar"
 - tapOn: "Cobrar"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Facturado"
+    visible: ".*Cobros.*"
     timeout: 10000
-
-- assertVisible: "Cobrado"
-- assertVisible: "Pendiente de Cobro"
-- assertVisible: "Registrar Cobro"
-- assertVisible: "Historial"
 
 - takeScreenshot: "dia-05-cobranza-dashboard"
 
@@ -104,8 +104,10 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
     visible: "Pedidos"
     timeout: 10000
 
-# Verificar que la pantalla de pedidos cargó (lista o vacía)
-- assertVisible: "Todos"
+# Vista agregada del equipo (AdminTenantPedidosList): el chip de rango "Hoy"
+# (testID filtro-rango-hoy) confirma que cargó. No existe filtro "Todos".
+- assertVisible:
+    id: "filtro-rango-hoy"
 
 - takeScreenshot: "dia-06-pedidos-lista"
 
@@ -126,6 +128,8 @@ name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 15000
 
 - takeScreenshot: "dia-08-dashboard-final"

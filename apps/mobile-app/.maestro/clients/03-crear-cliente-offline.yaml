@@ -1,6 +1,14 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Clientes > Crear cliente offline (vendedor) - hot path CRUD"
 ---
+
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ════════════════════════════════════════════════════════════
 # HOT-PATH VENDEDOR: Crear cliente desde mobile.

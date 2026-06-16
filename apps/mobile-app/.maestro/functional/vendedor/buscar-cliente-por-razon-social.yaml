@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Funcional > Vendedor > Buscar cliente por razon social"
 ---
 
@@ -41,39 +41,12 @@ name: "Funcional > Vendedor > Buscar cliente por razon social"
 #          - placeholder "Buscar cliente..."
 # ════════════════════════════════════════════════════════════
 
-# 0. Confirma sesion vendedor (dashboard "Hoy" visible).
-- launchApp:
-    clearState: false
-
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
-# 1. Dismiss modales opcionales (Aviso de Privacidad / promos).
+# 0. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-- runFlow:
-    when:
-      visible: "Cerrar"
-    commands:
-      - tapOn:
-          text: "Cerrar"
-          optional: true
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn:
-          text: "Permitir"
-          optional: true
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: func-vendedor-buscar-razon-00-hoy
 

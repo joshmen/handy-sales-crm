@@ -1,6 +1,14 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Flujo de venta acelerada — Cercanos + Numeric Sheet + Last Metodo"
 ---
+
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ════════════════════════════════════════════════════════════
 # PREREQ: ya logueado como vendedor1@jeyma.com
@@ -25,15 +33,11 @@ name: "Vendedor: Flujo de venta acelerada — Cercanos + Numeric Sheet + Last Me
     id: "fab-nuevo-pedido"
 - waitForAnimationToEnd
 
-# Si modo default es "Preguntar", aparece BottomSheet con opciones.
-# Si el admin ya eligió Preventa/VentaDirecta, salta directo a Cliente.
-- runFlow:
-    when:
-      visible: "Tipo de Venta"
-    commands:
-      - takeScreenshot: "va-01-bottom-sheet-tipo"
-      - tapOn: "Preventa"
-      - waitForAnimationToEnd
+# Selector de modo → Venta Directa: este flujo prueba el pago (Efectivo /
+# "Cobrar y Entregar"), que es el camino de venta directa. Preventa no tiene
+# paso de pago (su revisión es "Registrar Pedido").
+- tapOn: "Venta Directa"
+- waitForAnimationToEnd
 
 # ────────────────────────────────────────────
 # PASO 2: Pantalla Cliente — verificar Cercanos / Recientes
@@ -55,7 +59,7 @@ name: "Vendedor: Flujo de venta acelerada — Cercanos + Numeric Sheet + Last Me
 # ────────────────────────────────────────────
 # PASO 3: Tap primer cliente
 # ────────────────────────────────────────────
-- tapOn: "Abarrotes Don Pancho"
+- tapOn: "Abarrotes La Esquina"
 - waitForAnimationToEnd
 - tapOn: "Continuar"
 - waitForAnimationToEnd
@@ -101,35 +105,23 @@ name: "Vendedor: Flujo de venta acelerada — Cercanos + Numeric Sheet + Last Me
 
 - takeScreenshot: "va-06-revision"
 
-# Verificar que algún método de pago aparece pre-seleccionado.
-# En la primera ejecución del usuario no hay last_metodo_pago_<id>, así
-# que el modal de pago aparecerá. En la segunda ejecución debería estar
-# pre-seleccionado el método de la venta anterior (efectivo por default).
-- assertVisible: "Efectivo"
+# Verificar el total del pedido en la revisión
+- assertVisible: "Total"
 
 # ────────────────────────────────────────────
-# PASO 6: Confirmar venta
+# PASO 6: Cobrar y Entregar → modal de confirmación de venta directa
 # ────────────────────────────────────────────
-- tapOn: "Efectivo"
-- waitForAnimationToEnd
-- tapOn:
-    text: "Cobrar y Entregar|Confirmar|Crear Pedido"
+# El método de pago (Efectivo) NO está en la revisión; tras "Cobrar y Entregar"
+# aparece un modal "¿Confirmar venta directa...? Total: $X" con Cancelar / Cobrar.
+- tapOn: "Cobrar y Entregar"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Venta Completada|Pedido Creado"
-    timeout: 15000
+    visible: "Cancelar"
+    timeout: 10000
 
-- takeScreenshot: "va-07-confirmacion"
+- takeScreenshot: "va-07-confirm-modal"
 
-# ────────────────────────────────────────────
-# PASO 7: Volver al listado y verificar que aparece
-# ────────────────────────────────────────────
-- tapOn: "Listo"
+# NO completamos la venta — evita crear una orden/cobro real en staging.
+- tapOn: "Cancelar"
 - waitForAnimationToEnd
-
-- extendedWaitUntil:
-    visible: "Pedidos"
-    timeout: 15000
-
-- takeScreenshot: "va-08-listado-final"

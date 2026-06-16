@@ -213,18 +213,11 @@ public class ProductoRepository : IProductoRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var entities = await _db.Productos
+        return await _db.Productos
             .Where(p => ids.Contains(p.Id) && p.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var entity in entities)
-        {
-            entity.Activo = activo;
-            entity.ActualizadoEn = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
-        return entities.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     public async Task<bool> ActualizarImagenAsync(int id, string? imagenUrl, int tenantId)

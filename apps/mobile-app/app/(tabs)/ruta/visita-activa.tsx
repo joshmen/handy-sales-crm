@@ -190,6 +190,7 @@ function VisitaActivaScreen() {
               return (
                 <TouchableOpacity
                   key={opt.value}
+                  testID={`resultado-${opt.value}`}
                   style={[styles.resultCard, isSelected && { borderColor: opt.color, backgroundColor: `${opt.color}10` }]}
                   onPress={() => setResultado(opt.value)}
                   activeOpacity={0.7}
@@ -269,6 +270,7 @@ function VisitaActivaScreen() {
         {/* End Visit */}
         <View style={styles.endSection}>
           <Button
+            testID="btn-terminar-visita"
             title="Terminar Visita"
             onPress={handleTerminar}
             variant="danger"

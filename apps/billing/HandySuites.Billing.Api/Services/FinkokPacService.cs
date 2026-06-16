@@ -239,7 +239,7 @@ public class FinkokPacService : IPacService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error consultando get_sat_status para UUID {Uuid}", uuid);
-            return new SatStatusResult { Success = false, ErrorMessage = ex.Message };
+            return new SatStatusResult { Success = false, ErrorMessage = SanitizeErrorMessage(ex.Message, config.PacUsuario, config.PacPassword) };
         }
     }
 

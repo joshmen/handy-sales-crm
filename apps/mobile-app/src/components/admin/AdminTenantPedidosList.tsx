@@ -60,6 +60,7 @@ function AdminTenantPedidosListContent() {
     ({ item, index }: { item: TenantPedidoListItem; index: number }) => (
       <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 30).duration(280)}>
         <TouchableOpacity
+          testID={`pedido-row-${index}`}
           style={styles.card}
           onPress={() => router.push(`/(tabs)/vender/${item.id}` as any)}
           activeOpacity={0.85}
@@ -135,6 +136,7 @@ function AdminTenantPedidosListContent() {
               return (
                 <TouchableOpacity
                   key={pset}
+                  testID={`filtro-rango-${pset}`}
                   onPress={() => setPreset(pset)}
                   style={[styles.presetBtn, active && styles.presetBtnActive]}
                   accessibilityRole="button"

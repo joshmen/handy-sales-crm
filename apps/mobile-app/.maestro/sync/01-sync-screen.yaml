@@ -2,13 +2,16 @@ appId: com.handysuites.app
 name: "Sync - Pantalla con Pendientes"
 ---
 
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
 # Ir al tab Mas
-- tapOn:
-    text: "Más"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+- tapOn: "Más"
 
 - extendedWaitUntil:
     visible:

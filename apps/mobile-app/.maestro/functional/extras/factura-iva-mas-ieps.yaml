@@ -67,7 +67,7 @@
 #   - docker-compose -f docker-compose.dev.yml up -d
 #   - Seed Jeyma con vendedor1@jeyma.com / test123
 # =============================================================================
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Factura IVA+IEPS desglose - RBAC negativo + visibilidad menu"
 tags:
   - vendedor
@@ -80,68 +80,20 @@ tags:
 ---
 
 # -----------------------------------------------------------------------------
-# Paso 1 - Iniciar app sin limpiar estado (reusa sesion si existe)
-# -----------------------------------------------------------------------------
-- launchApp:
-    clearState: false
-
-# -----------------------------------------------------------------------------
-# Paso 2 - Login VENDEDOR (subflow ya existente)
-# -----------------------------------------------------------------------------
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# -----------------------------------------------------------------------------
-# Paso 3 - Dismiss de modales opcionales post-login
+# Paso 1 - Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
 # -----------------------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar|Continuar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# -----------------------------------------------------------------------------
-# Paso 4 - Confirmar que el dashboard del vendedor cargo
-# -----------------------------------------------------------------------------
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 - takeScreenshot: factura-ieps-vendedor-01-dashboard
 
 # -----------------------------------------------------------------------------
 # Paso 5 - Navegar a tab "Mas" (con tilde correcta en "Mas")
 # -----------------------------------------------------------------------------
-- tapOn: "Mas"
+- tapOn: "Más"
 - waitForAnimationToEnd
 
 # El chip "Vendedor" confirma que el rol esta hidratado en (tabs)/mas.tsx
@@ -183,7 +135,7 @@ tags:
 # -----------------------------------------------------------------------------
 - assertVisible: "Impresora"
 - assertVisible: "Mi Perfil"
-- assertVisible: "Configuracion"
+- assertVisible: "Configuración"
 
 # -----------------------------------------------------------------------------
 # Paso 9 - Volver al dashboard para dejar state limpio para flows downstream

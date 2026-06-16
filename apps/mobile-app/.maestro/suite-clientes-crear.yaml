@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+﻿appId: com.handysuites.app
 name: clientes-crear-offline-sync
 ---
 # ============================================================
@@ -34,9 +34,9 @@ name: clientes-crear-offline-sync
 # Paso 1 - Navegar al tab Mas (donde vive Clientes en el menu)
 - runFlow:
     when:
-      visible: "M�s"
+      visible: "Más"
     commands:
-      - tapOn: "M�s"
+      - tapOn: "Más"
 - extendedWaitUntil:
     visible: "Clientes"
     timeout: 30000
@@ -262,13 +262,13 @@ name: clientes-crear-offline-sync
 # Paso 13 - Navegar a Sync para verificar pending count
 - runFlow:
     when:
-      visible: "M�s"
+      visible: "Más"
     commands:
-      - tapOn: "M�s"
+      - tapOn: "Más"
 - extendedWaitUntil:
-    visible: "Sincronizacion"
+    visible: "Sincronización"
     timeout: 30000
-- tapOn: "Sincronizacion"
+- tapOn: "Sincronización"
 - extendedWaitUntil:
     visible: "ESTADO"
     timeout: 30000

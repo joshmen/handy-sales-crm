@@ -1,0 +1,192 @@
+appId: com.handysuites.app
+name: "Vendedor: Check-out visita con resultado No Encontrado"
+tags:
+  - functional
+  - vendedor
+  - ruta
+  - visita
+  - checkout
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: visita-checkout-no-encontrado
+#
+# Rol: vendedor (vendedor1@jeyma.com)
+# Variante de visita-checkout-con-venta: mismo flujo de check-out pero
+# seleccionando el resultado id resultado-3 (No Encontrado) en lugar de
+# "Con Venta".
+#
+# Flujo (entrypoint canonico via Ruta):
+#   dashboard "Hoy" -> card Ruta -> "Ruta del Día"
+#   -> (si aplica) aceptar ruta -> abrir parada Pendiente
+#   -> ParadaDetailScreen auto check-in GPS -> "Iniciar Visita"
+#   -> pantalla "Visita Activa"
+#     -> seleccionar resultado id resultado-3 (No Encontrado)
+#     -> escribir Notas (accessibilityLabel "Notas de la visita")
+#     -> tapOn id btn-terminar-visita "Terminar Visita"
+#     -> ConfirmModal "Terminar Visita" -> id confirm-modal-confirm
+#     -> updateVisitaCheckout(resultado=3) cierra la visita.
+#
+# Idempotencia / estado del seed: identico a la variante con venta. La
+# visita activa requiere ruta + parada Pendiente + GPS para el auto
+# check-in. Todo el bloque de check-out va en when:visible; si NO hay
+# visita activa ("No hay visita activa") el flow degrada sin fallar. La
+# precondicion se crea DENTRO del flow (inicio de visita) y el checkout la
+# cierra, dejando estado limpio.
+#
+# Strings/estados validados contra:
+#   apps/mobile-app/app/(tabs)/ruta/index.tsx (banner aceptar, paradas)
+#   apps/mobile-app/app/(tabs)/ruta/parada/[detalleId].tsx (auto arrive)
+#   apps/mobile-app/app/(tabs)/ruta/visita-activa.tsx
+#     - header "Visita Activa"
+#     - seccion "Resultado de la Visita"
+#     - opcion: testID resultado-3 ("No Encontrado")
+#     - notas: accessibilityLabel "Notas de la visita"
+#     - boton fin: testID btn-terminar-visita "Terminar Visita"
+#     - ConfirmModal: "Terminar Visita" /
+#       "¿Estás seguro de terminar esta visita?" / confirmText "Terminar"
+#     - empty state: "No hay visita activa"
+#
+# Endpoints backend implicados:
+#   POST /api/rutas/{id}/aceptar + /iniciar (si se acepta ruta)
+#   PATCH /api/rutas/detalles/{id}/llegada (auto check-in al abrir parada)
+#   POST /api/visitas (check-in / inicio de visita)
+#   PATCH/POST checkout de visita (updateVisitaCheckout -> push syncEngine)
+#
+# Pre-condicion (seed Jeyma): vendedor1 con ruta de HOY con una parada
+# Pendiente y cliente con GPS. Sin GPS mock el arrive() no dispara y el
+# boton "Iniciar Visita" puede no aparecer -> el flow degrada.
+# =================================================================
+
+# 0) Login VENDEDOR via helper.
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Reset stack -> dashboard root.
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+# 2) Abrir la Ruta del Día desde el card del dashboard. La sección "RUTA DEL
+# DÍA" puede quedar bajo el fold → scroll hasta verla, luego tap (navega a ruta).
+- scrollUntilVisible:
+    element:
+      text: "Ruta"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del Día"
+    timeout: 15000
+
+- takeScreenshot: visita-ne-01-ruta-del-dia
+
+# 3) Caso sin ruta -> degradar.
+- runFlow:
+    when:
+      visible: "Sin ruta para hoy"
+    commands:
+      - takeScreenshot: visita-ne-02-sin-ruta
+
+# 4) Aceptar la ruta si esta pendiente.
+- runFlow:
+    when:
+      visible: "Nueva ruta asignada"
+    commands:
+      - tapOn:
+          id: "btn-aceptar-ruta"
+      - extendedWaitUntil:
+          visible: "Ruta aceptada"
+          timeout: 15000
+      - waitForAnimationToEnd
+
+# 5) Abrir una parada Pendiente (dispara auto check-in GPS al montar).
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - tapOn:
+          text: ".*Pendiente.*"
+          index: 0
+      - waitForAnimationToEnd
+
+# 6) En la parada, iniciar la visita.
+- runFlow:
+    when:
+      visible: "Parada #"
+    commands:
+      - takeScreenshot: visita-ne-03-detalle-parada
+      - runFlow:
+          when:
+            visible: "Iniciar Visita"
+          commands:
+            - tapOn: "Iniciar Visita"
+      - runFlow:
+          when:
+            visible: "Comenzar Visita"
+          commands:
+            - tapOn: "Comenzar Visita"
+
+# 7) Esperar la pantalla "Visita Activa" (si la visita se inicio).
+- extendedWaitUntil:
+    visible: "Visita Activa"
+    timeout: 12000
+    optional: true
+
+# 8) Sin visita activa -> degradar.
+- runFlow:
+    when:
+      visible: "No hay visita activa"
+    commands:
+      - takeScreenshot: visita-ne-04-sin-visita-activa
+
+# 9) CHECK-OUT real (solo si la pantalla cargo). Bloque condicional.
+- runFlow:
+    when:
+      visible: "Resultado de la Visita"
+    commands:
+      - takeScreenshot: visita-ne-05-visita-activa
+
+      # 9a) Seleccionar resultado "No Encontrado" (resultado-3).
+      - tapOn:
+          id: "resultado-3"
+      - takeScreenshot: visita-ne-06-no-encontrado-seleccionado
+
+      # 9b) Escribir Notas de la visita.
+      - tapOn:
+          id: "Notas de la visita"
+      - inputText: "No localice al cliente en el domicilio registrado."
+      - hideKeyboard
+
+      # 9c) Terminar visita.
+      - scrollUntilVisible:
+          element:
+            id: "btn-terminar-visita"
+          direction: DOWN
+          timeout: 12000
+      - tapOn:
+          id: "btn-terminar-visita"
+      - extendedWaitUntil:
+          visible: "¿Estás seguro de terminar esta visita?"
+          timeout: 8000
+      - takeScreenshot: visita-ne-07-confirmar-terminar
+      - tapOn:
+          id: "confirm-modal-confirm"
+      - waitForAnimationToEnd
+
+      # 9d) Tras checkout, router.back(); visita ya no activa, sin error.
+      - assertNotVisible: "No se pudo finalizar la visita"
+      - assertNotVisible: "Visita Activa"
+      - takeScreenshot: visita-ne-08-visita-terminada
+
+# 10) Sesion vendedor activa.
+- assertVisible: "Hoy"
+- assertVisible: "Mapa"
+- assertVisible: "Vender"
+
+- takeScreenshot: visita-ne-09-flow-completo

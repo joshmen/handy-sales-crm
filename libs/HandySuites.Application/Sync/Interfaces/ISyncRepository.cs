@@ -6,9 +6,12 @@ namespace HandySuites.Application.Sync.Interfaces;
 public interface ISyncRepository
 {
     // Pull changes from server since last sync
-    Task<List<Cliente>> GetClientesModifiedSinceAsync(int tenantId, DateTime? since);
-    Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since);
-    Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
+    // maxRecords/afterId: paginacion OPCIONAL. Cuando maxRecords es null el comportamiento
+    // es identico al pull completo actual. Cuando se provee, devuelve registros con
+    // Id > afterId (cursor) y limita a maxRecords resultados.
+    Task<List<Cliente>> GetClientesModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null);
+    Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null);
+    Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since, int? maxRecords = null, int? afterId = null);
     Task<List<ClienteVisita>> GetVisitasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<List<RutaVendedor>> GetRutasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<Dictionary<int, List<RutaCarga>>> GetRutasCargaForRutasAsync(int tenantId, List<int> rutaIds);

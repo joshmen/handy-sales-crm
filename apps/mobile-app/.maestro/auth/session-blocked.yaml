@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Session blocked: login con sesion activa en otro dispositivo muestra Toast y no navega a Hoy"
 ---
 

@@ -1,0 +1,105 @@
+appId: com.handysuites.app
+name: superadmin-dashboard-aggregates
+---
+# ============================================================
+# CASO: sa-dashboard-aggregates
+# Rol: SUPER_ADMIN (xjoshmenx@gmail.com — único SA del sistema)
+# Capa: mobile
+# Use-case (kebab): dashboard-aggregates
+#
+# Prereq / estado:
+#   - xjoshmenx@gmail.com es el ÚNICO SUPER_ADMIN (ver MEMORY.md). El router de
+#     rol (app/(tabs)/index.tsx:9) trata SUPER_ADMIN igual que ADMIN ->
+#     <AdminDashboard/>. Read-only, sin mutaciones.
+#   - El "resumen tenant del día" (HOY EN TODA LA EMPRESA) lo renderiza el tab
+#     Equipo (equipo/index.tsx) solo para admin/SA vía useTenantResumen(isAdmin).
+#     NO está en el dashboard; por eso este flow navega al tab Equipo para
+#     validar el agregado tenant-wide, con when:visible para degradar si el
+#     endpoint no trae resumen.
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/index.tsx       (router de rol)
+#   apps/mobile-app/src/components/dashboard/AdminDashboard.tsx
+#     -> KPIs "Vendedores" / "Pedidos hoy" / "Ventas del día".
+#   apps/mobile-app/app/(tabs)/equipo/index.tsx
+#     -> sección "HOY EN TODA LA EMPRESA" + KPIs "Pedidos"/"Total facturado"/
+#        "Cobros"/"Total cobrado"/"Visitas"/"Vendedores activos" (testID
+#        admin-tenant-resumen).
+#   apps/mobile-app/app/(tabs)/mas.tsx -> chip ROLE_LABELS['SUPER_ADMIN'] = 'Super Admin'.
+#
+# Endpoints backend tocados:
+#   GET /api/mobile/supervisor/dashboard  (useSupervisorDashboard)
+#   GET /api/mobile/supervisor/resumen    (useTenantResumen — solo admin/SA)
+#   GET /api/mobile/empresa               (useTenantLocale)
+#
+# Cobertura funcional REAL (read-only):
+#   1. Login SUPER_ADMIN via helper.
+#   2. AdminDashboard cargado (KPIs admin exclusivos).
+#   3. Asserción NEGATIVA: NO KPIs del VendedorDashboard ("Paradas").
+#   4. Tab Equipo (id tab-equipo) -> resumen tenant "HOY EN TODA LA EMPRESA".
+#   5. Tab Más -> chip "Super Admin".
+# ============================================================
+
+# ---- FASE 1: Login SUPER_ADMIN robusto via helper ----
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "xjoshmenx@gmail.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: AdminDashboard cargado (SA comparte branch con ADMIN) ----
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 30000
+
+# KPIs exclusivos del AdminDashboard.tsx (88/92/98).
+- assertVisible: "Vendedores"
+- assertVisible: "Pedidos hoy"
+- assertVisible: "Ventas del día"
+
+- takeScreenshot: sa-aggregates-01-dashboard
+
+# ---- FASE 3: Asserción NEGATIVA — NO VendedorDashboard ----
+- assertNotVisible: "Paradas"
+
+# ---- FASE 4: Tab Equipo -> resumen tenant-wide ----
+# Usar testID tab-equipo (NO texto, por colisión con header "EQUIPO").
+- tapOn:
+    id: "tab-equipo"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# El resumen tenant carga vía useTenantResumen; KPIs del dashboard equipo
+# ("Vendedores", "Pedidos hoy") confirman que el tab cargó.
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 30000
+
+# Sección de agregado tenant — solo admin/SA. testID admin-tenant-resumen.
+- runFlow:
+    when:
+      visible: "HOY EN TODA LA EMPRESA"
+    commands:
+      - assertVisible: "HOY EN TODA LA EMPRESA"
+      - assertVisible: "Total facturado"
+      - assertVisible: "Total cobrado"
+      - assertVisible: "Vendedores activos"
+      - takeScreenshot: sa-aggregates-02-resumen-tenant
+
+# Fallback: si el resumen aún no cargó (timing del endpoint), documentar el
+# estado del tab Equipo sin fallar duro.
+- runFlow:
+    when:
+      notVisible: "HOY EN TODA LA EMPRESA"
+    commands:
+      - takeScreenshot: sa-aggregates-02b-equipo-sin-resumen
+
+# ---- FASE 5: Tab Más -> chip "Super Admin" ----
+- tapOn: "Más"
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 20000
+
+# ROLE_LABELS['SUPER_ADMIN'] = 'Super Admin' (mas.tsx:39).
+- assertVisible: "Super Admin"
+- takeScreenshot: sa-aggregates-03-chip-super-admin

@@ -1,6 +1,14 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Cobrar - Modo Abono a cuenta FIFO"
 ---
+
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # PR 5 cobros 3 modos: valida modo AbonoFifo (selector + ConfirmModal con
 # titulo "Abono a cuenta" + mensaje de distribucion automatica).
@@ -25,14 +33,15 @@ name: "Cobrar - Modo Abono a cuenta FIFO"
 
 - takeScreenshot: cobrar-modo-fifo-selected
 
-# Modo AbonoFifo filtra clientes con saldo>0 (igual que PorPedido).
+# Modo AbonoFifo filtra clientes con saldo>0 (igual que PorPedido). Abrir
+# picker y tap por nombre (index 0 no era confiable).
 - tapOn:
     text: "Seleccionar cliente"
-    optional: true
-
-- tapOn:
-    index: 0
-    optional: true
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 8000
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
 
 - tapOn:
     text: "0.00"
@@ -42,9 +51,9 @@ name: "Cobrar - Modo Abono a cuenta FIFO"
 
 - takeScreenshot: cobrar-modo-fifo-filled
 
-# Tap Confirmar → ConfirmModal con titulo "Abono a cuenta" + mensaje FIFO
+# Tap Confirmar (botón = "Confirmar Cobro · $X" → regex con comodín)
 - tapOn:
-    text: "Confirmar Cobro"
+    text: "Confirmar Cobro.*"
 
 - extendedWaitUntil:
     visible: "Abono a cuenta"
@@ -52,8 +61,9 @@ name: "Cobrar - Modo Abono a cuenta FIFO"
 
 - assertVisible:
     text: "Abono a cuenta"
+# El body es una frase larga; Maestro hace match completo → regex con comodines.
 - assertVisible:
-    text: "distribuira automaticamente"
+    text: ".*distribuir.*autom.*"
 
 - takeScreenshot: cobrar-modo-fifo-confirmmodal
 

@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Smoke sprint correctivo 2026-06-06"
 # Ejecutado y validado contra emulator-5554 limpio (wipe-data).
 # Flow:

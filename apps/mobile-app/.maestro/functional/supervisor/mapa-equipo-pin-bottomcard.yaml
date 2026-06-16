@@ -1,0 +1,125 @@
+appId: com.handysuites.app
+name: "Supervisor: mapa del equipo (placeholder Expo Go o pin + bottom card)"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-mapa-pin-bottomcard
+# Rol: SUPERVISOR (supervisor@jeyma.com)
+# Capa: mobile (read-only, no muta datos)
+#
+# Objetivo: Abrir el "Mapa del Equipo" desde el tab Equipo (boton
+# testID "ver-mapa") y validar la pantalla en sus dos modos:
+#   A) Expo Go sin Google Maps API key configurada -> placeholder
+#      "Mapas no disponibles en esta versión" (el MapView crashearia,
+#      por eso la pantalla degrada). Este es el camino esperado en el
+#      runner Expo Go habitual.
+#   B) APK con Maps configurado -> MapView con pins. Si aparece la
+#      tarjeta inferior (bottom card) al tocar un pin, navegar al
+#      detalle del vendedor. Rama condicional (no garantizada en CI).
+#   C) Sin ubicaciones GPS -> overlay "Sin ubicaciones".
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/ubicaciones  (consumido por useUbicacionesEquipo)
+#   GET /api/mobile/supervisor/mis-vendedores
+#
+# Pantalla RN:
+#   apps/mobile-app/app/(tabs)/equipo/mapa.tsx
+#   - isGoogleMapsConfigured() false -> placeholder + header "Mapa del Equipo".
+#   - con ubicaciones -> Marker por vendedor; onPress muestra bottomCard con
+#     nombre + "Ver detalle de {nombre}" -> push a equipo/vendedor/{id}.
+#   - sin ubicaciones -> emptyOverlay "Sin ubicaciones".
+#   Acceso: equipo/index.tsx -> boton testID "ver-mapa".
+#
+# Prereq seed: supervisor@jeyma.com supervisa "Vendedor 1 Jeyma".
+# El mapa es read-only y degrada al placeholder en Expo Go, por lo
+# que el flow no depende de pings GPS del seed.
+# ============================================================
+
+# ---- FASE 1: Login SUPERVISOR ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard supervisor cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
+- takeScreenshot: sup-mapa-01-dashboard
+
+# ---- FASE 3: Tab Equipo (testID) ----
+- tapOn:
+    id: "tab-equipo"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 30000
+
+# ---- FASE 4: Abrir "Mapa del Equipo" via boton del header (testID) ----
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Header presente en ambos modos (placeholder y MapView real).
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 20000
+- assertVisible: "Mapa del Equipo"
+- takeScreenshot: sup-mapa-02-pantalla-mapa
+
+# ---- FASE 5A: Expo Go -> placeholder "Mapas no disponibles en esta versión" ----
+- runFlow:
+    when:
+      visible: ".*Mapas no disponibles en esta versi.*n.*"
+    commands:
+      - assertVisible: ".*Mapas no disponibles en esta versi.*n.*"
+      - takeScreenshot: sup-mapa-03a-placeholder-expo-go
+
+# ---- FASE 5B: APK con Maps -> overlay sin ubicaciones ----
+- runFlow:
+    when:
+      visible: "Sin ubicaciones"
+    commands:
+      - assertVisible: "Sin ubicaciones"
+      - takeScreenshot: sup-mapa-03b-sin-ubicaciones
+
+# ---- FASE 5C: APK con Maps + ping del subordinado -> tocar pin -> bottom card ----
+# El Marker no expone testID propio; se intenta tocar el pin por el title
+# (nombre del vendedor) y validar la tarjeta inferior con "Ver detalle de".
+- runFlow:
+    when:
+      visible: "Vendedor 1 Jeyma"
+    commands:
+      - tapOn:
+          text: "Vendedor 1 Jeyma"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            visible: ".*Ver detalle de.*"
+          commands:
+            - takeScreenshot: sup-mapa-03c-bottom-card
+            - tapOn: ".*Ver detalle de.*"
+            - waitForAnimationToEnd:
+                timeout: 4000
+            - extendedWaitUntil:
+                visible: "Detalle Vendedor"
+                timeout: 15000
+            - assertVisible: "Detalle Vendedor"
+            - takeScreenshot: sup-mapa-03d-detalle-desde-pin
+            - back
+            - waitForAnimationToEnd:
+                timeout: 3000
+
+# ---- FASE 6: Volver al tab Equipo (cierre suave) ----
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: "VENDEDORES"
+    timeout: 15000
+- assertVisible: "VENDEDORES"
+- takeScreenshot: sup-mapa-04-cierre-equipo

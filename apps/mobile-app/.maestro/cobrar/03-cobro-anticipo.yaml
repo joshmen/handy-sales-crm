@@ -1,6 +1,14 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Cobrar - Modo Anticipo (saldo a favor)"
 ---
+
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # PR 5 cobros 3 modos: valida que el selector "Anticipo" funcione + el
 # ConfirmModal muestre el titulo de saldo a favor. NO confirma el cobro
@@ -36,14 +44,14 @@ name: "Cobrar - Modo Anticipo (saldo a favor)"
 
 - takeScreenshot: cobrar-modo-anticipo-selected
 
-# Seleccionar cualquier cliente (modo Anticipo no filtra por saldo)
+# Seleccionar cliente: abrir picker y tap por nombre (index 0 no era confiable)
 - tapOn:
     text: "Seleccionar cliente"
-    optional: true
-
-- tapOn:
-    index: 0
-    optional: true
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 8000
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
 
 # Ingresar monto
 - tapOn:
@@ -54,9 +62,9 @@ name: "Cobrar - Modo Anticipo (saldo a favor)"
 
 - takeScreenshot: cobrar-modo-anticipo-filled
 
-# Tap Confirmar Cobro → debe abrir ConfirmModal con titulo "Cobro como saldo a favor"
+# Tap Confirmar Cobro (botón = "Confirmar Cobro · $X" → regex con comodín)
 - tapOn:
-    text: "Confirmar Cobro"
+    text: "Confirmar Cobro.*"
 
 - extendedWaitUntil:
     visible: "Cobro como saldo a favor"
@@ -64,8 +72,9 @@ name: "Cobrar - Modo Anticipo (saldo a favor)"
 
 - assertVisible:
     text: "Cobro como saldo a favor"
+# El body es una frase larga; Maestro hace match completo → regex con comodines.
 - assertVisible:
-    text: "quedara como saldo a favor"
+    text: ".*quedara como saldo a favor.*"
 
 - takeScreenshot: cobrar-modo-anticipo-confirmmodal
 

@@ -429,6 +429,20 @@ public class FinkokPacServiceTests
         Assert.Contains("satisfactoriamente", result.CodigoEstatus ?? "");
     }
 
+    [Fact]
+    public async Task GetSatStatusAsync_DeberiaSanitizarCredenciales_CuandoHttpFalla()
+    {
+        // El mensaje de la excepción contiene credenciales que deben removerse del result.
+        var service = CreateServiceThatThrows(new HttpRequestException("Auth failed for test-user with secret test-pass"));
+
+        var result = await service.GetSatStatusAsync("uuid-x", "EKU9003173C9", "XAXX010101000", 100m, SandboxConfig());
+
+        Assert.False(result.Success);
+        Assert.DoesNotContain("test-pass", result.ErrorMessage ?? "");
+        Assert.DoesNotContain("test-user", result.ErrorMessage ?? "");
+        Assert.Contains("[REDACTED]", result.ErrorMessage ?? "");
+    }
+
     // ========== Sanitización indirecta vía CancelarAsync ==========
 
     [Fact]

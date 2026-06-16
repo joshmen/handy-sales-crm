@@ -1,0 +1,102 @@
+appId: com.handysuites.app
+name: "Funcional > Extras > Facturas supervisor (positivo): Mas > Facturas > detalle"
+---
+
+# ════════════════════════════════════════════════════════════
+# rol: SUPERVISOR (supervisor@jeyma.com)
+# use-case: facturas-supervisor-positivo
+# prereq:
+#   - Tenant Jeyma con facturacion habilitada (facturacionEnabled=true).
+#     El item "Facturas" del menu Mas SOLO aparece si facturacionEnabled
+#     && rol in (ADMIN|SUPER_ADMIN|SUPERVISOR). Ver app/(tabs)/mas.tsx L84.
+#   - Idealmente >= 1 factura timbrada en el tenant para que factura-row-0
+#     exista. Si no hay facturas, la pantalla muestra EmptyState "Sin facturas"
+#     y el flow DEGRADA sin fallar (assert del header en su lugar).
+# endpoints backend tocados:
+#   - GET /api/mobile/facturas        (lista, useFacturasList)
+#   - GET /api/mobile/facturas/{id}   (detalle, al tapOn factura-row-0)
+#
+# CASO POSITIVO (no RBAC-negativo): el supervisor SI debe ver Facturas
+# cuando el tenant tiene facturacion. Strings validados contra
+# app/(tabs)/facturas/index.tsx (header "Facturas", EmptyState
+# title "Sin facturas", message "...portal web aparecerán aquí",
+# factura-row-{index}, estado badge TIMBRADA/PENDIENTE/CANCELADA).
+# ════════════════════════════════════════════════════════════
+
+# 0. Login SUPERVISOR via helper (deja la app en el dashboard "Hoy").
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: facturas-sup-00-dashboard
+
+# 1. Abrir el tab Mas (acceso a Clientes/Productos/.../Facturas).
+- tapOn:
+    text: "Más"
+- waitForAnimationToEnd
+
+# 2. Localizar y abrir "Facturas". Solo existe si facturacionEnabled.
+#    Si el tenant NO tiene facturacion, el item no aparece → DEGRADAR.
+- runFlow:
+    when:
+      visible: "Facturas"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Facturas"
+          direction: DOWN
+          timeout: 15000
+      - tapOn:
+          text: "Facturas"
+      - waitForAnimationToEnd
+
+      # 3. Confirmar que aterrizamos en la pantalla de Facturas (header).
+      - extendedWaitUntil:
+          visible: "Facturas"
+          timeout: 15000
+      - takeScreenshot: facturas-sup-01-lista
+
+      # 4a. RAMA POSITIVA — hay al menos una factura: abrir el detalle.
+      - runFlow:
+          when:
+            visible:
+              id: "factura-row-0"
+          commands:
+            - tapOn:
+                id: "factura-row-0"
+            - waitForAnimationToEnd
+            # Detalle de factura: debe mostrar algun dato CFDI. Aceptamos
+            # cualquiera de los estados/labels tipicos del detalle.
+            - extendedWaitUntil:
+                visible:
+                  text: ".*(TIMBRADA|PENDIENTE|CANCELADA|Folio|Receptor|UUID|Total|Serie).*"
+                timeout: 15000
+            - assertVisible:
+                text: ".*(TIMBRADA|PENDIENTE|CANCELADA|Folio|Receptor|UUID|Total|Serie).*"
+            - takeScreenshot: facturas-sup-02-detalle
+
+      # 4b. RAMA DEGRADADA — sin facturas en el tenant: EmptyState.
+      - runFlow:
+          when:
+            notVisible:
+              id: "factura-row-0"
+          commands:
+            - assertVisible: "Sin facturas"
+            - assertVisible:
+                text: ".*portal web aparecerán aquí.*"
+            - takeScreenshot: facturas-sup-02-empty-state
+
+# 5. RAMA DEGRADADA GLOBAL — facturacion deshabilitada: el item nunca aparece.
+#    No fallar; documentar via screenshot del menu Mas.
+- runFlow:
+    when:
+      notVisible: "Facturas"
+    commands:
+      - takeScreenshot: facturas-sup-99-sin-item-facturacion-off
+      # KNOWN-LIMITATION: este flow requiere facturacionEnabled=true en el
+      # plan/tenant Jeyma. Si el seed no lo activa, habilitar con:
+      #   UPDATE subscription_plans SET incluye_facturacion = true
+      #     WHERE codigo IN ('PRO','BUSINESS');
+      # (o el flag equivalente que alimenta useFacturacionEnabled).

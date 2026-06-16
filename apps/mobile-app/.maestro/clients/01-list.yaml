@@ -1,10 +1,25 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Clientes - Lista"
 ---
 
-# Ir al tab Clientes
+# Login VENDEDOR via helper (la sesion NO persiste en cold-start: el runner
+# relanza a la pantalla de login). Deja el dashboard "Hoy" cargado.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# Clientes ya no es bottom tab — vive bajo el tab "Más" → NAVEGACIÓN
+- tapOn: "Más"
+
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 15000
+
 - tapOn: "Clientes"
 
+# Pantalla de Clientes cargada
 - extendedWaitUntil:
     visible: "Clientes"
     timeout: 15000

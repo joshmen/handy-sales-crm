@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Aplicar cupon/promocion a pedido"
 tags:
   - functional
@@ -60,38 +60,13 @@ tags:
 # =================================================================
 
 # ----------------------------------------------------------------
-# 0) Dismiss modales opcionales
+# 0) Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
 # ----------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ----------------------------------------------------------------
 # 1) Reset nav -> tab Vender
@@ -142,8 +117,10 @@ tags:
 
 - waitForAnimationToEnd
 
+# El título real del BottomSheet de modo de venta es "¿Qué tipo de pedido?"
+# (src/hooks/useCreateOrderFlow.tsx línea 91), no "Tipo de Venta".
 - extendedWaitUntil:
-    visible: "Tipo de Venta"
+    visible: "¿Qué tipo de pedido?"
     timeout: 10000
 - assertVisible: "Preventa"
 - tapOn: "Preventa"

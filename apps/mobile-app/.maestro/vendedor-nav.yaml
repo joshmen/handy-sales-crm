@@ -1,8 +1,8 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor Nav All"
 ---
 - tapOn: "Vender"
 - tapOn: "Cobrar"
 - tapOn: "Mapa"
-- tapOn: "Mas"
+- tapOn: "Más"
 - tapOn: "Hoy"

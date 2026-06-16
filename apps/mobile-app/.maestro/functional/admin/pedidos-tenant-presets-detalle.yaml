@@ -1,0 +1,156 @@
+appId: com.handysuites.app
+name: "Admin: pedidos tenant-wide, recorrer presets Hoy/Ayer/7d/30d + abrir detalle"
+---
+# ============================================================
+# CASO: adm-pedidos-tenant-presets-detalle
+# Rol: ADMIN (admin@jeyma.com)
+# Capa: mobile
+# Use-case (kebab): pedidos-tenant-presets-detalle
+#
+# Prereq / estado:
+#   - Seed Jeyma con pedidos de vendedores del tenant. La presencia de filas
+#     depende del preset/día seleccionado; por eso el tap al detalle va
+#     envuelto en when:visible: pedido-row-0 (degrada si la lista está vacía).
+#   - Read-only: solo navega presets y abre un detalle. No confirma/cancela.
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/vender/index.tsx (branch ADMIN)
+#   apps/mobile-app/src/components/admin/AdminTenantPedidosList.tsx
+#     -> Header labelByPreset: "Pedidos hoy" / "Pedidos ayer" /
+#        "Pedidos últimos 7 días" / "Pedidos últimos 30 días".
+#     -> Subtítulo "{N} pedidos en toda la empresa" (smoking gun tenant-wide).
+#     -> Chips testID filtro-rango-{hoy,ayer,7d,30d}; filas pedido-row-{index}.
+#
+# Endpoints backend tocados:
+#   GET /api/mobile/supervisor/pedidos?rango=7d|30d  o  ?dia=YYYY-MM-DD
+#     (hook useTenantPedidos)
+#   GET /api/mobile/empresa  (useTenantLocale)
+#
+# Cobertura funcional REAL:
+#   1. Login ADMIN via helper.
+#   2. Tab Vender -> branch admin (AdminTenantPedidosList), preset default "hoy".
+#   3. Subtítulo ".*en toda la empresa.*" -> confirma fetch tenant-wide.
+#   4. Recorrer presets Ayer / 7d / 30d -> header cambia al label correcto.
+#   5. Volver a Hoy y abrir pedido-row-0 (si existe) -> detalle.
+#   6. No-leak cross-tenant: NO aparecen "Admin Huichol" / "Admin Centro".
+# ============================================================
+
+# ---- FASE 1: Login ADMIN robusto via helper ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard ADMIN cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 30000
+- assertVisible: "Vendedores"
+
+# ---- FASE 3: Tab Vender -> branch ADMIN (AdminTenantPedidosList) ----
+# Doble tap resetea el stack del tab si quedó un detalle abierto.
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Default preset = 'hoy'. Header exacto "Pedidos hoy".
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 30000
+- assertVisible: "Pedidos hoy"
+
+# Smoking gun de fetch tenant-wide. El texto real es "{N} pedidos en toda la
+# empresa"; Maestro ancla al string completo, usar comodines.
+- assertVisible: ".*en toda la empresa.*"
+
+# Chips de preset presentes.
+- assertVisible:
+    id: "filtro-rango-hoy"
+- assertVisible:
+    id: "filtro-rango-ayer"
+- assertVisible:
+    id: "filtro-rango-7d"
+- assertVisible:
+    id: "filtro-rango-30d"
+
+- takeScreenshot: adm-pedidos-presets-01-hoy
+
+# ---- FASE 4: Preset "Ayer" -> header "Pedidos ayer" ----
+- tapOn:
+    id: "filtro-rango-ayer"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos ayer"
+    timeout: 30000
+- assertVisible: "Pedidos ayer"
+- takeScreenshot: adm-pedidos-presets-02-ayer
+
+# ---- FASE 5: Preset "7 días" -> header "Pedidos últimos 7 días" ----
+- tapOn:
+    id: "filtro-rango-7d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos últimos 7 días"
+    timeout: 30000
+- assertVisible: "Pedidos últimos 7 días"
+- takeScreenshot: adm-pedidos-presets-03-7d
+
+# ---- FASE 6: Preset "30 días" -> header "Pedidos últimos 30 días" ----
+- tapOn:
+    id: "filtro-rango-30d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos últimos 30 días"
+    timeout: 30000
+- assertVisible: "Pedidos últimos 30 días"
+- takeScreenshot: adm-pedidos-presets-04-30d
+
+# ---- FASE 7: No-leak cross-tenant ----
+# "Admin Huichol" / "Admin Centro" pertenecen a OTROS tenants. Si aparecen
+# como autor de un pedido, /api/mobile/supervisor/pedidos no está scopeado.
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+
+# ---- FASE 8: Volver a Hoy y abrir un pedido (si existe) ----
+- tapOn:
+    id: "filtro-rango-hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 30000
+
+# El detalle se abre solo si hay filas en el preset Hoy. Degrada si no hay.
+- runFlow:
+    when:
+      visible:
+        id: "pedido-row-0"
+    commands:
+      - tapOn:
+          id: "pedido-row-0"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      # El detalle de pedido no debe mostrar error de red al abrir cross-vendedor.
+      - assertNotVisible: "Sin conexión"
+      - assertNotVisible: "Failed"
+      - takeScreenshot: adm-pedidos-presets-05-detalle
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: "Pedidos hoy"
+          timeout: 15000
+
+# Fallback: lista vacía en Hoy -> documentar empty state.
+- runFlow:
+    when:
+      visible: ".*Sin pedidos.*"
+    commands:
+      - takeScreenshot: adm-pedidos-presets-05b-empty
+
+- takeScreenshot: adm-pedidos-presets-06-cierre

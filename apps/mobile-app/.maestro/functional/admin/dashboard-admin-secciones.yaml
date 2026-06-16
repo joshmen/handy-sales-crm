@@ -1,0 +1,85 @@
+appId: com.handysuites.app
+name: "Admin: dashboard Hoy con KPIs + secciones SUPERVISORES / TOP VENDEDORES"
+---
+# ============================================================
+# CASO: adm-dashboard-secciones
+# Rol: ADMIN (admin@jeyma.com)
+# Capa: mobile
+# Use-case (kebab): dashboard-admin-secciones
+#
+# Prereq / estado:
+#   - Seed Jeyma: admin@jeyma.com supervisa vendedores; useSupervisorDashboard
+#     y useMisVendedores devuelven datos. Read-only, no muta nada.
+#   - El dashboard renderizado depende del rol vía app/(tabs)/index.tsx:
+#     role ADMIN/SUPER_ADMIN -> <AdminDashboard/>.
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/index.tsx  (router de rol)
+#   apps/mobile-app/src/components/dashboard/AdminDashboard.tsx
+#     -> KPIs "Vendedores" / "Pedidos hoy" / "Ventas del día"
+#     -> Secciones "SUPERVISORES", "TOP VENDEDORES", "ACCIONES RÁPIDAS"
+#   NOTA: el "resumen tenant del día" (HOY EN TODA LA EMPRESA) vive en el
+#   tab Equipo (equipo/index.tsx), NO en el dashboard. Aquí solo se valida
+#   el AdminDashboard. La validación del resumen tenant va aparte.
+#
+# Endpoints backend tocados:
+#   GET /api/mobile/supervisor/dashboard   (useSupervisorDashboard)
+#   GET /api/mobile/supervisor/vendedores  (useMisVendedores)
+#   GET /api/mobile/empresa                (useTenantLocale)
+#
+# Cobertura funcional REAL (read-only):
+#   1. Login ADMIN via helper.
+#   2. KPIs admin exclusivos visibles ("Vendedores", "Pedidos hoy",
+#      "Ventas del día") — confirman branch AdminDashboard (no Vendedor).
+#   3. Secciones del AdminDashboard: SUPERVISORES, TOP VENDEDORES,
+#      ACCIONES RÁPIDAS.
+#   4. Asserción NEGATIVA: NO aparecen KPIs exclusivos del VendedorDashboard
+#      ("Paradas") — pin contra regresión del router de rol.
+#   5. Chip de rol "Administrador" en el tab Más.
+# ============================================================
+
+# ---- FASE 1: Login ADMIN robusto via helper ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "admin@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: AdminDashboard cargado (KPIs con latencia de red) ----
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 30000
+
+# KPIs exclusivos del AdminDashboard.tsx (líneas 88/92/98). Tilde correcto
+# en "Ventas del día" (regla UI en español de CLAUDE.md).
+- assertVisible: "Vendedores"
+- assertVisible: "Pedidos hoy"
+- assertVisible: "Ventas del día"
+
+- takeScreenshot: adm-dashboard-01-kpis
+
+# ---- FASE 3: Secciones del AdminDashboard ----
+# Las labels son uppercase en el componente (textTransform no aplica al match
+# de Maestro, que ya es case-insensitive; el string fuente es uppercase).
+- assertVisible: "SUPERVISORES"
+- assertVisible: "TOP VENDEDORES"
+- assertVisible: "ACCIONES RÁPIDAS"
+
+- takeScreenshot: adm-dashboard-02-secciones
+
+# ---- FASE 4: Asserción NEGATIVA — NO es el VendedorDashboard ----
+# "Paradas" es KPI exclusivo del VendedorDashboard; si aparece, el router
+# de rol cayó al fallback vendedor.
+- assertNotVisible: "Paradas"
+
+- takeScreenshot: adm-dashboard-03-no-vendedor-kpis
+
+# ---- FASE 5: Chip de rol "Administrador" en tab Más ----
+# ROLE_LABELS['ADMIN'] = 'Administrador' (mas.tsx:40).
+- tapOn: "Más"
+- extendedWaitUntil:
+    visible: "NAVEGACIÓN"
+    timeout: 20000
+
+- assertVisible: "Administrador"
+- takeScreenshot: adm-dashboard-04-chip-rol

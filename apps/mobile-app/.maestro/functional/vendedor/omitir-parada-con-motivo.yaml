@@ -1,0 +1,168 @@
+appId: com.handysuites.app
+name: "Vendedor: Omitir parada con motivo (No se visito)"
+tags:
+  - functional
+  - vendedor
+  - ruta
+  - parada
+  - omitir
+---
+# =================================================================
+# E2E FUNCTIONAL — VENDEDOR
+# Use case: omitir-parada-con-motivo
+#
+# Rol: vendedor (vendedor1@jeyma.com)
+# Flujo:
+#   dashboard "Hoy" -> card Ruta -> "Ruta del Día"
+#   -> (si aplica) aceptar ruta -> abrir una parada de preventa
+#   -> en la parada (preventa): boton id btn-no-visito "No se visitó"
+#   -> abre modal "No se visitó" con TextInput (minimo 10 caracteres)
+#   -> escribir motivo >= 10 chars -> confirmar con accessibilityLabel
+#      "Confirmar No se visitó" (el boton queda disabled si < 10 chars)
+#   -> stop.skip(reason): Pendiente/EnProgreso -> Omitida (estado 3)
+#   -> navega de vuelta a la lista; la parada queda "Omitida".
+#
+# Idempotencia: TODO condicional (when:visible). Mutar (omitir) solo
+# ocurre si la parada es de PREVENTA y esta Pendiente/En Progreso (boton
+# btn-no-visito solo se renderiza en ese caso). Si la parada es delivery,
+# o ya esta Completada/Omitida, no hay boton -> el flow degrada sin
+# fallar. NO crea precondicion destructiva fuera del flujo real.
+#
+# Strings/estados validados contra:
+#   apps/mobile-app/app/(tabs)/ruta/index.tsx (banner aceptar, paradas)
+#   apps/mobile-app/app/(tabs)/ruta/parada/[detalleId].tsx
+#     - header: "Parada #{orden}"
+#     - boton preventa: testID btn-no-visito, title "No se visitó"
+#     - modal: titulo "No se visitó",
+#       mensaje "Indica el motivo (mínimo 10 caracteres):"
+#     - input accessibilityLabel "Motivo de no visita"
+#     - confirmar accessibilityLabel "Confirmar No se visitó"
+#       (disabled mientras noVisitoReason.length < 10)
+#     - cancelar accessibilityLabel "Cancelar No se visitó"
+#
+# Endpoints backend implicados:
+#   POST /api/rutas/{id}/aceptar + /iniciar (si se acepta ruta)
+#   PATCH /api/rutas/detalles/{id}/llegada (auto check-in al abrir parada)
+#   PATCH /api/rutas/detalles/{id}/omitir  (stop.skip -> Omitida)
+#   (la parte movil se empuja via syncEngine)
+#
+# Pre-condicion (seed Jeyma): vendedor1 con ruta de HOY que incluya al
+# menos una parada de PREVENTA Pendiente. Sin ruta o sin paradas el flow
+# degrada (asserts optional + when:visible).
+# =================================================================
+
+# 0) Login VENDEDOR via helper.
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+# 1) Reset stack -> dashboard root.
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+# 2) Abrir "Ruta del Día" desde el card de ruta.
+- scrollUntilVisible:
+    element:
+      text: "Ruta"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Ruta"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ruta del Día"
+    timeout: 15000
+
+- takeScreenshot: omitir-parada-01-ruta-del-dia
+
+# 3) Caso sin ruta -> degradar.
+- runFlow:
+    when:
+      visible: "Sin ruta para hoy"
+    commands:
+      - takeScreenshot: omitir-parada-02-sin-ruta
+
+# 4) Si la ruta esta pendiente de aceptar, aceptarla primero.
+- runFlow:
+    when:
+      visible: "Nueva ruta asignada"
+    commands:
+      - tapOn:
+          id: "btn-aceptar-ruta"
+      - extendedWaitUntil:
+          visible: "Ruta aceptada"
+          timeout: 15000
+      - waitForAnimationToEnd
+
+# 5) Abrir una parada Pendiente. El stopItem expone accessibilityLabel
+#    "Parada {orden}: {cliente}, Pendiente". Fallback por texto "Pendiente".
+- runFlow:
+    when:
+      visible: "Pendiente"
+    commands:
+      - tapOn:
+          text: ".*Pendiente.*"
+          index: 0
+      - waitForAnimationToEnd
+
+# 6) Esperar la pantalla Parada (header "Parada #N").
+- runFlow:
+    when:
+      visible: "Parada #"
+    commands:
+      - takeScreenshot: omitir-parada-03-detalle-parada
+
+      # 7) El boton "No se visitó" (btn-no-visito) solo existe en paradas
+      #    de PREVENTA activas. Si es delivery o ya cerrada, degradar.
+      - runFlow:
+          when:
+            visible:
+              id: "btn-no-visito"
+          commands:
+            - tapOn:
+                id: "btn-no-visito"
+            - extendedWaitUntil:
+                visible: "Indica el motivo (mínimo 10 caracteres):"
+                timeout: 10000
+            - takeScreenshot: omitir-parada-04-modal-motivo
+
+            # 8) Escribir motivo >= 10 caracteres en el TextInput.
+            - tapOn:
+                id: "Motivo de no visita"
+            - inputText: "Cliente cerrado, no habia quien recibiera el pedido"
+            - hideKeyboard
+            - takeScreenshot: omitir-parada-05-motivo-escrito
+
+            # 9) Confirmar (boton habilitado solo con >= 10 chars).
+            - tapOn:
+                id: "Confirmar No se visitó"
+            - waitForAnimationToEnd
+
+            # 10) Tras skip, regresa a "Ruta del Día"; la parada queda
+            #     "Omitida". No debe haber error.
+            - extendedWaitUntil:
+                visible: "Ruta del Día"
+                timeout: 15000
+            - assertNotVisible: "No se pudo marcar la parada."
+            - assertVisible:
+                text: "Omitida"
+                optional: true
+            - takeScreenshot: omitir-parada-06-parada-omitida
+
+# 11) Si nunca se abrio una parada de preventa, regresar a la lista.
+- runFlow:
+    when:
+      visible: "Parada #"
+    commands:
+      - back
+      - waitForAnimationToEnd
+
+# 12) Sesion vendedor activa.
+- assertVisible: "Vender"
+- assertVisible: "Cobrar"
+- assertVisible: "Hoy"
+
+- takeScreenshot: omitir-parada-07-flow-completo

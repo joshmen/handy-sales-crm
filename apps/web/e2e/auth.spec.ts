@@ -47,6 +47,23 @@ test.describe('Authentication', () => {
     // Use force click to bypass any overlay
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
 
+    // El usuario de test puede arrastrar una sesión previa (zombie) → la app
+    // muestra el modal "Ya tienes una sesión abierta" con "Continuar aquí"
+    // (comportamiento correcto de single-session). Lo aceptamos para continuar
+    // al dashboard, igual que fillLoginForm en helpers/auth.ts.
+    const continueBtn = page.getByRole('button', { name: /Continuar aqu[ií]|Cerrar sesión anterior/i });
+    try {
+      await Promise.race([
+        page.waitForURL(/dashboard/, { timeout: 10000 }),
+        continueBtn.waitFor({ state: 'visible', timeout: 10000 }),
+      ]);
+    } catch {
+      // Ninguno aún
+    }
+    if (await continueBtn.isVisible().catch(() => false)) {
+      await continueBtn.click();
+    }
+
     // Should redirect to dashboard after login
     await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
   });

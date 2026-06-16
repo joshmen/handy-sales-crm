@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Registrar dos cobros consecutivos (multiple payments) end-to-end"
 tags:
   - vendedor
@@ -25,35 +25,12 @@ tags:
 #   - Sesión inicial NO requerida: este flow ejecuta login subflow
 # ════════════════════════════════════════════════════════════════════
 
-# 1. Login VENDEDOR (subflow)
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# 2. Dismiss de modales opcionales post-login (permisos, recordatorios)
+# 1. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# 3. Verificar dashboard cargado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ════════════════════════════════════════════════════════════════════
 # HUB DE COBRANZA
@@ -110,10 +87,10 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "Abarrotes"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -150,12 +127,11 @@ tags:
 # ConfirmModal — el título se repite "Confirmar Cobro" y el body trae
 # "Registrar cobro de $X a CLIENTE". Tap el botón "Confirmar" del modal.
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 # Recibo del Cobro #1
 - extendedWaitUntil:
@@ -201,12 +177,12 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
 # Búsqueda genérica para listar varios clientes; tomamos el primer
 # chevron-right (primer cliente con saldo en la lista).
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "a"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -235,12 +211,11 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 
 # Recibo del Cobro #2
 - extendedWaitUntil:

@@ -512,6 +512,25 @@ public class StripeService : IStripeService
             .FirstOrDefaultAsync(t => t.StripeCustomerId == invoice.Customer.Id);
         if (tenant == null) return;
 
+        // Guard: if the invoice belongs to a specific subscription, verify it matches
+        // the tenant's active subscription. A customer can have multiple subscriptions
+        // (e.g., after cancel/reactivate cycles), and we must not extend the wrong tenant.
+        //
+        // Unit-test note: testing this guard requires constructing a real Stripe.Event with
+        // a properly deserialized Invoice (Stripe SDK uses custom JSON converters for
+        // expandable fields). There is no existing webhook test harness in this project.
+        // To add tests, use StripeEntity.FromJson<Invoice>(json) with real Stripe JSON
+        // payloads and mock IStripeService or invoke HandleInvoicePaid via reflection.
+        if (!string.IsNullOrEmpty(invoice.SubscriptionId)
+            && !string.IsNullOrEmpty(tenant.StripeSubscriptionId)
+            && invoice.SubscriptionId != tenant.StripeSubscriptionId)
+        {
+            _logger.LogWarning(
+                "invoice.paid ignored: invoice subscription {InvoiceSubId} does not match tenant {TenantId} active subscription {TenantSubId}. Possible duplicate/legacy subscription.",
+                invoice.SubscriptionId, tenant.Id, tenant.StripeSubscriptionId);
+            return;
+        }
+
         // Extend subscription (also handles trial → paid conversion)
         tenant.SubscriptionStatus = "Active";
         tenant.FechaSuscripcion ??= DateTime.UtcNow;

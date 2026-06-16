@@ -172,18 +172,11 @@ public class PromocionRepository : IPromocionRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var entities = await _db.Promociones
+        return await _db.Promociones
             .Where(p => ids.Contains(p.Id) && p.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var entity in entities)
-        {
-            entity.Activo = activo;
-            entity.ActualizadoEn = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
-        return entities.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     public async Task<bool> ExisteNombreAsync(string nombre, int tenantId, int? excludeId = null)

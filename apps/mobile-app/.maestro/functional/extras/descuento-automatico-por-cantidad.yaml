@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor: Descuento automatico por volumen (cantidad minima)"
 tags:
   - functional
@@ -49,66 +49,14 @@ tags:
 # calculados) sigue siendo testeable.
 # =================================================================
 
-- launchApp:
-    clearState: false
-
 # ----------------------------------------------------------------
-# 0) Dismiss modales opcionales
+# 1) Login VENDEDOR via helper robusto (deja la app en el dashboard "Hoy")
 # ----------------------------------------------------------------
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Más tarde"
-    commands:
-      - tapOn: "Más tarde"
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-- runFlow:
-    when:
-      visible: "While using the app"
-    commands:
-      - tapOn: "While using the app"
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-
-# ----------------------------------------------------------------
-# 1) Login VENDEDOR si todavia no hay sesion
-# ----------------------------------------------------------------
-- runFlow:
-    when:
-      visible: "Iniciar Sesi"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText: 50
-      - inputText: "vendedor1@jeyma.com"
-      - hideKeyboard
-      - tapOn:
-          id: "password-input"
-          retryTapIfNoChange: true
-      - eraseText: 50
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-      - extendedWaitUntil:
-          visible: "Hoy"
-          timeout: 45000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # ----------------------------------------------------------------
 # 2) Reset nav -> tab Vender
@@ -159,8 +107,10 @@ tags:
 
 - waitForAnimationToEnd
 
+# El título real del BottomSheet de modo de venta es "¿Qué tipo de pedido?"
+# (src/hooks/useCreateOrderFlow.tsx línea 91), no "Tipo de Venta".
 - extendedWaitUntil:
-    visible: "Tipo de Venta"
+    visible: "¿Qué tipo de pedido?"
     timeout: 10000
 - assertVisible: "Preventa"
 - tapOn: "Preventa"

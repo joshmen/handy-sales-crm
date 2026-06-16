@@ -11,7 +11,7 @@ public static class SubscriptionPlanAdminEndpoints
     public static void MapSubscriptionPlanAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/superadmin/subscription-plans")
-            .RequireAuthorization()
+            .RequireAuthorization(policy => policy.RequireRole("SUPER_ADMIN"))
             .RequireCors("HandySuitesPolicy");
 
         group.MapGet("/", GetAll)

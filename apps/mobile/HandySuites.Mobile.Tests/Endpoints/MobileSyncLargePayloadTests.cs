@@ -64,11 +64,11 @@ public class MobileSyncLargePayloadTests
     private void SetupEmptyPullDefaults()
     {
         // El test es PUSH-heavy. Pull devuelve vacios para no contaminar el summary.
-        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Cliente>());
-        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Producto>());
-        _repo.Setup(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Pedido>());
         _repo.Setup(r => r.GetVisitasModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
             .ReturnsAsync(new List<ClienteVisita>());

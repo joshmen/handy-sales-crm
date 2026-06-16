@@ -133,18 +133,11 @@ public class MetaVendedorRepository : IMetaVendedorRepository
 
     public async Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId)
     {
-        var metas = await _db.MetasVendedor
+        return await _db.MetasVendedor
             .Where(m => ids.Contains(m.Id) && m.TenantId == tenantId)
-            .ToListAsync();
-
-        foreach (var meta in metas)
-        {
-            meta.Activo = activo;
-            meta.ActualizadoEn = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
-        return metas.Count;
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.Activo, activo)
+                .SetProperty(e => e.ActualizadoEn, DateTime.UtcNow));
     }
 
     public async Task<List<MetaVendedorDto>> GetActivasParaPeriodoAsync(DateTime fecha, int tenantId)

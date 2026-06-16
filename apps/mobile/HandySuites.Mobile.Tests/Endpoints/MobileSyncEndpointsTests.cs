@@ -58,11 +58,11 @@ public class MobileSyncEndpointsTests
 
     private void SetupEmptyPullDefaults()
     {
-        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetClientesModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Cliente>());
-        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetProductosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Producto>());
-        _repo.Setup(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
+        _repo.Setup(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<Pedido>());
         _repo.Setup(r => r.GetVisitasModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()))
             .ReturnsAsync(new List<ClienteVisita>());
@@ -241,9 +241,9 @@ public class MobileSyncEndpointsTests
 
         await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>()), Times.Once);
+        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
         // No debe pedir pedidos de otros usuarios.
-        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.Is<int>(uid => uid != VendedorId), It.IsAny<DateTime?>()), Times.Never);
+        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.Is<int>(uid => uid != VendedorId), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Never);
     }
 
     [Fact]
@@ -401,8 +401,8 @@ public class MobileSyncEndpointsTests
 
         await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.GetClientesModifiedSinceAsync(TenantId, It.IsAny<DateTime?>()), Times.Once);
-        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()), Times.Never);
+        _repo.Verify(r => r.GetClientesModifiedSinceAsync(TenantId, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
+        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Never);
         _repo.Verify(r => r.GetCobrosModifiedSinceAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime?>()), Times.Never);
     }
 
@@ -414,9 +414,9 @@ public class MobileSyncEndpointsTests
 
         await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.GetClientesModifiedSinceAsync(TenantId, It.IsAny<DateTime?>()), Times.Once);
-        _repo.Verify(r => r.GetProductosModifiedSinceAsync(TenantId, It.IsAny<DateTime?>()), Times.Once);
-        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>()), Times.Once);
+        _repo.Verify(r => r.GetClientesModifiedSinceAsync(TenantId, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
+        _repo.Verify(r => r.GetProductosModifiedSinceAsync(TenantId, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
+        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
         _repo.Verify(r => r.GetVisitasModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetRutasModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>()), Times.Once);
         _repo.Verify(r => r.GetCobrosModifiedSinceAsync(TenantId, VendedorId, It.IsAny<DateTime?>()), Times.Once);
@@ -438,7 +438,7 @@ public class MobileSyncEndpointsTests
 
         await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(TenantId, VendedorId, since), Times.Once);
+        _repo.Verify(r => r.GetPedidosModifiedSinceAsync(TenantId, VendedorId, since, It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 
     // ──────────────────────────────────────────────────────────────

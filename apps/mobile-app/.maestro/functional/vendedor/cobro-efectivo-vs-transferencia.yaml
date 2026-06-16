@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Vendedor - Cobro Efectivo vs Transferencia (selector removido)"
 tags:
   - vendedor
@@ -46,49 +46,12 @@ tags:
 # menos un cliente con saldo > 100 MXN ("Abarrotes Don Pancho").
 # ════════════════════════════════════════════════════════════
 
-# 1. Login VENDEDOR (subflow compartido)
-- runFlow: ../../auth/01-login-vendedor.yaml
-
-# 2. Dismiss modales opcionales post-login
+# 1. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado)
 - runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn: "Aceptar"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mientras uso la app"
-    commands:
-      - tapOn: "Mientras uso la app"
-      - waitForAnimationToEnd
-
-# 3. Confirmar dashboard hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # 4. Navegar a tab Cobrar
 - tapOn: "Cobrar"
@@ -160,10 +123,10 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "Abarrotes"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -193,15 +156,14 @@ tags:
 
 # 12. ConfirmModal — body "Registrar cobro de $X para CLIENTE"
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - takeScreenshot: efectivo-vs-transfer-05-modal
 
-# 13. Tap "Confirmar" del modal (index:1 porque el header repite el texto)
+# 13. Tap confirmar del ConfirmModal (testID estable)
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 - waitForAnimationToEnd
 
 # 14. Recibo del cobro efectivo
@@ -255,10 +217,10 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Buscar cliente por nombre"
+    visible: "Buscar cliente por nombre.*"
     timeout: 5000
 
-- tapOn: "Buscar cliente por nombre"
+- tapOn: "Buscar cliente por nombre.*"
 - inputText: "Abarrotes"
 - waitForAnimationToEnd
 - hideKeyboard
@@ -286,12 +248,11 @@ tags:
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Registrar cobro de"
+    visible: ".*Registrar cobro de.*"
     timeout: 5000
 
 - tapOn:
-    text: "Confirmar"
-    index: 1
+    id: "confirm-modal-confirm"
 - waitForAnimationToEnd
 
 # 22. Segundo recibo
@@ -320,10 +281,10 @@ tags:
 - assertVisible: "Facturado"
 - assertVisible: "Cobrado"
 
-# Tab bar del rol vendedor intacta
+# Tab bar del rol vendedor intacta: Hoy, Mapa, Vender, Cobrar, Mas (NO existe tab "Ruta")
 - assertVisible: "Vender"
 - assertVisible: "Cobrar"
-- assertVisible: "Ruta"
+- assertVisible: "Mapa"
 - assertVisible: "Más"
 
 - takeScreenshot: efectivo-vs-transfer-10-flow-completo

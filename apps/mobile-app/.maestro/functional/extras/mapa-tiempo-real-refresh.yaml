@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
 ---
 
@@ -43,83 +43,18 @@ name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
 #    fechaUbicacion, clienteNombre?)
 # ════════════════════════════════════════════════════════════
 
-# NO clearState: mantiene sesión y caches React Query si existen.
-# Esto permite validar el comportamiento de staleness real entre
-# entradas sucesivas al mapa.
-- launchApp:
-    clearState: false
-
-# 1. Saltar onboarding si aparece (primer arranque)
+# 1. Login SUPERVISOR via helper robusto (deja la app en el dashboard "Hoy").
 - runFlow:
-    when:
-      visible: "Siguiente"
-    commands:
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "onboarding-action"
-      - waitForAnimationToEnd
-
-# 2. Login como supervisor si la pantalla de login está visible
-- runFlow:
-    when:
-      visible:
-        id: "login-button"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: "supervisor@jeyma.com"
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: "test123"
-      - hideKeyboard
-      - tapOn:
-          id: "login-button"
-
-# 3. Esperar al dashboard "Hoy" hidratado
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 60000
-
-# 4. Dismiss de modales opcionales (permisos, privacidad, sync)
-- runFlow:
-    when:
-      visible: "Aviso de Privacidad"
-    commands:
-      - tapOn:
-          text: "Aceptar"
-          optional: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Permitir"
-    commands:
-      - tapOn: "Permitir"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible: "Mas tarde"
-    commands:
-      - tapOn: "Mas tarde"
-      - waitForAnimationToEnd
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
 
 # 5. Validar contexto supervisor (tab Equipo disponible)
-- assertVisible: "Mi Equipo"
+# "Mi Equipo" es el título de la pantalla del TAB Equipo, no del dashboard Hoy.
+# En el dashboard supervisor el KPI real es "Vendedores activos"
+# (src/components/dashboard/SupervisorDashboard.tsx línea 83).
+- assertVisible: "Vendedores activos"
 - assertVisible: "Equipo"
 
 - takeScreenshot: refresh-mapa-01-dashboard-supervisor
@@ -131,7 +66,8 @@ name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
 #   (i) mapa con pins, (ii) estado vacío, (iii) sin API key.
 # ════════════════════════════════════════════════════════════
 
-- tapOn: "Equipo"
+- tapOn:
+    id: "tab-equipo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
@@ -336,6 +272,7 @@ name: "Supervisor - Mapa tiempo real, refresh de ubicaciones GPS"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
 
-- assertVisible: "Mi Equipo"
+# KPI real del dashboard supervisor (no "Mi Equipo", que es el tab Equipo).
+- assertVisible: "Vendedores activos"
 
 - takeScreenshot: refresh-mapa-11-flow-completo

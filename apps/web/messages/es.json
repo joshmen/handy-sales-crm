@@ -3516,7 +3516,10 @@
     "stampsUsedLabel": "Timbres usados: {used} de {max}",
     "pendingCancellations": {
       "title": "Solicitudes de cancelación ({count})",
+      "titleSection": "Cancelaciones pendientes (receptor)",
       "subtitle": "Un emisor solicitó cancelar un CFDI donde tú eres receptor. Tienes 72 horas para aceptar o rechazar; si no respondes, el SAT lo cancela automáticamente.",
+      "subtitleInfo": "El SAT da 72 horas para aceptar o rechazar cuando eres receptor de un CFDI cancelado. Sin respuesta, se acepta automáticamente.",
+      "zeroState": "Sin solicitudes pendientes por revisar.",
       "accept": "Aceptar",
       "reject": "Rechazar",
       "cancel": "Cancelar",

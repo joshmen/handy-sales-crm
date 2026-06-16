@@ -1,11 +1,22 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Supervisor: Registrar cobro completo end-to-end"
 ---
 
 # ═══════════════════════════════════════════
-# PREREQ: Ya logueado como supervisor@jeyma.com
+# LOGIN COMO VENDEDOR (helper robusto: onboarding/consent/logout)
 # Con pedidos creados previamente (hay saldo pendiente)
 # ═══════════════════════════════════════════
+# Para SUPERVISOR el tab Cobrar renderiza CobrarAdminContent (header
+# "Cobros" + AdminTenantCobrosList), NO el dashboard de cobranza del
+# vendedor. Por tanto "Facturado", "Cobrado", "Registrar Cobro" y el
+# testID "btn-registrar-cobro" NO existen en esa sesion (ver
+# app/(tabs)/cobrar/index.tsx -> CobrarScreenContent). Registrar un cobro
+# requiere sesion VENDEDOR.
+- runFlow:
+    file: ../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # Reset navigation
 - tapOn: "Hoy"
@@ -82,7 +93,8 @@ name: "Supervisor: Registrar cobro completo end-to-end"
     visible: "CONFIRMAR"
     timeout: 5000
 - takeScreenshot: "cobro-06b-dialogo-confirmacion"
-- tapOn: "CONFIRMAR"
+- tapOn:
+    id: "confirm-modal-confirm"
 - waitForAnimationToEnd
 
 # Esperar recibo

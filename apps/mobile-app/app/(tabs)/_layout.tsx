@@ -84,6 +84,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Hoy',
+          tabBarButtonTestID: 'tab-hoy',
           tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
         }}
       />
@@ -92,6 +93,7 @@ export default function TabsLayout() {
         options={{
           title: 'Mapa',
           href: showMapa ? undefined : null,
+          tabBarButtonTestID: 'tab-mapa',
           tabBarIcon: ({ color, size }) => <Map size={size} color={color} />,
         }}
       />
@@ -100,6 +102,7 @@ export default function TabsLayout() {
         options={{
           title: 'Equipo',
           href: showEquipo ? undefined : null,
+          tabBarButtonTestID: 'tab-equipo',
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
         }}
       />
@@ -113,6 +116,7 @@ export default function TabsLayout() {
         }}
         options={{
           title: 'Vender',
+          tabBarButtonTestID: 'tab-vender',
           tabBarIcon: ({ color, size }) => <ShoppingBag size={size} color={color} />,
         }}
       />
@@ -120,6 +124,7 @@ export default function TabsLayout() {
         name="cobrar"
         options={{
           title: 'Cobrar',
+          tabBarButtonTestID: 'tab-cobrar',
           tabBarIcon: ({ color, size }) => <CreditCard size={size} color={color} />,
         }}
         listeners={{
@@ -134,6 +139,7 @@ export default function TabsLayout() {
         name="mas"
         options={{
           title: 'Más',
+          tabBarButtonTestID: 'tab-mas',
           tabBarIcon: ({ color, size }) => <MoreHorizontal size={size} color={color} />,
           tabBarBadge: masBadgeCount > 0 ? masBadgeCount : undefined,
           tabBarBadgeStyle: masBadgeCount > 0 ? { backgroundColor: COLORS.warning, fontSize: 10 } : undefined,

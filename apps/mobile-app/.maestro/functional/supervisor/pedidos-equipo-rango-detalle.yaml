@@ -1,0 +1,121 @@
+appId: com.handysuites.app
+name: "Supervisor: pedidos del equipo rango 7 dias + abrir detalle"
+---
+# ============================================================
+# CASO FUNCIONAL: sup-pedidos-rango-detalle
+# Rol: SUPERVISOR (supervisor@jeyma.com)
+# Capa: mobile (read-only, no muta datos)
+#
+# Objetivo: En el tab Vender (vista admin/supervisor =
+# VenderAdminContent -> AdminTenantPedidosList), cambiar el filtro
+# de rango a "7 días" (testID filtro-rango-7d) y, si hay pedidos en
+# ese rango (pedido-row-0 visible), abrir el detalle del primer
+# pedido y validar el header de detalle ("Pedido ..."). Degrada con
+# runFlow:when:visible si el seed no tiene pedidos en 7d.
+#
+# Endpoints backend involucrados:
+#   GET /api/mobile/supervisor/pedidos?rango=7d  (lista agregada tenant)
+#   GET /api/mobile/supervisor/mis-vendedores
+#
+# Pantallas RN:
+#   apps/mobile-app/app/(tabs)/vender/index.tsx (rama isAdminOrSupervisor)
+#   apps/mobile-app/src/components/admin/AdminTenantPedidosList.tsx
+#     -> header de lista "Pedidos últimos 7 días" en preset 7d;
+#        testIDs filtro-rango-{hoy,ayer,7d,30d} + pedido-row-{N}.
+#   apps/mobile-app/app/(tabs)/vender/[id].tsx
+#     -> header blueHeaderTitle empieza con "Pedido" (cargando, encontrado
+#        o "Pedido no encontrado"). El pedido tenant puede no estar en el
+#        WatermelonDB local del supervisor; el header "Pedido" siempre
+#        se renderiza, por lo que .*Pedido.* es un assert robusto.
+#
+# Prereq seed: supervisor@jeyma.com supervisa "Vendedor 1 Jeyma"
+# con pedidos recientes.
+# ============================================================
+
+# ---- FASE 1: Login SUPERVISOR ----
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "supervisor@jeyma.com"
+      PASSWORD: "test123"
+
+# ---- FASE 2: Dashboard supervisor cargado ----
+- extendedWaitUntil:
+    visible: "Vendedores activos"
+    timeout: 30000
+- takeScreenshot: sup-pedidos-rango-01-dashboard
+
+# ---- FASE 3: Tab Vender (vista admin/supervisor) ----
+# Doble tap garantiza reset al stack inicial del tab si ya estaba activo.
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Header de lista "Pedidos hoy" en preset por defecto confirma la rama supervisor.
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 20000
+- assertVisible: "Pedidos hoy"
+- assertVisible: "7 días"
+- takeScreenshot: sup-pedidos-rango-02-vista-pedidos
+
+# ---- FASE 4: Cambiar filtro de rango a "7 días" ----
+- tapOn:
+    id: "filtro-rango-7d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos últimos 7 días"
+    timeout: 20000
+- assertVisible: "Pedidos últimos 7 días"
+- takeScreenshot: sup-pedidos-rango-03-filtro-7d
+
+# ---- FASE 5: No-leak cross-tenant en el rango 7d ----
+- assertNotVisible: "Admin Huichol"
+- assertNotVisible: "Admin Centro"
+- assertNotVisible: "Admin Rutas Norte"
+
+# ---- FASE 6: Si hay pedidos en 7d, abrir detalle del primero ----
+- runFlow:
+    when:
+      visible:
+        id: "pedido-row-0"
+    commands:
+      - tapOn:
+          id: "pedido-row-0"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      # Header de la pantalla de detalle (cargando/encontrado/no-encontrado).
+      - extendedWaitUntil:
+          visible: ".*Pedido.*"
+          timeout: 15000
+      - assertVisible: ".*Pedido.*"
+      - takeScreenshot: sup-pedidos-rango-04-detalle-pedido
+      # Volver a la lista; debe seguir en la vista de pedidos.
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: "Pedidos últimos 7 días"
+          timeout: 15000
+      - assertVisible: "Pedidos últimos 7 días"
+
+# Fallback: seed sin pedidos en 7d -> documentar empty state.
+- runFlow:
+    when:
+      visible: ".*Sin pedidos.*"
+    commands:
+      - assertVisible: ".*Sin pedidos.*"
+      - takeScreenshot: sup-pedidos-rango-04b-empty-7d
+
+# ---- FASE 7: Volver a "Hoy" (estado idempotente para encadenar suites) ----
+- tapOn:
+    id: "filtro-rango-hoy"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: "Pedidos hoy"
+    timeout: 15000
+- assertVisible: "Pedidos hoy"
+- takeScreenshot: sup-pedidos-rango-05-vuelta-hoy

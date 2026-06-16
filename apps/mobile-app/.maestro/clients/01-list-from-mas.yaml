@@ -1,17 +1,12 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Clientes - Acceder desde Mas"
 ---
 
-# Ir al tab Mas
-- tapOn:
-    id: "tab-mas"
-    optional: true
-- tapOn:
-    text: "Mas"
-    optional: true
+# Ir al tab Más
+- tapOn: "Más"
 
 - extendedWaitUntil:
-    visible: "Navegaci"
+    visible: "NAVEGACIÓN"
     timeout: 15000
 
 - takeScreenshot: mas-menu

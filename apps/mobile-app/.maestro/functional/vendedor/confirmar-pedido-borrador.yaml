@@ -1,0 +1,188 @@
+appId: com.handysuites.app
+name: "Funcional > Vendedor > Confirmar pedido borrador"
+---
+
+# ════════════════════════════════════════════════════════════
+# ROL:       Vendedor (vendedor1@jeyma.com)
+# USE-CASE:  confirmar-pedido-borrador
+# PREREQ:    Seed Jeyma (cliente "Abarrotes La Esquina", producto
+#            "Coca-Cola 2L"). Sesion limpia. El flow CREA su propia
+#            precondicion (un pedido Borrador) → idempotente en re-run.
+# ENDPOINTS: createPedidoOffline (WDB local) → sync push pedidos;
+#            POST /api/mobile/pedidos/{id}/confirmar (useConfirmarPedido).
+#
+# FLUJO:
+#   1. Login vendedor (helper) → dashboard "Hoy".
+#   2. Tab Vender → FAB fab-nuevo-pedido.
+#   3. BottomSheet "¿Qué tipo de pedido?" → "Preventa".
+#      (Si admin configuro modoVentaDefault, el sheet se salta solo →
+#       degradamos con when:visible.)
+#   4. Paso Cliente: buscar + seleccionar "Abarrotes La Esquina" → Continuar.
+#   5. Paso Productos: buscar "coca" → agregar "Coca-Cola 2L" → Revisar pedido.
+#   6. Paso Revisar: "Registrar Pedido" → confirm modal "Enviar".
+#   7. Pantalla exito "Pedido Registrado" → "Ver Pedido" abre el detalle.
+#   8. Detalle: tapOn id btn-confirmar → confirm-modal-confirm.
+#      btn-confirmar SOLO aparece si el pedido ya se sincronizo (serverId>0).
+#      Si esta offline muestra "Sincronizando con servidor..." → degradamos
+#      con when:visible y assertamos al menos el badge "Borrador".
+#   9. Assert estado "Confirmado" (badge header).
+#
+# Screens: vender/index.tsx (FAB), useCreateOrderFlow.tsx (sheet),
+#          vender/crear/{index,productos,revision,exito}.tsx,
+#          vender/[id].tsx (btn-confirmar + stepper).
+# ════════════════════════════════════════════════════════════
+
+# 1. Login VENDEDOR (deja dashboard "Hoy" cargado).
+- runFlow:
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
+
+- takeScreenshot: func-confirmar-borrador-00-hoy
+
+# 2. Tab Vender → lista de Pedidos.
+- tapOn:
+    id: "tab-vender"
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+# 3. FAB Nuevo Pedido.
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# BottomSheet de tipo de venta — solo si modoVentaDefault = Preguntar.
+# Si el admin fijo un modo default, el sheet NO aparece y ya estamos en
+# "Seleccionar Cliente". Degradamos con when:visible.
+- runFlow:
+    when:
+      visible: "Preventa"
+    commands:
+      - tapOn:
+          text: "Preventa"
+      - waitForAnimationToEnd
+
+# 4. Paso 1 — Seleccionar Cliente.
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+
+- takeScreenshot: func-confirmar-borrador-01-cliente
+
+- tapOn:
+    text: "Buscar cliente..."
+- inputText: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- extendedWaitUntil:
+    visible: "Abarrotes La Esquina"
+    timeout: 10000
+- tapOn: "Abarrotes La Esquina"
+- waitForAnimationToEnd
+
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# 5. Paso 2 — Productos.
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- tapOn:
+    text: "Buscar producto..."
+- inputText: "coca"
+- waitForAnimationToEnd
+- hideKeyboard
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Coca-Cola 2L.*"
+    timeout: 10000
+
+- takeScreenshot: func-confirmar-borrador-02-productos
+
+# Tap en el card abre el sheet numerico de cantidad → confirmar.
+- tapOn:
+    text: ".*Coca-Cola 2L.*"
+- waitForAnimationToEnd
+# QuantityNumericSheet: confirmar la cantidad por defecto (1).
+- tapOn:
+    text: "Agregar|Confirmar|Aceptar|Listo"
+    optional: true
+- waitForAnimationToEnd
+
+# CartBar "Revisar pedido" para avanzar al paso 3.
+- extendedWaitUntil:
+    visible: "Revisar pedido"
+    timeout: 10000
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+# 6. Paso 3 — Revisar Pedido → Registrar.
+- extendedWaitUntil:
+    visible: "Revisar Pedido"
+    timeout: 15000
+
+- takeScreenshot: func-confirmar-borrador-03-revisar
+
+- tapOn: "Registrar Pedido"
+- waitForAnimationToEnd
+
+# Confirm modal — titulo "Registrar Pedido", confirmText "Enviar".
+- extendedWaitUntil:
+    visible: "Enviar"
+    timeout: 10000
+- tapOn:
+    id: "confirm-modal-confirm"
+- waitForAnimationToEnd
+
+# 7. Pantalla exito.
+- extendedWaitUntil:
+    visible: "Pedido Registrado"
+    timeout: 20000
+
+- takeScreenshot: func-confirmar-borrador-04-exito
+
+# Abrir detalle del pedido recien creado.
+- tapOn:
+    text: "Ver Pedido"
+- waitForAnimationToEnd
+
+# 8. Detalle del pedido — debe estar en Borrador antes de confirmar.
+- extendedWaitUntil:
+    visible: "Borrador"
+    timeout: 15000
+
+- takeScreenshot: func-confirmar-borrador-05-detalle-borrador
+
+# btn-confirmar requiere serverId>0 (pedido sincronizado). Si aun esta
+# offline, el boton no aparece (muestra "Sincronizando con servidor...").
+# Degradamos: si visible, confirmamos y assertamos "Confirmado".
+- runFlow:
+    when:
+      visible:
+        id: "btn-confirmar"
+    commands:
+      - tapOn:
+          id: "btn-confirmar"
+      - waitForAnimationToEnd
+      # Confirm modal "Confirmar Pedido" → confirmText "Confirmar".
+      - extendedWaitUntil:
+          visible: "¿Confirmar este pedido?"
+          timeout: 10000
+      - tapOn:
+          id: "confirm-modal-confirm"
+      - waitForAnimationToEnd
+      # 9. Assert estado Confirmado (badge header). updateLocalStatus(2)
+      #    actualiza WDB inmediatamente tras exito.
+      - extendedWaitUntil:
+          visible: "Confirmado"
+          timeout: 15000
+      - assertVisible: "Confirmado"
+      - takeScreenshot: func-confirmar-borrador-06-confirmado
+
+# Si btn-confirmar no estaba visible (pedido aun sin sincronizar), al menos
+# garantizamos que el detalle se abrio en estado Borrador (paso 8).

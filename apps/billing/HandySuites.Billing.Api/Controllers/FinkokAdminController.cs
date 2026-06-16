@@ -18,7 +18,7 @@ namespace HandySuites.Billing.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/admin/finkok")]
-[Authorize]
+[Authorize(Roles = "SUPER_ADMIN")]
 public class FinkokAdminController : ControllerBase
 {
     private readonly BillingDbContext _context;

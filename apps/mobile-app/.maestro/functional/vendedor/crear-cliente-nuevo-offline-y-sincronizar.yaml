@@ -1,4 +1,4 @@
-appId: host.exp.exponent
+appId: com.handysuites.app
 name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 ---
 
@@ -41,24 +41,12 @@ name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 # WatermelonDB: clients table con pending_sync=true en modo offline.
 # ════════════════════════════════════════════════════════════
 
-# 0. Dashboard 'Hoy' visible — confirma sesión vendedor activa.
-- extendedWaitUntil:
-    visible: "Hoy"
-    timeout: 30000
-
-# 1. Dismiss modales opcionales (Aviso de Privacidad / promos).
+# 0. Login VENDEDOR via helper robusto (deja dashboard "Hoy" cargado).
 - runFlow:
-    when:
-      visible: "AHORA NO"
-    commands:
-      - tapOn: "AHORA NO"
-- runFlow:
-    when:
-      visible: "Cerrar"
-    commands:
-      - tapOn:
-          text: "Cerrar"
-          optional: true
+    file: ../../_helpers/login-as.yaml
+    env:
+      EMAIL: "vendedor1@jeyma.com"
+      PASSWORD: "test123"
 
 # 2. Navegar a tab Más (vendedor sin tab Clientes directo).
 - tapOn: "Más"
@@ -114,9 +102,9 @@ name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 - takeScreenshot: func-vendedor-crear-cliente-03-form
 
 # 6. Validar estructura del form (4 secciones esperadas).
-- assertVisible: "UBICACION"
-- assertVisible: "DIRECCION"
-- assertVisible: "INFORMACION GENERAL"
+- assertVisible: "UBICACIÓN"
+- assertVisible: "DIRECCIÓN"
+- assertVisible: "INFORMACIÓN GENERAL"
 - assertVisible: "DATOS FISCALES"
 
 # 7. DIRECCION — calle + número exterior (requeridos).
@@ -164,10 +152,10 @@ name: "Funcional > Vendedor > Crear cliente NUEVO offline y sincronizar"
 
 - runFlow:
     when:
-      visible: "10 digitos (opcional)"
+      visible: "10 dígitos (opcional)"
     commands:
       - tapOn:
-          text: "10 digitos (opcional)"
+          text: "10 dígitos (opcional)"
       - inputText: "5598765432"
       - hideKeyboard
 
