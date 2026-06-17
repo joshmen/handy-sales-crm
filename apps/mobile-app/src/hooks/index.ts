@@ -21,6 +21,7 @@ export { useOfflineOrders, useOfflineOrderById, useOfflineOrderDetalles } from '
 export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga } from './useOfflineRoutes';
 export { useOfflineVisits, useOfflineVisitById, useOfflineTodayVisits } from './useOfflineVisits';
 export { useOfflineCobros, useOfflineCobroById, useOfflineTodayCobros } from './useOfflineCobros';
+export { useOfflineSalesToday } from './useOfflineSalesToday';
 export { usePendingCount } from './usePendingCount';
 export { useClientNameMap } from './useClientNameMap';
 

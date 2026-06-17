@@ -2,16 +2,26 @@ import { useQuery } from '@tanstack/react-query';
 import { supervisorApi } from '@/api/supervisor';
 
 export function useSupervisorDashboard() {
+  // KPIs ejecutivos del día (vendedores activos, pedidos hoy, ventas mes).
+  // Refresca solo mientras la pantalla está visible — sin esto cargaban una
+  // sola vez al montar y quedaban congelados toda la jornada (inconsistente con
+  // el mapa GPS / resumen-tenant que sí refrescan).
   return useQuery({
     queryKey: ['supervisor', 'dashboard'],
     queryFn: () => supervisorApi.getDashboard(),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
   });
 }
 
 export function useMisVendedores() {
+  // Lista del equipo con estado online/offline (último ping GPS). Refresca para
+  // que los badges "en línea" no queden pegados con datos viejos.
   return useQuery({
     queryKey: ['supervisor', 'vendedores'],
     queryFn: () => supervisorApi.getMisVendedores(),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
   });
 }
 

@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
 import { useTenantLocale } from '@/hooks';
+import { startOfDayInTz } from '@/utils/dateTz';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 import type { VendedorDiaConFecha } from '@/api/schemas/supervisor';
@@ -43,25 +44,21 @@ function formatDayLabel(fechaIso: string): string {
   }).format(date);
 }
 
-function isToday(fechaIso: string): boolean {
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
-  // Aproximación — si el server y el cliente discrepan en TZ esto puede fallar.
-  // Aceptable para destacar visualmente "hoy" en la lista.
+function isToday(fechaIso: string, tz: string = 'America/Mexico_City'): boolean {
+  // "Hoy" en la TZ del TENANT (no device ni hardcode). El backend cuenta los
+  // días en TZ tenant, así que destacar "hoy" debe usar la misma TZ.
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
   return fechaIso === today;
 }
 
 /**
- * Calcula la fecha de "ayer" en formato YYYY-MM-DD usando la TZ local del
- * device. El backend ignora horas y solo lee el string de fecha, así que
- * aproximación es OK para el preset "Ayer".
+ * Calcula la fecha de "ayer" en formato YYYY-MM-DD en la TZ del TENANT. Tomamos
+ * un instante claramente dentro de "ayer" (12h antes de la medianoche de hoy en
+ * el tenant) y lo formateamos en esa TZ. El backend solo lee el string de fecha.
  */
-function getAyerIsoLocal(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+function getAyerIso(tz: string = 'America/Mexico_City'): string {
+  const ayerInstant = new Date(startOfDayInTz(tz).getTime() - 12 * 3600000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(ayerInstant);
 }
 
 function VendedorDetalleContent() {
@@ -70,16 +67,16 @@ function VendedorDetalleContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [preset, setPreset] = useState<Preset>('hoy');
+  const { money: formatMoney, tz } = useTenantLocale();
 
   const queryOpts = preset === '7d'
     ? { rango: '7d' as const }
     : preset === 'ayer'
-      ? { fecha: getAyerIsoLocal() }
+      ? { fecha: getAyerIso(tz) }
       : undefined; // 'hoy' = sin params (default backend = hoy en TZ tenant)
 
   const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId, queryOpts);
   const [refreshing, setRefreshing] = useState(false);
-  const { money: formatMoney } = useTenantLocale();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -189,11 +186,11 @@ function VendedorDetalleContent() {
               {dias.map((d: VendedorDiaConFecha) => (
                 <View
                   key={d.fecha}
-                  style={[styles.diaRow, isToday(d.fecha) && styles.diaRowHighlight]}
+                  style={[styles.diaRow, isToday(d.fecha, tz) && styles.diaRowHighlight]}
                 >
                   <View style={styles.diaHeader}>
-                    <Text style={[styles.diaFecha, isToday(d.fecha) && { color: COLORS.primary }]}>
-                      {formatDayLabel(d.fecha)}{isToday(d.fecha) ? ' · Hoy' : ''}
+                    <Text style={[styles.diaFecha, isToday(d.fecha, tz) && { color: COLORS.primary }]}>
+                      {formatDayLabel(d.fecha)}{isToday(d.fecha, tz) ? ' · Hoy' : ''}
                     </Text>
                   </View>
                   <View style={styles.diaChips}>

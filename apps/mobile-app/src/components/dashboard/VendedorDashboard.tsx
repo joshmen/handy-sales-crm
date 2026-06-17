@@ -4,14 +4,13 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore, useJornadaStore } from '@/stores';
-import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros, useOfflineRutaPedidos, useOfflineRutaCarga } from '@/hooks';
-import { database } from '@/db/database';
-import { Q } from '@nozbe/watermelondb';
+import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros, useOfflineRutaPedidos, useOfflineRutaCarga, useOfflineRutaDetalles, useOfflineSalesToday } from '@/hooks';
 import { Card, LoadingSpinner, UserAvatar, ConfirmModal } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import ProgressCard from '@/components/shared/ProgressCard';
 import RutaCarga from '@/db/models/RutaCarga';
 import RutaPedido from '@/db/models/RutaPedido';
+import RutaDetalle from '@/db/models/RutaDetalle';
 import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { getGreetingForTz } from '@/utils/greeting';
 import { startOfDayInTz } from '@/utils/dateTz';
@@ -47,41 +46,6 @@ export function VendedorDashboard() {
   // reportado por vendedor1@jeyma.com 2026-05-04).
   const { openCreateOrder, SheetComponent } = useCreateOrderFlow();
 
-  // Route stats — single source of truth via direct query on focus
-  const [routeStats, setRouteStats] = useState({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 });
-
-  useFocusEffect(useCallback(() => {
-    const userId = Number(user?.id ?? 0);
-    if (!userId) return;
-    // Window simétrico de ±12h alrededor del midnight tenant TZ — alineado
-    // con useOfflineRutaHoy. Antes usaba device TZ + +36h, lo que mostraba
-    // rutas del día siguiente al vendedor (reportado 2026-05-05: aceptó
-    // por error la ruta del miércoles cuando aún era martes).
-    const tenantMidnight = startOfDayInTz(tz || 'America/Mexico_City').getTime();
-    const windowStart = tenantMidnight - 12 * 3600000;
-    const windowEnd = tenantMidnight + 12 * 3600000;
-    database.get('rutas').query(
-      Q.where('usuario_id', userId), Q.where('activo', true),
-      Q.where('fecha', Q.gte(windowStart)),
-      Q.where('fecha', Q.lt(windowEnd)),
-      // Excluir terminales/no-accionables: Completada=2, Cancelada=3, Cerrada=6 —
-      // alineado con useOfflineRutaHoy. Las completadas van al historial; si el
-      // dashboard las mostraba y el vendedor recibía notif de ruta nueva, el
-      // tap abría la vieja completada en vez de la nueva (reportado 2026-05-05).
-      Q.where('estado', Q.notIn([2, 3, 6])),
-    ).fetch().then(async (rutas: any[]) => {
-      const r = rutas[0];
-      if (!r) { setRouteStats({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 }); return; }
-      const detalles = await database.get('ruta_detalles').query(Q.where('ruta_id', r.id)).fetch();
-      setRouteStats({
-        total: detalles.length,
-        atendidas: detalles.filter((d: any) => d.estado === 2 || d.estado === 3).length,
-        routeName: r.nombre || '',
-        routeEstado: r.estado ?? 0,
-      });
-    }).catch(() => {});
-  }, [user?.id, tz]));
-
   // Local WDB data (for other KPIs)
   const { data: todayVisits } = useOfflineTodayVisits();
   const { data: rutas, isLoading: loadingRuta } = useOfflineRutaHoy();
@@ -89,11 +53,18 @@ export function VendedorDashboard() {
   const { data: pedidos } = useOfflineOrders();
   const { data: cobros } = useOfflineCobros();
 
+  // Paradas de la ruta — observable reactivo (antes era un fetch en useFocusEffect
+  // que solo refrescaba al re-enfocar el tab). Alimenta el ProgressCard "Paradas
+  // atendidas" y se actualiza en vivo al marcar una parada.
+  const { data: rutaDetalles } = useOfflineRutaDetalles(route?.id ?? '');
+
+  // Unidades vendidas HOY (venta directa + preventa + entregas), reactivo y
+  // route-independent. Alimenta el KPI "Vendido hoy" del Resumen del día.
+  const { data: vendidoHoyUnidades } = useOfflineSalesToday();
+
   // Carga (productos asignados al camión) y pedidos pre-asignados a la
-  // ruta — consumidos para los 3 ProgressCards del card "Ruta del día".
-  // Mismo patrón que app/(tabs)/ruta/index.tsx — el home muestra los
-  // 3 progresos para que el vendedor vea actividad real aún si la ruta
-  // se creó sin paradas (ej. ruta solo de venta directa con carga inicial).
+  // ruta — consumidos para los ProgressCards del card "Ruta del día".
+  // Mismo patrón que app/(tabs)/ruta/index.tsx.
   const { data: pedidosCargados } = useOfflineRutaPedidos(route?.id ?? '');
   const { data: cargaProductos } = useOfflineRutaCarga(route?.id ?? '');
 
@@ -136,28 +107,40 @@ export function VendedorDashboard() {
     return () => controller.abort();
   }, []));
 
-  const stats = routeStats;
+  // Stats de paradas, derivadas del observable reactivo de ruta_detalles.
+  // atendidas = Visitado(2) | Omitido(3). Usamos displayEstado (no estado crudo)
+  // para que el dashboard y la pantalla /ruta cuenten igual, incluyendo la parada
+  // con estado=1 pero horaSalida set (displayEstado la deriva a Visitado).
+  const stats = useMemo(() => {
+    const detalles = (rutaDetalles as RutaDetalle[] | undefined) ?? [];
+    return {
+      total: detalles.length,
+      atendidas: detalles.filter((d) => d.displayEstado === 2 || d.displayEstado === 3).length,
+    };
+  }, [rutaDetalles]);
 
-  // Additional KPIs — orders and sales today
+  // Additional KPIs — orders and sales today.
+  // Ventana "hoy" en TZ del TENANT (no del dispositivo), consistente con
+  // vendidoHoyUnidades (useOfflineSalesToday) y useOfflineTodayVisits. Antes
+  // usaba new Date().setHours(0,0,0,0) (medianoche del device) → cerca de
+  // medianoche en TZ negativas, estos KPIs discrepaban del de "Vendido (uds)".
   const pedidosHoy = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const dayStart = startOfDayInTz(tz || 'America/Mexico_City').getTime();
     return (pedidos ?? []).filter(p => {
-      const created = p.createdAt ? new Date(p.createdAt) : null;
-      return created && created >= today;
+      const created = p.createdAt ? p.createdAt.getTime() : null;
+      return created != null && created >= dayStart;
     }).length;
-  }, [pedidos]);
+  }, [pedidos, tz]);
 
   const ventasHoy = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const dayStart = startOfDayInTz(tz || 'America/Mexico_City').getTime();
     return (pedidos ?? [])
       .filter(p => {
-        const created = p.createdAt ? new Date(p.createdAt) : null;
-        return created && created >= today && p.estado >= 1 && p.estado !== 6;
+        const created = p.createdAt ? p.createdAt.getTime() : null;
+        return created != null && created >= dayStart && p.estado >= 1 && p.estado !== 6;
       })
       .reduce((sum, p) => sum + (p.total || 0), 0);
-  }, [pedidos]);
+  }, [pedidos, tz]);
 
   // Badge de notif sin leer — al lado de la foto/iniciales en el header.
   // Tap al avatar abre /profile que tiene link directo a /notificaciones.
@@ -239,9 +222,13 @@ export function VendedorDashboard() {
           <Text style={styles.kpiValue}>{visitasCompletadas}</Text>
           <Text style={styles.kpiLabel}>Completadas</Text>
         </View>
+        {/* Unidades vendidas hoy (route-independent): reemplaza el KPI "Paradas",
+            que ya se muestra en el ProgressCard "Paradas atendidas" del card de
+            ruta. Refleja toda la venta del día — directa o no, con ruta o sin
+            ella — al instante de confirmar cada venta. */}
         <View style={styles.kpiCard}>
-          <Text style={styles.kpiValue}>{stats.atendidas}/{stats.total}</Text>
-          <Text style={styles.kpiLabel}>Paradas</Text>
+          <Text style={[styles.kpiValue, { color: COLORS.salesGreen }]}>{vendidoHoyUnidades ?? 0}</Text>
+          <Text style={styles.kpiLabel}>Vendido (uds)</Text>
         </View>
       </Animated.View>
 
@@ -315,12 +302,12 @@ export function VendedorDashboard() {
               </View>
               <StatusBadge type="route" status={route.estado} />
             </View>
-            {/* 3 ProgressCards: Paradas / Pedidos / Productos. Idéntico
-                a /ruta — coherencia visual y mismo cómputo. Si la ruta
-                se creó sin paradas (caso reportado 2026-05-07 vendedor
-                Rodrigo) la barra de Productos sigue mostrando avance
-                real porque la carga inicial decrementa con cada
-                venta directa confirmada. */}
+            {/* 3 ProgressCards: Paradas / Pedidos / Productos. Idéntico a /ruta.
+                OJO: la barra "Productos" mide SOLO consumo de la carga precargada
+                del camión (ruta_carga: vendida + entregada / total). NO refleja la
+                venta directa de productos que no venían en la carga, ni ventas sin
+                ruta. Para "todo lo vendido hoy" mirar el KPI "Vendido (uds)" del
+                Resumen del día (useOfflineSalesToday), que es route-independent. */}
             <ProgressCard
               label="Paradas atendidas"
               current={stats.atendidas}
