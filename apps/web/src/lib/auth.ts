@@ -1,5 +1,6 @@
-import { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
 import { JWT } from 'next-auth/jwt';
+import { authConfig } from './auth.config';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { jwtVerify } from 'jose';
@@ -109,7 +110,21 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
   }
 }
 
-export const authOptions: NextAuthOptions = {
+// Convierte los Web Headers del Request (v5 authorize) al Record que serverApiCall
+// espera (forward de User-Agent / IP real para el DeviceSession del backend).
+function webHeadersToRecord(
+  headers: Headers | undefined
+): Record<string, string | undefined> | undefined {
+  if (!headers) return undefined;
+  return {
+    'user-agent': headers.get('user-agent') ?? undefined,
+    'x-forwarded-for': headers.get('x-forwarded-for') ?? undefined,
+    'x-real-ip': headers.get('x-real-ip') ?? undefined,
+  };
+}
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -118,12 +133,12 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
         loginResponse: { label: 'Login Response', type: 'text' },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials, request) {
         // Mode 1: Pre-authenticated (after 2FA verify or force-login)
         // The login page already called the API and got tokens — just establish the session
         if (credentials?.loginResponse) {
           try {
-            const data = JSON.parse(credentials.loginResponse);
+            const data = JSON.parse(credentials.loginResponse as string);
             if (data.user && data.token) {
               // Cryptographically verify the JWT signature using the backend's HMAC-SHA256 secret
               // This prevents forged tokens from creating valid NextAuth sessions
@@ -160,9 +175,9 @@ export const authOptions: NextAuthOptions = {
         // This ensures we get real JWT tokens that the backend can validate
         try {
           const response = (await serverApiCall('post', '/auth/login', {
-            email: credentials.email,
-            password: credentials.password,
-          }, undefined, req?.headers)) as ApiLoginResponse;
+            email: credentials.email as string,
+            password: credentials.password as string,
+          }, undefined, webHeadersToRecord(request?.headers))) as ApiLoginResponse;
 
           // Caso 1: { success: true, data: { user, token, refreshToken } }
           if (isWrappedSuccess(response)) {
@@ -247,12 +262,8 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
 
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,
-  },
-
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user, account }) {
       // For credentials provider, always allow (handled in authorize)
       if (account?.provider === 'credentials') return true;
@@ -392,31 +403,5 @@ export const authOptions: NextAuthOptions = {
       // Token expired or about to expire: refresh it
       return refreshAccessToken(token);
     },
-
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id ?? session.user.id;
-        session.user.role = token.role;
-        if (token.name) {
-          session.user.name = token.name;
-        }
-      }
-      session.accessToken = token.accessToken;
-      session.refreshToken = token.refreshToken;
-      session.tenantId = token.tenantId;
-      session.companyId = token.companyId;
-      session.isImpersonating = token.isImpersonating;
-      session.onboardingCompleted = token.onboardingCompleted;
-      session.error = token.error;
-      return session;
-    },
   },
-
-  pages: {
-    signIn: '/login',
-    signOut: '/',
-    error: '/auth/error',
-  },
-
-  secret: process.env.NEXTAUTH_SECRET,
-};
+});

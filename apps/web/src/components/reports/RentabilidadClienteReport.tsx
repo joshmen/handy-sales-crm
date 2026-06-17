@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Card } from "@tremor/react";
+import { Card } from "@/components/ui/reportPrimitives";
 import { ReportFilters } from "./ReportFilters";
 import { ReportTable, ReportColumn } from "./ReportTable";
 import { getRentabilidadCliente, RentabilidadCliente, RentabilidadClienteResponse } from "@/services/api/reports";

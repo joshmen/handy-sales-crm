@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Card, Metric, Text, Flex, BadgeDelta } from '@tremor/react';
+import { Card, Metric, Text, Flex, BadgeDelta } from '@/components/ui/reportPrimitives';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 export interface KPICard {

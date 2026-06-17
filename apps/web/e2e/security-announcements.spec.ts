@@ -1,5 +1,11 @@
 import { test, expect, Page } from '@playwright/test';
-import { loginAsAdmin, loginAsSuperAdmin, getTestEmails } from './helpers/auth';
+import {
+  loginAsAdmin,
+  loginAsSuperAdmin,
+  getTestEmails,
+  getSuperAdminApiToken,
+  getAdminApiToken,
+} from './helpers/auth';
 
 /**
  * E2E Tests for Security Features + Announcements
@@ -33,12 +39,7 @@ async function waitForPageLoad(page: Page) {
 // Helper: create an announcement via API directly (SuperAdmin)
 async function createAnnouncementViaAPI(page: Page, titulo: string, tipo: string, prioridad = 'Normal') {
   // Get a SuperAdmin JWT token
-  const { superAdmin, password } = getTestEmails();
-  const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-    data: { email: superAdmin, password },
-  });
-  const loginData = await loginRes.json();
-  const token = loginData.token;
+  const token = await getSuperAdminApiToken(page);
 
   const res = await page.request.post(`${API_BASE}/api/superadmin/announcements`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -49,12 +50,7 @@ async function createAnnouncementViaAPI(page: Page, titulo: string, tipo: string
 
 // Helper: cleanup — expire all active announcements and deactivate maintenance
 async function cleanupAnnouncements(page: Page) {
-  const { superAdmin, password } = getTestEmails();
-  const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-    data: { email: superAdmin, password },
-  });
-  const loginData = await loginRes.json();
-  const token = loginData.token;
+  const token = await getSuperAdminApiToken(page);
 
   // Deactivate maintenance mode
   await page.request.delete(`${API_BASE}/api/superadmin/maintenance`, {
@@ -117,8 +113,10 @@ test.describe('Login Page UI', () => {
     await page.locator('#password').fill(password);
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
 
-    // Handle session conflict if admin already has an active session
-    const replaceBtn = page.getByRole('button', { name: /Cerrar sesión anterior/i });
+    // Handle session conflict if loginAdmin already has an active session.
+    // El modal "Ya tienes una sesion abierta" usa "Continuar aqui" (i18n continueHere);
+    // aceptamos el legacy "Cerrar sesion anterior" para robustez (igual que fillLoginForm).
+    const replaceBtn = page.getByRole('button', { name: /Continuar aqu[ií]|Cerrar sesión anterior/i });
     try {
       await Promise.race([
         page.waitForURL(/dashboard/, { timeout: 10000 }),
@@ -178,16 +176,10 @@ test.describe('Login Page UI', () => {
 // 2. 2FA / SECURITY TAB
 // ═══════════════════════════════════════════════════════════════
 test.describe('2FA & Security Settings', () => {
-  test('Settings security tab shows 2FA section', async ({ page }) => {
-    await loginAsAdmin(page);
-    await page.goto('/settings?tab=security');
-    await waitForPageLoad(page);
-
-    // Should show 2FA section (text is lowercase: "dos factores")
-    const tfaHeading = page.getByText(/Autenticación de dos factores/i);
-    await expect(tfaHeading).toBeVisible({ timeout: 10000 });
-  });
-
+  // NOTA: se elimino el test "Settings security tab shows 2FA section" — el 2FA es
+  // per-usuario y vive en /profile -> tab "Seguridad" (la pagina /settings ya no tiene
+  // tab security; sus tabs son perfil-empresa/company/appearance/notifications/system).
+  // El test de abajo ("Profile page shows 2FA card") cubre el 2FA en su ubicacion real.
   test('Profile page shows 2FA card in Seguridad tab', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/profile');
@@ -356,12 +348,8 @@ test.describe('Maintenance Mode', () => {
     await loginAsSuperAdmin(page);
 
     // Activate via API and navigate — retry if parallel cleanup deactivates it
-    const { superAdmin, password } = getTestEmails();
+    const token = await getSuperAdminApiToken(page);
     for (let attempt = 0; attempt < 3; attempt++) {
-      const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-        data: { email: superAdmin, password },
-      });
-      const { token } = await loginRes.json();
       await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { message: 'Test deactivation' },
@@ -404,12 +392,11 @@ test.describe('Maintenance Mode', () => {
     const adminToken = adminData.token;
     expect(adminToken).toBeTruthy();
 
-    // Step 2: Activate maintenance via SuperAdmin API
-    const saLoginRes = await request.post(`${API_BASE}/auth/force-login`, {
-      data: { email: getTestEmails().superAdmin, password: 'test123' },
-    });
-    const saData = await saLoginRes.json();
-    const saToken = saData.token;
+    // Step 2: Activate maintenance via SuperAdmin API. getSuperAdminApiToken LEE la
+    // sesion SA existente (no bumpea session_version). El force-login del SA compartido
+    // (xjoshmenx, unico SUPER_ADMIN) invalidaba la storageState SA de los demas tests
+    // del archivo, forzando recoveries lentos en loginAsSuperAdmin.
+    const saToken = await getSuperAdminApiToken(page);
     expect(saToken).toBeTruthy();
 
     // Step 3: Activate maintenance and immediately test write operation.
@@ -509,10 +496,7 @@ test.describe('Banner Rendering', () => {
 
   test('Maintenance banner shows in layout when maintenance active', async ({ page }) => {
     // Activate maintenance
-    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: getTestEmails().superAdmin, password: 'test123' },
-    });
-    const { token } = await loginRes.json();
+    const token = await getSuperAdminApiToken(page);
     await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { message: 'Mantenimiento programado' },
@@ -558,10 +542,7 @@ test.describe('Announcement API Integration', () => {
   });
 
   test('SuperAdmin can create and list announcements via API', async ({ page }) => {
-    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: getTestEmails().superAdmin, password: 'test123' },
-    });
-    const { token } = await loginRes.json();
+    const token = await getSuperAdminApiToken(page);
 
     // Create
     const createRes = await page.request.post(`${API_BASE}/api/superadmin/announcements`, {
@@ -588,10 +569,7 @@ test.describe('Announcement API Integration', () => {
   });
 
   test('Admin cannot access SuperAdmin announcement endpoints', async ({ page }) => {
-    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: getTestEmails().admin, password: 'test123' },
-    });
-    const { token } = await loginRes.json();
+    const token = await getAdminApiToken(page);
 
     const res = await page.request.get(`${API_BASE}/api/superadmin/announcements`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -604,10 +582,7 @@ test.describe('Announcement API Integration', () => {
     await createAnnouncementViaAPI(page, 'Targeted Banner', 'Banner');
 
     // Login as Admin and fetch banners
-    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: getTestEmails().admin, password: 'test123' },
-    });
-    const { token } = await loginRes.json();
+    const token = await getAdminApiToken(page);
 
     const res = await page.request.get(`${API_BASE}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -620,10 +595,7 @@ test.describe('Announcement API Integration', () => {
   test('Dismiss endpoint removes banner from user view', async ({ page }) => {
     const created = await createAnnouncementViaAPI(page, 'Dismissable', 'Banner');
 
-    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: getTestEmails().admin, password: 'test123' },
-    });
-    const { token } = await loginRes.json();
+    const token = await getAdminApiToken(page);
 
     // Dismiss
     const dismissRes = await page.request.post(`${API_BASE}/api/notificaciones/banners/${created.id}/dismiss`, {

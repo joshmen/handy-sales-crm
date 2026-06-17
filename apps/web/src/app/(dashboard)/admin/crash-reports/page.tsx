@@ -27,16 +27,7 @@ import {
   GearSix,
   WarningCircle,
 } from '@phosphor-icons/react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
@@ -65,6 +56,9 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { useChartTheme } from '@/hooks/useChartTheme';
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const PAGE_SIZE = 20;
 
@@ -332,6 +326,7 @@ function LogLevelControls() {
 
 function CloudWatchTab() {
   const t = useTranslations('admin.crashReports');
+  const ct = useChartTheme();
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [recentErrors, setRecentErrors] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -397,8 +392,58 @@ function CloudWatchTab() {
     });
   };
 
-  // Prepare chart data — group by hour with log group breakdown
+  // Prepare chart data — aggregate error counts per hour
   const chartData = stats?.errorsByHour ?? [];
+
+  const hourlyCounts = chartData.reduce<Record<string, number>>((acc, item) => {
+    acc[item.hour] = (acc[item.hour] ?? 0) + item.count;
+    return acc;
+  }, {});
+  const chartHours = Object.keys(hourlyCounts);
+  const chartSeries = [{ name: 'Errores', data: chartHours.map(h => hourlyCounts[h]) }];
+
+  const chartOptions: ApexCharts.ApexOptions = {
+    chart: {
+      type: 'bar',
+      toolbar: { show: false },
+      fontFamily: 'inherit',
+      animations: { enabled: true, speed: 500 },
+    },
+    colors: ['#f97316'],
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        borderRadiusApplication: 'end',
+        columnWidth: '60%',
+      },
+    },
+    dataLabels: { enabled: false },
+    grid: { borderColor: ct.grid, strokeDashArray: 3, padding: { left: 8, right: 8 } },
+    xaxis: {
+      categories: chartHours,
+      labels: { style: { fontSize: '11px', colors: ct.textSecondary } },
+      axisBorder: { color: ct.grid },
+      axisTicks: { color: ct.grid },
+    },
+    yaxis: {
+      labels: {
+        style: { fontSize: '11px', colors: ct.textSecondary },
+        formatter: (val: number) => String(Math.round(val)),
+      },
+    },
+    legend: {
+      position: 'bottom',
+      labels: { colors: ct.textSecondary },
+      markers: { size: 6 },
+      itemMargin: { horizontal: 10 },
+    },
+    fill: { opacity: 1 },
+    tooltip: {
+      theme: ct.isDark ? 'dark' : 'light',
+      style: { fontSize: '12px' },
+      y: { formatter: (val: number) => String(Math.round(val)) },
+    },
+  };
 
   return (
     <div className="space-y-6">
@@ -530,19 +575,13 @@ function CloudWatchTab() {
             {t('noDataLast24h')}
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <RechartsTooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                labelStyle={{ fontWeight: 600 }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="count" name="Errores" fill="#f97316" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Chart
+            key={ct.isDark ? 'dark' : 'light'}
+            type="bar"
+            height={280}
+            options={chartOptions}
+            series={chartSeries}
+          />
         )}
       </div>
 
