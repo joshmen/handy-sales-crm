@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { SystemMetrics, SystemTrends } from '@/types/tenant';
 import { tenantService } from '@/services/api/tenants';
 import { toast } from '@/hooks/useToast';
@@ -17,22 +18,11 @@ import {
   Crown
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
-import {
-  AreaChart,
-  Area,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444'];
 
@@ -54,6 +44,7 @@ export default function SystemDashboardPage() {
   const t = useTranslations('admin.systemDashboard');
   const ta = useTranslations('admin');
   const { formatCurrency: _fmtCur, formatNumber: _fmtNum } = useFormatters();
+  const ct = useChartTheme();
 
   const PERIOD_OPTIONS = PERIOD_VALUES.map(v => ({
     value: v,
@@ -105,6 +96,186 @@ export default function SystemDashboardPage() {
     { label: ta('breadcrumb') },
     { label: t('breadcrumb') },
   ];
+
+  // ── ApexCharts: Revenue by day (area + gradient) ──
+  const revenueSeries = useMemo(
+    () => [
+      {
+        name: t('revenue'),
+        data: (trends?.revenueByDay ?? []).map((d) => ({ x: d.date, y: d.value })),
+      },
+    ],
+    [trends, t]
+  );
+
+  const revenueOptions = useMemo<ApexCharts.ApexOptions>(
+    () => ({
+      chart: {
+        type: 'area',
+        toolbar: { show: false },
+        fontFamily: 'inherit',
+        animations: { enabled: true, speed: 600 },
+        zoom: { enabled: false },
+      },
+      colors: ['#10b981'],
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.3,
+          opacityTo: 0,
+          stops: [5, 95],
+        },
+      },
+      grid: { borderColor: ct.grid, strokeDashArray: 3, padding: { left: 8, right: 8 } },
+      xaxis: {
+        type: 'category',
+        labels: {
+          rotate: 0,
+          hideOverlappingLabels: true,
+          formatter: (value: string) => formatChartDate(String(value)),
+          style: { fontSize: '11px', colors: ct.textSecondary },
+        },
+        axisBorder: { color: ct.grid },
+        axisTicks: { color: ct.grid },
+        tooltip: { enabled: false },
+      },
+      yaxis: {
+        labels: {
+          formatter: (value: number) => formatShortCurrency(value),
+          style: { fontSize: '11px', colors: ct.textSecondary },
+        },
+      },
+      tooltip: {
+        theme: ct.isDark ? 'dark' : 'light',
+        x: { formatter: (_v, opts) => formatChartDate(String(revenueSeries[0]?.data[opts?.dataPointIndex ?? 0]?.x ?? '')) },
+        y: { formatter: (value: number) => formatCurrency(Number(value)), title: { formatter: () => `${t('revenue')}: ` } },
+      },
+    }),
+    [ct, t, revenueSeries]
+  );
+
+  // ── ApexCharts: Tenant & user growth (multi-line) ──
+  const growthSeries = useMemo(
+    () => [
+      {
+        name: t('companies'),
+        data: (trends?.tenantGrowth ?? []).map((d) => ({ x: d.date, y: d.value })),
+      },
+      {
+        name: t('users'),
+        data: (trends?.userGrowth ?? []).map((d) => ({ x: d.date, y: d.value })),
+      },
+    ],
+    [trends, t]
+  );
+
+  const growthOptions = useMemo<ApexCharts.ApexOptions>(
+    () => ({
+      chart: {
+        type: 'line',
+        toolbar: { show: false },
+        fontFamily: 'inherit',
+        animations: { enabled: true, speed: 600 },
+        zoom: { enabled: false },
+      },
+      colors: ['#3b82f6', '#8b5cf6'],
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
+      markers: { size: 0, hover: { size: 4 } },
+      grid: { borderColor: ct.grid, strokeDashArray: 3, padding: { left: 8, right: 8 } },
+      legend: { show: false },
+      xaxis: {
+        type: 'category',
+        labels: {
+          rotate: 0,
+          hideOverlappingLabels: true,
+          formatter: (value: string) => formatChartDate(String(value)),
+          style: { fontSize: '11px', colors: ct.textSecondary },
+        },
+        axisBorder: { color: ct.grid },
+        axisTicks: { color: ct.grid },
+        tooltip: { enabled: false },
+      },
+      yaxis: {
+        labels: {
+          formatter: (value: number) => String(Math.round(value)),
+          style: { fontSize: '11px', colors: ct.textSecondary },
+        },
+      },
+      tooltip: {
+        theme: ct.isDark ? 'dark' : 'light',
+        shared: true,
+        x: { formatter: (_v, opts) => formatChartDate(String(growthSeries[0]?.data[opts?.dataPointIndex ?? 0]?.x ?? '')) },
+      },
+    }),
+    [ct, t, growthSeries]
+  );
+
+  // ── ApexCharts: Plan distribution (horizontal bar, per-bar colors) ──
+  const planSeries = useMemo(
+    () => [
+      {
+        name: t('colCompany'),
+        data: (trends?.planBreakdown ?? []).map((p) => p.count),
+      },
+    ],
+    [trends, t]
+  );
+
+  const planOptions = useMemo<ApexCharts.ApexOptions>(
+    () => {
+      const breakdown = trends?.planBreakdown ?? [];
+      return {
+        chart: {
+          type: 'bar',
+          toolbar: { show: false },
+          fontFamily: 'inherit',
+          animations: { enabled: true, speed: 600 },
+        },
+        colors: breakdown.map((_p, i) => CHART_COLORS[i % CHART_COLORS.length]),
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 4,
+            borderRadiusApplication: 'end',
+            barHeight: '60%',
+            distributed: true,
+          },
+        },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        grid: {
+          borderColor: ct.grid,
+          strokeDashArray: 3,
+          xaxis: { lines: { show: true } },
+          yaxis: { lines: { show: false } },
+        },
+        xaxis: {
+          categories: breakdown.map((p) => p.plan),
+          labels: { style: { fontSize: '11px', colors: ct.textSecondary } },
+          axisBorder: { color: ct.grid },
+          axisTicks: { color: ct.grid },
+        },
+        yaxis: {
+          labels: { style: { fontSize: '12px', colors: ct.textPrimary } },
+        },
+        tooltip: {
+          theme: ct.isDark ? 'dark' : 'light',
+          y: {
+            formatter: (value: number, opts) => {
+              const pct = breakdown[opts?.dataPointIndex ?? 0]?.percentage ?? 0;
+              return `${Number(value)} ${t('companies')} (${pct}%)`;
+            },
+            title: { formatter: () => '' },
+          },
+        },
+      };
+    },
+    [ct, t, trends]
+  );
 
   if (loading) {
     return (
@@ -249,40 +420,13 @@ export default function SystemDashboardPage() {
               <h3 className="text-base font-semibold text-foreground mb-4">
                 {t('revenueByDay')}
               </h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={trends.revenueByDay}>
-                  <defs>
-                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={formatChartDate}
-                    tick={{ fontSize: 11, fill: '#9ca3af' }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    tickFormatter={formatShortCurrency}
-                    tick={{ fontSize: 11, fill: '#9ca3af' }}
-                    width={60}
-                  />
-                  <Tooltip
-                    formatter={(value) => [formatCurrency(Number(value)), t('revenue')]}
-                    labelFormatter={(label) => formatChartDate(String(label))}
-                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    fill="url(#revenueGrad)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <Chart
+                key={ct.isDark ? 'dark' : 'light'}
+                type="area"
+                height={280}
+                options={revenueOptions}
+                series={revenueSeries}
+              />
             </div>
           )}
 
@@ -294,41 +438,13 @@ export default function SystemDashboardPage() {
                 <h3 className="text-base font-semibold text-foreground mb-4">
                   {t('growth')}
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={formatChartDate}
-                      tick={{ fontSize: 11, fill: '#9ca3af' }}
-                      allowDuplicatedCategory={false}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} width={45} />
-                    <Tooltip
-                      labelFormatter={(label) => formatChartDate(String(label))}
-                      contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
-                    />
-                    <Line
-                      data={trends.tenantGrowth}
-                      type="monotone"
-                      dataKey="value"
-                      name={t('companies')}
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      data={trends.userGrowth}
-                      type="monotone"
-                      dataKey="value"
-                      name={t('users')}
-                      stroke="#8b5cf6"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <Chart
+                  key={ct.isDark ? 'dark' : 'light'}
+                  type="line"
+                  height={250}
+                  options={growthOptions}
+                  series={growthSeries}
+                />
                 <div className="flex items-center gap-4 mt-2 justify-center">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-0.5 bg-blue-500 rounded-full" />
@@ -348,30 +464,13 @@ export default function SystemDashboardPage() {
                 <h3 className="text-base font-semibold text-foreground mb-4">
                   {t('planDistribution')}
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={trends.planBreakdown} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} />
-                    <YAxis
-                      type="category"
-                      dataKey="plan"
-                      tick={{ fontSize: 12, fill: '#374151' }}
-                      width={100}
-                    />
-                    <Tooltip
-                      formatter={(value, _name, props) => [
-                        `${Number(value)} empresas (${((props as unknown as { payload: { percentage: number } }).payload.percentage)}%)`,
-                        'Cantidad',
-                      ]}
-                      contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
-                    />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={32}>
-                      {trends.planBreakdown.map((_entry, index) => (
-                        <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <Chart
+                  key={ct.isDark ? 'dark' : 'light'}
+                  type="bar"
+                  height={250}
+                  options={planOptions}
+                  series={planSeries}
+                />
               </div>
             )}
           </div>

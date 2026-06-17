@@ -1,19 +1,11 @@
-import React, { useMemo, useCallback } from 'react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
-import type { TooltipContentProps, LegendPayload } from 'recharts';
+import React, { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { useChartTheme } from '@/hooks/useChartTheme';
 import { ActivityChartData } from '@/services/dashboardService';
 import { useTranslations } from 'next-intl';
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface ActivityChartProps {
   data: ActivityChartData[];
@@ -37,82 +29,102 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   const resolvedTitle = title ?? t('title');
   const resolvedSubtitle = subtitle ?? t('subtitle');
 
-  // Colores para cada métrica — static, memoized to keep referential identity
-  const colors = useMemo(() => ({
-    totalActivities: '#3b82f6', // Azul
-    logins: '#10b981', // Verde
-    uniqueUsers: '#8b5cf6', // Púrpura
-    errors: '#ef4444', // Rojo
-  }), []);
-
-  const chartMargin = useMemo(() => ({ top: 20, right: 30, left: 20, bottom: 5 }), []);
-
-  // Componente personalizado para el tooltip
-  const CustomTooltip = useCallback(({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
-          <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
-          <div className="space-y-1">
-            {payload.map((entry, index: number) => (
-              <div key={index} className="flex items-center justify-between space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: entry.color }}
-                  ></div>
-                  <span className="text-sm">
-                    {entry.dataKey === 'totalActivities' && `${t('activities')}:`}
-                    {entry.dataKey === 'logins' && `${t('logins')}:`}
-                    {entry.dataKey === 'uniqueUsers' && `${t('users')}:`}
-                    {entry.dataKey === 'errors' && `${t('errors')}:`}
-                  </span>
-                </div>
-                <span className="text-sm font-semibold">{entry.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  }, [ct.tooltipBg, ct.tooltipBorder, ct.tooltipText, t]);
-
-  // Calcular métricas totales — memoized since data array can be large
-  const totals = useMemo(() => data.reduce(
-    (acc, item) => ({
-      totalActivities: acc.totalActivities + item.totalActivities,
-      logins: acc.logins + item.logins,
-      uniqueUsers: acc.uniqueUsers + item.uniqueUsers,
-      errors: acc.errors + item.errors,
+  // Colores para cada metrica (mismos que la version recharts)
+  const colors = useMemo(
+    () => ({
+      totalActivities: '#3b82f6', // Azul
+      logins: '#10b981', // Verde
+      uniqueUsers: '#8b5cf6', // Purpura
+      errors: '#ef4444', // Rojo
     }),
-    { totalActivities: 0, logins: 0, uniqueUsers: 0, errors: 0 }
-  ), [data]);
+    []
+  );
 
-  // Legend label map — memoized to avoid recreating on each render
-  const legendLabels = useMemo<Record<string, string>>(() => ({
-    totalActivities: t('activities'),
-    logins: t('logins'),
-    uniqueUsers: t('users'),
-    errors: t('errors'),
-  }), [t]);
+  // Calcular metricas totales — memoized since data array can be large
+  const totals = useMemo(
+    () =>
+      data.reduce(
+        (acc, item) => ({
+          totalActivities: acc.totalActivities + item.totalActivities,
+          logins: acc.logins + item.logins,
+          uniqueUsers: acc.uniqueUsers + item.uniqueUsers,
+          errors: acc.errors + item.errors,
+        }),
+        { totalActivities: 0, logins: 0, uniqueUsers: 0, errors: 0 }
+      ),
+    [data]
+  );
 
-  // Componente personalizado para la leyenda
-  const CustomLegend = useCallback(({ payload }: { payload?: ReadonlyArray<LegendPayload> }) => {
-    return (
-      <div className="flex justify-center space-x-6 mt-4">
-        {payload?.map((entry, index: number) => (
-          <div key={index} className="flex items-center space-x-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            ></div>
-            <span className="text-sm" style={{ color: ct.textSecondary }}>{(entry.value != null ? legendLabels[entry.value] : undefined) || entry.value}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }, [ct.textSecondary, legendLabels]);
+  // 4 series area: actividades, logins, usuarios, errores
+  const series = useMemo(
+    () => [
+      { name: t('activities'), data: data.map((d) => d.totalActivities) },
+      { name: t('logins'), data: data.map((d) => d.logins) },
+      { name: t('users'), data: data.map((d) => d.uniqueUsers) },
+      { name: t('errors'), data: data.map((d) => d.errors) },
+    ],
+    [data, t]
+  );
+
+  const options: ApexCharts.ApexOptions = useMemo(
+    () => ({
+      chart: {
+        type: 'area',
+        toolbar: { show: false },
+        fontFamily: 'inherit',
+        animations: { enabled: true, speed: 500 },
+      },
+      colors: [colors.totalActivities, colors.logins, colors.uniqueUsers, colors.errors],
+      stroke: { curve: 'smooth', width: 2 },
+      dataLabels: { enabled: false },
+      // Gradient solo para actividades y logins; usuarios y errores sin relleno
+      fill: {
+        type: ['gradient', 'gradient', 'solid', 'solid'],
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.3,
+          opacityTo: 0,
+          stops: [5, 95],
+        },
+        opacity: [1, 1, 0, 0],
+      },
+      grid: { borderColor: ct.grid, strokeDashArray: 3, padding: { left: 8, right: 8 } },
+      xaxis: {
+        categories: data.map((d) => d.date),
+        labels: { style: { fontSize: '12px', colors: ct.textSecondary } },
+        axisBorder: { color: ct.grid },
+        axisTicks: { color: ct.grid },
+      },
+      yaxis: { labels: { style: { fontSize: '12px', colors: ct.textSecondary } } },
+      legend: {
+        position: 'bottom',
+        labels: { colors: ct.textSecondary },
+        markers: { size: 6 },
+        itemMargin: { horizontal: 10 },
+      },
+      tooltip: {
+        shared: true,
+        intersect: false,
+        custom: ({ series: s, dataPointIndex, w }) => {
+          const label = data[dataPointIndex]?.date ?? '';
+          const rows = (w.globals.seriesNames as string[])
+            .map((name, i) => {
+              const val = s[i]?.[dataPointIndex] ?? 0;
+              const color = w.globals.colors[i];
+              return `<div class="flex items-center justify-between gap-4 py-0.5">
+                <div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:9999px;background:${color};display:inline-block"></span><span style="font-size:13px">${name}</span></div>
+                <span style="font-size:13px;font-weight:600">${val}</span></div>`;
+            })
+            .join('');
+          return `<div style="padding:10px 12px;border-radius:8px;background:${ct.tooltipBg};border:1px solid ${ct.tooltipBorder};color:${ct.tooltipText}">
+            <p style="font-size:13px;font-weight:500;margin-bottom:6px">${label}</p>
+            ${rows}
+          </div>`;
+        },
+      },
+    }),
+    [colors, ct, data]
+  );
 
   if (isLoading) {
     return (
@@ -178,42 +190,13 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
       </CardHeader>
 
       <CardContent>
-        <div style={{ height }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={chartMargin}>
-              <defs>
-                <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={colors.totalActivities} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={colors.totalActivities} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="loginsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={colors.logins} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={colors.logins} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke={ct.axis} />
-              <YAxis tick={{ fontSize: 12 }} stroke={ct.axis} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend content={<CustomLegend />} />
-
-              <Area
-                type="monotone"
-                dataKey="totalActivities"
-                stroke={colors.totalActivities}
-                strokeWidth={2}
-                fill="url(#activityGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="logins"
-                stroke={colors.logins}
-                strokeWidth={2}
-                fill="url(#loginsGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <Chart
+          key={ct.isDark ? 'dark' : 'light'}
+          type="area"
+          height={height}
+          options={options}
+          series={series}
+        />
       </CardContent>
     </Card>
   );

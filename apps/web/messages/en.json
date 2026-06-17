@@ -970,6 +970,8 @@
       "total": "Total:",
       "totalVisits": "Total Visits",
       "completed": "Completed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
       "successRate": "Success Rate"
     }
   },
