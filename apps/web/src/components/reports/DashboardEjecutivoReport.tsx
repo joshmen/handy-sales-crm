@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { getDashboardEjecutivo, DashboardEjecutivoResponse } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
-import { Card, Metric, Text, Flex, BadgeDelta, BarList } from '@tremor/react';
+import { Card, Metric, Text, Flex, BadgeDelta } from '@/components/ui/reportPrimitives';
 import { ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2, Download } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
