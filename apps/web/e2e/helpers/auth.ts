@@ -245,3 +245,67 @@ export async function loginAsSuperAdmin(page: Page): Promise<void> {
   await fillLoginForm(page, superAdmin, TEST_PASSWORD);
   await expect(page).toHaveURL(/dashboard/, { timeout: 25000 });
 }
+
+/**
+ * Devuelve el accessToken (JWT backend) del SuperAdmin para llamadas a la API
+ * (`page.request` con Authorization Bearer), SIN hacer un `POST /auth/login`.
+ *
+ * ROOT CAUSE FIX (single-session SA): el patron duplicado en muchos specs hacia
+ * `POST /auth/login` para xjoshmenx, lo cual BUMPEA session_version e INVALIDA la
+ * storageState SA compartida (auth.setup) → la sesion UI queda stale → 401 /
+ * re-render → inestabilidad de UI y "Unexpected end of JSON input" en beforeEach.
+ *
+ * En su lugar leemos el token de la sesion NextAuth EXISTENTE (`/api/auth/session`,
+ * que expone `accessToken` — ver lib/auth.ts session callback). Si el contexto aun
+ * no tiene la sesion SA (p.ej. arranca con la storageState admin del proyecto), se
+ * carga via loginAsSuperAdmin (fast-path, NO bumpea). Cero session bumps.
+ */
+export async function getSuperAdminApiToken(page: Page): Promise<string> {
+  const readSession = async (): Promise<{ accessToken?: string; user?: { role?: string } } | null> => {
+    const res = await page.request.get('/api/auth/session');
+    if (!res.ok()) return null;
+    return (await res.json().catch(() => null)) as { accessToken?: string; user?: { role?: string } } | null;
+  };
+
+  let s = await readSession();
+  // Si no hay sesion SA cargada (token ausente o el rol no es SUPER_ADMIN porque
+  // el contexto trae la storageState admin), cargar la sesion SA compartida.
+  if (!s?.accessToken || s.user?.role !== 'SUPER_ADMIN') {
+    await loginAsSuperAdmin(page);
+    s = await readSession();
+  }
+  if (!s?.accessToken) {
+    throw new Error('No se obtuvo accessToken SuperAdmin de /api/auth/session');
+  }
+  return s.accessToken;
+}
+
+/**
+ * Devuelve un accessToken de ADMIN para llamadas a la API en tests que necesitan
+ * la perspectiva admin (p.ej. /api/notificaciones/banners). Usa force-login del
+ * usuario DEDICADO `loginAdmin` (e2e-login-admin@jeyma) — NO de `admin@jeyma` — para
+ * no invalidar la storageState admin compartida del proyecto. force-login bypassa el
+ * single-session estricto, evitando el "Unexpected end of JSON input" del `/auth/login`.
+ *
+ * IMPORTANTE — por que loginAdmin y NO leer la sesion admin@jeyma (que seria cero-bump):
+ * los tests de banners (announcement-displaymode + security-announcements) crean un
+ * banner y verifican que ESTE admin lo ve. `loginAdmin` es el usuario para el que ese
+ * banner es visible (tenant/estado de dismissals limpio); `admin@jeyma` NO lo ve →
+ * romperia los tests de banner. La colision con el test UI "Login con credenciales
+ * validas" (que tambien usa loginAdmin) se resuelve en ESE test via su conflict-handling
+ * (boton "Continuar aqui"), no aqui.
+ */
+export async function getAdminApiToken(page: Page): Promise<string> {
+  const { loginAdmin, password, apiBase } = getTestEmails();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await page.request.post(`${apiBase}/auth/force-login`, {
+      data: { email: loginAdmin, password },
+    });
+    if (r.ok()) {
+      const d = (await r.json().catch(() => null)) as { token?: string } | null;
+      if (d?.token) return d.token;
+    }
+    await page.waitForTimeout(300);
+  }
+  throw new Error('No se obtuvo accessToken admin (force-login de loginAdmin fallo)');
+}

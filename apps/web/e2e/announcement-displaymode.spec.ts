@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { loginAsAdmin, loginAsSuperAdmin, getTestEmails } from './helpers/auth';
+import { loginAsAdmin, loginAsSuperAdmin, getSuperAdminApiToken, getAdminApiToken } from './helpers/auth';
 
 /**
  * E2E Tests for Announcement DisplayMode Feature
@@ -26,14 +26,11 @@ async function waitForPageLoad(page: Page) {
   await page.waitForTimeout(2000);
 }
 
+// ROOT CAUSE FIX: usar el token de la sesion NextAuth EXISTENTE (no `POST /auth/login`,
+// que bumpea session_version e invalida la storageState SA → JSON error + UI inestable).
+// Ver getSuperAdminApiToken en helpers/auth.ts.
 function getSuperAdminToken(page: Page) {
-  const { superAdmin, password, apiBase } = getTestEmails();
-  return page.request
-    .post(`${apiBase}/auth/login`, {
-      data: { email: superAdmin, password },
-    })
-    .then((r) => r.json())
-    .then((d) => d.token as string);
+  return getSuperAdminApiToken(page);
 }
 
 async function createAnnouncementViaAPI(
@@ -283,13 +280,9 @@ test.describe('DisplayMode API', () => {
     await createAnnouncementViaAPI(page, 'API Both Mode', 'Banner', 'Both');
 
     // Login as admin and fetch banners
-    const { admin, password, apiBase } = getTestEmails();
-    const loginRes = await page.request.post(`${apiBase}/auth/login`, {
-      data: { email: admin, password },
-    });
-    const { token } = await loginRes.json();
+    const token = await getAdminApiToken(page);
 
-    const res = await page.request.get(`${apiBase}/api/notificaciones/banners`, {
+    const res = await page.request.get(`${API_BASE}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
@@ -304,13 +297,9 @@ test.describe('DisplayMode API', () => {
   test('Banner response includes displayMode field', async ({ page }) => {
     await createAnnouncementViaAPI(page, 'API DM Field', 'Banner', 'Both');
 
-    const { admin, password, apiBase } = getTestEmails();
-    const loginRes = await page.request.post(`${apiBase}/auth/login`, {
-      data: { email: admin, password },
-    });
-    const { token } = await loginRes.json();
+    const token = await getAdminApiToken(page);
 
-    const res = await page.request.get(`${apiBase}/api/notificaciones/banners`, {
+    const res = await page.request.get(`${API_BASE}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const banners = await res.json();

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { Card } from "@tremor/react";
+import { Card } from "@/components/ui/reportPrimitives";
 import dynamic from "next/dynamic";
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import { DateTimePicker } from "@/components/ui/DateTimePicker";

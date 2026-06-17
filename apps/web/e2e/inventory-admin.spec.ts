@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
+import { settle } from './helpers/settle';
 
 /**
  * QA Audit 2026-06-06 — ADMIN inventory ajustes + movimientos log.
@@ -27,8 +28,8 @@ test.describe('Inventario — ADMIN almacen tab', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/inventory');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    // de-flake: settle (DOM + spinner global oculto) en vez de waitForTimeout(1500).
+    await settle(page);
   });
 
   test('admin carga /inventory con heading + sin crash', async ({ page }) => {
@@ -73,7 +74,8 @@ test.describe('Inventario — ADMIN almacen tab', () => {
       return;
     }
     await tab.click();
-    await page.waitForTimeout(1500);
+    // de-flake: settle del contenido del tab en vez de waitForTimeout(1500).
+    await settle(page);
     expect(page.url()).toContain('/inventory');
     const bodyText = (await page.locator('main, body').first().textContent()) ?? '';
     expect(bodyText).not.toMatch(/Application error|crashed/i);
@@ -84,8 +86,7 @@ test.describe('Inventario — ADMIN movimientos log', () => {
   test('GET /api/inventario/movimientos responde 2xx', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/inventory');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await settle(page);
 
     const status = await page.evaluate(async () => {
       try {
@@ -120,8 +121,7 @@ test.describe('Inventario — ADMIN movimientos log', () => {
     }
     await loginAsAdmin(page);
     await page.goto('/inventory');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await settle(page);
 
     const tab = page.getByRole('tab', { name: /Movimientos|Historial/i }).first();
     if (!(await tab.isVisible({ timeout: 4000 }).catch(() => false))) {
@@ -129,7 +129,7 @@ test.describe('Inventario — ADMIN movimientos log', () => {
       return;
     }
     await tab.click();
-    await page.waitForTimeout(1500);
+    await settle(page);
 
     // Debe existir una tabla, lista o mensaje "sin movimientos"
     const hasTable = await page.locator('table, [role="table"], [role="grid"]').first().isVisible({ timeout: 3000 }).catch(() => false);
@@ -146,8 +146,7 @@ test.describe('Inventario — ADMIN ajustes drawer', () => {
     }
     await loginAsAdmin(page);
     await page.goto('/inventory');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await settle(page);
 
     const newBtn = page
       .getByRole('button', { name: /Nuevo movimiento|Nuevo ajuste|Ajuste|Entrada|Salida/i })
@@ -157,10 +156,11 @@ test.describe('Inventario — ADMIN ajustes drawer', () => {
       return;
     }
     await newBtn.click();
-    await page.waitForTimeout(1500);
 
+    // de-flake: waitFor({state:'visible'}) auto-espera la apertura del drawer en vez
+    // de waitForTimeout(1500) + isVisible (que no auto-espera).
     const dialog = page.locator('[role="dialog"]').first();
-    const visible = await dialog.isVisible({ timeout: 3000 }).catch(() => false);
+    const visible = await dialog.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
     if (!visible) {
       test.skip(true, 'Drawer no abrio');
       return;
@@ -188,8 +188,7 @@ test.describe('Inventario — ADMIN ajustes drawer', () => {
     }
     await loginAsAdmin(page);
     await page.goto('/inventory');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await settle(page);
 
     const newBtn = page
       .getByRole('button', { name: /Nuevo movimiento|Nuevo ajuste|Ajuste|Entrada|Salida/i })
@@ -199,10 +198,9 @@ test.describe('Inventario — ADMIN ajustes drawer', () => {
       return;
     }
     await newBtn.click();
-    await page.waitForTimeout(1500);
 
     const dialog = page.locator('[role="dialog"]').first();
-    if (!(await dialog.isVisible({ timeout: 3000 }).catch(() => false))) {
+    if (!(await dialog.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false))) {
       test.skip(true, 'Drawer no abrio');
       return;
     }
@@ -243,15 +241,14 @@ test.describe('Inventario — ADMIN busqueda', () => {
   test('buscador productos acepta input sin crash', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/inventory');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await settle(page);
     const buscador = page.getByPlaceholder(/Buscar/i).first();
     if (!(await buscador.isVisible({ timeout: 4000 }).catch(() => false))) {
       test.skip();
       return;
     }
     await buscador.fill('zzz-inv-no-match');
-    await page.waitForTimeout(600);
-    expect(await buscador.inputValue()).toBe('zzz-inv-no-match');
+    // de-flake: toHaveValue auto-espera (antes waitForTimeout(600) de debounce).
+    await expect(buscador).toHaveValue('zzz-inv-no-match');
   });
 });

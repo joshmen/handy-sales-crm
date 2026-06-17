@@ -1,19 +1,10 @@
 import React, { useMemo, useCallback } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-} from "recharts";
-import type { TooltipContentProps } from "recharts";
+import dynamic from "next/dynamic";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { useTranslations, useLocale } from "next-intl";
+
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface SalesData {
   date: string;
@@ -66,34 +57,6 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   // YAxis tick formatter — memoized to keep stable reference
   const yAxisTickFormatter = useCallback((value: number) => `$${(value / 1000).toFixed(0)}k`, []);
 
-  // Componente personalizado para el tooltip
-  const CustomTooltip = useCallback(({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
-          <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
-          {payload.map((entry, index: number) => (
-            <div key={index} className="flex items-center space-x-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              ></div>
-              <span className="text-sm">
-                {entry.dataKey === "sales" ? t("sales") : t("orders")}{" "}
-                <span className="font-semibold">
-                  {entry.dataKey === "sales"
-                    ? formatCurrency(entry.value as number)
-                    : formatNumber(entry.value as number)}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  }, [ct.tooltipBg, ct.tooltipBorder, ct.tooltipText, t, formatCurrency, formatNumber]);
-
   // Calcular métricas rápidas — memoized since data array can be large
   const { totalSales, totalOrders, avgOrderValue } = useMemo(() => {
     const sales = data.reduce((sum, item) => sum + item.sales, 0);
@@ -105,9 +68,84 @@ export const SalesChart: React.FC<SalesChartProps> = ({
     };
   }, [data]);
 
-  // Inline style objects for Line chart — memoized to prevent re-renders
-  const lineDotStyle = useMemo(() => ({ fill: color, strokeWidth: 0, r: 4 }), [color]);
-  const lineActiveDotStyle = useMemo(() => ({ r: 6, stroke: color, strokeWidth: 2 }), [color]);
+  // Solo graficamos la serie de ventas (igual que la version recharts)
+  const series = useMemo(
+    () => [{ name: t("sales"), data: data.map((d) => d.sales) }],
+    [data, t]
+  );
+
+  const options: ApexCharts.ApexOptions = useMemo(
+    () => ({
+      chart: {
+        type: type === "area" ? "area" : "line",
+        toolbar: { show: false },
+        fontFamily: "inherit",
+        animations: { enabled: true, speed: 500 },
+        zoom: { enabled: false },
+      },
+      colors: [color],
+      stroke: {
+        curve: "smooth",
+        width: type === "area" ? 2 : 3,
+      },
+      markers: {
+        size: type === "area" ? 0 : 4,
+        strokeWidth: 0,
+        hover: { size: 6 },
+      },
+      dataLabels: { enabled: false },
+      grid: { borderColor: ct.grid, strokeDashArray: 3, padding: { left: 8, right: 8 } },
+      xaxis: {
+        categories: data.map((d) => d.date),
+        labels: { style: { fontSize: "12px", colors: ct.textSecondary } },
+        axisBorder: { color: ct.grid },
+        axisTicks: { color: ct.grid },
+        tooltip: { enabled: false },
+      },
+      yaxis: {
+        labels: {
+          style: { fontSize: "12px", colors: ct.textSecondary },
+          formatter: (value: number) => yAxisTickFormatter(value),
+        },
+      },
+      legend: { show: false },
+      fill:
+        type === "area"
+          ? {
+              type: "gradient",
+              gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.3,
+                opacityTo: 0,
+                stops: [5, 95],
+              },
+            }
+          : { type: "solid", opacity: 1 },
+      tooltip: {
+        shared: true,
+        intersect: false,
+        custom: ({ dataPointIndex }) => {
+          const point = data[dataPointIndex];
+          if (!point) return "";
+          const label = point.label ?? point.date;
+          const salesRow = `<div class="flex items-center space-x-2" style="display:flex;align-items:center;gap:8px">
+            <span style="width:12px;height:12px;border-radius:9999px;background:${color};display:inline-block"></span>
+            <span style="font-size:13px">${t("sales")} <span style="font-weight:600">${formatCurrency(point.sales)}</span></span>
+          </div>`;
+          const ordersRow = `<div class="flex items-center space-x-2" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            <span style="width:12px;height:12px;border-radius:9999px;background:${ct.textMuted};display:inline-block"></span>
+            <span style="font-size:13px">${t("orders")} <span style="font-weight:600">${formatNumber(point.orders)}</span></span>
+          </div>`;
+          return `<div style="padding:10px 12px;border-radius:8px;background:${ct.tooltipBg};border:1px solid ${ct.tooltipBorder};color:${ct.tooltipText}">
+            <p style="font-size:13px;font-weight:500;margin-bottom:6px">${label}</p>
+            ${salesRow}
+            ${ordersRow}
+          </div>`;
+        },
+      },
+    }),
+    [type, color, ct, data, t, locale, formatCurrency, formatNumber, yAxisTickFormatter]
+  );
 
   if (isLoading) {
     return (
@@ -161,68 +199,13 @@ export const SalesChart: React.FC<SalesChartProps> = ({
       </CardHeader>
 
       <CardContent>
-        <div style={{ height }}>
-          <ResponsiveContainer width="100%" height="100%">
-            {type === "area" ? (
-              <AreaChart data={data}>
-                <defs>
-                  <linearGradient
-                    id="salesGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  stroke={ct.axis}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  stroke={ct.axis}
-                  tickFormatter={yAxisTickFormatter}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="sales"
-                  stroke={color}
-                  strokeWidth={2}
-                  fill="url(#salesGradient)"
-                />
-              </AreaChart>
-            ) : (
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  stroke={ct.axis}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  stroke={ct.axis}
-                  tickFormatter={yAxisTickFormatter}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="sales"
-                  stroke={color}
-                  strokeWidth={3}
-                  dot={lineDotStyle}
-                  activeDot={lineActiveDotStyle}
-                />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
-        </div>
+        <Chart
+          key={ct.isDark ? "dark" : "light"}
+          type={type === "area" ? "area" : "line"}
+          height={height}
+          options={options}
+          series={series}
+        />
       </CardContent>
     </Card>
   );

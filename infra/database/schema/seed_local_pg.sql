@@ -25,10 +25,10 @@ BEGIN;
 -- =====================================================
 
 -- Subscription Plans (3)
-INSERT INTO subscription_plans (nombre, codigo, precio_mensual, precio_anual, max_usuarios, max_productos, max_clientes_por_mes, incluye_reportes, incluye_soporte_prioritario, caracteristicas, activo, orden) VALUES
-('Gratis', 'FREE', 0, 0, 2, 50, 20, false, false, '["Hasta 2 usuarios","50 productos","20 clientes"]'::jsonb, true, 1),
-('Basico', 'BASIC', 499, 4990, 5, 500, 100, true, false, '["Hasta 5 usuarios","500 productos","100 clientes","Reportes"]'::jsonb, true, 2),
-('Profesional', 'PRO', 999, 9990, 20, 5000, 500, true, true, '["Hasta 20 usuarios","5000 productos","500 clientes","Reportes","Soporte prioritario"]'::jsonb, true, 3)
+INSERT INTO subscription_plans (nombre, codigo, precio_mensual, precio_anual, max_usuarios, max_productos, max_clientes_por_mes, incluye_reportes, incluye_soporte_prioritario, incluye_facturacion, max_timbres_mes, max_facturas_mes, caracteristicas, activo, orden) VALUES
+('Gratis', 'FREE', 0, 0, 2, 50, 20, false, false, false, 0, 0, '["Hasta 2 usuarios","50 productos","20 clientes"]'::jsonb, true, 1),
+('Basico', 'BASIC', 499, 4990, 5, 500, 100, true, false, false, 0, 0, '["Hasta 5 usuarios","500 productos","100 clientes","Reportes"]'::jsonb, true, 2),
+('Profesional', 'PRO', 999, 9990, 20, 5000, 500, true, true, true, 100, 100, '["Hasta 20 usuarios","5000 productos","500 clientes","Reportes","Soporte prioritario"]'::jsonb, true, 3)
 ON CONFLICT DO NOTHING;
 
 -- Timbre Packages (3)

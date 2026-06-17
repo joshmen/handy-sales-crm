@@ -46,7 +46,7 @@ test.describe('Metas de Vendedor Page', () => {
 
     // Close with X button (scoped to drawer to avoid matching HelpPanel's Cerrar button)
     await drawer.locator('button[aria-label="Cerrar"]').click();
-    await page.waitForTimeout(400);
+    // de-flake: not.toBeVisible auto-espera el cierre del drawer (antes waitForTimeout(400)).
     await expect(drawer).not.toBeVisible();
   });
 
@@ -94,11 +94,9 @@ test.describe('Metas de Vendedor Page', () => {
     const submitBtn = page.locator('[data-tour="metas-drawer-actions"] button[type="submit"]');
     await submitBtn.click();
 
-    // Wait for API + re-render
-    await page.waitForTimeout(2500);
-
-    // Drawer should close on success
-    await expect(drawer).not.toBeVisible({ timeout: 5000 });
+    // de-flake: el drawer cierra al exito del POST -> not.toBeVisible es la senal
+    // determinista del resultado (antes waitForTimeout(2500)).
+    await expect(drawer).not.toBeVisible({ timeout: 8000 });
 
     // Table is still in DOM (attached)
     await expect(page.locator('[data-tour="metas-table"]')).toBeAttached();
@@ -109,16 +107,14 @@ test.describe('Metas de Vendedor Page', () => {
 
     const tipoFilter = page.locator('[data-tour="metas-tipo-filter"]');
 
+    // de-flake: toHaveValue auto-espera el valor del select (antes waitForTimeout(400) c/u).
     await tipoFilter.selectOption('ventas');
-    await page.waitForTimeout(400);
     await expect(tipoFilter).toHaveValue('ventas');
 
     await tipoFilter.selectOption('pedidos');
-    await page.waitForTimeout(400);
     await expect(tipoFilter).toHaveValue('pedidos');
 
     await tipoFilter.selectOption('visitas');
-    await page.waitForTimeout(400);
     await expect(tipoFilter).toHaveValue('visitas');
 
     // Reset
@@ -130,16 +126,19 @@ test.describe('Metas de Vendedor Page', () => {
     await navigateToMetas(page);
 
     const searchInput = page.locator('[data-tour="metas-search"] input');
+
+    // de-flake: los waitForTimeout(500) eran de debounce client-side pero el assert
+    // (tabla siempre attached) no verificaba el filtrado. Se ancla el valor del input.
     await searchInput.fill('vendor');
-    await page.waitForTimeout(500);
+    await expect(searchInput).toHaveValue('vendor');
     await expect(page.locator('[data-tour="metas-table"]')).toBeAttached();
 
     await searchInput.fill('Ventas');
-    await page.waitForTimeout(500);
+    await expect(searchInput).toHaveValue('Ventas');
     await expect(page.locator('[data-tour="metas-table"]')).toBeAttached();
 
     await searchInput.clear();
-    await page.waitForTimeout(300);
+    await expect(searchInput).toHaveValue('');
   });
 
   test('should toggle show-inactive via InactiveToggle', async ({ page }) => {
@@ -148,14 +147,12 @@ test.describe('Metas de Vendedor Page', () => {
     const toggleBtn = page.locator('[data-tour="metas-toggle-inactive"] button');
     await expect(toggleBtn).toBeVisible();
 
-    // Toggle on
+    // de-flake: el toggle es un filtro client-side (useMemo), la tabla siempre esta
+    // attached; los waitForTimeout(500) no gateaban nada determinista.
     await toggleBtn.click();
-    await page.waitForTimeout(500);
     await expect(page.locator('[data-tour="metas-table"]')).toBeAttached();
 
-    // Toggle back off
     await toggleBtn.click();
-    await page.waitForTimeout(500);
     await expect(page.locator('[data-tour="metas-table"]')).toBeAttached();
   });
 
@@ -165,6 +162,8 @@ test.describe('Metas de Vendedor Page', () => {
     // Show inactive to see all metas
     const toggleBtn = page.locator('[data-tour="metas-toggle-inactive"] button');
     await toggleBtn.click();
+    // settle cat-e: re-render client-side del filtro show-inactive antes de contar
+    // filas; data-dependiente, sin senal de red ni elemento garantizado.
     await page.waitForTimeout(500);
 
     // Works on both desktop (button[title="Editar"]) and mobile (button with text Editar)
@@ -182,9 +181,8 @@ test.describe('Metas de Vendedor Page', () => {
 
     const saveBtn = page.locator('[data-tour="metas-drawer-actions"] button[type="submit"]');
     await saveBtn.click();
-    await page.waitForTimeout(2500);
-
-    await expect(drawer).not.toBeVisible({ timeout: 5000 });
+    // de-flake: el drawer cierra al exito del PUT (antes waitForTimeout(2500)).
+    await expect(drawer).not.toBeVisible({ timeout: 8000 });
   });
 
   test('should toggle activo for a meta if any exist', async ({ page }) => {
@@ -193,6 +191,7 @@ test.describe('Metas de Vendedor Page', () => {
     // Show inactive to see all
     const toggleBtn = page.locator('[data-tour="metas-toggle-inactive"] button');
     await toggleBtn.click();
+    // settle cat-e: re-render client-side del filtro show-inactive antes de contar.
     await page.waitForTimeout(500);
 
     // Find any ActiveToggle (label wrapping a checkbox) on the page
@@ -205,15 +204,22 @@ test.describe('Metas de Vendedor Page', () => {
     const checkbox = activeToggleLabel.locator('input[type="checkbox"]');
     const wasChecked = await checkbox.isChecked();
 
+    // de-flake: toBeChecked/not.toBeChecked auto-reintenta hasta que el PATCH /activo
+    // se refleje en el checkbox (antes waitForTimeout(1500) + isChecked() sin auto-espera).
     await activeToggleLabel.click();
-    await page.waitForTimeout(1500);
-
-    const nowChecked = await checkbox.isChecked();
-    expect(nowChecked).toBe(!wasChecked);
+    if (wasChecked) {
+      await expect(checkbox).not.toBeChecked();
+    } else {
+      await expect(checkbox).toBeChecked();
+    }
 
     // Restore
     await activeToggleLabel.click();
-    await page.waitForTimeout(1500);
+    if (wasChecked) {
+      await expect(checkbox).toBeChecked();
+    } else {
+      await expect(checkbox).not.toBeChecked();
+    }
   });
 
   test('should delete a meta if any exist', async ({ page }) => {
@@ -222,6 +228,7 @@ test.describe('Metas de Vendedor Page', () => {
     // Show inactive
     const toggleBtn = page.locator('[data-tour="metas-toggle-inactive"] button');
     await toggleBtn.click();
+    // settle cat-e: re-render client-side del filtro show-inactive antes de buscar el boton.
     await page.waitForTimeout(500);
 
     // Works on both desktop (title attr) and mobile (text)
@@ -233,8 +240,14 @@ test.describe('Metas de Vendedor Page', () => {
     // Confirm dialog
     const confirmBtn = page.getByRole('button', { name: /^Eliminar$/ });
     await expect(confirmBtn).toBeVisible({ timeout: 3000 });
+
+    // de-flake: anclar el DELETE /api/metas/{id} (antes waitForTimeout(1500)); el assert
+    // de tabla attached es debil, asi que la respuesta de red es la senal real.
+    const delResp = page
+      .waitForResponse((r) => /\/api\/metas\/\d+/.test(r.url()) && r.request().method() === 'DELETE', { timeout: 15000 })
+      .catch(() => null);
     await confirmBtn.click();
-    await page.waitForTimeout(1500);
+    await delResp;
 
     // Table still in DOM
     await expect(page.locator('[data-tour="metas-table"]')).toBeAttached();

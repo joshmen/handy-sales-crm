@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card as TremorCard } from '@tremor/react';
+import { Card as TremorCard } from '@/components/ui/reportPrimitives';
 import dynamic from 'next/dynamic';
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 import { ReportKPICards } from './ReportKPICards';

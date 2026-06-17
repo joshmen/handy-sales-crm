@@ -1,5 +1,17 @@
 # Lessons Learned
 
+## E2E: NO redisenar un helper compartido para "arreglar" la colision de UN test (2026-06-16)
+- **Caso**: `getAdminApiToken` (helpers/auth.ts) hace force-login del usuario DEDICADO `loginAdmin`. El test UI "Login con credenciales validas" (security-announcements) TAMBIEN usa loginAdmin, asi que bajo `--repeat-each` el force-login dejaba loginAdmin con sesion activa y el login por UI caia en el modal de conflicto. Lo "arregle" redisenando getAdminApiToken para leer la sesion de `admin@jeyma` (cero-bump, sin tocar loginAdmin).
+- **Que rompio**: los banner tests (announcement-displaymode + security-announcements) crean un banner y verifican que el admin lo VE. `loginAdmin` lo ve (su tenant/estado de dismissals); `admin@jeyma` NO lo ve, asi que 3 specs pasaron de verde a rojo (`banner === undefined`). Cambiar QUIEN autentica un helper compartido rompe tests que dependen del tenant/estado de ese usuario.
+- **El fix real** de la colision era PUNTUAL en el test que colisiona: su conflict-handling tenia el boton stale (`/Cerrar sesion anterior/`) cuando el modal ahora dice "Continuar aqui". Arreglado el regex (igual que ya hacia `fillLoginForm`), el test resuelve el conflicto solo, y getAdminApiToken se queda como estaba (force-login loginAdmin).
+- **Leccion**: cuando un helper E2E compartido lo consumen muchos tests, un "fix de colision" que cambia el usuario/tenant que autentica puede romper tests no relacionados. Preferir arreglar el test que colisiona (selector, conflict-handling) sobre redisenar el helper. Si tocas el helper, RE-VERIFICAR todos sus consumidores, no solo el que motivo el cambio.
+- **Como se detecto**: corriendo la regresion de announcement-displaymode (consumidor del helper) tras el cambio. El revert lo devolvio a 32/0. Sin esa regresion, el redise̱ño se habria commiteado rompiendo specs verdes.
+
+## Tooling: NO correr `npm run build` con el dev server (npm run dev) vivo (2026-06-16)
+- El build de produccion escribe a `apps/web/.next/` mientras Turbopack (dev) usa ese mismo dir, corrompe el dev server (empieza a responder 500). Extiende la regla ya conocida de no BORRAR `.next` con el server corriendo: tampoco hacer un build de produccion encima.
+- Recuperacion: matar el dev server, borrar `.next` (seguro ya con el server caido), reiniciar `npm run dev`.
+- Si necesitas validar con build de produccion, para el dev server primero (o usa un worktree aparte). Para QA visual basta con el dev server.
+
 ## NO "arreglar" comportamiento sin confirmar el MODELO DE NEGOCIO (2026-06-10)
 - **Regla doble**: (1) en E2E "desde cero" NO parchar con `UPDATE` a la BD para forzar estado — esconde bugs y no prueba el flujo real; (2) NO asumir que un comportamiento es un "bug" y cambiarlo: PREGUNTAR el modelo de producto primero.
 - **Caso real**: el checkout de timbres devolvía 400 "plan no incluye facturación" para un tenant nuevo (en Trial). Primero lo parcheé con `UPDATE subscription_plan_id=3` (mal). Luego lo "arreglé" haciendo el check trial-aware (peor: cambié comportamiento sin preguntar).
