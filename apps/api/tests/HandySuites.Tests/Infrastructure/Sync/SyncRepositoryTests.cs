@@ -651,6 +651,209 @@ public class SyncRepositoryTests : IDisposable
         todos.Should().BeEquivalentTo(new[] { ProductoId, 2300, 2301 });
     }
 
+    // === UpsertRutaDetalleAsync (estado de parada, fix sync jun 2026) ===
+    // El repo ya NO guarda internamente (caller hace el save unico) y NO destruye
+    // vinculos VisitaId/PedidoId cuando el movil manda null. Retorna (found, entity).
+
+    private const int RutaId = 400;
+
+    private RutaDetalle SeedParada(
+        int detalleId,
+        EstadoParada estado,
+        int? visitaId = null,
+        int? pedidoId = null,
+        long version = 1,
+        int rutaId = RutaId,
+        int rutaUsuarioId = UsuarioId)
+    {
+        if (!_db.RutasVendedor.Any(r => r.Id == rutaId))
+        {
+            _db.RutasVendedor.Add(new RutaVendedor
+            {
+                Id = rutaId, TenantId = TenantId, UsuarioId = rutaUsuarioId,
+                Codigo = $"RT-{rutaId}", Nombre = "Ruta Test",
+                Fecha = DateTime.UtcNow, Estado = EstadoRuta.EnProgreso, Activo = true,
+            });
+        }
+        var detalle = new RutaDetalle
+        {
+            Id = detalleId, RutaId = rutaId, ClienteId = ClienteId,
+            OrdenVisita = 1, Estado = estado, VisitaId = visitaId, PedidoId = pedidoId,
+            Version = version, Activo = true,
+        };
+        _db.RutasDetalle.Add(detalle);
+        _db.SaveChanges();
+        return detalle;
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_IdInvalido_DeberiaRetornarNotFound()
+    {
+        var dto = new SyncRutaDetalleDto { Id = 0, Operation = SyncOperation.Update };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+
+        found.Should().BeFalse();
+        entity.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_NoExiste_DeberiaRetornarNotFound()
+    {
+        var dto = new SyncRutaDetalleDto { Id = 99999, Operation = SyncOperation.Update };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+
+        found.Should().BeFalse();
+        entity.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_OtroUsuario_DeberiaRetornarNotFound()
+    {
+        // Parada de una ruta de OTRO vendedor (usuario 999) — no debe encontrarse.
+        SeedParada(510, EstadoParada.Pendiente, rutaId: 410, rutaUsuarioId: 999);
+        var dto = new SyncRutaDetalleDto { Id = 510, Operation = SyncOperation.Update };
+
+        var (found, _) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+
+        found.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_ConHoraSalida_DeberiaNormalizarAVisitado()
+    {
+        // Mobile manda estado=EnCamino(1) pero con HoraSalidaReal → backend lo
+        // normaliza a Visitado (enums divergentes mobile/backend en el valor 1).
+        SeedParada(520, EstadoParada.Pendiente);
+        var dto = new SyncRutaDetalleDto
+        {
+            Id = 520,
+            Estado = (int)EstadoParada.EnCamino,
+            HoraLlegadaReal = DateTime.UtcNow.AddMinutes(-30),
+            HoraSalidaReal = DateTime.UtcNow,
+            Operation = SyncOperation.Update,
+        };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        found.Should().BeTrue();
+        entity!.Estado.Should().Be(EstadoParada.Visitado);
+        entity.HoraSalidaReal.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_Omitido_DeberiaConservarRazonOmision()
+    {
+        SeedParada(530, EstadoParada.Pendiente);
+        var dto = new SyncRutaDetalleDto
+        {
+            Id = 530,
+            Estado = (int)EstadoParada.Omitido,
+            RazonOmision = "Cliente cerrado",
+            Operation = SyncOperation.Update,
+        };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        found.Should().BeTrue();
+        entity!.Estado.Should().Be(EstadoParada.Omitido);
+        entity.RazonOmision.Should().Be("Cliente cerrado");
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_RazonOmisionNull_NoDeberiaBorrarRazonExistente()
+    {
+        // Transicion Omitido(con razon) -> otro estado: el movil manda razonOmision=null
+        // (solo la envia en estado Omitido). El backend NO debe borrar la razon auditable.
+        var seed = SeedParada(535, EstadoParada.Omitido);
+        seed.RazonOmision = "Cliente cerrado";
+        await _db.SaveChangesAsync();
+
+        var dto = new SyncRutaDetalleDto
+        {
+            Id = 535,
+            Estado = (int)EstadoParada.Visitado,
+            HoraSalidaReal = DateTime.UtcNow,
+            RazonOmision = null,
+            Operation = SyncOperation.Update,
+        };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        found.Should().BeTrue();
+        entity!.RazonOmision.Should().Be("Cliente cerrado"); // conservada, no borrada
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_VisitaIdNull_NoDeberiaBorrarVinculoExistente()
+    {
+        // Bug: el movil nunca setea VisitaId (manda null) → el backend NO debe
+        // sobreescribir el vinculo que ya existe en el servidor.
+        SeedParada(540, EstadoParada.EnCamino, visitaId: 77);
+        var dto = new SyncRutaDetalleDto
+        {
+            Id = 540,
+            Estado = (int)EstadoParada.Visitado,
+            HoraSalidaReal = DateTime.UtcNow,
+            VisitaId = null,
+            Operation = SyncOperation.Update,
+        };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        found.Should().BeTrue();
+        entity!.VisitaId.Should().Be(77); // conservado, no borrado
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_PedidoIdNull_NoDeberiaBorrarVinculoExistente()
+    {
+        // El pedido_id local del WDB no mapea a un Id de servidor (llega null) →
+        // conservar el PedidoId que el servidor ya tiene.
+        SeedParada(550, EstadoParada.EnCamino, pedidoId: 88);
+        var dto = new SyncRutaDetalleDto
+        {
+            Id = 550,
+            Estado = (int)EstadoParada.Visitado,
+            HoraSalidaReal = DateTime.UtcNow,
+            PedidoId = null,
+            Operation = SyncOperation.Update,
+        };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        found.Should().BeTrue();
+        entity!.PedidoId.Should().Be(88); // conservado, no borrado
+    }
+
+    [Fact]
+    public async Task UpsertRutaDetalle_UpdateConSave_DeberiaIncrementarVersionUnaVez()
+    {
+        // El repo ya no guarda ni bumpea Version manualmente. Un save logico del
+        // caller → el interceptor de HandySalesDbContext incrementa Version 1→2
+        // (una sola vez, sin doble-bump).
+        SeedParada(560, EstadoParada.Pendiente, version: 1);
+        var dto = new SyncRutaDetalleDto
+        {
+            Id = 560,
+            Estado = (int)EstadoParada.Visitado,
+            HoraSalidaReal = DateTime.UtcNow,
+            Operation = SyncOperation.Update,
+        };
+
+        var (found, entity) = await _sut.UpsertRutaDetalleAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        found.Should().BeTrue();
+        entity!.Version.Should().Be(2);
+    }
+
     public void Dispose()
     {
         _db.Dispose();
