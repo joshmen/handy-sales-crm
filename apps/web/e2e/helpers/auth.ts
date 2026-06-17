@@ -286,6 +286,14 @@ export async function getSuperAdminApiToken(page: Page): Promise<string> {
  * usuario DEDICADO `loginAdmin` (e2e-login-admin@jeyma) — NO de `admin@jeyma` — para
  * no invalidar la storageState admin compartida del proyecto. force-login bypassa el
  * single-session estricto, evitando el "Unexpected end of JSON input" del `/auth/login`.
+ *
+ * IMPORTANTE — por que loginAdmin y NO leer la sesion admin@jeyma (que seria cero-bump):
+ * los tests de banners (announcement-displaymode + security-announcements) crean un
+ * banner y verifican que ESTE admin lo ve. `loginAdmin` es el usuario para el que ese
+ * banner es visible (tenant/estado de dismissals limpio); `admin@jeyma` NO lo ve →
+ * romperia los tests de banner. La colision con el test UI "Login con credenciales
+ * validas" (que tambien usa loginAdmin) se resuelve en ESE test via su conflict-handling
+ * (boton "Continuar aqui"), no aqui.
  */
 export async function getAdminApiToken(page: Page): Promise<string> {
   const { loginAdmin, password, apiBase } = getTestEmails();
