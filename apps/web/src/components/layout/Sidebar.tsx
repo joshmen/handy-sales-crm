@@ -77,6 +77,14 @@ const sidebarItems: SidebarItem[] = [
     href: '/dashboard',
     permission: 'view_dashboard',
   },
+  // — PRIMEROS PASOS (item propio bajo Tablero, como el diseño Claude) —
+  {
+    id: 'getting-started',
+    label: 'Primeros pasos',
+    icon: SbForms,
+    href: '/getting-started',
+    permission: 'view_company_settings',
+  },
 
   // — VENTAS —
   {
@@ -463,7 +471,7 @@ interface SidebarProps {
 
 // Translation map: sidebar label → i18n key
 const LABEL_KEYS: Record<string, string> = {
-  'Tablero': 'nav.dashboard', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections',
+  'Tablero': 'nav.dashboard', 'Primeros pasos': 'nav.gettingStarted', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections',
   'Clientes': 'nav.clients', 'Lista de clientes': 'nav.clientsList', 'Categorías de clientes': 'nav.clientCategories',
   'Productos': 'nav.products', 'Lista de productos': 'nav.productsList', 'Familias de productos': 'nav.productFamilies',
   'Categorías de productos': 'nav.productCategories', 'Unidades de medida': 'nav.units', 'Tasas de impuesto': 'nav.taxRates',
@@ -790,17 +798,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                 );
               })}
             </nav>
-
-          {/* Getting Started Progress (non-SuperAdmin, non-collapsed) */}
-          {!sidebarCollapsed && session?.user && session.user.role !== 'SUPER_ADMIN' && !isImpersonating && (
-            <Link
-              href="/getting-started"
-              className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors group"
-            >
-              <SbForms size={16} className="text-muted-foreground group-hover:text-primary flex-shrink-0" />
-              <span className="truncate">{t('nav.gettingStarted')}</span>
-            </Link>
-          )}
 
           {/* Bottom User Section */}
           {!sidebarCollapsed && session?.user && (
