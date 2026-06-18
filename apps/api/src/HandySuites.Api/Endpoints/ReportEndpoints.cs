@@ -522,34 +522,41 @@ public static class ReportEndpoints
         group.MapGet("/ejecutivo", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] string periodo = "mes") =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
-            var ahora = DateTime.UtcNow;
-            DateTime fechaDesde;
-            DateTime fechaDesdeAnterior;
-            DateTime fechaHastaAnterior;
-
+            // Anclar las ventanas al DIA CALENDARIO del tenant (no a UtcNow). Antes
+            // el back restaba dias/meses a UtcNow mientras el front (getDateRange)
+            // usa tenantToday() -> cerca de medianoche en TZ no-UTC los KPIs del
+            // dashboard ejecutivo discrepaban del rango que muestra el admin.
+            var tenantToday = await tzService.GetTenantTodayAsync();
+            DateOnly desdeDay, desdeAntDay, hastaAntDay;
             switch (periodo)
             {
                 case "semana":
-                    fechaDesde = ahora.AddDays(-7);
-                    fechaDesdeAnterior = ahora.AddDays(-14);
-                    fechaHastaAnterior = ahora.AddDays(-7);
+                    desdeDay = tenantToday.AddDays(-7);
+                    desdeAntDay = tenantToday.AddDays(-14);
+                    hastaAntDay = tenantToday.AddDays(-7);
                     break;
                 case "trimestre":
-                    fechaDesde = ahora.AddMonths(-3);
-                    fechaDesdeAnterior = ahora.AddMonths(-6);
-                    fechaHastaAnterior = ahora.AddMonths(-3);
+                    desdeDay = tenantToday.AddMonths(-3);
+                    desdeAntDay = tenantToday.AddMonths(-6);
+                    hastaAntDay = tenantToday.AddMonths(-3);
                     break;
                 default:
-                    fechaDesde = ahora.AddMonths(-1);
-                    fechaDesdeAnterior = ahora.AddMonths(-2);
-                    fechaHastaAnterior = ahora.AddMonths(-1);
+                    desdeDay = tenantToday.AddMonths(-1);
+                    desdeAntDay = tenantToday.AddMonths(-2);
+                    hastaAntDay = tenantToday.AddMonths(-1);
                     break;
             }
+            // Cada limite = 00:00 en TZ tenant convertido a instante UTC (las
+            // queries comparan FechaPedido, almacenada en UTC).
+            var fechaDesde = await tzService.ConvertTenantDateToUtcAsync(desdeDay);
+            var fechaDesdeAnterior = await tzService.ConvertTenantDateToUtcAsync(desdeAntDay);
+            var fechaHastaAnterior = await tzService.ConvertTenantDateToUtcAsync(hastaAntDay);
 
             var pedidosActual = await db.Pedidos
                 .Where(p => p.TenantId == tenantId

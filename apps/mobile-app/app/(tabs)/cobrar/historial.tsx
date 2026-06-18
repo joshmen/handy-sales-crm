@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineCobros, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
@@ -82,7 +83,7 @@ export default function HistorialCobrosScreen() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/cobrar')} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Historial de Cobros</Text>

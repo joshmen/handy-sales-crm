@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Activi
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import { usePrinterStore } from '@/stores/printerStore';
@@ -224,7 +225,7 @@ export default function ImpresoraScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/mas')} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Impresora</Text>

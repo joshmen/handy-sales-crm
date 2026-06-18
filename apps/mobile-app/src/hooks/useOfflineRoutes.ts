@@ -85,7 +85,12 @@ export function useOfflineRutaDetalles(rutaId: string) {
     return database
       .get<RutaDetalle>('ruta_detalles')
       .query(Q.where('ruta_id', rutaId), Q.sortBy('orden', Q.asc))
-      .observe();
+      // observeWithColumns (no .observe() plano): que la lista re-emita también
+      // cuando cambia el estado/timestamps de una parada existente, no solo
+      // cuando se agrega/quita una. Sin esto, marcar una parada como visitada
+      // no actualizaba en vivo el contador "Paradas X/Y" del dashboard ni la
+      // pantalla /ruta hasta re-enfocar.
+      .observeWithColumns(['estado', 'hora_llegada', 'hora_salida', 'pedido_id']);
   }, [rutaId]);
 
   return useObservable(observable);

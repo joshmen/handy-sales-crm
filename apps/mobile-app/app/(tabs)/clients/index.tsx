@@ -1,6 +1,7 @@
 import { useState, useCallback, memo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
@@ -92,7 +93,7 @@ function ClientsListScreenContent() {
     <View style={styles.container}>
       {/* Header with safe area */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/mas')} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Clientes</Text>

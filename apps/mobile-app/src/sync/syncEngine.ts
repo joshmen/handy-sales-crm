@@ -81,6 +81,10 @@ interface SyncOptions {
 let inflightSync: Promise<void> | null = null;
 
 export async function performSync(options?: SyncOptions): Promise<void> {
+  // El super admin no usa vistas offline: su pantalla es el dashboard de salud
+  // de plataforma (HTTP/React Query). Saltamos el sync para no traer a WDB el
+  // dataset de su propio tenant innecesariamente.
+  if (useAuthStore.getState().user?.role === 'SUPER_ADMIN') return;
   if (inflightSync) return inflightSync;
   inflightSync = doPerformSync(options).finally(() => {
     inflightSync = null;

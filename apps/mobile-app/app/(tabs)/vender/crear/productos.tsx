@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { useOrderDraftStore, useOrderItemCount } from '@/stores';
@@ -30,7 +31,7 @@ function CrearPedidoStep2() {
     if (fromParada) {
       router.replace(`/(tabs)/ruta/parada/${fromParada}` as any);
     } else {
-      router.back();
+      safeBack('/(tabs)/vender');
     }
   }, [fromParada, router]);
 

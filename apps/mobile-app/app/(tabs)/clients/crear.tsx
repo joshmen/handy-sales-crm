@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, TouchableOpacity, Modal, FlatList, Switch } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '@/api';
@@ -374,7 +375,7 @@ export default function CrearClienteScreen() {
         text1: isEditing ? 'Cliente actualizado' : 'Cliente creado',
         text2: isOffline ? 'Guardado offline — se sincronizará automáticamente' : 'Se guardó exitosamente',
       });
-      router.back();
+      safeBack('/(tabs)/clients');
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.errors
@@ -476,7 +477,7 @@ export default function CrearClienteScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/clients')} style={styles.headerBack} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={24} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? 'Editar Cliente' : 'Crear Cliente'}</Text>

@@ -556,14 +556,19 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 page-animate page-animate-delay-2" data-tour="dashboard-metrics">
           {metricCards.length > 0 ? metricCards.map((card, index) => {
             const sparkColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
-            // Use real chartData for sales sparkline, derive others from it
+            // Solo el sparkline de Ventas tiene serie REAL (chartData). Antes los
+            // otros 3 se inventaban: Pedidos derivado de ventas, Visitas con
+            // Math.random() (cambiaba en cada render!) y Clientes con un trend
+            // lineal falso. Mostrar datos inventados es peor que no mostrar nada:
+            // dejamos null en los que no tienen serie real → placeholder vacío.
             const salesValues = chartData.length > 0 ? chartData.map(d => d.value) : [0];
-            const sparkDataMap = [
-              salesValues, // Total Sales — real data
-              salesValues.map((v) => Math.max(1, Math.round(v / (ejecutivo?.ventas?.ticketPromedio || 67)))), // Orders — derived
-              salesValues.map(() => Math.round(Math.random() * 3)), // Visits — approximate
-              salesValues.map((_, i) => Math.round(10 + i * 0.5)), // Clients — growth trend
+            const sparkDataMap: (number[] | null)[] = [
+              salesValues, // Total Sales — datos reales
+              null,        // Orders — sin serie real disponible
+              null,        // Visits — sin serie real disponible
+              null,        // Clients — sin serie real disponible
             ];
+            const sparkData = sparkDataMap[index % 4];
             return (
               <div key={index} className="bg-card border border-border rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
                 <div className="p-5 pb-0">
@@ -587,18 +592,24 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="-mb-1">
-                  <ApexSparkline
-                    type="area"
-                    height={60}
-                    options={{
-                      chart: { type: 'area', sparkline: { enabled: true } },
-                      stroke: { curve: 'smooth', width: 2 },
-                      fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0, stops: [0, 100] } },
-                      colors: [sparkColors[index % 4]],
-                      tooltip: { enabled: false },
-                    }}
-                    series={[{ data: sparkDataMap[index % 4] }]}
-                  />
+                  {sparkData ? (
+                    <ApexSparkline
+                      type="area"
+                      height={60}
+                      options={{
+                        chart: { type: 'area', sparkline: { enabled: true } },
+                        stroke: { curve: 'smooth', width: 2 },
+                        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0, stops: [0, 100] } },
+                        colors: [sparkColors[index % 4]],
+                        tooltip: { enabled: false },
+                      }}
+                      series={[{ data: sparkData }]}
+                    />
+                  ) : (
+                    // Sin serie real: placeholder de la misma altura para que las
+                    // cards de la grilla queden parejas (no mostrar datos falsos).
+                    <div style={{ height: 60 }} />
+                  )}
                 </div>
               </div>
             );

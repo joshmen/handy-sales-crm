@@ -42,17 +42,27 @@ export default function TabsLayout() {
   const masBadgeCount = pendingCount + unreadNotifCount;
 
   // Tab visibility per role:
-  // Vendedor:   Hoy, Mapa, Vender, Cobrar, Mas
-  // Supervisor: Hoy, Equipo, Vender, Cobrar, Mas
-  // Admin:      Hoy, Equipo, Vender, Cobrar, Mas
+  // Vendedor:    Hoy, Mapa, Vender, Cobrar, Mas
+  // Supervisor:  Hoy, Equipo, Vender, Cobrar, Mas
+  // Admin:       Hoy, Equipo, Vender, Cobrar, Mas
+  // Super_Admin: Hoy, Mas  (solo el dashboard de salud de plataforma)
   const isVendedor = role === 'VENDEDOR';
-  const showEquipo = !isVendedor; // Supervisor, Admin, Super_Admin
+  const isSuperAdmin = role === 'SUPER_ADMIN';
   const showMapa = isVendedor;    // Only vendedor gets standalone Mapa tab
+  // El super admin solo ve el dashboard agregado de plataforma (READ-ONLY): no
+  // opera un tenant desde el movil, asi que Equipo, Vender y Cobrar se ocultan
+  // (no hay contexto de tenant que mostrar/escribir).
+  const showEquipo = !isVendedor && !isSuperAdmin; // Supervisor, Admin
+  const showVentaCobro = !isSuperAdmin;
 
   return (
     <ErrorBoundary componentName="TabsRoot">
     <View style={{ flex: 1 }}>
     <Tabs
+      // backBehavior="history": el back de sistema (gesto/hardware) vuelve a la
+      // ULTIMA tab visitada, no a la primera (Hoy). Sin esto, una pantalla suelta
+      // como Mas -> Inventario hacia back saltaba al Hoy ("te lleva a inicio").
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,       // #4338CA indigo
@@ -116,6 +126,7 @@ export default function TabsLayout() {
         }}
         options={{
           title: 'Vender',
+          href: showVentaCobro ? undefined : null,
           tabBarButtonTestID: 'tab-vender',
           tabBarIcon: ({ color, size }) => <ShoppingBag size={size} color={color} />,
         }}
@@ -124,6 +135,7 @@ export default function TabsLayout() {
         name="cobrar"
         options={{
           title: 'Cobrar',
+          href: showVentaCobro ? undefined : null,
           tabBarButtonTestID: 'tab-cobrar',
           tabBarIcon: ({ color, size }) => <CreditCard size={size} color={color} />,
         }}

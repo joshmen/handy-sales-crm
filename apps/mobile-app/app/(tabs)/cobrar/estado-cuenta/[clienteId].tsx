@@ -1,5 +1,6 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEstadoCuenta } from '@/hooks';
 import { Button, LoadingSpinner } from '@/components/ui';
@@ -65,7 +66,7 @@ export default function EstadoCuentaScreen() {
           <View>
             {/* Blue Header */}
             <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+              <TouchableOpacity onPress={() => safeBack('/(tabs)/cobrar')} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
                 <ChevronLeft size={22} color={COLORS.headerText} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Estado de Cuenta</Text>

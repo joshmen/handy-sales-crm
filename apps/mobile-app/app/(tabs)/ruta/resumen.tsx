@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useVisitsSummary, useRouteToday } from '@/hooks';
+import { useVisitsSummary, useRouteToday, useTerminalBack } from '@/hooks';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -14,6 +14,10 @@ export default function ResumenDiarioScreen() {
 
   const summary = visitsSummary.data;
   const route = routeToday.data;
+
+  // Pantalla terminal (cierre de jornada): el back de hardware va a la principal,
+  // igual que "Volver al Inicio". Antes del early-return para respetar Rules of Hooks.
+  useTerminalBack(() => router.replace('/(tabs)' as any));
 
   if (visitsSummary.isLoading) {
     return <View style={styles.container}><LoadingSpinner message="Cargando resumen..." /></View>;

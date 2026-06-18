@@ -198,6 +198,7 @@ app.MapMobileNotificationEndpoints();
 app.MapMobileAttachmentEndpoints();
 app.MapMobileVentaDirectaEndpoints();
 app.MapMobileSupervisorEndpoints();
+app.MapMobileAdminEndpoints();
 app.MapMobileEmpresaEndpoints();
 app.MapMobileCrashReportEndpoints();
 app.MapMobileAnnouncementEndpoints();

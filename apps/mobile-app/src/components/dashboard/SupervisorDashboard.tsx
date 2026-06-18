@@ -10,6 +10,7 @@ import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { UserAvatar } from '@/components/ui';
 import { getGreetingForTz } from '@/utils/greeting';
 import { COLORS } from '@/theme/colors';
+import { goToSection, route } from '@/utils/navigation';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function SupervisorDashboard() {
@@ -102,7 +103,7 @@ export function SupervisorDashboard() {
             <VendedorCard
               key={v.id}
               vendedor={v}
-              onPress={() => router.push(`/(tabs)/equipo/vendedor/${v.id}` as any)}
+              onPress={() => goToSection(route(`/(tabs)/equipo/vendedor/${v.id}`))}
             />
           ))
         ) : (
@@ -113,7 +114,7 @@ export function SupervisorDashboard() {
         {vendedores && vendedores.length > 5 && (
           <TouchableOpacity
             style={styles.verTodosBtn}
-            onPress={() => router.push('/(tabs)/equipo')}
+            onPress={() => goToSection(route('/(tabs)/equipo'))}
             activeOpacity={0.7}
           >
             <Text style={styles.verTodosText}>Ver todos ({vendedores.length})</Text>
@@ -127,21 +128,21 @@ export function SupervisorDashboard() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo/mapa')}
+            onPress={() => goToSection(route('/(tabs)/equipo/mapa'))}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Ver Mapa</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo/actividad')}
+            onPress={() => goToSection(route('/(tabs)/equipo/actividad'))}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Actividad</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo')}
+            onPress={() => goToSection(route('/(tabs)/equipo'))}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Reportes</Text>

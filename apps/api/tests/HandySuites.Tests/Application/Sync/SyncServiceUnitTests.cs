@@ -451,7 +451,8 @@ public class SyncServiceUnitTests
         var rdCreate = new SyncRutaDetalleDto { Id = 1, ClienteId = 5, Operation = SyncOperation.Create };
         var rdUpdate = new SyncRutaDetalleDto { Id = 2, ClienteId = 6, Operation = SyncOperation.Update };
 
-        _repo.Setup(r => r.UpsertRutaDetalleAsync(1, 1, rdUpdate)).ReturnsAsync(true);
+        _repo.Setup(r => r.UpsertRutaDetalleAsync(1, 1, rdUpdate, It.IsAny<string>()))
+            .ReturnsAsync((true, (RutaDetalle?)null));
 
         var request = new SyncRequestDto
         {
@@ -461,8 +462,11 @@ public class SyncServiceUnitTests
 
         var result = await _service.SyncAsync(request);
 
-        _repo.Verify(r => r.UpsertRutaDetalleAsync(1, 1, rdCreate), Times.Never);
-        _repo.Verify(r => r.UpsertRutaDetalleAsync(1, 1, rdUpdate), Times.Once);
+        _repo.Verify(r => r.UpsertRutaDetalleAsync(1, 1, rdCreate, It.IsAny<string>()), Times.Never);
+        _repo.Verify(r => r.UpsertRutaDetalleAsync(1, 1, rdUpdate, It.IsAny<string>()), Times.Once);
+        // El save lo hace ahora el service (el repo ya no guarda internamente). Guard:
+        // si alguien quita el save del service sin re-agregarlo al repo, esto lo detecta.
+        _repo.Verify(r => r.SaveChangesAsync(), Times.AtLeastOnce);
         result.Summary.RutaDetallesPushed.Should().Be(1);
     }
 

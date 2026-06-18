@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { useUbicacionesEquipo } from '@/hooks/useSupervisor';
@@ -43,7 +44,7 @@ function MapaEquipoContent() {
     return (
       <View style={styles.container}>
         <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/equipo')} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.blueHeaderTitle}>Mapa del Equipo</Text>
@@ -80,7 +81,7 @@ function MapaEquipoContent() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/equipo')} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Mapa del Equipo</Text>

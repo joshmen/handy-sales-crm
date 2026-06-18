@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { Clock, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SbOrders, SbMap, SbPayments } from '@/components/icons/DashboardIcons';
@@ -111,7 +112,7 @@ export default function ActividadEquipoScreen() {
       {/* Blue Header con back */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack('/(tabs)/equipo')}
           style={styles.backBtn}
           accessibilityLabel="Volver"
           accessibilityRole="button"

@@ -8,6 +8,7 @@ import { useLogout, useFacturacionEnabled, usePendingCount } from '@/hooks';
 import { useSyncStore } from '@/stores';
 import Toast from 'react-native-toast-message';
 import { Badge, ConfirmModal } from '@/components/ui';
+import { goToSection, route } from '@/utils/navigation';
 import {
   Users,
   ShoppingCart,
@@ -88,19 +89,19 @@ function MasScreenContent() {
       label: 'Clientes',
       icon: <SbClients size={20} />,
       iconBg: COLORS.background,
-      onPress: () => router.push('/(tabs)/clients'),
+      onPress: () => goToSection(route('/(tabs)/clients')),
     },
     {
       label: 'Pedidos',
       icon: <SbOrders size={20} />,
       iconBg: COLORS.background,
-      onPress: () => router.push('/(tabs)/vender' as any),
+      onPress: () => goToSection(route('/(tabs)/vender')),
     },
     {
       label: 'Productos',
       icon: <Package size={20} color="#6b7280" />,
       iconBg: COLORS.background,
-      onPress: () => router.push('/(tabs)/vender/productos' as any),
+      onPress: () => goToSection(route('/(tabs)/vender/productos')),
     },
     {
       label: 'Inventario',
@@ -119,7 +120,7 @@ function MasScreenContent() {
           label: 'Facturas',
           icon: <FileText size={20} color="#6b7280" />,
           iconBg: COLORS.background,
-          onPress: () => router.push('/(tabs)/facturas' as any),
+          onPress: () => goToSection(route('/(tabs)/facturas')),
         }]
       : []),
     {

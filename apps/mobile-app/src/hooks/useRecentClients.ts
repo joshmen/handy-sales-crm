@@ -38,12 +38,16 @@ export function useRecentClients(daysBack: number = DEFAULT_DAYS_BACK, limit: nu
     let cancelled = false;
     (async () => {
       try {
-        // Fetch pedidos del vendedor en el rango. Usamos `created_at` (siempre
-        // poblado) en lugar de `fecha_pedido` que puede ser null en drafts.
+        // Fetch pedidos en el rango. Usamos `created_at` (siempre poblado) en
+        // lugar de `fecha_pedido` que puede ser null en drafts.
+        // NO filtrar por usuario_id: el sync deja usuario_id=0 en los pedidos
+        // traídos del servidor (mappers.ts mapPedidoToRaw), así que filtrar por
+        // él dejaba fuera a TODOS los clientes de pedidos sincronizados — solo
+        // aparecían los de pedidos creados localmente. La WDB del dispositivo ya
+        // contiene solo los datos del vendedor logueado, así que el filtro sobra.
         const pedidos = await database
           .get<Pedido>('pedidos')
           .query(
-            Q.where('usuario_id', userId),
             Q.where('created_at', Q.gte(since)),
             Q.where('activo', true),
             Q.sortBy('created_at', Q.desc),
