@@ -876,6 +876,11 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Sales and activity overview",
+    "execSummary": "Executive summary",
+    "execSummaryWith": "Executive summary · {company}",
+    "deliveriesByStatus": "Breakdown by delivery status",
+    "noDeliveriesToday": "No deliveries today",
+    "teamActiveGoals": "Team active goals",
     "thisWeek": "This Week",
     "thisMonth": "This Month",
     "thisQuarter": "This Quarter",

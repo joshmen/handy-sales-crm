@@ -876,6 +876,11 @@
   "dashboard": {
     "title": "Tablero",
     "subtitle": "Resumen de ventas y actividad",
+    "execSummary": "Resumen ejecutivo",
+    "execSummaryWith": "Resumen ejecutivo · {company}",
+    "deliveriesByStatus": "Distribución por estado de entrega",
+    "noDeliveriesToday": "Sin entregas hoy",
+    "teamActiveGoals": "Metas activas del equipo",
     "thisWeek": "Esta Semana",
     "thisMonth": "Este Mes",
     "thisQuarter": "Este Trimestre",
