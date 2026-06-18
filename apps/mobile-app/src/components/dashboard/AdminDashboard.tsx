@@ -11,6 +11,7 @@ import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { UserAvatar } from '@/components/ui';
 import { getGreetingForTz } from '@/utils/greeting';
 import { COLORS } from '@/theme/colors';
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function AdminDashboard() {
@@ -18,6 +19,9 @@ export function AdminDashboard() {
   const { money: formatCurrency, locale, tz } = useTenantLocale();
   const greeting = getGreetingForTz(tz);
   const user = useAuthStore(s => s.user);
+  // Si un super admin está viendo este tenant en modo soporte, el banner ocupa
+  // el top (incluye safe-area) → el header no debe volver a padear insets.top.
+  const impersonation = useAuthStore(s => s.impersonation);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const { data: dashboard, refetch: refetchDash } = useSupervisorDashboard();
@@ -38,8 +42,9 @@ export function AdminDashboard() {
 
   return (
     <View style={styles.container}>
+      <ImpersonationBanner />
       {/* Blue Header — fixed outside scroll */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: (impersonation ? 16 : insets.top + 16) }]}>
         <View style={styles.headerRow}>
           <View style={styles.headerTextContainer}>
             <Text style={styles.greeting}>
