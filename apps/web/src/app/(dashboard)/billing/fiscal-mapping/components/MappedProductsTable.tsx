@@ -42,7 +42,7 @@ export function MappedProductsTable({
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
+      <div className="hidden md:block bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
@@ -65,7 +65,7 @@ export function MappedProductsTable({
                     aria-label={t('selectProductLabel', { id: m.productoId })}
                     checked={selectedIds.has(m.productoId)}
                     onChange={() => onToggleSelect(m.productoId)}
-                    className="rounded border-border text-green-600 focus:ring-green-500"
+                    className="rounded border-border text-primary focus:ring-primary"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -88,7 +88,7 @@ export function MappedProductsTable({
                   {m.descripcionFiscal || '\u2014'}
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20">
                     <Check className="w-3 h-3 mr-1" />
                     {t('mapped')}
                   </span>
@@ -106,7 +106,7 @@ export function MappedProductsTable({
                         currentUnidad: m.claveUnidad,
                         hasMapping: true,
                       })}
-                      className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                      className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                       aria-label={t('editMappingOf', { name: m.productoNombre || m.productoId })}
                       title={tc('editMapping')}
                     >
@@ -114,7 +114,7 @@ export function MappedProductsTable({
                     </button>
                     <button
                       onClick={() => onDelete(m.productoId)}
-                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                       aria-label={t('deleteMappingOf', { name: m.productoNombre || m.productoId })}
                       title={tc('deleteMapping')}
                     >
@@ -138,16 +138,16 @@ export function MappedProductsTable({
       {/* Mobile cards - Todos */}
       <div className="md:hidden space-y-3">
         {mappings.map(m => (
-          <div key={m.id} className="bg-card border border-border rounded-xl p-4">
+          <div key={m.id} className="bg-card border border-border rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <input
                 type="checkbox"
                 checked={selectedIds.has(m.productoId)}
                 onChange={() => onToggleSelect(m.productoId)}
-                className="rounded border-border text-green-600 focus:ring-green-500"
+                className="rounded border-border text-primary focus:ring-primary"
               />
               <span className="font-medium text-sm">{t('productHash')}{m.productoId}</span>
-              <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20">
                 {t('mapped')}
               </span>
             </div>

@@ -68,6 +68,7 @@ type RouteFormData = z.infer<typeof routeSchema>;
 export default function RoutesPage() {
   const t = useTranslations('routes');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const showApiError = useApiErrorToast();
   const router = useRouter();
   const { formatDateOnly, tenantToday } = useFormatters();
@@ -216,7 +217,7 @@ export default function RoutesPage() {
       sortable: true,
       width: 'flex',
       cellRenderer: (route) => (
-        <span className="text-[13px] font-medium text-green-600 truncate block">{route.nombre}</span>
+        <span className="text-[13px] font-medium text-primary truncate block">{route.nombre}</span>
       ),
     },
     {
@@ -269,7 +270,7 @@ export default function RoutesPage() {
       align: 'center',
       cellRenderer: (route) => (
         <span className="text-[13px] text-foreground/70">
-          <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
+          <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-primary font-medium' : ''}>
             {route.paradasCompletadas}
           </span>/{route.totalParadas}
         </span>
@@ -300,7 +301,7 @@ export default function RoutesPage() {
             <button onClick={() => router.push(`/routes/${route.id}?tab=carga`)} className="text-[11px] font-medium text-foreground/70 hover:text-foreground bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
           )}
           {route.estado === 2 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
           )}
           {route.estado === 6 && (
             <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-muted-foreground bg-surface-1 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
@@ -408,11 +409,11 @@ export default function RoutesPage() {
     switch (estado) {
       case 0: return { label: t('status.planned'), cls: 'bg-surface-3 text-foreground/70' };
       case 1: return { label: t('status.inProgress'), cls: 'bg-cyan-100 text-cyan-700' };
-      case 2: return { label: t('status.completed'), cls: 'bg-green-100 text-green-600' };
+      case 2: return { label: t('status.completed'), cls: 'bg-primary/10 text-primary' };
       case 3: return { label: t('status.cancelled'), cls: 'bg-red-100 text-red-600' };
       case 4: return { label: t('status.pendingAccept'), cls: 'bg-yellow-100 text-yellow-700' };
       case 5: return { label: t('status.loadAccepted'), cls: 'bg-blue-100 text-blue-700' };
-      case 6: return { label: t('status.closed'), cls: 'bg-emerald-100 text-emerald-700' };
+      case 6: return { label: t('status.closed'), cls: 'bg-primary/10 text-primary' };
       default: return { label: t('status.unknown'), cls: 'bg-surface-3 text-foreground/70' };
     }
   };
@@ -437,6 +438,7 @@ export default function RoutesPage() {
     <PageHeader
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionOperations') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -446,15 +448,15 @@ export default function RoutesPage() {
           <button
             data-tour="routes-export-btn"
             onClick={async () => { try { await exportToCsv('rutas'); toast.success(t('csvDownloaded')); } catch { toast.error(t('exportError')); } }}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-500" />
+            <Download className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('export')}</span>
           </button>
           <button
             data-tour="routes-new-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>{t('newRoute')}</span>
@@ -462,25 +464,41 @@ export default function RoutesPage() {
         </div>
       }
     >
-      <div className="space-y-4">
-        {/* Filter Row */}
-        <div data-tour="routes-filters" className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <SearchBar
-            value={searchTerm}
-            onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder={t('searchPlaceholder')}
-            dataTour="routes-search"
-          />
-
-          <div className="min-w-[160px]">
-            <SearchableSelect
-              options={estadoOptions}
-              value={estadoFilter}
-              onChange={(val) => { setEstadoFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
-              placeholder={t('filters.allStatuses')}
+      <div className="space-y-5">
+        {/* Tabs de estado (segmentado azul) + búsqueda — reusa estadoFilter real */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="routes-estado-filter">
+            {estadoOptions.map((opt) => {
+              const active = estadoFilter === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => { setEstadoFilter(opt.value); setCurrentPage(1); }}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="w-full sm:w-72 lg:w-80" data-tour="routes-search">
+            <SearchBar
+              value={searchTerm}
+              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full"
             />
           </div>
+        </div>
 
+        {/* Filtros secundarios (zona, vendedor) + refrescar + inactivos */}
+        <div data-tour="routes-filters" className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="min-w-[160px]">
             <SearchableSelect
               options={zonaOptions}
@@ -507,9 +525,9 @@ export default function RoutesPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
@@ -570,8 +588,8 @@ export default function RoutesPage() {
               return (
                 <>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                      <Path className="w-5 h-5 text-teal-600" weight="duotone" />
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Path className="w-5 h-5 text-primary" weight="duotone" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-foreground truncate">{route.nombre}</div>
@@ -586,7 +604,7 @@ export default function RoutesPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>
-                    <span className="text-xs text-foreground/70">{t('columns.stops')}: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
+                    <span className="text-xs text-foreground/70">{t('columns.stops')}: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-primary font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
                     <span className="text-xs text-muted-foreground">{route.usuarioNombre}</span>
                     <span className="text-xs text-muted-foreground">{formatDateOnly(route.fecha)}</span>
                   </div>
@@ -616,7 +634,7 @@ export default function RoutesPage() {
         isOpen={isModalOpen}
         onClose={() => !actionLoading && setIsModalOpen(false)}
         title={t('drawer.createTitle')}
-        icon={<Map className="w-5 h-5 text-teal-500" />}
+        icon={<Map className="w-5 h-5 text-primary" />}
         width="lg"
         isDirty={isDirty}
         onSave={rhfSubmit(handleSubmit)}
@@ -632,7 +650,7 @@ export default function RoutesPage() {
             <button
               onClick={rhfSubmit(handleSubmit)}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('drawer.createRoute')}
@@ -648,7 +666,7 @@ export default function RoutesPage() {
             {/* Nombre */}
             <div data-tour="routes-drawer-nombre">
               <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
-                <Map className="w-3.5 h-3.5 text-teal-500" />
+                <Map className="w-3.5 h-3.5 text-primary" />
                 {t('columns.name')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -656,7 +674,7 @@ export default function RoutesPage() {
                 {...register('nombre')}
                 maxLength={100}
                 placeholder={t('drawer.namePlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {errors.nombre && <FieldError message={errors.nombre?.message} />}
             </div>
@@ -723,7 +741,7 @@ export default function RoutesPage() {
                 <input
                   type="time"
                   {...register('horaInicioEstimada')}
-                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
               <div>
@@ -734,7 +752,7 @@ export default function RoutesPage() {
                 <input
                   type="time"
                   {...register('horaFinEstimada')}
-                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             </div>
@@ -755,7 +773,7 @@ export default function RoutesPage() {
                 {...register('descripcion')}
                 rows={2}
                 placeholder={t('drawer.descriptionPlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
               />
             </div>
 
@@ -768,7 +786,7 @@ export default function RoutesPage() {
                 {...register('notas')}
                 rows={2}
                 placeholder={t('drawer.notesPlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
               />
             </div>
           </div>

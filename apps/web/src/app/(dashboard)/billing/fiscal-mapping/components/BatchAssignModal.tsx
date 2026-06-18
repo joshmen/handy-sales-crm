@@ -59,7 +59,7 @@ export function BatchAssignModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="batch-assign-title"
-        className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl"
+        className="bg-card border border-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -124,7 +124,7 @@ export function BatchAssignModal({
           <Button
             onClick={onAssign}
             disabled={saving || (!batchProdServ && !batchUnidad)}
-            className="bg-success hover:bg-success/90 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {t('assign')}

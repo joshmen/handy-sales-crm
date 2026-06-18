@@ -217,7 +217,7 @@ export default function BillingSettingsPage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{tCommon('loading')}</span>
     </div>
   );
@@ -259,6 +259,7 @@ export default function BillingSettingsPage() {
   return (
     <PageHeader
       breadcrumbs={[
+        { label: tCommon('home'), href: '/dashboard' },
         { label: tBilling('title'), href: '/billing' },
         { label: t('title') },
       ]}
@@ -266,14 +267,14 @@ export default function BillingSettingsPage() {
       subtitle={t('subtitle')}
       actions={
         activeTab === 'datos' ? (
-          <Button onClick={handleSave} disabled={saving} className="bg-success hover:bg-success/90 text-white">
+          <Button onClick={handleSave} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {tCommon('save')}
           </Button>
         ) : (
           <button
             onClick={() => setShowAddSerie(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-success hover:bg-success/90 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('newSeries')}
@@ -300,7 +301,7 @@ export default function BillingSettingsPage() {
           onClick={() => setActiveTab('datos')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'datos'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -312,7 +313,7 @@ export default function BillingSettingsPage() {
           onClick={() => setActiveTab('series')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'series'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -329,7 +330,7 @@ export default function BillingSettingsPage() {
       {activeTab === 'datos' && (
         <div className="space-y-6 max-w-3xl">
           {/* Datos sincronizados desde /settings (read-only) */}
-          <section className="bg-card border border-border rounded-xl p-5">
+          <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-sm font-semibold text-foreground">{t('issuerData')}</h2>
@@ -372,7 +373,7 @@ export default function BillingSettingsPage() {
           </section>
 
           {/* Configuración fiscal específica (editable aquí) */}
-          <section className="bg-card border border-border rounded-xl p-5">
+          <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-foreground mb-4">{t('fiscalRegimeSection')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
@@ -380,7 +381,7 @@ export default function BillingSettingsPage() {
                 <select
                   value={config.regimenFiscal || ''}
                   onChange={e => updateField('regimenFiscal', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   <option value="">{t('selectOption')}</option>
                   {/* Sprint pre-prod #45: catalogo centralizado en lib/sat/.
@@ -395,11 +396,11 @@ export default function BillingSettingsPage() {
           </section>
 
           {/* Certificados CSD */}
-          <section className="bg-card border border-border rounded-xl p-5">
+          <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-foreground mb-4">{t('csdCertificates')}</h2>
             <div className="flex items-center justify-between gap-2 mb-5">
               {hasCertificates ? (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <div className="flex items-center gap-2 text-primary">
                   <CheckCircle className="w-4 h-4" />
                   <span className="text-sm font-medium">{t('certsLoaded')}</span>
                 </div>
@@ -429,7 +430,7 @@ export default function BillingSettingsPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Finkok</span>
                     {config.finkokEmisorRegistrado ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary dark:bg-primary/20">
                         <CheckCircle className="w-3 h-3" />
                         Habilitado para facturar ({config.finkokStatus || 'active'})
                       </span>
@@ -476,7 +477,7 @@ export default function BillingSettingsPage() {
                   <div className="flex items-center gap-2">
                     <input ref={cerInputRef} type="file" accept=".cer" onChange={e => setCerFile(e.target.files?.[0] || null)} className="hidden" />
                     <button type="button" onClick={() => cerInputRef.current?.click()} className="flex-1 flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-left">
-                      {cerFile ? (<><FileCheck className="w-4 h-4 text-green-600 shrink-0" /><span className="text-foreground truncate">{cerFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{t('selectCerFile')}</span></>)}
+                      {cerFile ? (<><FileCheck className="w-4 h-4 text-primary shrink-0" /><span className="text-foreground truncate">{cerFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{t('selectCerFile')}</span></>)}
                     </button>
                     {cerFile && (<button type="button" onClick={() => { setCerFile(null); if (cerInputRef.current) cerInputRef.current.value = ''; }} className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"><X className="w-4 h-4" /></button>)}
                   </div>
@@ -486,21 +487,21 @@ export default function BillingSettingsPage() {
                   <div className="flex items-center gap-2">
                     <input ref={keyInputRef} type="file" accept=".key" onChange={e => setKeyFile(e.target.files?.[0] || null)} className="hidden" />
                     <button type="button" onClick={() => keyInputRef.current?.click()} className="flex-1 flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-left">
-                      {keyFile ? (<><FileCheck className="w-4 h-4 text-green-600 shrink-0" /><span className="text-foreground truncate">{keyFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{t('selectKeyFile')}</span></>)}
+                      {keyFile ? (<><FileCheck className="w-4 h-4 text-primary shrink-0" /><span className="text-foreground truncate">{keyFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{t('selectKeyFile')}</span></>)}
                     </button>
                     {keyFile && (<button type="button" onClick={() => { setKeyFile(null); if (keyInputRef.current) keyInputRef.current.value = ''; }} className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"><X className="w-4 h-4" /></button>)}
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">{t('keyPassword')}</label>
-                  <input type="password" value={certPassword} onChange={e => setCertPassword(e.target.value)} placeholder={t('keyPasswordPlaceholder')} className="w-full max-w-sm px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30" />
+                  <input type="password" value={certPassword} onChange={e => setCertPassword(e.target.value)} placeholder={t('keyPasswordPlaceholder')} className="w-full max-w-sm px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="pt-1">
-                  <Button onClick={handleUploadCert} disabled={uploading || !cerFile || !keyFile || !certPassword.trim()} className="bg-success hover:bg-success/90 text-white disabled:opacity-50">
+                  <Button onClick={handleUploadCert} disabled={uploading || !cerFile || !keyFile || !certPassword.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50">
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
                     {t('uploadCerts')}
                   </Button>
-                  <div className="flex items-start gap-2 mt-3 px-3 py-2 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
+                  <div className="flex items-start gap-2 mt-3 px-3 py-2 rounded-lg bg-muted/40 border border-border border-l-2 border-l-primary/50">
                     <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       {t('certsSecurityNote')}
@@ -559,7 +560,7 @@ export default function BillingSettingsPage() {
         <div>
           {/* Add serie form */}
           {showAddSerie && (
-            <div className="mb-5 p-4 rounded-xl border border-border bg-card">
+            <div className="mb-5 p-4 rounded-2xl border border-border bg-card shadow-sm">
               <h3 className="text-sm font-semibold text-foreground mb-3">{t('newSeries')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div>
@@ -570,7 +571,7 @@ export default function BillingSettingsPage() {
                     onChange={e => setNewSerie(s => ({ ...s, serie: e.target.value.toUpperCase() }))}
                     placeholder="A"
                     maxLength={10}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 <div>
@@ -578,7 +579,7 @@ export default function BillingSettingsPage() {
                   <select
                     value={newSerie.tipoDocumento}
                     onChange={e => setNewSerie(s => ({ ...s, tipoDocumento: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="Ingreso">Ingreso (Factura)</option>
                     <option value="Egreso">Egreso (Nota de crédito)</option>
@@ -593,13 +594,13 @@ export default function BillingSettingsPage() {
                     value={newSerie.folioInicial}
                     onChange={e => setNewSerie(s => ({ ...s, folioInicial: parseInt(e.target.value) || 1 }))}
                     min={1}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowAddSerie(false)}>{tCommon('cancel')}</Button>
-                <Button onClick={handleAddSerie} disabled={savingSerie} className="bg-success hover:bg-success/90 text-white">
+                <Button onClick={handleAddSerie} disabled={savingSerie} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   {savingSerie ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                   {t('createSeries')}
                 </Button>

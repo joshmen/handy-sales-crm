@@ -51,7 +51,7 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
                       (timbres.maximo + timbres.extras) > 0
                         ? timbres.usados / (timbres.maximo + timbres.extras) > 0.9 ? 'bg-red-500'
                         : timbres.usados / (timbres.maximo + timbres.extras) > 0.6 ? 'bg-amber-500'
-                        : 'bg-green-500'
+                        : 'bg-primary'
                         : 'bg-muted-foreground/30'
                     }`}
                     style={{ width: `${(timbres.maximo + timbres.extras) > 0 ? Math.min(100, (timbres.usados / (timbres.maximo + timbres.extras)) * 100) : 0}%` }}
@@ -59,7 +59,7 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
                 </div>
                 <Link
                   href="/subscription/buy-timbres"
-                  className="block w-full py-2 px-4 text-sm font-medium text-center text-green-600 dark:text-green-400 hover:underline rounded-lg transition-colors"
+                  className="block w-full py-2 px-4 text-sm font-medium text-center text-primary hover:underline rounded-lg transition-colors"
                 >
                   {t('buyStamps')}
                 </Link>

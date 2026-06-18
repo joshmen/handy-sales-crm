@@ -58,7 +58,7 @@ function getTemplateIcon(iconName: string): React.ComponentType<IconProps> {
 }
 
 const STATUS_STYLES: Record<string, { bg: string; labelKey: string; icon?: React.ComponentType<IconProps> }> = {
-  Success: { bg: 'bg-emerald-50 text-emerald-700', labelKey: 'statusSuccess', icon: CheckCircle },
+  Success: { bg: 'bg-primary/10 text-primary', labelKey: 'statusSuccess', icon: CheckCircle },
   Failed: { bg: 'bg-red-50 text-red-700', labelKey: 'statusError', icon: Warning },
   Skipped: { bg: 'bg-surface-3 text-foreground/70', labelKey: 'statusSkipped' },
 };
@@ -289,10 +289,10 @@ export default function AutomationsPage() {
           <button
             onClick={() => loadTemplates()}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
             data-tour="automations-refresh"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
         }
@@ -300,48 +300,56 @@ export default function AutomationsPage() {
         <div className="space-y-6">
           {error && <ErrorBanner error={error} onRetry={() => { setError(''); loadTemplates(); }} />}
 
-          {/* KPI summary bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="automations-kpis">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-green-200 bg-green-50 text-green-700">
-              <Lightning size={18} weight="fill" className="flex-shrink-0 opacity-60" />
-              <div>
-                <p className="text-lg font-bold leading-none">{loading ? '—' : activeCount}</p>
-                <p className="text-[11px] opacity-70 mt-0.5">{t('activeOf', { total: templates.length })}</p>
+          {/* KPI summary bar (data real de templates) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-tour="automations-kpis">
+            <div className="bg-card border border-primary/30 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <p className="text-xs font-medium text-muted-foreground">{t('activeOf', { total: templates.length })}</p>
+                <Lightning size={20} weight="fill" className="text-primary/40" />
               </div>
+              <p className={`text-2xl sm:text-3xl font-bold text-primary tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                {loading ? '—' : activeCount}
+              </p>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-foreground/80">
-              <Sparkle size={18} weight="fill" className="flex-shrink-0 opacity-60" />
-              <div>
-                <p className="text-lg font-bold leading-none">{loading ? '—' : totalExecutions}</p>
-                <p className="text-[11px] opacity-70 mt-0.5">{t('totalExecutions')}</p>
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <p className="text-xs font-medium text-muted-foreground">{t('totalExecutions')}</p>
+                <Sparkle size={20} weight="fill" className="text-muted-foreground/40" />
               </div>
+              <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                {loading ? '—' : totalExecutions}
+              </p>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-foreground/80">
-              <Clock size={18} weight="fill" className="flex-shrink-0 opacity-60" />
-              <div>
-                <p className="text-lg font-bold leading-none truncate">
-                  {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : t('noExecution')}
-                </p>
-                <p className="text-[11px] opacity-70 mt-0.5">{t('lastExecution')}</p>
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <p className="text-xs font-medium text-muted-foreground">{t('lastExecution')}</p>
+                <Clock size={20} weight="fill" className="text-muted-foreground/40" />
               </div>
+              <p className={`text-lg sm:text-xl font-bold text-foreground tracking-tight mt-3 truncate ${loading ? 'animate-pulse' : ''}`}>
+                {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : t('noExecution')}
+              </p>
             </div>
           </div>
 
-          {/* Category tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-1" data-tour="automations-categories">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeCategory === cat
-                    ? 'bg-success text-success-foreground'
-                    : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
-                }`}
-              >
-                {cat === 'Todas' ? t('allCategories') : tCategory(cat)}
-              </button>
-            ))}
+          {/* Category tabs (segmentado azul) */}
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1 max-w-full overflow-x-auto" data-tour="automations-categories">
+            {CATEGORIES.map(cat => {
+              const active = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {cat === 'Todas' ? t('allCategories') : tCategory(cat)}
+                </button>
+              );
+            })}
           </div>
 
           {/* Grid */}
@@ -393,10 +401,10 @@ export default function AutomationsPage() {
                 return (
                   <div
                     key={template.slug}
-                    className={`bg-surface-2 rounded-xl border transition-colors ${
+                    className={`bg-card rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md ${
                       template.activada
-                        ? 'border-green-200 hover:bg-surface-1'
-                        : 'border-border-subtle hover:bg-surface-1 opacity-60'
+                        ? 'border-primary/30'
+                        : 'border-border opacity-60'
                     }`}
                   >
                     <div className="p-3">
@@ -405,7 +413,7 @@ export default function AutomationsPage() {
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                             template.activada
-                              ? 'bg-green-50 text-green-600'
+                              ? 'bg-primary/10 text-primary'
                               : 'bg-surface-3 text-muted-foreground'
                           }`}>
                             <Icon size={20} />
@@ -424,7 +432,7 @@ export default function AutomationsPage() {
                         </div>
                         <div className="shrink-0 mt-0.5" data-tour="automations-toggle">
                           {isToggling ? (
-                            <RefreshCw className="w-5 h-5 text-green-600 animate-spin" />
+                            <RefreshCw className="w-5 h-5 text-primary animate-spin" />
                           ) : (
                             <Switch
                               checked={template.activada}
@@ -463,7 +471,7 @@ export default function AutomationsPage() {
                           <button
                               onClick={() => handleTest(template.slug, tName(template.slug, template.nombre))}
                               disabled={testingSlug === template.slug}
-                              className="text-muted-foreground hover:text-green-600 text-xs transition-colors disabled:opacity-50"
+                              className="text-muted-foreground hover:text-primary text-xs transition-colors disabled:opacity-50"
                               aria-label={`${t('testNow')} ${tName(template.slug, template.nombre)}`}
                               title={t('testNow')}
                             >
@@ -682,7 +690,7 @@ export default function AutomationsPage() {
                     type="time"
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
               );
@@ -695,7 +703,7 @@ export default function AutomationsPage() {
                   <select
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-surface-2"
                   >
                     {config.optionKeys.map(opt => (
                       <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
@@ -714,7 +722,7 @@ export default function AutomationsPage() {
                   min={config.min}
                   max={config.max}
                   onChange={e => setConfigParams(prev => ({ ...prev, [key]: parseInt(e.target.value, 10) }))}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
                 {config.min !== undefined && config.max !== undefined && (
                   <p className="text-[11px] text-muted-foreground mt-1">{t('range', { min: config.min, max: config.max })}</p>

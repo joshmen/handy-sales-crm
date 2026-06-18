@@ -10,6 +10,7 @@ import {
   Plus,
   Pencil,
   Users,
+  UserCheck,
   Mail,
   Phone,
   MapPin,
@@ -379,7 +380,7 @@ export default function TenantsPage() {
         type="submit"
         form="tenant-form"
         disabled={submitting}
-        className="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {submitting ? (
           <>
@@ -400,36 +401,84 @@ export default function TenantsPage() {
         { label: t('breadcrumb') },
       ]}
       title={t('title')}
-      subtitle={t('subtitle')}
+      subtitle={filteredTenants.length > 0 ? `${filteredTenants.length} empresa${filteredTenants.length !== 1 ? 's' : ''}` : t('subtitle')}
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Nueva Empresa
         </button>
       }
     >
-      <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBar
-          value={searchTerm}
-          onChange={(v) => { setSearchTerm(v); }}
-          placeholder={t('searchPlaceholder')}
-        />
-        <select
-          value={planFilter}
-          onChange={(e) => setPlanFilter(e.target.value as 'todos' | 'free' | 'basic' | 'pro')}
-          className="px-3 py-2 text-xs border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        >
-          <option value="todos">{t('allPlans')}</option>
-          <option value="free">{t('planFree')}</option>
-          <option value="basic">{t('planBasic')}</option>
-          <option value="pro">{t('planPro')}</option>
-        </select>
+      <div className="space-y-5">
+      {/* Tabs de plan (segmentado) + búsqueda — reusa el filtro real planFilter */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
+          {([
+            { value: 'todos', label: t('allPlans') },
+            { value: 'free', label: t('planFree') },
+            { value: 'basic', label: t('planBasic') },
+            { value: 'pro', label: t('planPro') },
+          ] as const).map((opt) => {
+            const active = planFilter === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setPlanFilter(opt.value)}
+                aria-pressed={active}
+                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                  active
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="w-full sm:w-72 lg:w-80">
+          <SearchBar
+            value={searchTerm}
+            onChange={(v) => { setSearchTerm(v); }}
+            placeholder={t('searchPlaceholder')}
+            className="w-full"
+          />
+        </div>
+      </div>
 
+      {/* KPI Row — tarjetas (data real de la lista cargada) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { title: 'Empresas (filtradas)', value: String(filteredTenants.length), hint: 'Coinciden con el filtro', icon: Building2 },
+          { title: 'Total empresas', value: String(tenants.length), hint: 'Todas las registradas', icon: Building2 },
+          { title: 'Activas', value: String(tenants.filter(t => t.activo).length), hint: 'En el sistema', icon: UserCheck },
+          { title: 'Usuarios totales', value: String(tenants.reduce((s, t) => s + (t.usuarioCount || 0), 0)), hint: 'Suma de todas las empresas', icon: Users },
+        ].map((card) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={card.title}
+              className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex items-start justify-between">
+                <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                <Icon className="w-5 h-5 text-muted-foreground/40" />
+              </div>
+              <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                {card.value}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Toggle de inactivos */}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <InactiveToggle
           value={showInactive}
           onChange={(v) => { setShowInactive(v); }}
@@ -449,7 +498,7 @@ export default function TenantsPage() {
       />
 
       {/* Desktop Table */}
-      <div className="hidden md:block border border-border-subtle rounded-lg overflow-hidden overflow-x-auto">
+      <div className="hidden md:block bg-card border border-border rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
         {/* Table Header */}
         <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-border-subtle">
           <div className="w-[28px] flex items-center justify-center">
@@ -496,7 +545,7 @@ export default function TenantsPage() {
                 {!searchTerm && planFilter === 'todos' && (
                   <button
                     onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90"
                   >
                     <Plus className="w-4 h-4" />
                     {t('newCompany')}
@@ -636,7 +685,7 @@ export default function TenantsPage() {
                   onClick={() => setCurrentPage(page)}
                   className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                     page === currentPage
-                      ? 'bg-success text-success-foreground'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent'
                   }`}
                 >
@@ -662,7 +711,7 @@ export default function TenantsPage() {
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground mt-2">Cargando...</span>
           </div>
         )}
@@ -695,7 +744,7 @@ export default function TenantsPage() {
         {!loading && paginatedTenants.map((tenant) => (
           <div
             key={tenant.id}
-            className={`border border-border rounded-lg p-3 bg-card ${
+            className={`bg-card border border-border rounded-2xl shadow-sm p-3 ${
               !tenant.activo ? 'opacity-60' : ''
             }`}
           >
@@ -752,7 +801,7 @@ export default function TenantsPage() {
             <div className="flex justify-end gap-1">
               <button
                 onClick={() => navigateToDetail(tenant.id)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-600 hover:bg-green-50 dark:hover:bg-green-950 rounded-md transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-primary hover:bg-primary/10 rounded-md transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>{t('detail')}</span>
@@ -830,7 +879,7 @@ export default function TenantsPage() {
         isOpen={drawerMode !== 'none'}
         onClose={handleCloseDrawer}
         title={drawerMode === 'edit' ? 'Editar Empresa' : 'Nueva Empresa'}
-        icon={<Building2 className="h-5 w-5 text-green-600" />}
+        icon={<Building2 className="h-5 w-5 text-primary" />}
         width="md"
         footer={drawerFooter}
       >
@@ -846,7 +895,7 @@ export default function TenantsPage() {
                 required: 'nameRequired',
                 minLength: { value: 2, message: 'min2Chars' },
               })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Ej: Mi Empresa SA de CV"
             />
             {errors.nombreEmpresa && (
@@ -870,7 +919,7 @@ export default function TenantsPage() {
                       maxLength: { value: 20, message: 'max20Chars' },
                       setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v,
                     })}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent uppercase"
                     placeholder="Ej: XAXX010101000"
                     maxLength={20}
                   />
@@ -888,7 +937,7 @@ export default function TenantsPage() {
                 <input
                   type="text"
                   {...register('contacto')}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Nombre del contacto principal"
                 />
               </div>
@@ -908,7 +957,7 @@ export default function TenantsPage() {
                         message: 'emailInvalid',
                       },
                     })}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="contacto@empresa.com"
                   />
                 </div>
@@ -927,7 +976,7 @@ export default function TenantsPage() {
                   <input
                     type="tel"
                     {...register('telefono')}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Ej: 3331234567"
                   />
                 </div>
@@ -943,7 +992,7 @@ export default function TenantsPage() {
                   <textarea
                     {...register('direccion')}
                     rows={3}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                     placeholder={t('addressPlaceholder')}
                   />
                 </div>
@@ -958,7 +1007,7 @@ export default function TenantsPage() {
             </label>
             <select
               {...register('planTipo')}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="free">Gratis</option>
               <option value="basic">Básico</option>
@@ -980,7 +1029,7 @@ export default function TenantsPage() {
                   min: { value: 1, message: 'minOneUser' },
                   max: { value: 1000, message: 'maxUsers1000' },
                 })}
-                className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="10"
                 min={1}
                 max={1000}
@@ -1011,7 +1060,7 @@ export default function TenantsPage() {
                 <input
                   type="text"
                   {...register('adminNombre')}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Nombre completo"
                 />
               </div>
@@ -1031,7 +1080,7 @@ export default function TenantsPage() {
                         message: 'emailInvalid',
                       },
                     })}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="admin@empresa.com"
                   />
                 </div>
@@ -1050,7 +1099,7 @@ export default function TenantsPage() {
                   {...register('adminPassword', {
                     minLength: { value: 6, message: 'min6Chars' },
                   })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder={t('adminPasswordLabel')}
                 />
                 {errors.adminPassword && (

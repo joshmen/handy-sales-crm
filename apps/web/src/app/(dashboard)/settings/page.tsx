@@ -92,9 +92,9 @@ function SettingsPageContent() {
     >
       {/* Audit M-1: cross-link a billing settings para evitar que admin se pierda
           buscando configuración fiscal (CSD, mapeo SAT, series). */}
-      <div className="mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 text-sm text-blue-900 dark:text-blue-200">
+      <div className="mb-4 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 p-3 text-sm text-foreground/80 dark:text-foreground/80">
         ¿Buscas configuración fiscal (CSD, series, mapeo SAT)? Está en{' '}
-        <a href="/billing/settings" className="font-medium underline hover:no-underline">
+        <a href="/billing/settings" className="font-medium text-primary underline hover:no-underline">
           Facturación → Configuración Fiscal
         </a>.
       </div>
@@ -109,27 +109,24 @@ function SettingsPageContent() {
         }}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tabs.companyProfile')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="company" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tabs.brand')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tabs.appearance')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tabs.notifications')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tabs.system')}</span>
-          </TabsTrigger>
+        {/* Tabs internos restilados a azul: barra inferior, activo border-primary text-primary */}
+        <TabsList className="flex h-auto w-full items-center justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted-foreground">
+          {[
+            { value: 'perfil-empresa', icon: Building2, label: t('tabs.companyProfile') },
+            { value: 'company', icon: Building, label: t('tabs.brand') },
+            { value: 'appearance', icon: Palette, label: t('tabs.appearance') },
+            { value: 'notifications', icon: Bell, label: t('tabs.notifications') },
+            { value: 'system', icon: Database, label: t('tabs.system') },
+          ].map(({ value, icon: Icon, label }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="flex items-center gap-2 whitespace-nowrap rounded-none border-b-2 border-transparent bg-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+            >
+              <Icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{label}</span>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* Perfil de Empresa - Datos fiscales y contacto */}
@@ -185,7 +182,7 @@ function SettingsPageContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" /><SrLoadingText /></div>}>
       <SettingsPageContent />
     </Suspense>
   );

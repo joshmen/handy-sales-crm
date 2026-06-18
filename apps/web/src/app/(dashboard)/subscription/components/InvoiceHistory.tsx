@@ -10,7 +10,7 @@ import { Loader2, FileText, Download, Receipt, ChevronDown } from "lucide-react"
 
 // ── Invoice Status Badge ──────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
-  paid: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  paid: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
   open: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
   draft: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground/60",
   uncollectible: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",

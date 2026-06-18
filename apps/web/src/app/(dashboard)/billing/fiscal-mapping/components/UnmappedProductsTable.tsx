@@ -39,7 +39,7 @@ export function UnmappedProductsTable({
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
+      <div className="hidden md:block bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
@@ -62,7 +62,7 @@ export function UnmappedProductsTable({
                     aria-label={t('selectLabel', { name: u.nombre })}
                     checked={selectedIds.has(u.productoId)}
                     onChange={() => onToggleSelect(u.productoId)}
-                    className="rounded border-border text-green-600 focus:ring-green-500"
+                    className="rounded border-border text-primary focus:ring-primary"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -111,7 +111,7 @@ export function UnmappedProductsTable({
                       currentUnidad: u.unidadClaveSat ?? undefined,
                       hasMapping: false,
                     })}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-green-50 dark:hover:bg-green-900/20 text-muted-foreground hover:text-green-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     aria-label={t('assignMappingTo', { name: u.nombre })}
                     title={t('assignMapping')}
                   >
@@ -125,7 +125,7 @@ export function UnmappedProductsTable({
               <tr>
                 <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
-                    <Check className="w-8 h-8 text-green-500" />
+                    <Check className="w-8 h-8 text-primary" />
                     <span>{t('allProductsMapped')}</span>
                   </div>
                 </td>
@@ -138,13 +138,13 @@ export function UnmappedProductsTable({
       {/* Mobile cards - Sin Mapear */}
       <div className="md:hidden space-y-3">
         {unmapped.map(u => (
-          <div key={u.productoId} className="bg-card border border-border rounded-xl p-4">
+          <div key={u.productoId} className="bg-card border border-border rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <input
                 type="checkbox"
                 checked={selectedIds.has(u.productoId)}
                 onChange={() => onToggleSelect(u.productoId)}
-                className="rounded border-border text-green-600 focus:ring-green-500"
+                className="rounded border-border text-primary focus:ring-primary"
               />
               <div className="flex-1 min-w-0">
                 <span className="font-medium text-sm truncate block">{u.nombre}</span>
@@ -190,7 +190,7 @@ export function UnmappedProductsTable({
                   currentUnidad: u.unidadClaveSat ?? undefined,
                   hasMapping: false,
                 })}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-green-50 dark:hover:bg-green-900/20 text-muted-foreground hover:text-green-600 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
               >
                 <ClipboardList className="w-3.5 h-3.5" />
                 {t('assignBtn')}
@@ -200,7 +200,7 @@ export function UnmappedProductsTable({
         ))}
         {unmapped.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground text-sm flex flex-col items-center gap-2">
-            <Check className="w-8 h-8 text-green-500" />
+            <Check className="w-8 h-8 text-primary" />
             {t('allProductsMapped')}
           </div>
         )}

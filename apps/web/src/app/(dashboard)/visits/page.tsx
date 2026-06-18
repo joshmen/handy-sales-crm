@@ -465,11 +465,12 @@ function VisitsPageContent() {
   // View toggle + create button for actions
   const headerActions = (
     <>
-      <div className="inline-flex bg-surface-3 rounded-lg p-1">
+      <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
         <button
           onClick={() => setView('list')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'list' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
+          aria-pressed={currentView === 'list'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+            currentView === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <List className="w-4 h-4" />
@@ -477,8 +478,9 @@ function VisitsPageContent() {
         </button>
         <button
           onClick={() => setView('calendar')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'calendar' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
+          aria-pressed={currentView === 'calendar'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+            currentView === 'calendar' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <CalendarDays className="w-4 h-4" />
@@ -487,7 +489,7 @@ function VisitsPageContent() {
       </div>
       <button
         onClick={handleCreateVisit}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline">{t('newVisit')}</span>
@@ -575,15 +577,15 @@ function VisitsPageContent() {
             </div>
             <button
               onClick={() => fetchVisits()}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
             {hasFilters && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-foreground/80 border border-border-subtle rounded hover:bg-surface-1"
+                className="flex items-center gap-1 px-3 py-2 h-10 text-xs text-muted-foreground hover:text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
                 {t('clearFilters')}
@@ -704,7 +706,7 @@ function VisitsPageContent() {
       >
         {detailLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         )}
         {!detailLoading && visitDetail && (
@@ -854,7 +856,7 @@ function VisitsPageContent() {
 export default function VisitsPage() {
   const { formatDate } = useFormatters();
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <VisitsPageContent />
     </Suspense>
   );

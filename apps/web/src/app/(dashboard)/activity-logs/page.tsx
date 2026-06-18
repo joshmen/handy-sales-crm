@@ -213,9 +213,9 @@ export default function ActivityLogsPage() {
         <button
           data-tour="logs-export-btn"
           onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-foreground/80 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
         >
-          <Download className="w-4 h-4" />
+          <Download className="w-4 h-4 text-muted-foreground" />
           <span>{tc('export')}</span>
         </button>
       }
@@ -231,7 +231,7 @@ export default function ActivityLogsPage() {
                 placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
@@ -292,7 +292,7 @@ export default function ActivityLogsPage() {
             )}
           </div>
             {/* Table */}
-            <div data-tour="logs-table" className="bg-card border border-border rounded-lg overflow-hidden">
+            <div data-tour="logs-table" className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
               {loading ? (
                 // Skeleton rows alineadas a las columnas reales — mismo patrón que
                 // DataGrid (clients/products/orders) para consistencia entre catálogos.
@@ -483,7 +483,7 @@ export default function ActivityLogsPage() {
                         onClick={() => setCurrentPage(page)}
                         className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                           page === currentPage
-                            ? 'bg-success text-success-foreground'
+                            ? 'bg-primary text-primary-foreground'
                             : 'text-foreground/70 hover:bg-surface-3'
                         }`}
                       >

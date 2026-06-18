@@ -106,7 +106,7 @@ export function PaymentMethods({ initialData, billingLoading, processing, onMana
                         {pm.cardLast4}
                       </span>
                       {pm.isDefault && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
                           {t('default')}
                         </span>
                       )}

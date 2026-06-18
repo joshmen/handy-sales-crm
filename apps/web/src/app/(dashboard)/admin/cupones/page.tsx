@@ -221,7 +221,7 @@ export default function CuponesAdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Ticket className="h-5 w-5 text-violet-600" weight="duotone" />
+            <Ticket className="h-5 w-5 text-primary" weight="duotone" />
             {drawerMode === 'edit' ? t('drawerTitleEdit') : t('drawerTitleCreate')}
           </h2>
           <button onClick={closeDrawer} className="p-2 hover:bg-surface-3 rounded-lg transition-colors">
@@ -364,10 +364,10 @@ export default function CuponesAdminPage() {
                 className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-surface-1 cursor-pointer"
                 onClick={() => setActivo(!activo)}
               >
-                <span className={`text-sm ${activo ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}`}>
+                <span className={`text-sm ${activo ? 'text-primary font-medium' : 'text-red-600 font-medium'}`}>
                   {activo ? t('couponActive') : t('couponInactive')}
                 </span>
-                <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-green-600' : 'bg-surface-3'}`}>
+                <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-primary' : 'bg-surface-3'}`}>
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface-2 transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
               </div>
@@ -390,10 +390,10 @@ export default function CuponesAdminPage() {
                 <button
                   type="button"
                   onClick={() => handleCopy(editingCupon.codigo, editingCupon.id)}
-                  className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                   title={t('copyCode')}
                 >
-                  {copiedId === editingCupon.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  {copiedId === editingCupon.id ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -432,7 +432,7 @@ export default function CuponesAdminPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {saving ? (
               <>
@@ -468,7 +468,7 @@ export default function CuponesAdminPage() {
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
             {t('newCoupon')}
@@ -479,36 +479,36 @@ export default function CuponesAdminPage() {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-violet-100 p-2">
-              <Ticket className="h-5 w-5 text-violet-600" weight="duotone" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Ticket className="h-5 w-5 text-primary" weight="duotone" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('totalCoupons')}</p>
-              <p className="text-2xl font-bold text-foreground">{totalCupones}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{totalCupones}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-100 p-2">
-              <CheckCircle className="h-5 w-5 text-green-600" weight="duotone" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <CheckCircle className="h-5 w-5 text-primary" weight="duotone" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('activeCoupons')}</p>
-              <p className="text-2xl font-bold text-foreground">{activeCupones}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{activeCupones}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <Ticket className="h-5 w-5 text-blue-600" weight="duotone" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Ticket className="h-5 w-5 text-primary" weight="duotone" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('totalRedemptions')}</p>
-              <p className="text-2xl font-bold text-foreground">{totalRedenciones}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{totalRedenciones}</p>
             </div>
           </div>
         </div>
@@ -520,12 +520,12 @@ export default function CuponesAdminPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : cupones.length === 0 ? (
-        <div className="rounded-lg border border-border-subtle bg-surface-2 p-12 text-center">
+        <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-sm">
           <Ticket className="mx-auto h-12 w-12 text-muted-foreground/60" weight="duotone" />
           <p className="mt-4 text-muted-foreground">{t('noCoupons')}</p>
           <button
             onClick={openCreate}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-success-foreground bg-success rounded-lg hover:bg-success/90"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-primary-foreground bg-primary rounded-lg hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             {t('createFirst')}
@@ -534,7 +534,7 @@ export default function CuponesAdminPage() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden overflow-hidden rounded-lg border border-border-subtle bg-surface-2 md:block">
+          <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:block">
             <table className="w-full text-sm">
               <thead className="border-b border-border-subtle bg-surface-1 text-left">
                 <tr>
@@ -560,21 +560,21 @@ export default function CuponesAdminPage() {
                         </span>
                         <button
                           onClick={() => handleCopy(cupon.codigo, cupon.id)}
-                          className="p-1 text-muted-foreground hover:text-blue-600 rounded transition-colors"
+                          className="p-1 text-muted-foreground hover:text-primary rounded transition-colors"
                           title={t('copyCode')}
                         >
-                          {copiedId === cupon.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                          {copiedId === cupon.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-violet-100 text-violet-700">
+                      <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-primary/10 text-primary">
                         {formatTipo(cupon.tipo)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                        cupon.usosActuales >= cupon.maxUsos ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                        cupon.usosActuales >= cupon.maxUsos ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'
                       }`}>
                         {cupon.usosActuales}/{cupon.maxUsos}
                       </span>
@@ -586,7 +586,7 @@ export default function CuponesAdminPage() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                        cupon.activo ? 'bg-green-100 text-green-700' : 'bg-surface-3 text-muted-foreground'
+                        cupon.activo ? 'bg-primary/10 text-primary' : 'bg-surface-3 text-muted-foreground'
                       }`}>
                         {cupon.activo ? tc('active') : tc('inactive')}
                       </span>
@@ -605,7 +605,7 @@ export default function CuponesAdminPage() {
                           className={`p-1.5 rounded-lg transition-colors ${
                             cupon.activo
                               ? 'text-red-600 hover:bg-red-50'
-                              : 'text-green-600 hover:bg-green-50'
+                              : 'text-primary hover:bg-primary/10'
                           }`}
                           title={cupon.activo ? tc('deactivate') : tc('activate')}
                         >
@@ -650,7 +650,7 @@ export default function CuponesAdminPage() {
             {cupones.map((cupon) => (
               <div
                 key={cupon.id}
-                className="rounded-lg border border-border-subtle bg-surface-2 p-4"
+                className="rounded-2xl border border-border bg-card p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -661,14 +661,14 @@ export default function CuponesAdminPage() {
                       </span>
                       <button
                         onClick={() => handleCopy(cupon.codigo, cupon.id)}
-                        className="p-0.5 text-muted-foreground hover:text-blue-600 rounded transition-colors"
+                        className="p-0.5 text-muted-foreground hover:text-primary rounded transition-colors"
                       >
-                        {copiedId === cupon.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedId === cupon.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   </div>
                   <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                    cupon.activo ? 'bg-green-100 text-green-700' : 'bg-surface-3 text-muted-foreground'
+                    cupon.activo ? 'bg-primary/10 text-primary' : 'bg-surface-3 text-muted-foreground'
                   }`}>
                     {cupon.activo ? 'Activo' : 'Inactivo'}
                   </span>
@@ -706,7 +706,7 @@ export default function CuponesAdminPage() {
                     className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
                       cupon.activo
                         ? 'text-red-600 border-red-200 hover:bg-red-50'
-                        : 'text-green-600 border-green-200 hover:bg-green-50'
+                        : 'text-primary border-primary/30 hover:bg-primary/10'
                     }`}
                   >
                     {cupon.activo ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}

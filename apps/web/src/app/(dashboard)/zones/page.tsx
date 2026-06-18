@@ -362,17 +362,17 @@ export default function ZonesPage() {
           <button
             data-tour="zones-map-btn"
             onClick={handleViewMap}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
           >
-            <Map className="w-3.5 h-3.5 text-blue-500" />
+            <Map className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{t('mapTitle')}</span>
           </button>
           <div className="relative" data-tour="zones-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Download className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -401,7 +401,7 @@ export default function ZonesPage() {
           <button
             data-tour="zones-add-btn"
             onClick={handleCreateZone}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>{t('newZone')}</span>
@@ -417,9 +417,9 @@ export default function ZonesPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
@@ -447,7 +447,7 @@ export default function ZonesPage() {
             {/* Loading State */}
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-green-600 animate-spin mb-3" />
+                <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
                 <span className="text-sm text-muted-foreground">{t('loadingZones')}</span>
               </div>
             )}
@@ -477,8 +477,8 @@ export default function ZonesPage() {
                     onClick={() => batch.handleToggleSelect(parseInt(zone.id))}
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       batch.selectedIds.has(parseInt(zone.id))
-                        ? 'bg-success border-success text-success-foreground'
-                        : 'border-border-default hover:border-green-500'
+                        ? 'bg-primary border-primary text-primary-foreground'
+                        : 'border-border-default hover:border-primary'
                     }`}
                   >
                     {batch.selectedIds.has(parseInt(zone.id)) && <Check className="w-3 h-3" />}
@@ -542,16 +542,16 @@ export default function ZonesPage() {
                   onClick={batch.handleSelectAllVisible}
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                     batch.allVisibleSelected
-                      ? 'bg-success border-success text-success-foreground'
+                      ? 'bg-primary border-primary text-primary-foreground'
                       : batch.someVisibleSelected
-                      ? 'bg-green-100 border-green-600'
-                      : 'border-border-default hover:border-green-500'
+                      ? 'bg-primary/10 border-primary'
+                      : 'border-border-default hover:border-primary'
                   }`}
                 >
                   {batch.allVisibleSelected ? (
                     <Check className="w-3 h-3" />
                   ) : batch.someVisibleSelected ? (
-                    <Minus className="w-3 h-3 text-green-600" />
+                    <Minus className="w-3 h-3 text-primary" />
                   ) : null}
                 </button>
               </div>
@@ -585,7 +585,7 @@ export default function ZonesPage() {
                   <div
                     key={zone.id}
                     onClick={() => handleEditZone(zone)}
-                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-amber-50 cursor-pointer transition-colors group ${
+                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-surface-1 cursor-pointer transition-colors group ${
                       !zone.isEnabled ? 'opacity-60' : ''
                     }`}
                   >
@@ -595,8 +595,8 @@ export default function ZonesPage() {
                         onClick={() => batch.handleToggleSelect(parseInt(zone.id))}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           batch.selectedIds.has(parseInt(zone.id))
-                            ? 'bg-success border-success text-success-foreground'
-                            : 'border-border-default hover:border-green-500'
+                            ? 'bg-primary border-primary text-primary-foreground'
+                            : 'border-border-default hover:border-primary'
                         }`}
                       >
                         {batch.selectedIds.has(parseInt(zone.id)) && <Check className="w-3 h-3" />}
@@ -613,7 +613,7 @@ export default function ZonesPage() {
 
                     {/* Nombre */}
                     <div className="flex-1">
-                      <span className="text-[13px] font-medium text-green-600">
+                      <span className="text-[13px] font-medium text-primary">
                         {zone.name}
                       </span>
                       {zone.description && (

@@ -29,6 +29,7 @@ interface KpiCard {
 
 export default function BillingDashboardPage() {
   const t = useTranslations('billing');
+  const tc = useTranslations('common');
   const [dashboard, setDashboard] = useState<BillingDashboard | null>(null);
   const [timbres, setTimbres] = useState<TimbresBalance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function BillingDashboardPage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{t('loadingScreenReader')}</span>
     </div>
   );
@@ -67,13 +68,13 @@ export default function BillingDashboardPage() {
       label: t('kpis.totalInvoiced'),
       value: formatCurrency(d?.montoTotal ?? 0),
       icon: SbDollarSign,
-      color: 'text-emerald-600 dark:text-emerald-400',
+      color: 'text-foreground',
     },
     {
       label: t('kpis.stampedInvoices'),
       value: String(d?.facturasTimbradas ?? 0),
       icon: SbCheckCircle,
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-foreground',
     },
     {
       label: t('kpis.pending'),
@@ -92,6 +93,7 @@ export default function BillingDashboardPage() {
   return (
     <PageHeader
       breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
         { label: t('title'), href: '/billing' },
         { label: t('summary') },
       ]}
@@ -99,7 +101,7 @@ export default function BillingDashboardPage() {
       subtitle={t('subtitle')}
       actions={
         <Link href="/billing/invoices/new">
-          <Button className="bg-success hover:bg-success/90 text-white">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Plus className="w-4 h-4 mr-2" />
             {t('newInvoice')}
           </Button>
@@ -107,19 +109,17 @@ export default function BillingDashboardPage() {
       }
     >
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map(kpi => (
           <div
             key={kpi.label}
-            className="bg-card border border-border rounded-xl p-4 flex items-start gap-3"
+            className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
           >
-            <div className="mt-0.5">
-              <kpi.icon size={28} />
+            <div className="flex items-start justify-between">
+              <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+              <kpi.icon size={20} className="text-muted-foreground/40" />
             </div>
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground font-medium">{kpi.label}</p>
-              <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-            </div>
+            <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${kpi.color}`}>{kpi.value}</p>
           </div>
         ))}
       </div>
@@ -129,7 +129,7 @@ export default function BillingDashboardPage() {
 
       {/* Timbres Balance */}
       {timbres && (
-        <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-foreground">{t('stampsThisMonth')}</h2>
             <span className="text-sm font-medium tabular-nums text-muted-foreground">
@@ -151,7 +151,7 @@ export default function BillingDashboardPage() {
                   ? 'bg-red-500'
                   : timbres.maximo > 0 && timbres.usados / timbres.maximo > 0.7
                     ? 'bg-amber-500'
-                    : 'bg-green-500'
+                    : 'bg-primary'
               }`}
               style={{ width: `${timbres.maximo > 0 ? Math.min(100, (timbres.usados / timbres.maximo) * 100) : 0}%` }}
             />
@@ -167,7 +167,7 @@ export default function BillingDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Facturación por día */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+        <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">{t('invoicingByDay')}</h2>
           </div>
@@ -191,7 +191,7 @@ export default function BillingDashboardPage() {
         </div>
 
         {/* Top Clientes */}
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">{t('topClients')}</h2>
           </div>
@@ -217,33 +217,33 @@ export default function BillingDashboardPage() {
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
           href="/billing/invoices"
-          className="group flex items-center justify-between bg-card border border-border rounded-xl p-4 hover:border-green-500/50 transition-colors"
+          className="group flex items-center justify-between bg-card border border-border rounded-2xl p-4 shadow-sm hover:border-primary/50 hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-3">
             <SbBilling size={22} />
             <span className="text-sm font-medium">{t('viewAllInvoices')}</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
         </Link>
         <Link
           href="/billing/invoices/new"
-          className="group flex items-center justify-between bg-card border border-border rounded-xl p-4 hover:border-green-500/50 transition-colors"
+          className="group flex items-center justify-between bg-card border border-border rounded-2xl p-4 shadow-sm hover:border-primary/50 hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-3">
-            <Plus className="w-5 h-5 text-green-600" />
+            <Plus className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium">{t('createNewInvoice')}</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
         </Link>
         <Link
           href="/billing/settings"
-          className="group flex items-center justify-between bg-card border border-border rounded-xl p-4 hover:border-green-500/50 transition-colors"
+          className="group flex items-center justify-between bg-card border border-border rounded-2xl p-4 shadow-sm hover:border-primary/50 hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-3">
             <SbBilling size={22} />
             <span className="text-sm font-medium">{t('fiscalSettings')}</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
         </Link>
       </div>
     </PageHeader>

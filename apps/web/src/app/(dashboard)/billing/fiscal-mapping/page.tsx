@@ -237,7 +237,7 @@ export default function FiscalMappingPage() {
 
   if (loading && mappings.length === 0 && unmapped.length === 0) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{tCommon('loading')}</span>
     </div>
   );
@@ -249,6 +249,7 @@ export default function FiscalMappingPage() {
   return (
     <PageHeader
       breadcrumbs={[
+        { label: tCommon('home'), href: '/dashboard' },
         { label: tBilling('title'), href: '/billing' },
         { label: t('title') },
       ]}
@@ -259,7 +260,7 @@ export default function FiscalMappingPage() {
           {selectedIds.size > 0 && (
             <Button
               onClick={() => setShowBatchAssign(true)}
-              className="bg-success hover:bg-success/90 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
               {t('assignToProducts', { count: selectedIds.size })}
@@ -322,7 +323,7 @@ export default function FiscalMappingPage() {
           onClick={() => setActiveTab('todos')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'todos'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -336,7 +337,7 @@ export default function FiscalMappingPage() {
           onClick={() => setActiveTab('sin-mapear')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'sin-mapear'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -357,7 +358,7 @@ export default function FiscalMappingPage() {
               type="checkbox"
               checked={currentIds.length > 0 && currentIds.every(id => selectedIds.has(id))}
               onChange={() => toggleSelectAll(currentIds)}
-              className="rounded border-border text-green-600 focus:ring-green-500"
+              className="rounded border-border text-primary focus:ring-primary"
             />
             {t('selectAll')}
           </label>
@@ -415,8 +416,8 @@ export default function FiscalMappingPage() {
 
       {/* Loading overlay */}
       {saving && (
-        <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg shadow-lg px-4 py-2 flex items-center gap-2 text-sm z-50">
-          <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+        <div className="fixed bottom-4 right-4 bg-card border border-border rounded-2xl shadow-lg px-4 py-2 flex items-center gap-2 text-sm z-50">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
           {tCommon('saving')}
         </div>
       )}

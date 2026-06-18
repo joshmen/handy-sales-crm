@@ -153,11 +153,11 @@ export default function GlobalSettingsPage() {
 
           <div className="space-y-6">
             {/* Platform Branding */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-6">
-                <Palette className="h-5 w-5 text-blue-600" />
+                <Palette className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{t('branding.title')}</h2>
-                <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">{t('branding.activeHint')}</span>
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{t('branding.activeHint')}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -244,9 +244,9 @@ export default function GlobalSettingsPage() {
             </Card>
 
             {/* Regional Settings */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-6">
-                <Globe className="h-5 w-5 text-green-600" />
+                <Globe className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{t('regional.title')}</h2>
                 <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-full">{t('regional.comingSoon')}</span>
               </div>
@@ -287,9 +287,9 @@ export default function GlobalSettingsPage() {
             </Card>
 
             {/* Security & Access */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-6">
-                <Shield className="h-5 w-5 text-orange-600" />
+                <Shield className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{t('security.title')}</h2>
               </div>
 
@@ -366,7 +366,7 @@ export default function GlobalSettingsPage() {
             </Card>
 
             {/* H9: Maintenance Mode — redirected to Announcements */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-4">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 <h2 className="text-xl font-semibold text-foreground">{t('maintenance.title')}</h2>
@@ -410,7 +410,7 @@ export default function GlobalSettingsPage() {
                 data-tour="settings-save"
                 onClick={handleSave}
                 disabled={isUpdating}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {isUpdating ? (
                   <>

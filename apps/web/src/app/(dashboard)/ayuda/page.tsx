@@ -307,11 +307,11 @@ function PhaseAccordion({ phase, isVendedor, t }: { phase: Phase; isVendedor: bo
   if (isVendedor && phase.hideForVendedor) return null;
 
   return (
-    <div className={`bg-card rounded-xl border transition-all ${open ? colors.border : 'border-border'}`}>
+    <div className={`bg-card rounded-2xl border shadow-sm transition-all ${open ? colors.border : 'border-border'}`}>
       {/* Header — clickable */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/30 transition-colors rounded-xl"
+        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/30 transition-colors rounded-2xl"
       >
         <div className={`flex-shrink-0 w-9 h-9 rounded-lg ${colors.bgLight} flex items-center justify-center`}>
           <Icon size={18} weight="duotone" className={colors.text} />
@@ -368,12 +368,13 @@ export default function AyudaPage() {
       title={t('title')}
       subtitle={t('subtitle')}
       actions={
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+        <div className="inline-flex items-center gap-1 p-1 bg-surface-1 border border-border rounded-xl">
           <button
             onClick={() => setIsVendedor(false)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            aria-pressed={!isVendedor}
+            className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
               !isVendedor
-                ? 'bg-card text-foreground shadow-sm'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -381,9 +382,10 @@ export default function AyudaPage() {
           </button>
           <button
             onClick={() => setIsVendedor(true)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            aria-pressed={isVendedor}
+            className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
               isVendedor
-                ? 'bg-card text-foreground shadow-sm'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -394,7 +396,7 @@ export default function AyudaPage() {
     >
       <div className="space-y-4 max-w-4xl mx-auto">
         {/* Timeline bar */}
-        <div className="flex items-center gap-2 flex-wrap p-3 bg-card rounded-xl border border-border">
+        <div className="flex items-center gap-2 flex-wrap p-3 bg-card rounded-2xl border border-border shadow-sm">
           {PHASES.filter(p => !(isVendedor && p.hideForVendedor)).map((phase, i, arr) => {
             const colors = COLOR_MAP[phase.color];
             return (

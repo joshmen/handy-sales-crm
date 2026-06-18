@@ -28,7 +28,7 @@ const formatMXN = (value: number) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 
 const SOURCE_STYLES: Record<PreFacturaLineDto['mappingSource'], { bg: string; key: string }> = {
-  mapping: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', key: 'sourceMapping' },
+  mapping: { bg: 'bg-primary/10 text-primary dark:bg-primary/20', key: 'sourceMapping' },
   producto: { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', key: 'sourceProduct' },
   default: { bg: 'bg-surface-3 text-foreground/80 dark:bg-zinc-700 dark:text-zinc-300', key: 'sourceDefault' },
   fallback: { bg: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', key: 'sourceFallback' },
@@ -120,7 +120,7 @@ function AutocompleteDropdown<T>({
             ac.search(value);
           }}
           placeholder={placeholder}
-          className="w-full px-2 py-1 text-xs border border-border rounded bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500"
+          className="w-full px-2 py-1 text-xs border border-border rounded bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary"
         />
         {ac.loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2" />}
       </div>
@@ -151,7 +151,7 @@ function AutocompleteDropdown<T>({
 
 export default function PreFacturaPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" /><SrLoadingText /></div>}>
       <PreFacturaContent />
     </Suspense>
   );
@@ -264,7 +264,7 @@ function PreFacturaContent() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{tc('loading')}</span>
     </div>
   );
@@ -275,6 +275,7 @@ function PreFacturaContent() {
     return (
       <PageHeader
         breadcrumbs={[
+          { label: tc('home'), href: '/dashboard' },
           { label: t('breadcrumbBilling'), href: '/billing' },
           { label: t('title') },
         ]}
@@ -287,7 +288,7 @@ function PreFacturaContent() {
           {errorClienteId && (
             <a
               href={`/clients/${errorClienteId}/edit`}
-              className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium text-white bg-success hover:bg-success/90 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
             >
               {t('editClient')}
             </a>
@@ -306,6 +307,7 @@ function PreFacturaContent() {
   return (<>
     <PageHeader
       breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbBilling'), href: '/billing' },
         { label: t('breadcrumbInvoices'), href: '/billing/invoices' },
         { label: t('breadcrumbPreInvoice', { order: preview.numeroPedido }) },
@@ -315,7 +317,7 @@ function PreFacturaContent() {
     >
       {/* Unmapped Products Warning */}
       {preview.hasUnmappedProducts && (
-        <div className="mb-6 flex items-start gap-3 p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
+        <div className="mb-6 flex items-start gap-3 p-4 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
@@ -339,7 +341,7 @@ function PreFacturaContent() {
       {/* Header: Emisor + Receptor */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Emisor */}
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('issuer')}</h3>
           <p className="font-medium text-sm">{preview.emisorNombre}</p>
           <p className="text-sm text-muted-foreground">RFC: {preview.emisorRfc}</p>
@@ -349,7 +351,7 @@ function PreFacturaContent() {
         </div>
 
         {/* Receptor */}
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('receptor')}</h3>
           <p className="font-medium text-sm">{preview.receptorNombre}</p>
           <p className="text-sm text-muted-foreground">RFC: {preview.receptorRfc}</p>
@@ -364,22 +366,22 @@ function PreFacturaContent() {
 
       {/* Payment Method / Uso CFDI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
           <span className="text-xs text-muted-foreground">{t('paymentMethodLabel')}</span>
           <p className="text-sm font-medium mt-0.5">{preview.metodoPago ?? '—'}</p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
           <span className="text-xs text-muted-foreground">{t('paymentFormLabel')}</span>
           <p className="text-sm font-medium mt-0.5">{preview.formaPago ?? '—'}</p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
           <span className="text-xs text-muted-foreground">{t('cfdiUseLabel')}</span>
           <p className="text-sm font-medium mt-0.5">{preview.receptorUsoCfdi ?? '—'}</p>
         </div>
       </div>
 
       {/* Amounts Summary */}
-      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+      <div className="bg-card border border-border rounded-2xl p-5 mb-6 shadow-sm">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('amountsSummary')}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
@@ -398,7 +400,7 @@ function PreFacturaContent() {
           </div>
           <div>
             <span className="text-xs text-muted-foreground">{t('totalLabel')}</span>
-            <p className="text-lg font-bold tabular-nums text-green-700 dark:text-green-400">
+            <p className="text-lg font-bold tabular-nums text-primary">
               {formatMXN(preview.total)}
             </p>
           </div>
@@ -406,7 +408,7 @@ function PreFacturaContent() {
       </div>
 
       {/* Lines Table — Desktop */}
-      <div className="hidden lg:block bg-card border border-border rounded-xl overflow-hidden mb-6">
+      <div className="hidden lg:block bg-card border border-border rounded-2xl overflow-hidden mb-6 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -474,7 +476,7 @@ function PreFacturaContent() {
         <Button
           onClick={() => handleSubmit(true)}
           disabled={submitting}
-          className="order-2 sm:order-3 bg-success hover:bg-success/90 text-white"
+          className="order-2 sm:order-3 bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Stamp className="w-4 h-4 mr-2" />}
           {t('createAndStamp')}
@@ -578,7 +580,7 @@ function MobileLineCard({
   const source = SOURCE_STYLES[line.mappingSource];
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4">
+    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm truncate">{line.productoNombre}</p>

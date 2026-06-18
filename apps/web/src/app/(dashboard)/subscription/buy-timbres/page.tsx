@@ -75,7 +75,7 @@ export default function BuyTimbresPage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">Loading...</span>
     </div>
   );
@@ -131,7 +131,7 @@ export default function BuyTimbresPage() {
       <div className="max-w-3xl mx-auto">
         {/* Current balance */}
         {timbres && (
-          <div className="bg-card rounded-xl border border-border p-5 mb-6">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-5 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center"><SbBilling size={32} /></div>
               <div>
@@ -139,7 +139,7 @@ export default function BuyTimbresPage() {
                 <p className="text-xs text-muted-foreground">
                   {tb('usedThisMonth', { used: timbres.usados, max: timbres.maximo })}
                   {timbres.extras > 0 && ` · ${tb('extrasAvailable', { extras: timbres.extras })}`}
-                  {' · '}<span className="font-semibold text-green-600">{tb('available', { count: timbres.disponibles })}</span>
+                  {' · '}<span className="font-semibold text-primary">{tb('available', { count: timbres.disponibles })}</span>
                 </p>
               </div>
             </div>
@@ -155,20 +155,20 @@ export default function BuyTimbresPage() {
               role="radio"
               aria-checked={selectedPackageId === pkg.id}
               onClick={() => setSelectedPackageId(pkg.id)}
-              className={`relative p-5 rounded-xl border-2 text-left transition-all ${
+              className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
                 selectedPackageId === pkg.id
-                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg'
+                  ? 'border-primary bg-primary/5 dark:bg-primary/15 shadow-lg'
                   : 'border-border bg-card hover:border-muted-foreground/30'
               }`}
             >
               {pkg.badge && (
-                <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-success text-success-foreground rounded-full">
+                <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-primary text-primary-foreground rounded-full">
                   {tb(pkg.badge)}
                 </span>
               )}
               {selectedPackageId === pkg.id && (
-                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
                 </div>
               )}
               <p className="text-3xl font-bold mb-1">{pkg.cantidad}</p>
@@ -191,7 +191,7 @@ export default function BuyTimbresPage() {
           <Button
             onClick={handlePurchase}
             disabled={purchasing || !selectedPkg}
-            className="h-11 px-8 bg-success hover:bg-success/90 text-white font-medium rounded-xl"
+            className="h-11 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-xl"
           >
             {purchasing ? (
               <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {tb('processing')}</>

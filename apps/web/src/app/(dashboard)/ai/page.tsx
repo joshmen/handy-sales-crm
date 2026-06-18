@@ -54,9 +54,9 @@ interface ChatMessage {
 // ─── AI Hero icon ──
 function AiHeroGem() {
   return (
-    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-violet-600 dark:bg-violet-700 flex items-center justify-center">
-      <Atom size={28} weight="duotone" className="text-white sm:hidden" />
-      <Atom size={32} weight="duotone" className="text-white hidden sm:block" />
+    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary flex items-center justify-center">
+      <Atom size={28} weight="duotone" className="text-primary-foreground sm:hidden" />
+      <Atom size={32} weight="duotone" className="text-primary-foreground hidden sm:block" />
     </div>
   );
 }
@@ -64,8 +64,8 @@ function AiHeroGem() {
 // ─── Small AI avatar for chat bubbles ────────────────────────────
 function AiChatAvatar() {
   return (
-    <div className="w-8 h-8 rounded-lg bg-violet-600 dark:bg-violet-700 flex items-center justify-center shrink-0 mt-1">
-      <Sparkle size={14} weight="fill" className="text-white" />
+    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 mt-1">
+      <Sparkle size={14} weight="fill" className="text-primary-foreground" />
     </div>
   );
 }
@@ -85,7 +85,7 @@ function HelpTooltip() {
   }, [open]);
 
   const colorMap: Record<string, string> = {
-    emerald: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10',
+    emerald: 'text-primary bg-primary/10',
     violet: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10',
     sky: 'text-sky-500 bg-sky-50 dark:bg-sky-500/10',
     amber: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10',
@@ -95,13 +95,13 @@ function HelpTooltip() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-center w-8 h-8 rounded-full border border-border-subtle dark:border-border-strong text-muted-foreground hover:text-violet-500 hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 hover:shadow-sm"
+        className="flex items-center justify-center w-8 h-8 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-all duration-200 hover:shadow-sm"
         aria-label={t('helpTitle')}
       >
         <Question size={15} weight="bold" />
       </button>
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border-subtle dark:border-border-strong bg-surface-2/95 dark:bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
           <p className="font-semibold text-foreground dark:text-white mb-4 text-base">{t('helpTitle')}</p>
           <div className="space-y-3">
             {ACTION_TYPES.map((a) => {
@@ -136,14 +136,14 @@ function WelcomeState({
 }) {
   const t = useTranslations('ai');
   const actionColorMap: Record<string, string> = {
-    resumen: 'group-hover:border-emerald-300 dark:group-hover:border-emerald-700 group-hover:shadow-emerald-500/5',
+    resumen: 'group-hover:border-primary/40 group-hover:shadow-primary/5',
     insight: 'group-hover:border-violet-300 dark:group-hover:border-violet-700 group-hover:shadow-violet-500/5',
     pregunta: 'group-hover:border-sky-300 dark:group-hover:border-sky-700 group-hover:shadow-sky-500/5',
     pronostico: 'group-hover:border-amber-300 dark:group-hover:border-amber-700 group-hover:shadow-amber-500/5',
   };
 
   const actionBadgeColor: Record<string, string> = {
-    resumen: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    resumen: 'bg-primary/10 text-primary',
     insight: 'bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400',
     pregunta: 'bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400',
     pronostico: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
@@ -175,7 +175,7 @@ function WelcomeState({
             <button
               key={s.textKey}
               onClick={() => onSelectSuggestion(suggestionText, s.action)}
-              className={`group text-left p-3 sm:p-4 rounded-2xl border border-border-subtle dark:border-border-strong/60 bg-surface-2/70 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-surface-2 dark:hover:bg-gray-700/80 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
+              className={`group text-left p-3 sm:p-4 rounded-2xl border border-border bg-card hover:bg-surface-1 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
               style={{ animationDelay: `${200 + i * 80}ms`, animationFillMode: 'forwards' }}
             >
               <div className="flex items-start gap-3">
@@ -222,7 +222,7 @@ function NoPlanGate() {
       <div className="opacity-0 animate-ai-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
         <Button
           onClick={() => window.location.href = '/subscription'}
-          className="!rounded-xl !px-6 !py-3 !bg-violet-600 hover:!bg-violet-700 !border-0"
+          className="!rounded-xl !px-6 !py-3 !bg-primary hover:!bg-primary/90 !text-primary-foreground !border-0"
         >
           <Sparkle size={18} weight="fill" className="mr-2" />
           {t('viewPlans')}
@@ -294,12 +294,12 @@ function ActionButtons({
               isConfirming
                 ? 'border-amber-500 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-500/30'
                 : isExecuting
-                  ? 'border-border-default dark:border-gray-600 bg-surface-1 dark:bg-card cursor-wait'
-                  : 'border-border-subtle dark:border-border-strong bg-surface-2 dark:bg-gray-800 hover:border-border-default dark:hover:border-gray-600 hover:shadow-sm'
+                  ? 'border-border bg-surface-1 cursor-wait'
+                  : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
             } ${executing && !isExecuting ? 'opacity-40 cursor-not-allowed' : ''}`}
             style={!isConfirming && !isExecuting ? {
               borderLeftWidth: '3px',
-              borderLeftColor: 'var(--company-primary-color, #16A34A)',
+              borderLeftColor: 'var(--company-primary-color, #0176D3)',
             } : undefined}
           >
             <div
@@ -307,8 +307,8 @@ function ActionButtons({
                 isConfirming ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' : ''
               }`}
               style={!isConfirming ? {
-                backgroundColor: 'color-mix(in srgb, var(--company-primary-color, #16A34A) 12%, transparent)',
-                color: 'var(--company-primary-color, #16A34A)',
+                backgroundColor: 'color-mix(in srgb, var(--company-primary-color, #0176D3) 12%, transparent)',
+                color: 'var(--company-primary-color, #0176D3)',
               } : undefined}
             >
               {isExecuting ? (
@@ -354,7 +354,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
     : null;
 
   const actionBadgeColor: Record<string, string> = {
-    resumen: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    resumen: 'bg-primary/10 text-primary',
     insight: 'bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400',
     pregunta: 'bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400',
     pronostico: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
@@ -369,8 +369,8 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
         <div
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
             isUser
-              ? 'bg-violet-600 text-white rounded-br-md shadow-sm'
-              : 'bg-surface-2 dark:bg-gray-800 border border-border-subtle dark:border-border-strong/60 text-foreground dark:text-gray-300 rounded-bl-md shadow-sm'
+              ? 'bg-primary text-primary-foreground rounded-br-md shadow-sm'
+              : 'bg-card border border-border text-foreground rounded-bl-md shadow-sm'
           }`}
         >
           <div className="whitespace-pre-wrap break-words">{message.content}</div>
@@ -432,11 +432,11 @@ function TypingIndicator() {
   return (
     <div className="flex gap-3 justify-start animate-ai-fade-up">
       <AiChatAvatar />
-      <div className="bg-surface-2 dark:bg-gray-800 border border-border-subtle dark:border-border-strong/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
+      <div className="bg-card border border-border rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500 animate-ai-dot-pulse" style={{ animationDelay: '0ms' }} />
-          <span className="w-2 h-2 rounded-full bg-blue-400 dark:bg-blue-500 animate-ai-dot-pulse" style={{ animationDelay: '200ms' }} />
-          <span className="w-2 h-2 rounded-full bg-cyan-400 dark:bg-cyan-500 animate-ai-dot-pulse" style={{ animationDelay: '400ms' }} />
+          <span className="w-2 h-2 rounded-full bg-primary animate-ai-dot-pulse" style={{ animationDelay: '0ms' }} />
+          <span className="w-2 h-2 rounded-full bg-primary/70 animate-ai-dot-pulse" style={{ animationDelay: '200ms' }} />
+          <span className="w-2 h-2 rounded-full bg-primary/40 animate-ai-dot-pulse" style={{ animationDelay: '400ms' }} />
         </div>
       </div>
     </div>
@@ -607,8 +607,8 @@ export default function AiPage() {
 
   const actionPillColors: Record<string, { active: string; inactive: string }> = {
     resumen: {
-      active: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-700 shadow-sm shadow-emerald-500/10',
-      inactive: 'bg-surface-1 dark:bg-gray-800 text-muted-foreground dark:text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400',
+      active: 'bg-primary/10 text-primary ring-1 ring-primary/30 shadow-sm shadow-primary/10',
+      inactive: 'bg-surface-1 text-muted-foreground hover:bg-primary/5 hover:text-primary',
     },
     insight: {
       active: 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-violet-300 dark:ring-violet-700 shadow-sm shadow-violet-500/10',
@@ -640,18 +640,18 @@ export default function AiPage() {
         {!noPlan && (
           <div className="flex items-center justify-end gap-2.5 pb-3">
             {!loadingCredits && credits && (
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-surface-2/80 dark:bg-gray-800 backdrop-blur-sm border border-border-subtle/60 dark:border-border-strong/60 text-sm shadow-sm">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-card border border-border text-sm shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
                     <Lightning size={11} weight="fill" className="text-white" />
                   </div>
-                  <span className="font-bold text-foreground dark:text-white tabular-nums">
+                  <span className="font-bold text-foreground tabular-nums">
                     {credits.disponibles}
                   </span>
                   <span className="text-muted-foreground text-xs">{t('credits')}</span>
                 </div>
-                <div className="w-px h-4 bg-surface-3 dark:bg-gray-800" />
-                <span className="text-xs font-medium text-violet-600 dark:text-violet-400 capitalize">{credits.plan}</span>
+                <div className="w-px h-4 bg-border" />
+                <span className="text-xs font-medium text-primary capitalize">{credits.plan}</span>
               </div>
             )}
             <HelpTooltip />
@@ -662,7 +662,7 @@ export default function AiPage() {
         {loadingCredits ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-2 border-violet-200 dark:border-violet-800 border-t-violet-500 animate-spin" />
+              <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
             </div>
             <p className="text-sm text-muted-foreground">{t('loadingAssistant')}</p>
           </div>
@@ -711,11 +711,11 @@ export default function AiPage() {
             <form onSubmit={handleSubmit} className="relative">
               <div className={`relative rounded-2xl transition-all duration-300 ${
                 inputFocused
-                  ? 'shadow-lg shadow-violet-500/10 ring-2 ring-violet-400/30 dark:ring-violet-500/20'
+                  ? 'shadow-lg shadow-primary/10 ring-2 ring-primary/30'
                   : 'shadow-sm'
               }`}>
                 {/* (focus ring handled by parent shadow) */}
-                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-surface-2 dark:bg-gray-800 border border-border-subtle dark:border-gray-600 rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
+                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-card border border-border rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
                   <textarea
                     ref={textareaRef}
                     value={prompt}
@@ -726,14 +726,14 @@ export default function AiPage() {
                     placeholder={t(`placeholders.${selectedAction}`)}
                     rows={1}
                     maxLength={2000}
-                    className="flex-1 py-2 bg-transparent text-foreground dark:text-white placeholder-gray-400 focus:outline-none focus:ring-0 border-none resize-none text-sm leading-relaxed"
+                    className="flex-1 py-2 bg-transparent text-foreground placeholder-muted-foreground focus:outline-none focus:ring-0 border-none resize-none text-sm leading-relaxed"
                   />
                   <Button
                     type="submit"
                     disabled={!prompt.trim() || loading || !hasCredits}
                     className={`!rounded-xl !p-2.5 shrink-0 transition-all duration-200 ${
                       prompt.trim() && !loading
-                        ? '!bg-violet-600 hover:!bg-violet-700 !border-0 !shadow-sm'
+                        ? '!bg-primary hover:!bg-primary/90 !text-primary-foreground !border-0 !shadow-sm'
                         : ''
                     }`}
                   >

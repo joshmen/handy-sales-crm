@@ -44,7 +44,7 @@ import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 const tipoIcons: Record<string, { icon: React.ReactNode; color: string }> = {
-  Broadcast: { icon: <Radio className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
+  Broadcast: { icon: <Radio className="h-4 w-4" />, color: 'bg-primary/10 text-primary' },
   Maintenance: { icon: <Wrench className="h-4 w-4" />, color: 'bg-red-100 text-red-700' },
   Banner: { icon: <Info className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700' },
 };
@@ -59,7 +59,7 @@ const prioridadColors: Record<string, string> = {
 const displayModeIcons: Record<string, { icon: React.ReactNode; color: string }> = {
   Banner: { icon: <Monitor className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700' },
   Notification: { icon: <Bell className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700' },
-  Both: { icon: <Layers className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
+  Both: { icon: <Layers className="h-4 w-4" />, color: 'bg-primary/10 text-primary' },
 };
 
 export default function AnnouncementsPage() {
@@ -221,7 +221,7 @@ export default function AnnouncementsPage() {
       actions={
         <button
           onClick={() => setDrawerOpen(true)}
-          className="inline-flex items-center gap-2 bg-success hover:bg-success/90 text-success-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="h-4 w-4" />
           {t('newAnnouncement')}
@@ -230,7 +230,7 @@ export default function AnnouncementsPage() {
     >
     <div className="space-y-6">
       {/* Maintenance Quick Toggle */}
-      <div className={`rounded-xl border p-4 ${maintenanceActive ? 'bg-red-50 border-red-200' : 'bg-surface-1 border-border-subtle'}`}>
+      <div className={`rounded-2xl border p-4 shadow-sm ${maintenanceActive ? 'bg-red-50 border-red-200' : 'bg-card border-border'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-1">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${maintenanceActive ? 'bg-red-100' : 'bg-surface-3'}`}>
@@ -263,7 +263,7 @@ export default function AnnouncementsPage() {
               disabled={togglingMaintenance}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 maintenanceActive
-                  ? 'bg-success hover:bg-success/90 text-white'
+                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
                   : 'bg-red-600 hover:bg-red-700 text-white'
               } disabled:opacity-50`}
             >
@@ -281,8 +281,8 @@ export default function AnnouncementsPage() {
       </div>
 
       {/* Announcements List */}
-      <div className="bg-surface-2 rounded-xl border border-border-subtle overflow-hidden">
-        <div className="px-4 py-3 border-b border-border-subtle">
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
           <h2 className="font-medium text-foreground">
             {t('historyTitle')}
           </h2>
@@ -414,7 +414,7 @@ export default function AnnouncementsPage() {
                     }))}
                     className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-colors ${
                       form.tipo === tipo
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border-subtle text-foreground/70 hover:bg-surface-1'
                     }`}
                   >
@@ -439,7 +439,7 @@ export default function AnnouncementsPage() {
                       onClick={() => setForm(f => ({ ...f, displayMode: mode }))}
                       className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                         form.displayMode === mode
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border-subtle text-foreground/70 hover:bg-surface-1'
                       }`}
                     >
@@ -461,7 +461,7 @@ export default function AnnouncementsPage() {
                 onClick={() => { setTargetMode('all'); setSelectedTenantIds([]); setSelectedRoles([]); setTenantSearch(''); }}
                 className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                   targetMode === 'all'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border-subtle text-foreground/70 hover:bg-surface-1'
                 }`}
               >
@@ -473,7 +473,7 @@ export default function AnnouncementsPage() {
                 onClick={() => { setTargetMode('tenants'); setSelectedRoles([]); }}
                 className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                   targetMode === 'tenants'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border-subtle text-foreground/70 hover:bg-surface-1'
                 }`}
               >
@@ -485,7 +485,7 @@ export default function AnnouncementsPage() {
                 onClick={() => { setTargetMode('roles'); setSelectedTenantIds([]); setTenantSearch(''); }}
                 className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                   targetMode === 'roles'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border-subtle text-foreground/70 hover:bg-surface-1'
                 }`}
               >
@@ -506,7 +506,7 @@ export default function AnnouncementsPage() {
                       placeholder={t('searchTenant')}
                       value={tenantSearch}
                       onChange={(e) => setTenantSearch(e.target.value)}
-                      className="w-full h-8 pl-8 pr-3 text-sm border border-border-subtle rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                      className="w-full h-8 pl-8 pr-3 text-sm border border-border-subtle rounded-md focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                     />
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function AnnouncementsPage() {
                     const allFilteredSelected = filtered.every(t => selectedTenantIds.includes(t.id));
                     return (
                       <>
-                        <label className="flex items-center gap-2 p-1.5 rounded-md hover:bg-purple-50 cursor-pointer border-b border-border-subtle mb-1 pb-1.5">
+                        <label className="flex items-center gap-2 p-1.5 rounded-md hover:bg-primary/5 cursor-pointer border-b border-border-subtle mb-1 pb-1.5">
                           <input
                             type="checkbox"
                             checked={allFilteredSelected && filtered.length > 0}
@@ -534,9 +534,9 @@ export default function AnnouncementsPage() {
                                 setSelectedTenantIds(prev => Array.from(new Set([...prev, ...filteredIds])));
                               }
                             }}
-                            className="w-4 h-4 rounded border-border-default text-purple-600 focus:ring-purple-500"
+                            className="w-4 h-4 rounded border-border-default text-primary focus:ring-primary"
                           />
-                          <span className="text-sm text-purple-700 font-medium">{t('selectAll')}</span>
+                          <span className="text-sm text-primary font-medium">{t('selectAll')}</span>
                           <span className="text-xs text-muted-foreground ml-auto">{filtered.length}</span>
                         </label>
                         {filtered.map(t => (
@@ -547,7 +547,7 @@ export default function AnnouncementsPage() {
                               onChange={() => setSelectedTenantIds(prev =>
                                 prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]
                               )}
-                              className="w-4 h-4 rounded border-border-default text-purple-600 focus:ring-purple-500"
+                              className="w-4 h-4 rounded border-border-default text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-foreground/80 flex-1 truncate">{t.nombreEmpresa}</span>
                             <span className="text-xs text-muted-foreground">{t.usuarioCount} usr</span>
@@ -558,14 +558,14 @@ export default function AnnouncementsPage() {
                   })()}
                 </div>
                 {selectedTenantIds.length > 0 && (
-                  <div className="px-2 py-1.5 border-t border-border-subtle bg-purple-50 flex items-center justify-between">
-                    <p className="text-xs text-purple-700 font-medium">
+                  <div className="px-2 py-1.5 border-t border-border-subtle bg-primary/5 flex items-center justify-between">
+                    <p className="text-xs text-primary font-medium">
                       {t('tenantsSelected', { count: selectedTenantIds.length })}
                     </p>
                     <button
                       type="button"
                       onClick={() => setSelectedTenantIds([])}
-                      className="text-xs text-purple-600 hover:text-purple-800 underline"
+                      className="text-xs text-primary hover:text-primary/80 underline"
                     >
                       {t('clearSelection')}
                     </button>
@@ -585,7 +585,7 @@ export default function AnnouncementsPage() {
                       onChange={() => setSelectedRoles(prev =>
                         prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
                       )}
-                      className="w-4 h-4 rounded border-border-default text-purple-600 focus:ring-purple-500"
+                      className="w-4 h-4 rounded border-border-default text-primary focus:ring-primary"
                     />
                     <span className="text-sm text-foreground/80">
                       {role === 'ADMIN' ? t('roleAdmins')
@@ -596,7 +596,7 @@ export default function AnnouncementsPage() {
                   </label>
                 ))}
                 {selectedRoles.length > 0 && (
-                  <p className="text-xs text-purple-600 font-medium pt-1 border-t">
+                  <p className="text-xs text-primary font-medium pt-1 border-t">
                     {t('onlyUsersWithRole', { roles: selectedRoles.join(', ') })}
                   </p>
                 )}
@@ -620,7 +620,7 @@ export default function AnnouncementsPage() {
               }}
               maxLength={150}
               placeholder={t('titlePlaceholder')}
-              className="w-full h-10 px-3 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+              className="w-full h-10 px-3 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
             />
           </div>
 
@@ -640,7 +640,7 @@ export default function AnnouncementsPage() {
               maxLength={500}
               placeholder={t('messagePlaceholder')}
               rows={3}
-              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-none"
             />
           </div>
 
@@ -650,7 +650,7 @@ export default function AnnouncementsPage() {
             <select
               value={form.prioridad}
               onChange={(e) => setForm(f => ({ ...f, prioridad: e.target.value }))}
-              className="w-full h-10 px-3 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-surface-2"
+              className="w-full h-10 px-3 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-surface-2"
             >
               <option value="Low">{t('priorityLow')}</option>
               <option value="Normal">{t('priorityNormal')}</option>
@@ -667,7 +667,7 @@ export default function AnnouncementsPage() {
                 id="dismissible"
                 checked={form.isDismissible}
                 onChange={(e) => setForm(f => ({ ...f, isDismissible: e.target.checked }))}
-                className="w-4 h-4 rounded border-border-default text-purple-600 focus:ring-purple-500"
+                className="w-4 h-4 rounded border-border-default text-primary focus:ring-primary"
               />
               <label htmlFor="dismissible" className="text-sm text-foreground/80">
                 {t('dismissibleLabel')}
@@ -702,7 +702,7 @@ export default function AnnouncementsPage() {
             <button
               onClick={handleCreate}
               disabled={creating || !form.titulo.trim() || !form.mensaje.trim()}
-              className="w-full h-10 bg-success hover:bg-success/90 text-success-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {creating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

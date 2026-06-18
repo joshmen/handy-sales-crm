@@ -29,6 +29,10 @@ import {
   Trash2,
   Loader2,
   RefreshCw,
+  Target as TargetIcon,
+  CheckCircle2,
+  DollarSign,
+  Repeat,
 } from 'lucide-react';
 import { Target } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
@@ -45,7 +49,7 @@ interface UsuarioOption {
 // ─── Constants (label keys resolved via useTranslations at render) ─
 
 const TIPO_COLORS: Record<string, string> = {
-  ventas: 'bg-emerald-100 text-emerald-700',
+  ventas: 'bg-primary/10 text-primary',
   pedidos: 'bg-blue-100 text-blue-700',
   visitas: 'bg-purple-100 text-purple-700',
 };
@@ -247,6 +251,14 @@ export default function MetasPage() {
 
   const totalPages = Math.ceil(sorted.length / pageSize);
 
+  // KPIs derivados de la lista completa cargada (data REAL del response).
+  // metaVendedorService.getAll() trae todas las metas, así que estos conteos
+  // reflejan el total real, no solo la página visible.
+  const totalMetas = metas.length;
+  const activeMetas = metas.filter(m => m.activo).length;
+  const ventasMetas = metas.filter(m => m.tipo === 'ventas').length;
+  const autoRenovarMetas = metas.filter(m => m.autoRenovar).length;
+
   // ─── Drawer helpers ────────────────────────────────
   const openCreate = () => {
     setEditingMeta(null);
@@ -363,7 +375,7 @@ export default function MetasPage() {
           <button
             data-tour="metas-add-btn"
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-success text-success-foreground rounded-lg text-sm font-medium hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('newGoal')}
@@ -371,50 +383,89 @@ export default function MetasPage() {
         ) : undefined
       }
     >
-      {/* Error */}
-      <ErrorBanner error={error} onRetry={loadMetas} />
+      <div className="space-y-5 px-4 sm:px-6 py-4">
+        {/* Error */}
+        <ErrorBanner error={error} onRetry={loadMetas} />
 
-      {/* Filters */}
-      <div className="px-6 py-3 border-b border-border-subtle flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBar
-          dataTour="metas-search"
-          value={searchTerm}
-          onChange={v => { setSearchTerm(v); setCurrentPage(1); }}
-          placeholder={t('searchPlaceholder')}
-          className="w-full sm:w-64"
-        />
-
-        <select
-          data-tour="metas-tipo-filter"
-          value={filterTipo}
-          onChange={e => { setFilterTipo(e.target.value); setCurrentPage(1); }}
-          className="h-9 border border-border-default rounded-lg text-sm px-3 text-foreground/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">{t('allTypes')}</option>
-          {TIPO_OPTIONS.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
-
-        <div data-tour="metas-toggle-inactive" className="ml-auto">
-          <InactiveToggle
-            value={showInactive}
-            onChange={v => { setShowInactive(v); setCurrentPage(1); }}
-          />
+        {/* Tabs de tipo (segmentado azul) + búsqueda — reusa filterTipo real */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="metas-tipo-filter">
+            {([{ value: '', label: t('allTypes') }, ...TIPO_OPTIONS] as const).map((opt) => {
+              const active = filterTipo === opt.value;
+              return (
+                <button
+                  key={opt.value || 'all'}
+                  type="button"
+                  onClick={() => { setFilterTipo(opt.value); setCurrentPage(1); }}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="w-full sm:w-72 lg:w-80">
+            <SearchBar
+              dataTour="metas-search"
+              value={searchTerm}
+              onChange={v => { setSearchTerm(v); setCurrentPage(1); }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full"
+            />
+          </div>
         </div>
 
-        <button
-          onClick={loadMetas}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline">{tc('refresh')}</span>
-        </button>
-      </div>
+        {/* KPI Row — tarjetas (data real de la lista completa) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { title: t('vendorGoals'), value: String(totalMetas), hint: 'Todas las metas', icon: TargetIcon },
+            { title: tc('active'), value: String(activeMetas), hint: 'Metas vigentes', icon: CheckCircle2 },
+            { title: t('types.sales'), value: String(ventasMetas), hint: 'Metas de venta', icon: DollarSign },
+            { title: t('autoRenew'), value: String(autoRenovarMetas), hint: 'Renovación automática', icon: Repeat },
+          ].map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.title}
+                className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                  <Icon className="w-5 h-5 text-muted-foreground/40" />
+                </div>
+                <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                  {card.value}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Filtros secundarios (inactivos) + refrescar */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div data-tour="metas-toggle-inactive">
+            <InactiveToggle
+              value={showInactive}
+              onChange={v => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
+
+          <button
+            onClick={loadMetas}
+            disabled={loading}
+            className="ml-auto flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{tc('refresh')}</span>
+          </button>
+        </div>
 
       {/* DataGrid */}
-      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4" data-tour="metas-table">
+      <div data-tour="metas-table">
         <DataGrid<MetaVendedor>
           columns={[
             { key: 'usuarioNombre', label: t('vendor'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.usuarioNombre || `#${item.usuarioId}`}</span> },
@@ -436,7 +487,7 @@ export default function MetasPage() {
                 {isAdmin ? (
                   <ActiveToggle isActive={item.activo} isLoading={togglingId === item.id} onToggle={() => handleToggle(item)} />
                 ) : (
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${item.activo ? 'bg-green-100 text-green-700' : 'bg-surface-3 text-muted-foreground'}`}>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${item.activo ? 'bg-primary/10 text-primary' : 'bg-surface-3 text-muted-foreground'}`}>
                     {item.activo ? tc('active') : tc('inactive')}
                   </span>
                 )}
@@ -507,6 +558,7 @@ export default function MetasPage() {
             </div>
           )}
         />
+      </div>
       </div>
 
       {/* Create / Edit Drawer */}

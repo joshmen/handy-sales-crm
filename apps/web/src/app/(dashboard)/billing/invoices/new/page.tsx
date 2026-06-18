@@ -177,7 +177,7 @@ export default function NewInvoicePage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{tCommon('loading')}</span>
     </div>
   );
@@ -186,13 +186,14 @@ export default function NewInvoicePage() {
     return (
       <PageHeader
         breadcrumbs={[
+          { label: tCommon('home'), href: '/dashboard' },
           { label: t('breadcrumbBilling'), href: '/billing' },
           { label: t('breadcrumbInvoices'), href: '/billing/invoices' },
           { label: t('breadcrumbNew') },
         ]}
         title={t('title')}
       >
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 text-center">
           <p className="text-amber-800 dark:text-amber-300 font-medium mb-2">
             {t('configureFiscalFirst')}
           </p>
@@ -210,6 +211,7 @@ export default function NewInvoicePage() {
   return (
     <PageHeader
       breadcrumbs={[
+        { label: tCommon('home'), href: '/dashboard' },
         { label: t('breadcrumbBilling'), href: '/billing' },
         { label: t('breadcrumbInvoices'), href: '/billing/invoices' },
         { label: t('breadcrumbNew') },
@@ -219,7 +221,7 @@ export default function NewInvoicePage() {
     >
       <div className="space-y-6 max-w-4xl">
         {/* Datos del comprobante */}
-        <section className="bg-card border border-border rounded-xl p-5">
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-foreground mb-4">{t('voucherData')}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
@@ -227,7 +229,7 @@ export default function NewInvoicePage() {
               <select
                 value={tipoComprobante}
                 onChange={e => setTipoComprobante(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {catalogos?.tiposComprobante?.map(t => (
                   <option key={t.codigo} value={t.codigo}>{t.codigo} — {t.descripcion}</option>
@@ -239,7 +241,7 @@ export default function NewInvoicePage() {
               <select
                 value={metodoPago}
                 onChange={e => setMetodoPago(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {catalogos?.metodosPago?.map(m => (
                   <option key={m.codigo} value={m.codigo}>{m.codigo} — {m.descripcion}</option>
@@ -254,7 +256,7 @@ export default function NewInvoicePage() {
               <select
                 value={formaPago}
                 onChange={e => setFormaPago(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {catalogos?.formasPago?.map(f => (
                   <option key={f.codigo} value={f.codigo}>{f.codigo} — {f.descripcion}</option>
@@ -266,7 +268,7 @@ export default function NewInvoicePage() {
               <select
                 value={usoCfdi}
                 onChange={e => setUsoCfdi(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {catalogos?.usosCfdi?.map(u => (
                   <option key={u.codigo} value={u.codigo}>{u.codigo} — {u.descripcion}</option>
@@ -277,7 +279,7 @@ export default function NewInvoicePage() {
         </section>
 
         {/* Receptor */}
-        <section className="bg-card border border-border rounded-xl p-5">
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-foreground mb-4">{t('receptor')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -288,7 +290,7 @@ export default function NewInvoicePage() {
                 onChange={e => setReceptorRfc(e.target.value.toUpperCase())}
                 placeholder="XAXX010101000"
                 maxLength={13}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 uppercase"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 uppercase"
               />
             </div>
             <div>
@@ -298,7 +300,7 @@ export default function NewInvoicePage() {
                 value={receptorNombre}
                 onChange={e => setReceptorNombre(e.target.value)}
                 placeholder={t('clientNamePlaceholder')}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <div>
@@ -306,7 +308,7 @@ export default function NewInvoicePage() {
               <select
                 value={receptorUsoCfdi}
                 onChange={e => setReceptorUsoCfdi(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {catalogos?.usosCfdi?.map(u => (
                   <option key={u.codigo} value={u.codigo}>{u.codigo} — {u.descripcion}</option>
@@ -321,14 +323,14 @@ export default function NewInvoicePage() {
                 onChange={e => setReceptorDomicilioFiscal(e.target.value)}
                 placeholder="12345"
                 maxLength={5}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           </div>
         </section>
 
         {/* Conceptos */}
-        <section className="bg-card border border-border rounded-xl p-5">
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">{t('concepts')}</h2>
             <Button variant="outline" size="sm" onClick={addLine}>
@@ -345,7 +347,7 @@ export default function NewInvoicePage() {
                     value={line.descripcion}
                     onChange={e => updateLine(line.key, 'descripcion', e.target.value)}
                     placeholder={t('productOrServicePlaceholder')}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 <div className="col-span-4 sm:col-span-2">
@@ -356,7 +358,7 @@ export default function NewInvoicePage() {
                     step="any"
                     value={line.cantidad}
                     onChange={e => updateLine(line.key, 'cantidad', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 <div className="col-span-4 sm:col-span-2">
@@ -367,7 +369,7 @@ export default function NewInvoicePage() {
                     step="any"
                     value={line.valorUnitario}
                     onChange={e => updateLine(line.key, 'valorUnitario', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 <div className="col-span-3 sm:col-span-2">
@@ -392,7 +394,7 @@ export default function NewInvoicePage() {
         </section>
 
         {/* Totals */}
-        <section className="bg-card border border-border rounded-xl p-5">
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="max-w-xs ml-auto space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t('subtotal')}</span>
@@ -404,19 +406,19 @@ export default function NewInvoicePage() {
             </div>
             <div className="border-t border-border pt-2 flex justify-between text-base">
               <span className="font-semibold">{tCommon('total')}</span>
-              <span className="font-bold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(total)}</span>
+              <span className="font-bold tabular-nums text-primary">{formatCurrency(total)}</span>
             </div>
           </div>
         </section>
 
         {/* Observaciones */}
-        <section className="bg-card border border-border rounded-xl p-5">
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <label className="block text-xs font-medium text-muted-foreground mb-1">{t('observationsOptional')}</label>
           <textarea
             value={observaciones}
             onChange={e => setObservaciones(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 resize-none"
+            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
             placeholder={t('observationsPlaceholder')}
           />
         </section>
@@ -441,7 +443,7 @@ export default function NewInvoicePage() {
           <Button
             onClick={() => handleSubmit(true)}
             disabled={saving}
-            className="bg-success hover:bg-success/90 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {saving && timbrarAfter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             {t('saveAndStamp')}

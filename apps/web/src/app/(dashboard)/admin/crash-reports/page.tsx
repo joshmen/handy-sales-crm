@@ -239,7 +239,7 @@ function LogLevelControls() {
   };
 
   return (
-    <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(prev => !prev)}
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
@@ -283,7 +283,7 @@ function LogLevelControls() {
                             onChange={() =>
                               setDraft(prev => ({ ...prev, [key]: opt.value as LogLevelValue }))
                             }
-                            className="h-4 w-4 text-blue-600 border-border-default focus:ring-blue-500"
+                            className="h-4 w-4 text-primary border-border-default focus:ring-primary"
                           />
                           <span className="text-sm text-foreground/80">{opt.label}</span>
                         </label>
@@ -308,7 +308,7 @@ function LogLevelControls() {
                   size="sm"
                   onClick={handleApply}
                   disabled={!hasChanges || applying}
-                  className="bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
                 >
                   {applying ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -476,7 +476,7 @@ function CloudWatchTab() {
             onClick={() => setAutoRefresh(prev => !prev)}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
               autoRefresh
-                ? 'bg-green-50 border-green-200 text-green-700'
+                ? 'bg-primary/10 border-primary/30 text-primary'
                 : 'bg-surface-2 border-border-subtle text-muted-foreground hover:bg-surface-1'
             }`}
           >
@@ -492,7 +492,7 @@ function CloudWatchTab() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('errors24h')}</p>
@@ -510,7 +510,7 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('warnings24h')}</p>
@@ -528,7 +528,7 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('crashes24h')}</p>
@@ -546,7 +546,7 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('apisWithErrors')}</p>
@@ -566,7 +566,7 @@ function CloudWatchTab() {
       </div>
 
       {/* Bar Chart — Errors by Hour */}
-      <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
         <h3 className="text-sm font-semibold text-foreground/80 mb-4">{t('errorsByHour')}</h3>
         {loading ? (
           <div className="h-64 w-full bg-surface-1 rounded-lg animate-pulse" />
@@ -586,7 +586,7 @@ function CloudWatchTab() {
       </div>
 
       {/* Recent Errors Table */}
-      <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-border-subtle">
           <h3 className="text-sm font-semibold text-foreground/80">{t('recentErrors')}</h3>
         </div>
@@ -909,7 +909,7 @@ function MobileCrashesTab() {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('today')}</p>
@@ -927,7 +927,7 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('unresolved')}</p>
@@ -945,7 +945,7 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('crashes')}</p>
@@ -963,7 +963,7 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('errors')}</p>
@@ -983,7 +983,7 @@ function MobileCrashesTab() {
       </div>
 
       {/* Filters + Refresh */}
-      <div className="bg-surface-2 rounded-xl border border-border-subtle p-4 shadow-sm">
+      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="w-full sm:w-48">
             <Select
@@ -1047,7 +1047,7 @@ function MobileCrashesTab() {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-1">
@@ -1138,7 +1138,7 @@ function MobileCrashesTab() {
       <div className="md:hidden space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-4 shadow-sm animate-pulse">
+            <div key={i} className="bg-card rounded-2xl border border-border p-4 shadow-sm animate-pulse">
               <div className="flex justify-between mb-3">
                 <div className="h-5 w-16 bg-surface-3 rounded-full" />
                 <div className="h-5 w-20 bg-surface-3 rounded-full" />
@@ -1148,7 +1148,7 @@ function MobileCrashesTab() {
             </div>
           ))
         ) : reports.length === 0 ? (
-          <div className="bg-surface-2 rounded-xl border border-border-subtle p-8 text-center shadow-sm">
+          <div className="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
             <Bug size={48} weight="duotone" className="mx-auto text-muted-foreground/60 mb-3" />
             <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
           </div>
@@ -1157,7 +1157,7 @@ function MobileCrashesTab() {
             <div
               key={report.id}
               onClick={() => handleRowClick(report)}
-              className="bg-surface-2 rounded-xl border border-border-subtle p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 {getSeverityBadge(report.severity)}
@@ -1217,7 +1217,7 @@ function MobileCrashesTab() {
                     value={resolverNota}
                     onChange={e => setResolverNota(e.target.value)}
                     placeholder="Describe como se resolvio el problema..."
-                    className="w-full h-24 rounded-md border border-border-default px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                    className="w-full h-24 rounded-md border border-border-default px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button
@@ -1234,7 +1234,7 @@ function MobileCrashesTab() {
                       size="sm"
                       onClick={handleMarcarResuelto}
                       disabled={resolverLoading}
-                      className="bg-success hover:bg-success/90 text-white"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       {resolverLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -1248,7 +1248,7 @@ function MobileCrashesTab() {
               ) : (
                 <Button
                   onClick={() => setResolverOpen(true)}
-                  className="bg-success hover:bg-success/90 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <CheckCircle size={16} weight="fill" className="mr-2" />
                   Marcar como resuelto
@@ -1423,7 +1423,7 @@ export default function CrashReportsPage() {
             onClick={() => setActiveTab('cloudwatch')}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'cloudwatch'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground/80 hover:border-border-default'
             }`}
           >
@@ -1436,7 +1436,7 @@ export default function CrashReportsPage() {
             onClick={() => setActiveTab('mobile')}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'mobile'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground/80 hover:border-border-default'
             }`}
           >

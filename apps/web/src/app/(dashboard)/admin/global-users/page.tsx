@@ -33,21 +33,21 @@ const STATUS_OPTIONS = [
 
 const roleBadgeColors: Record<string, string> = {
   SUPER_ADMIN: 'bg-red-100 text-red-700',
-  ADMIN: 'bg-blue-100 text-blue-700',
-  SUPERVISOR: 'bg-purple-100 text-purple-700',
-  VENDEDOR: 'bg-green-100 text-green-700',
+  ADMIN: 'bg-primary/10 text-primary',
+  SUPERVISOR: 'bg-primary/10 text-primary',
+  VENDEDOR: 'bg-primary/10 text-primary',
   VIEWER: 'bg-surface-3 text-foreground/70',
 };
 
 const userColorPool = [
-  'bg-blue-100 text-blue-600',
-  'bg-red-100 text-red-600',
+  'bg-primary/10 text-primary',
+  'bg-sky-100 text-sky-600',
   'bg-indigo-100 text-indigo-600',
-  'bg-green-100 text-green-600',
-  'bg-amber-100 text-amber-600',
-  'bg-purple-100 text-purple-600',
-  'bg-pink-100 text-pink-600',
+  'bg-blue-100 text-blue-600',
   'bg-cyan-100 text-cyan-600',
+  'bg-primary/10 text-primary',
+  'bg-sky-100 text-sky-600',
+  'bg-indigo-100 text-indigo-600',
 ];
 
 function getUserColor(id: number): string {
@@ -128,20 +128,41 @@ export default function GlobalUsersPage() {
       title={t('title')}
       subtitle={t('subtitle', { count: totalCount.toLocaleString() })}
     >
-      <div className="space-y-4">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
+      <div className="space-y-5">
+        {/* Barra segmentada de estado (reusa filterActivo real) + búsqueda */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
+            {STATUS_OPTIONS.map((opt) => {
+              const active = filterActivo === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFilterActivo(opt.value)}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="relative w-full sm:w-72 lg:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full pl-10 pr-3 py-2.5 text-sm border border-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
+        </div>
 
+        {/* Filtros secundarios (empresa, rol) */}
+        <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-[200px]">
             <SearchableSelect
               options={tenantOptions}
@@ -159,18 +180,9 @@ export default function GlobalUsersPage() {
               placeholder={t('allRoles')}
             />
           </div>
-
-          <div className="min-w-[140px]">
-            <SearchableSelect
-              options={STATUS_OPTIONS}
-              value={filterActivo}
-              onChange={(val) => setFilterActivo(val ? String(val) : 'all')}
-              placeholder={t('allStatuses')}
-            />
-          </div>
         </div>
 
-        <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
                 <div className="flex items-center gap-2">
@@ -178,7 +190,7 @@ export default function GlobalUsersPage() {
                   <span className="text-lg font-semibold text-foreground/80">Handy Suites<sup className="text-[8px] font-normal">®</sup></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4 text-[#16A34A]" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -240,7 +252,7 @@ export default function GlobalUsersPage() {
 
                       <div className="w-[80px]">
                         {user.activo ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-100 text-green-700">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary">
                             {t('statusActive')}
                           </span>
                         ) : (
@@ -325,7 +337,7 @@ export default function GlobalUsersPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                         page === currentPage
-                          ? 'bg-success text-success-foreground'
+                          ? 'bg-primary text-primary-foreground'
                           : 'text-foreground/70 hover:bg-surface-3'
                       }`}
                     >

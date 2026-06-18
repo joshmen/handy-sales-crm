@@ -75,7 +75,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
         role="dialog"
         aria-modal="true"
         aria-labelledby="mapeo-edit-title"
-        className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl"
+        className="bg-card border border-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -102,7 +102,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
           </label>
           {claveProdServ && (
             <div className="mb-1.5 flex items-center gap-2">
-              <span className="px-2 py-0.5 text-xs font-mono bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded border border-green-200 dark:border-green-800">
+              <span className="px-2 py-0.5 text-xs font-mono bg-primary/10 dark:bg-primary/20 text-primary rounded border border-primary/30">
                 {claveProdServ}
               </span>
               <button
@@ -132,7 +132,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
           </label>
           {claveUnidad && (
             <div className="mb-1.5 flex items-center gap-2">
-              <span className="px-2 py-0.5 text-xs font-mono bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded border border-green-200 dark:border-green-800">
+              <span className="px-2 py-0.5 text-xs font-mono bg-primary/10 dark:bg-primary/20 text-primary rounded border border-primary/30">
                 {claveUnidad}
               </span>
               <button
@@ -195,7 +195,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
             <Button
               onClick={() => onSave(product.productoId, claveProdServ, claveUnidad)}
               disabled={saving || !canSave || (!hasChanges && product.hasMapping)}
-              className="bg-success hover:bg-success/90 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               {t('save')}
@@ -207,7 +207,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
       {/* Confirm discard changes */}
       {confirmDiscard && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setConfirmDiscard(false)}>
-          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
             <h4 className="text-sm font-semibold text-foreground mb-2">{t('unsavedChanges')}</h4>
             <p className="text-sm text-muted-foreground mb-4">{t('unsavedChangesDesc')}</p>
             <div className="flex justify-end gap-2">

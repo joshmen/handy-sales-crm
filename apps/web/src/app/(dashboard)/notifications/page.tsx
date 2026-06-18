@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useFormatters } from '@/hooks/useFormatters';
 import { notificationService, NotificationDto } from '@/services/api/notificationService';
 import { toast } from '@/hooks/useToast';
@@ -55,6 +56,7 @@ const PAGE_SIZE = 10;
 
 export default function NotificationsPage() {
   const t = useTranslations('notifications');
+  const tc = useTranslations('common');
   const { formatDate } = useFormatters();
 
   const typeLabels: Record<string, string> = {
@@ -202,90 +204,86 @@ export default function NotificationsPage() {
   const endItem = Math.min(currentPage * PAGE_SIZE, totalItems);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-surface-2 dark:bg-card px-8 py-6 border-b border-border-subtle dark:border-border-strong">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-[13px] mb-4">
-          <span className="text-muted-foreground dark:text-muted-foreground">{t('breadcrumbAdmin')}</span>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          <span className="text-foreground dark:text-gray-100 font-semibold">{t('breadcrumbNotifications')}</span>
-        </div>
-
-        {/* Title Row */}
-        <div className="flex items-center justify-between mb-4">
+    <PageHeader
+      breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('breadcrumbAdmin') },
+        { label: t('breadcrumbNotifications') },
+      ]}
+      title={t('title')}
+      subtitle={unreadCount > 0 ? `${unreadCount} sin leer` : 'Estás al día'}
+      actions={
+        unreadCount > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+          >
+            <CheckCheck className="w-4 h-4 mr-2" />
+            {t('markAllRead')}
+          </Button>
+        ) : undefined
+      }
+    >
+      <div className="space-y-5">
+        {/* Filtros segmentados (tipo) + búsqueda + estado leído */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="notifications-filter-type">
+            {([
+              { value: 'all', label: t('allTypes') },
+              { value: 'order', label: t('typeOrders') },
+              { value: 'alert', label: t('typeAlerts') },
+              { value: 'route', label: t('typeRoutes') },
+              { value: 'inventory', label: t('typeInventory') },
+              { value: 'general', label: t('typeGeneral') },
+            ] as const).map((opt) => {
+              const active = filterType === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFilterType(opt.value)}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground dark:text-gray-100">
-              {t('title')}
-            </h1>
-            {unreadCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-red-500 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          {unreadCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-            >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              {t('markAllRead')}
-            </Button>
-          )}
-        </div>
-
-        {/* Filter Row */}
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              data-tour="notifications-search"
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle dark:border-gray-600 rounded-md bg-surface-2 dark:bg-card text-foreground dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-
-          {/* Type Filter */}
-          <div data-tour="notifications-filter-type" className="min-w-[170px]">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('allTypes') },
-                { value: 'order', label: t('typeOrders') },
-                { value: 'alert', label: t('typeAlerts') },
-                { value: 'route', label: t('typeRoutes') },
-                { value: 'inventory', label: t('typeInventory') },
-                { value: 'general', label: t('typeGeneral') },
-              ]}
-              value={filterType}
-              onChange={(val) => setFilterType(val ? String(val) : 'all')}
-              placeholder={t('allTypes')}
-            />
-          </div>
-
-          {/* Read/Unread Filter */}
-          <div className="min-w-[170px]">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('filterAll') },
-                { value: 'unread', label: t('filterUnread') },
-              ]}
-              value={filterUnread}
-              onChange={(val) => setFilterUnread(val ? String(val) : 'all')}
-              placeholder={t('filterAll')}
-            />
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                data-tour="notifications-search"
+                type="text"
+                placeholder={t('searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            {/* Read/Unread Filter */}
+            <div className="min-w-[150px]">
+              <SearchableSelect
+                options={[
+                  { value: 'all', label: t('filterAll') },
+                  { value: 'unread', label: t('filterUnread') },
+                ]}
+                value={filterUnread}
+                onChange={(val) => setFilterUnread(val ? String(val) : 'all')}
+                placeholder={t('filterAll')}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-auto">
-        <div className="px-8 py-6">
+        <div>
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-border-subtle"></div>
@@ -312,10 +310,10 @@ export default function NotificationsPage() {
                 return (
                   <div
                     key={notification.id}
-                    className={`border rounded-lg p-5 hover:shadow-sm transition-shadow cursor-pointer ${
+                    className={`border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
                       isUnread
-                        ? 'bg-surface-2 dark:bg-card border-border-subtle dark:border-border-strong'
-                        : 'bg-surface-1 dark:bg-surface-3/50 border-border-subtle dark:border-gray-800'
+                        ? 'bg-card border-border'
+                        : 'bg-surface-1 dark:bg-surface-3/50 border-border'
                     }`}
                     onClick={() => isUnread && handleMarkAsRead(notification.id)}
                   >
@@ -360,7 +358,7 @@ export default function NotificationsPage() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
                                 disabled={actionLoading === notification.id}
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                 title={t('markAsRead')}
                               >
                                 <Check className="w-4 h-4" />
@@ -416,7 +414,7 @@ export default function NotificationsPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                         page === currentPage
-                          ? 'bg-success text-success-foreground'
+                          ? 'bg-primary text-primary-foreground'
                           : 'text-foreground/70 dark:text-muted-foreground hover:bg-surface-3 dark:hover:bg-foreground'
                       }`}
                     >
@@ -428,7 +426,7 @@ export default function NotificationsPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-2 bg-success text-success-foreground rounded-md hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -437,6 +435,6 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageHeader>
   );
 }

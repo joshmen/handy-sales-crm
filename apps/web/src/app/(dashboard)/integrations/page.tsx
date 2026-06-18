@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 const estadoBadgeStyles: Record<string, string> = {
-  DISPONIBLE: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  DISPONIBLE: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
   PROXIMO: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   DESCONTINUADO: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground",
 };
@@ -64,12 +64,12 @@ function IntegrationCard({
   const icon = iconMap[integration.icono || ""] || <Zap className="h-6 w-6" />;
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 border-border-subtle dark:border-border-strong">
+    <Card className="group bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className={`p-3 rounded-xl ${
             integration.isActivated
-              ? "bg-green-100 dark:bg-green-900/30 text-green-600"
+              ? "bg-primary/10 dark:bg-primary/20 text-primary"
               : isAvailable
                 ? "bg-surface-3 dark:bg-surface-3 text-foreground/70 dark:text-muted-foreground"
                 : "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
@@ -81,7 +81,7 @@ function IntegrationCard({
               <h3 className="font-semibold text-foreground dark:text-white">{integration.nombre}</h3>
               <Badge className={badgeClassName}>{badgeLabel}</Badge>
               {integration.isActivated && (
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                <Badge className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
                   <Check className="h-3 w-3 mr-1" /> {t("activeLabel")}
                 </Badge>
               )}
@@ -100,7 +100,7 @@ function IntegrationCard({
                 </span>
               )}
               {integration.precioMXN === 0 && (
-                <span className="text-xs font-semibold text-green-600">{t("free")}</span>
+                <span className="text-xs font-semibold text-primary">{t("free")}</span>
               )}
             </div>
           </div>
@@ -120,7 +120,7 @@ function IntegrationCard({
                 size="sm"
                 onClick={() => onActivate(integration.slug)}
                 disabled={loading}
-                className="bg-success hover:bg-success/90 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("activate")}
               </Button>
@@ -210,7 +210,7 @@ export default function IntegrationsPage() {
   if (loading) {
     return (
       <div role="status" className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
         <span className="sr-only">Loading...</span>
       </div>
     );
@@ -244,17 +244,17 @@ export default function IntegrationsPage() {
           </div>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-2">
+        {/* Filter tabs (segmentado azul) */}
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
           {(["all", "active", "available"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               aria-pressed={filter === f}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
                 filter === f
-                  ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                  : "text-muted-foreground hover:bg-muted"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {f === "all" ? t("filterAll") : f === "active" ? t("filterActive") : t("filterAvailable")}

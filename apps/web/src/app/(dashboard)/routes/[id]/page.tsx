@@ -312,7 +312,7 @@ export default function RouteDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -321,7 +321,7 @@ export default function RouteDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-muted-foreground">{t('detail.notFound')}</p>
-        <Link href="/routes" className="text-green-600 hover:underline text-sm">
+        <Link href="/routes" className="text-primary hover:underline text-sm">
           {t('detail.backToRoutes')}
         </Link>
       </div>
@@ -369,7 +369,7 @@ export default function RouteDetailPage() {
                   onClick={handleSendToLoadClick}
                   disabled={actionLoading || sending || carga.length === 0}
                   title={carga.length === 0 ? 'Asigna al menos un producto de carga' : undefined}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Play className="w-4 h-4" />
                   {t('detail.sendToLoad')}
@@ -389,7 +389,7 @@ export default function RouteDetailPage() {
                 <button
                   onClick={handleCompletar}
                   disabled={actionLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   <CheckCircle className="w-4 h-4" />
                   {t('detail.completeRoute')}
@@ -417,7 +417,7 @@ export default function RouteDetailPage() {
             {route.estado === ESTADO_RUTA.Completada && (
               <Link
                 href={`/routes/manage/${route.id}/close`}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
               >
                 <FileCheck className="w-4 h-4" />
                 {t('detail.closeRoute')}
@@ -649,7 +649,7 @@ export default function RouteDetailPage() {
               type="button"
               onClick={submitSendToLoad}
               disabled={sending}
-              className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {t('detail.sendToLoad')}
@@ -664,7 +664,7 @@ export default function RouteDetailPage() {
         isOpen={isEditOpen}
         onClose={() => !editSaving && setIsEditOpen(false)}
         title={t('drawer.editTitle')}
-        icon={<Map className="w-5 h-5 text-teal-500" />}
+        icon={<Map className="w-5 h-5 text-primary" />}
         width="lg"
         isDirty={editIsDirty}
         onSave={editRhfSubmit(handleSaveEdit)}
@@ -680,7 +680,7 @@ export default function RouteDetailPage() {
             <button
               onClick={editRhfSubmit(handleSaveEdit)}
               disabled={editSaving}
-              className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
               {editSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('drawer.saveChanges')}
@@ -693,7 +693,7 @@ export default function RouteDetailPage() {
             <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.generalInfo')}</h4>
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
-                <Map className="w-3.5 h-3.5 text-teal-500" />
+                <Map className="w-3.5 h-3.5 text-primary" />
                 {t('columns.name')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -701,7 +701,7 @@ export default function RouteDetailPage() {
                 {...editRegister('nombre')}
                 maxLength={100}
                 placeholder={t('drawer.namePlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {editErrors.nombre && <FieldError message={editErrors.nombre?.message} />}
             </div>
@@ -757,7 +757,7 @@ export default function RouteDetailPage() {
                 <input
                   type="time"
                   {...editRegister('horaInicioEstimada')}
-                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
               <div>
@@ -768,7 +768,7 @@ export default function RouteDetailPage() {
                 <input
                   type="time"
                   {...editRegister('horaFinEstimada')}
-                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             </div>
@@ -782,7 +782,7 @@ export default function RouteDetailPage() {
                 {...editRegister('descripcion')}
                 rows={2}
                 placeholder={t('drawer.descriptionPlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
               />
             </div>
             <div>
@@ -791,7 +791,7 @@ export default function RouteDetailPage() {
                 {...editRegister('notas')}
                 rows={2}
                 placeholder={t('drawer.notesPlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
               />
             </div>
           </div>

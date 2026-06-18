@@ -371,6 +371,10 @@ export default function InventoryPage() {
     return item.minStock > 0 && item.warehouseQuantity <= item.minStock;
   };
 
+  // KPIs derivados de la página cargada (data REAL del response actual).
+  const lowStockCount = inventoryItems.filter(isLowStock).length;
+  const zeroStockCount = inventoryItems.filter(i => i.warehouseQuantity <= 0).length;
+
   // ─── Movimientos: fetch ────────────────────────────────────────────
   const fetchMovements = useCallback(async () => {
     try {
@@ -592,9 +596,9 @@ export default function InventoryPage() {
       <div className="relative" data-tour="inventory-import-export">
         <button
           onClick={() => setShowDataMenu(!showDataMenu)}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
         >
-          <Download className="w-3.5 h-3.5 text-emerald-500" />
+          <Download className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="hidden sm:inline">{tc('importExport')}</span>
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </button>
@@ -623,7 +627,7 @@ export default function InventoryPage() {
       <button
         data-tour="inventory-add-btn"
         onClick={handleOpenCreate}
-        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span>{t('warehouse.newProduct')}</span>
@@ -636,9 +640,9 @@ export default function InventoryPage() {
       <button
         data-tour="movements-export-btn"
         onClick={() => exportToCsv('inventario')}
-        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
       >
-        <Download className="w-3.5 h-3.5 text-emerald-500" />
+        <Download className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="hidden sm:inline">{tc('exportCsv')}</span>
       </button>
       <button
@@ -647,7 +651,7 @@ export default function InventoryPage() {
           movResetForm({ productoId: 0, tipoMovimiento: 'ENTRADA', cantidad: 0, motivo: '', comentario: '' });
           setShowMovModal(true);
         }}
-        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span>{t('movements.newMovement')}</span>
@@ -670,20 +674,22 @@ export default function InventoryPage() {
       actionsKey={activeTab}
     >
       <div className="space-y-4">
-        {/* Tabs */}
-        <div className="flex gap-1 bg-surface-3 rounded-lg p-1 w-fit">
+        {/* Tabs (segmentado azul) */}
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1 w-fit">
           <button
             onClick={() => setActiveTab('almacen')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'almacen' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
+            aria-pressed={activeTab === 'almacen'}
+            className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+              activeTab === 'almacen' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t('tabs.warehouse')}
           </button>
           <button
             onClick={() => setActiveTab('movimientos')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'movimientos' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
+            aria-pressed={activeTab === 'movimientos'}
+            className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+              activeTab === 'movimientos' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t('tabs.movements')}
@@ -723,11 +729,38 @@ export default function InventoryPage() {
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
+            </div>
+
+            {/* KPI Row — tarjetas (data real de la página cargada) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {[
+                { title: 'Productos en página', value: String(inventoryItems.length), hint: 'En esta página', icon: Package },
+                { title: 'Total inventario', value: String(totalItems), hint: 'Todos los registros', icon: Warehouse },
+                { title: 'Stock bajo', value: String(lowStockCount), hint: 'En esta página', icon: AlertTriangle },
+                { title: 'En cero', value: String(zeroStockCount), hint: 'En esta página', icon: ArrowDownToLine },
+              ].map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.title}
+                    className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                      <Icon className="w-5 h-5 text-muted-foreground/40" />
+                    </div>
+                    <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                      {card.value}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+                  </div>
+                );
+              })}
             </div>
 
             <ErrorBanner error={error} onRetry={fetchInventory} />
@@ -856,9 +889,9 @@ export default function InventoryPage() {
               <button
                 onClick={handleMovRefresh}
                 disabled={movLoading}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-white ${movLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${movLoading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
             </div>
@@ -956,7 +989,7 @@ export default function InventoryPage() {
                       return (
                         <div
                           key={movement.id}
-                          className="flex items-center px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-amber-50 transition-colors min-w-[1100px]"
+                          className="flex items-center px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-surface-1 transition-colors min-w-[1100px]"
                         >
                           <div className="w-[130px]">
                             <span className="text-[13px] text-foreground">

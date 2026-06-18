@@ -29,6 +29,7 @@ import {
   Compass,
   Loader2,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { productService } from '@/services/api/products';
 import { productCategoryService } from '@/services/api/productCategories';
 import { productFamilyService } from '@/services/api/productFamilies';
@@ -457,7 +458,7 @@ export default function GettingStartedPage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{t('loading')}</span>
     </div>
   );
@@ -472,50 +473,36 @@ export default function GettingStartedPage() {
   const allDone = completedSteps === totalSteps;
 
   return (
-    <div className="flex flex-col">
-      {/* Header */}
-      <div className="bg-surface-2 px-4 py-4 sm:px-8 sm:py-6 border-b border-border-subtle">
-        <div className="page-animate">
-          <div className="flex items-center gap-2 text-sm mb-3">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground/80 transition-colors">
-              {tc('home')}
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium">{t('breadcrumbTitle')}</span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between page-animate page-animate-delay-1">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-              {t('title')}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
-            <button
-              onClick={handleDismiss}
-              className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span className="sm:hidden">{t('skipShort')}</span>
-              <span className="hidden sm:inline">{t('skipFull')}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <PageHeader
+      breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('breadcrumbTitle') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle')}
+      actions={
+        <>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{tc('refresh')}</span>
+          </button>
+          <button
+            onClick={handleDismiss}
+            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+          >
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="sm:hidden">{t('skipShort')}</span>
+            <span className="hidden sm:inline">{t('skipFull')}</span>
+          </button>
+        </>
+      }
+    >
       {/* Body */}
-      <div className="px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full space-y-6">
+      <div className="max-w-3xl mx-auto w-full space-y-6">
 
         {/* Global Progress */}
         <div className="page-animate page-animate-delay-2">
@@ -719,6 +706,6 @@ export default function GettingStartedPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageHeader>
   );
 }

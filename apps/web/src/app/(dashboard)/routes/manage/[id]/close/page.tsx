@@ -192,7 +192,7 @@ export default function CloseRoutePage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground">{t('loading')}</span>
         </div>
       </div>
@@ -236,7 +236,7 @@ export default function CloseRoutePage() {
                 data-tour="routes-close-btn"
                 onClick={handleCerrarRuta}
                 disabled={closing}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                 {t('closeRoute')}
@@ -273,11 +273,11 @@ export default function CloseRoutePage() {
         )}
 
         {/* Section: Route Details */}
-        <div data-tour="routes-close-details" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
+        <div data-tour="routes-close-details" className="bg-card border border-border rounded-2xl shadow-sm p-6">
           <h2 className="text-sm font-semibold text-foreground mb-4">{t('routeDetails')}</h2>
           <div className="flex items-center gap-4 p-3 bg-surface-1 rounded-lg">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-              <User className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">{ruta.usuarioNombre}</p>
@@ -291,9 +291,9 @@ export default function CloseRoutePage() {
         {/* Financial Summary */}
         <div data-tour="routes-close-financial" className="grid grid-cols-3 gap-4">
           {/* Efectivo entrante */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-sm p-4">
             <div className="flex items-center gap-2 mb-3">
-              <ArrowDown className="w-4 h-4 text-green-600" />
+              <ArrowDown className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-semibold text-foreground/80">{t('incomingCash')}</h3>
             </div>
             <div className="space-y-2">
@@ -313,7 +313,7 @@ export default function CloseRoutePage() {
           </div>
 
           {/* Movimientos a saldo */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-sm p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="w-4 h-4 text-blue-600" />
               <h3 className="text-xs font-semibold text-foreground/80">{t('balanceMovements')}</h3>
@@ -335,7 +335,7 @@ export default function CloseRoutePage() {
           </div>
 
           {/* Otros movimientos */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-sm p-4">
             <div className="flex items-center gap-2 mb-3">
               <Package className="w-4 h-4 text-foreground/70" />
               <h3 className="text-xs font-semibold text-foreground/80">{t('otherMovements')}</h3>
@@ -423,7 +423,7 @@ export default function CloseRoutePage() {
         {/* Al inicio vs Al cierre */}
         <div className="grid grid-cols-2 gap-4">
           {/* Al inicio */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-sm p-4">
             <h3 className="text-xs font-semibold text-foreground/80 mb-3">{t('atStart')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -438,7 +438,7 @@ export default function CloseRoutePage() {
           </div>
 
           {/* Al cierre */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-sm p-4">
             <h3 className="text-xs font-semibold text-foreground/80 mb-3">{t('atClose')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -455,15 +455,15 @@ export default function CloseRoutePage() {
                     value={montoRecibido}
                     onChange={(e) => setMontoRecibido(e.target.value)}
                     step="0.01"
-                    className="w-32 px-2 py-1 text-right text-sm border border-border-default rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                   
+                    className="w-32 px-2 py-1 text-right text-sm border border-border-default rounded focus:outline-none focus:ring-2 focus:ring-primary"
+
                   />
                 )}
               </div>
               {diferencia !== null && (
                 <div className="flex justify-between text-xs pt-1 border-t">
                   <span className="text-muted-foreground">{t('difference')}</span>
-                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-foreground'}`}>
+                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-primary' : 'text-foreground'}`}>
                     {diferencia >= 0 ? '+' : ''}{formatCurrency(diferencia)}
                   </span>
                 </div>
@@ -502,7 +502,7 @@ export default function CloseRoutePage() {
         )}
 
         {/* Inventario de retorno */}
-        <div data-tour="routes-close-inventory" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
+        <div data-tour="routes-close-inventory" className="bg-card border border-border rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">{t('returnInventory')}</h2>
             {!isReadonly && (
@@ -628,7 +628,7 @@ export default function CloseRoutePage() {
                                   ? 'bg-red-100 text-red-700'
                                   : item.diferencia < 0
                                   ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
+                                  : 'bg-primary/10 text-primary'
                               }`}
                             >
                               {item.diferencia}
@@ -667,7 +667,7 @@ export default function CloseRoutePage() {
               type="button"
               onClick={submitCerrarRuta}
               disabled={closing}
-              className="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
               {closing && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('closeAction', { defaultValue: 'Cerrar ruta' })}

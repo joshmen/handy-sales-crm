@@ -17,6 +17,7 @@ import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { SecurityTab } from '@/app/(dashboard)/settings/components/SecurityTab';
 import { NotificationsTab } from '@/app/(dashboard)/settings/components/NotificationsTab';
+import { PageHeader } from '@/components/layout/PageHeader';
 import Link from 'next/link';
 import {
   User,
@@ -242,17 +243,17 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground mt-1">
-          {t('subtitle')}
-        </p>
-      </div>
-
+    <PageHeader
+      breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle')}
+    >
+    <div className="space-y-6">
       {/* Profile Overview */}
-      <Card>
+      <Card className="border border-border rounded-2xl shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             <div data-tour="profile-avatar" className="shrink-0">
@@ -279,9 +280,9 @@ export default function ProfilePage() {
                   className={
                     {
                       [UserRole.SUPER_ADMIN]: 'bg-red-100 text-red-800',
-                      [UserRole.ADMIN]: 'bg-blue-100 text-blue-800',
-                      [UserRole.SUPERVISOR]: 'bg-green-100 text-green-800',
-                      [UserRole.VENDEDOR]: 'bg-yellow-100 text-yellow-800',
+                      [UserRole.ADMIN]: 'bg-primary/15 text-primary',
+                      [UserRole.SUPERVISOR]: 'bg-primary/10 text-primary',
+                      [UserRole.VENDEDOR]: 'bg-amber-100 text-amber-800',
                     }[profile.rol as UserRole] || 'bg-surface-3 text-foreground'
                   }
                 >
@@ -541,7 +542,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {device.esSesionActual && (
-                        <Badge className="bg-green-500 text-white">{t('currentSession')}</Badge>
+                        <Badge className="bg-primary text-primary-foreground">{t('currentSession')}</Badge>
                       )}
                       {!device.esSesionActual && (
                         <Button
@@ -633,5 +634,6 @@ export default function ProfilePage() {
         isLoading={isUpdating}
       />
     </div>
+    </PageHeader>
   );
 }

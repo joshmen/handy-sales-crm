@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Search, Download, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import { Search, Download, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight, Shield, Plus, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { TimbresModal } from '@/components/billing/TimbresModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -23,7 +23,7 @@ import type { FacturaListItem, FacturaEstado } from '@/types/billing';
 
 const ESTADO_STYLES: Record<FacturaEstado, string> = {
   PENDIENTE: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  TIMBRADA: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  TIMBRADA: 'bg-primary/10 text-primary dark:bg-primary/20',
   CANCELADA: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   ERROR: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };
@@ -136,9 +136,24 @@ export default function InvoicesPage() {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  // KPIs derivados de la página cargada (data REAL del response actual).
+  // No hay endpoint de agregados por estado en esta lista; las tarjetas
+  // resumen lo visible en la página vigente. Hint "En esta página" explícito.
+  const stampedOnPage = facturas.filter(f => f.estado === 'TIMBRADA').length;
+  const pendingOnPage = facturas.filter(f => f.estado === 'PENDIENTE').length;
+  const cancelledOnPage = facturas.filter(f => f.estado === 'CANCELADA').length;
+
+  // Tabs de estado (segmentado) — reusa filterEstado real
+  const estadoTabs: { value: string; label: string }[] = [
+    { value: '', label: tInv('allStatuses') },
+    { value: 'PENDIENTE', label: tInv('status.pending') },
+    { value: 'TIMBRADA', label: tInv('status.stamped') },
+    { value: 'CANCELADA', label: tInv('status.cancelled') },
+  ];
+
   if (loading && facturas.length === 0) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{tCommon('loading')}</span>
     </div>
   );
@@ -146,28 +161,55 @@ export default function InvoicesPage() {
   return (<>
     <PageHeader
       breadcrumbs={[
+        { label: tCommon('home'), href: '/dashboard' },
         { label: t('title'), href: '/billing' },
         { label: tInv('title') },
       ]}
       title={tInv('title')}
       subtitle={tInv('subtitle', { count: totalCount })}
       actions={
-        <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
-          <Download className="w-4 h-4 mr-2" />
-          {tCommon('export')}
-        </Button>
+        <>
+          <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            {tCommon('export')}
+          </Button>
+          <Link href="/billing/invoices/new">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" />
+              {t('newInvoice')}
+            </Button>
+          </Link>
+        </>
       }
     >
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1 max-w-xs">
+      {/* Tabs de estado (segmentado) + búsqueda por RFC — reusa filtros reales */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-5">
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
+          {estadoTabs.map(opt => {
+            const active = filterEstado === opt.value;
+            return (
+              <button
+                key={opt.value || 'all'}
+                type="button"
+                onClick={() => setFilterEstado(opt.value)}
+                aria-pressed={active}
+                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                  active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative w-full sm:w-72 lg:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder={tInv('searchByRfc')}
             value={filterRfc}
             onChange={e => setFilterRfc(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
+            className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
           {filterRfc && (
             <button onClick={() => setFilterRfc('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -175,20 +217,32 @@ export default function InvoicesPage() {
             </button>
           )}
         </div>
-        <select
-          value={filterEstado}
-          onChange={e => setFilterEstado(e.target.value)}
-          className="px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
-        >
-          <option value="">{tInv('allStatuses')}</option>
-          <option value="PENDIENTE">{tInv('status.pending')}</option>
-          <option value="TIMBRADA">{tInv('status.stamped')}</option>
-          <option value="CANCELADA">{tInv('status.cancelled')}</option>
-        </select>
+      </div>
+
+      {/* KPI Row — tarjetas (data real de la página cargada) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {[
+          { title: 'Total facturas', value: String(totalCount), hint: 'Todas las facturas', icon: FileText, valueClass: 'text-foreground' },
+          { title: tInv('status.stamped'), value: String(stampedOnPage), hint: 'En esta página', icon: CheckCircle2, valueClass: 'text-foreground' },
+          { title: tInv('status.pending'), value: String(pendingOnPage), hint: 'En esta página', icon: Clock, valueClass: 'text-amber-600 dark:text-amber-400' },
+          { title: tInv('status.cancelled'), value: String(cancelledOnPage), hint: 'En esta página', icon: XCircle, valueClass: 'text-red-600 dark:text-red-400' },
+        ].map(card => {
+          const Icon = card.icon;
+          return (
+            <div key={card.title} className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                <Icon className="w-5 h-5 text-muted-foreground/40" />
+              </div>
+              <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${card.valueClass} ${loading ? 'animate-pulse' : ''}`}>{card.value}</p>
+              <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
+        <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-primary/50">
           <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             {tInv.rich('invoicesFromOrders', {
@@ -196,7 +250,7 @@ export default function InvoicesPage() {
             })}
           </p>
         </div>
-        <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
+        <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-primary/50">
           <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             {tInv('secureStorage')}
@@ -205,7 +259,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
+      <div className="hidden md:block bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
@@ -221,7 +275,7 @@ export default function InvoicesPage() {
             {facturas.map(f => (
               <tr key={f.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3 font-medium">
-                  <a href={`/billing/invoices/${f.id}`} className="text-green-600 hover:underline">
+                  <a href={`/billing/invoices/${f.id}`} className="text-primary hover:underline">
                     {f.serie ? `${f.serie}-` : ''}{f.folio}
                   </a>
                 </td>
@@ -248,7 +302,7 @@ export default function InvoicesPage() {
                         size="sm"
                         onClick={() => handleTimbrar(f.id)}
                         disabled={timbrando === f.id}
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs"
+                        className="text-primary hover:text-primary hover:bg-primary/10 text-xs"
                       >
                         {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : tInv('stamp')}
                       </Button>
@@ -303,9 +357,9 @@ export default function InvoicesPage() {
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {facturas.map(f => (
-          <div key={f.id} className="bg-card border border-border rounded-xl p-4">
+          <div key={f.id} className="bg-card border border-border rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <a href={`/billing/invoices/${f.id}`} className="font-medium text-sm text-green-600 hover:underline">
+              <a href={`/billing/invoices/${f.id}`} className="font-medium text-sm text-primary hover:underline">
                 {f.serie ? `${f.serie}-` : ''}{f.folio}
               </a>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_STYLES[f.estado]}`}>
@@ -325,7 +379,7 @@ export default function InvoicesPage() {
                 size="sm"
                 onClick={() => handleTimbrar(f.id)}
                 disabled={timbrando === f.id}
-                className="mt-3 w-full bg-success hover:bg-success/90 text-white text-xs"
+                className="mt-3 w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
               >
                 {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 {tInv('stamp')}

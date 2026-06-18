@@ -32,7 +32,7 @@ export function DefaultsPanel({
   const t = useTranslations('billing.fiscalMapping');
 
   return (
-    <div className="mb-6 bg-card border border-border rounded-xl p-4 sm:p-6">
+    <div className="mb-6 bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm">
       <h3 className="text-sm font-semibold text-foreground mb-1">{t('defaultsTitle')}</h3>
       <p className="text-xs text-muted-foreground mb-4">
         {t('defaultsDesc')}
@@ -58,7 +58,7 @@ export function DefaultsPanel({
           ) : (
             <button
               onClick={() => onSetDefaultsEditProdServ(true)}
-              className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground hover:border-green-500 transition-colors"
+              className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground hover:border-primary transition-colors"
             >
               {defaults.claveProdServDefault ? (
                 <span className="font-mono">{defaults.claveProdServDefault}</span>
@@ -89,7 +89,7 @@ export function DefaultsPanel({
           ) : (
             <button
               onClick={() => onSetDefaultsEditUnidad(true)}
-              className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground hover:border-green-500 transition-colors"
+              className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground hover:border-primary transition-colors"
             >
               {defaults.claveUnidadDefault ? (
                 <span className="font-mono">{defaults.claveUnidadDefault}</span>
@@ -104,7 +104,7 @@ export function DefaultsPanel({
         <Button
           onClick={onSaveDefaults}
           disabled={savingDefaults}
-          className="bg-success hover:bg-success/90 text-white"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {savingDefaults && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t('saveDefaults')}

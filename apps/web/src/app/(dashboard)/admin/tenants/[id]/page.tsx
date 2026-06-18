@@ -316,7 +316,7 @@ export default function TenantDetailPage() {
           <p className="text-sm text-muted-foreground mt-1">{t('companyNotFoundDesc')}</p>
           <button
             onClick={() => router.push('/admin/tenants')}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 hover:text-green-700"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:text-primary/80"
           >
             <ArrowLeft className="h-4 w-4" />
             {t('backToCompanies')}
@@ -342,7 +342,7 @@ export default function TenantDetailPage() {
         type="submit"
         form="edit-tenant-form"
         disabled={submitting}
-        className="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {submitting ? (
           <>
@@ -373,7 +373,7 @@ export default function TenantDetailPage() {
           className={`flex-1 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
             isSuspending
               ? 'bg-red-600 text-white hover:bg-red-700'
-              : 'bg-success text-success-foreground hover:bg-success/90'
+              : 'bg-primary text-primary-foreground hover:bg-primary/90'
           }`}
         >
           {submitting ? (
@@ -405,7 +405,7 @@ export default function TenantDetailPage() {
         type="submit"
         form="add-user-form"
         disabled={submitting || tenant.stats.usuarios >= tenant.maxUsuarios}
-        className="flex-1 px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {submitting ? (
           <>
@@ -442,7 +442,7 @@ export default function TenantDetailPage() {
         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${
           tenant.activo
             ? 'text-red-700 bg-red-50 border border-red-200 hover:bg-red-100'
-            : 'text-green-700 bg-green-50 border border-green-200 hover:bg-green-100'
+            : 'text-primary bg-primary/10 border border-primary/20 hover:bg-primary/15'
         }`}
       >
         <ShieldAlert className="h-4 w-4" />
@@ -466,7 +466,7 @@ export default function TenantDetailPage() {
         {/* Company Info + Stats Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Company Info Card */}
-          <div className="lg:col-span-2 bg-card border border-border rounded-lg p-5">
+          <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-foreground mb-4">
               {t('companyInfo')}
             </h3>
@@ -562,39 +562,39 @@ export default function TenantDetailPage() {
               {t('statistics')}
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
-              <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-950 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-500" />
+              <div className="bg-card border border-border rounded-2xl shadow-sm p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">{tenant.stats.usuarios}</div>
+                  <div className="text-2xl font-bold text-foreground tabular-nums">{tenant.stats.usuarios}</div>
                   <div className="text-xs text-muted-foreground">Usuarios</div>
                 </div>
               </div>
-              <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-emerald-500" />
+              <div className="bg-card border border-border rounded-2xl shadow-sm p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">{tenant.stats.clientes}</div>
+                  <div className="text-2xl font-bold text-foreground tabular-nums">{tenant.stats.clientes}</div>
                   <div className="text-xs text-muted-foreground">Clientes</div>
                 </div>
               </div>
-              <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+              <div className="bg-card border border-border rounded-2xl shadow-sm p-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-purple-50 dark:bg-purple-950 flex items-center justify-center">
                   <Package className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">{tenant.stats.productos}</div>
+                  <div className="text-2xl font-bold text-foreground tabular-nums">{tenant.stats.productos}</div>
                   <div className="text-xs text-muted-foreground">Productos</div>
                 </div>
               </div>
-              <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+              <div className="bg-card border border-border rounded-2xl shadow-sm p-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-orange-50 dark:bg-orange-950 flex items-center justify-center">
                   <ShoppingCart className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">{tenant.stats.pedidos}</div>
+                  <div className="text-2xl font-bold text-foreground tabular-nums">{tenant.stats.pedidos}</div>
                   <div className="text-xs text-muted-foreground">Pedidos</div>
                 </div>
               </div>
@@ -603,14 +603,14 @@ export default function TenantDetailPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-card border border-border rounded-lg">
+        <div className="bg-card border border-border rounded-2xl shadow-sm">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground">
               {t('tenantUsers')}
             </h3>
             <button
               onClick={handleOpenAddUser}
-              className="flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 font-medium"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium"
             >
               <UserPlus className="h-4 w-4" />
               {t('addUser')}
@@ -627,7 +627,7 @@ export default function TenantDetailPage() {
               <p>{t('noUsersRegistered')}</p>
               <button
                 onClick={handleOpenAddUser}
-                className="mt-3 inline-flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 font-medium"
+                className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium"
               >
                 <UserPlus className="h-4 w-4" />
                 {t('addFirstUser')}
@@ -667,7 +667,7 @@ export default function TenantDetailPage() {
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            user.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            user.activo ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-800'
                           }`}
                         >
                           {user.activo ? 'Activo' : 'Inactivo'}
@@ -687,7 +687,7 @@ export default function TenantDetailPage() {
         isOpen={drawerMode === 'edit'}
         onClose={handleCloseDrawer}
         title={t('editCompany')}
-        icon={<Building2 className="h-5 w-5 text-green-600" />}
+        icon={<Building2 className="h-5 w-5 text-primary" />}
         width="md"
         footer={editDrawerFooter}
       >
@@ -702,7 +702,7 @@ export default function TenantDetailPage() {
                 required: 'nameRequired',
                 minLength: { value: 2, message: 'min2Chars' },
               })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Ej: Mi Empresa SA de CV"
             />
             {errors.nombreEmpresa && (
@@ -720,7 +720,7 @@ export default function TenantDetailPage() {
                 const limit = PLAN_LIMITS[plan];
                 if (limit) setValue('maxUsuarios', limit);
               }}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="free">Gratis (hasta 5 usuarios)</option>
               <option value="basic">Básico (hasta 25 usuarios)</option>
@@ -751,21 +751,21 @@ export default function TenantDetailPage() {
         isOpen={drawerMode === 'suspend'}
         onClose={handleCloseDrawer}
         title={tenant.activo ? t('suspendCompany') : t('reactivateCompany')}
-        icon={<ShieldAlert className={`h-5 w-5 ${tenant.activo ? 'text-red-600' : 'text-green-600'}`} />}
+        icon={<ShieldAlert className={`h-5 w-5 ${tenant.activo ? 'text-red-600' : 'text-primary'}`} />}
         width="md"
         footer={suspendDrawerFooter}
       >
         <div className="p-6 space-y-6">
-          <div className={`rounded-lg p-4 ${tenant.activo ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+          <div className={`rounded-lg p-4 ${tenant.activo ? 'bg-red-50 border border-red-200' : 'bg-primary/10 border border-primary/20'}`}>
             <div className="flex items-start gap-3">
-              <AlertTriangle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${tenant.activo ? 'text-red-600' : 'text-green-600'}`} />
+              <AlertTriangle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${tenant.activo ? 'text-red-600' : 'text-primary'}`} />
               <div>
-                <h3 className={`font-medium ${tenant.activo ? 'text-red-800' : 'text-green-800'}`}>
+                <h3 className={`font-medium ${tenant.activo ? 'text-red-800' : 'text-primary'}`}>
                   {tenant.activo
                     ? '¿Estás seguro de suspender esta empresa?'
                     : '¿Estás seguro de reactivar esta empresa?'}
                 </h3>
-                <p className={`text-sm mt-1 ${tenant.activo ? 'text-red-700' : 'text-green-700'}`}>
+                <p className={`text-sm mt-1 ${tenant.activo ? 'text-red-700' : 'text-primary/90'}`}>
                   {tenant.activo
                     ? 'Los usuarios de esta empresa no podrán acceder al sistema hasta que sea reactivada.'
                     : 'Los usuarios de esta empresa podrán acceder nuevamente al sistema.'}
@@ -797,7 +797,7 @@ export default function TenantDetailPage() {
         isOpen={drawerMode === 'addUser'}
         onClose={handleCloseDrawer}
         title={t('addUserTitle')}
-        icon={<UserPlus className="h-5 w-5 text-green-600" />}
+        icon={<UserPlus className="h-5 w-5 text-primary" />}
         width="md"
         footer={addUserDrawerFooter}
       >
@@ -839,7 +839,7 @@ export default function TenantDetailPage() {
                     message: 'emailInvalid',
                   },
                 })}
-                className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="usuario@empresa.com"
               />
             </div>
@@ -858,7 +858,7 @@ export default function TenantDetailPage() {
                 required: 'nameRequired',
                 minLength: { value: 2, message: 'min2Chars' },
               })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Nombre del usuario"
             />
             {userErrors.nombre && (
@@ -872,7 +872,7 @@ export default function TenantDetailPage() {
             </label>
             <select
               {...registerUser('rol', { required: 'El rol es requerido' })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="ADMIN">Administrador</option>
               <option value="Vendedor">Vendedor</option>
@@ -890,7 +890,7 @@ export default function TenantDetailPage() {
                   required: tc('required'),
                   minLength: { value: 6, message: 'min6Chars' },
                 })}
-                className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm"
+                className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
                 placeholder={t('tempPasswordPlaceholder')}
               />
               <button
@@ -900,7 +900,7 @@ export default function TenantDetailPage() {
                   setUserValue('password', pass);
                   setCopiedPassword(false);
                 }}
-                className="px-3 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                className="px-3 py-2 text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/15 transition-colors"
                 title={t('generatePassword')}
               >
                 <RefreshCw className="h-4 w-4" />
@@ -915,7 +915,7 @@ export default function TenantDetailPage() {
                   }}
                   className={`px-3 py-2 border rounded-lg transition-colors ${
                     copiedPassword
-                      ? 'text-green-600 bg-green-50 border-green-200'
+                      ? 'text-primary bg-primary/10 border-primary/20'
                       : 'text-muted-foreground bg-accent border-border hover:bg-accent/80'
                   }`}
                   title={copiedPassword ? 'Copiado' : 'Copiar'}
