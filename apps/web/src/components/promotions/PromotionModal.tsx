@@ -341,9 +341,9 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
             </p>
           </div>
 
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-medium text-green-800 mb-2">{t('fileIncludes')}</h4>
-            <ul className="text-sm text-green-700 space-y-1">
+          <div className="bg-primary/5 p-4 rounded-lg">
+            <h4 className="font-medium text-primary mb-2">{t('fileIncludes')}</h4>
+            <ul className="text-sm text-primary/80 space-y-1">
               <li>• {t('includeGeneral')}</li>
               <li>• {t('includeProducts')}</li>
               <li>• {t('includeLimits')}</li>

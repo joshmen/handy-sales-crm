@@ -381,7 +381,7 @@ export default function GlobalSettingsPage() {
                     {t('maintenance.currentStatus')} {settings.maintenanceMode ? (
                       <span className="text-red-600 font-medium">{t('maintenance.statusActive')}</span>
                     ) : (
-                      <span className="text-green-600 font-medium">{t('maintenance.statusInactive')}</span>
+                      <span className="text-primary font-medium">{t('maintenance.statusInactive')}</span>
                     )}
                   </p>
                 </div>

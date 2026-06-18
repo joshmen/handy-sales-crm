@@ -180,7 +180,7 @@ function RegisterContent() {
   };
 
   const inputClassName = (hasError: boolean) =>
-    `w-full h-12 px-3.5 border rounded-[10px] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors ${
+    `w-full h-12 px-3.5 border rounded-[10px] text-[15px] focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors ${
       hasError ? 'border-red-500' : 'border-[#D1D5DB]'
     } disabled:bg-surface-1 disabled:text-muted-foreground`;
 
@@ -262,15 +262,15 @@ function RegisterContent() {
                   type="checkbox"
                   {...googleForm.register('aceptaTerminos')}
                   disabled={submitting}
-                  className="mt-0.5 h-4 w-4 rounded border-border-default text-indigo-600 focus:ring-indigo-500"
+                  className="mt-0.5 h-4 w-4 rounded border-border-default text-primary focus:ring-primary"
                 />
                 <span className="text-[13px] text-[#64748B] leading-tight">
                   {t('iAccept')}{' '}
-                  <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                  <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline">
                     {t('termsLink')}
                   </a>{' '}
                   {t('andThe')}{' '}
-                  <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                  <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline">
                     {t('privacyLink')}
                   </a>
                 </span>
@@ -283,7 +283,7 @@ function RegisterContent() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+              className="w-full h-12 bg-gradient-to-r from-primary to-[#0B5CAB] hover:from-[#0166BC] hover:to-[#094E91] text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
             >
               {submitting ? (<>{spinnerSvg}{t('creatingAccount')}</>) : t('completeRegistration')}
             </button>
@@ -408,15 +408,15 @@ function RegisterContent() {
                     type="checkbox"
                     {...manualForm.register('aceptaTerminos')}
                     disabled={submitting}
-                    className="mt-0.5 h-4 w-4 rounded border-border-default text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 h-4 w-4 rounded border-border-default text-primary focus:ring-primary"
                   />
                   <span className="text-[13px] text-[#64748B] leading-tight">
                     {t('iAccept')}{' '}
-                    <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                    <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline">
                       {t('termsLink')}
                     </a>{' '}
                     {t('andThe')}{' '}
-                    <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                    <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline">
                       {t('privacyLink')}
                     </a>
                   </span>
@@ -429,7 +429,7 @@ function RegisterContent() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                className="w-full h-12 bg-gradient-to-r from-primary to-[#0B5CAB] hover:from-[#0166BC] hover:to-[#094E91] text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
               >
                 {submitting ? (<>{spinnerSvg}{t('creatingAccount')}</>) : t('createMyAccount')}
               </button>
@@ -464,7 +464,7 @@ function RegisterContent() {
 
         <p className="text-center text-[14px] text-[#64748B]">
           {t('alreadyHaveAccount')}{' '}
-          <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-700">
+          <a href="/login" className="font-medium text-primary hover:text-primary/80">
             {t('signInLink')}
           </a>
         </p>
@@ -476,7 +476,7 @@ function RegisterContent() {
 export default function RegisterPage() {
   return (
     <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? ''}>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
         <RegisterContent />
       </Suspense>
     </GoogleReCaptchaProvider>

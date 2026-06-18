@@ -64,7 +64,7 @@ function TeamPageContent() {
           onClick={() => setActiveTab('miembros')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'miembros'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -76,7 +76,7 @@ function TeamPageContent() {
           onClick={() => setActiveTab('dispositivos')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'dispositivos'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -92,7 +92,7 @@ function TeamPageContent() {
 
 export default function TeamPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" /><SrLoadingText /></div>}>
       <TeamPageContent />
     </Suspense>
   );

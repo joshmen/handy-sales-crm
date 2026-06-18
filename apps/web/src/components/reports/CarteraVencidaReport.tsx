@@ -67,7 +67,7 @@ export function CarteraVencidaReport() {
     { key: "saldo", header: t("balance"), align: "right", sortable: true, render: r => fmt(r.saldo) },
     { key: "diasVencido", header: t("daysOverdue"), align: "right", sortable: true },
     { key: "bucket", header: t("category"), render: r => {
-      const color = r.bucket === "corriente" ? "text-green-600 bg-green-50" : r.bucket === "31-60" ? "text-amber-600 bg-amber-50" : r.bucket === "61-90" ? "text-orange-600 bg-orange-50" : "text-red-600 bg-red-50";
+      const color = r.bucket === "corriente" ? "text-primary bg-primary/5" : r.bucket === "31-60" ? "text-amber-600 bg-amber-50" : r.bucket === "61-90" ? "text-orange-600 bg-orange-50" : "text-red-600 bg-red-50";
       return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{BUCKET_LABELS[r.bucket] || r.bucket}</span>;
     }},
     { key: "diasCredito", header: t("creditDays"), align: "right" },

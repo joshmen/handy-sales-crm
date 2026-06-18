@@ -607,7 +607,7 @@ export default function CobranzaPage() {
                   value: formatCurrency(totalCobros),
                   hint: t('kpisCards.collectedPeriodHint'),
                   icon: CreditCard,
-                  valueClass: 'text-emerald-600 dark:text-emerald-400',
+                  valueClass: 'text-primary',
                   tooltipKey: 'cobranza-cobrado',
                 },
                 {
@@ -755,7 +755,7 @@ export default function CobranzaPage() {
                 <div className="sm:hidden space-y-3">
                   {cobrosLoading && (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   )}
                   {!cobrosLoading && filteredCobros.length === 0 ? (
@@ -768,8 +768,8 @@ export default function CobranzaPage() {
                       <div key={c.id} className="border border-border-subtle rounded-lg p-3 bg-surface-2" onClick={() => openDetail(c.clienteId)}>
                         {/* Row 1: Icon + Name/Subtitle + Amount */}
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                            <CurrencyDollar className="w-5 h-5 text-green-600" weight="duotone" />
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <CurrencyDollar className="w-5 h-5 text-primary" weight="duotone" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-foreground truncate">
@@ -985,12 +985,12 @@ export default function CobranzaPage() {
                 <div className="sm:hidden space-y-3">
                   {saldosLoading && (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   )}
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
-                      <DollarSign className="w-12 h-12 text-emerald-300 mb-3" />
+                      <DollarSign className="w-12 h-12 text-primary/30 mb-3" />
                       <p className="text-sm text-muted-foreground">{t('emptyBalances')}</p>
                     </div>
                   ) : (
@@ -1022,7 +1022,7 @@ export default function CobranzaPage() {
                             <span className="text-xs text-foreground/70">
                               {t('statement.invoiced')}: {formatCurrency(s.totalFacturado)}
                             </span>
-                            <span className="text-xs text-green-600">
+                            <span className="text-xs text-primary">
                               {t('statement.collected')}: {formatCurrency(s.totalCobrado)}
                             </span>
                           </div>
@@ -1030,7 +1030,7 @@ export default function CobranzaPage() {
                           <div className="mb-2">
                             <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-green-500 rounded-full transition-all"
+                                className="h-full bg-primary rounded-full transition-all"
                                 style={{ width: `${Math.min(100, pct)}%` }}
                               />
                             </div>
@@ -1077,7 +1077,7 @@ export default function CobranzaPage() {
 
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
-                      <DollarSign className="w-16 h-16 text-emerald-300 mb-4" />
+                      <DollarSign className="w-16 h-16 text-primary/30 mb-4" />
                       <h3 className="text-lg font-semibold text-foreground/80 mb-2">{t('emptyBalances')}</h3>
                       <p className="text-sm text-muted-foreground">{t('emptyBalancesHint')}</p>
                     </div>
@@ -1102,7 +1102,7 @@ export default function CobranzaPage() {
                             <div className="w-[130px] text-[13px] text-foreground text-right">
                               {formatCurrency(s.totalFacturado)}
                             </div>
-                            <div className="w-[130px] text-[13px] text-green-600 text-right">
+                            <div className="w-[130px] text-[13px] text-primary text-right">
                               {formatCurrency(s.totalCobrado)}
                             </div>
                             <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right">
@@ -1111,7 +1111,7 @@ export default function CobranzaPage() {
                             <div className="w-[100px] px-3">
                               <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-green-500 rounded-full transition-all"
+                                  className="h-full bg-primary rounded-full transition-all"
                                   style={{ width: `${Math.min(100, pct)}%` }}
                                 />
                               </div>
@@ -1120,7 +1120,7 @@ export default function CobranzaPage() {
                             <div className="w-[100px] flex items-center justify-center gap-1">
                               <button
                                 onClick={(e) => { e.stopPropagation(); openQuickCobro(s.clienteId); }}
-                                className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                                className="p-1.5 text-primary hover:text-primary/80 hover:bg-primary/5 rounded transition-colors"
                                 title={t('collect')}
                               >
                                 <CurrencyDollar className="w-4 h-4" weight="bold" />
@@ -1147,7 +1147,7 @@ export default function CobranzaPage() {
                           <div className="w-[130px] text-[13px] font-bold text-foreground text-right">
                             {formatCurrency(saldos.reduce((s, x) => s + x.totalFacturado, 0))}
                           </div>
-                          <div className="w-[130px] text-[13px] font-bold text-green-600 text-right">
+                          <div className="w-[130px] text-[13px] font-bold text-primary text-right">
                             {formatCurrency(saldos.reduce((s, x) => s + x.totalCobrado, 0))}
                           </div>
                           <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right">
@@ -1181,14 +1181,14 @@ export default function CobranzaPage() {
               <div className="flex items-center gap-4">
                 <div>
                   <p className="text-[10px] font-medium text-muted-foreground">{t('statement.pending')}</p>
-                  <p className={`text-sm font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                  <p className={`text-sm font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-500' : 'text-primary'}`}>
                     {formatCurrency(estadoCuenta.saldoPendiente)}
                   </p>
                 </div>
                 <div className="w-px h-8 bg-border" />
                 <div>
                   <p className="text-[10px] font-medium text-muted-foreground">{t('statement.collected')}</p>
-                  <p className="text-sm font-bold tabular-nums text-emerald-500">{formatCurrency(estadoCuenta.totalCobrado)}</p>
+                  <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(estadoCuenta.totalCobrado)}</p>
                 </div>
               </div>
               <button
@@ -1213,8 +1213,8 @@ export default function CobranzaPage() {
         <div className="p-0">
           {estadoCuentaLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-green-600" />
+              <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/15 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
               </div>
               <p className="text-sm text-muted-foreground">{t('loadingStatement')}</p>
             </div>
@@ -1235,7 +1235,7 @@ export default function CobranzaPage() {
                     {/* Stacked bar — cobrado fills green, remainder stays as track */}
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-700 ease-out ${pct === 100 ? 'bg-green-500' : pct >= 50 ? 'bg-green-500' : 'bg-amber-500'}`}
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${pct === 100 ? 'bg-primary' : pct >= 50 ? 'bg-primary' : 'bg-amber-500'}`}
                         style={{ width: `${Math.max(pct, 2)}%` }}
                       />
                     </div>
@@ -1247,11 +1247,11 @@ export default function CobranzaPage() {
                       </div>
                       <div>
                         <p className="text-[11px] text-muted-foreground mb-0.5">{t('statement.collected')}</p>
-                        <p className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(estadoCuenta.totalCobrado)}</p>
+                        <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(estadoCuenta.totalCobrado)}</p>
                       </div>
                       <div>
                         <p className="text-[11px] text-muted-foreground mb-0.5">{t('statement.pending')}</p>
-                        <p className={`text-sm font-semibold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>{formatCurrency(estadoCuenta.saldoPendiente)}</p>
+                        <p className={`text-sm font-semibold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>{formatCurrency(estadoCuenta.saldoPendiente)}</p>
                       </div>
                     </div>
                   </div>
@@ -1310,7 +1310,7 @@ export default function CobranzaPage() {
                         key={p.pedidoId}
                         className={`rounded-xl border transition-all duration-200 ${
                           isPaid
-                            ? 'border-green-200 bg-green-50/40'
+                            ? 'border-primary/20 bg-primary/5'
                             : 'border-border-subtle bg-surface-2 hover:border-border-default hover:shadow-sm'
                         }`}
                       >
@@ -1319,10 +1319,10 @@ export default function CobranzaPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                isPaid ? 'bg-green-100' : 'bg-amber-100'
+                                isPaid ? 'bg-primary/10' : 'bg-amber-100'
                               }`}>
                                 {isPaid
-                                  ? <CheckCircle className="w-4 h-4 text-green-600" weight="fill" />
+                                  ? <CheckCircle className="w-4 h-4 text-primary" weight="fill" />
                                   : <Clock className="w-4 h-4 text-amber-600" weight="fill" />
                                 }
                               </div>
@@ -1330,7 +1330,7 @@ export default function CobranzaPage() {
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-semibold text-foreground">{p.numeroPedido}</span>
                                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                                    isPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                    isPaid ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'
                                   }`}>
                                     {isPaid ? t('statement.paid') : t('statement.pending')}
                                   </span>
@@ -1353,7 +1353,7 @@ export default function CobranzaPage() {
                             <div className="mt-3 flex items-center gap-2">
                               <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-green-500 rounded-full transition-all duration-500"
+                                  className="h-full bg-primary rounded-full transition-all duration-500"
                                   style={{ width: `${paidPct}%` }}
                                 />
                               </div>
@@ -1368,7 +1368,7 @@ export default function CobranzaPage() {
                             <div className="space-y-1.5">
                               {p.cobros.map((c) => (
                                 <div key={c.id} className="flex items-center gap-2 text-xs group">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary/70 flex-shrink-0" />
                                   <span className="text-muted-foreground flex-1 min-w-0 truncate">
                                     {fmtDate(c.fechaCobro)}
                                     <span className="mx-1.5 text-muted-foreground/60">&middot;</span>
@@ -1377,7 +1377,7 @@ export default function CobranzaPage() {
                                       <span className="text-muted-foreground/60 ml-1.5">{t('drawer.reference')}: {c.referencia}</span>
                                     )}
                                   </span>
-                                  <span className="font-semibold text-green-600 tabular-nums flex-shrink-0">{formatCurrency(c.monto)}</span>
+                                  <span className="font-semibold text-primary tabular-nums flex-shrink-0">{formatCurrency(c.monto)}</span>
                                 </div>
                               ))}
                             </div>
@@ -1396,12 +1396,12 @@ export default function CobranzaPage() {
                           <div className="px-4 pb-3 pt-1">
                             {inlineCobroPedidoId === p.pedidoId ? (
                               /* ── Expanded inline form ── */
-                              <div className="rounded-lg border border-green-200 bg-green-50/50 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                                    <CurrencyDollar className="w-3 h-3 text-green-600" weight="bold" />
+                                  <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <CurrencyDollar className="w-3 h-3 text-primary" weight="bold" />
                                   </div>
-                                  <span className="text-xs font-semibold text-green-800">{t('registerPayment')}</span>
+                                  <span className="text-xs font-semibold text-primary">{t('registerPayment')}</span>
                                 </div>
                                 {/* Row 1: Monto + Método */}
                                 <div className="grid grid-cols-2 gap-2">
@@ -1416,7 +1416,7 @@ export default function CobranzaPage() {
                                         max={p.saldo}
                                         value={inlineCobroData.monto || ''}
                                         onChange={(e) => setInlineCobroData(prev => ({ ...prev, monto: parseFloat(e.target.value) || 0 }))}
-                                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2 tabular-nums"
+                                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-surface-2 tabular-nums"
                                       />
                                     </div>
                                   </div>
@@ -1425,7 +1425,7 @@ export default function CobranzaPage() {
                                     <select
                                       value={inlineCobroData.metodoPago}
                                       onChange={(e) => setInlineCobroData(prev => ({ ...prev, metodoPago: Number(e.target.value) }))}
-                                      className="w-full px-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
+                                      className="w-full px-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-surface-2"
                                     >
                                       {METODO_PAGO_OPTIONS.map((opt) => (
                                         <option key={opt.value} value={opt.value}>{t(`paymentMethods.${opt.labelKey}`)}</option>
@@ -1441,7 +1441,7 @@ export default function CobranzaPage() {
                                     value={inlineCobroData.referencia}
                                     onChange={(e) => setInlineCobroData(prev => ({ ...prev, referencia: e.target.value }))}
                                     placeholder={t('drawer.referencePlaceholder')}
-                                    className="w-full px-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
+                                    className="w-full px-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-surface-2"
                                   />
                                 </div>
                                 {/* Row 3: Actions */}
@@ -1503,7 +1503,7 @@ export default function CobranzaPage() {
           setFormPedidos([]);
         }}
         title={t('drawer.title')}
-        icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
+        icon={<DollarSign className="w-5 h-5 text-primary" />}
         width="md"
         isDirty={isDirty}
         onSave={rhfSubmit(handleCreateCobro)}
@@ -1557,8 +1557,8 @@ export default function CobranzaPage() {
                       isAnticipoDisabled
                         ? 'border-amber-200 bg-amber-50/40 text-foreground/40 opacity-60 cursor-not-allowed dark:border-amber-900/30 dark:bg-amber-950/10'
                         : selected
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ring-1 ring-emerald-500'
-                          : 'border-border-default hover:border-emerald-300'
+                          ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary'
+                          : 'border-border-default hover:border-primary/40'
                     }`}
                   >
                     <div className="font-semibold">{opt.label}</div>
@@ -1643,7 +1643,7 @@ export default function CobranzaPage() {
                 type="number"
                 step="0.01"
                 {...register('monto', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-primary focus:border-primary"
                 placeholder="0.00"
               />
               {errors.monto && <p className="text-xs text-red-500 mt-1">{t('validation.amountGreaterThanZero')}</p>}
@@ -1668,7 +1668,7 @@ export default function CobranzaPage() {
               <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.paymentMethod')}</label>
               <select
                 {...register('metodoPago', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-primary focus:border-primary"
               >
                 {METODO_PAGO_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{t(`paymentMethods.${o.labelKey}`)}</option>
@@ -1693,10 +1693,10 @@ export default function CobranzaPage() {
                 </div>
               )}
               {fifoPreview && fifoPreview.length > 0 && (
-                <div className="p-4 border border-green-300 bg-green-50/50 rounded-lg space-y-2">
+                <div className="p-4 border border-primary/30 bg-primary/5 rounded-lg space-y-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" weight="fill" />
-                    <p className="text-xs font-semibold text-green-800">{t('modes.fifo.previewTitle')}</p>
+                    <CheckCircle className="w-4 h-4 text-primary" weight="fill" />
+                    <p className="text-xs font-semibold text-primary">{t('modes.fifo.previewTitle')}</p>
                   </div>
                   <div className="space-y-1.5">
                     {fifoPreview.map((app) => (
@@ -1708,7 +1708,7 @@ export default function CobranzaPage() {
                     ))}
                   </div>
                   {fifoPreviewLoading && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-green-200">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-primary/20">
                       <Loader2 className="w-3 h-3 animate-spin" />
                       {t('modes.fifo.previewCalculating')}
                     </div>
@@ -1731,7 +1731,7 @@ export default function CobranzaPage() {
             <input
               type="text"
               {...register('referencia')}
-              className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-primary focus:border-primary"
               placeholder={t('drawer.referencePlaceholder')}
             />
           </div>
@@ -1739,7 +1739,7 @@ export default function CobranzaPage() {
             <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.notes')}</label>
             <textarea
               {...register('notas')}
-              className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-primary focus:border-primary"
               rows={2}
               placeholder={t('drawer.notesPlaceholder')}
             />

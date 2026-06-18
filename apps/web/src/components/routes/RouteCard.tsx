@@ -34,7 +34,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({
       case "in_progress":
         return "bg-blue-100 text-blue-800";
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-primary/10 text-primary";
       case "cancelled":
         return "bg-red-100 text-red-800";
       default:

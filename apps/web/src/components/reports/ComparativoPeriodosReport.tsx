@@ -218,7 +218,7 @@ export function ComparativoPeriodosReport() {
                   const TrendIcon = d.porcentajeCambio > 0 ? ArrowUp : d.porcentajeCambio < 0 ? ArrowDown : Minus;
                   const trendColor =
                     d.porcentajeCambio > 0
-                      ? "text-green-600"
+                      ? "text-primary"
                       : d.porcentajeCambio < 0
                       ? "text-red-600"
                       : "text-muted-foreground";

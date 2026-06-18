@@ -77,7 +77,7 @@ export const ImpersonationHistoryCard: React.FC = () => {
           </div>
         ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
-            <ShieldCheck className="h-8 w-8 text-green-500" />
+            <ShieldCheck className="h-8 w-8 text-primary" />
             <p className="text-sm font-medium">{t('noAccessTitle')}</p>
             <p className="text-xs">{t('noAccessDesc')}</p>
           </div>

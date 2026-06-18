@@ -844,7 +844,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                       alt={companySettings?.companyName || 'Mi Empresa'}
                       className="object-contain rounded-lg bg-card"
                     />
-                    <AvatarFallback className="rounded-lg bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-sm font-semibold">
+                    <AvatarFallback className="rounded-lg bg-primary/15 text-primary dark:text-primary text-sm font-semibold">
                       {getInitials(companySettings?.companyName || 'Mi Empresa')}
                     </AvatarFallback>
                   </Avatar>

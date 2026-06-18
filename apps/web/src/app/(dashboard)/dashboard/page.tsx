@@ -419,7 +419,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-1.5 mt-1">
                     {card.change !== 0 && (
-                      <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full ${card.change > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                      <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full ${card.change > 0 ? 'bg-primary/10 text-primary' : 'bg-red-50 text-red-600'}`}>
                         {card.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                         {card.change > 0 ? '+' : ''}{card.change}%
                       </span>
@@ -446,7 +446,7 @@ export default function DashboardPage() {
             </h3>
             {goalData && (
               <span className={`px-3 py-1 rounded-lg text-sm font-medium w-fit ${
-                goalData.percentage >= 100 ? 'bg-green-100 text-green-700' :
+                goalData.percentage >= 100 ? 'bg-primary/15 text-primary' :
                 goalData.percentage >= 75 ? 'bg-blue-100 text-blue-700' :
                 goalData.percentage >= 50 ? 'bg-amber-100 text-amber-700' :
                 'bg-red-100 text-red-700'
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('goalAchieved')}</p>
-                  <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
+                  <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #0176D3)' }}>
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(goalData.current)}`
                       : formatNumber(goalData.current)}
@@ -485,7 +485,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2">
                 <div className="h-3 bg-surface-3 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #16a34a)' }} />
+                  <div className="h-full rounded-full transition-all" style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #0176D3)' }} />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>0</span>
@@ -762,7 +762,7 @@ export default function DashboardPage() {
                 </h3>
                 {goalData && (
                   <span className={`px-3 py-1 rounded-lg text-sm font-medium w-fit ${
-                    goalData.percentage >= 100 ? 'bg-green-100 text-green-700' :
+                    goalData.percentage >= 100 ? 'bg-primary/15 text-primary' :
                     goalData.percentage >= 75 ? 'bg-blue-100 text-blue-700' :
                     goalData.percentage >= 50 ? 'bg-amber-100 text-amber-700' :
                     'bg-red-100 text-red-700'
@@ -784,7 +784,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">{t('goalAchieved')}</p>
-                      <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
+                      <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #0176D3)' }}>
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(goalData.current)}`
                           : formatNumber(goalData.current)}
@@ -803,7 +803,7 @@ export default function DashboardPage() {
                     <div className="h-3 bg-surface-3 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
-                        style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #16a34a)' }}
+                        style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #0176D3)' }}
                       />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
@@ -895,7 +895,7 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
   const firstName = userName?.split(' ')[0] || '';
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-green-200 dark:border-green-900/50 bg-gradient-to-r from-green-50 via-emerald-50/80 to-white dark:from-green-950/40 dark:via-emerald-950/20 dark:to-card p-5 sm:p-6 page-animate">
+    <div className="relative overflow-hidden rounded-xl border border-primary/20 dark:border-primary/30 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-white dark:from-primary/10 dark:via-primary/5 dark:to-card p-5 sm:p-6 page-animate">
       <button
         onClick={handleDismiss}
         className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-surface-2/10 transition-colors"
@@ -905,7 +905,7 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
       </button>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-10 h-10 rounded-lg bg-green-600 dark:bg-green-700 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
           <Zap className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">

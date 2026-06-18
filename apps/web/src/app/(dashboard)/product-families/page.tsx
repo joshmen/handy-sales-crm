@@ -416,7 +416,7 @@ export default function ProductFamiliesPage() {
                     <div className="text-sm font-medium text-foreground truncate">{family.nombre}</div>
                     <div className="text-xs text-muted-foreground truncate">{family.descripcion || tc('noDescription')}</div>
                   </div>
-                  <button onClick={() => batch.handleToggleSelect(family.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(family.id) ? 'bg-green-600 border-green-600 text-white' : 'border-border-default hover:border-green-500'}`}>
+                  <button onClick={() => batch.handleToggleSelect(family.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(family.id) ? 'bg-primary border-primary text-white' : 'border-border-default hover:border-primary'}`}>
                     {batch.selectedIds.has(family.id) && <Check className="w-3 h-3" />}
                   </button>
                   <ActiveToggle isActive={family.activo} onToggle={() => handleToggleActive(family)} disabled={loading} isLoading={togglingId === family.id} />

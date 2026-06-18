@@ -41,7 +41,7 @@ export function CookieConsentBanner() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <p className="text-[13px] sm:text-[14px] text-foreground/70 flex-1">
               Usamos cookies para mejorar tu experiencia. Al continuar navegando, aceptas nuestro uso de cookies conforme a nuestro{' '}
-              <Link href="/privacidad" className="text-indigo-600 hover:text-indigo-700 underline">
+              <Link href="/privacidad" className="text-primary hover:text-primary/80 underline">
                 Aviso de Privacidad
               </Link>.
             </p>
@@ -54,7 +54,7 @@ export function CookieConsentBanner() {
               </Link>
               <button
                 onClick={handleAccept}
-                className="flex-1 sm:flex-none text-center px-5 py-2 text-[13px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                className="flex-1 sm:flex-none text-center px-5 py-2 text-[13px] font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
               >
                 Aceptar
               </button>

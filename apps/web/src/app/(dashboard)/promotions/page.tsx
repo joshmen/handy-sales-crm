@@ -619,7 +619,7 @@ export default function PromotionsPage() {
                   {isExpired(promo.fechaFin) && <span className="text-red-500 ml-1">{t('expired')}</span>}
                 </div>
                 <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                  <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                   </button>
                   {deleteConfirmId === promo.id ? (
@@ -679,7 +679,7 @@ export default function PromotionsPage() {
               type="text"
               {...register('nombre')}
               placeholder={t('namePlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {errors.nombre && <FieldError message={errors.nombre.message} />}
           </div>
@@ -690,7 +690,7 @@ export default function PromotionsPage() {
               type="text"
               {...register('descripcion')}
               placeholder={t('descriptionPlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
@@ -702,12 +702,12 @@ export default function PromotionsPage() {
                 {watch('productoIds').map(id => {
                   const prod = productos.find(p => p.id === id);
                   return (
-                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
+                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/5 text-primary border border-primary/20 rounded-full">
                       {prod?.nombre || `#${id}`}
                       <button
                         type="button"
                         onClick={() => setValue('productoIds', watch('productoIds').filter(pid => pid !== id), { shouldDirty: true })}
-                        className="ml-0.5 p-0.5 hover:bg-green-100 rounded-full transition-colors"
+                        className="ml-0.5 p-0.5 hover:bg-primary/10 rounded-full transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -749,7 +749,7 @@ export default function PromotionsPage() {
           <div data-tour="promotions-drawer-tipo">
             <label className="block text-sm font-medium text-foreground/80 mb-2">{t('promotionType')}</label>
             <div className="grid grid-cols-2 gap-2">
-              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Porcentaje' ? 'border-green-500 bg-green-50' : 'border-border-default hover:border-border-strong'}`}>
+              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Porcentaje' ? 'border-primary bg-primary/5' : 'border-border-default hover:border-border-strong'}`}>
                 <input
                   type="radio"
                   value="Porcentaje"
@@ -762,7 +762,7 @@ export default function PromotionsPage() {
                   <p className="text-[11px] text-muted-foreground">{t('tipoPorcentajeHint')}</p>
                 </div>
               </label>
-              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Regalo' ? 'border-green-500 bg-green-50' : 'border-border-default hover:border-border-strong'}`}>
+              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Regalo' ? 'border-primary bg-primary/5' : 'border-border-default hover:border-border-strong'}`}>
                 <input
                   type="radio"
                   value="Regalo"
@@ -787,7 +787,7 @@ export default function PromotionsPage() {
                 max="100"
                 {...register('descuentoPorcentaje', { valueAsNumber: true })}
                 placeholder={t('discountPlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
             </div>
@@ -802,7 +802,7 @@ export default function PromotionsPage() {
                     step="1"
                     {...register('cantidadCompra', { valueAsNumber: true })}
                     placeholder="10"
-                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   {errors.cantidadCompra && <FieldError message={errors.cantidadCompra.message} />}
                 </div>
@@ -814,7 +814,7 @@ export default function PromotionsPage() {
                     step="1"
                     {...register('cantidadBonificada', { valueAsNumber: true })}
                     placeholder="1"
-                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   {errors.cantidadBonificada && <FieldError message={errors.cantidadBonificada.message} />}
                 </div>

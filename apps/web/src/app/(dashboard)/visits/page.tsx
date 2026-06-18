@@ -376,7 +376,7 @@ function VisitsPageContent() {
       key: 'pedido',
       label: '',
       width: 30,
-      cellRenderer: (visit) => visit.tienePedido ? <ShoppingCart className="w-4 h-4 text-green-500" /> : null,
+      cellRenderer: (visit) => visit.tienePedido ? <ShoppingCart className="w-4 h-4 text-primary" /> : null,
     },
     {
       key: 'actions',
@@ -391,7 +391,7 @@ function VisitsPageContent() {
               <Eye className="w-4 h-4" />
             </button>
             {isCompleted && (
-              <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600">
+              <span className="flex items-center gap-1 px-2 py-1 text-xs text-primary">
                 <CheckCircle className="w-3.5 h-3.5" />
               </span>
             )}
@@ -634,7 +634,7 @@ function VisitsPageContent() {
                         </span>
                         <span className={`text-xs font-medium ${tipo.color}`}>{tipo.label}</span>
                       </div>
-                      {visit.tienePedido && <ShoppingCart className="w-4 h-4 text-green-600" />}
+                      {visit.tienePedido && <ShoppingCart className="w-4 h-4 text-primary" />}
                     </div>
                     <div className="flex items-center gap-2 mb-1">
                       <User className="w-3.5 h-3.5 text-muted-foreground" />
@@ -682,7 +682,7 @@ function VisitsPageContent() {
         isOpen={showVisitForm}
         onClose={() => { setShowVisitForm(false); setPrefilledClienteId(undefined); }}
         title={t('detail.scheduleTitle')}
-        icon={<CalendarDays className="w-5 h-5 text-green-600" />}
+        icon={<CalendarDays className="w-5 h-5 text-primary" />}
         width="md"
       >
         <div className="p-6">
@@ -775,7 +775,7 @@ function VisitsPageContent() {
             {/* Pedido asociado */}
             {visitDetail.numeroPedido && (
               <div className="flex items-center gap-2 p-3 bg-surface-1 rounded-lg text-sm">
-                <ShoppingCart className="w-4 h-4 text-green-600" />
+                <ShoppingCart className="w-4 h-4 text-primary" />
                 <span className="text-foreground/80 font-medium">{t('detail.linkedOrder', { number: visitDetail.numeroPedido })}</span>
               </div>
             )}

@@ -177,7 +177,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
     switch (estado) {
       case 0: return { label: t('detail.stopPending'), cls: 'bg-surface-3 text-foreground/70' };
       case 1: return { label: t('detail.stopEnRoute'), cls: 'bg-blue-100 text-blue-600' };
-      case 2: return { label: t('detail.stopVisited'), cls: 'bg-green-100 text-green-600' };
+      case 2: return { label: t('detail.stopVisited'), cls: 'bg-primary/10 text-primary' };
       case 3: return { label: t('detail.stopSkipped'), cls: 'bg-red-100 text-red-600' };
       default: return { label: t('status.unknown'), cls: 'bg-surface-3 text-foreground/70' };
     }
@@ -259,7 +259,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
                 checked={allStopsOnPageSelected}
                 onChange={toggleSelectAllStopsOnPage}
                 aria-label={t('detail.selectAll')}
-                className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
               />
             </div>
           )}
@@ -299,7 +299,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
                 <div
                   key={stop.id}
                   className={`flex items-center gap-3 px-4 py-3 border-b border-border-subtle transition-colors ${
-                    isSelected ? 'bg-green-50 dark:bg-green-950/30' : 'hover:bg-surface-1'
+                    isSelected ? 'bg-primary/5 dark:bg-primary/10' : 'hover:bg-surface-1'
                   }`}
                 >
                   {isEditable && (
@@ -309,7 +309,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
                         checked={isSelected}
                         onChange={() => toggleStopSelected(stop.id)}
                         aria-label={`Seleccionar parada ${stop.id}`}
-                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
                       />
                     </div>
                   )}
@@ -423,7 +423,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
               value={stopSearch}
               onChange={(e) => setStopSearch(e.target.value)}
               placeholder={t('detail.searchClient')}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -435,7 +435,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
               type="number"
               value={stopForm.duracion}
               onChange={(e) => setStopForm({ duracion: parseInt(e.target.value) || 30 })}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
@@ -463,7 +463,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
                         type="checkbox"
                         checked={allSelected}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
                       />
                       {allSelected ? t('detail.deselectAll') : t('detail.selectAll')}
                     </label>
@@ -484,7 +484,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
                         key={c.value}
                         className={`flex items-center gap-3 px-3 py-2 border rounded-lg transition-colors cursor-pointer ${
                           isSelected
-                            ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10'
                             : 'border-border-subtle hover:bg-surface-1'
                         }`}
                       >
@@ -492,7 +492,7 @@ export function ParadasTab({ route, isEditable, onRefetch }: RouteTabProps) {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleStopClienteSelected(id)}
-                          className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                          className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
                         />
                         <span className="text-[13px] text-foreground flex-1">{c.label}</span>
                       </label>

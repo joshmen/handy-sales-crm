@@ -98,8 +98,8 @@ function getSeverityBadge(severity: string) {
 function getEstadoBadge(resuelto: boolean, labels: { resolved: string; pending: string }) {
   if (resuelto) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-        <CheckCircle size={14} weight="fill" className="text-green-600" />
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+        <CheckCircle size={14} weight="fill" className="text-primary" />
         {labels.resolved}
       </span>
     );
@@ -601,7 +601,7 @@ function CloudWatchTab() {
           </div>
         ) : recentErrors.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <CheckCircle size={48} weight="duotone" className="mx-auto text-green-300 mb-3" />
+            <CheckCircle size={48} weight="duotone" className="mx-auto text-primary/30 mb-3" />
             <p className="text-muted-foreground text-sm">{t('noRecentErrors')}</p>
             <p className="text-muted-foreground text-xs mt-1">{t('noRecentErrorsDesc')}</p>
           </div>
@@ -1256,12 +1256,12 @@ function MobileCrashesTab() {
               )}
             </div>
           ) : selectedReport?.resuelto ? (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-4 py-3">
-              <CheckCircle size={18} weight="fill" className="text-green-600" />
+            <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-lg px-4 py-3">
+              <CheckCircle size={18} weight="fill" className="text-primary" />
               <div>
                 <span className="font-medium">Resuelto</span>
                 {selectedReport.resueltoPorNombre && (
-                  <span className="text-green-600 ml-1">
+                  <span className="text-primary ml-1">
                     por {selectedReport.resueltoPorNombre}
                   </span>
                 )}
@@ -1347,7 +1347,7 @@ function MobileCrashesTab() {
 
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
-                <User size={14} className="text-emerald-500" />
+                <User size={14} className="text-primary" />
                 Contexto
               </h3>
               <div className="grid grid-cols-2 gap-3">
@@ -1384,10 +1384,10 @@ function MobileCrashesTab() {
             {selectedReport.resuelto && selectedReport.notaResolucion && (
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <CheckCircle size={14} className="text-green-500" />
+                  <CheckCircle size={14} className="text-primary" />
                   {t('resolutionNoteLabel')}
                 </h3>
-                <p className="text-sm text-foreground bg-green-50 rounded-lg p-3 border border-green-100">
+                <p className="text-sm text-foreground bg-primary/5 rounded-lg p-3 border border-primary/10">
                   {selectedReport.notaResolucion}
                 </p>
               </div>

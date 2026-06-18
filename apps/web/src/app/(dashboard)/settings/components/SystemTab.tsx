@@ -111,7 +111,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
               ) : healthError ? (
                 <XCircle className="h-3.5 w-3.5 text-red-500" />
               ) : (
-                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                <CheckCircle className="h-3.5 w-3.5 text-primary" />
               )}
               <p className="text-sm text-muted-foreground">
                 {healthLoading ? t('verifying') : healthError ? t('connectionError') : t('connected')}
@@ -127,7 +127,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
               ) : healthError ? (
                 <XCircle className="h-3.5 w-3.5 text-red-500" />
               ) : (
-                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                <CheckCircle className="h-3.5 w-3.5 text-primary" />
               )}
               <p className="text-sm text-muted-foreground">
                 {healthLoading ? t('verifying') : healthError ? t('noResponse') : health?.status === 'healthy' ? t('online') : t('degraded')}

@@ -35,7 +35,7 @@ export interface ReportExportConfig {
 
 // ─── Constants ──────────────────────────────────────────────────
 
-const DEFAULT_PRIMARY = '#16a34a';
+const DEFAULT_PRIMARY = '#0176D3';
 const MARGIN = 12;
 const HEADER_H = 30;
 const FOOTER_H = 10;

@@ -177,12 +177,12 @@ export default function TransferirCarteraPage() {
         </div>
 
         {lastResult !== null && (
-          <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-900 flex items-center gap-3" data-testid="transfer-success">
-            <Users className="w-5 h-5 text-green-700" />
+          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 text-sm text-primary flex items-center gap-3" data-testid="transfer-success">
+            <Users className="w-5 h-5 text-primary" />
             <div>
               <strong>{lastResult}</strong> clientes transferidos de <strong>{fromName}</strong> a <strong>{toName}</strong>.
               <br />
-              <span className="text-xs text-green-700">La próxima ejecución de &ldquo;Ruta semanal automática&rdquo; generará la ruta del nuevo vendedor.</span>
+              <span className="text-xs text-primary/80">La próxima ejecución de &ldquo;Ruta semanal automática&rdquo; generará la ruta del nuevo vendedor.</span>
             </div>
           </div>
         )}

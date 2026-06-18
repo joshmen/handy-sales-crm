@@ -55,7 +55,7 @@ export function ComisionesReport() {
     { key: "nombre", header: t("vendor"), sortable: true },
     { key: "totalVentas", header: t("sales"), align: "right", sortable: true, render: r => fmt(r.totalVentas) },
     { key: "cantidadPedidos", header: t("orders"), align: "right", sortable: true },
-    { key: "comision", header: t("commission"), align: "right", sortable: true, render: r => <span className="font-semibold text-green-600">{fmt(r.comision)}</span> },
+    { key: "comision", header: t("commission"), align: "right", sortable: true, render: r => <span className="font-semibold text-primary">{fmt(r.comision)}</span> },
   ];
 
   const chartOptions: ApexCharts.ApexOptions = {

@@ -99,8 +99,8 @@ interface PresenceLabels { online: string; agoMinutes: (min: number) => string; 
 function PresenceBadge({ isOnline, lastActivity, labels }: { isOnline?: boolean; lastActivity?: string; labels: PresenceLabels }) {
   if (isOnline) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+      <span className="inline-flex items-center gap-1 text-xs text-primary">
+        <span className="w-2 h-2 rounded-full bg-primary inline-block" />
         {labels.online}
       </span>
     );
@@ -143,7 +143,7 @@ function getDeviceIcon(deviceType: number) {
 
 function getSessionStatusConfig(status: number) {
   switch (status) {
-    case 0: return { labelKey: 'activeStatus', className: 'text-green-700 bg-green-100' };
+    case 0: return { labelKey: 'activeStatus', className: 'text-primary bg-primary/10' };
     case 1: return { labelKey: 'loggedOut', className: 'text-foreground/70 bg-surface-3' };
     case 2: return { labelKey: 'expired', className: 'text-foreground/70 bg-surface-3' };
     case 3: return { labelKey: 'revokedAdmin', className: 'text-red-700 bg-red-100' };
@@ -255,7 +255,7 @@ function SupervisorView() {
   if (loading) {
     return (
       <div role="status" className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
         <span className="sr-only">{tc('loading')}</span>
       </div>
     );
@@ -335,7 +335,7 @@ function SupervisorView() {
             {isAdmin && (
               <button
                 onClick={handleOpenAsignar}
-                className="mt-3 text-sm text-green-600 hover:text-green-700 font-medium"
+                className="mt-3 text-sm text-primary hover:text-primary/80 font-medium"
               >
                 {t('assignSellersLink')}
               </button>
@@ -360,7 +360,7 @@ function SupervisorView() {
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                     v.activo
-                      ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                      ? 'bg-primary/5 dark:bg-primary/10 text-primary'
                       : 'bg-muted text-muted-foreground'
                   }`}>
                     {v.activo ? t('active') : t('inactive')}
@@ -441,14 +441,14 @@ function SupervisorView() {
                     <label
                       key={v.id}
                       className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition ${
-                        selectedIds.has(v.id) ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'hover:bg-muted/50 border border-transparent'
+                        selectedIds.has(v.id) ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : 'hover:bg-muted/50 border border-transparent'
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={selectedIds.has(v.id)}
                         onChange={() => toggleSelect(v.id)}
-                        className="h-4 w-4 text-green-600 rounded border-border"
+                        className="h-4 w-4 text-primary rounded border-border"
                       />
                       <Avatar className="h-8 w-8">
                         {v.avatarUrl && <AvatarImage src={v.avatarUrl} alt={v.nombre} />}
@@ -999,7 +999,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   const renderStatusBadge = (user: User) => (
     <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
       user.status === UserStatus.ACTIVE
-        ? 'bg-green-100 text-green-600'
+        ? 'bg-primary/10 text-primary'
         : 'bg-surface-3 text-muted-foreground'
     }`}>
       {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
@@ -1026,7 +1026,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
           // El drawer queda como fallback si la URL viene con ?openDrawer=1.
           router.push(`/team/${user.id}/gps`);
         }}
-        className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
         title={`${ub.fuente} · ${ub.clienteNombre ?? ''}`}
       >
         <span>{fuenteIcon}</span>
@@ -1108,8 +1108,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
           }}
           className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
             batch.selectedIds.has(parseInt(user.id))
-              ? 'bg-green-600 border-green-600 text-white'
-              : 'border-border-default hover:border-green-500'
+              ? 'bg-primary border-primary text-white'
+              : 'border-border-default hover:border-primary'
           }`}
         >
           {batch.selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
@@ -1126,7 +1126,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
             </span>
             <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
               user.status === UserStatus.ACTIVE
-                ? 'bg-green-100 text-green-600'
+                ? 'bg-primary/10 text-primary'
                 : 'bg-surface-3 text-muted-foreground'
             }`}>
               {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
@@ -1169,7 +1169,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeUsers')}</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
+            <p className="text-2xl font-bold text-primary mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('onlineUsers')}</p>
@@ -1353,7 +1353,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   <div
                     key={s.id}
                     className={`border rounded-lg p-4 ${
-                      s.esSesionActual ? 'border-green-300 ring-1 ring-green-200 bg-green-50/30' : 'border-border-subtle bg-surface-2'
+                      s.esSesionActual ? 'border-primary/30 ring-1 ring-primary/20 bg-primary/5' : 'border-border-subtle bg-surface-2'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -1366,7 +1366,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                             {s.deviceName || s.deviceTypeNombre}
                           </span>
                           {s.esSesionActual && (
-                            <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
                               {t('yourSession')}
                             </span>
                           )}
@@ -1415,14 +1415,14 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         isOpen={gpsActivityUser !== null}
         onClose={() => { setGpsActivityUser(null); setGpsEventos([]); }}
         title={gpsActivityUser ? t('gpsActivity.activityOf', { name: gpsActivityUser.name }) : t('gpsActivity.activity')}
-        icon={<MapPin className="w-5 h-5 text-emerald-600" />}
+        icon={<MapPin className="w-5 h-5 text-primary" />}
         width="lg"
       >
         <div className="p-6 space-y-4">
           <p className="text-xs text-muted-foreground">{t('gpsActivity.faseAHint')}</p>
           {gpsEventosLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <span className="ml-2 text-sm text-muted-foreground">{t('gpsActivity.loading')}</span>
             </div>
           ) : gpsEventos.length === 0 ? (
@@ -1468,7 +1468,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                         <div className="flex items-center gap-2">
                           <span className="text-base" aria-hidden>{tipoIcon}</span>
                           <span className="text-sm font-medium text-foreground">{hora}</span>
-                          <span className="text-[11px] uppercase tracking-wide text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[11px] uppercase tracking-wide text-primary bg-primary/5 px-1.5 py-0.5 rounded">
                             {tipoLabel}
                           </span>
                         </div>
@@ -1517,7 +1517,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   type="text"
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder={t('placeholderName')}
                 />
               </div>
@@ -1560,7 +1560,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={t('placeholderEmail')}
                   required={!formData.sinEmail}
                   disabled={formData.sinEmail}
@@ -1577,7 +1577,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                     data-testid="create-user-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Min. 8 caracteres con mayúsculas, minúsculas y números"
                     required
                   />
@@ -1603,7 +1603,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                   type="tel"
                   value={formData.telefono}
                   onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="555-0100"
                 />
               </div>
@@ -1689,7 +1689,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                 type="text"
                 value={selectedUser.name}
                 onChange={(e) => setSelectedUser({ ...selectedUser, name: e.target.value })}
-                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
@@ -1827,7 +1827,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                         <td className="py-3 font-medium text-foreground">{row.nombre}</td>
                         <td className="py-3 text-foreground/70">{row.clienteNombre || '\u2014'}</td>
                         <td className="py-3 text-right font-mono">
-                          <span className={row.distanciaKm > 50 ? 'text-red-600' : row.distanciaKm > 20 ? 'text-amber-600' : 'text-green-600'}>
+                          <span className={row.distanciaKm > 50 ? 'text-red-600' : row.distanciaKm > 20 ? 'text-amber-600' : 'text-primary'}>
                             {row.distanciaKm.toFixed(1)} km
                           </span>
                         </td>

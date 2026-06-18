@@ -35,7 +35,7 @@ const actionColors: Record<string, string> = {
 // Category labels resolved via useTranslations at render time
 
 const statusColors: Record<string, string> = {
-  success: 'text-green-600',
+  success: 'text-primary',
   failed: 'text-red-600',
   warning: 'text-yellow-600',
   pending: 'text-muted-foreground',

@@ -450,7 +450,7 @@ export default function PriceListsPage() {
             sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
             loading={loading}
             loadingMessage={t('loadingLists')}
-            emptyIcon={<CurrencyDollar className="w-16 h-16 text-green-300" weight="duotone" />}
+            emptyIcon={<CurrencyDollar className="w-16 h-16 text-primary/30" weight="duotone" />}
             emptyTitle={
               hasSearchNoMatch
                 ? t('noMatchingLists')

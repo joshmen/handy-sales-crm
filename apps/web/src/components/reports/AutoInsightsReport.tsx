@@ -65,7 +65,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
   const isUp = insight.tendencia === "up";
   const isDown = insight.tendencia === "down";
   const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
-  const trendColor = isUp ? "text-emerald-600" : isDown ? "text-red-500" : "text-muted-foreground";
+  const trendColor = isUp ? "text-primary" : isDown ? "text-red-500" : "text-muted-foreground";
 
   // Mini sparkline for each card
   const sparkOptions: ApexCharts.ApexOptions = {
@@ -99,7 +99,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
           </div>
           {insight.valor !== undefined && (
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-              isUp ? "bg-emerald-50 text-emerald-700" : isDown ? "bg-red-50 text-red-600" : "bg-surface-3 text-muted-foreground"
+              isUp ? "bg-primary/5 text-primary" : isDown ? "bg-red-50 text-red-600" : "bg-surface-3 text-muted-foreground"
             }`}>
               <TrendIcon className="w-3.5 h-3.5" />
               {Math.abs(insight.valor)}%

@@ -19,7 +19,7 @@ const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
   EN_PREPARACION: { color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { color: 'text-purple-700', bg: 'bg-purple-100' },
   ENVIADA:        { color: 'text-amber-700',  bg: 'bg-amber-100' },
-  ENTREGADA:      { color: 'text-green-700',  bg: 'bg-green-100' },
+  ENTREGADA:      { color: 'text-primary',  bg: 'bg-primary/10' },
   CANCELADA:      { color: 'text-red-700',    bg: 'bg-red-100' },
 };
 
@@ -156,7 +156,7 @@ export default function OrderDetailPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="text-foreground/70">{t('loadingOrder')}</span>
         </div>
       </div>
@@ -266,11 +266,11 @@ export default function OrderDetailPage() {
                 return (
                   <React.Fragment key={step}>
                     {i > 0 && (
-                      <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-surface-3'}`} />
+                      <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-primary' : 'bg-surface-3'}`} />
                     )}
                     <div className="flex flex-col items-center gap-1">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
-                        ${isCurrent ? 'bg-success text-success-foreground ring-2 ring-green-200' : isCompleted ? 'bg-success text-success-foreground' : 'bg-surface-3 text-muted-foreground'}`}>
+                        ${isCurrent ? 'bg-success text-success-foreground ring-2 ring-primary/30' : isCompleted ? 'bg-success text-success-foreground' : 'bg-surface-3 text-muted-foreground'}`}>
                         {isCompleted ? '\u2713' : i + 1}
                       </div>
                       <span className={`text-xs ${isCurrent ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>

@@ -29,7 +29,7 @@ const ORDER_STATUS_STYLES: Record<string, { statusKey: string; color: string; bg
   EN_PREPARACION: { statusKey: 'inPrep',     color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { statusKey: 'readyToShip', color: 'text-purple-700', bg: 'bg-purple-100' },
   ENVIADA:        { statusKey: 'enRoute',    color: 'text-amber-700', bg: 'bg-amber-100' },
-  ENTREGADA:      { statusKey: 'delivered',  color: 'text-green-700', bg: 'bg-green-100' },
+  ENTREGADA:      { statusKey: 'delivered',  color: 'text-primary', bg: 'bg-primary/10' },
   CANCELADA:      { statusKey: 'cancelled',  color: 'text-red-700',   bg: 'bg-red-100' },
 };
 
@@ -120,7 +120,7 @@ export default function ClientDetailPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{client.name}</h1>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-foreground/80 bg-surface-3'}`}>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-primary bg-primary/10' : 'text-foreground/80 bg-surface-3'}`}>
               {client.isActive ? tc('active') : tc('inactive')}
             </span>
             {client.esProspecto && (

@@ -144,7 +144,7 @@ export default function OportunidadesReordenPage() {
               <KpiCard
                 label={t('kpi.valorEstimado')}
                 value={`~${valorEstimado.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 })}`}
-                icon={<CurrencyDollar size={20} className="text-green-600" weight="duotone" />}
+                icon={<CurrencyDollar size={20} className="text-primary" weight="duotone" />}
               />
             </div>
 
@@ -225,7 +225,7 @@ export default function OportunidadesReordenPage() {
                               <button
                                 onClick={() => router.push(`/visits?clienteId=${u.clienteId}`)}
                                 title={t('action.scheduleVisit')}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white bg-primary hover:bg-primary/90 rounded transition-colors"
                                 data-testid={`visit-cliente-${u.clienteId}`}
                               >
                                 <CalendarPlus size={14} weight="duotone" />

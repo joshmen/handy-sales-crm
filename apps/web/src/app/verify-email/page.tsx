@@ -181,8 +181,8 @@ function VerifyEmailContent() {
         <div className="space-y-7">
           <div className="space-y-2 text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center">
-                <Mail className="h-8 w-8 text-indigo-600" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <Mail className="h-8 w-8 text-primary" />
               </div>
             </div>
             <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
@@ -208,7 +208,7 @@ function VerifyEmailContent() {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
                 disabled={verifying}
-                className="w-12 h-14 text-center text-2xl font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors disabled:bg-surface-1 disabled:text-muted-foreground"
+                className="w-12 h-14 text-center text-2xl font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors disabled:bg-surface-1 disabled:text-muted-foreground"
               />
             ))}
           </div>
@@ -217,7 +217,7 @@ function VerifyEmailContent() {
             type="button"
             onClick={handleVerify}
             disabled={fullCode.length !== 6 || verifying}
-            className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+            className="w-full h-12 bg-gradient-to-r from-primary to-[#0B5CAB] hover:from-[#0166BC] hover:to-[#094E91] text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
           >
             {verifying ? (<>{spinnerSvg}{t('verifying')}</>) : t('verifyButton')}
           </button>
@@ -227,7 +227,7 @@ function VerifyEmailContent() {
               type="button"
               onClick={handleResend}
               disabled={resending || countdown > 0}
-              className="text-[14px] font-medium text-indigo-600 hover:text-indigo-700 disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
+              className="text-[14px] font-medium text-primary hover:text-primary/80 disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
             >
               {countdown > 0
                 ? t('resendCodeIn', { time: `${Math.floor(Math.max(0, countdown) / 60)}:${String(Math.max(0, countdown) % 60).padStart(2, '0')}` })
@@ -256,7 +256,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <VerifyEmailContent />
     </Suspense>
   );

@@ -256,7 +256,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             </button>
           </div>
           {tipoVenta === 1 && (
-            <span className="text-[11px] text-green-600 dark:text-green-400">
+            <span className="text-[11px] text-primary">
               {t('directSaleHint')}
             </span>
           )}
@@ -332,7 +332,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
               type="text"
               {...register('address')}
               placeholder={t('deliveryAddress')}
-              className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
                 errors.address ? 'border-red-500' : 'border-border-default'
               }`}
             />
@@ -411,7 +411,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
                     value={item.quantity}
                     onChange={e => handleQuantityChange(item.id, parseInt(e.target.value) || 0)}
                     min="0"
-                    className="w-14 text-center text-[13px] border border-border-default rounded py-1 focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                    className="w-14 text-center text-[13px] border border-border-default rounded py-1 focus:ring-1 focus:ring-primary focus:border-primary"
                   />
                 </div>
                 <div className="w-[80px] text-[13px] text-foreground/80 text-right">
@@ -448,7 +448,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             <div className="h-px bg-surface-3" />
             <div className="flex justify-between text-base font-bold">
               <span className="text-foreground">{t('total')}</span>
-              <span className="text-green-600">${total.toFixed(2)}</span>
+              <span className="text-primary">${total.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -470,7 +470,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           {...register('notes')}
           placeholder={t('additionalComments')}
           rows={3}
-          className={`w-full p-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+          className={`w-full p-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
             errors.notes ? 'border-red-500' : 'border-border-default'
           }`}
         />

@@ -87,7 +87,7 @@ export default function EditClientPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="text-foreground/70">{t('loadingClient')}</span>
         </div>
       </div>

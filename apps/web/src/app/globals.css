@@ -337,8 +337,8 @@ body {
 
 /* Auth components — dark */
 .dark .auth-input:focus {
-  border-color: #818cf8;
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+  border-color: #3B9DE8;
+  box-shadow: 0 0 0 3px rgba(59, 157, 232, 0.15);
   background-color: hsl(var(--card));
 }
 .dark .auth-separator {
@@ -466,13 +466,13 @@ body {
 }
 
 .auth-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  border-color: #0176D3;
+  box-shadow: 0 0 0 3px rgba(1, 118, 211, 0.12);
   background-color: #fff;
 }
 
 .auth-input:hover:not(:focus):not(:disabled) {
-  border-color: #a5b4fc;
+  border-color: #7DBAEC;
 }
 
 /* Auth separator line with fade */

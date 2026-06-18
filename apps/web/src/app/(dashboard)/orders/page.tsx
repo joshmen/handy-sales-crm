@@ -570,7 +570,7 @@ export default function OrdersPage() {
       width: 85,
       hiddenOnMobile: true,
       cellRenderer: (order) => (
-        <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+        <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
           {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
         </span>
       ),
@@ -618,7 +618,7 @@ export default function OrdersPage() {
               ) : (
                 <button
                   onClick={() => handleFacturar(order.id)}
-                  className="text-[11px] px-2.5 py-1 rounded font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors whitespace-nowrap"
+                  className="text-[11px] px-2.5 py-1 rounded font-medium text-primary border border-primary/30 hover:bg-primary/5 transition-colors whitespace-nowrap"
                 >
                   {t('actions.invoice')}
                 </button>
@@ -838,7 +838,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div className="flex justify-end mt-1">
-                        <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                        <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
                           {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
                         </span>
                       </div>
@@ -856,7 +856,7 @@ export default function OrdersPage() {
                         {/* Regla de negocio: editar y borrar solo en Borrador — backend rechaza cualquier otro estado con 400/409. */}
                         {order.apiEstado === 'Borrador' && (
                           <>
-                            <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
+                            <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
                               <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
                             </button>
                             <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
@@ -871,8 +871,8 @@ export default function OrdersPage() {
                               <FileText className="w-3.5 h-3.5 text-blue-500" /> {t('actions.viewInvoice')}
                             </button>
                           ) : (
-                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-emerald-600 hover:bg-emerald-50 rounded">
-                              <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> {t('actions.invoice')}
+                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
+                              <Receipt className="w-3.5 h-3.5 text-primary" weight="bold" /> {t('actions.invoice')}
                             </button>
                           );
                         })()}
@@ -916,7 +916,7 @@ export default function OrdersPage() {
               ? t('drawerTitleView')
               : t('drawerTitleEdit')
         }
-        icon={<ShoppingCart className="w-5 h-5 text-green-600" />}
+        icon={<ShoppingCart className="w-5 h-5 text-primary" />}
         width="lg"
         isDirty={isViewOnlyMode ? false : formIsDirty}
         onSave={isViewOnlyMode ? undefined : () => orderFormRef.current?.submit()}

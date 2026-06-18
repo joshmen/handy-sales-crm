@@ -182,7 +182,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   step === s
                     ? 'bg-primary text-primary-foreground'
                     : (['qr', 'verify', 'recovery'].indexOf(step) > i)
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-primary/10 text-primary'
                       : 'bg-muted text-muted-foreground'
                 }`}
               >

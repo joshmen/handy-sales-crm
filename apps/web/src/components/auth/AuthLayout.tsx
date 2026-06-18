@@ -103,7 +103,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-3">
               {benefits.map((text, i) => (
                 <li key={i} className="flex items-center gap-3 auth-panel-animate" style={{ animationDelay: `${0.35 + i * 0.08}s` }}>
-                  <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
+                  <CheckCircle className="w-6 h-6 text-[#5BA9E8] shrink-0 drop-shadow" />
                   <span className="text-lg text-white/90 drop-shadow">{text}</span>
                 </li>
               ))}

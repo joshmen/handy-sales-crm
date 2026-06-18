@@ -46,7 +46,7 @@ const typeColors: Record<string, { bg: string; icon: string; darkBg: string; dar
 // Status labels are resolved via translations at render time
 
 const statusColors: Record<string, string> = {
-  sent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  sent: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary',
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   read: 'bg-surface-3 text-muted-foreground dark:bg-surface-3/50 dark:text-muted-foreground',

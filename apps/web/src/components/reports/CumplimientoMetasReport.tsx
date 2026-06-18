@@ -62,11 +62,11 @@ export function CumplimientoMetasReport() {
     { key: "meta", header: t("goal"), align: "right", sortable: true, render: (r) => r.tipo === "ventas" ? fmt(r.meta) : String(r.meta) },
     { key: "actual", header: t("actual"), align: "right", sortable: true, render: (r) => r.tipo === "ventas" ? fmt(r.actual) : String(r.actual) },
     { key: "porcentajeCumplimiento", header: t("achievementPct"), align: "right", sortable: true, render: (r) => {
-      const color = r.porcentajeCumplimiento >= 100 ? "text-green-600" : r.porcentajeCumplimiento >= 70 ? "text-amber-600" : "text-red-600";
+      const color = r.porcentajeCumplimiento >= 100 ? "text-primary" : r.porcentajeCumplimiento >= 70 ? "text-amber-600" : "text-red-600";
       return <span className={`font-semibold ${color}`}>{r.porcentajeCumplimiento}%</span>;
     }},
     { key: "cumplida", header: t("status"), render: (r) => r.cumplida
-      ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">{t("statusAchieved")}</span>
+      ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/5 text-primary">{t("statusAchieved")}</span>
       : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">{t("statusPending")}</span>
     },
   ];

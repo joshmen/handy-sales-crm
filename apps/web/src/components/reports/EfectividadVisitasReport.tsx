@@ -51,7 +51,7 @@ export function EfectividadVisitasReport() {
     { key: "totalVisitas", header: t("visits"), align: "right", sortable: true },
     { key: "visitasConVenta", header: t("withSaleCol"), align: "right", sortable: true },
     { key: "tasaConversion", header: t("ratePct"), align: "right", sortable: true, render: (r) => {
-      const color = r.tasaConversion >= 50 ? "text-green-600" : r.tasaConversion >= 30 ? "text-amber-600" : "text-red-600";
+      const color = r.tasaConversion >= 50 ? "text-primary" : r.tasaConversion >= 30 ? "text-amber-600" : "text-red-600";
       return <span className={`font-semibold ${color}`}>{r.tasaConversion}%</span>;
     }},
     { key: "duracionPromedio", header: t("avgDuration"), align: "right" },

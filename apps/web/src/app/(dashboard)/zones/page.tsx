@@ -816,13 +816,13 @@ export default function ZonesPage() {
               <div className="flex gap-4 items-start" data-tour="zones-drawer-name">
                 <div className="flex-1">
                   <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
-                    <Map className="w-3.5 h-3.5 text-green-600" />
+                    <Map className="w-3.5 h-3.5 text-primary" />
                     {tc('name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     {...register('name')}
-                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder={t('drawer.namePlaceholder')}
                   />
                   {errors.name && (
@@ -867,7 +867,7 @@ export default function ZonesPage() {
                 </label>
                 <textarea
                   {...register('description')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder={t('drawer.descriptionPlaceholder')}
                   rows={2}
                 />
@@ -895,7 +895,7 @@ export default function ZonesPage() {
                       <input
                         type="text"
                         placeholder={t('drawer.searchPlaceholder')}
-                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       />
                     </div>
                   </Autocomplete>
@@ -982,7 +982,7 @@ export default function ZonesPage() {
                           setDrawerMapRadius(val);
                           setValue('radioKm', val, { shouldDirty: true });
                         }}
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1019,7 +1019,7 @@ export default function ZonesPage() {
                   type="checkbox"
                   id="isEnabled"
                   {...register('isEnabled')}
-                  className="mt-0.5 w-4 h-4 text-green-600 border-border-default rounded focus:ring-green-600"
+                  className="mt-0.5 w-4 h-4 text-primary border-border-default rounded focus:ring-primary"
                 />
                 <div>
                   <span className="text-sm font-medium text-foreground/80 group-hover:text-foreground transition-colors">

@@ -122,7 +122,7 @@ export default function TeamGpsPage() {
       label: t('columnLastEvent'),
       width: 160,
       cellRenderer: (u) => (
-        <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
+        <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/5 text-primary text-xs font-medium">
           {fuenteLabel(u.fuente)}
         </span>
       ),
@@ -164,10 +164,10 @@ export default function TeamGpsPage() {
       cellRenderer: (u) => (
         <button
           onClick={(e) => { e.stopPropagation(); router.push(`/team/${u.usuarioId}/gps`); }}
-          className="p-1 hover:bg-emerald-50 rounded transition-colors"
+          className="p-1 hover:bg-primary/5 rounded transition-colors"
           title={t('viewDetail')}
         >
-          <ChevronRight className="w-4 h-4 text-emerald-500 hover:text-emerald-600" />
+          <ChevronRight className="w-4 h-4 text-primary hover:text-primary/80" />
         </button>
       ),
     },
@@ -223,7 +223,7 @@ export default function TeamGpsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{u.nombre}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/5 text-primary text-[10px] font-medium">
                     {fuenteLabel(u.fuente)}
                   </span>
                   <span className="text-[11px] text-muted-foreground">{formatTimeAgo(u.ultimaActividad)}</span>
@@ -231,7 +231,7 @@ export default function TeamGpsPage() {
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); router.push(`/team/${u.usuarioId}/gps`); }}
-                className="flex items-center gap-1 px-2 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 text-xs text-primary hover:bg-primary/5 rounded transition-colors"
               >
                 <MapPin className="w-3.5 h-3.5" />
                 <span>{t('viewDetail')}</span>

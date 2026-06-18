@@ -662,7 +662,7 @@ export default function DiscountsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingDiscount ? t('editDiscount') : t('newDiscount')}
-        icon={<Percent className="w-5 h-5 text-green-600" />}
+        icon={<Percent className="w-5 h-5 text-primary" />}
         width="sm"
         isDirty={isDirty}
         onSave={handleSubmit}
@@ -691,7 +691,7 @@ export default function DiscountsPage() {
                   max="100"
                   placeholder="10"
                   {...register('descuentoPorcentaje', { valueAsNumber: true })}
-                  className="w-full px-3 py-2 pr-8 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 pr-8 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
               </div>
@@ -707,7 +707,7 @@ export default function DiscountsPage() {
                 min="1"
                 placeholder="10"
                 {...register('cantidadMinima', { valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {errors.cantidadMinima && <FieldError message={errors.cantidadMinima.message} />}
             </div>

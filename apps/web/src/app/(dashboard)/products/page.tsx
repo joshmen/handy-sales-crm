@@ -412,8 +412,8 @@ export default function ProductsPage() {
       cellRenderer: (product) => product.images[0] ? (
         <img src={product.images[0]} alt={product.name} className="w-9 h-9 rounded-md object-cover" />
       ) : (
-        <div className="w-9 h-9 rounded-md bg-green-100 flex items-center justify-center">
-          <PackageIcon className="w-[18px] h-[18px] text-green-600" weight="duotone" />
+        <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center">
+          <PackageIcon className="w-[18px] h-[18px] text-primary" weight="duotone" />
         </div>
       ),
     },
@@ -777,8 +777,8 @@ export default function ProductsPage() {
                         {product.images[0] ? (
                           <img src={product.images[0]} alt={product.name} className="w-10 h-10 rounded-md object-cover" />
                         ) : (
-                          <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center">
-                            <PackageIcon className="w-5 h-5 text-green-600" weight="duotone" />
+                          <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
+                            <PackageIcon className="w-5 h-5 text-primary" weight="duotone" />
                           </div>
                         )}
                       </div>
@@ -792,13 +792,13 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">{formatCurrency(product.price)}</span>
+                    <span className="px-2 py-1 bg-primary/5 text-primary rounded-md text-xs font-medium">{formatCurrency(product.price)}</span>
                     <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock <= product.minStock ? 'bg-red-50 text-red-600' : 'bg-surface-3 text-foreground/80'}`}>Stock: {product.stock}</span>
                     {product.family && <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{product.family}</span>}
                     {product.category && <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">{product.category}</span>}
                   </div>
                   <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
+                    <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
                       <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                     </button>
                     {deleteConfirmId === product.id ? (
@@ -844,7 +844,7 @@ export default function ProductsPage() {
           isOpen={showProductForm}
           onClose={handleCancelForm}
           title={editingProduct ? t('drawer.titleEdit') : t('drawer.titleNew')}
-          icon={<Package className="w-5 h-5 text-green-600" />}
+          icon={<Package className="w-5 h-5 text-primary" />}
           width="lg"
           isDirty={formIsDirtyWithImage}
           onSave={() => {
@@ -872,7 +872,7 @@ export default function ProductsPage() {
                 <input
                   type="text"
                   {...register('nombre')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder={t('drawer.namePlaceholder')}
                 />
                 {errors.nombre && <FieldError message={errors.nombre.message} />}
@@ -886,7 +886,7 @@ export default function ProductsPage() {
                 <input
                   type="text"
                   {...register('codigoBarra')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent font-mono"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono"
                   placeholder={t('drawer.barcodePlaceholder')}
                 />
                 {errors.codigoBarra && <FieldError message={errors.codigoBarra.message} />}
@@ -899,7 +899,7 @@ export default function ProductsPage() {
                 </label>
                 <textarea
                   {...register('descripcion')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder={t('drawer.descriptionPlaceholder')}
                   rows={2}
                 />
@@ -1019,13 +1019,13 @@ export default function ProductsPage() {
                   {t('drawer.basePrice')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                   <input
                     type="number"
                     min="0.01"
                     step="0.01"
                     {...register('precioBase', { valueAsNumber: true })}
-                    className="w-full pl-10 pr-4 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
@@ -1045,7 +1045,7 @@ export default function ProductsPage() {
                         shouldDirty: true,
                       })
                     }
-                    className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">
                       {tasasImpuesto.find((t) => t.esDefault)
@@ -1060,7 +1060,7 @@ export default function ProductsPage() {
                   </select>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Si dejas en default, usa la tasa marcada como default en{' '}
-                    <a href="/settings?tab=impuestos" className="text-green-600 hover:underline">
+                    <a href="/settings?tab=impuestos" className="text-primary hover:underline">
                       Configuración → Impuestos
                     </a>
                     .
@@ -1072,7 +1072,7 @@ export default function ProductsPage() {
                     type="checkbox"
                     checked={watch('precioIncluyeIva')}
                     onChange={(e) => setValue('precioIncluyeIva', e.target.checked, { shouldDirty: true })}
-                    className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500 mt-0.5"
+                    className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary mt-0.5"
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">El precio ya incluye IVA</p>

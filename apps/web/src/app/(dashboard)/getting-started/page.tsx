@@ -510,8 +510,8 @@ export default function GettingStartedPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 {allDone ? (
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <PartyPopper className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <PartyPopper className="w-5 h-5 text-primary" />
                   </div>
                 ) : (
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -537,7 +537,7 @@ export default function GettingStartedPage() {
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${progressPercent}%`,
-                  backgroundColor: allDone ? '#16a34a' : 'var(--company-primary-color, #2563eb)',
+                  backgroundColor: allDone ? '#0176D3' : 'var(--company-primary-color, #0176D3)',
                 }}
               />
             </div>
@@ -546,14 +546,14 @@ export default function GettingStartedPage() {
 
         {/* Confetti message */}
         {showConfetti && allDone && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center page-animate">
-            <p className="text-green-800 font-medium">
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-center page-animate">
+            <p className="text-primary font-medium">
               {t('congratulations')}
             </p>
-            <p className="text-sm text-green-600 mt-1">
+            <p className="text-sm text-primary/80 mt-1">
               {t.rich('goToDashboardHint', {
                 link: (chunks) => (
-                  <Link href="/dashboard" className="underline font-medium hover:text-green-700">
+                  <Link href="/dashboard" className="underline font-medium hover:text-primary">
                     {chunks}
                   </Link>
                 ),
@@ -584,14 +584,14 @@ export default function GettingStartedPage() {
                   onClick={() => togglePhase(phase.id)}
                   className="w-full flex items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 text-left hover:bg-surface-2/50 transition-colors"
                 >
-                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-green-500' : phase.colorDot}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-primary' : phase.colorDot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className={`font-semibold text-sm ${phaseCompleted ? 'text-muted-foreground dark:text-muted-foreground' : phase.colorText}`}>
                         {phase.title}
                       </h3>
                       {phaseCompleted && (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{phase.description}</p>
@@ -617,15 +617,15 @@ export default function GettingStartedPage() {
                           {/* Check icon */}
                           <div className="flex-shrink-0">
                             {step.completed ? (
-                              <CheckCircle2 className="w-5 h-5 text-green-500" />
+                              <CheckCircle2 className="w-5 h-5 text-primary" />
                             ) : (
                               <Circle className="w-5 h-5 text-muted-foreground/60" />
                             )}
                           </div>
 
                           {/* Icon */}
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.completed ? 'bg-green-50' : phase.colorBg}`}>
-                            <step.icon className={`w-4 h-4 ${step.completed ? 'text-green-500' : phase.colorText}`} />
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.completed ? 'bg-primary/10' : phase.colorBg}`}>
+                            <step.icon className={`w-4 h-4 ${step.completed ? 'text-primary' : phase.colorText}`} />
                           </div>
 
                           {/* Text */}

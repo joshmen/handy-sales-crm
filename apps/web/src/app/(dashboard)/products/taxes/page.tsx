@@ -342,7 +342,7 @@ export default function TaxRatesPage() {
               type="checkbox"
               checked={esDefaultValue ?? false}
               onChange={(e) => setValue('esDefault', e.target.checked, { shouldDirty: true })}
-              className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500 mt-0.5"
+              className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary mt-0.5"
             />
             <div>
               <p className="text-sm font-medium text-foreground">{t('isDefault')}</p>

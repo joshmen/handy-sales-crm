@@ -1063,7 +1063,7 @@ export default function InventoryPage() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={modalMode === 'create' ? t('drawer.addTitle') : t('drawer.editTitle')}
-        icon={<Warehouse className="w-5 h-5 text-green-600" />}
+        icon={<Warehouse className="w-5 h-5 text-primary" />}
         width="md"
         isDirty={isDirty || imageFile !== null}
         onSave={handleSubmit}
@@ -1087,7 +1087,7 @@ export default function InventoryPage() {
               </label>
               {loadingProducts ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-border-subtle rounded text-sm text-muted-foreground">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
                   {t('drawer.loadingProducts')}
                 </div>
               ) : products.length === 0 ? (
@@ -1159,7 +1159,7 @@ export default function InventoryPage() {
               type="number"
               min="0"
               {...register('cantidadActual', { valueAsNumber: true })}
-              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               placeholder="0"
             />
             {errors.cantidadActual && (
@@ -1174,7 +1174,7 @@ export default function InventoryPage() {
                 type="number"
                 min="0"
                 {...register('stockMinimo', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                 placeholder="0"
               />
               {errors.stockMinimo && (
@@ -1187,7 +1187,7 @@ export default function InventoryPage() {
                 type="number"
                 min="0"
                 {...register('stockMaximo', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                 placeholder="0"
               />
               {errors.stockMaximo && (
@@ -1233,7 +1233,7 @@ export default function InventoryPage() {
                   setModalOpen(false);
                   setActiveTab('movimientos');
                 }}
-                className="mt-3 text-xs font-medium text-green-600 hover:text-green-700 transition-colors"
+                className="mt-3 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
               >
                 {t('drawer.viewAll')}
               </button>
@@ -1308,14 +1308,14 @@ export default function InventoryPage() {
                   <span className="text-xs text-red-700">{t('movementDrawer.zeroStock')}</span>
                 </div>
               ) : currentStock !== null ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded border border-green-200">
-                  <Package className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-xs text-green-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded border border-primary/20">
+                  <Package className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-xs text-primary">
                     {t('movementDrawer.currentStock')} <strong>{currentStock}</strong>
                     {projectedStock !== null && (
                       <span className="ml-2 text-muted-foreground">
                         <ArrowRight className="w-3 h-3 inline mx-1" />
-                        <strong className={projectedStock < 0 ? 'text-red-600' : 'text-green-700'}>{projectedStock}</strong>
+                        <strong className={projectedStock < 0 ? 'text-red-600' : 'text-primary'}>{projectedStock}</strong>
                       </span>
                     )}
                   </span>
@@ -1368,7 +1368,7 @@ export default function InventoryPage() {
               min="0"
               step="0.01"
               {...movRegister('cantidad', { valueAsNumber: true })}
-              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               placeholder="0"
             />
             {movErrors.cantidad && (
@@ -1398,7 +1398,7 @@ export default function InventoryPage() {
             <textarea
               {...movRegister('comentario')}
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 resize-none"
+              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
               placeholder={t('movementDrawer.commentPlaceholder')}
             />
           </div>
