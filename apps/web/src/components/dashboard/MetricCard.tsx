@@ -85,7 +85,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     if (!trend) return null;
 
     if (trend.value > 0) {
-      return <TrendingUp size={16} className="text-green-500" />;
+      return <TrendingUp size={16} className="text-success" />;
     } else if (trend.value < 0) {
       return <TrendingDown size={16} className="text-red-500" />;
     } else {
@@ -98,11 +98,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
     // Si se especifica isPositive, usar esa lógica
     if (trend.isPositive !== undefined) {
-      return trend.isPositive ? "text-green-600" : "text-red-600";
+      return trend.isPositive ? "text-success" : "text-red-600";
     }
 
     // Sino, usar el valor numérico
-    if (trend.value > 0) return "text-green-600";
+    if (trend.value > 0) return "text-success";
     if (trend.value < 0) return "text-red-600";
     return "text-muted-foreground";
   };

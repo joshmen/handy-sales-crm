@@ -184,7 +184,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
             <button
               onClick={handleRequestClose}
               aria-label={tc('close')}
-              className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent hover:bg-accent/80 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
+              className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent hover:bg-accent/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
             >
               <X className="w-[18px] h-[18px] text-muted-foreground" />
             </button>

@@ -133,7 +133,7 @@ export function DataGrid<T>({
                 checked={allSelected || false}
                 ref={(el) => { if (el) el.indeterminate = !allSelected && (someSelected || false); }}
                 onChange={handleHeaderCheckbox}
-                className="h-4 w-4 rounded border-border-default text-green-600 focus:ring-green-500 cursor-pointer"
+                className="h-4 w-4 rounded border-border-default text-success focus:ring-primary cursor-pointer"
               />
             </div>
           )}
@@ -200,7 +200,7 @@ export function DataGrid<T>({
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => selection.onToggle(id)}
-                        className="h-4 w-4 rounded border-border-default text-green-600 focus:ring-green-500 cursor-pointer"
+                        className="h-4 w-4 rounded border-border-default text-success focus:ring-primary cursor-pointer"
                       />
                     </div>
                   )}
@@ -231,7 +231,7 @@ export function DataGrid<T>({
       <div className="sm:hidden">
         {loading && data.length === 0 ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         ) : data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">

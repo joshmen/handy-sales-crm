@@ -77,7 +77,7 @@ export function SearchableSelect({
           aria-haspopup="listbox"
           className={cn(
             'flex items-center justify-between w-full px-3 py-2 text-sm border rounded-lg bg-white transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent',
+            'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
             error ? 'border-red-500' : 'border-border-default',
             disabled && 'opacity-50 cursor-not-allowed',
             className
@@ -147,7 +147,7 @@ export function SearchableSelect({
                 <button
                   type="button"
                   onClick={() => { onSelectAll(); setOpen(false); }}
-                  className="text-xs text-green-600 hover:text-green-700 font-medium hover:underline"
+                  className="text-xs text-success hover:text-success/80 font-medium hover:underline"
                 >
                   {tc('selectAll', { count: options.length })}
                 </button>
@@ -186,12 +186,12 @@ export function SearchableSelect({
                     className={cn(
                       'flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors',
                       isSelected
-                        ? 'bg-green-50 text-green-700'
+                        ? 'bg-success/10 text-success'
                         : 'hover:bg-surface-1 text-foreground/80'
                     )}
                   >
                     <div className="w-4 flex-shrink-0">
-                      {isSelected && <Check className="w-4 h-4 text-green-600" />}
+                      {isSelected && <Check className="w-4 h-4 text-success" />}
                     </div>
                     {option.imageUrl !== undefined && (
                       option.imageUrl ? (

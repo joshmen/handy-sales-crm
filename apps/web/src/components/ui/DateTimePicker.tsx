@@ -217,7 +217,7 @@ export function DateTimePicker({
             className={cn(
               cn('flex w-full items-center rounded-md border bg-white text-left', compact ? 'h-8 px-2 py-1 text-xs' : 'h-10 px-3 py-2 text-sm'),
               'ring-offset-background transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1',
               'disabled:cursor-not-allowed disabled:opacity-50',
               error
                 ? 'border-red-500 focus-visible:ring-red-500'
@@ -291,9 +291,9 @@ export function DateTimePicker({
                       'h-8 w-8 mx-auto flex items-center justify-center rounded-md text-sm tabular-nums transition-colors',
                       // Base states
                       !inMonth && 'text-muted-foreground/60',
-                      inMonth && !selected && !today && 'text-foreground/80 hover:bg-green-50 hover:text-green-700',
+                      inMonth && !selected && !today && 'text-foreground/80 hover:bg-success/10 hover:text-success',
                       // Today ring
-                      today && !selected && 'font-semibold text-green-700 ring-1 ring-inset ring-green-300',
+                      today && !selected && 'font-semibold text-success ring-1 ring-inset ring-primary/40',
                       // Selected
                       selected && 'bg-success text-success-foreground font-semibold hover:bg-success/90',
                       // Disabled
@@ -318,7 +318,7 @@ export function DateTimePicker({
                   <select
                     value={parsedHour}
                     onChange={(e) => handleTimePartChange(Number(e.target.value), parsedMinute)}
-                    className="h-8 rounded-md border border-border-default bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 cursor-pointer"
+                    className="h-8 rounded-md border border-border-default bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
                   >
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i}>
@@ -331,7 +331,7 @@ export function DateTimePicker({
                   <select
                     value={parsedMinute}
                     onChange={(e) => handleTimePartChange(parsedHour, Number(e.target.value))}
-                    className="h-8 rounded-md border border-border-default bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 cursor-pointer"
+                    className="h-8 rounded-md border border-border-default bg-white px-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
                   >
                     {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
                       <option key={m} value={m}>

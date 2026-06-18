@@ -25,8 +25,8 @@ export const InactiveToggle: React.FC<InactiveToggleProps> = ({
         aria-checked={value}
         aria-label={resolvedLabel}
         onClick={() => onChange(!value)}
-        className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
-          value ? 'bg-green-500' : 'bg-surface-3'
+        className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
+          value ? 'bg-success' : 'bg-surface-3'
         }`}
         title={resolvedLabel}
       >

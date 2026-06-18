@@ -33,7 +33,7 @@ export function BrandedLoadingScreen({ message }: BrandedLoadingScreenProps) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'var(--company-primary-color, #16a34a)' }}
+      style={{ backgroundColor: 'var(--company-primary-color, #0176D3)' }}
     >
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-3">
