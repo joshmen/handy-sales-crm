@@ -81,11 +81,10 @@ interface SyncOptions {
 let inflightSync: Promise<void> | null = null;
 
 export async function performSync(options?: SyncOptions): Promise<void> {
-  // Parte B: en modo soporte (super admin impersonando un tenant READ_ONLY) NO
-  // sincronizamos el WDB. El push está bloqueado server-side (daría 403) y el
-  // dashboard que ve el super admin es HTTP (React Query), no offline. Evita el
-  // 403 y un pull innecesario del dataset del tenant ajeno.
-  if (useAuthStore.getState().impersonation) return;
+  // El super admin no usa vistas offline: su pantalla es el dashboard de salud
+  // de plataforma (HTTP/React Query). Saltamos el sync para no traer a WDB el
+  // dataset de su propio tenant innecesariamente.
+  if (useAuthStore.getState().user?.role === 'SUPER_ADMIN') return;
   if (inflightSync) return inflightSync;
   inflightSync = doPerformSync(options).finally(() => {
     inflightSync = null;

@@ -47,58 +47,6 @@ public class MobileSessionValidationMiddleware
             return;
         }
 
-        // Token de impersonation (super admin movil viendo un tenant): NO tiene
-        // claim `sid` (no es una DeviceSession), asi que sin esto caeria por el
-        // branch backward-compat de abajo y NUNCA se validaria. Validar contra
-        // la ImpersonationSession (ACTIVE + no expirada), espejo del
-        // SessionValidationMiddleware de la Main API. Cierra el gap de seguridad:
-        // una sesion de soporte terminada/expirada deja de funcionar en movil.
-        var isImpersonating = context.User.FindFirstValue("is_impersonating");
-        if (isImpersonating == "true" || isImpersonating == "True")
-        {
-            var impSessionId = context.User.FindFirstValue("impersonation_session_id");
-            if (!string.IsNullOrEmpty(impSessionId) && Guid.TryParse(impSessionId, out var sessionGuid))
-            {
-                var impCacheKey = $"imp_session_{sessionGuid}";
-                if (!_cache.TryGetValue<bool>(impCacheKey, out var isSessionActive))
-                {
-                    using var scope = context.RequestServices.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
-                    // IgnoreQueryFilters: ImpersonationSession es platform-level
-                    // (sin tenant). En el contexto movil (tenant del JWT impersonado)
-                    // un filtro global la excluia -> la validacion daba siempre
-                    // IMPERSONATION_EXPIRED. Es un lookup de seguridad sobre una tabla
-                    // de auditoria, no debe estar scopeado al tenant.
-                    var session = await db.Set<HandySuites.Domain.Entities.ImpersonationSession>()
-                        .AsNoTracking()
-                        .IgnoreQueryFilters()
-                        .Where(s => s.Id == sessionGuid)
-                        .Select(s => new { s.Status, s.ExpiresAt })
-                        .FirstOrDefaultAsync();
-
-                    isSessionActive = session != null
-                        && session.Status == "ACTIVE"
-                        && session.ExpiresAt > DateTime.UtcNow;
-
-                    _cache.Set(impCacheKey, isSessionActive, TimeSpan.FromSeconds(30));
-                }
-
-                if (!isSessionActive)
-                {
-                    context.Response.StatusCode = 401;
-                    await context.Response.WriteAsJsonAsync(new
-                    {
-                        code = "IMPERSONATION_EXPIRED",
-                        message = "La sesión de soporte expiró. Vuelve a elegir la empresa."
-                    });
-                    return;
-                }
-            }
-
-            await _next(context);
-            return;
-        }
-
         // Si el JWT no tiene claim `sid` (token legacy generado antes del
         // rediseño 2026-05-18), permitir paso durante backward-compat window.
         // Tokens viejos expiran <30d, naturalmente se renuevan con sid.

@@ -1,48 +1,40 @@
 import api from './client';
 
-/** Empresa (tenant) en el picker del super admin. */
-export interface AdminTenant {
+/** Empresa (tenant) en el dashboard de salud de plataforma — metadata read-only,
+ *  sin PII de clientes finales. */
+export interface OverviewTenant {
   id: number;
   nombre: string;
   plan: string | null;
   activo: boolean;
-  estadoSuscripcion: string;
   usuarios: number;
-}
-
-/** Resultado de entrar a un tenant en modo soporte READ_ONLY. */
-export interface ImpersonateResult {
-  token: string;
-  sessionId: string;
-  tenantId: number;
-  tenantName: string;
-  accessLevel: string;
-  expiresAt: string;
+  pedidosHoy: number;
 }
 
 /**
- * API del super admin móvil (Parte B). Sólo el SUPER_ADMIN puede llamar estos
- * endpoints; el backend valida el rol. `startImpersonation` devuelve un JWT
- * temporal scopeado al tenant elegido (READ_ONLY).
+ * Salud de plataforma (agregado) que ve el super admin móvil. Solo números
+ * globales — cero PII de clientes finales, cero drill-down per-tenant. El
+ * detalle por empresa (con auditoría) vive en la web.
+ */
+export interface PlatformOverview {
+  tenantsActivos: number;
+  tenantsInactivos: number;
+  tenantsTotal: number;
+  pedidosHoy: number;
+  ventasHoy: number;
+  ventasMes: number;
+  tenants: OverviewTenant[];
+}
+
+/**
+ * API del super admin móvil (Opción A). Solo expone el agregado de plataforma;
+ * el SUPER_ADMIN no impersona tenants desde el móvil. El backend valida el rol.
  */
 export const adminApi = {
-  listTenants: async (q?: string): Promise<AdminTenant[]> => {
-    const res = await api.get<{ success: boolean; data: AdminTenant[] }>(
-      '/api/mobile/admin/tenants',
-      q ? { params: { q } } : undefined,
+  getOverview: async (): Promise<PlatformOverview> => {
+    const res = await api.get<{ success: boolean; data: PlatformOverview }>(
+      '/api/mobile/admin/overview',
     );
-    return res.data?.data ?? [];
-  },
-
-  startImpersonation: async (targetTenantId: number, reason?: string): Promise<ImpersonateResult> => {
-    const res = await api.post<ImpersonateResult & { success: boolean }>(
-      '/api/mobile/admin/impersonate',
-      { targetTenantId, reason },
-    );
-    return res.data;
-  },
-
-  stopImpersonation: async (sessionId: string): Promise<void> => {
-    await api.post('/api/mobile/admin/stop-impersonation', { sessionId });
+    return res.data.data;
   },
 };

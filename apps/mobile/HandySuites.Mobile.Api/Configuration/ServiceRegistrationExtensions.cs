@@ -114,19 +114,6 @@ public static class ServiceRegistrationExtensions
                             HandySuites.Infrastructure.Common.TenantTimeZoneService>();
         services.AddScoped<MobileAuthService>();
 
-        // Impersonation (Parte B: super admin movil elige un tenant y ve sus
-        // datos READ_ONLY). Reusa el ImpersonationService de la Main API: misma
-        // auditoria (ImpersonationSession), mismo JWT (GenerateImpersonationToken).
-        // Sus 3 repos solo dependen del DbContext (sin cascada).
-        services.AddScoped<HandySuites.Application.Notifications.Interfaces.INotificationRepository,
-                            HandySuites.Infrastructure.Notifications.Repositories.NotificationRepository>();
-        services.AddScoped<HandySuites.Application.Usuarios.Interfaces.ITenantRepository,
-                            HandySuites.Infrastructure.Repositories.TenantRepository>();
-        services.AddScoped<HandySuites.Application.Impersonation.Interfaces.IImpersonationRepository,
-                            HandySuites.Infrastructure.Impersonation.ImpersonationRepository>();
-        services.AddScoped<HandySuites.Application.Interfaces.IImpersonationService,
-                            HandySuites.Application.Impersonation.Services.ImpersonationService>();
-
         // TOTP verification (compartido con web API). El mobile NO genera
         // secrets ni recovery codes — solo valida códigos durante login.
         // VULN-M03 fix: antes el mobile bypaseaba TOTP completamente.

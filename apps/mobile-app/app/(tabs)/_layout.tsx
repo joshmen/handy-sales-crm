@@ -42,16 +42,17 @@ export default function TabsLayout() {
   const masBadgeCount = pendingCount + unreadNotifCount;
 
   // Tab visibility per role:
-  // Vendedor:   Hoy, Mapa, Vender, Cobrar, Mas
-  // Supervisor: Hoy, Equipo, Vender, Cobrar, Mas
-  // Admin:      Hoy, Equipo, Vender, Cobrar, Mas
+  // Vendedor:    Hoy, Mapa, Vender, Cobrar, Mas
+  // Supervisor:  Hoy, Equipo, Vender, Cobrar, Mas
+  // Admin:       Hoy, Equipo, Vender, Cobrar, Mas
+  // Super_Admin: Hoy, Mas  (solo el dashboard de salud de plataforma)
   const isVendedor = role === 'VENDEDOR';
   const isSuperAdmin = role === 'SUPER_ADMIN';
-  const showEquipo = !isVendedor; // Supervisor, Admin, Super_Admin
   const showMapa = isVendedor;    // Only vendedor gets standalone Mapa tab
-  // Super admin nunca vende/cobra: en el picker no hay tenant elegido y cuando
-  // entra a uno es en modo soporte READ_ONLY (el backend bloquea el push). Ocultar
-  // Vender/Cobrar evita crear pedidos/cobros que nunca sincronizarian.
+  // El super admin solo ve el dashboard agregado de plataforma (READ-ONLY): no
+  // opera un tenant desde el movil, asi que Equipo, Vender y Cobrar se ocultan
+  // (no hay contexto de tenant que mostrar/escribir).
+  const showEquipo = !isVendedor && !isSuperAdmin; // Supervisor, Admin
   const showVentaCobro = !isSuperAdmin;
 
   return (

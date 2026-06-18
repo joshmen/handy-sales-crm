@@ -40,15 +40,6 @@ interface AuthState {
    */
   sessionExpired: boolean;
 
-  /**
-   * Parte B (super admin móvil): cuando un SUPER_ADMIN entra a un tenant en
-   * modo soporte READ_ONLY, aquí guardamos qué empresa está viendo. El token
-   * impersonado vive solo en memoria (api client); el token ORIGINAL del super
-   * admin queda intacto en SecureStore, así que un cold-start restaura al super
-   * admin (impersonation es efímera, como en la web). null = no impersonando.
-   */
-  impersonation: { tenantId: number; tenantName: string; sessionId: string } | null;
-
   login: (user: AuthUser, token: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
@@ -60,12 +51,6 @@ interface AuthState {
    * desde el backend (e.g. avatar cambiado desde web).
    */
   setUser: (partial: Partial<AuthUser>) => Promise<void>;
-
-  /** Super admin entra a un tenant (READ_ONLY). Activa el token impersonado +
-   *  wipea/re-sincroniza el WDB. El token original queda en SecureStore. */
-  enterImpersonation: (impToken: string, info: { tenantId: number; tenantName: string; sessionId: string }) => Promise<void>;
-  /** Sale del modo soporte: restaura el token original + wipea el WDB del tenant. */
-  exitImpersonation: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -74,7 +59,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   isLoggingIn: false,
   sessionExpired: false,
-  impersonation: null,
 
   login: async (user, token, refreshToken) => {
     // Audit 2026-06-01 (v4) — cross-user leak guard. Si el login() entra con un
@@ -269,31 +253,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setLoggingIn: (loading) => set({ isLoggingIn: loading }),
-
-  enterImpersonation: async (impToken, info) => {
-    // El super admin entra a un tenant en READ_ONLY. Wipe del WDB (que tenía el
-    // contexto anterior) + cursors + query cache, luego activa el token
-    // impersonado SOLO en memoria. El token original del super admin queda
-    // intacto en SecureStore (ACCESS_TOKEN) para restaurarlo al salir / cold-start.
-    try { await queryClient.cancelQueries(); queryClient.clear(); } catch {}
-    try { syncCursors.clear(); } catch {}
-    const { safeResetWDB } = await import('@/db/database');
-    await safeResetWDB('login_cross_user');
-    setAccessToken(impToken);
-    set({ impersonation: info });
-  },
-
-  exitImpersonation: async () => {
-    // Restaurar el token original del super admin (sigue en SecureStore) y wipear
-    // el WDB del tenant impersonado. El próximo sync re-pullea el contexto propio.
-    const originalToken = await secureStorage.get(STORAGE_KEYS.ACCESS_TOKEN);
-    try { await queryClient.cancelQueries(); queryClient.clear(); } catch {}
-    try { syncCursors.clear(); } catch {}
-    const { safeResetWDB } = await import('@/db/database');
-    await safeResetWDB('logout');
-    setAccessToken(originalToken ?? null);
-    set({ impersonation: null });
-  },
 
   setUser: async (partial) => {
     const current = useAuthStore.getState().user;
