@@ -46,8 +46,13 @@ export default function TabsLayout() {
   // Supervisor: Hoy, Equipo, Vender, Cobrar, Mas
   // Admin:      Hoy, Equipo, Vender, Cobrar, Mas
   const isVendedor = role === 'VENDEDOR';
+  const isSuperAdmin = role === 'SUPER_ADMIN';
   const showEquipo = !isVendedor; // Supervisor, Admin, Super_Admin
   const showMapa = isVendedor;    // Only vendedor gets standalone Mapa tab
+  // Super admin nunca vende/cobra: en el picker no hay tenant elegido y cuando
+  // entra a uno es en modo soporte READ_ONLY (el backend bloquea el push). Ocultar
+  // Vender/Cobrar evita crear pedidos/cobros que nunca sincronizarian.
+  const showVentaCobro = !isSuperAdmin;
 
   return (
     <ErrorBoundary componentName="TabsRoot">
@@ -116,6 +121,7 @@ export default function TabsLayout() {
         }}
         options={{
           title: 'Vender',
+          href: showVentaCobro ? undefined : null,
           tabBarButtonTestID: 'tab-vender',
           tabBarIcon: ({ color, size }) => <ShoppingBag size={size} color={color} />,
         }}
@@ -124,6 +130,7 @@ export default function TabsLayout() {
         name="cobrar"
         options={{
           title: 'Cobrar',
+          href: showVentaCobro ? undefined : null,
           tabBarButtonTestID: 'tab-cobrar',
           tabBarIcon: ({ color, size }) => <CreditCard size={size} color={color} />,
         }}
