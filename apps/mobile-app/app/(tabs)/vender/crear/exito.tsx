@@ -12,6 +12,7 @@ import { useEmpresa } from '@/hooks/useEmpresa';
 import { useAuthStore } from '@/stores';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printOrderTicket, isNativeAvailable } from '@/services/printerService';
+import { useTerminalBack } from '@/hooks';
 
 export default function PedidoExitoScreen() {
   const router = useRouter();
@@ -70,6 +71,11 @@ export default function PedidoExitoScreen() {
 
   const isDirecta = tipo === 'directa';
   const isFromRuta = fromRuta === '1';
+
+  // Pantalla terminal: el back de hardware NO debe regresar al carrito/flujo
+  // (modo->cliente->productos quedan debajo en el stack). Va a la principal,
+  // igual que los botones "Ir al Inicio" / "Volver a Ruta".
+  useTerminalBack(() => router.replace((isFromRuta ? '/(tabs)/ruta' : '/(tabs)') as any));
   const title = isDirecta ? 'Venta Completada' : 'Pedido Registrado';
   const subtitle = isDirecta
     ? 'Venta cobrada y entregada exitosamente'

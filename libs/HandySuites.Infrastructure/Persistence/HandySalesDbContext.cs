@@ -123,6 +123,11 @@ public class HandySuitesDbContext : DbContext
                 case EntityState.Modified:
                     entry.Entity.ActualizadoEn = DateTime.UtcNow;
                     entry.Entity.ActualizadoPor = currentUser;
+                    // INVARIANTE: este interceptor es el UNICO autor de Version++.
+                    // Los repos NO deben incrementar Version manualmente (causaria
+                    // doble-bump y romperia el ConcurrencyCheck del sync). Tampoco
+                    // deben hacer SaveChangesAsync intermedios sobre la misma entidad
+                    // dentro de una operacion logica unica.
                     entry.Entity.Version++;
                     break;
                 case EntityState.Deleted:

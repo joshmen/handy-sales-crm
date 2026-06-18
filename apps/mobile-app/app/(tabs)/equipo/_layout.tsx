@@ -2,6 +2,12 @@ import { Stack } from 'expo-router';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { COLORS } from '@/theme/colors';
 
+// Ancla del back: al entrar a un detalle (deep link o cross-tab) deja `index`
+// debajo en el stack, asi el back vuelve a la lista en vez de salir o ir al Hoy.
+export const unstable_settings = {
+  initialRouteName: 'index',
+};
+
 export default function EquipoLayout() {
   return (
     <ErrorBoundary componentName="EquipoStack">

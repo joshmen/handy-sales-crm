@@ -445,10 +445,14 @@ public class SyncService
                 var spName = $"sp_ruta_detalle_{dto.Id}";
                 var (committed, error) = await sp.TryRunInSavepointAsync(spName, async () =>
                 {
-                    var success = await _repo.UpsertRutaDetalleAsync(tenantId, usuarioId, dto);
-                    await _repo.SaveChangesAsync();
-                    if (success)
+                    var (found, _) = await _repo.UpsertRutaDetalleAsync(tenantId, usuarioId, dto, userId);
+                    if (found)
+                    {
+                        // Save unico: el repo ya no guarda internamente. El interceptor de
+                        // HandySalesDbContext incrementa Version una sola vez (no doble-bump).
+                        await _repo.SaveChangesAsync();
                         response.Summary.RutaDetallesPushed++;
+                    }
                 });
                 if (!committed)
                 {

@@ -939,9 +939,9 @@ public class SyncRepository : ISyncRepository
         throw new InvalidOperationException($"RutaVendedor sync only supports Update operation. Id: {dto.Id}, Operation: {dto.Operation}");
     }
 
-    public async Task<bool> UpsertRutaDetalleAsync(int tenantId, int usuarioId, SyncRutaDetalleDto dto)
+    public async Task<(bool found, RutaDetalle? entity)> UpsertRutaDetalleAsync(int tenantId, int usuarioId, SyncRutaDetalleDto dto, string userId)
     {
-        if (dto.Id <= 0) return false;
+        if (dto.Id <= 0) return (false, null);
 
         var existing = await _db.RutasDetalle
             .Include(d => d.Ruta)
@@ -950,7 +950,7 @@ public class SyncRepository : ISyncRepository
                 && d.Ruta.TenantId == tenantId
                 && d.Ruta.UsuarioId == usuarioId);
 
-        if (existing == null) return false;
+        if (existing == null) return (false, null);
 
         // Normalizar estado desde timestamps: mobile y backend tienen enums
         // divergentes en el valor 1 (mobile=EnVisita, backend=EnCamino). Si hay
@@ -964,18 +964,28 @@ public class SyncRepository : ISyncRepository
         else
             existing.Estado = clientEstado;
 
-        existing.RazonOmision = dto.RazonOmision;
+        // No borrar la razon de omision cuando el movil manda null: solo la envia
+        // en estado Omitido (mappers.ts). Mismo criterio que VisitaId/PedidoId —
+        // preservar el valor del servidor en updates de otros estados, evita perder
+        // el dato auditable en una transicion Omitido -> Visitado. (review jun 2026)
+        existing.RazonOmision = dto.RazonOmision ?? existing.RazonOmision;
         existing.HoraLlegadaReal = dto.HoraLlegadaReal;
         existing.HoraSalidaReal = dto.HoraSalidaReal;
         existing.Latitud = dto.LatitudLlegada;
         existing.Longitud = dto.LongitudLlegada;
-        existing.VisitaId = dto.VisitaId;
-        existing.PedidoId = dto.PedidoId;
+        // No destruir vinculos cuando el movil manda null: el pedido_id local del WDB
+        // no mapea a un Id de servidor (parseInt de un id WDB da NaN -> null) y VisitaId
+        // nunca se setea desde mobile. Conservar el valor que ya existe en el servidor.
+        existing.VisitaId = dto.VisitaId ?? existing.VisitaId;
+        existing.PedidoId = dto.PedidoId ?? existing.PedidoId;
         if (!string.IsNullOrEmpty(dto.Notas))
             existing.Notas = dto.Notas;
         existing.ActualizadoEn = DateTime.UtcNow;
+        existing.ActualizadoPor = userId;
+        // Version bump y SaveChangesAsync los hace el caller (SyncService) una sola vez
+        // dentro del savepoint. NO guardar aqui (evita el doble-save de paradas).
 
-        return await _db.SaveChangesAsync() > 0;
+        return (true, existing);
     }
 
     public async Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)

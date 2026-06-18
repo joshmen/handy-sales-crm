@@ -251,6 +251,12 @@ function mapPedidoToRaw(p: any, pedidoMap: Map<number, string>, clienteMap: Map<
     server_id: p.id,
     cliente_id: clienteMap.get(p.clienteId) || String(p.clienteId),
     cliente_server_id: p.clienteId,
+    // INVARIANTE: usuario_id queda en 0 para registros traídos por sync (el pull
+    // no lo envía). La WDB del dispositivo contiene solo los datos del vendedor
+    // logueado, así que las queries offline NUNCA deben filtrar por usuario_id
+    // (lo harían vacío para todo lo sincronizado). Mismo criterio en cobros/
+    // visitas/devoluciones de abajo. Bug histórico: useOfflineSalesToday /
+    // useRecentClients filtraban por usuario_id y daban 0/incompletos (jun 2026).
     usuario_id: 0,
     numero_pedido: p.numeroPedido ?? null,
     fecha_pedido: toTimestamp(p.fechaPedido),
@@ -864,7 +870,15 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
       ...mapPushEntities(r?.updated, 1, rawToRutaDto),
     ],
     rutaDetalles: [
-      ...mapPushEntities(rd?.updated, 1, rawToRutaDetalleDto),
+      // Solo paradas que ya tienen server_id: una parada sin server_id no existe
+      // aun en el backend (creada por admin web → llega por pull), asi que el push
+      // generaria dto.Id=0 que el backend no puede resolver (UpsertRutaDetalle
+      // retorna notFound). Filtrar evita ese ruido y errores en el response.
+      ...mapPushEntities(
+        (rd?.updated ?? []).filter((row: DirtyRaw) => row.server_id != null),
+        1,
+        rawToRutaDetalleDto,
+      ),
     ],
   };
 }
@@ -1001,10 +1015,17 @@ function rawToRutaDetalleDto(raw: DirtyRaw, operation: number): any {
     latitudLlegada: raw.latitud_llegada ?? null,
     longitudLlegada: raw.longitud_llegada ?? null,
     estado: raw.estado ?? 0,
-    razonOmision: raw.notas ?? null,
+    // El modelo mobile solo tiene `notas` (skip() escribe ahi la razon). Ruteamos
+    // ese texto a EXACTAMENTE un campo del servidor segun el estado: razon de omision
+    // cuando la parada esta Omitida (3), nota general en cualquier otro caso. Antes
+    // ambos campos recibian raw.notas (colision: la razon aparecia tambien como nota).
+    razonOmision: raw.estado === 3 ? (raw.notas ?? null) : null,
+    // visitaId/pedidoId: el movil no tiene el Id de servidor (pedido_id es un id WDB
+    // local que no mapea a int). Mandar null; el backend conserva el vinculo existente
+    // (`?? existing`) en vez de borrarlo.
     visitaId: null,
-    pedidoId: raw.pedido_id ? (parseInt(String(raw.pedido_id), 10) || null) : null,
-    notas: raw.notas,
+    pedidoId: null,
+    notas: raw.estado === 3 ? null : (raw.notas ?? null),
     version: raw.version ?? 1,
     operation,
   };

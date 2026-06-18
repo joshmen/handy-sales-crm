@@ -117,21 +117,19 @@ export default function RutaScreen() {
       .map((c) => ({ latitude: c.lat, longitude: c.lng }));
   }, [detalles, allClients]);
 
-  // Direct query for stats on every focus (WDB observable unreliable in Expo Go/LokiJS)
-  const [stats, setStats] = useState({ total: 0, atendidas: 0, pendientes: 0, omitidas: 0 });
-  useFocusEffect(useCallback(() => {
-    if (!route?.id) return;
-    database.get<RutaDetalle>('ruta_detalles')
-      .query(Q.where('ruta_id', route.id))
-      .fetch()
-      .then((stops) => {
-        const total = stops.length;
-        const visitadas = stops.filter((d) => d.displayEstado === 2).length;
-        const omitidas = stops.filter((d) => d.displayEstado === 3).length;
-        setStats({ total, atendidas: visitadas + omitidas, pendientes: total - visitadas - omitidas, omitidas });
-      })
-      .catch(() => {});
-  }, [route?.id]));
+  // Stats de paradas derivadas del observable reactivo `detalles` (L69). Antes
+  // era un useFocusEffect+fetch one-shot ("WDB observable unreliable in Expo
+  // Go/LokiJS") que solo refrescaba al re-enfocar → marcar una parada no movía
+  // el contador hasta salir y volver. En prod (SQLite) el observable es fiable y
+  // el dashboard ya deriva estas mismas stats así (observeWithColumns incluye
+  // estado + hora_salida, lo que displayEstado necesita) → ahora actualiza en vivo.
+  const stats = useMemo(() => {
+    const stops = (detalles as RutaDetalle[] | undefined) ?? [];
+    const total = stops.length;
+    const visitadas = stops.filter((d) => d.displayEstado === 2).length;
+    const omitidas = stops.filter((d) => d.displayEstado === 3).length;
+    return { total, atendidas: visitadas + omitidas, pendientes: total - visitadas - omitidas, omitidas };
+  }, [detalles]);
 
   const progress = stats.total > 0 ? (stats.atendidas / stats.total) * 100 : 0;
 

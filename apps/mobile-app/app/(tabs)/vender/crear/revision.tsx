@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 
 // método de pago (Bug #2: ahora siempre Efectivo).
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore, useOrderSubtotal } from '@/stores';
 import { useAuthStore } from '@/stores';
@@ -214,7 +215,7 @@ function CrearPedidoStep3() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/vender')} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Revisar Pedido</Text>

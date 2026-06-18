@@ -29,7 +29,10 @@ public interface ISyncRepository
     Task<(RutaVendedor entity, bool wasConflict)> UpsertRutaAsync(int tenantId, int usuarioId, SyncRutaDto dto, string userId);
 
     // Push changes from client - RutaDetalles
-    Task<bool> UpsertRutaDetalleAsync(int tenantId, int usuarioId, SyncRutaDetalleDto dto);
+    // Retorna (found, entity): found=false cuando la parada no existe (dto.Id<=0 o no
+    // pertenece al tenant/usuario). NO hace SaveChangesAsync — el caller (SyncService)
+    // guarda una sola vez dentro del savepoint. Ver fix sync de paradas (jun 2026).
+    Task<(bool found, RutaDetalle? entity)> UpsertRutaDetalleAsync(int tenantId, int usuarioId, SyncRutaDetalleDto dto, string userId);
 
     // Pull/Push - Cobros
     Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);

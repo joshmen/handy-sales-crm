@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { ChevronLeft, FileText, ChevronRight } from 'lucide-react-native';
 import { useFacturasList } from '@/hooks/useFacturas';
 import { EmptyState, LoadingSpinner } from '@/components/ui';
@@ -74,7 +75,7 @@ function FacturasListScreenContent() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack('/(tabs)/mas')}
           style={{ width: 32, alignItems: 'center' }}
           accessibilityLabel="Volver"
           accessibilityRole="button"

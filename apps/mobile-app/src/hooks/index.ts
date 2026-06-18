@@ -12,6 +12,7 @@ export { useProductsList, useProductDetail, useProductStock } from './useProduct
 export { useUserLocation } from './useLocation';
 export { useNetworkStatus } from './useNetworkStatus';
 export { useAutoSync } from './useAutoSync';
+export { useTerminalBack } from './useTerminalBack';
 
 // Offline-first hooks (WatermelonDB)
 export { useObservable } from './useObservable';
@@ -21,6 +22,7 @@ export { useOfflineOrders, useOfflineOrderById, useOfflineOrderDetalles } from '
 export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga } from './useOfflineRoutes';
 export { useOfflineVisits, useOfflineVisitById, useOfflineTodayVisits } from './useOfflineVisits';
 export { useOfflineCobros, useOfflineCobroById, useOfflineTodayCobros } from './useOfflineCobros';
+export { useOfflineSalesToday } from './useOfflineSalesToday';
 export { usePendingCount } from './usePendingCount';
 export { useClientNameMap } from './useClientNameMap';
 
