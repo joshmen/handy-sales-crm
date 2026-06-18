@@ -67,6 +67,12 @@ public static class MobileSyncEndpoints
         catch { /* fire and forget */ }
     }
 
+    private static bool IsImpersonating(HttpContext ctx)
+    {
+        var v = ctx.User.FindFirst("is_impersonating")?.Value;
+        return v == "true" || v == "True";
+    }
+
     public static void MapMobileSyncEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/mobile/sync")
@@ -82,6 +88,11 @@ public static class MobileSyncEndpoints
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config) =>
         {
+            // READ_ONLY bajo impersonation (super admin movil viendo un tenant):
+            // descartar cualquier cambio local para NO escribir como el tenant.
+            // El cliente tampoco deberia pushear bajo impersonation; esto es defensa.
+            if (IsImpersonating(httpContext)) request.ClientChanges = null;
+
             var response = await servicio.SyncAsync(request);
 
             // Notify Main API if client pushed changes (pedidos, cobros, etc.)
@@ -129,6 +140,10 @@ public static class MobileSyncEndpoints
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] IConfiguration config) =>
         {
+            // READ_ONLY bajo impersonation: rechazar escrituras del super admin.
+            if (IsImpersonating(httpContext))
+                return Results.Json(new { success = false, code = "READ_ONLY_IMPERSONATION", message = "Modo soporte de solo lectura: no se permiten cambios." }, statusCode: 403);
+
             var syncRequest = new SyncRequestDto
             {
                 LastSyncTimestamp = null,
