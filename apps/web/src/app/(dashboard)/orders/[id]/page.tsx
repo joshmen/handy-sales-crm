@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { orderService, type OrderDetail, estadoIntToStatus } from '@/services/api/orders';
+import { getInvoicedOrders, type InvoicedOrder } from '@/services/api/billing';
 import { OrderStatus } from '@/types';
 import { toast } from '@/hooks/useToast';
 
@@ -66,6 +67,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const t = useTranslations('orders.detailPage');
   const tc = useTranslations('common');
+  const tActions = useTranslations('orders.actions');
   const orderId = Number(params.id);
 
   const STATUS_LABELS: Record<string, string> = {
@@ -84,6 +86,15 @@ export default function OrderDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [invoice, setInvoice] = useState<InvoicedOrder | null>(null);
+
+  // Lookup de factura emitida (best-effort) para decidir Facturar vs Ver factura.
+  useEffect(() => {
+    if (!orderId) return;
+    getInvoicedOrders()
+      .then((map) => setInvoice(map[orderId] ?? null))
+      .catch(() => { /* best-effort */ });
+  }, [orderId]);
 
   const loadOrder = useCallback(async () => {
     try {
@@ -248,6 +259,25 @@ export default function OrderDetailPage() {
                 {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('cancelBtn')}
               </button>
+            )}
+            {isDelivered && (
+              invoice ? (
+                <button
+                  onClick={() => router.push(`/billing/invoices/${invoice.facturaId}`)}
+                  className="flex items-center gap-2 border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10 text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  {tActions('viewInvoice')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push(`/billing/pre-factura?pedidoId=${order.id}`)}
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  {tActions('invoice')}
+                </button>
+              )
             )}
           </div>
         </div>

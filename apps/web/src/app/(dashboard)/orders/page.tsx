@@ -27,8 +27,7 @@ import {
   ShoppingCart,
   X,
   ChevronRight,
-  DollarSign,
-  ReceiptText,
+  Tag,
   CheckCircle2,
   FileEdit,
 } from 'lucide-react';
@@ -130,6 +129,32 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
   };
 }
 
+// Avatar de iniciales con color por hash del nombre (paleta categórica del diseño Claude).
+const AVATAR_PALETTE = ['#0D8A7A', '#7C3AED', '#DC2626', '#D97706', '#2563EB', '#DB2777', '#65A30D', '#0891B2'];
+function NameAvatar({ name, size = 28 }: { name: string; size?: number }) {
+  const initials = (name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const hash = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const bg = AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+  return (
+    <span
+      className="inline-flex items-center justify-center flex-shrink-0 font-bold text-white"
+      style={{ width: size, height: size, borderRadius: size * 0.32, background: bg, fontSize: size * 0.4, letterSpacing: '-0.02em' }}
+      aria-hidden
+    >
+      {initials}
+    </span>
+  );
+}
+
+// Pill de estado (soft) — espejo del StatusBadge del mockup: bg suave + texto del tono + dot.
+const STATUS_PILL: Record<string, { wrap: string; dot: string }> = {
+  draft: { wrap: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
+  confirmed: { wrap: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300', dot: 'bg-blue-500' },
+  en_route: { wrap: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300', dot: 'bg-cyan-500' },
+  delivered: { wrap: 'bg-success/10 text-success', dot: 'bg-success' },
+  cancelled: { wrap: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300', dot: 'bg-red-500' },
+};
+
 interface UsuarioOption {
   id: number;
   nombre: string;
@@ -143,6 +168,7 @@ export default function OrdersPage() {
   const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+  const isVendedor = session?.user?.role === 'VENDEDOR';
   const canAdvanceOrders = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'SUPERVISOR';
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -190,6 +216,12 @@ export default function OrdersPage() {
   const avgTicket = ordersOnPage > 0 ? totalAmount / ordersOnPage : 0;
   const confirmedCount = orders.filter((o) => o.status === 'confirmed').length;
   const draftCount = orders.filter((o) => o.status === 'draft').length;
+
+  // Atajos de fecha para los tabs (Hoy / Todos) — espejo del mockup.
+  const todayStr = new Date().toISOString().split('T')[0];
+  const default30Str = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0]; })();
+  const isTodayRange = fechaDesde === todayStr && fechaHasta === todayStr;
+  const periodLabel = (() => { const s = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); })();
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -513,132 +545,101 @@ export default function OrdersPage() {
   }, [filteredOrders, sortKey, sortDir]);
 
   // Column definitions
-  const orderColumns = useMemo<DataGridColumn<Order>[]>(() => [
-    {
-      key: 'code',
-      label: t('columns.orderNumber'),
-      sortable: true,
-      width: 150,
-      cellRenderer: (order) => (
-        <div className="flex items-center gap-2">
-          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDotColors[order.status]}`} />
-          <span className="text-[13px] text-foreground font-mono">{order.code}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'client',
-      label: t('columns.client'),
-      sortable: true,
-      width: 'flex',
-      cellRenderer: (order) => (
-        <div className="text-[13px] text-foreground font-medium truncate">{order.client.name}</div>
-      ),
-    },
-    {
-      key: 'vendor',
-      label: t('columns.vendor'),
-      width: 140,
-      hiddenOnMobile: true,
-      cellRenderer: (order) => <span className="text-[13px] text-muted-foreground truncate block">{order.user.name}</span>,
-    },
-    {
-      key: 'orderDate',
-      label: t('columns.date'),
-      sortable: true,
-      width: 120,
-      cellRenderer: (order) => (
-        <div className="text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
-          <div>{order.orderDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-          <div className="text-[11px] text-muted-foreground">{order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      label: t('columns.status'),
-      width: 90,
-      cellRenderer: (order) => (
-        <span className={`text-[12px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>
-          {t(`status.${order.status === 'en_route' ? 'enRoute' : order.status}`)}
-        </span>
-      ),
-    },
-    {
-      key: 'tipoVenta',
-      label: t('columns.type'),
-      width: 85,
-      hiddenOnMobile: true,
-      cellRenderer: (order) => (
-        <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-          {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
-        </span>
-      ),
-    },
-    {
-      key: 'total',
-      label: 'Total',
-      sortable: true,
-      width: 90,
-      align: 'right',
-      cellRenderer: (order) => (
-        <span className="text-[13px] text-foreground font-semibold whitespace-nowrap tabular-nums">
-          {formatCurrency(order.total)}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: tc('actions'),
-      width: 180,
-      align: 'center',
-      cellRenderer: (order) => {
-        const nextAction = getNextAction(order.apiEstado);
-        const canCancel = cancellableEstados.has(order.apiEstado || '');
-        return (
-          <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
-            {canAdvanceOrders && nextAction && (
-              <button
-                onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
-                className={`flex items-center gap-0.5 text-[11px] px-2.5 py-1 rounded font-semibold transition-colors whitespace-nowrap ${nextAction.colorClasses}`}
-              >
-                {nextAction.action === 'confirmar' ? t('actions.confirm') : nextAction.action === 'en-ruta' ? t('actions.sendToRoute') : t('actions.deliver')}
-              </button>
-            )}
-            {order.status === 'delivered' && (() => {
-              const inv = invoicedOrders[parseInt(order.id)];
-              return inv ? (
-                <button
-                  onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)}
-                  className="text-[11px] px-2.5 py-1 rounded font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors whitespace-nowrap flex items-center gap-1"
-                >
-                  <FileText className="w-3 h-3" />
-                  {t('actions.viewInvoice')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleFacturar(order.id)}
-                  className="text-[11px] px-2.5 py-1 rounded font-medium text-primary border border-primary/30 hover:bg-primary/5 transition-colors whitespace-nowrap"
-                >
-                  {t('actions.invoice')}
-                </button>
-              );
-            })()}
-            <div className="flex items-center gap-0.5 border border-border-subtle rounded-md px-0.5 py-0.5">
-              {canAdvanceOrders && canCancel && (
-                <button onClick={() => handleCancelOrderStatus(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={t('actions.cancelOrder')}>
-                  <X className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
-                </button>
-              )}
-              <button onClick={() => handleDeleteOrder(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={tc('delete')}>
-                <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
-              </button>
-            </div>
-          </div>
-        );
+  const orderColumns = useMemo<DataGridColumn<Order>[]>(() => {
+    const cols: DataGridColumn<Order>[] = [
+      {
+        key: 'code',
+        label: t('columns.orderNumber'),
+        sortable: true,
+        width: 120,
+        cellRenderer: (order) => (
+          <span className="text-[13px] font-bold text-foreground whitespace-nowrap">{order.code}</span>
+        ),
       },
-    },
-  ], [canAdvanceOrders, formatCurrency, invoicedOrders]);
+      {
+        key: 'client',
+        label: t('columns.client'),
+        sortable: true,
+        width: 'flex',
+        cellRenderer: (order) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <NameAvatar name={order.client.name} />
+            <span className="text-[13px] font-semibold text-foreground truncate">{order.client.name}</span>
+          </div>
+        ),
+      },
+    ];
+    // Vendedor: el mockup oculta esta columna para el rol vendedor (ve solo sus pedidos).
+    if (!isVendedor) {
+      cols.push({
+        key: 'vendor',
+        label: t('columns.vendor'),
+        width: 140,
+        hiddenOnMobile: true,
+        cellRenderer: (order) => <span className="text-[13px] text-muted-foreground truncate block">{order.user.name}</span>,
+      });
+    }
+    cols.push(
+      {
+        key: 'items',
+        label: t('columns.products'),
+        width: 72,
+        align: 'center',
+        hiddenOnMobile: true,
+        cellRenderer: (order) => <span className="text-[13px] text-foreground tabular-nums">{order.items.length}</span>,
+      },
+      {
+        key: 'orderDate',
+        label: t('columns.date'),
+        sortable: true,
+        width: 130,
+        cellRenderer: (order) => (
+          <span className="text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
+            {order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}{' '}
+            {order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        ),
+      },
+      {
+        key: 'tipoVenta',
+        label: t('columns.type'),
+        width: 95,
+        hiddenOnMobile: true,
+        cellRenderer: (order) => (
+          <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+            {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
+          </span>
+        ),
+      },
+      {
+        key: 'status',
+        label: t('columns.status'),
+        width: 130,
+        cellRenderer: (order) => {
+          const pill = STATUS_PILL[order.status] ?? STATUS_PILL.draft;
+          return (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap ${pill.wrap}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} />
+              {t(`status.${order.status === 'en_route' ? 'enRoute' : order.status}`)}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'total',
+        label: t('columns.total'),
+        sortable: true,
+        width: 100,
+        align: 'right',
+        cellRenderer: (order) => (
+          <span className="text-[13px] text-foreground font-bold whitespace-nowrap tabular-nums">
+            {formatCurrency(order.total)}
+          </span>
+        ),
+      },
+    );
+    return cols;
+  }, [formatCurrency, isVendedor, t]);
 
   return (
     <>
@@ -649,7 +650,7 @@ export default function OrdersPage() {
           { label: t('title') },
         ]}
         title={t('title')}
-        subtitle={totalItems > 0 ? t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined}
+        subtitle={totalItems > 0 ? `${periodLabel} · ${t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' })}` : undefined}
         actions={
           <>
             <ExportButton entity="pedidos" params={{ desde: fechaDesde, hasta: fechaHasta }} />
@@ -673,30 +674,28 @@ export default function OrdersPage() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="orders-estado-filter">
               {([
-                { value: '', label: t('tabs.all') },
-                { value: 'Borrador', label: t('status.draft') },
-                { value: 'Confirmado', label: t('status.confirmed') },
-                { value: 'EnRuta', label: t('status.enRoute') },
-                { value: 'Entregado', label: t('status.delivered') },
-                { value: 'Cancelado', label: t('status.cancelled') },
-              ] as const).map((opt) => {
-                const active = estadoFilter === opt.value;
-                return (
-                  <button
-                    key={opt.value || 'all'}
-                    type="button"
-                    onClick={() => { setEstadoFilter(opt.value); setCurrentPage(1); }}
-                    aria-pressed={active}
-                    className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                      active
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
+                { id: 'all', label: t('tabs.all'), active: estadoFilter === '' && !isTodayRange, on: () => { setEstadoFilter(''); setFechaDesde(default30Str); setFechaHasta(todayStr); setCurrentPage(1); } },
+                { id: 'today', label: t('tabs.today'), active: estadoFilter === '' && isTodayRange, on: () => { setEstadoFilter(''); setFechaDesde(todayStr); setFechaHasta(todayStr); setCurrentPage(1); } },
+                { id: 'Borrador', label: t('status.draft'), active: estadoFilter === 'Borrador', on: () => { setEstadoFilter('Borrador'); setCurrentPage(1); } },
+                { id: 'Confirmado', label: t('status.confirmed'), active: estadoFilter === 'Confirmado', on: () => { setEstadoFilter('Confirmado'); setCurrentPage(1); } },
+                { id: 'EnRuta', label: t('status.enRoute'), active: estadoFilter === 'EnRuta', on: () => { setEstadoFilter('EnRuta'); setCurrentPage(1); } },
+                { id: 'Entregado', label: t('status.delivered'), active: estadoFilter === 'Entregado', on: () => { setEstadoFilter('Entregado'); setCurrentPage(1); } },
+                { id: 'Cancelado', label: t('status.cancelled'), active: estadoFilter === 'Cancelado', on: () => { setEstadoFilter('Cancelado'); setCurrentPage(1); } },
+              ]).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={opt.on}
+                  aria-pressed={opt.active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    opt.active
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
             <div className="w-full sm:w-72 lg:w-80" data-tour="orders-search">
               <SearchBar
@@ -708,25 +707,28 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          {/* KPI Row — 4 tarjetas (data real de la página cargada) */}
+          {/* KPI Row — 4 StatCards estilo mockup (icono en caja + valor por tono). Data real de la página. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { title: t('kpis.shownTotal'), value: formatCurrency(totalAmount), hint: t('kpis.shownTotalHint'), icon: DollarSign },
-              { title: t('kpis.avgTicket'), value: formatCurrency(avgTicket), hint: t('kpis.avgTicketHint'), icon: ReceiptText },
-              { title: t('kpis.confirmed'), value: String(confirmedCount), hint: t('kpis.confirmedHint'), icon: CheckCircle2 },
-              { title: t('kpis.drafts'), value: String(draftCount), hint: t('kpis.draftsHint'), icon: FileEdit },
-            ].map((card) => {
+            {([
+              { title: t('kpis.shownTotal'), value: formatCurrency(totalAmount), hint: t('kpis.shownTotalHint'), icon: ShoppingCart, tone: 'primary' as const },
+              { title: t('kpis.avgTicket'), value: formatCurrency(avgTicket), hint: t('kpis.avgTicketHint'), icon: Tag, tone: 'default' as const },
+              { title: t('kpis.confirmed'), value: String(confirmedCount), hint: t('kpis.confirmedHint'), icon: CheckCircle2, tone: 'default' as const },
+              { title: t('kpis.drafts'), value: String(draftCount), hint: t('kpis.draftsHint'), icon: FileEdit, tone: 'warning' as const },
+            ]).map((card) => {
               const Icon = card.icon;
+              const valueTone = card.tone === 'primary' ? 'text-primary' : card.tone === 'warning' ? 'text-amber-600 dark:text-amber-500' : 'text-foreground';
               return (
                 <div
                   key={card.title}
                   className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
                 >
-                  <div className="flex items-start justify-between">
-                    <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
-                    <Icon className="w-5 h-5 text-muted-foreground/40" />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12.5px] font-semibold text-muted-foreground">{card.title}</p>
+                    <span className="w-[34px] h-[34px] rounded-[10px] bg-surface-2 text-muted-foreground flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-[18px] h-[18px]" />
+                    </span>
                   </div>
-                  <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                  <p className={`text-[28px] font-bold tracking-tight tabular-nums mt-2.5 leading-none ${valueTone} ${loading ? 'animate-pulse' : ''}`}>
                     {card.value}
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
@@ -933,6 +935,25 @@ export default function OrdersPage() {
           </div>
         }
       >
+        {/* Acciones de Borrador dentro del drawer (la tabla ya no tiene columna de acciones). */}
+        {editingOrder && !isViewOnlyMode && editingOrder.apiEstado === 'Borrador' && (
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border-subtle">
+            <button
+              type="button"
+              onClick={() => { const id = editingOrder.id; setShowOrderForm(false); setEditingOrder(null); handleAdvanceStatus(id, 'confirmar'); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10 transition-colors"
+            >
+              <CheckCircle2 className="w-4 h-4" /> {t('actions.confirm')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { const id = editingOrder.id; setShowOrderForm(false); setEditingOrder(null); handleDeleteOrder(id); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-lg border border-border-subtle text-muted-foreground hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> {tc('delete')}
+            </button>
+          </div>
+        )}
         <OrderForm
           ref={orderFormRef}
           order={editingOrder}

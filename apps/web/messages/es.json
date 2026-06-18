@@ -1000,7 +1000,8 @@
     "confirmCancelOrder": "Cancelar pedido",
     "confirmDelete": "¿Estás seguro de que quieres eliminar este pedido?",
     "columns": {
-      "orderNumber": "# Pedido",
+      "orderNumber": "Folio",
+      "products": "Prod.",
       "client": "Cliente",
       "vendor": "Vendedor",
       "date": "Fecha",
@@ -1054,7 +1055,8 @@
       "draftsHint": "En esta página"
     },
     "tabs": {
-      "all": "Todos"
+      "all": "Todos",
+      "today": "Hoy"
     },
     "form": {
       "saleType": "Tipo de venta:",
