@@ -1043,6 +1043,19 @@
     "orderCount": "{count} pedido{plural}",
     "from": "Desde",
     "to": "Hasta",
+    "kpis": {
+      "shownTotal": "Total mostrado",
+      "shownTotalHint": "En esta página",
+      "avgTicket": "Ticket promedio",
+      "avgTicketHint": "Por pedido en página",
+      "confirmed": "Confirmados",
+      "confirmedHint": "En esta página",
+      "drafts": "Borradores",
+      "draftsHint": "En esta página"
+    },
+    "tabs": {
+      "all": "Todos"
+    },
     "form": {
       "saleType": "Tipo de venta:",
       "presale": "Preventa",
@@ -1490,6 +1503,16 @@
       "collected": "Cobrado",
       "outstanding": "Por cobrar",
       "clientsOwing": "Clientes que deben"
+    },
+    "kpisCards": {
+      "outstanding": "Por cobrar",
+      "outstandingHint": "Saldo pendiente total",
+      "collectedPeriod": "Cobrado (período)",
+      "collectedPeriodHint": "Rango de fechas seleccionado",
+      "clientsOwing": "Clientes que deben",
+      "clientsOwingHint": "Con saldo pendiente",
+      "recovery": "Recuperación",
+      "recoveryHint": "Cobrado sobre facturado"
     },
     "searchPlaceholder": "Buscar cobro por cliente, pedido o referencia...",
     "columns": {

@@ -30,6 +30,7 @@ import {
   Calendar,
   FileText,
   DollarSign,
+  Percent,
 } from 'lucide-react';
 import { CurrencyDollar, CreditCard, Wallet, CheckCircle, Clock, Receipt } from '@phosphor-icons/react';
 import {
@@ -133,6 +134,7 @@ type Tab = 'cobros' | 'saldos';
 export default function CobranzaPage() {
   const t = useTranslations('collections');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { formatCurrency, formatDate, tenantToday } = useFormatters();
   const fmtDate = (d: string) => formatDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
@@ -545,6 +547,15 @@ export default function CobranzaPage() {
   // Totals
   const totalCobros = useMemo(() => cobros.reduce((s, c) => s + c.monto, 0), [cobros]);
 
+  // Recuperación = cobrado / facturado (data REAL de resumen de cartera).
+  // El mockup pide una KPI "Vencido", pero ResumenCartera no expone aging
+  // (no hay fecha de vencimiento ni días-mora en el backend de cartera), así
+  // que esa tarjeta se omite y en su lugar usamos "Clientes que deben"
+  // (clientesConSaldo, dato real equivalente).
+  const recoveryPct = resumen && resumen.totalFacturado > 0
+    ? Math.round((resumen.totalCobrado / resumen.totalFacturado) * 100)
+    : 0;
+
   // ─── Render ────────────────────────────────────────
 
   // Defense-in-depth: hide UI while resolving session or for disallowed roles
@@ -559,16 +570,18 @@ export default function CobranzaPage() {
       <PageHeader
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionSales') },
           { label: t('title') },
         ]}
         title={t('title')}
+        subtitle={resumen ? t('clientCount', { count: resumen.clientesConSaldo }) : undefined}
         actions={
           <>
             <ExportButton entity="cobros" label={tc('export')} params={{ desde: dates.desde, hasta: dates.hasta }} />
             <button
               data-tour="cobranza-new-btn"
               onClick={() => setShowNewCobro(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newPayment')}</span>
@@ -577,69 +590,74 @@ export default function CobranzaPage() {
         }
       >
         <div className="space-y-4">
-          {/* KPI Row */}
-          <div data-tour="cobranza-kpis" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {/* KPI Row — 4 tarjetas (data real de ResumenCartera) */}
+          <div data-tour="cobranza-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {resumen ? (
-              <>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
-                  <div className="p-2 rounded-lg bg-blue-50">
-                    <DollarSign className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.totalSold')} <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
-                    <p className="text-sm font-bold text-foreground">
-                      {formatCurrency(resumen.totalFacturado)}
+              [
+                {
+                  title: t('kpisCards.outstanding'),
+                  value: formatCurrency(resumen.totalPendiente),
+                  hint: t('kpisCards.outstandingHint'),
+                  icon: AlertCircle,
+                  valueClass: 'text-amber-600 dark:text-amber-400',
+                  tooltipKey: 'cobranza-por-cobrar',
+                },
+                {
+                  title: t('kpisCards.collectedPeriod'),
+                  value: formatCurrency(totalCobros),
+                  hint: t('kpisCards.collectedPeriodHint'),
+                  icon: CreditCard,
+                  valueClass: 'text-emerald-600 dark:text-emerald-400',
+                  tooltipKey: 'cobranza-cobrado',
+                },
+                {
+                  title: t('kpisCards.clientsOwing'),
+                  value: String(resumen.clientesConSaldo),
+                  hint: t('kpisCards.clientsOwingHint'),
+                  icon: Users,
+                  valueClass: 'text-foreground',
+                  tooltipKey: 'cobranza-clientes-deben',
+                },
+                {
+                  title: t('kpisCards.recovery'),
+                  value: `${recoveryPct}%`,
+                  hint: t('kpisCards.recoveryHint'),
+                  icon: Percent,
+                  valueClass: 'text-foreground',
+                  tooltipKey: undefined as string | undefined,
+                },
+              ].map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.title}
+                    className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between">
+                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        {card.title}
+                        {card.tooltipKey && <HelpTooltip tooltipKey={card.tooltipKey} />}
+                      </p>
+                      <Icon className="w-5 h-5 text-muted-foreground/40" />
+                    </div>
+                    <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${card.valueClass}`}>
+                      {card.value}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
-                  <div className="p-2 rounded-lg bg-green-50">
-                    <CreditCard className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.collected')} <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
-                    <p className="text-sm font-bold text-foreground">
-                      {formatCurrency(resumen.totalCobrado)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
-                  <div className="p-2 rounded-lg bg-amber-50">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.outstanding')} <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
-                    <p className="text-sm font-bold text-amber-600">
-                      {formatCurrency(resumen.totalPendiente)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
-                  <div className="p-2 rounded-lg bg-red-50">
-                    <Users className="w-4 h-4 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.clientsOwing')} <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
-                    <p className="text-sm font-bold text-foreground">
-                      {resumen.clientesConSaldo}
-                    </p>
-                  </div>
-                </div>
-              </>
+                );
+              })
             ) : (
-              <>
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2 animate-pulse">
-                    <div className="p-2 rounded-lg bg-surface-3">
-                      <div className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-3 w-20 bg-surface-3 rounded mb-1.5" />
-                      <div className="h-4 w-24 bg-surface-3 rounded" />
-                    </div>
+              [0, 1, 2, 3].map((i) => (
+                <div key={i} className="bg-card border border-border rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                    <div className="w-5 h-5 bg-muted rounded animate-pulse" />
                   </div>
-                ))}
-              </>
+                  <div className="h-8 w-28 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                </div>
+              ))
             )}
           </div>
 
@@ -680,9 +698,9 @@ export default function CobranzaPage() {
             <button
               data-tour="cobranza-refresh"
               onClick={() => { fetchCobros(); fetchSaldos(); fetchResumen(); }}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
 
@@ -694,8 +712,8 @@ export default function CobranzaPage() {
                   onClick={() => { setDates(p.calc()); setActivePreset(p.label); }}
                   className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors ${
                     activePreset === p.label
-                      ? 'bg-green-100 text-green-700 ring-1 ring-green-300'
-                      : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
+                      ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
+                      : 'bg-surface-3 text-foreground/70 hover:bg-surface-1'
                   }`}
                 >
                   {tc(p.label)}
@@ -703,24 +721,26 @@ export default function CobranzaPage() {
               ))}
             </div>
 
-            {/* Tabs inline — always right-aligned */}
-            <div data-tour="cobranza-tabs" className="flex items-center gap-2 ml-auto">
+            {/* Tabs segmentadas — always right-aligned */}
+            <div data-tour="cobranza-tabs" className="ml-auto inline-flex items-center rounded-xl border border-border bg-surface-1 p-1">
               <button
                 onClick={() => { setTab('cobros'); setSearchCobros(''); }}
-                className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
+                aria-pressed={tab === 'cobros'}
+                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
                   tab === 'cobros'
-                    ? 'text-green-600 border-green-600'
-                    : 'text-muted-foreground border-transparent hover:text-foreground/80'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {t('tabs.payments')}
               </button>
               <button
                 onClick={() => setTab('saldos')}
-                className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
+                aria-pressed={tab === 'saldos'}
+                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
                   tab === 'saldos'
-                    ? 'text-green-600 border-green-600'
-                    : 'text-muted-foreground border-transparent hover:text-foreground/80'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {t('tabs.balances')}

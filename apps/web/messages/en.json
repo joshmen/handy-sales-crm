@@ -1043,6 +1043,19 @@
     "orderCount": "{count} order{plural}",
     "from": "From",
     "to": "To",
+    "kpis": {
+      "shownTotal": "Shown total",
+      "shownTotalHint": "On this page",
+      "avgTicket": "Average ticket",
+      "avgTicketHint": "Per order on page",
+      "confirmed": "Confirmed",
+      "confirmedHint": "On this page",
+      "drafts": "Drafts",
+      "draftsHint": "On this page"
+    },
+    "tabs": {
+      "all": "All"
+    },
     "form": {
       "saleType": "Sale type:",
       "presale": "Pre-sale",
@@ -1490,6 +1503,16 @@
       "collected": "Collected",
       "outstanding": "Outstanding",
       "clientsOwing": "Clients owing"
+    },
+    "kpisCards": {
+      "outstanding": "Outstanding",
+      "outstandingHint": "Total pending balance",
+      "collectedPeriod": "Collected (period)",
+      "collectedPeriodHint": "Selected date range",
+      "clientsOwing": "Clients owing",
+      "clientsOwingHint": "With pending balance",
+      "recovery": "Recovery",
+      "recoveryHint": "Collected over invoiced"
     },
     "searchPlaceholder": "Search payment by client, order or reference...",
     "columns": {

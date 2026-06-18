@@ -27,6 +27,10 @@ import {
   ShoppingCart,
   X,
   ChevronRight,
+  DollarSign,
+  ReceiptText,
+  CheckCircle2,
+  FileEdit,
 } from 'lucide-react';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
@@ -134,6 +138,7 @@ interface UsuarioOption {
 export default function OrdersPage() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const showApiError = useApiErrorToast();
   const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
@@ -176,6 +181,15 @@ export default function OrdersPage() {
 
   // Calcular total de montos
   const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
+
+  // KPIs derivados de la página cargada (data REAL del response actual).
+  // No hay endpoint de agregados de pedidos en esta página, así que las
+  // tarjetas resumen lo que está visible en la página vigente. Hint i18n
+  // lo declara explícitamente ("En esta página") para no engañar al usuario.
+  const ordersOnPage = orders.length;
+  const avgTicket = ordersOnPage > 0 ? totalAmount / ordersOnPage : 0;
+  const confirmedCount = orders.filter((o) => o.status === 'confirmed').length;
+  const draftCount = orders.filter((o) => o.status === 'draft').length;
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -631,6 +645,7 @@ export default function OrdersPage() {
       <PageHeader
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionSales') },
           { label: t('title') },
         ]}
         title={t('title')}
@@ -641,7 +656,7 @@ export default function OrdersPage() {
             <button
               data-tour="orders-create-btn"
               onClick={handleCreateOrder}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newOrder')}</span>
@@ -649,24 +664,79 @@ export default function OrdersPage() {
           </>
         }
       >
+        <div className="space-y-5">
           {error && (
-            <div className="mb-4">
-              <ErrorBanner error={error} onRetry={fetchOrders} />
-            </div>
+            <ErrorBanner error={error} onRetry={fetchOrders} />
           )}
 
-          {/* Search */}
-          <div className="mb-3 w-full sm:w-1/2 lg:w-1/3" data-tour="orders-search">
-            <SearchBar
-              value={searchTerm}
-              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-              placeholder={t('searchPlaceholder')}
-              className="w-full"
-            />
+          {/* Tabs de estado (segmentado) + búsqueda — reusa estadoFilter real */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="orders-estado-filter">
+              {([
+                { value: '', label: t('tabs.all') },
+                { value: 'Borrador', label: t('status.draft') },
+                { value: 'Confirmado', label: t('status.confirmed') },
+                { value: 'EnRuta', label: t('status.enRoute') },
+                { value: 'Entregado', label: t('status.delivered') },
+                { value: 'Cancelado', label: t('status.cancelled') },
+              ] as const).map((opt) => {
+                const active = estadoFilter === opt.value;
+                return (
+                  <button
+                    key={opt.value || 'all'}
+                    type="button"
+                    onClick={() => { setEstadoFilter(opt.value); setCurrentPage(1); }}
+                    aria-pressed={active}
+                    className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                      active
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-full sm:w-72 lg:w-80" data-tour="orders-search">
+              <SearchBar
+                value={searchTerm}
+                onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+                placeholder={t('searchPlaceholder')}
+                className="w-full"
+              />
+            </div>
           </div>
 
-          {/* Filter Row */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          {/* KPI Row — 4 tarjetas (data real de la página cargada) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { title: t('kpis.shownTotal'), value: formatCurrency(totalAmount), hint: t('kpis.shownTotalHint'), icon: DollarSign },
+              { title: t('kpis.avgTicket'), value: formatCurrency(avgTicket), hint: t('kpis.avgTicketHint'), icon: ReceiptText },
+              { title: t('kpis.confirmed'), value: String(confirmedCount), hint: t('kpis.confirmedHint'), icon: CheckCircle2 },
+              { title: t('kpis.drafts'), value: String(draftCount), hint: t('kpis.draftsHint'), icon: FileEdit },
+            ].map((card) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={card.title}
+                  className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                    <Icon className="w-5 h-5 text-muted-foreground/40" />
+                  </div>
+                  <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                    {card.value}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Filtros secundarios (fechas, vendedor, tipo) + refrescar */}
+          <div className="flex flex-wrap items-center gap-3">
             {/* Date Filters */}
             <div data-tour="orders-date-filter">
               <DateTimePicker
@@ -688,21 +758,6 @@ export default function OrdersPage() {
               />
             </div>
 
-            {/* Estado Filter */}
-            <select
-              data-tour="orders-estado-filter"
-              value={estadoFilter}
-              onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">{t('filters.allStatuses')}</option>
-              <option value="Borrador">{t('status.draft')}</option>
-              <option value="Confirmado">{t('status.confirmed')}</option>
-              <option value="EnRuta">{t('status.enRoute')}</option>
-              <option value="Entregado">{t('status.delivered')}</option>
-              <option value="Cancelado">{t('status.cancelled')}</option>
-            </select>
-
             {/* Users Filter - solo visible para Admin */}
             {isAdmin && (
             <div className="min-w-[200px] max-w-[260px]" data-tour="orders-user-filter">
@@ -723,7 +778,7 @@ export default function OrdersPage() {
               data-tour="orders-tipo-filter"
               value={tipoVentaFilter}
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">{t('filters.allTypes')}</option>
               <option value="0">{t('filters.preventa')}</option>
@@ -733,12 +788,13 @@ export default function OrdersPage() {
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
           </div>
+
             {/* Orders DataGrid */}
             <div data-tour="orders-table">
               <DataGrid<Order>
@@ -840,6 +896,7 @@ export default function OrdersPage() {
                 }}
               />
             </div>
+        </div>
       </PageHeader>
 
       {/* Drawer lateral para crear/editar pedidos */}
