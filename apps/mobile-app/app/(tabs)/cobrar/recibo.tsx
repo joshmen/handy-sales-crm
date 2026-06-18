@@ -11,7 +11,7 @@ import { METODO_PAGO } from '@/types/cobro';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { useOfflineOrderById, useOfflineOrderDetalles } from '@/hooks';
+import { useOfflineOrderById, useOfflineOrderDetalles, useTerminalBack } from '@/hooks';
 import { Share2, Printer, X } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 
@@ -137,6 +137,11 @@ export default function ReciboScreen() {
       router.replace('/(tabs)/cobrar' as any);
     }
   };
+
+  // Pantalla terminal (ticket): el back de hardware hace lo mismo que "Cerrar"
+  // (handleDone, contextual: venta directa->Hoy, ruta->Ruta, cobro->Cobrar);
+  // nunca regresa al formulario de registrar/parada.
+  useTerminalBack(handleDone);
 
   const tipoDocumento = isFromVD ? 'NOTA DE VENTA' : 'RECIBO DE COBRO';
 
