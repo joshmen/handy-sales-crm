@@ -26,6 +26,8 @@ import {
   Users,
   CheckCircle,
   XCircle,
+  UserCheck,
+  UserPlus,
 } from 'lucide-react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -40,6 +42,7 @@ type ProspectFilter = 'todos' | 'clientes' | 'prospectos';
 export default function ClientsPage() {
   const t = useTranslations('clients');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const router = useRouter();
   const { data: session } = useSession();
   const userRole = session?.user?.role;
@@ -67,6 +70,13 @@ export default function ClientsPage() {
   // Catálogos para filtros
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
+
+  // KPIs honestos. El único agregado real disponible es `totalClients` (total
+  // del backend). El payload de lista NO trae saldo/pedidos/nivel, así que el
+  // resto de tarjetas resumen lo que está visible en la página vigente
+  // (sublabel "En esta página" para no engañar al usuario, igual que pedidos).
+  const activosEnPagina = clients.filter(c => c.isActive).length;
+  const prospectosEnPagina = clients.filter(c => c.esProspecto).length;
 
   const fetchClients = useCallback(async () => {
     try {
@@ -358,6 +368,7 @@ export default function ClientsPage() {
       <PageHeader
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionCatalog') },
           { label: t('title') },
         ]}
         title={t('title')}
@@ -398,7 +409,7 @@ export default function ClientsPage() {
             <button
               data-tour="clients-add-btn"
               onClick={handleCreateClient}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newClient')}</span>
@@ -406,36 +417,72 @@ export default function ClientsPage() {
           </>
         }
       >
-        <div className="space-y-4">
-        {/* Prospect Filter Chips */}
-        <div className="flex items-center gap-1.5">
-          {([
-            { key: 'todos', label: t('filters.all') },
-            { key: 'clientes', label: t('filters.clients') },
-            { key: 'prospectos', label: t('filters.prospects') },
-          ] as const).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => { setProspectFilter(key); setCurrentPage(1); }}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                prospectFilter === key
-                  ? 'bg-success text-success-foreground'
-                  : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="space-y-5">
+        {/* Tabs segmentados (estado real: prospecto) + búsqueda a la derecha */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="clients-prospect-filter">
+            {([
+              { key: 'todos', label: t('filters.all') },
+              { key: 'clientes', label: t('filters.clients') },
+              { key: 'prospectos', label: t('filters.prospects') },
+            ] as const).map(({ key, label }) => {
+              const active = prospectFilter === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { setProspectFilter(key); setCurrentPage(1); }}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="w-full sm:w-72 lg:w-80" data-tour="clients-search">
+            <SearchBar
+              value={searchTerm}
+              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full"
+            />
+          </div>
         </div>
 
-        {/* Filter Row */}
+        {/* KPI Row — solo data real. Total es agregado del backend; activos y
+            prospectos resumen la página cargada (sublabel "En esta página"). */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { title: 'Total de clientes', value: totalClients.toLocaleString('es-MX'), hint: 'Total registrado', icon: Users },
+            { title: 'Activos', value: String(activosEnPagina), hint: 'En esta página', icon: UserCheck },
+            { title: 'Prospectos', value: String(prospectosEnPagina), hint: 'En esta página', icon: UserPlus },
+          ].map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.title}
+                className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                  <Icon className="w-5 h-5 text-muted-foreground/40" />
+                </div>
+                <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                  {card.value}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Filtros secundarios (zona, categoría) + refrescar + inactivos */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <SearchBar
-            value={searchTerm}
-            onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder={t('searchPlaceholder')}
-            dataTour="clients-search"
-          />
           <div className="min-w-[150px] max-w-[250px]" data-tour="clients-zone-filter">
             <SearchableSelect
               options={zonas.map(z => ({ value: z.id, label: z.nombre }))}
@@ -456,9 +503,9 @@ export default function ClientsPage() {
           </div>
           <button
             onClick={fetchClients}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 

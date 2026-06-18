@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
-import { ArrowRight, Users, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Users, Loader2, AlertTriangle, UserCheck } from 'lucide-react';
 
 interface VendedorOption {
   id: number;
@@ -90,20 +90,28 @@ export default function TransferirCarteraPage() {
       title={t('title')}
       subtitle={t('subtitle')}
     >
-      <div className="p-4 sm:p-6 max-w-2xl" data-testid="transferir-cartera-page">
-        <div className="rounded-xl bg-surface-2 border border-border-subtle p-6 space-y-5">
-          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3 text-sm text-amber-900 dark:text-amber-100 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-300 mt-0.5 flex-shrink-0" />
-            <span>
-              <strong>{t('warningPermanent')}</strong> {t('warningBody')}
-            </span>
-          </div>
+      <div className="max-w-4xl space-y-5" data-testid="transferir-cartera-page">
+        {/* Aviso permanente */}
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4 text-sm text-amber-900 dark:text-amber-100 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-300 mt-0.5 flex-shrink-0" />
+          <span>
+            <strong>{t('warningPermanent')}</strong> {t('warningBody')}
+          </span>
+        </div>
 
+        {/* Cards origen / destino con flecha al centro */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">
           {/* FROM */}
-          <div>
-            <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-              {t('fromLabel')} <span className="text-red-500">*</span>
-            </label>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-surface-1 flex items-center justify-center flex-shrink-0">
+                <Users className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Vendedor origen</p>
+                <p className="text-[13px] font-semibold text-foreground">{fromName || t('fromLabel')}</p>
+              </div>
+            </div>
             <SearchableSelect
               options={vendedores.map(v => ({ value: v.id, label: v.nombre }))}
               value={fromId}
@@ -115,15 +123,23 @@ export default function TransferirCarteraPage() {
           </div>
 
           {/* Arrow */}
-          <div className="flex items-center justify-center">
-            <ArrowRight className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-center justify-center py-1">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <ArrowRight className="w-4 h-4 text-primary" />
+            </div>
           </div>
 
           {/* TO */}
-          <div>
-            <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-              {t('toLabel')} <span className="text-red-500">*</span>
-            </label>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <UserCheck className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Vendedor destino</p>
+                <p className="text-[13px] font-semibold text-foreground">{toName || t('toLabel')}</p>
+              </div>
+            </div>
             <SearchableSelect
               options={vendedores.filter(v => v.id !== fromId).map(v => ({ value: v.id, label: v.nombre }))}
               value={toId}
@@ -133,8 +149,10 @@ export default function TransferirCarteraPage() {
               disabled={loading || !fromId}
             />
           </div>
+        </div>
 
-          {/* Checkbox */}
+        {/* Opciones + acción */}
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <label className="flex items-center gap-2 text-sm text-foreground/80">
             <input
               type="checkbox"
@@ -144,9 +162,7 @@ export default function TransferirCarteraPage() {
             />
             {t('onlyActive')}
           </label>
-
-          {/* Submit */}
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" onClick={() => router.push('/clients')} disabled={submitting}>
               {tc('cancel')}
             </Button>
@@ -161,7 +177,7 @@ export default function TransferirCarteraPage() {
         </div>
 
         {lastResult !== null && (
-          <div className="mt-4 rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-900 flex items-center gap-3" data-testid="transfer-success">
+          <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-900 flex items-center gap-3" data-testid="transfer-success">
             <Users className="w-5 h-5 text-green-700" />
             <div>
               <strong>{lastResult}</strong> clientes transferidos de <strong>{fromName}</strong> a <strong>{toName}</strong>.

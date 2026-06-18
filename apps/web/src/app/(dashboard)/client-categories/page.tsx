@@ -44,6 +44,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ClientCategoriesPage() {
   const t = useTranslations('clientCategories');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const showApiError = useApiErrorToast();
   // State
   const [categories, setCategories] = useState<ClientCategory[]>([]);
@@ -204,6 +205,7 @@ export default function ClientCategoriesPage() {
       <PageHeader
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionCatalog') },
           { label: t('title') },
         ]}
         title={t('title')}
@@ -244,7 +246,7 @@ export default function ClientCategoriesPage() {
             <button
               onClick={handleOpenCreate}
               data-tour="client-categories-create-btn"
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newCategory')}</span>
@@ -253,7 +255,7 @@ export default function ClientCategoriesPage() {
         }
       >
             {/* Search Row */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-5">
               <SearchBar
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -262,9 +264,9 @@ export default function ClientCategoriesPage() {
               />
               <button
                 onClick={loadCategories}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
 
@@ -281,7 +283,12 @@ export default function ClientCategoriesPage() {
               <DataGrid<ClientCategory>
                 columns={[
                   { key: 'id', label: tc('id'), width: 80, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
-                  { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.nombre}</span> },
+                  { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => (
+                    <span className="flex items-center gap-2.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary/60 flex-shrink-0" />
+                      <span className="font-medium text-foreground">{item.nombre}</span>
+                    </span>
+                  ) },
                   { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-muted-foreground truncate">{item.descripcion || '-'}</span> },
                   { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                     <div onClick={e => e.stopPropagation()}>

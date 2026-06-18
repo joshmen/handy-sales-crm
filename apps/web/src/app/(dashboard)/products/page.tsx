@@ -30,6 +30,9 @@ import {
   Package,
   Trash2,
   X,
+  Boxes,
+  AlertTriangle,
+  Tag,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Package as PackageIcon } from '@phosphor-icons/react';
@@ -99,6 +102,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 export default function ProductsPage() {
   const t = useTranslations('products');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
   const { formatCurrency } = useFormatters();
@@ -127,6 +131,10 @@ export default function ProductsPage() {
   const [selectedFamiliaId, setSelectedFamiliaId] = useState<number | null>(null);
   const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  // Tab "Por revisar": filtro client-side de productos sin precio (price <= 0).
+  // No existe endpoint de servidor para esto; se aplica sobre la data ya
+  // cargada (igual que el search local de orders). El backend NO se toca.
+  const [showSinPrecio, setShowSinPrecio] = useState(false);
 
   // React Hook Form
   const { register, handleSubmit: rhfSubmit, reset: resetForm, setValue, watch, formState: { errors, isDirty: isFormDirty } } = useForm<ProductFormData>({
@@ -372,7 +380,9 @@ export default function ProductsPage() {
   }, [sortKey]);
 
   const sortedProducts = useMemo(() => {
-    const sorted = [...products];
+    // "Por revisar" = sin precio (price <= 0). Filtro local sobre la página cargada.
+    const base = showSinPrecio ? products.filter(p => p.price <= 0) : products;
+    const sorted = [...base];
     sorted.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
@@ -384,7 +394,14 @@ export default function ProductsPage() {
       return sortDir === 'desc' ? -cmp : cmp;
     });
     return sorted;
-  }, [products, sortKey, sortDir]);
+  }, [products, sortKey, sortDir, showSinPrecio]);
+
+  // KPIs derivados de la página cargada (data REAL del response actual).
+  // No hay endpoint de agregados de catálogo en esta página, así que las
+  // tarjetas resumen lo que está visible en la página vigente.
+  const productsOnPage = products.length;
+  const lowStockCount = products.filter(p => p.stock <= p.minStock).length;
+  const sinPrecioCount = products.filter(p => p.price <= 0).length;
 
   // Column definitions
   const productColumns = useMemo<DataGridColumn<Product>[]>(() => [
@@ -417,8 +434,15 @@ export default function ProductsPage() {
       key: 'price',
       label: t('columns.price'),
       sortable: true,
-      width: 90,
-      cellRenderer: (product) => <span className="text-[13px] font-medium text-foreground">{formatCurrency(product.price)}</span>,
+      width: 110,
+      cellRenderer: (product) => product.price > 0 ? (
+        <span className="text-[13px] font-medium text-foreground tabular-nums">{formatCurrency(product.price)}</span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-700">
+          <AlertTriangle className="w-3 h-3" />
+          Sin precio
+        </span>
+      ),
     },
     {
       key: 'stock',
@@ -441,9 +465,16 @@ export default function ProductsPage() {
     {
       key: 'category',
       label: t('columns.category'),
-      width: 130,
+      width: 140,
       hiddenOnMobile: true,
-      cellRenderer: (product) => <span className="text-[13px] text-muted-foreground truncate block">{product.category || '-'}</span>,
+      cellRenderer: (product) => product.category ? (
+        <span className="inline-flex max-w-full items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-1 text-foreground/80 border border-border">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+          <span className="truncate">{product.category}</span>
+        </span>
+      ) : (
+        <span className="text-[13px] text-muted-foreground">-</span>
+      ),
     },
     {
       key: 'isActive',
@@ -527,6 +558,7 @@ export default function ProductsPage() {
       <PageHeader
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionCatalog') },
           { label: t('title') },
         ]}
         title={t('title')}
@@ -536,9 +568,9 @@ export default function ProductsPage() {
             <div className="relative" data-tour="products-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-500" />
+                <Upload className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="hidden sm:inline">{tc('importExport')}</span>
                 <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
@@ -567,7 +599,7 @@ export default function ProductsPage() {
             <button
               data-tour="products-new-btn"
               onClick={handleCreateProduct}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newProduct')}</span>
@@ -575,10 +607,89 @@ export default function ProductsPage() {
           </>
         }
       >
-        <div className="space-y-4">
-          {/* Filter Row */}
+        <div className="space-y-5">
+          {/* Error message */}
+          <ErrorBanner error={error} onRetry={fetchProducts} />
+
+          {/* Tabs de categoría (segmentado) + búsqueda — reusa el filtro real selectedCategoriaId */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="products-category-filter">
+              {(() => {
+                const allActive = !showSinPrecio && selectedCategoriaId === null;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setShowSinPrecio(false); setSelectedCategoriaId(null); setCurrentPage(1); }}
+                    aria-pressed={allActive}
+                    className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                      allActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                );
+              })()}
+              {categorias.map((cat) => {
+                const active = !showSinPrecio && selectedCategoriaId === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => { setShowSinPrecio(false); setSelectedCategoriaId(cat.id); setCurrentPage(1); }}
+                    aria-pressed={active}
+                    className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                      active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {cat.nombre}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => { setShowSinPrecio(true); setCurrentPage(1); }}
+                aria-pressed={showSinPrecio}
+                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                  showSinPrecio ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Por revisar
+              </button>
+            </div>
+            <div className="w-full sm:w-72 lg:w-80" data-tour="products-search">
+              <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder={t('searchPlaceholder')} className="w-full" />
+            </div>
+          </div>
+
+          {/* KPI Row — tarjetas (data real de la página cargada) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { title: 'Productos en página', value: String(productsOnPage), hint: 'En esta página', icon: Boxes },
+              { title: 'Total catálogo', value: String(totalProducts), hint: 'Todos los productos', icon: Package },
+              { title: 'Stock bajo', value: String(lowStockCount), hint: 'En esta página', icon: AlertTriangle },
+              { title: 'Sin precio', value: String(sinPrecioCount), hint: 'En esta página', icon: Tag },
+            ].map((card) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={card.title}
+                  className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                    <Icon className="w-5 h-5 text-muted-foreground/40" />
+                  </div>
+                  <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                    {card.value}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Filtros secundarios (familia, categoría detallada) + refrescar + inactivos */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder={t('searchPlaceholder')} dataTour="products-search" />
             <div className="min-w-[180px] max-w-[300px]" data-tour="products-family-filter">
               <SearchableSelect
                 options={familias.map(f => ({ value: f.id, label: f.nombre, description: f.descripcion }))}
@@ -591,11 +702,12 @@ export default function ProductsPage() {
                 searchPlaceholder={t('filters.searchFamily')}
               />
             </div>
-            <div className="min-w-[150px] max-w-[250px]" data-tour="products-category-filter">
+            <div className="min-w-[150px] max-w-[250px]">
               <SearchableSelect
                 options={categorias.map(c => ({ value: c.id, label: c.nombre, description: c.descripcion }))}
                 value={selectedCategoriaId}
                 onChange={(val) => {
+                  setShowSinPrecio(false);
                   setSelectedCategoriaId(val ? Number(val) : null);
                   setCurrentPage(1);
                 }}
@@ -605,9 +717,9 @@ export default function ProductsPage() {
             </div>
             <button
               onClick={fetchProducts}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
 
@@ -616,9 +728,6 @@ export default function ProductsPage() {
               <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} />
             </div>
           </div>
-
-          {/* Error message */}
-          <ErrorBanner error={error} onRetry={fetchProducts} />
 
           {/* Selection Action Bar */}
           <BatchActionBar

@@ -106,10 +106,10 @@ export default function OportunidadesReordenPage() {
         <button
           onClick={runNow}
           disabled={running}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           data-testid="run-now-btn"
         >
-          {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lightning className="w-3.5 h-3.5 text-amber-500" weight="fill" />}
+          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightning className="w-4 h-4" weight="fill" />}
           {running ? tc('processing') : t('runNow')}
         </button>
       }
@@ -129,7 +129,7 @@ export default function OportunidadesReordenPage() {
         ) : (
           <>
             {/* KPI cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid="kpis">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="kpis">
               <KpiCard
                 label={t('kpi.evaluados')}
                 value={detalle.clientesEvaluados}
@@ -256,12 +256,12 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, icon, accent = 'text-foreground' }: KpiCardProps) {
   return (
-    <div className="rounded-xl bg-surface-2 border border-border-subtle px-4 py-3">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="flex items-start justify-between">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         {icon}
       </div>
-      <div className={`text-2xl font-bold ${accent}`}>{value}</div>
+      <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${accent}`}>{value}</p>
     </div>
   );
 }

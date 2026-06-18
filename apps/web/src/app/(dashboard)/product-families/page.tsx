@@ -53,6 +53,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ProductFamiliesPage() {
   const t = useTranslations('productFamilies');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const tv = useTranslations('formValidation');
   // State
   const [families, setFamilies] = useState<ProductFamily[]>([]);
@@ -285,6 +286,7 @@ export default function ProductFamiliesPage() {
     <PageHeader
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionCatalog') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -294,9 +296,9 @@ export default function ProductFamiliesPage() {
           <div className="relative" data-tour="product-families-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -325,7 +327,7 @@ export default function ProductFamiliesPage() {
           <button
             onClick={handleOpenCreate}
             data-tour="product-families-create-btn"
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>{t('newFamily')}</span>
@@ -344,9 +346,9 @@ export default function ProductFamiliesPage() {
           />
           <button
             onClick={loadFamilies}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
