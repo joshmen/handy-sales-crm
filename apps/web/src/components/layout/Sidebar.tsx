@@ -9,44 +9,45 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  // Iconos mono (lucide) del diseño nuevo — aliaseados a los nombres Sb* para
+  // re-skinear todo el sidebar con una sola edición. Heredan currentColor:
+  // blancos sobre el pill azul activo, grises cuando inactivos.
+  LayoutGrid as SbDashboard,
+  ShoppingCart as SbOrders,
+  Wallet as SbPayments,
+  Users as SbClients,
+  Package as SbProducts,
+  Tag as SbPriceLists,
+  Percent as SbDiscounts,
+  Gift as SbPromotions,
+  Route as SbRoutes,
+  Layers as SbInventory,
+  MapPin as SbZones,
+  MapPinned as SbVisits,
+  Compass as SbForms,
+  BarChart3 as SbReports,
+  UsersRound as SbTeam,
+  Smartphone as SbDevices,
+  Zap as SbAutomations,
+  Target as SbGoals,
+  Bot as SbAI,
+  Settings as SbSettings,
+  Shield as SbAdmin,
+  User as SbUsers,
+  CreditCard as SbSubscription,
+  Activity as SbActivityLog,
+  LifeBuoy as SbHelp,
+  Megaphone as SbAnnouncements,
+  Building2 as SbBuildings,
+  Bug as SbBug,
+  Tags as SbCategory,
+  Folder as SbFolders,
+  Scale as SbUnits,
+  ArrowLeftRight as SbMovements,
+  Users as SbUsersGlobal,
+  Plug as SbIntegrations,
+  Receipt as SbBilling,
 } from 'lucide-react';
-import {
-  SbDashboard,
-  SbOrders,
-  SbPayments,
-  SbClients,
-  SbProducts,
-  SbPriceLists,
-  SbDiscounts,
-  SbPromotions,
-  SbRoutes,
-  SbInventory,
-  SbZones,
-  SbVisits,
-  SbForms,
-  SbReports,
-  SbTeam,
-  SbDevices,
-  SbAutomations,
-  SbGoals,
-  SbAI,
-  SbSettings,
-  SbAdmin,
-  SbUsers,
-  SbSubscription,
-  SbActivityLog,
-  SbHelp,
-  SbAnnouncements,
-  SbBuildings,
-  SbBug,
-  SbCategory,
-  SbFolders,
-  SbUnits,
-  SbMovements,
-  SbUsersGlobal,
-  SbIntegrations,
-  SbBilling,
-} from '@/components/layout/DashboardIcons';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
@@ -668,7 +669,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       !item.href && 'w-full',
       level > 0 && 'ml-6 py-2',
       activeState
-        ? item.href ? 'bg-primary/10 text-primary shadow-sm' : 'bg-primary/5 text-primary'
+        ? item.href ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-primary/10 text-primary'
         : 'text-muted-foreground hover:bg-accent hover:text-foreground',
       !showLabels && 'justify-center px-2'
     );
@@ -796,7 +797,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
               href="/getting-started"
               className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors group"
             >
-              <SbForms size={16} className="text-muted-foreground group-hover:text-green-600 flex-shrink-0" />
+              <SbForms size={16} className="text-muted-foreground group-hover:text-primary flex-shrink-0" />
               <span className="truncate">{t('nav.gettingStarted')}</span>
             </Link>
           )}
