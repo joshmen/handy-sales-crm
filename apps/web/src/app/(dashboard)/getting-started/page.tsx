@@ -160,14 +160,14 @@ export default function GettingStartedPage() {
         id: 'base',
         title: t('phases.base.title'),
         description: t('phases.base.description'),
-        colorDot: 'bg-slate-500',
-        colorBg: 'bg-slate-50',
-        colorText: 'text-slate-700',
-        colorBorder: 'border-slate-200',
-        colorProgress: 'bg-slate-500',
+        colorDot: 'bg-slate-600',
+        colorBg: 'bg-card',
+        colorText: 'text-slate-600',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-slate-600',
         colorButton: '#475569',
-        colorCompletedBg: 'bg-slate-50/50',
-        colorCompletedBorder: 'border-slate-200',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'company',
@@ -193,14 +193,14 @@ export default function GettingStartedPage() {
         id: 'catalog',
         title: t('phases.catalog.title'),
         description: t('phases.catalog.description'),
-        colorDot: 'bg-amber-500',
-        colorBg: 'bg-amber-50',
+        colorDot: 'bg-amber-700',
+        colorBg: 'bg-card',
         colorText: 'text-amber-700',
-        colorBorder: 'border-amber-200',
-        colorProgress: 'bg-amber-500',
-        colorButton: '#b45309',
-        colorCompletedBg: 'bg-amber-50/40',
-        colorCompletedBorder: 'border-amber-200',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-amber-700',
+        colorButton: '#B45309',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'product-categories',
@@ -262,14 +262,14 @@ export default function GettingStartedPage() {
         id: 'clients',
         title: t('phases.clients.title'),
         description: t('phases.clients.description'),
-        colorDot: 'bg-blue-500',
-        colorBg: 'bg-blue-50',
+        colorDot: 'bg-blue-700',
+        colorBg: 'bg-card',
         colorText: 'text-blue-700',
-        colorBorder: 'border-blue-200',
-        colorProgress: 'bg-blue-500',
-        colorButton: '#1d4ed8',
-        colorCompletedBg: 'bg-blue-50/40',
-        colorCompletedBorder: 'border-blue-200',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-blue-700',
+        colorButton: '#1D4ED8',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'client-categories',
@@ -295,14 +295,14 @@ export default function GettingStartedPage() {
         id: 'territory',
         title: t('phases.territory.title'),
         description: t('phases.territory.description'),
-        colorDot: 'bg-violet-500',
-        colorBg: 'bg-violet-50',
+        colorDot: 'bg-violet-700',
+        colorBg: 'bg-card',
         colorText: 'text-violet-700',
-        colorBorder: 'border-violet-200',
-        colorProgress: 'bg-violet-500',
-        colorButton: '#6d28d9',
-        colorCompletedBg: 'bg-violet-50/40',
-        colorCompletedBorder: 'border-violet-200',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-violet-700',
+        colorButton: '#6D28D9',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'team',
@@ -328,14 +328,14 @@ export default function GettingStartedPage() {
         id: 'operations',
         title: t('phases.operations.title'),
         description: t('phases.operations.description'),
-        colorDot: 'bg-green-500',
-        colorBg: 'bg-green-50',
-        colorText: 'text-green-700',
-        colorBorder: 'border-green-200',
-        colorProgress: 'bg-green-500',
-        colorButton: '#15803d',
-        colorCompletedBg: 'bg-green-50/40',
-        colorCompletedBorder: 'border-green-200',
+        colorDot: 'bg-[#0B5CAB]',
+        colorBg: 'bg-card',
+        colorText: 'text-[#0B5CAB]',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-[#0B5CAB]',
+        colorButton: '#0B5CAB',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'routes',
@@ -380,6 +380,14 @@ export default function GettingStartedPage() {
     } else {
       localStorage.removeItem('onboarding-completed');
     }
+
+    // Persistir progreso para que el sidebar muestre el badge real (X/N)
+    try {
+      const totalCount = newPhases.reduce((s, p) => s + p.steps.length, 0);
+      const doneCount = newPhases.reduce((s, p) => s + p.steps.filter(x => x.completed).length, 0);
+      localStorage.setItem('onboarding-progress', JSON.stringify({ completed: doneCount, total: totalCount }));
+      window.dispatchEvent(new Event('onboarding-progress'));
+    } catch { /* ignore */ }
 
     return newPhases;
   }, [t]);
@@ -485,9 +493,9 @@ export default function GettingStartedPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
           <button
@@ -506,12 +514,12 @@ export default function GettingStartedPage() {
 
         {/* Global Progress */}
         <div className="page-animate page-animate-delay-2">
-          <div className="bg-surface-2 border border-border-subtle rounded-xl p-5 sm:p-6">
+          <div className="bg-card border border-border rounded-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 {allDone ? (
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <PartyPopper className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <PartyPopper className="w-5 h-5 text-green-600" />
                   </div>
                 ) : (
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -537,7 +545,7 @@ export default function GettingStartedPage() {
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${progressPercent}%`,
-                  backgroundColor: allDone ? '#0176D3' : 'var(--company-primary-color, #0176D3)',
+                  backgroundColor: '#16a34a',
                 }}
               />
             </div>
@@ -546,14 +554,14 @@ export default function GettingStartedPage() {
 
         {/* Confetti message */}
         {showConfetti && allDone && (
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-center page-animate">
-            <p className="text-primary font-medium">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center page-animate">
+            <p className="text-green-700 font-medium">
               {t('congratulations')}
             </p>
-            <p className="text-sm text-primary/80 mt-1">
+            <p className="text-sm text-green-600 mt-1">
               {t.rich('goToDashboardHint', {
                 link: (chunks) => (
-                  <Link href="/dashboard" className="underline font-medium hover:text-primary">
+                  <Link href="/dashboard" className="underline font-medium hover:text-green-700">
                     {chunks}
                   </Link>
                 ),
@@ -584,14 +592,14 @@ export default function GettingStartedPage() {
                   onClick={() => togglePhase(phase.id)}
                   className="w-full flex items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 text-left hover:bg-surface-2/50 transition-colors"
                 >
-                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-primary' : phase.colorDot}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-green-500' : phase.colorDot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className={`font-semibold text-sm ${phaseCompleted ? 'text-muted-foreground dark:text-muted-foreground' : phase.colorText}`}>
                         {phase.title}
                       </h3>
                       {phaseCompleted && (
-                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{phase.description}</p>
@@ -617,15 +625,15 @@ export default function GettingStartedPage() {
                           {/* Check icon */}
                           <div className="flex-shrink-0">
                             {step.completed ? (
-                              <CheckCircle2 className="w-5 h-5 text-primary" />
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
                             ) : (
                               <Circle className="w-5 h-5 text-muted-foreground/60" />
                             )}
                           </div>
 
                           {/* Icon */}
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.completed ? 'bg-primary/10' : phase.colorBg}`}>
-                            <step.icon className={`w-4 h-4 ${step.completed ? 'text-primary' : phase.colorText}`} />
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.completed ? 'bg-green-100' : phase.colorBg}`}>
+                            <step.icon className={`w-4 h-4 ${step.completed ? 'text-green-600' : phase.colorText}`} />
                           </div>
 
                           {/* Text */}

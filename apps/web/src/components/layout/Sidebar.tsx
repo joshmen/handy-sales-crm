@@ -519,6 +519,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
   });
   const [isDesktop, setIsDesktop] = useState(false);
 
+  // Badge de progreso de onboarding ("X/N") para el item "Primeros pasos".
+  // La página /getting-started persiste el conteo real en localStorage; aquí lo
+  // leemos y escuchamos sus eventos. Si el onboarding ya está completo, sin badge.
+  const [onboardingBadge, setOnboardingBadge] = useState<string | null>(null);
+  useEffect(() => {
+    const readProgress = () => {
+      try {
+        const raw = localStorage.getItem('onboarding-progress');
+        if (!raw) { setOnboardingBadge(null); return; }
+        const { completed, total } = JSON.parse(raw);
+        // Mostrar el badge SOLO cuando faltan pasos (rojo = atención);
+        // al completar (X === N) se oculta.
+        if (typeof completed === 'number' && typeof total === 'number' && total > 0 && completed < total) {
+          setOnboardingBadge(`${completed}/${total}`);
+        } else {
+          setOnboardingBadge(null);
+        }
+      } catch { setOnboardingBadge(null); }
+    };
+    readProgress();
+    window.addEventListener('onboarding-progress', readProgress);
+    window.addEventListener('onboarding-completed', readProgress);
+    window.addEventListener('storage', readProgress);
+    return () => {
+      window.removeEventListener('onboarding-progress', readProgress);
+      window.removeEventListener('onboarding-completed', readProgress);
+      window.removeEventListener('storage', readProgress);
+    };
+  }, []);
+
   // Scroll to active sidebar item on mount
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -793,7 +823,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                         </div>
                       </div>
                     )}
-                    {renderSidebarItem(item)}
+                    {renderSidebarItem(item.id === 'getting-started' && onboardingBadge ? { ...item, badge: onboardingBadge } : item)}
                   </React.Fragment>
                 );
               })}

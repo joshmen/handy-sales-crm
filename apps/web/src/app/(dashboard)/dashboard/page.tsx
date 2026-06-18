@@ -9,9 +9,6 @@ import {
   Download,
   AlertCircle,
   Loader2,
-  ArrowRight,
-  X,
-  Zap,
   LogIn,
   CheckCircle2,
   Package,
@@ -573,9 +570,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Welcome Banner (dismissible, shows for 7 days after onboarding) */}
-        <WelcomeBanner userName={session?.user?.name} />
-
         {/* Metrics Row — 4 KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 page-animate page-animate-delay-2" data-tour="dashboard-metrics">
           {metricCards.length > 0 ? metricCards.map((card, index) => {
@@ -872,58 +866,3 @@ export default function DashboardPage() {
 
 // ─── Welcome Banner ───
 
-function WelcomeBanner({ userName }: { userName?: string | null }) {
-  const t = useTranslations('dashboard');
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
-    const dismissedAt = localStorage.getItem('welcome-banner-dismissed');
-    if (!dismissedAt) {
-      setDismissed(false);
-      return;
-    }
-    setDismissed(true);
-  }, []);
-
-  const handleDismiss = () => {
-    localStorage.setItem('welcome-banner-dismissed', new Date().toISOString());
-    setDismissed(true);
-  };
-
-  if (dismissed) return null;
-
-  const firstName = userName?.split(' ')[0] || '';
-
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-primary/20 dark:border-primary/30 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-white dark:from-primary/10 dark:via-primary/5 dark:to-card p-5 sm:p-6 page-animate">
-      <button
-        onClick={handleDismiss}
-        className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-surface-2/10 transition-colors"
-        aria-label={t('welcome.closeBanner')}
-      >
-        <X className="w-4 h-4" />
-      </button>
-
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-          <Zap className="w-5 h-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-semibold text-foreground">
-            {firstName ? t('welcome.title', { name: firstName }) : t('welcome.titleDefault')}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {t('welcome.subtitle')}
-          </p>
-        </div>
-        <a
-          href="/getting-started"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success hover:bg-success/90 text-white text-sm font-medium transition-colors flex-shrink-0 w-fit"
-        >
-          {t('welcome.cta')}
-          <ArrowRight className="w-3.5 h-3.5" />
-        </a>
-      </div>
-    </div>
-  );
-}
