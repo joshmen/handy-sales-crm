@@ -58,6 +58,7 @@ type DiscountFormData = z.infer<typeof discountSchema>;
 export default function DiscountsPage() {
   const t = useTranslations('discounts');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
   const { formatDate } = useFormatters();
@@ -288,8 +289,11 @@ export default function DiscountsPage() {
       sortable: true,
       width: 'flex',
       cellRenderer: (d) => (
-        <div>
-          <div className="text-lg font-semibold text-foreground">{d.descuentoPorcentaje}%</div>
+        <div className="flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <Percent className="w-4 h-4 text-primary" />
+          </span>
+          <span className="text-lg font-semibold text-foreground tabular-nums">{d.descuentoPorcentaje}%</span>
         </div>
       ),
     },
@@ -320,7 +324,7 @@ export default function DiscountsPage() {
       hiddenOnMobile: true,
       cellRenderer: (d) => (
         <div>
-          <div className="text-[13px] font-medium text-green-600">{d.creadoPor || '-'}</div>
+          <div className="text-[13px] font-medium text-foreground">{d.creadoPor || '-'}</div>
           <div className="text-xs text-muted-foreground">{formatRelativeTime(d.creadoEn)}</div>
         </div>
       ),
@@ -332,7 +336,7 @@ export default function DiscountsPage() {
       hiddenOnMobile: true,
       cellRenderer: (d) => (
         <div>
-          <div className="text-[13px] font-medium text-green-600">{d.actualizadoPor || d.creadoPor || '-'}</div>
+          <div className="text-[13px] font-medium text-foreground">{d.actualizadoPor || d.creadoPor || '-'}</div>
           <div className="text-xs text-muted-foreground">{formatRelativeTime(d.actualizadoEn || d.creadoEn)}</div>
         </div>
       ),
@@ -418,6 +422,8 @@ export default function DiscountsPage() {
     <PageHeader
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionCatalog') },
+        { label: 'Precios' },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -427,9 +433,9 @@ export default function DiscountsPage() {
           <div className="relative" data-tour="discounts-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -456,7 +462,7 @@ export default function DiscountsPage() {
             )}
           </div>
           <div className="relative group" data-tour="discounts-create-btn">
-            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors">
               <Plus className="w-4 h-4" />
               <span>{t('newDiscount')}</span>
               <ChevronDown className="w-3.5 h-3.5" />
@@ -479,50 +485,55 @@ export default function DiscountsPage() {
         </>
       }
     >
-          {/* Tabs */}
-          <div className="flex items-center border-b border-border-subtle mb-4" data-tour="discounts-tabs">
-            <button
-              onClick={() => { setActiveTab('global'); setCurrentPage(1); }}
-              className={`px-5 py-2 text-[13px] font-medium border-b-2 transition-colors ${
-                activeTab === 'global'
-                  ? 'text-green-600 border-green-600'
-                  : 'text-muted-foreground border-transparent hover:text-foreground/80'
-              }`}
-            >
-              {t('tabGlobal', { count: globalCount })}
-            </button>
-            <button
-              onClick={() => { setActiveTab('product'); setCurrentPage(1); }}
-              className={`px-5 py-2 text-[13px] font-medium border-b-2 transition-colors ${
-                activeTab === 'product'
-                  ? 'text-green-600 border-green-600'
-                  : 'text-muted-foreground border-transparent hover:text-foreground/80'
-              }`}
-            >
-              {t('tabProduct', { count: productCount })}
-            </button>
+        <div className="space-y-5">
+          {/* Tabs segmentados (mecánica) + búsqueda */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="discounts-tabs">
+              {([
+                { value: 'global' as const, label: t('tabGlobal', { count: globalCount }) },
+                { value: 'product' as const, label: t('tabProduct', { count: productCount }) },
+              ]).map((opt) => {
+                const active = activeTab === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => { setActiveTab(opt.value); setCurrentPage(1); }}
+                    aria-pressed={active}
+                    className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                      active
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-full sm:w-72 lg:w-80" data-tour="discounts-search">
+              <SearchBar
+                value={searchTerm}
+                onChange={(v) => {
+                  if (activeTab === 'global') setSearchGlobal(v);
+                  else setSearchProduct(v);
+                  setCurrentPage(1);
+                }}
+                placeholder={activeTab === 'product' ? t('searchProduct') : t('searchGlobal')}
+                className="w-full"
+              />
+            </div>
           </div>
 
-          {/* Filter Row */}
-          <div className="flex items-center gap-3 mb-4">
-            <SearchBar
-              value={searchTerm}
-              onChange={(v) => {
-                if (activeTab === 'global') setSearchGlobal(v);
-                else setSearchProduct(v);
-                setCurrentPage(1);
-              }}
-              placeholder={activeTab === 'product' ? t('searchProduct') : t('searchGlobal')}
-              dataTour="discounts-search"
-            />
-
+          {/* Filtros secundarios + refrescar */}
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>{tc('refresh')}</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
 
             <div data-tour="discounts-toggle-inactive" className="ml-auto">
@@ -546,7 +557,6 @@ export default function DiscountsPage() {
             onDeactivate={() => batch.openBatchAction('deactivate')}
             onClear={batch.handleClearSelection}
             loading={actionLoading}
-            className="mb-4"
           />
 
           {/* Discounts DataGrid */}
@@ -581,7 +591,7 @@ export default function DiscountsPage() {
                       else setShowInactiveProduct(true);
                       setCurrentPage(1);
                     }}
-                    className="px-4 py-2 rounded-md bg-success text-success-foreground hover:opacity-90 text-sm font-medium"
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium"
                   >
                     {t('showAllDiscounts')}
                   </button>
@@ -610,8 +620,8 @@ export default function DiscountsPage() {
                 <>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-start gap-2 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <PercentIcon className="w-5 h-5 text-orange-600" weight="duotone" />
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <PercentIcon className="w-5 h-5 text-primary" weight="duotone" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">{discount.descuentoPorcentaje}% {t('discount')}</p>
@@ -644,6 +654,7 @@ export default function DiscountsPage() {
               )}
             />
           </div>
+        </div>
 
       {/* Create/Edit Drawer */}
       <Drawer

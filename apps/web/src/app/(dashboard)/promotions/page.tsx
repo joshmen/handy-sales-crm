@@ -84,6 +84,7 @@ type PromotionFormData = z.infer<typeof promotionSchema>;
 export default function PromotionsPage() {
   const t = useTranslations('promotions');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
   const { formatDate: _fmtDate } = useFormatters();
@@ -198,9 +199,14 @@ export default function PromotionsPage() {
       sortable: true,
       width: 'flex',
       cellRenderer: (promo) => (
-        <div className={`${!promo.activo ? 'opacity-50' : ''}`}>
-          <div className="text-[13px] font-medium text-foreground truncate">{promo.nombre}</div>
-          {promo.descripcion && <div className="text-xs text-muted-foreground truncate mt-0.5">{promo.descripcion}</div>}
+        <div className={`flex items-center gap-2.5 ${!promo.activo ? 'opacity-50' : ''}`}>
+          <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <Gift className="w-4 h-4 text-primary" />
+          </span>
+          <div className="min-w-0">
+            <div className="text-[13px] font-medium text-foreground truncate">{promo.nombre}</div>
+            {promo.descripcion && <div className="text-xs text-muted-foreground truncate mt-0.5">{promo.descripcion}</div>}
+          </div>
         </div>
       ),
     },
@@ -442,6 +448,8 @@ export default function PromotionsPage() {
     <PageHeader
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionCatalog') },
+        { label: 'Precios' },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -451,9 +459,9 @@ export default function PromotionsPage() {
           <div className="relative" data-tour="promotions-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -482,7 +490,7 @@ export default function PromotionsPage() {
           <button
             data-tour="promotions-create-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>{t('newPromotion')}</span>
@@ -490,22 +498,50 @@ export default function PromotionsPage() {
         </>
       }
     >
-      <div className="space-y-4">
-        {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <SearchBar
-            value={search}
-            onChange={(v) => { setSearch(v); setCurrentPage(1); }}
-            placeholder={t('searchPlaceholder')}
-            dataTour="promotions-search"
-          />
+      <div className="space-y-5">
+        {/* Filtros segmentados (estado) + búsqueda */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
+            {([
+              { value: false, label: 'Activas' },
+              { value: true, label: 'Todas' },
+            ] as const).map((opt) => {
+              const active = showInactive === opt.value;
+              return (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => { setShowInactive(opt.value); setCurrentPage(1); }}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="w-full sm:w-72 lg:w-80" data-tour="promotions-search">
+            <SearchBar
+              value={search}
+              onChange={(v) => { setSearch(v); setCurrentPage(1); }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full"
+            />
+          </div>
+        </div>
 
+        {/* Filtros secundarios + refrescar */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
@@ -561,8 +597,8 @@ export default function PromotionsPage() {
               <div className={`${!promo.activo ? 'opacity-60' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <Megaphone className="w-5 h-5 text-purple-600" weight="duotone" />
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Megaphone className="w-5 h-5 text-primary" weight="duotone" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{promo.nombre}</p>
