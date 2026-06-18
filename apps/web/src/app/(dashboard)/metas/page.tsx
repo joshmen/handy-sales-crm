@@ -421,10 +421,10 @@ export default function MetasPage() {
         {/* KPI Row — tarjetas (data real de la lista completa) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { title: t('vendorGoals'), value: String(totalMetas), hint: 'Todas las metas', icon: TargetIcon },
-            { title: tc('active'), value: String(activeMetas), hint: 'Metas vigentes', icon: CheckCircle2 },
-            { title: t('types.sales'), value: String(ventasMetas), hint: 'Metas de venta', icon: DollarSign },
-            { title: t('autoRenew'), value: String(autoRenovarMetas), hint: 'Renovación automática', icon: Repeat },
+            { title: t('vendorGoals'), value: String(totalMetas), hint: t('kpiHints.allGoals'), icon: TargetIcon },
+            { title: tc('active'), value: String(activeMetas), hint: t('kpiHints.activeGoals'), icon: CheckCircle2 },
+            { title: t('types.sales'), value: String(ventasMetas), hint: t('kpiHints.salesGoals'), icon: DollarSign },
+            { title: t('autoRenew'), value: String(autoRenovarMetas), hint: t('kpiHints.autoRenew'), icon: Repeat },
           ].map((card) => {
             const Icon = card.icon;
             return (

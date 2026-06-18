@@ -1243,6 +1243,13 @@
     "clientUpdated": "Client updated successfully",
     "clientActivated": "Client activated",
     "clientDeactivated": "Client deactivated",
+    "kpis": {
+      "totalClients": "Total clients",
+      "totalRegistered": "Total registered",
+      "active": "Active",
+      "thisPage": "On this page",
+      "prospects": "Prospects"
+    },
     "columns": {
       "client": "Client",
       "zone": "Zone",
@@ -1479,7 +1486,20 @@
       "descriptionPlaceholder": "Product description"
     },
     "consequenceDeactivate": "Deactivated products will not appear in active lists.",
-    "consequenceActivate": "Activated products will reappear in active lists."
+    "consequenceActivate": "Activated products will reappear in active lists.",
+    "tabs": {
+      "all": "All",
+      "toReview": "To review"
+    },
+    "noPrice": "No price",
+    "kpis": {
+      "productsOnPage": "Products on page",
+      "totalCatalog": "Total catalog",
+      "lowStock": "Low stock",
+      "noPrice": "No price",
+      "thisPage": "On this page",
+      "allProducts": "All products"
+    }
   },
   "collections": {
     "title": "Collections",
@@ -2066,6 +2086,14 @@
     "tabs": {
       "warehouse": "Warehouse",
       "movements": "Movements"
+    },
+    "kpis": {
+      "productsOnPage": "Products on page",
+      "totalInventory": "Total inventory",
+      "lowStock": "Low stock",
+      "zeroStock": "Zero stock",
+      "thisPage": "On this page",
+      "allRecords": "All records"
     },
     "errorLoading": "Error loading inventory",
     "errorLoadingRetry": "Error loading inventory. Please try again.",
@@ -3282,6 +3310,11 @@
         "cancelled": "Cancelled",
         "error": "Error"
       },
+      "kpis": {
+        "totalInvoices": "Total invoices",
+        "allInvoices": "All invoices",
+        "thisPage": "On this page"
+      },
       "subtitle": "{count} invoices",
       "searchByRfc": "Search by receiver tax ID...",
       "allStatuses": "All statuses",
@@ -4056,6 +4089,12 @@
     "errorToggle": "Could not change status",
     "errorDeleting": "Could not delete goal",
     "vendorGoals": "Vendor Goals",
+    "kpiHints": {
+      "allGoals": "All goals",
+      "activeGoals": "Active goals",
+      "salesGoals": "Sales goals",
+      "autoRenew": "Auto-renewal"
+    },
     "metaCount": "{count} goal{plural}",
     "searchPlaceholder": "Search by vendor or type...",
     "allTypes": "All types",
@@ -4821,6 +4860,10 @@
   },
   "promotions": {
     "title": "Promotions",
+    "statusFilter": {
+      "active": "Active",
+      "all": "All"
+    },
     "promoSingular": "promotion",
     "promoPlural": "promotions",
     "newPromotion": "New promotion",
@@ -5018,6 +5061,10 @@
   },
   "priceLists": {
     "title": "Price Lists",
+    "statusFilter": {
+      "active": "Active",
+      "all": "All"
+    },
     "listSingular": "list",
     "listPlural": "lists",
     "newList": "New list",

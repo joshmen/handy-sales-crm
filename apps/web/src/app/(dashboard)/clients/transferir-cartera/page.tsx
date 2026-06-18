@@ -108,7 +108,7 @@ export default function TransferirCarteraPage() {
                 <Users className="w-4 h-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Vendedor origen</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t('fromLabel')}</p>
                 <p className="text-[13px] font-semibold text-foreground">{fromName || t('fromLabel')}</p>
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function TransferirCarteraPage() {
                 <UserCheck className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Vendedor destino</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t('toLabel')}</p>
                 <p className="text-[13px] font-semibold text-foreground">{toName || t('toLabel')}</p>
               </div>
             </div>

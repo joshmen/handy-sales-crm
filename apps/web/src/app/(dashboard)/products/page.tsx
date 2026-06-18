@@ -440,7 +440,7 @@ export default function ProductsPage() {
       ) : (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-700">
           <AlertTriangle className="w-3 h-3" />
-          Sin precio
+          {t('noPrice')}
         </span>
       ),
     },
@@ -625,7 +625,7 @@ export default function ProductsPage() {
                       allActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Todos
+                    {t('tabs.all')}
                   </button>
                 );
               })()}
@@ -653,7 +653,7 @@ export default function ProductsPage() {
                   showSinPrecio ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Por revisar
+                {t('tabs.toReview')}
               </button>
             </div>
             <div className="w-full sm:w-72 lg:w-80" data-tour="products-search">
@@ -664,10 +664,10 @@ export default function ProductsPage() {
           {/* KPI Row — tarjetas (data real de la página cargada) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { title: 'Productos en página', value: String(productsOnPage), hint: 'En esta página', icon: Boxes },
-              { title: 'Total catálogo', value: String(totalProducts), hint: 'Todos los productos', icon: Package },
-              { title: 'Stock bajo', value: String(lowStockCount), hint: 'En esta página', icon: AlertTriangle },
-              { title: 'Sin precio', value: String(sinPrecioCount), hint: 'En esta página', icon: Tag },
+              { title: t('kpis.productsOnPage'), value: String(productsOnPage), hint: t('kpis.thisPage'), icon: Boxes },
+              { title: t('kpis.totalCatalog'), value: String(totalProducts), hint: t('kpis.allProducts'), icon: Package },
+              { title: t('kpis.lowStock'), value: String(lowStockCount), hint: t('kpis.thisPage'), icon: AlertTriangle },
+              { title: t('kpis.noPrice'), value: String(sinPrecioCount), hint: t('kpis.thisPage'), icon: Tag },
             ].map((card) => {
               const Icon = card.icon;
               return (

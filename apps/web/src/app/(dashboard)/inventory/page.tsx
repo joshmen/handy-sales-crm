@@ -739,10 +739,10 @@ export default function InventoryPage() {
             {/* KPI Row — tarjetas (data real de la página cargada) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               {[
-                { title: 'Productos en página', value: String(inventoryItems.length), hint: 'En esta página', icon: Package },
-                { title: 'Total inventario', value: String(totalItems), hint: 'Todos los registros', icon: Warehouse },
-                { title: 'Stock bajo', value: String(lowStockCount), hint: 'En esta página', icon: AlertTriangle },
-                { title: 'En cero', value: String(zeroStockCount), hint: 'En esta página', icon: ArrowDownToLine },
+                { title: t('kpis.productsOnPage'), value: String(inventoryItems.length), hint: t('kpis.thisPage'), icon: Package },
+                { title: t('kpis.totalInventory'), value: String(totalItems), hint: t('kpis.allRecords'), icon: Warehouse },
+                { title: t('kpis.lowStock'), value: String(lowStockCount), hint: t('kpis.thisPage'), icon: AlertTriangle },
+                { title: t('kpis.zeroStock'), value: String(zeroStockCount), hint: t('kpis.thisPage'), icon: ArrowDownToLine },
               ].map((card) => {
                 const Icon = card.icon;
                 return (

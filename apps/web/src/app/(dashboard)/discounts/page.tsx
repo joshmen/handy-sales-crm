@@ -423,7 +423,7 @@ export default function DiscountsPage() {
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: tn('sectionCatalog') },
-        { label: 'Precios' },
+        { label: tn('pricing') },
         { label: t('title') },
       ]}
       title={t('title')}

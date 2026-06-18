@@ -222,10 +222,10 @@ export default function InvoicesPage() {
       {/* KPI Row — tarjetas (data real de la página cargada) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {[
-          { title: 'Total facturas', value: String(totalCount), hint: 'Todas las facturas', icon: FileText, valueClass: 'text-foreground' },
-          { title: tInv('status.stamped'), value: String(stampedOnPage), hint: 'En esta página', icon: CheckCircle2, valueClass: 'text-foreground' },
-          { title: tInv('status.pending'), value: String(pendingOnPage), hint: 'En esta página', icon: Clock, valueClass: 'text-amber-600 dark:text-amber-400' },
-          { title: tInv('status.cancelled'), value: String(cancelledOnPage), hint: 'En esta página', icon: XCircle, valueClass: 'text-red-600 dark:text-red-400' },
+          { title: tInv('kpis.totalInvoices'), value: String(totalCount), hint: tInv('kpis.allInvoices'), icon: FileText, valueClass: 'text-foreground' },
+          { title: tInv('status.stamped'), value: String(stampedOnPage), hint: tInv('kpis.thisPage'), icon: CheckCircle2, valueClass: 'text-foreground' },
+          { title: tInv('status.pending'), value: String(pendingOnPage), hint: tInv('kpis.thisPage'), icon: Clock, valueClass: 'text-amber-600 dark:text-amber-400' },
+          { title: tInv('status.cancelled'), value: String(cancelledOnPage), hint: tInv('kpis.thisPage'), icon: XCircle, valueClass: 'text-red-600 dark:text-red-400' },
         ].map(card => {
           const Icon = card.icon;
           return (

@@ -55,8 +55,8 @@ export default function ForgotPasswordPage() {
       {submitted ? (
         /* Success state */
         <div className="text-center">
-          <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-success" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">
             {t('forgotPasswordSuccess')}

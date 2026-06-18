@@ -458,9 +458,9 @@ export default function ClientsPage() {
             prospectos resumen la página cargada (sublabel "En esta página"). */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { title: 'Total de clientes', value: totalClients.toLocaleString('es-MX'), hint: 'Total registrado', icon: Users },
-            { title: 'Activos', value: String(activosEnPagina), hint: 'En esta página', icon: UserCheck },
-            { title: 'Prospectos', value: String(prospectosEnPagina), hint: 'En esta página', icon: UserPlus },
+            { title: t('kpis.totalClients'), value: totalClients.toLocaleString('es-MX'), hint: t('kpis.totalRegistered'), icon: Users },
+            { title: t('kpis.active'), value: String(activosEnPagina), hint: t('kpis.thisPage'), icon: UserCheck },
+            { title: t('kpis.prospects'), value: String(prospectosEnPagina), hint: t('kpis.thisPage'), icon: UserPlus },
           ].map((card) => {
             const Icon = card.icon;
             return (

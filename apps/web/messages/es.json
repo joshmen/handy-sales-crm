@@ -1243,6 +1243,13 @@
     "clientUpdated": "Cliente actualizado exitosamente",
     "clientActivated": "Cliente activado",
     "clientDeactivated": "Cliente desactivado",
+    "kpis": {
+      "totalClients": "Total de clientes",
+      "totalRegistered": "Total registrado",
+      "active": "Activos",
+      "thisPage": "En esta página",
+      "prospects": "Prospectos"
+    },
     "columns": {
       "client": "Cliente",
       "zone": "Zona",
@@ -1479,7 +1486,20 @@
       "descriptionPlaceholder": "Descripción del producto"
     },
     "consequenceDeactivate": "Los productos desactivados no apareceran en las listas activas.",
-    "consequenceActivate": "Los productos activados volveran a aparecer en las listas activas."
+    "consequenceActivate": "Los productos activados volveran a aparecer en las listas activas.",
+    "tabs": {
+      "all": "Todos",
+      "toReview": "Por revisar"
+    },
+    "noPrice": "Sin precio",
+    "kpis": {
+      "productsOnPage": "Productos en página",
+      "totalCatalog": "Total catálogo",
+      "lowStock": "Stock bajo",
+      "noPrice": "Sin precio",
+      "thisPage": "En esta página",
+      "allProducts": "Todos los productos"
+    }
   },
   "collections": {
     "title": "Cobranza",
@@ -2066,6 +2086,14 @@
     "tabs": {
       "warehouse": "Almacen",
       "movements": "Movimientos"
+    },
+    "kpis": {
+      "productsOnPage": "Productos en página",
+      "totalInventory": "Total inventario",
+      "lowStock": "Stock bajo",
+      "zeroStock": "En cero",
+      "thisPage": "En esta página",
+      "allRecords": "Todos los registros"
     },
     "errorLoading": "Error al cargar el inventario",
     "errorLoadingRetry": "Error al cargar el inventario. Intenta de nuevo.",
@@ -3282,6 +3310,11 @@
         "cancelled": "Cancelada",
         "error": "Error"
       },
+      "kpis": {
+        "totalInvoices": "Total facturas",
+        "allInvoices": "Todas las facturas",
+        "thisPage": "En esta página"
+      },
       "subtitle": "{count} facturas",
       "searchByRfc": "Buscar por RFC receptor...",
       "allStatuses": "Todos los estados",
@@ -4056,6 +4089,12 @@
     "errorToggle": "No se pudo cambiar el estado",
     "errorDeleting": "No se pudo eliminar la meta",
     "vendorGoals": "Metas de Vendedor",
+    "kpiHints": {
+      "allGoals": "Todas las metas",
+      "activeGoals": "Metas vigentes",
+      "salesGoals": "Metas de venta",
+      "autoRenew": "Renovación automática"
+    },
     "metaCount": "{count} meta{plural}",
     "searchPlaceholder": "Buscar por vendedor o tipo...",
     "allTypes": "Todos los tipos",
@@ -4821,6 +4860,10 @@
   },
   "promotions": {
     "title": "Promociones",
+    "statusFilter": {
+      "active": "Activas",
+      "all": "Todas"
+    },
     "promoSingular": "promoción",
     "promoPlural": "promociones",
     "newPromotion": "Nueva promoción",
@@ -5018,6 +5061,10 @@
   },
   "priceLists": {
     "title": "Listas de precios",
+    "statusFilter": {
+      "active": "Activas",
+      "all": "Todas"
+    },
     "listSingular": "lista",
     "listPlural": "listas",
     "newList": "Nueva lista",

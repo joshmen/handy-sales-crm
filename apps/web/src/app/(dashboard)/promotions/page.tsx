@@ -449,7 +449,7 @@ export default function PromotionsPage() {
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: tn('sectionCatalog') },
-        { label: 'Precios' },
+        { label: tn('pricing') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -503,8 +503,8 @@ export default function PromotionsPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
             {([
-              { value: false, label: 'Activas' },
-              { value: true, label: 'Todas' },
+              { value: false, label: t('statusFilter.active') },
+              { value: true, label: t('statusFilter.all') },
             ] as const).map((opt) => {
               const active = showInactive === opt.value;
               return (

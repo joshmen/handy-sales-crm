@@ -125,7 +125,7 @@ function PricingCard({
       <div
         className={`pricing-card group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
           plan.popular
-            ? 'border-2 border-green-600 shadow-lg'
+            ? 'border-2 border-primary shadow-lg'
             : 'border border-border-subtle shadow-sm hover:shadow-md hover:border-border-default'
         }`}
       >
@@ -163,7 +163,7 @@ function PricingCard({
                 style={{ gridTemplateRows: isAnnual ? '1fr' : '0fr' }}
               >
                 <div className="overflow-hidden">
-                  <p className="text-xs text-green-600 font-medium mt-1.5">
+                  <p className="text-xs text-success font-medium mt-1.5">
                     Ahorras ${(plan.price.monthly - plan.price.annual) * 12} MXN al año
                   </p>
                 </div>
@@ -175,7 +175,7 @@ function PricingCard({
           <ul className="space-y-3 mb-8">
             {plan.features.map((feat) => (
               <li key={feat} className="flex items-center gap-2.5 text-sm text-foreground/70">
-                <Check className="w-4 h-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+                <Check className="w-4 h-4 text-success flex-shrink-0" strokeWidth={2.5} />
                 {feat}
               </li>
             ))}
@@ -229,7 +229,7 @@ export function PricingSection({ fontClassName }: { fontClassName?: string }) {
       <div className="max-w-5xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-14">
-          <p className="text-sm font-semibold text-green-600 mb-3">
+          <p className="text-sm font-semibold text-primary mb-3">
             Precios
           </p>
           <h2 className={`text-3xl lg:text-[40px] font-extrabold text-foreground tracking-tight leading-tight ${fontClassName || ''}`}>
@@ -246,8 +246,8 @@ export function PricingSection({ fontClassName }: { fontClassName?: string }) {
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 ${
-                isAnnual ? 'bg-green-600' : 'bg-surface-3'
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                isAnnual ? 'bg-primary' : 'bg-surface-3'
               }`}
               aria-label="Alternar entre facturación mensual y anual"
             >
@@ -260,7 +260,7 @@ export function PricingSection({ fontClassName }: { fontClassName?: string }) {
               Anual
             </span>
             {isAnnual && (
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-2.5 py-0.5 rounded-full pricing-fade-in">
+              <span className="text-xs font-bold text-success bg-primary/10 px-2.5 py-0.5 rounded-full pricing-fade-in">
                 -20%
               </span>
             )}
