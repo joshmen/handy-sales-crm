@@ -31,52 +31,52 @@ body {
   :root {
     /* ═══ HANDY SUITES VISUAL IDENTITY ═══ */
 
-    /* Background — cool slate tint */
-    --background: 220 16% 93%;          /* #E8EBF0 — slate bg */
-    --foreground: 220 20% 14%;
+    /* Background — light slate-blue (design #F3F5F9) */
+    --background: 220 27% 96%;
+    --foreground: 225 60% 12%;          /* #0B1430 — navy ink */
 
     /* Cards — pure white, stands out from slate background */
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 14%;
+    --card-foreground: 225 60% 12%;
 
     /* Popovers — pure white */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 14%;
+    --popover-foreground: 225 60% 12%;
 
-    /* Primary — company brand (overridden by CompanyContext) */
-    --primary: 142 71% 45%;
+    /* Primary — Salesforce blue #0176D3 (overridden by CompanyContext) */
+    --primary: 206 99% 42%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary — dark navy for emphasis, headers, badges */
-    --secondary: 220 26% 18%;
+    /* Secondary — deep navy for emphasis, headers, badges */
+    --secondary: 213 90% 20%;
     --secondary-foreground: 210 40% 96%;
 
     /* Muted — subtle background for disabled/secondary areas */
-    --muted: 220 16% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 27% 96%;
+    --muted-foreground: 226 16% 50%;    /* #6E789A */
 
     /* Accent — blue for links, info, interactive highlights */
-    --accent: 217 91% 60%;
+    --accent: 206 92% 50%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Success — company green */
-    --success: 142 71% 45%;
+    /* Success — brand blue ("todo azul") */
+    --success: 206 99% 42%;
     --success-foreground: 0 0% 100%;
 
-    /* Borders — blue-gray tint */
-    --border: 220 13% 87%;
-    --input: 220 13% 87%;
+    /* Borders — blue tint (design #E3E8F1) */
+    --border: 218 30% 92%;
+    --input: 218 30% 92%;
 
-    /* Ring — company brand for focus */
-    --ring: 142 71% 45%;
+    /* Ring — brand blue for focus */
+    --ring: 206 99% 42%;
 
     /* Charts */
-    --chart-1: 213 93% 57%;
-    --chart-2: 142 71% 45%;
+    --chart-1: 206 99% 42%;
+    --chart-2: 206 70% 60%;
     --chart-3: 0 84% 60%;
     --chart-4: 45 93% 57%;
     --chart-5: 280 60% 55%;
@@ -85,9 +85,9 @@ body {
     --radius: 0.75rem;
 
     /* ═══ SURFACE ELEVATION SYSTEM ═══ */
-    --surface-1: 220 16% 93%;          /* #E8EBF0 — page bg */
+    --surface-1: 220 27% 96%;          /* #F3F5F9 — page bg */
     --surface-2: 0 0% 100%;            /* #FFFFFF — cards float above */
-    --surface-3: 220 14% 90%;          /* #E0E4EA — hover/active */
+    --surface-3: 220 33% 97%;          /* #F4F6FB — hover/active */
     --surface-4: 0 0% 100%;            /* #FFFFFF — modals */
 
     /* ═══ SHADOW ELEVATION SYSTEM ═══ */
@@ -96,9 +96,9 @@ body {
     --shadow-3: 0 20px 50px -8px rgba(0,0,0,0.18), 0 10px 24px -8px rgba(0,0,0,0.10);
 
     /* ═══ BORDER ELEVATION SYSTEM ═══ */
-    --border-subtle: 220 14% 88%;
-    --border-default: 220 13% 84%;
-    --border-strong: 220 13% 72%;
+    --border-subtle: 218 30% 92%;
+    --border-default: 218 28% 88%;
+    --border-strong: 218 24% 82%;
 
     /* ═══ RADIUS SCALE ═══ */
     --radius-xs: 0.25rem;
@@ -109,55 +109,55 @@ body {
     --radius-2xl: 1.25rem;
 
     /* ═══ ACCENT COLOR ═══ */
-    --accent-color: 217 91% 60%;       /* #3B82F6 — blue accent */
+    --accent-color: 206 92% 50%;       /* blue accent */
     --accent-color-foreground: 0 0% 100%;
   }
 
   .dark {
-    /* Teal-Black palette — WhatsApp-inspired dark mode, hue 200 (teal) */
-    --background: 200 20% 7%;        /* #0e1518 — deepest layer */
-    --foreground: 200 12% 92%;       /* #e4eaed — warm white text */
+    /* Navy-Black palette — dark mode tuned to the blue brand, hue 218 */
+    --background: 218 28% 8%;        /* deep navy — deepest layer */
+    --foreground: 216 18% 92%;       /* warm white text */
 
-    --card: 200 18% 11%;             /* #172025 — cards, panels, drawers */
-    --card-foreground: 200 12% 92%;
+    --card: 218 22% 12%;             /* cards, panels, drawers */
+    --card-foreground: 216 18% 92%;
 
-    --popover: 200 16% 14%;          /* #1e2a30 — dropdowns, popovers */
-    --popover-foreground: 200 12% 92%;
+    --popover: 218 20% 15%;          /* dropdowns, popovers */
+    --popover-foreground: 216 18% 92%;
 
-    --primary: 142 64% 48%;
+    --primary: 205 90% 56%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 20% 82%;         /* light slate for dark mode badges/emphasis */
-    --secondary-foreground: 200 20% 10%;
+    --secondary: 216 18% 82%;         /* light slate for dark mode badges/emphasis */
+    --secondary-foreground: 218 22% 10%;
 
-    --muted: 200 14% 15%;            /* #212b31 — muted backgrounds */
-    --muted-foreground: 200 10% 55%; /* #7b9099 — secondary text */
+    --muted: 218 16% 16%;            /* muted backgrounds */
+    --muted-foreground: 218 12% 60%; /* secondary text */
 
-    --accent: 217 85% 62%;           /* blue accent, slightly lighter for dark bg */
+    --accent: 205 88% 62%;           /* blue accent, slightly lighter for dark bg */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 64% 48%;
+    --success: 205 90% 56%;
     --success-foreground: 0 0% 100%;
 
-    --border: 200 14% 20%;           /* #2b3539 — subtle borders */
-    --input: 200 16% 22%;            /* #2f3b40 — input bg (lighter than card!) */
+    --border: 218 16% 22%;           /* subtle borders */
+    --input: 218 16% 24%;            /* input bg (lighter than card!) */
 
-    --ring: 142 64% 48%;
+    --ring: 205 90% 56%;
 
-    --chart-1: 213 85% 58%;
-    --chart-2: 152 55% 50%;
+    --chart-1: 205 90% 58%;
+    --chart-2: 205 70% 64%;
     --chart-3: 25 85% 58%;
     --chart-4: 280 60% 62%;
     --chart-5: 340 70% 58%;
 
     /* ═══ SURFACE ELEVATION SYSTEM ═══ */
-    --surface-1: 200 20% 7%;
-    --surface-2: 200 18% 11%;
-    --surface-3: 200 16% 14%;
-    --surface-4: 200 16% 17%;
+    --surface-1: 218 28% 8%;
+    --surface-2: 218 22% 12%;
+    --surface-3: 218 20% 15%;
+    --surface-4: 218 18% 18%;
 
     /* ═══ SHADOW ELEVATION SYSTEM ═══ */
     --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.2), 0 1px 2px 0 rgba(0,0,0,0.12);
@@ -165,12 +165,12 @@ body {
     --shadow-3: 0 12px 32px -4px rgba(0,0,0,0.4), 0 8px 16px -4px rgba(0,0,0,0.2);
 
     /* ═══ BORDER ELEVATION SYSTEM ═══ */
-    --border-subtle: 200 14% 16%;
-    --border-default: 200 14% 20%;
-    --border-strong: 200 14% 28%;
+    --border-subtle: 218 16% 16%;
+    --border-default: 218 16% 22%;
+    --border-strong: 218 16% 30%;
 
     /* ═══ ACCENT COLOR ═══ */
-    --accent-color: 210 75% 62%;
+    --accent-color: 205 85% 62%;
     --accent-color-foreground: 0 0% 100%;
   }
 }
@@ -284,8 +284,8 @@ body {
 /* Colored tint backgrounds — low opacity on dark */
 .dark .bg-blue-50 { background-color: hsl(213 90% 60% / 0.08); }
 .dark .bg-blue-100 { background-color: hsl(213 90% 60% / 0.12); }
-.dark .bg-green-50 { background-color: hsl(152 60% 48% / 0.08); }
-.dark .bg-green-100 { background-color: hsl(152 60% 48% / 0.12); }
+.dark .bg-green-50 { background-color: hsl(206 99% 42% / 0.08); }
+.dark .bg-green-100 { background-color: hsl(206 99% 42% / 0.12); }
 .dark .bg-red-50 { background-color: hsl(0 72% 55% / 0.08); }
 .dark .bg-red-100 { background-color: hsl(0 72% 55% / 0.12); }
 .dark .bg-yellow-50 { background-color: hsl(45 93% 57% / 0.08); }
@@ -301,8 +301,8 @@ body {
 .dark .bg-teal-100 { background-color: hsl(166 64% 45% / 0.12); }
 .dark .bg-cyan-50 { background-color: hsl(190 82% 48% / 0.08); }
 .dark .bg-cyan-100 { background-color: hsl(190 82% 48% / 0.12); }
-.dark .bg-emerald-50 { background-color: hsl(152 60% 48% / 0.08); }
-.dark .bg-emerald-100 { background-color: hsl(152 60% 48% / 0.12); }
+.dark .bg-emerald-50 { background-color: hsl(206 99% 42% / 0.08); }
+.dark .bg-emerald-100 { background-color: hsl(206 99% 42% / 0.12); }
 .dark .bg-violet-50 { background-color: hsl(263 70% 58% / 0.08); }
 .dark .bg-violet-100 { background-color: hsl(263 70% 58% / 0.12); }
 .dark .bg-rose-50 { background-color: hsl(350 70% 55% / 0.08); }
@@ -551,11 +551,11 @@ body {
 
 /* Company-themed primary button (standalone usage) */
 .btn-company-primary {
-  background-color: var(--company-primary-color, #16a34a);
+  background-color: var(--company-primary-color, #0176D3);
 }
 
 .btn-company-primary:hover {
-  background-color: var(--company-primary-color, #16a34a);
+  background-color: var(--company-primary-color, #0176D3);
   filter: brightness(0.88);
 }
 
@@ -568,13 +568,13 @@ body {
 [data-dashboard] .bg-green-600.hover\:bg-green-700,
 [data-dashboard] .bg-blue-600.hover\:bg-blue-700,
 [data-dashboard] .bg-indigo-600.hover\:bg-indigo-700 {
-  background-color: var(--company-primary-color, #16a34a);
+  background-color: var(--company-primary-color, #0176D3);
 }
 
 [data-dashboard] .bg-green-600.hover\:bg-green-700:hover,
 [data-dashboard] .bg-blue-600.hover\:bg-blue-700:hover,
 [data-dashboard] .bg-indigo-600.hover\:bg-indigo-700:hover {
-  background-color: var(--company-primary-color, #16a34a);
+  background-color: var(--company-primary-color, #0176D3);
   filter: brightness(0.88);
 }
 
@@ -621,12 +621,12 @@ body {
 }
 
 .driver-popover.handy-tour-popover .driver-popover-title {
-  font-family: Inter, system-ui, sans-serif;
+  font-family: 'Figtree', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   color: white;
   padding: 14px 18px 10px;
-  background: linear-gradient(135deg, #16A34A 0%, #15803d 100%);
+  background: linear-gradient(135deg, #0176D3 0%, #0B5CAB 100%);
   border-radius: 0;
   border-bottom: none;
   margin: 0;
@@ -639,20 +639,20 @@ body {
   line-height: 1.7;
   padding: 14px 18px;
   margin: 0;
-  border-left: 3px solid #bbf7d0;
+  border-left: 3px solid #CFE3F7;
   margin-left: 14px;
   margin-right: 14px;
   margin-top: 2px;
   padding-left: 12px;
   padding-right: 4px;
-  background: #f0fdf4;
+  background: #EAF3FB;
   border-radius: 0 6px 6px 0;
 }
 
 .driver-popover.handy-tour-popover .driver-popover-progress-text {
   font-size: 11px;
   font-weight: 500;
-  color: #16A34A;
+  color: #0176D3;
   padding: 0 18px;
   letter-spacing: 0.02em;
 }
@@ -684,7 +684,7 @@ body {
 
 .driver-popover.handy-tour-popover .driver-popover-next-btn,
 .driver-popover.handy-tour-popover .driver-popover-close-btn-text {
-  background: #16A34A;
+  background: #0176D3;
   color: white;
   border: none;
   border-radius: 8px;
@@ -694,18 +694,18 @@ body {
   cursor: pointer;
   transition: all 0.15s;
   text-shadow: none;
-  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 1px 3px rgba(1, 118, 211, 0.3);
 }
 
 .driver-popover.handy-tour-popover .driver-popover-next-btn:hover,
 .driver-popover.handy-tour-popover .driver-popover-close-btn-text:hover {
-  background: #15803d;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.4);
+  background: #0B5CAB;
+  box-shadow: 0 2px 6px rgba(1, 118, 211, 0.4);
 }
 
 /* Arrow styling */
 .driver-popover.handy-tour-popover .driver-popover-arrow-side-top .driver-popover-arrow {
-  border-bottom-color: #16A34A;
+  border-bottom-color: #0176D3;
 }
 
 .driver-popover.handy-tour-popover .driver-popover-arrow-side-left .driver-popover-arrow {
