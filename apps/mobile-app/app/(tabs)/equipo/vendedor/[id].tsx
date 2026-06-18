@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Clock, ChevronLeft } from 'lucide-react-native';
+import { MapPin, Clock, ChevronLeft, Map } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { VendedorUbicacionModal } from '@/components/map/VendedorUbicacionModal';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
 import { useTenantLocale } from '@/hooks';
 import { startOfDayInTz } from '@/utils/dateTz';
@@ -77,6 +78,7 @@ function VendedorDetalleContent() {
 
   const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId, queryOpts);
   const [refreshing, setRefreshing] = useState(false);
+  const [showUbicacionMapa, setShowUbicacionMapa] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -220,7 +222,13 @@ function VendedorDetalleContent() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>ÚLTIMA UBICACIÓN</Text>
           {ultimaUbicacion ? (
-            <View style={styles.locationCard}>
+            <TouchableOpacity
+              style={styles.locationCard}
+              onPress={() => setShowUbicacionMapa(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Ver última ubicación en el mapa"
+            >
               <View style={styles.locationRow}>
                 <MapPin size={18} color={COLORS.headerBg} />
                 <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicación desconocida'}</Text>
@@ -229,10 +237,11 @@ function VendedorDetalleContent() {
                 <Clock size={14} color={COLORS.textTertiary} />
                 <Text style={styles.locationTime}>{formatTimeAgo(ultimaUbicacion.fecha)}</Text>
               </View>
-              <Text style={styles.locationCoords}>
-                {ultimaUbicacion.latitud.toFixed(4)}, {ultimaUbicacion.longitud.toFixed(4)}
-              </Text>
-            </View>
+              <View style={styles.locationHint}>
+                <Map size={14} color={COLORS.primary} />
+                <Text style={styles.locationHintText}>Ver en mapa</Text>
+              </View>
+            </TouchableOpacity>
           ) : (
             <View style={styles.locationCard}>
               <MapPin size={24} color={COLORS.textTertiary} />
@@ -242,6 +251,15 @@ function VendedorDetalleContent() {
         </View>
       </Animated.View>
     </ScrollView>
+
+    {ultimaUbicacion && (
+      <VendedorUbicacionModal
+        visible={showUbicacionMapa}
+        onClose={() => setShowUbicacionMapa(false)}
+        ubicacion={ultimaUbicacion}
+        vendedorNombre={vendedor.nombre}
+      />
+    )}
     </View>
   );
 }
@@ -372,6 +390,8 @@ const styles = StyleSheet.create({
   locationClient: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
   locationTime: { fontSize: 13, color: COLORS.textSecondary },
   locationCoords: { fontSize: 11, color: COLORS.textTertiary, fontFamily: 'monospace' },
+  locationHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  locationHintText: { fontSize: 13, fontWeight: '600', color: COLORS.primary },
   noLocationText: { fontSize: 14, color: COLORS.textTertiary, textAlign: 'center' },
 });
 
