@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
 import { useEmpresa } from '@/hooks/useEmpresa';
@@ -21,7 +22,7 @@ export default function ModoVentaScreen() {
     if (fromParada) {
       router.replace(`/(tabs)/ruta/parada/${fromParada}` as any);
     } else {
-      router.back();
+      safeBack('/(tabs)/vender');
     }
   }, [fromParada, router]);
 

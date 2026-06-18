@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
 import {
@@ -150,7 +151,7 @@ function NuevoGastoScreen() {
       });
       // Sync best-effort (no blocking)
       performSync().catch(() => {});
-      router.back();
+      safeBack('/(tabs)/ruta');
     } catch (err: any) {
       Toast.show({
         type: 'error',
@@ -167,7 +168,7 @@ function NuevoGastoScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.headerBtn}>
             <ChevronLeft size={24} color={COLORS.foreground} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Nuevo gasto</Text>
@@ -197,7 +198,7 @@ function NuevoGastoScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.headerBtn}>
           <ChevronLeft size={24} color={COLORS.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nuevo gasto</Text>
@@ -332,7 +333,7 @@ function NuevoGastoScreen() {
 
         {/* Botones */}
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.btnCancel}>
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.btnCancel}>
             <Text style={styles.btnCancelText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity

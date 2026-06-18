@@ -59,6 +59,10 @@ export default function TabsLayout() {
     <ErrorBoundary componentName="TabsRoot">
     <View style={{ flex: 1 }}>
     <Tabs
+      // backBehavior="history": el back de sistema (gesto/hardware) vuelve a la
+      // ULTIMA tab visitada, no a la primera (Hoy). Sin esto, una pantalla suelta
+      // como Mas -> Inventario hacia back saltaba al Hoy ("te lleva a inicio").
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,       // #4338CA indigo

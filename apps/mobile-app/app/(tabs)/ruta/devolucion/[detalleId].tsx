@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
 import {
@@ -87,7 +88,7 @@ function NuevaDevolucionScreen() {
         const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(String(detalleId));
         if (!stopRecord) {
           Toast.show({ type: 'error', text1: 'Parada no encontrada' });
-          router.back();
+          safeBack('/(tabs)/ruta');
           return;
         }
         setStop(stopRecord);
@@ -98,7 +99,7 @@ function NuevaDevolucionScreen() {
             text1: 'Esta parada no tiene pedido',
             text2: 'Solo se puede devolver producto de un pedido entregado.',
           });
-          router.back();
+          safeBack('/(tabs)/ruta');
           return;
         }
 
@@ -113,7 +114,7 @@ function NuevaDevolucionScreen() {
 
         if (!pedidoRec) {
           Toast.show({ type: 'error', text1: 'Pedido no encontrado en local' });
-          router.back();
+          safeBack('/(tabs)/ruta');
           return;
         }
 
@@ -135,7 +136,7 @@ function NuevaDevolucionScreen() {
       } catch (err) {
         console.error('Error cargando devolucion screen:', err);
         Toast.show({ type: 'error', text1: 'Error cargando datos' });
-        router.back();
+        safeBack('/(tabs)/ruta');
       } finally {
         setLoading(false);
       }
@@ -245,7 +246,7 @@ function NuevaDevolucionScreen() {
         visibilityTime: 2500,
       });
       performSync().catch(() => {});
-      router.back();
+      safeBack('/(tabs)/ruta');
     } catch (err: any) {
       Toast.show({
         type: 'error',
@@ -261,7 +262,7 @@ function NuevaDevolucionScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.headerBtn}>
             <ChevronLeft size={24} color={COLORS.foreground} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Registrar devolucion</Text>
@@ -278,7 +279,7 @@ function NuevaDevolucionScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]} testID="devolucion-screen">
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn} testID="btn-back">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.headerBtn} testID="btn-back">
           <ChevronLeft size={24} color={COLORS.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registrar devolucion</Text>
@@ -447,7 +448,7 @@ function NuevaDevolucionScreen() {
 
         {/* Botones */}
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.btnCancel} testID="btn-cancel">
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.btnCancel} testID="btn-cancel">
             <Text style={styles.btnCancelText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity

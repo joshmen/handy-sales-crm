@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useOfflineTodayVisits, useClientNameMap } from '@/hooks';
@@ -105,7 +106,7 @@ function VisitaActivaScreen() {
       }
 
       performSync().catch(() => {});
-      router.back();
+      safeBack('/(tabs)/ruta');
     } catch {
       Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo finalizar la visita' });
     } finally {
@@ -130,7 +131,7 @@ function VisitaActivaScreen() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.empty}>
           <Text style={styles.emptyText}>No hay visita activa</Text>
-          <Button title="Volver" onPress={() => router.back()} variant="secondary" />
+          <Button title="Volver" onPress={() => safeBack('/(tabs)/ruta')} variant="secondary" />
         </View>
       </View>
     );

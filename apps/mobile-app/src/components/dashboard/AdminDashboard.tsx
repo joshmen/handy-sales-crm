@@ -11,6 +11,7 @@ import { useTenantLocale, useUnreadNotificationCount } from '@/hooks';
 import { UserAvatar } from '@/components/ui';
 import { getGreetingForTz } from '@/utils/greeting';
 import { COLORS } from '@/theme/colors';
+import { goToSection, route } from '@/utils/navigation';
 import type { VendedorEquipo } from '@/api/schemas/supervisor';
 
 export function AdminDashboard() {
@@ -107,7 +108,7 @@ export function AdminDashboard() {
             <PersonCard
               key={v.id}
               person={v}
-              onPress={() => router.push(`/(tabs)/equipo/vendedor/${v.id}` as any)}
+              onPress={() => goToSection(route(`/(tabs)/equipo/vendedor/${v.id}`))}
             />
           ))
         ) : (
@@ -125,7 +126,7 @@ export function AdminDashboard() {
             <PersonCard
               key={v.id}
               person={v}
-              onPress={() => router.push(`/(tabs)/equipo/vendedor/${v.id}` as any)}
+              onPress={() => goToSection(route(`/(tabs)/equipo/vendedor/${v.id}`))}
             />
           ))
         ) : (
@@ -136,7 +137,7 @@ export function AdminDashboard() {
         {vendedores && vendedores.filter(v => v.rol === 'VENDEDOR').length > 3 && (
           <TouchableOpacity
             style={styles.verTodosBtn}
-            onPress={() => router.push('/(tabs)/equipo')}
+            onPress={() => goToSection(route('/(tabs)/equipo'))}
             activeOpacity={0.7}
           >
             <Text style={styles.verTodosText}>
@@ -152,24 +153,25 @@ export function AdminDashboard() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
-            // router.replace en vez de push — push preservaba el stack interno
-            // del tab equipo (vendedor detail previo) → user veía detail viejo
-            // pegado en lugar del index. Reportado admin@jeyma.com 2026-05-04.
-            onPress={() => router.replace('/(tabs)/equipo')}
+            // goToSection ancla el index de equipo (withAnchor) y navigate
+            // desenrolla a un equipo ya abierto: el back vuelve a la lista y no
+            // queda un detalle viejo pegado. Reemplaza el viejo router.replace
+            // (workaround del stale-stack). Reportado admin@jeyma.com 2026-05-04.
+            onPress={() => goToSection(route('/(tabs)/equipo'))}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Equipo</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo/mapa')}
+            onPress={() => goToSection(route('/(tabs)/equipo/mapa'))}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Mapa</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/equipo/actividad' as any)}
+            onPress={() => goToSection(route('/(tabs)/equipo/actividad'))}
             activeOpacity={0.85}
             accessibilityLabel="Ver reportes de actividad del equipo"
             accessibilityRole="button"

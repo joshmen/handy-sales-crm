@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -246,7 +247,7 @@ function ParadaDetailScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.blueHeaderTitle}>Parada</Text>
@@ -267,7 +268,7 @@ function ParadaDetailScreen() {
     <View style={styles.container}>
     {/* Blue Header */}
     <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+      <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
         <ChevronLeft size={22} color={COLORS.headerText} />
       </TouchableOpacity>
       <Text style={styles.blueHeaderTitle}>Parada #{stop.orden}</Text>

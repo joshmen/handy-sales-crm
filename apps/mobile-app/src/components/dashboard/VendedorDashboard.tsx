@@ -18,6 +18,7 @@ import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
 import { COLORS } from '@/theme/colors';
+import { goToSection, route as navRoute } from '@/utils/navigation';
 import { api } from '@/api/client';
 import { Target } from 'lucide-react-native';
 import { JornadaCard } from './JornadaCard';
@@ -291,7 +292,7 @@ export function VendedorDashboard() {
         ) : route ? (
           <Card
             className="mb-5"
-            onPress={() => router.navigate('/(tabs)/ruta' as any)}
+            onPress={() => goToSection(navRoute('/(tabs)/ruta'))}
           >
             <View style={styles.routeHeader}>
               <View style={styles.routeIconBox}>
@@ -355,7 +356,7 @@ export function VendedorDashboard() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/cobrar' as any)}
+            onPress={() => goToSection(navRoute('/(tabs)/cobrar'))}
             activeOpacity={0.85}
           >
             <Text style={styles.quickActionText}>Registrar Cobro</Text>

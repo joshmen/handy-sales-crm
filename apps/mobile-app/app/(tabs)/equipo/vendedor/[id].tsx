@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Clock, ChevronLeft, Map } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -88,7 +89,7 @@ function VendedorDetalleContent() {
 
   const Header = (
     <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-      <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+      <TouchableOpacity onPress={() => safeBack('/(tabs)/equipo')} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
         <ChevronLeft size={22} color={COLORS.headerText} />
       </TouchableOpacity>
       <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>
@@ -127,7 +128,7 @@ function VendedorDetalleContent() {
   return (
     <View style={styles.container}>
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/equipo')} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>

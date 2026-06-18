@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { safeBack } from '@/utils/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ExternalLink } from 'lucide-react-native';
 import { database } from '@/db/database';
@@ -35,7 +36,7 @@ function GastoDetailScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+          <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.headerBtn}>
             <ChevronLeft size={24} color={COLORS.foreground} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Cargando...</Text>
@@ -50,7 +51,7 @@ function GastoDetailScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => safeBack('/(tabs)/ruta')} style={styles.headerBtn}>
           <ChevronLeft size={24} color={COLORS.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detalle de gasto</Text>
