@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { callLoginApi, establishSession, callRegisterApi } from '@/lib/auth-client';
 
@@ -28,11 +29,21 @@ export default function LandingAuthModal({ open, tab, onClose, onTab }: Props) {
   const [error, setError] = useState('');
   const [lEmail, setLEmail] = useState('');
   const [lPassword, setLPassword] = useState('');
+  const [showLPass, setShowLPass] = useState(false);
   const [rNegocio, setRNegocio] = useState('');
   const [rNombre, setRNombre] = useState('');
   const [rTel, setRTel] = useState('');
   const [rEmail, setREmail] = useState('');
   const [rPassword, setRPassword] = useState('');
+  const [showRPass, setShowRPass] = useState(false);
+
+  // Al cerrar, volver a ocultar las contraseñas (no dejarlas reveladas para el siguiente uso).
+  useEffect(() => {
+    if (!open) {
+      setShowLPass(false);
+      setShowRPass(false);
+    }
+  }, [open]);
 
   // Focus trap + foco inicial + restauración + bloqueo de scroll del body + Escape.
   useEffect(() => {
@@ -164,9 +175,6 @@ export default function LandingAuthModal({ open, tab, onClose, onTab }: Props) {
     <div
       className="auth-scrim"
       data-open={open ? '' : undefined}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       <div className="auth-modal" ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="hsl-auth-title">
         <button className="auth-close" aria-label="Cerrar" onClick={onClose}>
@@ -218,7 +226,12 @@ export default function LandingAuthModal({ open, tab, onClose, onTab }: Props) {
             </div>
             <div className="fld">
               <label htmlFor="hsl-l-pass">Contraseña</label>
-              <input id="hsl-l-pass" type="password" required autoComplete="current-password" placeholder="••••••••" value={lPassword} onChange={(e) => setLPassword(e.target.value)} />
+              <div className="auth-pass">
+                <input id="hsl-l-pass" type={showLPass ? 'text' : 'password'} required autoComplete="current-password" placeholder="••••••••" value={lPassword} onChange={(e) => setLPassword(e.target.value)} />
+                <button type="button" className="auth-pass-toggle" onClick={() => setShowLPass((v) => !v)} aria-label={showLPass ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showLPass}>
+                  {showLPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn btn-pri" style={{ width: '100%', marginTop: 6 }} disabled={loading}>
               {loading ? 'Entrando…' : 'Entrar'}
@@ -260,7 +273,12 @@ export default function LandingAuthModal({ open, tab, onClose, onTab }: Props) {
             </div>
             <div className="fld">
               <label htmlFor="hsl-r-pass">Contraseña</label>
-              <input id="hsl-r-pass" type="password" required autoComplete="new-password" placeholder="12+ con mayúscula, minúscula y número" value={rPassword} onChange={(e) => setRPassword(e.target.value)} />
+              <div className="auth-pass">
+                <input id="hsl-r-pass" type={showRPass ? 'text' : 'password'} required autoComplete="new-password" placeholder="12+ con mayúscula, minúscula y número" value={rPassword} onChange={(e) => setRPassword(e.target.value)} />
+                <button type="button" className="auth-pass-toggle" onClick={() => setShowRPass((v) => !v)} aria-label={showRPass ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showRPass}>
+                  {showRPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn btn-pri" style={{ width: '100%', marginTop: 6 }} disabled={loading}>
               {loading ? 'Creando…' : 'Crear cuenta gratis'}

@@ -11,10 +11,12 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
-import { HelpTooltip } from '@/components/help/HelpTooltip';
+import { TabBar } from '@/components/ui/TabBar';
+import { StatCard } from '@/components/dashboard/StatCard';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { SearchBar } from '@/components/common/SearchBar';
+import { DateFilter } from '@/components/ui/DateFilter';
 import {
   AlertCircle,
   Users,
@@ -81,18 +83,6 @@ type CobroFormData = z.infer<typeof cobroSchema>;
 
 // fmtDate moved inside component to use locale-aware useFormatters hook
 
-/**
- * Calcula `defaultDates` y `DATE_PRESETS` ANCLADOS al día calendario del tenant.
- * Antes usaban `new Date()` (TZ del browser), causando que un admin en CDMX
- * abriendo el panel de un tenant Mazatlán filtrara con un día desfasado.
- */
-function defaultDatesFromTenantToday(today: string) {
-  const [y, m, d] = today.split('-').map(Number);
-  const past = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1, 12, 0, 0));
-  past.setUTCMonth(past.getUTCMonth() - 1);
-  return { desde: past.toISOString().slice(0, 10), hasta: today };
-}
-
 const metodoPagoColors: Record<number, string> = {
   0: 'bg-green-100 text-green-700',
   1: 'bg-blue-100 text-blue-700',
@@ -101,31 +91,6 @@ const metodoPagoColors: Record<number, string> = {
   4: 'bg-indigo-100 text-indigo-700',
   5: 'bg-surface-3 text-foreground/80',
 };
-
-function buildDatePresets(today: string): { label: string; calc: () => { desde: string; hasta: string } }[] {
-  const [y, m, d] = today.split('-').map(Number);
-  const todayUtc = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1, 12, 0, 0));
-  const isoOf = (date: Date) => date.toISOString().slice(0, 10);
-
-  return [
-    { label: 'today', calc: () => ({ desde: today, hasta: today }) },
-    { label: 'thisWeek', calc: () => {
-      const day = todayUtc.getUTCDay();
-      const mon = new Date(todayUtc);
-      mon.setUTCDate(todayUtc.getUTCDate() - (day === 0 ? 6 : day - 1));
-      return { desde: isoOf(mon), hasta: today };
-    }},
-    { label: 'thisMonth', calc: () => {
-      const first = new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), 1, 12, 0, 0));
-      return { desde: isoOf(first), hasta: today };
-    }},
-    { label: 'last90Days', calc: () => {
-      const past = new Date(todayUtc);
-      past.setUTCDate(past.getUTCDate() - 90);
-      return { desde: isoOf(past), hasta: today };
-    }},
-  ];
-}
 
 type Tab = 'cobros' | 'saldos';
 
@@ -164,9 +129,8 @@ export default function CobranzaPage() {
   // (Historial). Owner reportó que al cargar /cobranza esperaba ver
   // primero los pagos recibidos del día.
   const [tab, setTab] = useState<Tab>('cobros');
-  const [dates, setDates] = useState(() => defaultDatesFromTenantToday(tenantToday()));
-  // Presets recompiled when tenant TZ/day changes (rare).
-  const DATE_PRESETS = useMemo(() => buildDatePresets(tenantToday()), [tenantToday]);
+  // Filtro de día único (solo afecta el tab 'cobros'). Default: hoy del tenant.
+  const [diaFiltro, setDiaFiltro] = useState<string>(() => tenantToday());
   const [resumen, setResumen] = useState<ResumenCartera | null>(null);
 
   // Cobros
@@ -220,8 +184,7 @@ export default function CobranzaPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Date presets & search
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  // Search
   const [searchCobros, setSearchCobros] = useState('');
 
   // Inline cobro (inside estado de cuenta drawer)
@@ -238,10 +201,10 @@ export default function CobranzaPage() {
   const fetchCobros = useCallback(async () => {
     try {
       setCobrosLoading(true);
-      setCobros(await getCobros({ desde: dates.desde, hasta: dates.hasta }));
+      setCobros(await getCobros({ desde: diaFiltro, hasta: diaFiltro }));
     } catch { toast.error(t('errorLoadingPayments')); }
     finally { setCobrosLoading(false); }
-  }, [dates]);
+  }, [diaFiltro]);
 
   const fetchSaldos = useCallback(async () => {
     try {
@@ -264,16 +227,14 @@ export default function CobranzaPage() {
     if (tab === 'cobros') fetchCobros(); else fetchSaldos();
   }, [tab, fetchCobros, fetchSaldos]);
 
-  // Date change: refresh cobros + resumen (debounced, skip initial mount)
-  const datesInitialized = useRef(false);
+  // Day change: refresh cobros + resumen (skip initial mount). El DateFilter
+  // emite selecciones discretas (Hoy/Ayer/Fecha…), no necesita debounce.
+  const diaInitialized = useRef(false);
   useEffect(() => {
-    if (!datesInitialized.current) { datesInitialized.current = true; return; }
-    const timeout = setTimeout(() => {
-      fetchCobros();
-      fetchResumen();
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [dates.desde, dates.hasta, fetchCobros, fetchResumen]);
+    if (!diaInitialized.current) { diaInitialized.current = true; return; }
+    fetchCobros();
+    fetchResumen();
+  }, [diaFiltro, fetchCobros, fetchResumen]);
 
   // Load clients for the new cobro dropdown
   useEffect(() => {
@@ -536,7 +497,7 @@ export default function CobranzaPage() {
   // quedar en una página inexistente del nuevo conjunto.
   useEffect(() => {
     setCobrosPage(1);
-  }, [searchCobros, dates.desde, dates.hasta, tab]);
+  }, [searchCobros, diaFiltro, tab]);
 
   const totalPagesCobros = Math.max(1, Math.ceil(filteredCobros.length / PAGE_SIZE));
   const paginatedCobros = useMemo(
@@ -568,6 +529,7 @@ export default function CobranzaPage() {
   return (
     <>
       <PageHeader
+        section="ventas"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: tn('sectionSales') },
@@ -577,15 +539,16 @@ export default function CobranzaPage() {
         subtitle={resumen ? t('clientCount', { count: resumen.clientesConSaldo }) : undefined}
         actions={
           <>
-            <ExportButton entity="cobros" label={tc('export')} params={{ desde: dates.desde, hasta: dates.hasta }} />
-            <button
-              data-tour="cobranza-new-btn"
-              onClick={() => setShowNewCobro(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
+            {tab === 'cobros' && (
+              <div data-tour="cobranza-date-filter">
+                <DateFilter value={diaFiltro} onChange={setDiaFiltro} retentionDays={365} />
+              </div>
+            )}
+            <ExportButton entity="cobros" label={tc('export')} params={{ desde: diaFiltro, hasta: diaFiltro }} />
+            <Button variant="wbPrimary" data-tour="cobranza-new-btn" onClick={() => setShowNewCobro(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               <span>{t('newPayment')}</span>
-            </button>
+            </Button>
           </>
         }
       >
@@ -593,60 +556,45 @@ export default function CobranzaPage() {
           {/* KPI Row — 4 tarjetas (data real de ResumenCartera) */}
           <div data-tour="cobranza-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {resumen ? (
-              [
+              ([
                 {
                   title: t('kpisCards.outstanding'),
                   value: formatCurrency(resumen.totalPendiente),
                   hint: t('kpisCards.outstandingHint'),
                   icon: AlertCircle,
-                  valueClass: 'text-amber-600 dark:text-amber-400',
-                  tooltipKey: 'cobranza-por-cobrar',
+                  tone: 'warning',
                 },
                 {
                   title: t('kpisCards.collectedPeriod'),
                   value: formatCurrency(totalCobros),
                   hint: t('kpisCards.collectedPeriodHint'),
                   icon: CreditCard,
-                  valueClass: 'text-primary',
-                  tooltipKey: 'cobranza-cobrado',
+                  tone: 'primary',
                 },
                 {
                   title: t('kpisCards.clientsOwing'),
                   value: String(resumen.clientesConSaldo),
                   hint: t('kpisCards.clientsOwingHint'),
                   icon: Users,
-                  valueClass: 'text-foreground',
-                  tooltipKey: 'cobranza-clientes-deben',
+                  tone: 'default',
                 },
                 {
                   title: t('kpisCards.recovery'),
                   value: `${recoveryPct}%`,
                   hint: t('kpisCards.recoveryHint'),
                   icon: Percent,
-                  valueClass: 'text-foreground',
-                  tooltipKey: undefined as string | undefined,
+                  tone: 'default',
                 },
-              ].map((card) => {
-                const Icon = card.icon;
-                return (
-                  <div
-                    key={card.title}
-                    className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex items-start justify-between">
-                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                        {card.title}
-                        {card.tooltipKey && <HelpTooltip tooltipKey={card.tooltipKey} />}
-                      </p>
-                      <Icon className="w-5 h-5 text-muted-foreground/40" />
-                    </div>
-                    <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${card.valueClass}`}>
-                      {card.value}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
-                  </div>
-                );
-              })
+              ] as const).map((card) => (
+                <StatCard
+                  key={card.title}
+                  label={card.title}
+                  value={card.value}
+                  icon={card.icon}
+                  tone={card.tone}
+                  sub={card.hint}
+                />
+              ))
             ) : (
               [0, 1, 2, 3].map((i) => (
                 <div key={i} className="bg-card border border-border rounded-2xl p-5">
@@ -675,76 +623,21 @@ export default function CobranzaPage() {
 
           {/* Filter Row */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div data-tour="cobranza-date-filter">
-              <DateTimePicker
-                compact
-                mode="date"
-                value={dates.desde}
-                onChange={(val) => { setDates(d => ({ ...d, desde: val })); setActivePreset(null); }}
-                placeholder={tc('from')}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground">—</span>
-            <div>
-              <DateTimePicker
-                compact
-                mode="date"
-                value={dates.hasta}
-                onChange={(val) => { setDates(d => ({ ...d, hasta: val })); setActivePreset(null); }}
-                placeholder={tc('to')}
-                min={dates.desde}
-              />
-            </div>
-            <button
-              data-tour="cobranza-refresh"
-              onClick={() => { fetchCobros(); fetchSaldos(); fetchResumen(); }}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+            <Button variant="wbOutline" size="sm" data-tour="cobranza-refresh" onClick={() => { fetchCobros(); fetchSaldos(); fetchResumen(); }}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
+            </Button>
 
-            {/* Date presets */}
-            <div className="hidden sm:flex items-center gap-1">
-              {DATE_PRESETS.map((p) => (
-                <button
-                  key={p.label}
-                  onClick={() => { setDates(p.calc()); setActivePreset(p.label); }}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors ${
-                    activePreset === p.label
-                      ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
-                      : 'bg-surface-3 text-foreground/70 hover:bg-surface-1'
-                  }`}
-                >
-                  {tc(p.label)}
-                </button>
-              ))}
-            </div>
-
-            {/* Tabs segmentadas — always right-aligned */}
-            <div data-tour="cobranza-tabs" className="ml-auto inline-flex items-center rounded-xl border border-border bg-surface-1 p-1">
-              <button
-                onClick={() => { setTab('cobros'); setSearchCobros(''); }}
-                aria-pressed={tab === 'cobros'}
-                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                  tab === 'cobros'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('tabs.payments')}
-              </button>
-              <button
-                onClick={() => setTab('saldos')}
-                aria-pressed={tab === 'saldos'}
-                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                  tab === 'saldos'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('tabs.balances')}
-              </button>
+            {/* Tabs (TabBar subrayado, verde ventas) — always right-aligned */}
+            <div data-tour="cobranza-tabs" className="ml-auto">
+              <TabBar
+                items={[
+                  { id: 'cobros', label: t('tabs.payments') },
+                  { id: 'saldos', label: t('tabs.balances') },
+                ]}
+                value={tab}
+                onChange={(id) => { setTab(id as Tab); if (id === 'cobros') setSearchCobros(''); }}
+              />
             </div>
           </div>
 

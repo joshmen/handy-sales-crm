@@ -8,6 +8,8 @@ public class ListaPrecioDto
     public bool Activo { get; set; }
     public DateTime CreadoEn { get; set; }
     public DateTime? ActualizadoEn { get; set; }
+    public int CantidadClientes { get; set; }
+    public int CantidadProductos { get; set; }
 }
 
 public record ListaPrecioCambiarActivoDto(bool Activo);

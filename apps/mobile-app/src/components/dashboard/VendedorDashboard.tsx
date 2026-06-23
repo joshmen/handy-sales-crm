@@ -22,6 +22,7 @@ import { goToSection, route as navRoute } from '@/utils/navigation';
 import { api } from '@/api/client';
 import { Target } from 'lucide-react-native';
 import { JornadaCard } from './JornadaCard';
+import { VisitasAgendaCard } from './VisitasAgendaCard';
 import { useCreateOrderFlow } from '@/hooks/useCreateOrderFlow';
 import { PendingDataBanner } from '@/components/shared/PendingDataBanner';
 
@@ -342,6 +343,11 @@ export function VendedorDashboard() {
           </Card>
         )}
       </Animated.View>
+
+      {/* Visitas de hoy — agenda + ad-hoc check-in. Combina visitas agendadas
+          pendientes + visitadas hoy; "Llegué" hace check-in offline reutilizando
+          el mismo flujo del mapa (useCheckInFlow). Se auto-oculta si no hay visitas. */}
+      <VisitasAgendaCard />
 
       {/* Quick Actions — white cards with gray icons */}
       <Animated.View entering={FadeInDown.delay(400).duration(400)}>

@@ -274,6 +274,7 @@ function PreFacturaContent() {
   if (error || !preview) {
     return (
       <PageHeader
+        section="empresa"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: t('breadcrumbBilling'), href: '/billing' },
@@ -306,6 +307,7 @@ function PreFacturaContent() {
 
   return (<>
     <PageHeader
+      section="empresa"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbBilling'), href: '/billing' },
@@ -327,7 +329,7 @@ function PreFacturaContent() {
               {t('unmappedHint')}{' '}
               <button
                 type="button"
-                onClick={() => router.push('/billing/fiscal-mapping')}
+                onClick={() => router.push('/products')}
                 className="underline hover:no-underline font-medium"
               >
                 {t('fiscalConfig')}

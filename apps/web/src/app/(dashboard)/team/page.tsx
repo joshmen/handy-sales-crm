@@ -27,6 +27,7 @@ function TeamPageContent() {
 
   return (
     <PageHeader
+      section="equipo"
       breadcrumbs={[
         { label: tCommon('home'), href: '/dashboard' },
         { label: t('title') },
@@ -38,7 +39,7 @@ function TeamPageContent() {
           {exportFn && (
             <button
               onClick={exportFn}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tCommon('export')}</span>
@@ -47,7 +48,7 @@ function TeamPageContent() {
           {createFn && (
             <button
               onClick={createFn}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-full hover:bg-success/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('members.newUser')}</span>

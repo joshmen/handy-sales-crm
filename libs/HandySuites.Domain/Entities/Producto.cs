@@ -27,8 +27,26 @@ public class Producto : AuditableEntity
     [Column("precio_base")]
     public decimal PrecioBase { get; set; }
 
+    /// <summary>
+    /// Costo unitario actual (costo promedio ponderado). Base para inventario
+    /// valorizado, margen y rotación (reportes de costo). Default 0 = sin costear.
+    /// Editable en la ficha; se recalcula (prom. ponderado) en entradas con costo.
+    /// </summary>
+    [Column("costo")]
+    public decimal Costo { get; set; }
+
+    /// <summary>ClaveProdServ del SAT (CFDI 4.0). Fuente para facturación; el Mapeo
+    /// Fiscal puede sobre-escribirla. Null = sin mapear (no facturable hasta asignarla).</summary>
     [Column("clave_sat")]
     public string? ClaveSat { get; set; }
+
+    /// <summary>ClaveUnidad del SAT (ej. "H87" = Pieza). Acompaña a ClaveSat en el CFDI.</summary>
+    [Column("clave_unidad")]
+    public string? ClaveUnidad { get; set; }
+
+    /// <summary>Si false, el producto NO se incluye en CFDI (no facturable). Default true.</summary>
+    [Column("facturable")]
+    public bool Facturable { get; set; } = true;
 
     /// <summary>
     /// Si true (default), `PrecioBase` es lo que el cliente paga al final (IVA

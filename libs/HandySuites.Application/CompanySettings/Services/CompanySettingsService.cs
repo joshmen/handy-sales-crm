@@ -95,6 +95,7 @@ namespace HandySuites.Application.CompanySettings.Services
                     HoraFinJornada = settings.HoraFinJornada.ToString("HH:mm"),
                     DiasLaborables = settings.DiasLaborables,
                     ModoVentaDefault = settings.ModoVentaDefault,
+                    GeocercaRadioMetros = settings.GeocercaRadioMetros,
                 };
             }
             catch (Exception ex)
@@ -173,6 +174,9 @@ namespace HandySuites.Application.CompanySettings.Services
                     }
                 }
 
+                if (request.GeocercaRadioMetros.HasValue)
+                    settings.GeocercaRadioMetros = request.GeocercaRadioMetros.Value;
+
                 settings.ActualizadoPor = userId.ToString();
 
                 var updatedSettings = await _repository.UpdateAsync(settings);
@@ -194,6 +198,7 @@ namespace HandySuites.Application.CompanySettings.Services
                     HoraFinJornada = updatedSettings.HoraFinJornada.ToString("HH:mm"),
                     DiasLaborables = updatedSettings.DiasLaborables,
                     ModoVentaDefault = updatedSettings.ModoVentaDefault,
+                    GeocercaRadioMetros = updatedSettings.GeocercaRadioMetros,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };
             }

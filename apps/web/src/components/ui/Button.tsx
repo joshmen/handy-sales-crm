@@ -18,11 +18,19 @@ const buttonVariants = cva(
         ghost: "hover:bg-surface-3 hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-gradient-to-b from-success to-success/85 text-success-foreground shadow-elevation-1 hover:shadow-elevation-2 hover:brightness-110",
+        // SLDS pill variants (rediseño visual): radio alto, estilo plano.
+        wbPrimary: "rounded-full bg-primary text-primary-foreground shadow-elevation-1 hover:bg-primary/90",
+        wbOutline: "rounded-full bg-card text-foreground border border-border-strong hover:bg-surface-2",
+        wbSoft: "rounded-full bg-surface-2 text-foreground border border-border-subtle hover:bg-surface-3",
+        wbGhost: "rounded-full bg-surface-2 text-foreground hover:bg-surface-3",
+        wbDanger: "rounded-full bg-destructive text-destructive-foreground hover:brightness-110",
       },
       size: {
+        // NOTE: sm/lg intentionally omit `rounded-*` so the variant's radius wins
+        // (base provides rounded-md for non-wb variants; wb* variants keep rounded-full).
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        sm: "h-9 px-3",
+        lg: "h-11 px-8",
         icon: "h-10 w-10",
       },
     },
@@ -59,4 +67,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
-export { Button };
+export { Button, buttonVariants };

@@ -125,6 +125,20 @@ class RouteService {
     }
   }
 
+  /**
+   * Rutas activas de hoy con paradas geo-localizadas, para el mapa de Operaciones.
+   * RBAC en el backend (vendedor ve solo las suyas). Devuelve el detalle completo
+   * (incluye `detalles` con `clienteLatitud`/`clienteLongitud`).
+   */
+  async getActiveRoutesMap(): Promise<RouteDetail[]> {
+    try {
+      const response = await api.get<RouteDetail[]>(`${this.basePath}/active-map`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async toggleActivo(id: number, activo: boolean): Promise<void> {
     try {
       await api.patch(`${this.basePath}/${id}/activo`, { activo });
@@ -459,6 +473,10 @@ export interface RouteDetail {
   efectivoInicial?: number;
   comentariosCarga?: string;
   montoRecibido?: number;
+  /** Vehículo asignado (flotilla). Solo poblado en el detalle. */
+  vehiculoId?: number | null;
+  vehiculoPlaca?: string | null;
+  vehiculoCapacidad?: number | null;
   totalParadas: number;
   paradasCompletadas: number;
   paradasPendientes: number;
@@ -472,6 +490,8 @@ export interface RouteStop {
   clienteId: number;
   clienteNombre: string;
   clienteDireccion?: string;
+  clienteLatitud?: number | null;
+  clienteLongitud?: number | null;
   ordenVisita: number;
   horaEstimadaLlegada?: string;
   duracionEstimadaMinutos?: number;
@@ -505,6 +525,8 @@ export interface RouteCreateRequest {
   horaInicioEstimada?: string | null;
   horaFinEstimada?: string | null;
   notas?: string;
+  /** Vehículo (flotilla) asignado a la ruta. */
+  vehiculoId?: number | null;
 }
 
 export interface RouteUpdateRequest {
@@ -519,6 +541,8 @@ export interface RouteUpdateRequest {
   horaInicioEstimada?: string | null;
   horaFinEstimada?: string | null;
   notas?: string;
+  /** Vehículo: >0 asigna, 0 limpia, undefined/null deja sin cambio (back-compat con backend). */
+  vehiculoId?: number | null;
 }
 
 // Resultado de asignación batch de pedidos a una ruta. Tolerante a fallos

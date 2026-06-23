@@ -21,6 +21,7 @@ import {
   Percent as SbDiscounts,
   Gift as SbPromotions,
   Route as SbRoutes,
+  Truck as SbFleet,
   Layers as SbInventory,
   MapPin as SbZones,
   MapPinned as SbVisits,
@@ -47,6 +48,7 @@ import {
   Users as SbUsersGlobal,
   Plug as SbIntegrations,
   Receipt as SbBilling,
+  Banknote as SbExpenses,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -102,8 +104,15 @@ const sidebarItems: SidebarItem[] = [
     href: '/cobranza',
     permission: 'view_orders',
   },
-  // Gastos eliminados del sidebar (redesign 30/5): se reportan desde mobile y
-  // se auditan ahora desde el tab "Gastos" del detalle de ruta + Drawer en close.
+  // Gastos contables (deducibles): alimentan P&L / IVA / DIOT. NO confundir con
+  // los gastos de ruta del móvil (auditados en el detalle de ruta + Drawer close).
+  {
+    id: 'gastos',
+    label: 'Gastos',
+    icon: SbExpenses,
+    href: '/gastos',
+    permission: 'view_orders',
+  },
 
   // — CATÁLOGO —
   {
@@ -236,6 +245,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_routes',
       },
       {
+        id: 'routes-carga-liquidacion',
+        label: 'Carga y liquidación',
+        icon: SbProducts,
+        href: '/routes/carga-liquidacion',
+        permission: 'view_routes',
+      },
+      {
         id: 'routes-templates',
         label: 'Plantillas',
         icon: SbForms,
@@ -243,6 +259,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_routes',
       },
     ],
+  },
+  {
+    id: 'flotilla',
+    label: 'Flotilla',
+    icon: SbFleet,
+    href: '/flotilla',
+    permission: 'view_routes',
   },
   {
     id: 'inventory',
@@ -273,6 +296,7 @@ const sidebarItems: SidebarItem[] = [
     icon: SbReports,
     href: '/reports',
     permission: 'view_reports',
+    section: 'Herramientas',
   },
   {
     id: 'metas',
@@ -344,13 +368,6 @@ const sidebarItems: SidebarItem[] = [
         label: 'Facturas',
         icon: SbOrders,
         href: '/billing/invoices',
-        permission: 'manage_billing',
-      },
-      {
-        id: 'billing-fiscal-mapping',
-        label: 'Mapeo Fiscal',
-        icon: SbProducts,
-        href: '/billing/fiscal-mapping',
         permission: 'manage_billing',
       },
       {
@@ -471,13 +488,13 @@ interface SidebarProps {
 
 // Translation map: sidebar label → i18n key
 const LABEL_KEYS: Record<string, string> = {
-  'Tablero': 'nav.dashboard', 'Primeros pasos': 'nav.gettingStarted', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections',
+  'Tablero': 'nav.dashboard', 'Primeros pasos': 'nav.gettingStarted', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections', 'Gastos': 'nav.expenses',
   'Clientes': 'nav.clients', 'Lista de clientes': 'nav.clientsList', 'Categorías de clientes': 'nav.clientCategories',
   'Productos': 'nav.products', 'Lista de productos': 'nav.productsList', 'Familias de productos': 'nav.productFamilies',
   'Categorías de productos': 'nav.productCategories', 'Unidades de medida': 'nav.units', 'Tasas de impuesto': 'nav.taxRates',
   'Precios': 'nav.pricing', 'Listas de precios': 'nav.priceLists', 'Descuentos': 'nav.discounts', 'Promociones': 'nav.promotions',
-  'Rutas': 'nav.routes', 'Lista de rutas': 'nav.routesList', 'Plantillas': 'nav.routeTemplates',
-  'Inventario': 'nav.inventory', 'Zonas': 'nav.zones', 'Visitas': 'nav.visits',
+  'Rutas': 'nav.routes', 'Lista de rutas': 'nav.routesList', 'Carga y liquidación': 'nav.routesLoadSettlement', 'Plantillas': 'nav.routeTemplates',
+  'Flotilla': 'nav.flotilla', 'Inventario': 'nav.inventory', 'Zonas': 'nav.zones', 'Visitas': 'nav.visits',
   'Reportes': 'nav.reports', 'Metas': 'nav.goals', 'Automatizaciones': 'nav.automations',
   'Equipo': 'nav.team', 'Miembros': 'nav.teamMembers', 'Histórico GPS': 'nav.teamGpsHistory',
   'Registro de actividad': 'nav.activityLog',
@@ -489,7 +506,7 @@ const LABEL_KEYS: Record<string, string> = {
   'Monitor de Errores': 'nav.saCrashReports',
   // Sections
   'Ventas': 'nav.sectionSales', 'Catálogo': 'nav.sectionCatalog', 'Operación': 'nav.sectionOperations',
-  'Empresa': 'nav.sectionCompany',
+  'Herramientas': 'nav.sectionTools', 'Empresa': 'nav.sectionCompany',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonatingProp }) => {

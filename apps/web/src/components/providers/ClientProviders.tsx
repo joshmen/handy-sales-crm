@@ -7,7 +7,7 @@ import { SignalRProvider } from "@/contexts/SignalRContext"
 import { CompanyProvider } from "@/contexts/CompanyContext"
 import { ProfileProvider } from "@/contexts/ProfileContext"
 import { LoadingProvider } from "@/contexts/LoadingContext"
-import { Toaster } from "sonner"
+import { Toaster } from "@/components/ui/Toaster"
 import { GlobalLoadingIndicator } from "@/components/ui/GlobalLoadingIndicator"
 import { HydrationProvider } from "./HydrationProvider"
 import NextTopLoader from "nextjs-toploader"
@@ -34,7 +34,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
               <ProfileProvider>
                 <UIProvider>
                   {children}
-                  <Toaster richColors position="top-right" toastOptions={{ duration: 4000 }} />
+                  <Toaster />
                   <GlobalLoadingIndicator />
                 </UIProvider>
               </ProfileProvider>

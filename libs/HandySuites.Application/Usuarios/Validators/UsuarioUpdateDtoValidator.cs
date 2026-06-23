@@ -13,6 +13,7 @@ namespace HandySuites.Application.Usuarios.Validators
             RoleNames.Supervisor,
             RoleNames.Viewer,
             RoleNames.Vendedor,
+            RoleNames.Almacenista,
         };
 
         public UsuarioUpdateDtoValidator()
@@ -38,7 +39,7 @@ namespace HandySuites.Application.Usuarios.Validators
             // Rol opcional. Si viene, debe ser uno de los válidos.
             RuleFor(x => x.Rol)
                 .Must(rol => rol == null || ValidRoles.Contains(rol))
-                .WithMessage("El rol no es válido. Valores aceptados: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.")
+                .WithMessage("El rol no es válido. Valores aceptados: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR, ALMACENISTA.")
                 .When(x => !string.IsNullOrWhiteSpace(x.Rol));
 
             // Teléfono opcional. Acepta dígitos + separadores comunes ("(",

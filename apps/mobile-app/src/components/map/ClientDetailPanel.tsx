@@ -10,24 +10,41 @@ interface ClientDetailPanelProps {
   client: MapClient;
   routeStopMap: Map<string, number>;
   todayVisitSet: Set<string>;
+  /** Clientes con una visita agendada hoy pendiente de check-in ("Agendado hoy"). */
+  scheduledTodaySet?: Set<string>;
   distance: number | null;
   bottomInset: number;
   onClose: () => void;
   onViewDetail: () => void;
   onSell: () => void;
+  /** Inicia el check-in del cliente "Agendado hoy" (reutiliza el flujo de paradas). */
+  onCheckIn?: () => void;
 }
 
 function ClientDetailPanelInner({
   client,
   routeStopMap,
   todayVisitSet,
+  scheduledTodaySet,
   distance,
   bottomInset,
   onClose,
   onViewDetail,
   onSell,
+  onCheckIn,
 }: ClientDetailPanelProps) {
-  const markerColor = getClientMarkerColor(client.id, routeStopMap, todayVisitSet, client.activo);
+  // "Agendado hoy" matchea por id local o server id (ver useMapData.scheduledTodaySet).
+  const isScheduledToday =
+    !!scheduledTodaySet &&
+    (scheduledTodaySet.has(client.id) ||
+      (client.serverId != null && scheduledTodaySet.has(String(client.serverId))));
+  const markerColor = getClientMarkerColor(
+    client.id,
+    routeStopMap,
+    todayVisitSet,
+    client.activo,
+    isScheduledToday ? new Set([client.id]) : undefined,
+  );
   const isVisitedToday = todayVisitSet.has(client.id);
 
   const handleNavigate = () => {
@@ -50,6 +67,11 @@ function ClientDetailPanelInner({
           <View style={styles.nameRow}>
             <View style={[styles.colorDot, { backgroundColor: markerColor }]} />
             <Text style={styles.name}>{client.nombre}</Text>
+            {isScheduledToday && !isVisitedToday && (
+              <View style={styles.scheduledBadge}>
+                <Text style={styles.scheduledText}>Agendado hoy</Text>
+              </View>
+            )}
             {isVisitedToday && (
               <View style={styles.visitedBadge}>
                 <Text style={styles.visitedText}>Visitado</Text>
@@ -69,6 +91,23 @@ function ClientDetailPanelInner({
           <X size={18} color="#94a3b8" />
         </TouchableOpacity>
       </View>
+
+      {/* "Llegué": check-in directo del cliente. Se muestra para CUALQUIER cliente
+          aún no visitado hoy → habilita check-in ad-hoc (sin visita agendada previa).
+          createVisitaOffline cumple la visita agendada si existe, o crea una ad-hoc
+          nueva si no. El badge "Agendado hoy" sigue marcando solo los agendados. */}
+      {!isVisitedToday && onCheckIn && (
+        <TouchableOpacity
+          style={styles.checkInBtn}
+          onPress={onCheckIn}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Hacer check-in de la visita agendada hoy"
+        >
+          <MapPin size={18} color="#fff" />
+          <Text style={styles.checkInText}>Llegué</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={styles.actions}>
         <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.primary }]} onPress={onViewDetail} activeOpacity={0.85}>
@@ -125,6 +164,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   visitedText: { fontSize: 10, fontWeight: '700', color: '#16a34a' },
+  scheduledBadge: {
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  scheduledText: { fontSize: 10, fontWeight: '700', color: '#0284c7' },
   address: { fontSize: 13, color: '#64748b', marginTop: 3 },
   distance: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
   closeBtn: {
@@ -135,6 +181,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  checkInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#0284c7',
+    marginBottom: 10,
+  },
+  checkInText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     flex: 1,

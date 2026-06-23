@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { StatCard } from '@/components/dashboard/StatCard';
 import {
   SbDollarSign,
   SbShoppingCart,
@@ -54,6 +55,8 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useTranslations } from 'next-intl';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { startOfMonthIso } from '@/components/ui/dateFilterUtils';
 
 // Tipos para métricas
 interface MetricCardData {
@@ -63,7 +66,7 @@ interface MetricCardData {
   changeLabel: string;
   icon3d: React.ComponentType<{ size?: number; className?: string }>;
   // Lucide icon (tenue) usado por las KPI cards del tablero ejecutivo.
-  lucideIcon?: React.ComponentType<{ className?: string }>;
+  lucideIcon?: React.ComponentType<{ size?: number; className?: string }>;
 }
 
 // Activity feed: flat Lucide icons + status-colored circles for data-dense rows
@@ -77,22 +80,6 @@ const activityIcons: Record<string, React.ElementType> = {
   view: Eye,
   export: FileDown,
 };
-
-/**
- * Calcula el rango YYYY-MM-DD usando el día calendario en TZ del tenant.
- * `today` se inyecta desde `useFormatters().tenantToday()` para que la consulta
- * coincida con lo que ve el admin en su zona (Mazatlán/CDMX/etc) en lugar
- * del calendario UTC del browser.
- */
-function getDateRange(periodo: 'semana' | 'mes' | 'trimestre', today: string) {
-  const hasta = today;
-  const [y, m, d] = today.split('-').map(Number);
-  const days = periodo === 'semana' ? 7 : periodo === 'mes' ? 30 : 90;
-  const desdeUtcNoon = new Date(Date.UTC((y ?? 0), (m ?? 1) - 1, (d ?? 1), 12, 0, 0));
-  desdeUtcNoon.setUTCDate(desdeUtcNoon.getUTCDate() - days);
-  const desde = desdeUtcNoon.toISOString().slice(0, 10);
-  return { desde, hasta };
-}
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
@@ -127,7 +114,6 @@ export default function DashboardPage() {
   const [allMetasActivas, setAllMetasActivas] = useState<MetaVendedor[]>([]);
 
   // Real data state for Admin dashboard
-  const [periodo, setPeriodo] = useState<'semana' | 'mes' | 'trimestre'>('semana');
   const [ejecutivo, setEjecutivo] = useState<DashboardEjecutivoResponse | null>(null);
   const [ventasDiarias, setVentasDiarias] = useState<VentaPeriodo[]>([]);
   const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
@@ -140,9 +126,21 @@ export default function DashboardPage() {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { on, off } = useSignalR();
-  const { formatCurrency, formatNumber, formatDate, tenantToday } = useFormatters();
+  const { formatCurrency, formatNumber, formatDate, tenantToday, tenantStartOfWeek } = useFormatters();
   const { settings } = useCompany();
   const companyName = settings?.companyName ?? '';
+
+  // Filtro de rango — Supervisor por defecto "esta semana" (retención 1 año),
+  // Admin por defecto "este mes" (retención 2 años). `rango.mode` reemplaza al
+  // antiguo `periodo` en los branches visuales (changeLabel, tipo de gráfica,
+  // títulos); 'custom' se comporta como 'mes'.
+  const isSupervisor = session?.user?.role === 'SUPERVISOR';
+  const RET = isSupervisor ? 365 : 730;
+  const [rango, setRango] = useState<DateRangeValue>(() =>
+    isSupervisor
+      ? { mode: 'semana', from: tenantStartOfWeek(), to: tenantToday() }
+      : { mode: 'mes', from: startOfMonthIso(tenantToday()), to: tenantToday() }
+  );
 
   // Listen for real-time updates via SignalR (debounced)
   useEffect(() => {
@@ -180,13 +178,19 @@ export default function DashboardPage() {
     }
   }, [isSuperAdminDirect, router]);
 
+  // Para los branches VISUALES (changeLabel, tipo de gráfica bar/area, títulos)
+  // un rango personalizado se trata como "mes": mismas etiquetas y gráfica de
+  // área diaria. Los fetches usan rango.from/to directos (no este derivado).
+  const vistaMode: 'semana' | 'mes' | 'trimestre' =
+    rango.mode === 'custom' ? 'mes' : rango.mode;
+
   // Build metric cards dynamically from ejecutivo data
   const metricCards: MetricCardData[] = ejecutivo ? [
     {
       title: t('totalSales'),
       value: `${formatCurrency(ejecutivo.ventas.total)}`,
       change: ejecutivo.ventas.crecimientoPct,
-      changeLabel: periodo === 'semana' ? t('vsPreviousWeek') : periodo === 'mes' ? t('vsPreviousMonth') : t('vsPreviousQuarter'),
+      changeLabel: vistaMode === 'semana' ? t('vsPreviousWeek') : vistaMode === 'mes' ? t('vsPreviousMonth') : t('vsPreviousQuarter'),
       icon3d: SbDollarSign,
       lucideIcon: DollarSign,
     },
@@ -194,7 +198,7 @@ export default function DashboardPage() {
       title: t('orders'),
       value: formatNumber(ejecutivo.ventas.pedidos),
       change: 0,
-      changeLabel: periodo === 'semana' ? t('thisWeek') : periodo === 'mes' ? t('thisMonth') : t('thisQuarter'),
+      changeLabel: vistaMode === 'semana' ? t('thisWeek') : vistaMode === 'mes' ? t('thisMonth') : t('thisQuarter'),
       icon3d: SbShoppingCart,
       lucideIcon: ShoppingCart,
     },
@@ -231,36 +235,39 @@ export default function DashboardPage() {
 
   // Chart data from real API — fill missing days with 0
   const chartData = (() => {
-    if (periodo === 'trimestre') {
-      // Trimestre: API returns weekly data, use as-is
+    if (vistaMode === 'trimestre') {
+      // Trimestre: agrupación semanal, la API devuelve puntos por semana → tal cual
       return ventasDiarias.map(p => ({
         day: formatDate(p.fecha + 'T12:00:00', { day: 'numeric', month: 'short' }),
         value: Number(p.totalVentas),
       }));
     }
-    // Semana (7 days) or Mes (30 days): fill missing days
-    // Anclamos en "hoy" tenant (no browser local) para que el chart muestre
-    // el mismo día calendario que ven los usuarios del tenant.
-    const days = periodo === 'semana' ? 7 : 30;
+    // Semana o Mes (y custom→mes): agrupación diaria. Rellenamos cada día del
+    // rango seleccionado [rango.from .. rango.to] con 0 si no hubo ventas.
     const salesMap = new Map(ventasDiarias.map(p => [p.fecha, Number(p.totalVentas)]));
     const result: { day: string; value: number }[] = [];
-    const today = tenantToday();
-    const [ty, tm, td] = today.split('-').map(Number);
-    for (let i = days - 1; i >= 0; i--) {
-      const baseUtcNoon = new Date(Date.UTC(ty ?? 0, (tm ?? 1) - 1, td ?? 1, 12, 0, 0));
-      baseUtcNoon.setUTCDate(baseUtcNoon.getUTCDate() - i);
-      const key = baseUtcNoon.toISOString().slice(0, 10);
-      const label = periodo === 'semana'
-        ? formatDate(baseUtcNoon, { weekday: 'short' })
-        : formatDate(baseUtcNoon, { day: 'numeric' });
+    const [fy, fm, fd] = rango.from.split('-').map(Number);
+    const [ttoY, ttoM, ttoD] = rango.to.split('-').map(Number);
+    const cursor = new Date(Date.UTC(fy ?? 0, (fm ?? 1) - 1, fd ?? 1, 12, 0, 0));
+    const end = new Date(Date.UTC(ttoY ?? 0, (ttoM ?? 1) - 1, ttoD ?? 1, 12, 0, 0));
+    // Guard: hasta ~370 días para no iterar de más con rangos extremos.
+    let safety = 0;
+    while (cursor.getTime() <= end.getTime() && safety < 400) {
+      const key = cursor.toISOString().slice(0, 10);
+      const label = vistaMode === 'semana'
+        ? formatDate(cursor, { weekday: 'short' })
+        : formatDate(cursor, { day: 'numeric' });
       result.push({ day: label, value: salesMap.get(key) ?? 0 });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+      safety++;
     }
     return result;
   })();
   const maxChartValue = Math.max(...chartData.map(d => d.value), 1);
 
-  // Date range for display
-  const { desde, hasta } = getDateRange(periodo, tenantToday());
+  // Date range for display / export
+  const desde = rango.from;
+  const hasta = rango.to;
 
   // Export hook
   const { exportPDF, exporting } = useReportExport({
@@ -298,12 +305,13 @@ export default function DashboardPage() {
             // Non-critical — dashboard works without meta
           }
         } else {
-          // Admin/Supervisor: load real data from APIs
-          const { desde: d, hasta: h } = getDateRange(periodo, tenantToday());
+          // Admin/Supervisor: load real data from APIs usando el rango seleccionado.
+          // Agrupación: semana→día, trimestre→semana, mes/custom→día.
+          const agrupacion = rango.mode === 'semana' ? 'dia' : rango.mode === 'trimestre' ? 'semana' : 'dia';
 
           const [ejResult, vpResult, actResult] = await Promise.allSettled([
-            getDashboardEjecutivo({ periodo }),
-            getVentasPeriodo({ desde: d, hasta: h, agrupacion: periodo === 'semana' ? 'dia' : periodo === 'mes' ? 'dia' : 'semana' }),
+            getDashboardEjecutivo({ desde: rango.from, hasta: rango.to }),
+            getVentasPeriodo({ desde: rango.from, hasta: rango.to, agrupacion }),
             dashboardService.getRecentActivity(5),
           ]);
 
@@ -347,7 +355,8 @@ export default function DashboardPage() {
       }
     };
     loadData();
-  }, [isVendedor, isSuperAdminDirect, periodo, refreshKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVendedor, isSuperAdminDirect, rango, refreshKey]);
 
   if (isLoading) {
     return <BrandedLoadingScreen message={t('loadingDashboard')} />;
@@ -395,7 +404,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="page-animate page-animate-delay-1">
-          <h1 className="text-3xl font-semibold text-foreground tracking-tight">{t('myPerformance')}</h1>
+          <h1 className="text-[22px] font-bold tracking-tight text-foreground">{t('myPerformance')}</h1>
           <p className="text-muted-foreground mt-1">{t('greeting', { name: session?.user?.name || '' })}</p>
         </div>
 
@@ -409,8 +418,8 @@ export default function DashboardPage() {
                 <div className="p-5 pb-0">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">{card.title}</p>
-                      <p className="text-2xl font-bold text-foreground">{card.value}</p>
+                      <p className="text-[12.5px] font-semibold text-muted-foreground mb-1">{card.title}</p>
+                      <p className="text-[28px] font-extrabold tracking-tight tabular-nums text-foreground leading-none">{card.value}</p>
                     </div>
                     <card.icon3d size={28} />
                   </div>
@@ -521,40 +530,17 @@ export default function DashboardPage() {
           />
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{t('title')}</h1>
+              <h1 className="text-[22px] font-bold tracking-tight text-foreground">{t('title')}</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {companyName ? t('execSummaryWith', { company: companyName }) : t('execSummary')}
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Control segmentado de período */}
-              <div className="inline-flex items-center rounded-xl border border-border bg-surface-1 p-1">
-                {([
-                  { value: 'semana', label: t('thisWeek') },
-                  { value: 'mes', label: t('thisMonth') },
-                  { value: 'trimestre', label: t('thisQuarter') },
-                ] as const).map((opt) => {
-                  const active = periodo === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setPeriodo(opt.value)}
-                      aria-pressed={active}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                        active
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Filtro de rango (Esta semana / Este mes / Trimestre / Personalizado) */}
+              <DateRangeFilter value={rango} onChange={setRango} retentionDays={RET} />
               {/* Botón Exportar */}
               <Button
-                variant="outline"
+                variant="wbOutline"
                 size="sm"
                 onClick={exportPDF}
                 disabled={exporting || metricCards.length === 0}
@@ -572,34 +558,20 @@ export default function DashboardPage() {
 
         {/* Metrics Row — 4 KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 page-animate page-animate-delay-2" data-tour="dashboard-metrics">
-          {metricCards.length > 0 ? metricCards.map((card, index) => {
-            const Icon = card.lucideIcon;
-            return (
-              <div
-                key={index}
-                className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-start justify-between">
-                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
-                  {Icon && <Icon className="w-5 h-5 text-muted-foreground/40" />}
-                </div>
-                <p className={`text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${isRefreshing ? 'animate-pulse' : ''}`}>
-                  {card.value}
-                </p>
-                <div className="flex items-center gap-1.5 mt-2">
-                  {card.change !== 0 && (
-                    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
-                      card.change > 0 ? 'text-primary' : 'text-destructive'
-                    }`}>
-                      {card.change > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                      {card.change > 0 ? '+' : ''}{card.change}%
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground">{card.changeLabel}</span>
-                </div>
-              </div>
-            );
-          }) : (
+          {metricCards.length > 0 ? metricCards.map((card, index) => (
+            <StatCard
+              key={index}
+              label={card.title}
+              value={card.value}
+              icon={card.lucideIcon}
+              tone="default"
+              delta={card.change !== 0 ? `${card.change > 0 ? '+' : ''}${card.change}%` : undefined}
+              deltaTone={card.change > 0 ? 'success' : card.change < 0 ? 'danger' : 'neutral'}
+              deltaLabel={card.changeLabel}
+              sub={card.change === 0 ? card.changeLabel : undefined}
+              loading={isRefreshing}
+            />
+          )) : (
             Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="bg-card border border-border rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -620,7 +592,7 @@ export default function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-base font-bold text-foreground">
-                  {periodo === 'semana' ? t('weeklySales') : periodo === 'mes' ? t('monthlySales') : t('quarterlySales')}
+                  {vistaMode === 'semana' ? t('weeklySales') : vistaMode === 'mes' ? t('monthlySales') : t('quarterlySales')}
                 </h3>
                 <p className="text-sm text-muted-foreground">{t('revenuePerDay')}</p>
               </div>
@@ -629,14 +601,14 @@ export default function DashboardPage() {
             <div className={`${isRefreshing ? 'opacity-50' : ''}`}>
               {chartData.length > 0 ? (
                 <ApexSparkline
-                  type={periodo === 'semana' ? 'bar' : 'area'}
+                  type={vistaMode === 'semana' ? 'bar' : 'area'}
                   height={220}
                   options={{
-                    chart: { type: periodo === 'semana' ? 'bar' : 'area', toolbar: { show: false }, animations: { enabled: true, speed: 800 } },
+                    chart: { type: vistaMode === 'semana' ? 'bar' : 'area', toolbar: { show: false }, animations: { enabled: true, speed: 800 } },
                     plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
                     colors: ['#3b82f6'],
-                    stroke: { curve: 'smooth', width: periodo === 'semana' ? 0 : 2.5 },
-                    fill: periodo === 'semana' ? { type: 'solid' } : { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] } },
+                    stroke: { curve: 'smooth', width: vistaMode === 'semana' ? 0 : 2.5 },
+                    fill: vistaMode === 'semana' ? { type: 'solid' } : { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] } },
                     grid: { borderColor: '#f3f4f6', strokeDashArray: 3, padding: { left: 10, right: 10 } },
                     dataLabels: { enabled: false },
                     xaxis: { categories: chartData.map(d => d.day), labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },

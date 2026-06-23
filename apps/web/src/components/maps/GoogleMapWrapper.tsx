@@ -23,6 +23,8 @@ export interface MapMarker {
   label?: string;
   title?: string;
   color?: string;
+  /** URL/data-URL de un icono personalizado (p.ej. pin SVG numerado y coloreado). Tiene prioridad sobre `color`. */
+  iconUrl?: string;
   info?: React.ReactNode;
 }
 
@@ -130,7 +132,7 @@ export function GoogleMapWrapper({
             key={marker.id}
             position={{ lat: marker.lat, lng: marker.lng }}
             title={marker.title || marker.label}
-            icon={marker.color && PIN_COLORS[marker.color] ? PIN_COLORS[marker.color] : undefined}
+            icon={marker.iconUrl ? marker.iconUrl : (marker.color && PIN_COLORS[marker.color] ? PIN_COLORS[marker.color] : undefined)}
             onClick={() => {
               setSelectedMarker(marker);
               onMarkerClick?.(marker);

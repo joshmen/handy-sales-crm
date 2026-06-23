@@ -119,7 +119,7 @@ export default function ClientDetailPage() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">{client.name}</h1>
+            <h1 className="text-xl sm:text-[22px] font-bold tracking-tight text-foreground">{client.name}</h1>
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-primary bg-primary/10' : 'text-foreground/80 bg-surface-3'}`}>
               {client.isActive ? tc('active') : tc('inactive')}
             </span>
@@ -132,7 +132,7 @@ export default function ClientDetailPage() {
 
           <Link
             href={`/clients/${clientId}/edit`}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium px-5 py-2 rounded-lg transition-colors w-fit"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium px-5 py-2 rounded-full transition-colors w-fit"
           >
             {tc('edit')}
           </Link>

@@ -450,6 +450,9 @@ export default function CuponesAdminPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Ticket}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('title') },

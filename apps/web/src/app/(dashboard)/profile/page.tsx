@@ -244,6 +244,8 @@ export default function ProfilePage() {
 
   return (
     <PageHeader
+      section="equipo"
+      icon={User}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title') },

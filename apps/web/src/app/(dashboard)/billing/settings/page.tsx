@@ -11,6 +11,7 @@ import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { toast } from '@/hooks/useToast';
+import { getApiErrorMessage } from '@/lib/api';
 import { getConfigFiscal, saveConfigFiscal, uploadCertificado, retryFinkokRegistration, deleteCertificado, getNumeraciones, createNumeracion, toggleNumeracion } from '@/services/api/billing';
 import type { ConfiguracionFiscal, NumeracionDocumento } from '@/types/billing';
 import { REGIMENES_FISCALES, formatRegimenLabel } from '@/lib/sat/regimenes-fiscales';
@@ -151,7 +152,7 @@ export default function BillingSettingsPage() {
       if (cerInputRef.current) cerInputRef.current.value = '';
       if (keyInputRef.current) keyInputRef.current.value = '';
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = getApiErrorMessage(err)
         || t('uploadCertsError');
       toast({ title: msg, variant: 'destructive' });
     } finally {
@@ -177,7 +178,7 @@ export default function BillingSettingsPage() {
       const updated = await getConfigFiscal();
       setConfig(updated);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = getApiErrorMessage(err)
         || 'Error al reintentar registro en Finkok';
       toast({ title: msg, variant: 'destructive' });
     } finally {
@@ -203,7 +204,7 @@ export default function BillingSettingsPage() {
       if (cerInputRef.current) cerInputRef.current.value = '';
       if (keyInputRef.current) keyInputRef.current.value = '';
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = getApiErrorMessage(err)
         || t('deleteCsdError');
       toast({ title: msg, variant: 'destructive' });
     } finally {
@@ -258,6 +259,7 @@ export default function BillingSettingsPage() {
 
   return (
     <PageHeader
+      section="empresa"
       breadcrumbs={[
         { label: tCommon('home'), href: '/dashboard' },
         { label: tBilling('title'), href: '/billing' },

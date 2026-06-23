@@ -24,6 +24,13 @@ public class DetallePedido : AuditableEntity
     [Column("precio_unitario")]
     public decimal PrecioUnitario { get; set; }
 
+    /// <summary>
+    /// Costo unitario del producto al momento de la venta (snapshot de Producto.Costo).
+    /// Permite calcular COGS/margen histórico aunque el costo del producto cambie luego.
+    /// </summary>
+    [Column("costo_unitario")]
+    public decimal CostoUnitario { get; set; }
+
     [Column("descuento")]
     public decimal Descuento { get; set; }
 

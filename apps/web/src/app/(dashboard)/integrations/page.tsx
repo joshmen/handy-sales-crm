@@ -218,6 +218,8 @@ export default function IntegrationsPage() {
 
   return (
     <PageHeader
+      section="navegacion"
+      icon={Zap}
       breadcrumbs={[
         { label: tc("home"), href: "/dashboard" },
         { label: t("breadcrumbIntegrations") },

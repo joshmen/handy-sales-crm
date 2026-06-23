@@ -13,7 +13,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import { Input } from '@/components/ui/Input';
+import { SearchBar } from '@/components/common/SearchBar';
 import {
   Plus,
   Pencil,
@@ -326,6 +326,7 @@ export default function RouteAdminPage() {
 
   return (
     <PageHeader
+      section="operacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title'), href: '/routes' },
@@ -340,7 +341,7 @@ export default function RouteAdminPage() {
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{t('templates.newTemplate')}</span>
@@ -384,14 +385,12 @@ export default function RouteAdminPage() {
               placeholder={t('allZones')}
             />
           </div>
-          <div className="w-full sm:w-72 lg:w-80">
-            <Input
-              type="text"
-              placeholder={t('templates.searchPlaceholder')}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={(v) => setSearchTerm(v)}
+            placeholder={t('templates.searchPlaceholder')}
+            className="w-full sm:w-72 lg:w-80"
+          />
         </div>
 
         {/* Loading */}

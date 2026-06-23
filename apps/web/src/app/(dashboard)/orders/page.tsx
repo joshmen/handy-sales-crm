@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
-import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
 import { Order, OrderItem } from '@/types/orders';
@@ -33,12 +32,15 @@ import {
 } from 'lucide-react';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { ShoppingCart as ShoppingCartIcon, Receipt } from '@phosphor-icons/react';
 import { getInvoicedOrders, type InvoicedOrder } from '@/services/api/billing';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { NameAvatar } from '@/components/ui/NameAvatar';
+import { DateFilter } from '@/components/ui/DateFilter';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 
@@ -129,23 +131,6 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
   };
 }
 
-// Avatar de iniciales con color por hash del nombre (paleta categórica del diseño Claude).
-const AVATAR_PALETTE = ['#0D8A7A', '#7C3AED', '#DC2626', '#D97706', '#2563EB', '#DB2777', '#65A30D', '#0891B2'];
-function NameAvatar({ name, size = 28 }: { name: string; size?: number }) {
-  const initials = (name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-  const hash = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const bg = AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
-  return (
-    <span
-      className="inline-flex items-center justify-center flex-shrink-0 font-bold text-white"
-      style={{ width: size, height: size, borderRadius: size * 0.32, background: bg, fontSize: size * 0.4, letterSpacing: '-0.02em' }}
-      aria-hidden
-    >
-      {initials}
-    </span>
-  );
-}
-
 // Pill de estado (soft) — espejo del StatusBadge del mockup: bg suave + texto del tono + dot.
 const STATUS_PILL: Record<string, { wrap: string; dot: string }> = {
   draft: { wrap: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
@@ -165,7 +150,7 @@ export default function OrdersPage() {
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
   const showApiError = useApiErrorToast();
-  const { formatCurrency, formatDate } = useFormatters();
+  const { formatCurrency, formatDate, tenantToday } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
   const isVendedor = session?.user?.role === 'VENDEDOR';
@@ -189,11 +174,7 @@ export default function OrdersPage() {
   const [filterUser, setFilterUser] = useState('all');
   const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
   const [estadoFilter, setEstadoFilter] = useState('');
-  const [fechaDesde, setFechaDesde] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
-  });
-  const [fechaHasta, setFechaHasta] = useState(() => new Date().toISOString().split('T')[0]);
+  const [diaFiltro, setDiaFiltro] = useState(() => tenantToday());
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -217,10 +198,6 @@ export default function OrdersPage() {
   const confirmedCount = orders.filter((o) => o.status === 'confirmed').length;
   const draftCount = orders.filter((o) => o.status === 'draft').length;
 
-  // Atajos de fecha para los tabs (Hoy / Todos) — espejo del mockup.
-  const todayStr = new Date().toISOString().split('T')[0];
-  const default30Str = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0]; })();
-  const isTodayRange = fechaDesde === todayStr && fechaHasta === todayStr;
   const periodLabel = (() => { const s = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); })();
 
   const fetchOrders = useCallback(async () => {
@@ -231,8 +208,7 @@ export default function OrdersPage() {
       if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
       if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
       if (estadoFilter) params.estado = estadoFilter;
-      if (fechaDesde) params.fechaInicio = fechaDesde;
-      if (fechaHasta) params.fechaFin = fechaHasta;
+      if (diaFiltro) { params.fechaInicio = diaFiltro; params.fechaFin = diaFiltro; }
       const response = await orderService.getOrders(params);
       const mappedOrders = response.items.map(mapApiOrderToOrder);
       setOrders(mappedOrders);
@@ -251,7 +227,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, fechaDesde, fechaHasta]);
+  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, diaFiltro]);
 
   const fetchFormData = useCallback(async () => {
     // Load clients and products independently so one failure doesn't block the other
@@ -644,6 +620,7 @@ export default function OrdersPage() {
   return (
     <>
       <PageHeader
+        section="ventas"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: tn('sectionSales') },
@@ -653,15 +630,14 @@ export default function OrdersPage() {
         subtitle={totalItems > 0 ? `${periodLabel} · ${t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' })}` : undefined}
         actions={
           <>
-            <ExportButton entity="pedidos" params={{ desde: fechaDesde, hasta: fechaHasta }} />
-            <button
-              data-tour="orders-create-btn"
-              onClick={handleCreateOrder}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
+            <div data-tour="orders-date-filter">
+              <DateFilter value={diaFiltro} onChange={(iso) => { setDiaFiltro(iso); setCurrentPage(1); }} retentionDays={365} />
+            </div>
+            <ExportButton entity="pedidos" params={{ desde: diaFiltro, hasta: diaFiltro }} />
+            <Button variant="wbPrimary" data-tour="orders-create-btn" onClick={handleCreateOrder}>
+              <Plus className="w-4 h-4 mr-2" />
               <span>{t('newOrder')}</span>
-            </button>
+            </Button>
           </>
         }
       >
@@ -670,32 +646,21 @@ export default function OrdersPage() {
             <ErrorBanner error={error} onRetry={fetchOrders} />
           )}
 
-          {/* Tabs de estado (segmentado) + búsqueda — reusa estadoFilter real */}
+          {/* Tabs de estado (TabBar subrayado, verde ventas) + búsqueda — reusa estadoFilter real */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="orders-estado-filter">
-              {([
-                { id: 'all', label: t('tabs.all'), active: estadoFilter === '' && !isTodayRange, on: () => { setEstadoFilter(''); setFechaDesde(default30Str); setFechaHasta(todayStr); setCurrentPage(1); } },
-                { id: 'today', label: t('tabs.today'), active: estadoFilter === '' && isTodayRange, on: () => { setEstadoFilter(''); setFechaDesde(todayStr); setFechaHasta(todayStr); setCurrentPage(1); } },
-                { id: 'Borrador', label: t('status.draft'), active: estadoFilter === 'Borrador', on: () => { setEstadoFilter('Borrador'); setCurrentPage(1); } },
-                { id: 'Confirmado', label: t('status.confirmed'), active: estadoFilter === 'Confirmado', on: () => { setEstadoFilter('Confirmado'); setCurrentPage(1); } },
-                { id: 'EnRuta', label: t('status.enRoute'), active: estadoFilter === 'EnRuta', on: () => { setEstadoFilter('EnRuta'); setCurrentPage(1); } },
-                { id: 'Entregado', label: t('status.delivered'), active: estadoFilter === 'Entregado', on: () => { setEstadoFilter('Entregado'); setCurrentPage(1); } },
-                { id: 'Cancelado', label: t('status.cancelled'), active: estadoFilter === 'Cancelado', on: () => { setEstadoFilter('Cancelado'); setCurrentPage(1); } },
-              ]).map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={opt.on}
-                  aria-pressed={opt.active}
-                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                    opt.active
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="min-w-0 lg:flex-1" data-tour="orders-estado-filter">
+              <TabBar
+                items={[
+                  { id: 'all', label: t('tabs.all') },
+                  { id: 'Borrador', label: t('status.draft') },
+                  { id: 'Confirmado', label: t('status.confirmed') },
+                  { id: 'EnRuta', label: t('status.enRoute') },
+                  { id: 'Entregado', label: t('status.delivered') },
+                  { id: 'Cancelado', label: t('status.cancelled') },
+                ]}
+                value={estadoFilter === '' ? 'all' : estadoFilter}
+                onChange={(id) => { setEstadoFilter(id === 'all' ? '' : id); setCurrentPage(1); }}
+              />
             </div>
             <div className="w-full sm:w-72 lg:w-80" data-tour="orders-search">
               <SearchBar
@@ -737,29 +702,8 @@ export default function OrdersPage() {
             })}
           </div>
 
-          {/* Filtros secundarios (fechas, vendedor, tipo) + refrescar */}
+          {/* Filtros secundarios (vendedor, tipo) + refrescar */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Date Filters */}
-            <div data-tour="orders-date-filter">
-              <DateTimePicker
-                compact
-                mode="date"
-                value={fechaDesde}
-                onChange={(val) => { setFechaDesde(val); setCurrentPage(1); }}
-                placeholder="Desde"
-              />
-            </div>
-            <div>
-              <DateTimePicker
-                compact
-                mode="date"
-                value={fechaHasta}
-                onChange={(val) => { setFechaHasta(val); setCurrentPage(1); }}
-                placeholder="Hasta"
-                min={fechaDesde}
-              />
-            </div>
-
             {/* Users Filter - solo visible para Admin */}
             {isAdmin && (
             <div className="min-w-[200px] max-w-[260px]" data-tour="orders-user-filter">
@@ -788,13 +732,10 @@ export default function OrdersPage() {
             </select>
 
             {/* Refresh Button */}
-            <button
-              onClick={handleRefresh}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+            <Button variant="wbOutline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
+            </Button>
           </div>
 
             {/* Orders DataGrid */}

@@ -444,6 +444,137 @@ public class SyncRepositoryTests : IDisposable
             .WithMessage("*excede el total*");
     }
 
+    // === Anti-doble-venta directa (incidente prod 2026-06-23) ===
+
+    private static SyncPedidoDto BuildVentaDirectaDto(string localId, int cantidad = 1)
+    {
+        return new SyncPedidoDto
+        {
+            Id = 0,
+            LocalId = localId,
+            ClienteId = ClienteId,
+            TipoVenta = (int)TipoVenta.VentaDirecta,
+            Estado = (int)EstadoPedido.Entregado,
+            FechaPedido = DateTime.UtcNow,
+            Version = 1,
+            Operation = SyncOperation.Create,
+            Detalles = new List<SyncDetallePedidoDto>
+            {
+                new()
+                {
+                    LocalId = localId + "-d1",
+                    ProductoId = ProductoId,
+                    Cantidad = cantidad,
+                    PrecioUnitario = 100m,
+                    Descuento = 0m,
+                },
+            },
+        };
+    }
+
+    [Fact]
+    public async Task UpsertPedido_ColapsaVentaDirectaDuplicada_MismaHuellaEnVentana()
+    {
+        // Caso offline: ambas copias llegan por sync push (dto.Id=0) con
+        // mobile_record_id distinto. El guard de huella debe colapsar la 2a.
+        var (a, _) = await _sut.UpsertPedidoAsync(TenantId, UsuarioId, BuildVentaDirectaDto("vd-1"), userId: "10");
+        await _sut.SaveChangesAsync();
+        var (b, _) = await _sut.UpsertPedidoAsync(TenantId, UsuarioId, BuildVentaDirectaDto("vd-2"), userId: "10");
+        await _sut.SaveChangesAsync();
+
+        b.Id.Should().Be(a.Id, "la 2a venta directa idéntica dentro de la ventana se colapsa a la 1a");
+
+        var count = await _db.Pedidos.AsNoTracking()
+            .CountAsync(p => p.TenantId == TenantId && p.TipoVenta == TipoVenta.VentaDirecta);
+        count.Should().Be(1, "solo debe quedar UN pedido de venta directa");
+    }
+
+    [Fact]
+    public async Task UpsertPedido_NoColapsa_CuandoTotalDifiere()
+    {
+        var (a, _) = await _sut.UpsertPedidoAsync(TenantId, UsuarioId, BuildVentaDirectaDto("vd-a", cantidad: 1), userId: "10");
+        await _sut.SaveChangesAsync();
+        var (b, _) = await _sut.UpsertPedidoAsync(TenantId, UsuarioId, BuildVentaDirectaDto("vd-b", cantidad: 3), userId: "10");
+        await _sut.SaveChangesAsync();
+
+        b.Id.Should().NotBe(a.Id, "totales distintos = ventas distintas, no se colapsan");
+
+        var count = await _db.Pedidos.AsNoTracking()
+            .CountAsync(p => p.TenantId == TenantId && p.TipoVenta == TipoVenta.VentaDirecta);
+        count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task UpsertCobro_ColapsaSegundoCobroDeVentaDirecta_MismoPedido()
+    {
+        // Si una venta directa duplicada se colapsó a un solo pedido, el cobro de
+        // la copia llega con otro mobile_record_id pero apunta al MISMO pedido.
+        // No se debe crear un segundo cobro activo (doble pago / doble saldo).
+        _db.Pedidos.Add(new Pedido
+        {
+            Id = 8200, TenantId = TenantId, ClienteId = ClienteId, UsuarioId = UsuarioId,
+            NumeroPedido = "VD-DUP", TipoVenta = TipoVenta.VentaDirecta, Estado = EstadoPedido.Entregado,
+            Total = 100m, Activo = true, Version = 1,
+        });
+        _db.Cobros.Add(new Cobro
+        {
+            Id = 9200, TenantId = TenantId, ClienteId = ClienteId, UsuarioId = UsuarioId,
+            PedidoId = 8200, MobileRecordId = "cob-orig", Monto = 100m,
+            MetodoPago = MetodoPago.Efectivo, Modo = ModoCobro.PorPedido,
+            Activo = true, Version = 1,
+        });
+        await _db.SaveChangesAsync();
+
+        var dto = new SyncCobroDto
+        {
+            Id = 0, LocalId = "cob-dup", ClienteId = ClienteId, PedidoId = 8200,
+            Monto = 100m, MetodoPago = (int)MetodoPago.Efectivo, Activo = true,
+            Operation = SyncOperation.Create,
+        };
+
+        var (entity, _) = await _sut.UpsertCobroAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        entity.Id.Should().Be(9200, "devuelve el cobro existente en vez de crear otro");
+        var count = await _db.Cobros.AsNoTracking().CountAsync(c => c.PedidoId == 8200 && c.Activo);
+        count.Should().Be(1, "solo UN cobro activo por venta directa");
+    }
+
+    [Fact]
+    public async Task UpsertCobro_NoColapsa_CuandoPedidoNoEsVentaDirecta()
+    {
+        // En preventa un pedido puede tener varios cobros (abonos). El guard NO debe
+        // bloquearlos — solo aplica a VentaDirecta.
+        _db.Pedidos.Add(new Pedido
+        {
+            Id = 8201, TenantId = TenantId, ClienteId = ClienteId, UsuarioId = UsuarioId,
+            NumeroPedido = "PED-AB", TipoVenta = TipoVenta.Preventa, Estado = EstadoPedido.Confirmado,
+            Total = 1000m, Activo = true, Version = 1,
+        });
+        _db.Cobros.Add(new Cobro
+        {
+            Id = 9201, TenantId = TenantId, ClienteId = ClienteId, UsuarioId = UsuarioId,
+            PedidoId = 8201, MobileRecordId = "abono-1", Monto = 100m,
+            MetodoPago = MetodoPago.Efectivo, Modo = ModoCobro.PorPedido,
+            Activo = true, Version = 1,
+        });
+        await _db.SaveChangesAsync();
+
+        var dto = new SyncCobroDto
+        {
+            Id = 0, LocalId = "abono-2", ClienteId = ClienteId, PedidoId = 8201,
+            Monto = 100m, MetodoPago = (int)MetodoPago.Efectivo, Activo = true,
+            Operation = SyncOperation.Create,
+        };
+
+        var (entity, _) = await _sut.UpsertCobroAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        entity.Id.Should().NotBe(9201, "los abonos de preventa no se colapsan");
+        var count = await _db.Cobros.AsNoTracking().CountAsync(c => c.PedidoId == 8201 && c.Activo);
+        count.Should().Be(2);
+    }
+
     // === GetStockMapAsync ===
 
     [Fact]

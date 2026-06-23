@@ -212,6 +212,9 @@ export default function AnnouncementsPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Megaphone}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('breadcrumb') },

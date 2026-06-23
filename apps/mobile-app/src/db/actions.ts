@@ -670,7 +670,56 @@ export async function createDevolucionOffline(params: {
 }
 
 /**
+ * Busca una visita AGENDADA hoy pendiente de check-in para un cliente. Es la
+ * visita que el admin programó desde la web (ClienteVisita.FechaProgramada) y que
+ * el vendedor todavía no atiende. Se usa para que el check-in CUMPLA esa visita
+ * agendada en vez de crear un duplicado.
+ *
+ * Criterio (conservador): cliente + fecha_programada dentro del día actual +
+ * check_in_at null + activo. Match por id local Y por server id (las visitas
+ * pulled pueden traer el cliente como server id si no estaba mapeado localmente).
+ * Window "hoy" con `Date.UTC(...)` del calendar date local — mismo patrón que
+ * createGastoOffline (backend guarda fechas como UTC midnight del calendar date).
+ * Si hay varias candidatas (raro), tomamos la de fecha_programada más temprana.
+ */
+async function findScheduledVisitaForCliente(
+  clienteId: string,
+  clienteServerId: number | null
+): Promise<Visita | null> {
+  try {
+    const now = new Date();
+    const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrowMs = todayMs + 24 * 3600 * 1000;
+
+    const clienteRefs = [clienteId];
+    if (clienteServerId != null) clienteRefs.push(String(clienteServerId));
+
+    const candidatas = await database
+      .get<Visita>('visitas')
+      .query(
+        Q.where('activo', true),
+        Q.where('cliente_id', Q.oneOf(clienteRefs)),
+        Q.where('check_in_at', Q.eq(null)),
+        Q.where('fecha_programada', Q.gte(todayMs)),
+        Q.where('fecha_programada', Q.lt(tomorrowMs)),
+        Q.sortBy('fecha_programada', Q.asc)
+      )
+      .fetch();
+
+    return candidatas.length > 0 ? candidatas[0] : null;
+  } catch {
+    // Cualquier error en la búsqueda → tratar como "no hay agendada" y crear nueva.
+    return null;
+  }
+}
+
+/**
  * Create a visita (check-in) offline in WatermelonDB.
+ *
+ * Si el cliente TIENE una visita agendada hoy sin check-in (programada desde la
+ * web), el check-in CUMPLE esa visita existente (set checkInAt/coords/distancia/
+ * resultado=EnProgreso) en vez de crear una nueva — evita un duplicado. Si no hay
+ * agendada, se crea una visita nueva (comportamiento original).
  */
 export async function createVisitaOffline(
   clienteId: string,
@@ -681,7 +730,26 @@ export async function createVisitaOffline(
   distancia: number,
   rutaId?: string
 ): Promise<Visita> {
+  // Buscar candidata agendada ANTES de la transacción (lectura pura). Si existe,
+  // la actualizamos dentro del write; si no, creamos una nueva.
+  const scheduled = await findScheduledVisitaForCliente(clienteId, clienteServerId);
+
   return database.write(async () => {
+    if (scheduled) {
+      await scheduled.update((record: any) => {
+        record.checkInAt = new Date();
+        record.latitudCheckIn = latitud;
+        record.longitudCheckIn = longitud;
+        record.distanciaCheckIn = distancia;
+        record.resultado = 1; // EnProgreso
+        // Si la visita agendada aún no tenía ruta y este check-in viene de una ruta,
+        // la vinculamos. No pisamos un rutaId previo si ya existía.
+        if (rutaId && !record.rutaId) record.rutaId = rutaId;
+        record.updatedAt = new Date();
+      });
+      return scheduled;
+    }
+
     return database.get<Visita>('visitas').create((record: any) => {
       record.serverId = null;
       record.clienteId = clienteId;

@@ -26,6 +26,7 @@ import {
   ImportResult,
   ImportError,
 } from '@/lib/import';
+import { downloadBlob } from '@/lib/download';
 
 interface ImportButtonProps<T = unknown> {
   columns: ImportColumn<T>[];
@@ -158,12 +159,7 @@ export function ImportButton<T = unknown>({
     const blob = new Blob([content], {
       type: format === 'csv' ? 'text/csv' : 'application/json',
     });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `template.${format}`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `template.${format}`);
   };
 
   return (

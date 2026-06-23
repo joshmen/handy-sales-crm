@@ -33,7 +33,7 @@ export function CumplimientoMetasReport() {
   const [data, setData] = useState<CumplimientoMetasResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: "cumplimiento-metas", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalGoals"), value: data.resumen.totalMetas },
@@ -85,7 +85,7 @@ export function CumplimientoMetasReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.metas.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.metas.length > 0 ? exportPDF : undefined} onExportExcel={data && data.metas.length > 0 ? exportExcel : undefined} exporting={exporting} />
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-sm">{tc("clickApply")}</p>

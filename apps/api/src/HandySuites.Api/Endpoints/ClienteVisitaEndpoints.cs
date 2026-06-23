@@ -215,6 +215,18 @@ public static class ClienteVisitaEndpoints
         .Produces<List<ClienteVisitaListaDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        // Cobertura — clientes activos con zona y su estado de visita vs frecuencia.
+        group.MapGet("/cobertura", async (
+            [FromServices] ClienteVisitaService servicio) =>
+        {
+            var cobertura = await servicio.ObtenerCoberturaAsync();
+            return Results.Ok(cobertura);
+        })
+        .WithSummary("Cobertura de visitas")
+        .WithDescription("Lista los clientes activos con zona asignada y su estado de cobertura (Vencida/PorVisitar) según la frecuencia de visita de su zona. Ordenado por días vencido descendente.")
+        .Produces<List<CoberturaClienteDto>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         // Reportes
         group.MapGet("/mi-resumen/diario", async (
             DateTime? fecha,

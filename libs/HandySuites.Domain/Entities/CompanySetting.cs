@@ -100,6 +100,14 @@ public class CompanySetting : AuditableEntity
     [MaxLength(20)]
     public string ModoVentaDefault { get; set; } = "Preguntar";
 
+    /// <summary>
+    /// Radio de geocerca en metros para el indicador "dentro/fuera" del check-in
+    /// en el registro de visitas (supervisión web). Default 80 m. Solo afecta la
+    /// visualización de supervisión; el gate de check-in en campo (mobile) es aparte.
+    /// </summary>
+    [Column("geocerca_radio_metros")]
+    public int GeocercaRadioMetros { get; set; } = 80;
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Company? Company { get; set; }

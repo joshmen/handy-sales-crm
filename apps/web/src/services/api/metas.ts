@@ -13,6 +13,10 @@ export interface MetaVendedor {
   activo: boolean;
   creadoEn: string;
   autoRenovar: boolean;
+  /** Avance LOGRADO en el período (Σ ventas, nº pedidos o nº visitas según tipo). */
+  avance: number;
+  /** % de avance (avance / monto). Puede pasar de 100; la barra se clampa en el front. */
+  progresoPct: number;
 }
 
 export interface CreateMetaVendedorRequest {

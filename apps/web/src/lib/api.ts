@@ -261,6 +261,25 @@ export interface ApiError {
   validationErrors?: Record<string, string[]>; // FluentValidation format: { "FieldName": ["error"] }
 }
 
+/**
+ * Error de API como instancia REAL de Error (antes era un objeto plano, lo que
+ * rompía los `catch` con `err instanceof Error` → mostraban "Error" genérico en
+ * vez del mensaje real del backend). Lleva status/errors/validationErrors para
+ * los consumidores existentes (ClientForm, useApi). `err.message` = mensaje real.
+ */
+export class ApiException extends Error {
+  status: number;
+  errors?: string[];
+  validationErrors?: Record<string, string[]>;
+  constructor(init: ApiError) {
+    super(init.message);
+    this.name = 'ApiException';
+    this.status = init.status;
+    this.errors = init.errors;
+    this.validationErrors = init.validationErrors;
+  }
+}
+
 // Helper function to handle API responses
 export const handleApiResponse = <T>(response: AxiosResponse<ApiResponse<T>>): T => {
   if (response.data.success) {
@@ -290,42 +309,84 @@ const sanitizeMessage = (msg: string | undefined, fallback: string): string => {
   return msg;
 };
 
-// Helper function to handle API errors
-export const handleApiError = (error: unknown): ApiError => {
+/** Primer mensaje de un objeto de validación FluentValidation { Campo: ["err"] }. */
+const firstValidationMessage = (data: Record<string, unknown>): string | undefined => {
+  for (const key of Object.keys(data)) {
+    if (key === 'errors' || key === 'message') continue;
+    const arr = data[key];
+    if (Array.isArray(arr) && arr.length && typeof arr[0] === 'string') return arr[0];
+  }
+  return undefined;
+};
+
+// Helper function to handle API errors → siempre una instancia de ApiException (Error).
+export const handleApiError = (error: unknown): ApiException => {
   if (axios.isAxiosError(error)) {
     const responseData = error.response?.data;
 
     // FluentValidation devuelve errores como { "FieldName": ["error1", "error2"] }
-    // Detectar si es un objeto de validación (no tiene propiedad 'message' o 'errors')
     let validationErrors: Record<string, string[]> | undefined;
+    let validationFirst: string | undefined;
 
     if (responseData && typeof responseData === 'object') {
-      // Si es un objeto con campos como keys (FluentValidation format)
       const hasValidationFormat = Object.keys(responseData).some(key =>
         Array.isArray(responseData[key]) &&
         key !== 'errors' &&
         key !== 'message'
       );
-
       if (hasValidationFormat) {
         validationErrors = responseData as Record<string, string[]>;
+        validationFirst = firstValidationMessage(responseData as Record<string, unknown>);
       }
     }
 
-    const rawMessage = responseData?.message || responseData?.error;
+    // Cubre TODAS las formas de error del backend (auditadas):
+    // { message }, { error }, { code, message }, { success, message }, validación FluentValidation, ProblemDetails { detail/title }.
+    const rawMessage =
+      responseData?.message ||
+      responseData?.error ||
+      validationFirst ||
+      responseData?.detail ||
+      responseData?.title;
     const fallback = getApiFallbackMessage();
-    return {
+    return new ApiException({
       message: translateError(sanitizeMessage(rawMessage, fallback)),
       status: error.response?.status || 0,
       errors: responseData?.errors || [],
       validationErrors,
-    };
+    });
   }
 
-  return {
+  return new ApiException({
     message: translateError(getApiFallbackMessage()),
     status: 0,
-  };
+  });
+};
+
+/**
+ * Extrae el mensaje de error de cualquier forma (para contextos sin el hook
+ * useApiErrorToast): ApiException/Error → su message; axios crudo → message/error/
+ * validación/detail; si no hay nada → fallback por locale. Filtra el boilerplate
+ * "Request failed with status...".
+ */
+export const getApiErrorMessage = (err: unknown, fallback?: string): string => {
+  const fb = fallback || getApiFallbackMessage();
+  const isGeneric = (m?: string) =>
+    !m || /^request failed with status/i.test(m) || m.toLowerCase() === 'network error';
+
+  if (err instanceof ApiException) return isGeneric(err.message) ? fb : err.message;
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as Record<string, unknown> | undefined;
+    const msg =
+      (data?.message as string) ||
+      (data?.error as string) ||
+      (data && firstValidationMessage(data)) ||
+      (data?.detail as string) ||
+      (data?.title as string);
+    return isGeneric(msg) ? fb : (msg as string);
+  }
+  if (err instanceof Error) return isGeneric(err.message) ? fb : err.message;
+  return fb;
 };
 
 export default apiInstance;

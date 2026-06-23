@@ -86,4 +86,7 @@ public class ProductoService
 
     public Task<bool> ActualizarImagenAsync(int id, string? imagenUrl)
         => _repo.ActualizarImagenAsync(id, imagenUrl, _tenant.TenantId);
+
+    public Task<int> BatchAsignarClaveSatAsync(ProductoBatchClaveSatDto dto)
+        => _repo.BatchAsignarClaveSatAsync(dto, _tenant.TenantId);
 }

@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import {
   ChevronLeft,
   ChevronRight,
-  Search,
   Bell,
   ShoppingCart,
   AlertTriangle,
@@ -17,6 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { SearchBar } from '@/components/common/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -205,6 +205,8 @@ export default function NotificationsPage() {
 
   return (
     <PageHeader
+      section="navegacion"
+      icon={Bell}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbAdmin') },
@@ -257,17 +259,13 @@ export default function NotificationsPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                data-tour="notifications-search"
-                type="text"
-                placeholder={t('searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
+            <SearchBar
+              dataTour="notifications-search"
+              value={searchTerm}
+              onChange={(v) => setSearchTerm(v)}
+              placeholder={t('searchPlaceholder')}
+              className="w-full sm:w-[280px]"
+            />
             {/* Read/Unread Filter */}
             <div className="min-w-[150px]">
               <SearchableSelect

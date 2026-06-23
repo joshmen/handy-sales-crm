@@ -82,4 +82,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_orders',
     'view_routes',
   ],
+  ALMACENISTA: [
+    'view_dashboard',
+    'view_products',
+    'view_inventory',
+  ],
 };

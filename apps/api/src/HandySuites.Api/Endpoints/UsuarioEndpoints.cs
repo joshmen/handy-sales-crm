@@ -3,8 +3,11 @@ using HandySuites.Application.Usuarios.DTOs;
 using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.SubscriptionPlans.Interfaces;
 using HandySuites.Shared.Multitenancy;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using HandySuites.Application.Common.DTOs;
 using FluentValidation;
 
@@ -75,6 +78,11 @@ public static class UsuarioEndpoints
         usuarios.MapGet("/ubicaciones", GetUbicaciones)
             .WithName("GetUbicaciones")
             .WithSummary("Obtener última ubicación GPS de cada vendedor activo");
+
+        usuarios.MapGet("/{id}/kpis", GetUsuarioKpis)
+            .WithName("GetUsuarioKpis")
+            .WithSummary("KPIs del miembro: ventas del mes, pedidos, ruta/zona, clientes asignados")
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPERVISOR", "SUPER_ADMIN"));
     }
 
     private static async Task<IResult> GetUsuarios(
@@ -388,6 +396,49 @@ public static class UsuarioEndpoints
         {
             Serilog.Log.ForContext("Endpoint", "UsuarioEndpoints").Error(ex, "{Msg}", "Error al obtener ubicaciones"); return Results.Problem("Error al obtener ubicaciones");
         }
+    }
+
+    // KPIs por miembro para el drawer de perfil (Equipo). Read-only, on-the-fly.
+    private static async Task<IResult> GetUsuarioKpis(
+        int id,
+        [FromServices] HandySuitesDbContext db,
+        [FromServices] ITenantContextService tenantContext)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        if (tenantId == 0) return Results.Unauthorized();
+
+        // Inicio del mes actual en UTC (FechaPedido se guarda en UTC).
+        var now = DateTime.UtcNow;
+        var inicioMes = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var pedidosMesQuery = db.Pedidos.Where(p =>
+            p.TenantId == tenantId &&
+            p.UsuarioId == id &&
+            p.FechaPedido >= inicioMes &&
+            p.Estado != EstadoPedido.Cancelado);
+
+        var ventasMes = await pedidosMesQuery.SumAsync(p => (decimal?)p.Total) ?? 0m;
+        var pedidosMes = await pedidosMesQuery.CountAsync();
+
+        // Ruta activa más reciente del usuario (no plantilla) + su zona (legacy nav).
+        var ruta = await db.RutasVendedor
+            .Where(r => r.TenantId == tenantId && r.UsuarioId == id && !r.EsTemplate &&
+                (r.Estado == EstadoRuta.Planificada ||
+                 r.Estado == EstadoRuta.EnProgreso ||
+                 r.Estado == EstadoRuta.CargaAceptada ||
+                 r.Estado == EstadoRuta.PendienteAceptar))
+            .OrderByDescending(r => r.Fecha)
+            .Select(r => new { r.Nombre, ZonaNombre = r.Zona != null ? r.Zona.Nombre : null })
+            .FirstOrDefaultAsync();
+
+        var clientesAsignados = await db.Clientes.CountAsync(c => c.TenantId == tenantId && c.VendedorId == id);
+
+        return Results.Ok(new UsuarioKpisDto(
+            ventasMes,
+            pedidosMes,
+            ruta?.Nombre,
+            ruta?.ZonaNombre,
+            clientesAsignados));
     }
 
 }

@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Zonas.DTOs;
 using HandySuites.Application.Zonas.Interfaces;
 using HandySuites.Shared.Multitenancy;
@@ -12,15 +13,33 @@ public class ZonaService
 {
     private readonly IZonaRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITenantTimeZoneService _tenantTz;
 
-    public ZonaService(IZonaRepository repo, ICurrentTenant tenant)
+    public ZonaService(IZonaRepository repo, ICurrentTenant tenant, ITenantTimeZoneService tenantTz)
     {
         _repo = repo;
         _tenant = tenant;
+        _tenantTz = tenantTz;
     }
 
     public Task<List<ZonaDto>> ObtenerZonasAsync()
         => _repo.ObtenerPorTenantAsync(_tenant.TenantId);
+
+    /// <summary>
+    /// Zonas con stats agregadas. Calcula los bordes UTC del mes actual del tenant
+    /// (mismo patrón que DashboardEndpoints) y los pasa al repo para las agregaciones.
+    /// </summary>
+    public async Task<List<ZonaDto>> ObtenerStatsAsync()
+    {
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var inicioMesTenant = new DateOnly(hoyTenant.Year, hoyTenant.Month, 1);
+        var inicioMesSiguienteTenant = inicioMesTenant.AddMonths(1);
+
+        var desdeUtc = await _tenantTz.ConvertTenantDateToUtcAsync(inicioMesTenant);
+        var hastaUtc = await _tenantTz.ConvertTenantDateToUtcAsync(inicioMesSiguienteTenant);
+
+        return await _repo.ObtenerStatsPorTenantAsync(_tenant.TenantId, desdeUtc, hastaUtc, DateTime.UtcNow);
+    }
 
     public Task<ZonaDto?> ObtenerPorIdAsync(int id)
         => _repo.ObtenerPorIdAsync(id, _tenant.TenantId);
@@ -34,6 +53,9 @@ public class ZonaService
         var coordError = ValidarCoordenadas(dto.CentroLatitud, dto.CentroLongitud, dto.RadioKm);
         if (coordError != null)
             return new ZonaMutationResult(false, coordError);
+
+        if (dto.VendedorId.HasValue && !await _repo.EsVendedorDelTenantAsync(dto.VendedorId.Value, _tenant.TenantId))
+            return new ZonaMutationResult(false, "El vendedor seleccionado no existe o no tiene rol VENDEDOR.");
 
         if (dto.CentroLatitud.HasValue && dto.CentroLongitud.HasValue && dto.RadioKm.HasValue)
         {
@@ -55,6 +77,9 @@ public class ZonaService
         var coordError = ValidarCoordenadas(dto.CentroLatitud, dto.CentroLongitud, dto.RadioKm);
         if (coordError != null)
             return new ZonaMutationResult(false, coordError);
+
+        if (dto.VendedorId.HasValue && !await _repo.EsVendedorDelTenantAsync(dto.VendedorId.Value, _tenant.TenantId))
+            return new ZonaMutationResult(false, "El vendedor seleccionado no existe o no tiene rol VENDEDOR.");
 
         if (dto.CentroLatitud.HasValue && dto.CentroLongitud.HasValue && dto.RadioKm.HasValue)
         {

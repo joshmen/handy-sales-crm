@@ -14,6 +14,7 @@ import { Loader2, RefreshCw, CheckCircle, AlertCircle, AlertTriangle, Pause, Pla
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Modal } from '@/components/ui/Modal';
 import { toast } from '@/hooks/useToast';
+import { getApiErrorMessage } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import {
   listEmitters,
@@ -48,7 +49,7 @@ export default function FinkokAdminPage() {
       const result = await listEmitters(1);
       setEmitters(result.items);
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = getApiErrorMessage(err)
         || 'Error al consultar Finkok';
       toast({ title: msg, variant: 'destructive' });
     } finally {
@@ -73,7 +74,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al suspender',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -90,7 +91,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al reactivar',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -108,7 +109,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: t('creditReportError'),
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -133,7 +134,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al asignar créditos',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -152,7 +153,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al cambiar modalidad',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -171,6 +172,9 @@ export default function FinkokAdminPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Coins}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('breadcrumb') },

@@ -13,6 +13,7 @@ import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -22,19 +23,18 @@ import {
   Upload,
   Download,
   ChevronDown,
-  RefreshCw,
   Users,
   CheckCircle,
   XCircle,
-  UserCheck,
-  UserPlus,
 } from 'lucide-react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
-import { getInitials } from '@/lib/utils';
+import { NameAvatar } from '@/components/ui/NameAvatar';
+import { SoftBadge } from '@/components/ui/SoftBadge';
+import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
 
 type ProspectFilter = 'todos' | 'clientes' | 'prospectos';
@@ -44,8 +44,10 @@ export default function ClientsPage() {
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
   const router = useRouter();
+  const { formatCurrency } = useFormatters();
   const { data: session } = useSession();
   const userRole = session?.user?.role;
+  const isVendedor = userRole === 'VENDEDOR';
   const canManageProspects = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'SUPERVISOR';
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -70,13 +72,6 @@ export default function ClientsPage() {
   // Catálogos para filtros
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
-
-  // KPIs honestos. El único agregado real disponible es `totalClients` (total
-  // del backend). El payload de lista NO trae saldo/pedidos/nivel, así que el
-  // resto de tarjetas resumen lo que está visible en la página vigente
-  // (sublabel "En esta página" para no engañar al usuario, igual que pedidos).
-  const activosEnPagina = clients.filter(c => c.isActive).length;
-  const prospectosEnPagina = clients.filter(c => c.esProspecto).length;
 
   const fetchClients = useCallback(async () => {
     try {
@@ -217,117 +212,114 @@ export default function ClientsPage() {
     return sorted;
   }, [clients, sortKey, sortDir]);
 
-  // Column definitions
-  const columns = useMemo<DataGridColumn<Client>[]>(() => [
-    {
-      key: 'name',
-      label: t('columns.client'),
-      sortable: true,
-      width: 'flex',
-      cellRenderer: (client) => (
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded bg-foreground flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-[11px] font-medium">{getInitials(client.name)}</span>
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[13px] font-medium text-foreground truncate">{client.name} ({client.code})</span>
-              {client.esProspecto && (
-                <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">{tc('prospect')}</span>
-              )}
+  // Column definitions — espejo del ClientsPage del mockup Claude Design:
+  // Cliente (Avatar 32 + nombre + zona subtítulo) · Nivel (badge categoría) · [Vendedor]
+  // · Pedidos 30d (centro) · Saldo (rojo si >0 / "Al día" verde) · acciones.
+  const columns = useMemo<DataGridColumn<Client>[]>(() => {
+    const cols: DataGridColumn<Client>[] = [
+      {
+        key: 'name',
+        label: t('columns.client'),
+        sortable: true,
+        width: 'flex',
+        cellRenderer: (client) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <NameAvatar name={client.name} size={32} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[13px] font-semibold text-foreground truncate">{client.name}</span>
+                {client.esProspecto && (
+                  <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">{tc('prospect')}</span>
+                )}
+              </div>
+              <div className="text-[11px] text-muted-foreground truncate">{client.zoneName || t('noZone')}</div>
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">{client.email || client.phone || '—'}</div>
           </div>
-        </div>
-      ),
-    },
-    {
-      key: 'zoneName',
-      label: t('columns.zone'),
-      sortable: true,
-      width: 100,
-      cellRenderer: (client) => <span className="text-[13px] text-foreground">{client.zoneName || t('noZone')}</span>,
-    },
-    {
-      key: 'categoryName',
-      label: t('columns.category'),
-      sortable: true,
-      width: 130,
-      cellRenderer: (client) => <span className="text-[13px] text-foreground">{client.categoryName || t('noCategory')}</span>,
-    },
-    {
-      key: 'balance',
-      label: t('columns.balance'),
-      width: 90,
-      hiddenOnMobile: true,
-      cellRenderer: () => <span className="text-[13px] text-muted-foreground">—</span>,
-    },
-    {
-      key: 'creditLimit',
-      label: t('columns.creditLimit'),
-      width: 110,
-      hiddenOnMobile: true,
-      cellRenderer: () => <span className="text-[13px] text-muted-foreground">—</span>,
-    },
-    {
-      key: 'isActive',
-      label: t('columns.active'),
-      width: 50,
-      align: 'center',
-      cellRenderer: (client) => (
-        <div onClick={(e) => e.stopPropagation()} data-testid={`delete-client-${client.id}`}>
-          <ActiveToggle
-            isActive={client.isActive}
-            onToggle={() => handleToggleActive(client)}
-            disabled={loading}
-            isLoading={togglingId === client.id}
-            title={client.isActive ? t('deactivateClient') : t('activateClient')}
-          />
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      label: t('columns.actions'),
-      width: 100,
-      align: 'center',
-      cellRenderer: (client) => (
-        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-          {client.esProspecto && canManageProspects && (
-            <>
-              <button
-                onClick={() => handleAprobarProspecto(client)}
-                disabled={loading || prospectActionLoading === client.id}
-                className="p-1 hover:bg-primary/5 rounded transition-colors disabled:opacity-50"
-                title={t('approveProspect')}
-                data-testid={`approve-prospect-${client.id}`}
-              >
-                <CheckCircle className="w-4 h-4 text-primary" />
-              </button>
-              <button
-                onClick={() => handleRechazarProspecto(client)}
-                disabled={loading || prospectActionLoading === client.id}
-                className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                title={t('rejectProspect')}
-                data-testid={`reject-prospect-${client.id}`}
-              >
-                <XCircle className="w-4 h-4 text-red-500" />
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => handleEditClient(client)}
-            disabled={loading}
-            className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-            title={tc('edit')}
-            data-testid={`edit-client-${client.id}`}
-          >
-            <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-          </button>
-        </div>
-      ),
-    },
-  ], [loading, togglingId, canManageProspects, prospectActionLoading, t, tc]);
+        ),
+      },
+      {
+        key: 'categoryName',
+        label: t('columns.level'),
+        sortable: true,
+        width: 130,
+        hiddenOnMobile: true,
+        cellRenderer: (client) => client.categoryName
+          ? <SoftBadge tone="primary">{client.categoryName}</SoftBadge>
+          : <span className="text-[13px] text-muted-foreground">{t('noCategory')}</span>,
+      },
+    ];
+    // Vendedor: el mockup oculta esta columna para el rol vendedor (ve solo su cartera).
+    if (!isVendedor) {
+      cols.push({
+        key: 'vendedor',
+        label: t('columns.vendor'),
+        width: 140,
+        hiddenOnMobile: true,
+        cellRenderer: (client) => <span className="text-[13px] text-muted-foreground truncate block">{client.vendedorName || '—'}</span>,
+      });
+    }
+    cols.push(
+      {
+        key: 'pedidos30d',
+        label: t('columns.orders30d'),
+        width: 100,
+        align: 'center',
+        hiddenOnMobile: true,
+        cellRenderer: (client) => <span className="text-[13px] text-foreground tabular-nums">{client.pedidos30d ?? 0}</span>,
+      },
+      {
+        key: 'saldo',
+        label: t('columns.balance'),
+        width: 110,
+        align: 'right',
+        cellRenderer: (client) => (client.saldo ?? 0) > 0
+          ? <span className="text-[13px] font-bold text-red-600 tabular-nums">{formatCurrency(client.saldo ?? 0)}</span>
+          : <span className="text-[13px] font-semibold text-green-600">{t('upToDate')}</span>,
+      },
+      {
+        key: 'actions',
+        label: t('columns.actions'),
+        width: 100,
+        align: 'center',
+        cellRenderer: (client) => (
+          <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+            {client.esProspecto && canManageProspects && (
+              <>
+                <button
+                  onClick={() => handleAprobarProspecto(client)}
+                  disabled={loading || prospectActionLoading === client.id}
+                  className="p-1 hover:bg-primary/5 rounded transition-colors disabled:opacity-50"
+                  title={t('approveProspect')}
+                  data-testid={`approve-prospect-${client.id}`}
+                >
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                </button>
+                <button
+                  onClick={() => handleRechazarProspecto(client)}
+                  disabled={loading || prospectActionLoading === client.id}
+                  className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                  title={t('rejectProspect')}
+                  data-testid={`reject-prospect-${client.id}`}
+                >
+                  <XCircle className="w-4 h-4 text-red-500" />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => handleEditClient(client)}
+              disabled={loading}
+              className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
+              title={tc('edit')}
+              data-testid={`edit-client-${client.id}`}
+            >
+              <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
+            </button>
+          </div>
+        ),
+      },
+    );
+    return cols;
+  }, [loading, canManageProspects, prospectActionLoading, isVendedor, formatCurrency, t, tc]);
 
   const visibleIds = sortedClients.map(c => parseInt(c.id));
   const batch = useBatchOperations({
@@ -366,19 +358,20 @@ export default function ClientsPage() {
 
   return (
       <PageHeader
+        section="catalogo"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: tn('sectionCatalog') },
           { label: t('title') },
         ]}
         title={t('title')}
-        subtitle={totalClients > 0 ? t('subtitle', { count: totalClients, plural: totalClients !== 1 ? 's' : '' }) : undefined}
+        subtitle={totalClients > 0 ? t('subtitleCartera', { count: totalClients }) : undefined}
         actions={
           <>
             <div className="relative" data-tour="clients-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
                 <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -406,43 +399,26 @@ export default function ClientsPage() {
                 </>
               )}
             </div>
-            <button
-              data-tour="clients-add-btn"
-              onClick={handleCreateClient}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
+            <Button variant="wbPrimary" data-tour="clients-add-btn" onClick={handleCreateClient}>
+              <Plus className="w-4 h-4 mr-2" />
               <span>{t('newClient')}</span>
-            </button>
+            </Button>
           </>
         }
       >
         <div className="space-y-5">
-        {/* Tabs segmentados (estado real: prospecto) + búsqueda a la derecha */}
+        {/* Tabs (TabBar subrayado, índigo catálogo) — estado real: prospecto. 'all' mapea a 'todos'. */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="clients-prospect-filter">
-            {([
-              { key: 'todos', label: t('filters.all') },
-              { key: 'clientes', label: t('filters.clients') },
-              { key: 'prospectos', label: t('filters.prospects') },
-            ] as const).map(({ key, label }) => {
-              const active = prospectFilter === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => { setProspectFilter(key); setCurrentPage(1); }}
-                  aria-pressed={active}
-                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
+          <div className="min-w-0 lg:flex-1" data-tour="clients-prospect-filter">
+            <TabBar
+              items={[
+                { id: 'all', label: t('filters.all') },
+                { id: 'clientes', label: t('filters.clients') },
+                { id: 'prospectos', label: t('filters.prospects') },
+              ]}
+              value={prospectFilter === 'todos' ? 'all' : prospectFilter}
+              onChange={(id) => { setProspectFilter(id === 'all' ? 'todos' : (id as ProspectFilter)); setCurrentPage(1); }}
+            />
           </div>
           <div className="w-full sm:w-72 lg:w-80" data-tour="clients-search">
             <SearchBar
@@ -454,34 +430,8 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        {/* KPI Row — solo data real. Total es agregado del backend; activos y
-            prospectos resumen la página cargada (sublabel "En esta página"). */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { title: t('kpis.totalClients'), value: totalClients.toLocaleString('es-MX'), hint: t('kpis.totalRegistered'), icon: Users },
-            { title: t('kpis.active'), value: String(activosEnPagina), hint: t('kpis.thisPage'), icon: UserCheck },
-            { title: t('kpis.prospects'), value: String(prospectosEnPagina), hint: t('kpis.thisPage'), icon: UserPlus },
-          ].map((card) => {
-            const Icon = card.icon;
-            return (
-              <div
-                key={card.title}
-                className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-start justify-between">
-                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
-                  <Icon className="w-5 h-5 text-muted-foreground/40" />
-                </div>
-                <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
-                  {card.value}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Filtros secundarios (zona, categoría) + refrescar + inactivos */}
+        {/* Filtros secundarios (zona, categoría) + inactivos — zona/categoría
+            no están cubiertos por las pestañas, así que se conservan como filtros reales. */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="min-w-[150px] max-w-[250px]" data-tour="clients-zone-filter">
             <SearchableSelect
@@ -501,13 +451,6 @@ export default function ClientsPage() {
               searchPlaceholder={t('filters.searchCategory')}
             />
           </div>
-          <button
-            onClick={fetchClients}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">{tc('refresh')}</span>
-          </button>
 
           <div data-tour="clients-toggle-inactive" className="ml-auto">
             <InactiveToggle
@@ -560,12 +503,11 @@ export default function ClientsPage() {
               pageSize,
               onPageChange: setCurrentPage,
             }}
+            onRowClick={(client) => router.push(`/clients/${client.id}`)}
             mobileCardRenderer={(client) => (
               <div className={`${!client.isActive ? 'opacity-60' : ''}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded bg-foreground text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
-                    {getInitials(client.name)}
-                  </div>
+                  <NameAvatar name={client.name} size={40} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-foreground truncate">{client.name}</span>
@@ -573,7 +515,7 @@ export default function ClientsPage() {
                         <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">{tc('prospect')}</span>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground">{client.code}</div>
+                    <div className="text-xs text-muted-foreground">{client.zoneName || t('noZone')}</div>
                   </div>
                   <div onClick={(e) => e.stopPropagation()} data-testid={`delete-client-${client.id}`}>
                     <ActiveToggle
@@ -586,8 +528,10 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">{client.zoneName || t('noZone')}</span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-medium">{client.categoryName || t('noCategory')}</span>
+                  {client.categoryName && <SoftBadge tone="primary">{client.categoryName}</SoftBadge>}
+                  {(client.saldo ?? 0) > 0
+                    ? <span className="inline-flex items-center px-2 py-1 rounded-md bg-red-50 text-red-600 text-xs font-bold">{formatCurrency(client.saldo ?? 0)}</span>
+                    : <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-600 text-xs font-semibold">{t('upToDate')}</span>}
                 </div>
                 <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                   {client.esProspecto && canManageProspects && (

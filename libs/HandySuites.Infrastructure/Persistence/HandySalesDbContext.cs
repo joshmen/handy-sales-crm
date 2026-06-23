@@ -34,6 +34,7 @@ public class HandySuitesDbContext : DbContext
     public DbSet<Promocion> Promociones => Set<Promocion>();
     public DbSet<PromocionProducto> PromocionProductos => Set<PromocionProducto>();
     public DbSet<Zona> Zonas => Set<Zona>();
+    public DbSet<Vehiculo> Vehiculos => Set<Vehiculo>();
     public DbSet<FamiliaProducto> FamiliasProductos => Set<FamiliaProducto>();
     public DbSet<CategoriaCliente> CategoriasClientes => Set<CategoriaCliente>();
     public DbSet<CategoriaProducto> CategoriasProductos => Set<CategoriaProducto>();
@@ -63,6 +64,7 @@ public class HandySuitesDbContext : DbContext
     public DbSet<NotificationHistory> NotificationHistory => Set<NotificationHistory>();
     public DbSet<Cobro> Cobros => Set<Cobro>();
     public DbSet<Gasto> Gastos => Set<Gasto>();
+    public DbSet<GastoContable> GastosContables => Set<GastoContable>();
     public DbSet<DevolucionPedido> DevolucionesPedido => Set<DevolucionPedido>();
     public DbSet<DetalleDevolucion> DetalleDevoluciones => Set<DetalleDevolucion>();
     public DbSet<TwoFactorRecoveryCode> TwoFactorRecoveryCodes => Set<TwoFactorRecoveryCode>();
@@ -289,6 +291,9 @@ public class HandySuitesDbContext : DbContext
                   .WithOne(i => i.Producto)
                   .HasForeignKey<HandySuites.Domain.Entities.Inventario>(i => i.ProductoId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Facturable default true → la migración hace backfill de productos existentes.
+            entity.Property(p => p.Facturable).HasDefaultValue(true);
         });
 
         // Configure Role entity
@@ -537,6 +542,13 @@ public class HandySuitesDbContext : DbContext
             entity.HasOne(rv => rv.Zona)
                   .WithMany()
                   .HasForeignKey(rv => rv.ZonaId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            // Relación con Vehiculo (opcional). SET NULL al borrar el vehículo:
+            // la ruta queda sin vehículo asignado en vez de romper la FK. 2026-06-20.
+            entity.HasOne(rv => rv.Vehiculo)
+                  .WithMany()
+                  .HasForeignKey(rv => rv.VehiculoId)
                   .OnDelete(DeleteBehavior.SetNull);
 
             // Índices
@@ -866,6 +878,30 @@ public class HandySuitesDbContext : DbContext
                 .HasFilter("\"mobile_record_id\" IS NOT NULL");
         });
 
+        // Configure GastoContable entity (gasto de operacion para el CORE contable)
+        modelBuilder.Entity<GastoContable>(entity =>
+        {
+            entity.ToTable("GastosContables");
+            entity.HasKey(g => g.Id);
+
+            entity.HasOne(g => g.Tenant)
+                  .WithMany()
+                  .HasForeignKey(g => g.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(g => g.Categoria).HasMaxLength(40);
+            entity.Property(g => g.Descripcion).HasMaxLength(300);
+            entity.Property(g => g.ProveedorRfc).HasMaxLength(13);
+            entity.Property(g => g.ProveedorNombre).HasMaxLength(200);
+            entity.Property(g => g.Base).HasPrecision(14, 2);
+            entity.Property(g => g.Iva).HasPrecision(14, 2);
+            entity.Property(g => g.Total).HasPrecision(14, 2);
+
+            entity.HasIndex(g => new { g.TenantId, g.Fecha });
+            entity.HasIndex(g => new { g.TenantId, g.Categoria });
+            entity.HasIndex(g => new { g.TenantId, g.ProveedorRfc });
+        });
+
         // Configure DevolucionPedido entity (devolucion de cliente, ligada a un Pedido)
         modelBuilder.Entity<DevolucionPedido>(entity =>
         {
@@ -1101,8 +1137,45 @@ public class HandySuitesDbContext : DbContext
         modelBuilder.Entity<PromocionProducto>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
-        modelBuilder.Entity<Zona>()
-            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+        modelBuilder.Entity<Zona>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            // Vendedor responsable de la zona (opcional). SET NULL al borrar el usuario:
+            // la zona queda sin asignar en vez de romper la FK. 2026-06-18.
+            entity.HasOne(z => z.Vendedor)
+                  .WithMany()
+                  .HasForeignKey(z => z.VendedorId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(z => new { z.TenantId, z.VendedorId });
+        });
+
+        modelBuilder.Entity<Vehiculo>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+            entity.Property(v => v.Placa).HasMaxLength(20);
+
+            // Placa única por tenant (soft-delete aware): un vehículo dado de baja
+            // (eliminado_en != null) libera su placa para un alta nueva. 2026-06-20.
+            entity.HasIndex(v => new { v.TenantId, v.Placa })
+                  .IsUnique()
+                  .HasFilter("\"eliminado_en\" IS NULL");
+
+            // Vendedor (conductor) asignado al vehículo (opcional). SET NULL al borrar
+            // el usuario: el vehículo queda sin conductor en vez de romper la FK.
+            entity.HasOne(v => v.Vendedor)
+                  .WithMany()
+                  .HasForeignKey(v => v.VendedorId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(v => v.Tenant)
+                  .WithMany()
+                  .HasForeignKey(v => v.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(v => new { v.TenantId, v.VendedorId });
+            entity.HasIndex(v => new { v.TenantId, v.Estado });
+        });
 
         modelBuilder.Entity<FamiliaProducto>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
@@ -1224,6 +1297,9 @@ public class HandySuitesDbContext : DbContext
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Gasto>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        modelBuilder.Entity<GastoContable>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<DevolucionPedido>()

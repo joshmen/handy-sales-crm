@@ -1,3 +1,4 @@
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Multitenancy;
@@ -249,8 +250,8 @@ public static class CuponEndpoints
                 var baseDate = tenant.FechaExpiracion ?? DateTime.UtcNow;
                 if (baseDate < DateTime.UtcNow) baseDate = DateTime.UtcNow;
                 tenant.FechaExpiracion = baseDate.AddMonths(meses);
-                if (tenant.SubscriptionStatus == "Trial" || tenant.SubscriptionStatus == "Expired")
-                    tenant.SubscriptionStatus = "Active";
+                if (SubscriptionStatuses.IsTrial(tenant.SubscriptionStatus) || SubscriptionStatuses.IsExpired(tenant.SubscriptionStatus))
+                    tenant.SubscriptionStatus = SubscriptionStatuses.Active;
                 beneficioAplicado = $"{meses} mes(es) gratis agregados. Nueva expiración: {tenant.FechaExpiracion:yyyy-MM-dd}";
                 break;
 
@@ -264,8 +265,8 @@ public static class CuponEndpoints
                 var upgradeBase = tenant.FechaExpiracion ?? DateTime.UtcNow;
                 if (upgradeBase < DateTime.UtcNow) upgradeBase = DateTime.UtcNow;
                 tenant.FechaExpiracion = upgradeBase.AddMonths(mesesUpgrade);
-                if (tenant.SubscriptionStatus == "Trial" || tenant.SubscriptionStatus == "Expired")
-                    tenant.SubscriptionStatus = "Active";
+                if (SubscriptionStatuses.IsTrial(tenant.SubscriptionStatus) || SubscriptionStatuses.IsExpired(tenant.SubscriptionStatus))
+                    tenant.SubscriptionStatus = SubscriptionStatuses.Active;
                 beneficioAplicado = $"Upgrade de {planAnterior ?? "N/A"} a {tenant.PlanTipo} por {mesesUpgrade} mes(es)";
                 break;
 

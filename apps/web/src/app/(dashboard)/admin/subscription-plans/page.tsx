@@ -468,6 +468,9 @@ export default function SubscriptionPlansAdminPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={CreditCard}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('breadcrumb') },

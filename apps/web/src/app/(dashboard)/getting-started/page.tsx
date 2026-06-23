@@ -482,6 +482,7 @@ export default function GettingStartedPage() {
 
   return (
     <PageHeader
+      section="navegacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbTitle') },
@@ -493,14 +494,14 @@ export default function GettingStartedPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
           <button
             onClick={handleDismiss}
-            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
           >
             <X className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="sm:hidden">{t('skipShort')}</span>
@@ -680,7 +681,7 @@ export default function GettingStartedPage() {
                                   scheduleTourContinuation(step.tourId!);
                                   router.push(step.href);
                                 }}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                                 title={t('repeatTour')}
                               >
                                 <Compass className="w-3 h-3" />
@@ -690,7 +691,7 @@ export default function GettingStartedPage() {
                             {step.completed && (
                               <Link
                                 href={step.href}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               >
                                 {t('view')}
                                 <ChevronRight className="w-3 h-3" />

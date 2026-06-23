@@ -165,7 +165,7 @@ export function DashboardEjecutivoReport() {
             </Card>
 
             <Card className="lg:col-span-3 page-animate page-animate-delay-3">
-              <Text className="!font-semibold !text-foreground mb-4">{t('salesTitle')} — {periodoLabel}</Text>
+              <Text className="!font-semibold !text-foreground mb-4">{t('salesTitle')}: {periodoLabel}</Text>
               <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={barOptions} series={barSeries} height={200} />
             </Card>
           </div>

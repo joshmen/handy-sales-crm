@@ -1,51 +1,93 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { routeService, RouteListItem, RouteCreateRequest } from '@/services/api/routes';
+import { routeService, RouteCreateRequest, RouteDetail, RouteStop } from '@/services/api/routes';
 import { zoneService } from '@/services/api/zones';
+import { vehiclesService, type Vehiculo } from '@/services/api/vehicles';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
-import { useBatchOperations } from '@/hooks/useBatchOperations';
-import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { SearchBar } from '@/components/common/SearchBar';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
+import { StatCard, type StatTone } from '@/components/dashboard/StatCard';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import {
-  Plus,
   Download,
-  RefreshCw,
-  MapPin,
   Map,
   Loader2,
   Calendar,
   Clock,
   User,
   MapPinned,
+  Route as RouteIcon,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronRight,
+  Check,
+  Navigation,
+  Truck,
+  Info,
 } from 'lucide-react';
 import { exportToCsv } from '@/services/api/importExport';
-import { SearchBar } from '@/components/common/SearchBar';
-import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { SoftBadge, type SoftBadgeTone } from '@/components/ui/SoftBadge';
 import { Path } from '@phosphor-icons/react';
 import { useFormatters } from '@/hooks/useFormatters';
+import { usePermissions } from '@/hooks/usePermissions';
 import { dateOnlyToUTC } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
-import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 
 interface ZoneOption {
   id: number;
   name: string;
 }
+
+// Estado activo de hoy: una ruta va "atrasada" si está en progreso, le quedan paradas
+// y ya pasó su hora estimada de fin. Heurística client-side (espejo del badge del mockup).
+function isRutaAtrasada(r: RouteDetail): boolean {
+  if (r.estado === 2 || r.estado === 6) return false; // Completada / Cerrada
+  if (r.totalParadas > 0 && r.paradasCompletadas >= r.totalParadas) return false;
+  if (!r.horaFinEstimada) return false;
+  const parts = r.horaFinEstimada.split(':');
+  const finMin = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes() > finMin;
+}
+
+/** "HH:MM:SS" (TimeSpan) → "HH:MM"; vacío → "—". */
+const fmtEta = (t?: string | null) => (t ? t.slice(0, 5) : '—');
+
+// Vista decorada de una ruta para el tablero (avance, atrasada, siguiente parada).
+interface RutaDecorada {
+  r: RouteDetail;
+  done: number;
+  total: number;
+  pct: number;
+  atrasada: boolean;
+  next: RouteStop | null;
+}
+
+function decorate(r: RouteDetail): RutaDecorada {
+  const done = r.paradasCompletadas;
+  const total = r.totalParadas;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const ordered = [...r.detalles].sort((a, b) => a.ordenVisita - b.ordenVisita);
+  const next = ordered.find((s) => s.estado === 0 || s.estado === 1) ?? null;
+  return { r, done, total, pct, atrasada: isRutaAtrasada(r), next };
+}
+
+// Tono del badge de estado de cada parada (EstadoParada: 0 pend / 1 en camino / 2 visitado / 3 omitido).
+const STOP_TONE: Record<number, SoftBadgeTone> = { 0: 'default', 1: 'info', 2: 'success', 3: 'warning' };
 
 interface UsuarioOption {
   id: number;
@@ -56,6 +98,7 @@ const routeSchema = z.object({
   nombre: z.string().min(1, 'nameRequired').max(100),
   usuarioId: z.number(),
   zonaId: z.number().nullable(),
+  vehiculoId: z.number().nullable(),
   fecha: z.string().min(1, 'dateRequired'),
   horaInicioEstimada: z.string(),
   horaFinEstimada: z.string(),
@@ -69,32 +112,31 @@ export default function RoutesPage() {
   const t = useTranslations('routes');
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
-  const showApiError = useApiErrorToast();
   const router = useRouter();
-  const { formatDateOnly, tenantToday } = useFormatters();
+  const { tenantToday } = useFormatters();
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+  const { hasPermission } = usePermissions();
+  const isVendedor = session?.user?.role === 'VENDEDOR';
+  const canViewTeam = hasPermission('view_team');
 
-  const [routes, setRoutes] = useState<RouteListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Rutas activas de hoy para el tablero de control de la jornada.
+  const [activeRoutes, setActiveRoutes] = useState<RouteDetail[]>([]);
+  const [activeLoading, setActiveLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [estadoFilter, setEstadoFilter] = useState<string>('all');
-  const [zonaFilter, setZonaFilter] = useState<string>('all');
-  const [usuarioFilter, setUsuarioFilter] = useState<string>('all');
-  const [showInactive, setShowInactive] = useState(false);
   const [zones, setZones] = useState<ZoneOption[]>([]);
 
-  // Toggle state
-  const [togglingId, setTogglingId] = useState<number | null>(null);
+  // Filtros del tablero
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTab, setFilterTab] = useState<'all' | 'onTrack' | 'behind'>('all');
+
+  // Drawer de detalle de ruta
+  const [detailRoute, setDetailRoute] = useState<RouteDetail | null>(null);
 
   // Create modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
 
   const drawerRef = useRef<DrawerHandle>(null);
 
@@ -105,6 +147,7 @@ export default function RoutesPage() {
       nombre: '',
       usuarioId: 0,
       zonaId: null,
+      vehiculoId: null,
       fecha: '',
       horaInicioEstimada: '',
       horaFinEstimada: '',
@@ -113,34 +156,20 @@ export default function RoutesPage() {
     },
   });
 
-  const pageSize = 20;
-
-  const fetchRoutes = useCallback(async () => {
+  const fetchActiveRoutes = useCallback(async () => {
     try {
-      setLoading(true);
+      setActiveLoading(true);
       setError(null);
-      const response = await routeService.getRutas({
-        page: currentPage,
-        limit: pageSize,
-        search: searchTerm || undefined,
-        estado: estadoFilter !== 'all' ? parseInt(estadoFilter) : undefined,
-        zonaId: zonaFilter !== 'all' ? parseInt(zonaFilter) : undefined,
-        usuarioId: usuarioFilter !== 'all' ? parseInt(usuarioFilter) : undefined,
-        mostrarInactivos: showInactive,
-      });
-      setRoutes(response.items);
-      setTotalItems(response.total);
-      setTotalPages(Math.ceil(response.total / pageSize) || 1);
+      const data = await routeService.getActiveRoutesMap();
+      setActiveRoutes(data);
     } catch {
-      // BUG-3: el toast + setError ya comunican el fallo al user; no
-      // necesitamos console.error en prod (se va a Sentry/Vercel logs
-      // automáticamente vía error boundary si llegara a propagar).
       setError(t('errorLoadingRetry'));
       toast.error(t('errorLoading'));
     } finally {
-      setLoading(false);
+      setActiveLoading(false);
     }
-  }, [currentPage, searchTerm, estadoFilter, zonaFilter, usuarioFilter, showInactive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchZones = async () => {
     try {
@@ -163,201 +192,96 @@ export default function RoutesPage() {
   };
 
   useEffect(() => {
-    fetchRoutes();
-  }, [fetchRoutes]);
+    fetchActiveRoutes();
+  }, [fetchActiveRoutes]);
+
+  const fetchVehiculos = async () => {
+    try {
+      const list = await vehiclesService.getVehiculos();
+      // Solo asignables: activos y no dados de baja (estado 3).
+      setVehiculos(list.filter((v) => v.activo && v.estado !== 3));
+    } catch (err) {
+      console.error('Error al cargar vehículos:', err);
+    }
+  };
 
   useEffect(() => {
     fetchZones();
     fetchUsuarios();
+    fetchVehiculos();
   }, []);
 
-  const handleRefresh = () => {
-    fetchRoutes();
-    toast.success(t('routesUpdated'));
-  };
+  // ── Datos derivados del tablero ──
+  const decorated = useMemo(() => activeRoutes.map(decorate), [activeRoutes]);
 
-  // Sort state
-  const [sortKey, setSortKey] = useState('fecha');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const filtered = useMemo(() => {
+    let list = decorated;
+    if (filterTab === 'onTrack') list = list.filter(d => !d.atrasada);
+    else if (filterTab === 'behind') list = list.filter(d => d.atrasada);
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(d =>
+        (d.r.zonaNombre || d.r.nombre || '').toLowerCase().includes(q) ||
+        (d.r.usuarioNombre || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [decorated, filterTab, searchTerm]);
 
-  const handleSortChange = useCallback((key: string) => {
-    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
-    setSortKey(key);
-  }, [sortKey]);
+  // KPIs
+  const sumDone = decorated.reduce((s, d) => s + d.done, 0);
+  const sumTotal = decorated.reduce((s, d) => s + d.total, 0);
+  const overallPct = sumTotal > 0 ? Math.round((sumDone / sumTotal) * 100) : 0;
+  const atrasadas = decorated.filter(d => d.atrasada);
+  const worstZona = atrasadas.slice().sort((a, b) => a.pct - b.pct)[0]?.r;
+  const estClose = decorated
+    .map(d => d.r.horaFinEstimada)
+    .filter((h): h is string => !!h)
+    .sort()
+    .slice(-1)[0];
 
-  const sortedRoutes = useMemo(() => {
-    const sorted = [...routes];
-    sorted.sort((a, b) => {
-      let cmp = 0;
-      switch (sortKey) {
-        case 'nombre': cmp = a.nombre.localeCompare(b.nombre); break;
-        case 'fecha': cmp = a.fecha.getTime() - b.fecha.getTime(); break;
-        case 'usuarioNombre': cmp = a.usuarioNombre.localeCompare(b.usuarioNombre); break;
-        default: cmp = 0;
-      }
-      return sortDir === 'desc' ? -cmp : cmp;
-    });
-    return sorted;
-  }, [routes, sortKey, sortDir]);
+  const kpiCards: Array<{ title: string; value: string; hint?: string; icon: React.ComponentType<{ size?: number; className?: string }>; tone: StatTone }> = [
+    { title: t('dashboard.kpiActiveRoutes'), value: String(decorated.length), icon: RouteIcon, tone: 'primary' },
+    { title: t('dashboard.kpiStopsDone'), value: `${sumDone} / ${sumTotal}`, hint: `${overallPct}%`, icon: CheckCircle2, tone: 'default' },
+    { title: t('dashboard.kpiDelayed'), value: String(atrasadas.length), hint: worstZona ? (worstZona.zonaNombre || worstZona.nombre) : undefined, icon: AlertTriangle, tone: atrasadas.length > 0 ? 'danger' : 'default' },
+    { title: t('dashboard.kpiEstClose'), value: fmtEta(estClose), icon: Clock, tone: 'default' },
+  ];
 
-  // Column definitions for routes
-  const routeColumns = useMemo<DataGridColumn<RouteListItem>[]>(() => [
+  // ── Columnas del tablero ──
+  const columns: DataGridColumn<RutaDecorada>[] = [
     {
-      key: 'codigo',
-      label: 'Código',
-      sortable: true,
-      width: 150,
-      cellRenderer: (route) => (
-        <span className="text-[12px] font-mono text-foreground/70 truncate block">{route.codigo || '-'}</span>
+      key: 'zona', label: t('columns.zone'), width: 'flex', cellRenderer: (d) => (
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0" style={{ background: d.atrasada ? 'rgba(220,38,38,0.10)' : 'rgba(1,118,211,0.10)', color: d.atrasada ? '#DC2626' : '#0176D3' }}>
+            <Path className="w-[18px] h-[18px]" weight="duotone" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-foreground truncate">{d.r.zonaNombre || d.r.nombre}</p>
+            <p className="text-xs text-muted-foreground truncate">{d.r.usuarioNombre}</p>
+          </div>
+        </div>
       ),
     },
     {
-      key: 'nombre',
-      label: t('columns.name'),
-      sortable: true,
-      width: 'flex',
-      cellRenderer: (route) => (
-        <span className="text-[13px] font-medium text-primary truncate block">{route.nombre}</span>
-      ),
-    },
-    {
-      key: 'zonaNombre',
-      label: t('columns.zone'),
-      width: 120,
-      cellRenderer: (route) => <span className="text-[13px] text-foreground/70 truncate block">{route.zonaNombre || '-'}</span>,
-    },
-    {
-      key: 'usuarioNombre',
-      label: t('columns.user'),
-      sortable: true,
-      width: 140,
-      cellRenderer: (route) => <span className="text-[13px] text-foreground/70 truncate block">{route.usuarioNombre}</span>,
-    },
-    {
-      key: 'fecha',
-      label: t('columns.date'),
-      sortable: true,
-      width: 100,
-      cellRenderer: (route) => <span className="text-[13px] text-foreground">{formatDateOnly(route.fecha)}</span>,
-    },
-    {
-      key: 'horario',
-      label: t('columns.schedule'),
-      width: 110,
-      align: 'center',
-      cellRenderer: (route) => (
-        <span className="text-[12px] text-muted-foreground">
-          {route.horaInicioEstimada
-            ? `${route.horaInicioEstimada.substring(0, 5)} - ${route.horaFinEstimada?.substring(0, 5) || '--:--'}`
-            : '--'}
-        </span>
-      ),
-    },
-    {
-      key: 'estado',
-      label: t('columns.status'),
-      width: 110,
-      align: 'center',
-      cellRenderer: (route) => {
-        const badge = getEstadoBadge(route.estado);
-        return <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>;
+      key: 'pct', label: t('dashboard.colProgress'), width: 200, cellRenderer: (d) => {
+        const barColor = d.atrasada ? '#DC2626' : d.pct < 60 ? '#D97706' : '#16A34A';
+        return (
+          <div className="flex items-center gap-2.5 min-w-[150px]">
+            <div className="flex-1 max-w-[120px] h-1.5 rounded-full bg-surface-3 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, d.pct)}%`, background: barColor }} /></div>
+            <span className="text-[12px] font-bold text-foreground tabular-nums w-12 text-right">{d.done}/{d.total}</span>
+          </div>
+        );
       },
     },
-    {
-      key: 'paradas',
-      label: t('columns.stops'),
-      width: 80,
-      align: 'center',
-      cellRenderer: (route) => (
-        <span className="text-[13px] text-foreground/70">
-          <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-primary font-medium' : ''}>
-            {route.paradasCompletadas}
-          </span>/{route.totalParadas}
-        </span>
-      ),
-    },
-    {
-      key: 'activo',
-      label: t('columns.active'),
-      width: 50,
-      align: 'center',
-      cellRenderer: (route) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ActiveToggle isActive={route.activo} onToggle={() => handleToggleActive(route)} disabled={loading} isLoading={togglingId === route.id} />
-        </div>
-      ),
-    },
-    {
-      key: 'contextAction',
-      label: t('columns.action'),
-      width: 80,
-      align: 'center',
-      cellRenderer: (route) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          {(route.estado === 0) && (
-            <button onClick={() => router.push(`/routes/${route.id}?tab=carga`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
-          )}
-          {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-            <button onClick={() => router.push(`/routes/${route.id}?tab=carga`)} className="text-[11px] font-medium text-foreground/70 hover:text-foreground bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
-          )}
-          {route.estado === 2 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
-          )}
-          {route.estado === 6 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-muted-foreground bg-surface-1 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
-          )}
-        </div>
-      ),
-    },
-  ], [loading, togglingId, formatDateOnly, router]);
+    { key: 'next', label: t('dashboard.colNextStop'), width: 'flex', hiddenOnMobile: true, cellRenderer: (d) => <span className="text-[13px] text-foreground/70 truncate">{d.next ? d.next.clienteNombre : t('dashboard.allCompleted')}</span> },
+    { key: 'eta', label: t('dashboard.colEstClose'), width: 110, align: 'center', cellRenderer: (d) => <span className="text-[13px] text-foreground tabular-nums">{fmtEta(d.r.horaFinEstimada)}</span> },
+    { key: 'estado', label: t('columns.status'), width: 120, align: 'center', cellRenderer: (d) => <SoftBadge tone={d.atrasada ? 'danger' : 'success'}>{d.atrasada ? t('delayed') : t('dashboard.statusOnTime')}</SoftBadge> },
+    { key: 'chev', label: '', width: 44, align: 'center', cellRenderer: () => <ChevronRight className="w-4 h-4 text-muted-foreground/50" /> },
+  ];
 
-  // Batch operations
-  const visibleIds = sortedRoutes.map(r => r.id);
-  const batch = useBatchOperations({
-    visibleIds,
-    clearDeps: [currentPage, estadoFilter, zonaFilter, usuarioFilter, showInactive],
-  });
-
-  const handleBatchToggle = async () => {
-    const ids = Array.from(batch.selectedIds);
-    const activo = batch.batchAction === 'activate';
-    try {
-      batch.setBatchLoading(true);
-      await routeService.batchToggleActivo(ids, activo);
-      toast.success(t('batchSuccess', { count: ids.length, action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() }));
-      batch.completeBatch();
-      fetchRoutes();
-    } catch (err) {
-      showApiError(err, t('errorUpdating'));
-      batch.setBatchLoading(false);
-    }
-  };
-
-  // Individual toggle
-  const handleToggleActive = async (route: RouteListItem) => {
-    const newActivo = !route.activo;
-    setTogglingId(route.id);
-    setRoutes(prev => prev.map(r => r.id === route.id ? { ...r, activo: newActivo } : r));
-    try {
-      await routeService.toggleActivo(route.id, newActivo);
-      toast.success(newActivo ? t('routeActivated') : t('routeDeactivated'));
-      if (!showInactive && !newActivo) {
-        setRoutes(prev => prev.filter(r => r.id !== route.id));
-        setTotalItems(prev => prev - 1);
-      }
-    } catch (err) {
-      setRoutes(prev => prev.map(r => r.id === route.id ? { ...r, activo: !newActivo } : r));
-      showApiError(err, t('errorUpdating'));
-    } finally {
-      setTogglingId(null);
-    }
-  };
-
-  // Create/Edit handlers
+  // Create handlers
   const handleOpenCreate = () => {
-    // Default `fecha` al día calendario tenant. Antes usaba UTC del browser
-    // (`new Date().toISOString()`) lo que en TZ negativa preseleccionaba el
-    // día siguiente.
+    // Default `fecha` al día calendario tenant (no UTC del browser).
     const todayString = tenantToday();
     resetForm({
       nombre: '',
@@ -380,11 +304,12 @@ export default function RoutesPage() {
         setActionLoading(false);
         return;
       }
-      const fmtTime = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
+      const fmtTime = (tt?: string | null) => tt ? (tt.length === 5 ? `${tt}:00` : tt) : null;
       const createData: RouteCreateRequest = {
         nombre: data.nombre,
         usuarioId: data.usuarioId,
         zonaId: data.zonaId,
+        vehiculoId: data.vehiculoId,
         fecha: dateOnlyToUTC(data.fecha),
         horaInicioEstimada: fmtTime(data.horaInicioEstimada),
         horaFinEstimada: fmtTime(data.horaFinEstimada),
@@ -394,7 +319,7 @@ export default function RoutesPage() {
       await routeService.createRuta(createData);
       toast.success(t('routeCreated'));
       setIsModalOpen(false);
-      fetchRoutes();
+      fetchActiveRoutes();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
       const msg = e?.response?.data?.message || e?.message || t('errorSaving');
@@ -404,229 +329,176 @@ export default function RoutesPage() {
     }
   };
 
-  // Estado badge
-  const getEstadoBadge = (estado: number) => {
-    switch (estado) {
-      case 0: return { label: t('status.planned'), cls: 'bg-surface-3 text-foreground/70' };
-      case 1: return { label: t('status.inProgress'), cls: 'bg-cyan-100 text-cyan-700' };
-      case 2: return { label: t('status.completed'), cls: 'bg-primary/10 text-primary' };
-      case 3: return { label: t('status.cancelled'), cls: 'bg-red-100 text-red-600' };
-      case 4: return { label: t('status.pendingAccept'), cls: 'bg-yellow-100 text-yellow-700' };
-      case 5: return { label: t('status.loadAccepted'), cls: 'bg-blue-100 text-blue-700' };
-      case 6: return { label: t('status.closed'), cls: 'bg-primary/10 text-primary' };
-      default: return { label: t('status.unknown'), cls: 'bg-surface-3 text-foreground/70' };
-    }
-  };
-
-  const estadoOptions = [
-    { value: 'all', label: t('filters.allStatuses') },
-    { value: '0', label: t('status.planned') },
-    { value: '1', label: t('status.inProgress') },
-    { value: '2', label: t('status.completed') },
-    { value: '3', label: t('status.cancelled') },
-    { value: '4', label: t('status.pendingAccept') },
-    { value: '5', label: t('status.loadAccepted') },
-    { value: '6', label: t('status.closed') },
-  ];
-
-  const zonaOptions = [
-    { value: 'all', label: t('filters.allZones') },
-    ...zones.map(z => ({ value: z.id.toString(), label: z.name })),
-  ];
+  const detailStops = detailRoute ? [...detailRoute.detalles].sort((a, b) => a.ordenVisita - b.ordenVisita) : [];
 
   return (
     <PageHeader
+      section="operacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: tn('sectionOperations') },
         { label: t('title') },
       ]}
-      title={t('title')}
-      subtitle={totalItems > 0 ? t('routeCount', { count: totalItems }) : undefined}
+      title={isVendedor ? t('myRoute') : t('title')}
+      subtitle={t('dashboard.subtitle')}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {canViewTeam && (
+            <Button variant="wbOutline" onClick={() => router.push('/team/gps')}>
+              <Navigation className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+              <span className="hidden sm:inline">{t('dashboard.viewGps')}</span>
+            </Button>
+          )}
           <button
             data-tour="routes-export-btn"
             onClick={async () => { try { await exportToCsv('rutas'); toast.success(t('csvDownloaded')); } catch { toast.error(t('exportError')); } }}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('export')}</span>
           </button>
-          <button
-            data-tour="routes-new-btn"
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('newRoute')}</span>
-          </button>
+          <Button variant="wbPrimary" data-tour="routes-new-btn" onClick={handleOpenCreate}>
+            <MapPinned className="w-4 h-4 mr-2" />
+            <span>{t('planRoutes')}</span>
+          </Button>
         </div>
       }
     >
       <div className="space-y-5">
-        {/* Tabs de estado (segmentado azul) + búsqueda — reusa estadoFilter real */}
+        <ErrorBanner error={error} onRetry={fetchActiveRoutes} />
+
+        {/* KPI Row — espejo del mockup RoutesPage */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCards.map((card) => (
+            <StatCard
+              key={card.title}
+              label={card.title}
+              value={card.value}
+              icon={card.icon}
+              tone={card.tone}
+              sub={card.hint}
+              loading={activeLoading}
+            />
+          ))}
+        </div>
+
+        {/* Tabs (segmentado) + búsqueda */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="routes-estado-filter">
-            {estadoOptions.map((opt) => {
-              const active = estadoFilter === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => { setEstadoFilter(opt.value); setCurrentPage(1); }}
-                  aria-pressed={active}
-                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="w-full sm:w-72 lg:w-80" data-tour="routes-search">
-            <SearchBar
-              value={searchTerm}
-              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-              placeholder={t('searchPlaceholder')}
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        {/* Filtros secundarios (zona, vendedor) + refrescar + inactivos */}
-        <div data-tour="routes-filters" className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="min-w-[160px]">
-            <SearchableSelect
-              options={zonaOptions}
-              value={zonaFilter}
-              onChange={(val) => { setZonaFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
-              placeholder={t('filters.allZones')}
-            />
-          </div>
-
-          {isAdmin && (
-          <div className="min-w-[160px]">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('filters.allVendors') },
-                ...usuarios.map(u => ({ value: u.id.toString(), label: u.nombre })),
+          <div className="min-w-0 lg:flex-1">
+            <TabBar
+              items={[
+                { id: 'all', label: t('dashboard.tabs.all') },
+                { id: 'onTrack', label: t('dashboard.tabs.onTrack') },
+                { id: 'behind', label: t('dashboard.tabs.behind') },
               ]}
-              value={usuarioFilter}
-              onChange={(val) => { setUsuarioFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
-              placeholder={t('filters.allVendors')}
+              value={filterTab}
+              onChange={(id) => setFilterTab(id as typeof filterTab)}
             />
           </div>
-          )}
-
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{tc('refresh')}</span>
-          </button>
-
-          <div data-tour="routes-toggle-inactive" className="ml-auto">
-            <InactiveToggle
-              value={showInactive}
-              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            />
+          <div className="w-full sm:w-72 lg:w-80">
+            <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder={t('dashboard.searchPlaceholder')} className="w-full" />
           </div>
         </div>
 
-        {/* Selection Action Bar */}
-        <BatchActionBar
-          selectedCount={batch.selectedCount}
-          totalItems={totalItems}
-          entityLabel={t('title').toLowerCase()}
-          onActivate={() => batch.openBatchAction('activate')}
-          onDeactivate={() => batch.openBatchAction('deactivate')}
-          onClear={batch.handleClearSelection}
-          loading={batch.batchLoading}
+        {/* Tabla por zona/vendedor */}
+        <DataGrid<RutaDecorada>
+          columns={columns}
+          data={filtered}
+          keyExtractor={(d) => d.r.id}
+          onRowClick={(d) => setDetailRoute(d.r)}
+          loading={activeLoading}
+          loadingMessage={t('loadingMessage')}
+          emptyIcon={<Path className="w-8 h-8 text-muted-foreground/60" weight="duotone" />}
+          emptyTitle={t('dashboard.emptyTitle')}
+          emptyMessage={t('dashboard.emptyHint')}
+          mobileCardRenderer={(d) => {
+            const barColor = d.atrasada ? '#DC2626' : d.pct < 60 ? '#D97706' : '#16A34A';
+            return (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0" style={{ background: d.atrasada ? 'rgba(220,38,38,0.10)' : 'rgba(1,118,211,0.10)', color: d.atrasada ? '#DC2626' : '#0176D3' }}>
+                      <Path className="w-[18px] h-[18px]" weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{d.r.zonaNombre || d.r.nombre}</p>
+                      <p className="text-xs text-muted-foreground truncate">{d.r.usuarioNombre}</p>
+                    </div>
+                  </div>
+                  <SoftBadge tone={d.atrasada ? 'danger' : 'success'}>{d.atrasada ? t('delayed') : t('dashboard.statusOnTime')}</SoftBadge>
+                </div>
+                <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, d.pct)}%`, background: barColor }} /></div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="truncate">{d.next ? d.next.clienteNombre : t('dashboard.allCompleted')}</span>
+                  <span className="tabular-nums">{d.done}/{d.total} · {fmtEta(d.r.horaFinEstimada)}</span>
+                </div>
+              </div>
+            );
+          }}
         />
-
-        {/* Error */}
-        <ErrorBanner error={error} onRetry={fetchRoutes} />
-
-        {/* Routes DataGrid */}
-        <div data-tour="routes-table">
-          <DataGrid<RouteListItem>
-            columns={routeColumns}
-            data={sortedRoutes}
-            keyExtractor={(r) => r.id}
-            loading={loading}
-            loadingMessage={t('loadingMessage')}
-            emptyIcon={<MapPin className="w-16 h-16 text-cyan-300" />}
-            emptyTitle={t('emptyTitle')}
-            emptyMessage={searchTerm || estadoFilter !== 'all' || zonaFilter !== 'all' ? t('emptyFiltered') : t('emptyDefault')}
-            onRowClick={(route) => router.push(`/routes/${route.id}`)}
-            sort={{
-              key: sortKey,
-              direction: sortDir,
-              onSort: handleSortChange,
-            }}
-            selection={{
-              selectedIds: batch.selectedIds as unknown as Set<string | number>,
-              onToggle: (id) => batch.handleToggleSelect(id as number),
-              onSelectAll: batch.handleSelectAllVisible,
-              onClearAll: batch.handleClearSelection,
-            }}
-            pagination={(routes.length > 0 || loading) ? {
-              currentPage,
-              totalPages,
-              totalItems,
-              pageSize,
-              onPageChange: setCurrentPage,
-            } : undefined}
-            mobileCardRenderer={(route) => {
-              const badge = getEstadoBadge(route.estado);
-              return (
-                <>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Path className="w-5 h-5 text-primary" weight="duotone" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-foreground truncate">{route.nombre}</div>
-                      {route.codigo && (
-                        <div className="text-[10px] font-mono text-foreground/60 truncate">{route.codigo}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground truncate">{route.zonaNombre || t('noZone')}</div>
-                    </div>
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <ActiveToggle isActive={route.activo} onToggle={() => handleToggleActive(route)} disabled={loading} isLoading={togglingId === route.id} />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>
-                    <span className="text-xs text-foreground/70">{t('columns.stops')}: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-primary font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
-                    <span className="text-xs text-muted-foreground">{route.usuarioNombre}</span>
-                    <span className="text-xs text-muted-foreground">{formatDateOnly(route.fecha)}</span>
-                  </div>
-                </>
-              );
-            }}
-          />
-        </div>
       </div>
 
-      {/* Batch Confirm Modal */}
-      <BatchConfirmModal
-        isOpen={batch.isBatchConfirmOpen}
-        onClose={batch.closeBatchConfirm}
-        onConfirm={handleBatchToggle}
-        action={batch.batchAction}
-        selectedCount={batch.selectedCount}
-        entityLabel={t('title').toLowerCase()}
-        loading={batch.batchLoading}
-        consequenceActivate={t('batchConsequenceActivate')}
-        consequenceDeactivate={t('batchConsequenceDeactivate')}
-      />
+      {/* Drawer de detalle de ruta (paradas visitadas/pendientes) */}
+      <Drawer
+        isOpen={!!detailRoute}
+        onClose={() => setDetailRoute(null)}
+        title={detailRoute ? (detailRoute.zonaNombre || detailRoute.nombre) : ''}
+        icon={<Path className="w-5 h-5 text-primary" weight="duotone" />}
+        width="md"
+        footer={
+          <div className="flex items-center justify-between w-full gap-3">
+            {canViewTeam && detailRoute && (
+              <button
+                onClick={() => router.push(`/team/gps?v=${detailRoute.usuarioId}`)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 transition-colors"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                {t('dashboard.viewGps')}
+              </button>
+            )}
+            <button
+              onClick={() => detailRoute && router.push(`/routes/${detailRoute.id}`)}
+              className="ml-auto flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+            >
+              {t('dashboard.viewFullRoute')}
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        }
+      >
+        {detailRoute && (
+          <div className="p-6 space-y-4">
+            <div className="text-sm text-muted-foreground">
+              {detailRoute.usuarioNombre} · {detailRoute.paradasCompletadas}/{detailRoute.totalParadas} {t('columns.stops').toLowerCase()}
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1">{t('dashboard.drawerStops')}</h4>
+              {detailStops.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">{t('detail.noStops')}</p>
+              ) : (
+                <div>
+                  {detailStops.map((s, i) => {
+                    const visited = s.estado === 2;
+                    const label = s.estado === 2 ? t('detail.stopVisited') : s.estado === 1 ? t('detail.stopEnRoute') : s.estado === 3 ? t('detail.stopSkipped') : t('detail.stopPending');
+                    return (
+                      <div key={s.id} className={`flex items-center gap-3 py-3 ${i < detailStops.length - 1 ? 'border-b border-border-subtle' : ''}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${visited ? 'bg-green-100 text-green-600' : 'bg-surface-3 text-muted-foreground'}`}>
+                          {visited ? <Check className="w-3.5 h-3.5" /> : <span className="text-[11px] font-semibold">{s.ordenVisita}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-foreground truncate">{s.clienteNombre}</p>
+                          <p className="text-[11px] text-muted-foreground">{fmtEta(s.horaEstimadaLlegada)}</p>
+                        </div>
+                        <SoftBadge tone={STOP_TONE[s.estado] ?? 'default'}>{label}</SoftBadge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Drawer>
 
       {/* Create Route Drawer */}
       <Drawer
@@ -693,6 +565,26 @@ export default function RoutesPage() {
               />
             </div>
 
+            {/* Vehículo (flotilla) — opcional; su capacidad alimenta el armado de carga. */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
+                <Truck className="w-3.5 h-3.5 text-muted-foreground" />
+                {t('drawer.vehicle')}
+              </label>
+              <SearchableSelect
+                options={[
+                  { value: '', label: t('drawer.noVehicle') },
+                  ...vehiculos.map((v) => ({
+                    value: v.id.toString(),
+                    label: `${v.placa} · ${v.capacidadUnidades} u${v.vendedorNombre ? ' · ' + v.vendedorNombre : ''}`,
+                  })),
+                ]}
+                value={watch('vehiculoId') ? watch('vehiculoId')!.toString() : ''}
+                onChange={(val) => setValue('vehiculoId', val ? parseInt(String(val)) : null, { shouldDirty: true })}
+                placeholder={t('drawer.selectVehicle')}
+              />
+            </div>
+
             {/* Zona */}
             <div data-tour="routes-drawer-zona">
               <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80 mb-1.5">
@@ -756,6 +648,10 @@ export default function RoutesPage() {
                 />
               </div>
             </div>
+            <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+              <Info className="w-3 h-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
+              {t('drawer.scheduleHint')}
+            </p>
           </div>
 
           <hr className="border-border-subtle" />

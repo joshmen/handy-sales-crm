@@ -83,6 +83,8 @@ function SettingsPageContent() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Building2}
       breadcrumbs={[
         { label: tCommon('home'), href: '/dashboard' },
         { label: t('title') },

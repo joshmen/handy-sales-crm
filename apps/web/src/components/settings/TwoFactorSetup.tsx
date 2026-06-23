@@ -24,6 +24,7 @@ import {
 import { SbCheckCircle, SbAlert } from '@/components/layout/DashboardIcons';
 import { Spinner } from '@/components/ui/Spinner';
 import { profileService, TwoFactorSetupResponse } from '@/services/api/profileService';
+import { downloadBlob } from '@/lib/download';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
@@ -142,12 +143,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     ].join('\n');
 
     const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'handysuites-recovery-codes.txt';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, 'handysuites-recovery-codes.txt');
     toast.success(t('recoveryDownloaded'));
   };
 

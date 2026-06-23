@@ -32,5 +32,15 @@ public class ProductoCreateDtoValidator : AbstractValidator<ProductoCreateDto>
 
         RuleFor(x => x.UnidadMedidaId)
             .GreaterThan(0).WithMessage("Debe seleccionar una unidad de medida válida.");
+
+        // Claves SAT opcionales: si vienen, validar longitud (ClaveProdServ = 8 dígitos,
+        // ClaveUnidad = código corto tipo "H87"). Cap defensivo.
+        RuleFor(x => x.ClaveSat)
+            .MaximumLength(20).WithMessage("La clave SAT no puede exceder 20 caracteres.")
+            .When(x => !string.IsNullOrWhiteSpace(x.ClaveSat));
+
+        RuleFor(x => x.ClaveUnidad)
+            .MaximumLength(20).WithMessage("La clave de unidad SAT no puede exceder 20 caracteres.")
+            .When(x => !string.IsNullOrWhiteSpace(x.ClaveUnidad));
     }
 }

@@ -85,7 +85,7 @@ public class SubscriptionMonitor : BackgroundService
         // Find active trial tenants that haven't collected a card yet
         var trialTenants = await db.Tenants
             .Where(t => t.Activo
-                && t.SubscriptionStatus == "Trial"
+                && t.SubscriptionStatus.ToLower() == "trial"
                 && t.TrialEndsAt != null
                 && t.TrialCardCollectedAt == null)
             .ToListAsync(ct);
@@ -171,7 +171,7 @@ public class SubscriptionMonitor : BackgroundService
                     && t.FechaExpiracion != null
                     && t.FechaExpiracion <= warningDate
                     && t.FechaExpiracion > now
-                    && (t.SubscriptionStatus == "Active" || t.SubscriptionStatus == "Trial"))
+                    && (t.SubscriptionStatus.ToLower() == "active" || t.SubscriptionStatus.ToLower() == "trial"))
                 .ToListAsync(ct);
 
             foreach (var tenant in tenantsToWarn)
@@ -234,14 +234,14 @@ public class SubscriptionMonitor : BackgroundService
             .Where(t => t.Activo
                 && t.FechaExpiracion != null
                 && t.FechaExpiracion <= now
-                && (t.SubscriptionStatus == "Active" || t.SubscriptionStatus == "Trial"))
+                && (t.SubscriptionStatus.ToLower() == "active" || t.SubscriptionStatus.ToLower() == "trial"))
             .ToListAsync(ct);
 
         foreach (var tenant in expiredTenants)
         {
             // Trial expiration with card collected: Stripe will auto-charge via invoice.paid webhook.
             // Don't mark as expired — let Stripe handle the transition.
-            if (tenant.SubscriptionStatus == "Trial"
+            if (SubscriptionStatuses.IsTrial(tenant.SubscriptionStatus)
                 && tenant.TrialCardCollectedAt != null
                 && !string.IsNullOrEmpty(tenant.StripeSubscriptionId))
             {
@@ -252,10 +252,10 @@ public class SubscriptionMonitor : BackgroundService
             }
 
             // Trial expired without card: shorter grace period (3 days)
-            var graceDays = tenant.SubscriptionStatus == "Trial" ? TrialGracePeriodDays : GracePeriodDays;
+            var graceDays = SubscriptionStatuses.IsTrial(tenant.SubscriptionStatus) ? TrialGracePeriodDays : GracePeriodDays;
 
             var previousStatus = tenant.SubscriptionStatus;
-            tenant.SubscriptionStatus = "Expired";
+            tenant.SubscriptionStatus = SubscriptionStatuses.Expired;
             tenant.GracePeriodEnd = now.AddDays(graceDays);
 
             // Send expiration email
@@ -288,7 +288,7 @@ public class SubscriptionMonitor : BackgroundService
         // Find tenants past grace period that are still active
         var tenantsToDeactivate = await db.Tenants
             .Where(t => t.Activo
-                && t.SubscriptionStatus == "Expired"
+                && t.SubscriptionStatus.ToLower() == "expired"
                 && t.GracePeriodEnd != null
                 && t.GracePeriodEnd <= now)
             .ToListAsync(ct);
@@ -296,7 +296,7 @@ public class SubscriptionMonitor : BackgroundService
         // Also check PastDue tenants past grace period (failed payments)
         var pastDueTenants = await db.Tenants
             .Where(t => t.Activo
-                && t.SubscriptionStatus == "PastDue"
+                && t.SubscriptionStatus.ToLower() == "pastdue"
                 && t.GracePeriodEnd != null
                 && t.GracePeriodEnd <= now)
             .ToListAsync(ct);

@@ -31,6 +31,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .AsNoTracking()
             .Include(r => r.Usuario)
             .Include(r => r.Zona)
+            .Include(r => r.Vehiculo)
             .Include(r => r.Zonas)
                 .ThenInclude(rz => rz.Zona)
             .Include(r => r.Detalles)
@@ -260,6 +261,42 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .OrderBy(r => r.Fecha)
             .ToListAsync();
 
+        return rutas.Select(MapToDto).ToList();
+    }
+
+    /// <summary>
+    /// Rutas activas de HOY (día tenant) para el mapa de operaciones web: incluye
+    /// paradas con coordenadas (vía Cliente) para dibujar pins + polilínea. Estados
+    /// activos: Planificada, PendienteAceptar, CargaAceptada, EnProgreso. Si
+    /// <paramref name="usuarioId"/> viene, filtra a las rutas de ese vendedor (RBAC). 2026-06-18.
+    /// </summary>
+    public async Task<List<RutaVendedorDto>> ObtenerRutasActivasParaMapaAsync(int tenantId, int? usuarioId)
+    {
+        var hoyTenant = await _tenantTz.GetTenantTodayAsync();
+        var (inicioUtc, finUtc) = await _tenantTz.GetTenantDayWindowUtcAsync(hoyTenant);
+
+        var query = _db.RutasVendedor
+            .AsNoTracking()
+            .Include(r => r.Usuario)
+            .Include(r => r.Zona)
+            .Include(r => r.Zonas)
+                .ThenInclude(rz => rz.Zona)
+            .Include(r => r.Detalles.OrderBy(d => d.OrdenVisita))
+                .ThenInclude(d => d.Cliente)
+            .Where(r =>
+                r.TenantId == tenantId &&
+                r.Activo == true &&
+                !r.EsTemplate &&
+                r.Fecha >= inicioUtc && r.Fecha < finUtc &&
+                (r.Estado == EstadoRuta.Planificada
+                    || r.Estado == EstadoRuta.PendienteAceptar
+                    || r.Estado == EstadoRuta.CargaAceptada
+                    || r.Estado == EstadoRuta.EnProgreso));
+
+        if (usuarioId.HasValue)
+            query = query.Where(r => r.UsuarioId == usuarioId.Value);
+
+        var rutas = await query.ToListAsync();
         return rutas.Select(MapToDto).ToList();
     }
 
@@ -1454,6 +1491,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             ZonaId = ruta.ZonaId,
             ZonaNombre = ruta.Zona?.Nombre,
             Zonas = zonasResumen,
+            VehiculoId = ruta.VehiculoId,
+            VehiculoPlaca = ruta.Vehiculo?.Placa,
+            VehiculoCapacidad = ruta.Vehiculo?.CapacidadUnidades,
             Codigo = ruta.Codigo,
             Nombre = ruta.Nombre,
             Descripcion = ruta.Descripcion,
@@ -1509,4 +1549,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     public Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId)
         => _db.Zonas.AsNoTracking()
             .AnyAsync(z => z.Id == zonaId && z.TenantId == tenantId);
+
+    public Task<bool> ExisteVehiculoEnTenantAsync(int vehiculoId, int tenantId)
+        => _db.Vehiculos.AsNoTracking()
+            .AnyAsync(v => v.Id == vehiculoId && v.TenantId == tenantId);
 }

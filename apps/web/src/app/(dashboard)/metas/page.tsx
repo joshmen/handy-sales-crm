@@ -7,12 +7,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { startOfMonthIso } from '@/components/ui/dateFilterUtils';
+import { NameAvatar } from '@/components/ui/NameAvatar';
+import { SoftBadge, type SoftBadgeTone } from '@/components/ui/SoftBadge';
+import { ProgressRing } from '@/components/ui/ProgressRing';
+import { SegmentedBar } from '@/components/ui/SegmentedBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import {
   metaVendedorService,
@@ -29,10 +36,8 @@ import {
   Trash2,
   Loader2,
   RefreshCw,
-  Target as TargetIcon,
-  CheckCircle2,
-  DollarSign,
-  Repeat,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { Target } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
@@ -53,6 +58,17 @@ const TIPO_COLORS: Record<string, string> = {
   pedidos: 'bg-blue-100 text-blue-700',
   visitas: 'bg-purple-100 text-purple-700',
 };
+
+// Tono del badge de Tipo (espejo del mockup): ventas=success, pedidos=info, visitas=primary.
+const TIPO_TONE: Record<string, SoftBadgeTone> = {
+  ventas: 'success',
+  pedidos: 'info',
+  visitas: 'primary',
+};
+
+// Tono de la barra de avance según el % (mockup): <40 danger, <70 warning, si no success.
+const avanceTone = (pct: number): { bar: string; tone: SoftBadgeTone } =>
+  pct < 40 ? { bar: '#DC2626', tone: 'danger' } : pct < 70 ? { bar: '#D97706', tone: 'warning' } : { bar: '#16A34A', tone: 'success' };
 
 // ─── Zod Schema ────────────────────────────────────────
 const metaSchema = z.object({
@@ -91,7 +107,7 @@ export default function MetasPage() {
   const t = useTranslations('goals');
   const tc = useTranslations('common');
   const showApiError = useApiErrorToast();
-  const { formatDate, formatNumber, tenantToday } = useFormatters();
+  const { formatDate, formatDateOnly, formatNumber, tenantToday } = useFormatters();
   const todayStr = () => todayStrFromTenantToday(tenantToday());
   const nextMonthStr = () => nextMonthStrFromTenantToday(tenantToday());
   const { data: session } = useSession();
@@ -131,6 +147,10 @@ export default function MetasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [filterTipo, setFilterTipo] = useState<string>('');
+  const [rango, setRango] = useState<DateRangeValue>(() => {
+    const hoy = tenantToday();
+    return { mode: 'mes', from: startOfMonthIso(hoy), to: hoy };
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -138,10 +158,6 @@ export default function MetasPage() {
   const drawerRef = useRef<DrawerHandle>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<MetaVendedor | null>(null);
-
-  // Delete confirm
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Form
   const {
@@ -206,6 +222,11 @@ export default function MetasPage() {
     let result = metas;
     if (!showInactive) result = result.filter(m => m.activo);
     if (filterTipo) result = result.filter(m => m.tipo === filterTipo);
+    // Rango de fechas: mostrar metas cuyo [fechaInicio, fechaFin] se traslapa con [rango.from, rango.to].
+    // Traslape = metaInicio <= rango.to && metaFin >= rango.from (comparando recortes 'YYYY-MM-DD').
+    result = result.filter(m =>
+      m.fechaInicio.slice(0, 10) <= rango.to && m.fechaFin.slice(0, 10) >= rango.from
+    );
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter(m =>
@@ -214,7 +235,7 @@ export default function MetasPage() {
       );
     }
     return result;
-  }, [metas, showInactive, filterTipo, searchTerm]);
+  }, [metas, showInactive, filterTipo, searchTerm, rango]);
 
   // Sort state
   const [sortKey, setSortKey] = useState('usuarioNombre');
@@ -251,13 +272,23 @@ export default function MetasPage() {
 
   const totalPages = Math.ceil(sorted.length / pageSize);
 
-  // KPIs derivados de la lista completa cargada (data REAL del response).
-  // metaVendedorService.getAll() trae todas las metas, así que estos conteos
-  // reflejan el total real, no solo la página visible.
-  const totalMetas = metas.length;
-  const activeMetas = metas.filter(m => m.activo).length;
-  const ventasMetas = metas.filter(m => m.tipo === 'ventas').length;
-  const autoRenovarMetas = metas.filter(m => m.autoRenovar).length;
+  // Resumen agregado del equipo (escala a N vendedores), sobre las metas ACTIVAS
+  // usando el avance REAL del backend. Umbrales alineados con avanceTone:
+  // en camino >=70 (verde) / por debajo 40-69 (ambar) / en riesgo <40 (rojo).
+  const metasActivasList = metas.filter(m => m.activo);
+  const metasActivas = metasActivasList.length;
+  const teamAvance = metasActivas > 0
+    ? Math.round(metasActivasList.reduce((s, m) => s + Math.min(100, m.progresoPct), 0) / metasActivas)
+    : 0;
+  const enCaminoCount = metasActivasList.filter(m => m.progresoPct >= 70).length;
+  const porDebajoCount = metasActivasList.filter(m => m.progresoPct >= 40 && m.progresoPct < 70).length;
+  const enRiesgoCount = metasActivasList.filter(m => m.progresoPct < 40).length;
+  const mejorMeta = metasActivasList.length
+    ? metasActivasList.reduce((a, b) => (b.progresoPct > a.progresoPct ? b : a))
+    : null;
+  const peorMeta = metasActivasList.length
+    ? metasActivasList.reduce((a, b) => (b.progresoPct < a.progresoPct ? b : a))
+    : null;
 
   // ─── Drawer helpers ────────────────────────────────
   const openCreate = () => {
@@ -345,42 +376,63 @@ export default function MetasPage() {
     }
   };
 
-  // ─── Delete ────────────────────────────────────────
-  const handleDelete = async () => {
-    if (!confirmDeleteId) return;
+  // ─── Delete (optimista + Deshacer real) ────────────
+  const toCreateDto = (m: MetaVendedor): CreateMetaVendedorRequest => ({
+    usuarioId: m.usuarioId,
+    tipo: m.tipo,
+    periodo: m.periodo,
+    monto: m.monto,
+    fechaInicio: m.fechaInicio.slice(0, 10),
+    fechaFin: m.fechaFin.slice(0, 10),
+    autoRenovar: m.autoRenovar,
+  });
+
+  const handleDelete = async (meta: MetaVendedor) => {
+    // Optimista: la fila sale del estado de inmediato.
+    setMetas(prev => prev.filter(m => m.id !== meta.id));
     try {
-      setDeleteLoading(true);
-      await metaVendedorService.delete(confirmDeleteId);
-      setMetas(prev => prev.filter(m => m.id !== confirmDeleteId));
-      toast.success(t('goalDeleted'));
+      await metaVendedorService.delete(meta.id);
+      // Deshacer REAL: re-crea la meta y recarga (reaparece en su posición ordenada).
+      toast.undo(t('goalDeleted'), meta.usuarioNombre || `#${meta.usuarioId}`, async () => {
+        try {
+          await metaVendedorService.create(toCreateDto(meta));
+          await loadMetas();
+          toast.success(t('goalRestored'));
+        } catch (e) {
+          showApiError(e, t('errorRestoring'));
+        }
+      });
     } catch (err) {
+      // Falló el borrado: revertir la remoción optimista.
       showApiError(err, t('errorDeleting'));
-    } finally {
-      setDeleteLoading(false);
-      setConfirmDeleteId(null);
+      await loadMetas();
     }
   };
 
   // ─── Render ────────────────────────────────────────
   return (
     <PageHeader
+      section="herramientas"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('vendorGoals') },
       ]}
       title={t('vendorGoals')}
-      subtitle={sorted.length > 0 ? t('metaCount', { count: sorted.length, plural: sorted.length !== 1 ? 's' : '' }) : undefined}
+      subtitle={t('teamObjectives')}
       actions={
-        isAdmin ? (
-          <button
-            data-tour="metas-add-btn"
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t('newGoal')}
-          </button>
-        ) : undefined
+        <div className="flex items-center gap-2">
+          <DateRangeFilter
+            value={rango}
+            onChange={v => { setRango(v); setCurrentPage(1); }}
+            retentionDays={365}
+          />
+          {isAdmin && (
+            <Button variant="wbPrimary" data-tour="metas-add-btn" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-2" />
+              {t('newGoal')}
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="space-y-5 px-4 sm:px-6 py-4">
@@ -389,23 +441,15 @@ export default function MetasPage() {
 
         {/* Tabs de tipo (segmentado azul) + búsqueda — reusa filterTipo real */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="metas-tipo-filter">
-            {([{ value: '', label: t('allTypes') }, ...TIPO_OPTIONS] as const).map((opt) => {
-              const active = filterTipo === opt.value;
-              return (
-                <button
-                  key={opt.value || 'all'}
-                  type="button"
-                  onClick={() => { setFilterTipo(opt.value); setCurrentPage(1); }}
-                  aria-pressed={active}
-                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                    active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
+          <div className="min-w-0 lg:flex-1" data-tour="metas-tipo-filter">
+            <TabBar
+              items={[
+                { id: 'all', label: t('allTypes') },
+                ...TIPO_OPTIONS.map((opt) => ({ id: opt.value, label: opt.label })),
+              ]}
+              value={filterTipo || 'all'}
+              onChange={(id) => { setFilterTipo(id === 'all' ? '' : id); setCurrentPage(1); }}
+            />
           </div>
           <div className="w-full sm:w-72 lg:w-80">
             <SearchBar
@@ -418,31 +462,60 @@ export default function MetasPage() {
           </div>
         </div>
 
-        {/* KPI Row — tarjetas (data real de la lista completa) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { title: t('vendorGoals'), value: String(totalMetas), hint: t('kpiHints.allGoals'), icon: TargetIcon },
-            { title: tc('active'), value: String(activeMetas), hint: t('kpiHints.activeGoals'), icon: CheckCircle2 },
-            { title: t('types.sales'), value: String(ventasMetas), hint: t('kpiHints.salesGoals'), icon: DollarSign },
-            { title: t('autoRenew'), value: String(autoRenovarMetas), hint: t('kpiHints.autoRenew'), icon: Repeat },
-          ].map((card) => {
-            const Icon = card.icon;
-            return (
-              <div
-                key={card.title}
-                className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-start justify-between">
-                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
-                  <Icon className="w-5 h-5 text-muted-foreground/40" />
-                </div>
-                <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
-                  {card.value}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+        {/* Resumen agregado del equipo (1 sola tarjeta, escala a N vendedores):
+            anillo de avance + barra tricolor + mini-tarjetas mejor/requiere atención. */}
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+            {/* Anillo (azul primario) + "Avance del equipo" + N metas activas */}
+            <div className="flex items-center gap-4 lg:border-r lg:border-border lg:pr-6">
+              <ProgressRing value={teamAvance} color="hsl(var(--primary))" size={92} stroke={9}>
+                <span className={`text-xl font-bold tabular-nums text-foreground ${loading ? 'animate-pulse' : ''}`}>{teamAvance}%</span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">{t('summary.team')}</span>
+              </ProgressRing>
+              <div>
+                <p className="text-[17px] font-semibold text-foreground">{t('summary.teamProgress')}</p>
+                <p className="text-[12.5px] text-muted-foreground mt-0.5">{t('summary.nActiveGoals', { count: metasActivas })}</p>
               </div>
-            );
-          })}
+            </div>
+
+            {/* Barra tricolor + leyenda + mini-tarjetas con ícono */}
+            <div className="flex-1 space-y-4 min-w-0">
+              <SegmentedBar
+                segments={[
+                  { value: enCaminoCount, color: '#16A34A', label: t('summary.onTrack') },
+                  { value: porDebajoCount, color: '#D97706', label: t('summary.below') },
+                  { value: enRiesgoCount, color: '#DC2626', label: t('summary.atRisk') },
+                ]}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {[
+                  { label: t('summary.best'), meta: mejorMeta, color: '#16A34A', Icon: TrendingUp },
+                  { label: t('summary.needsAttention'), meta: peorMeta, color: '#DC2626', Icon: AlertTriangle },
+                ].map((mini) => (
+                  <div
+                    key={mini.label}
+                    className="flex items-center gap-2.5 rounded-xl p-3 min-w-0"
+                    style={{
+                      background: `color-mix(in srgb, ${mini.color} 9%, hsl(var(--card)))`,
+                      border: `1px solid color-mix(in srgb, ${mini.color} 22%, hsl(var(--border)))`,
+                    }}
+                  >
+                    <mini.Icon className="w-[17px] h-[17px] shrink-0" style={{ color: mini.color }} />
+                    <div className="min-w-0">
+                      <p className="text-[10.5px] text-muted-foreground">{mini.label}</p>
+                      {mini.meta ? (
+                        <p className="text-[12.5px] font-bold text-foreground truncate">
+                          {mini.meta.usuarioNombre || `#${mini.meta.usuarioId}`} · {Math.round(mini.meta.progresoPct)}%
+                        </p>
+                      ) : (
+                        <p className="text-[12.5px] text-muted-foreground">{t('summary.noData')}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filtros secundarios (inactivos) + refrescar */}
@@ -457,7 +530,7 @@ export default function MetasPage() {
           <button
             onClick={loadMetas}
             disabled={loading}
-            className="ml-auto flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+            className="ml-auto flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">{tc('refresh')}</span>
@@ -468,31 +541,44 @@ export default function MetasPage() {
       <div data-tour="metas-table">
         <DataGrid<MetaVendedor>
           columns={[
-            { key: 'usuarioNombre', label: t('vendor'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.usuarioNombre || `#${item.usuarioId}`}</span> },
-            { key: 'tipo', label: tc('type'), width: 100, sortable: true, cellRenderer: (item) => (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[item.tipo] ?? 'bg-surface-3 text-foreground/80'}`}>
-                {TIPO_LABELS[item.tipo] ?? item.tipo}
-              </span>
-            )},
-            { key: 'periodo', label: t('period'), width: 100, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-foreground/70">{PERIODO_LABELS[item.periodo] ?? item.periodo}</span> },
-            { key: 'monto', label: t('title'), width: 120, sortable: true, align: 'right', cellRenderer: (item) => <span className="font-semibold text-foreground">{item.tipo === 'ventas' ? formatCurrency(item.monto) : formatNumber(item.monto)}</span> },
-            { key: 'fechaInicio', label: t('validity'), width: 180, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => (
-              <div className="flex items-center gap-1.5 text-muted-foreground text-xs whitespace-nowrap">
-                <span>{formatDate(item.fechaInicio)} - {formatDate(item.fechaFin)}</span>
-                {item.autoRenovar && <RefreshCw className="w-3 h-3 text-blue-500" />}
+            { key: 'usuarioNombre', label: t('vendor'), width: 'flex', sortable: true, cellRenderer: (item) => (
+              <div className="flex items-center gap-2.5 min-w-0">
+                <NameAvatar name={item.usuarioNombre || `#${item.usuarioId}`} size={30} />
+                <span className="text-[13px] font-semibold text-foreground truncate">{item.usuarioNombre || `#${item.usuarioId}`}</span>
               </div>
             )},
-            { key: 'activo', label: tc('status'), width: 80, align: 'center', cellRenderer: (item) => (
-              <div onClick={e => e.stopPropagation()}>
-                {isAdmin ? (
-                  <ActiveToggle isActive={item.activo} isLoading={togglingId === item.id} onToggle={() => handleToggle(item)} />
-                ) : (
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${item.activo ? 'bg-primary/10 text-primary' : 'bg-surface-3 text-muted-foreground'}`}>
-                    {item.activo ? tc('active') : tc('inactive')}
-                  </span>
-                )}
+            { key: 'tipo', label: tc('type'), width: 110, sortable: true, cellRenderer: (item) => <SoftBadge tone={TIPO_TONE[item.tipo] ?? 'default'}>{TIPO_LABELS[item.tipo] ?? item.tipo}</SoftBadge> },
+            { key: 'periodo', label: t('period'), width: 110, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-[13px] text-foreground/70">{PERIODO_LABELS[item.periodo] ?? item.periodo}</span> },
+            { key: 'monto', label: t('objective'), width: 120, sortable: true, align: 'right', cellRenderer: (item) => <span className="text-[13px] font-semibold text-foreground tabular-nums">{item.tipo === 'ventas' ? formatCurrency(item.monto) : formatNumber(item.monto)}</span> },
+            { key: 'vigencia', label: t('validity'), width: 170, hiddenOnMobile: true, cellRenderer: (item) => (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] text-foreground/70 tabular-nums whitespace-nowrap">{formatDateOnly(item.fechaInicio)} - {formatDateOnly(item.fechaFin)}</span>
+                {item.autoRenovar && <RefreshCw className="w-3 h-3 text-blue-500 shrink-0" aria-label={t('autoRenew')} />}
               </div>
             )},
+            { key: 'progresoPct', label: t('progress'), width: 180, sortable: true, cellRenderer: (item) => {
+              const pct = Math.round(item.progresoPct);
+              const { bar } = avanceTone(pct);
+              return (
+                <div className="flex items-center gap-2.5 min-w-[150px]">
+                  <div className="flex-1 max-w-[120px] h-1.5 rounded-full bg-surface-3 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: bar }} /></div>
+                  <span className="text-[12px] font-bold text-foreground tabular-nums w-10 text-right">{pct}%</span>
+                </div>
+              );
+            }},
+            { key: 'estado', label: t('statusLabel'), width: 110, align: 'center', hiddenOnMobile: true, cellRenderer: (item) => {
+              const badge = <SoftBadge tone={item.activo ? 'success' : 'default'}>{item.activo ? t('statusActive') : t('statusInactive')}</SoftBadge>;
+              return isAdmin ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleToggle(item); }}
+                  disabled={togglingId === item.id}
+                  title={item.activo ? tc('deactivate') : tc('activate')}
+                  className="disabled:opacity-50 transition-opacity hover:opacity-80"
+                >
+                  {badge}
+                </button>
+              ) : badge;
+            }},
             ...(isAdmin ? [{
               key: 'actions',
               label: '',
@@ -503,7 +589,7 @@ export default function MetasPage() {
                   <button onClick={() => openEdit(item)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title={tc('edit')}>
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setConfirmDeleteId(item.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title={tc('delete')}>
+                  <button onClick={() => handleDelete(item)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title={tc('delete')}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -512,6 +598,7 @@ export default function MetasPage() {
           ] as DataGridColumn<MetaVendedor>[]}
           data={paginated}
           keyExtractor={(item) => item.id}
+          onRowClick={isAdmin ? (item) => openEdit(item) : undefined}
           pagination={{ currentPage, totalPages, totalItems: sorted.length, pageSize, onPageChange: setCurrentPage }}
           sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
           loading={loading}
@@ -545,12 +632,21 @@ export default function MetasPage() {
                   </div>
                 </div>
               </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">{t('progress')}</span>
+                  <span className="text-xs font-bold text-foreground tabular-nums">{Math.round(meta.progresoPct)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(meta.progresoPct))}%`, background: avanceTone(Math.round(meta.progresoPct)).bar }} />
+                </div>
+              </div>
               {isAdmin && (
                 <div className="flex gap-2 pt-1 border-t border-border-subtle">
                   <button onClick={() => openEdit(meta)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                     <Edit2 className="w-3.5 h-3.5" /> {tc('edit')}
                   </button>
-                  <button onClick={() => setConfirmDeleteId(meta.id)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                  <button onClick={() => handleDelete(meta)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                     <Trash2 className="w-3.5 h-3.5" /> {tc('delete')}
                   </button>
                 </div>
@@ -720,25 +816,6 @@ export default function MetasPage() {
           </div>
         </form>
       </Drawer>
-
-      {/* Delete Confirm Modal */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-surface-2 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 page-animate">
-            <h3 className="font-semibold text-foreground mb-2">{t('deleteTitle')}</h3>
-            <p className="text-sm text-foreground/70 mb-6">{t('deleteConfirm')}</p>
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={() => setConfirmDeleteId(null)} className="flex-1">
-                {tc('cancel')}
-              </Button>
-              <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteLoading} className="flex-1 flex items-center justify-center gap-2">
-                {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {tc('delete')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </PageHeader>
   );
 }

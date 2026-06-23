@@ -34,6 +34,11 @@ public class MetaVendedorRepository : IMetaVendedorRepository
                 Activo = m.Activo,
                 CreadoEn = m.CreadoEn,
                 AutoRenovar = m.AutoRenovar,
+                Avance = m.Tipo == "ventas"
+                    ? (_db.Pedidos.Where(p => p.UsuarioId == m.UsuarioId && p.TenantId == tenantId && p.FechaPedido >= m.FechaInicio && p.FechaPedido <= m.FechaFin).Sum(p => (decimal?)p.Total) ?? 0m)
+                    : m.Tipo == "pedidos"
+                        ? (decimal)_db.Pedidos.Count(p => p.UsuarioId == m.UsuarioId && p.TenantId == tenantId && p.FechaPedido >= m.FechaInicio && p.FechaPedido <= m.FechaFin)
+                        : (decimal)_db.ClienteVisitas.Count(v => v.UsuarioId == m.UsuarioId && v.TenantId == tenantId && v.FechaHoraInicio != null && v.FechaHoraInicio >= m.FechaInicio && v.FechaHoraInicio <= m.FechaFin),
             })
             .OrderByDescending(m => m.FechaInicio)
             .ToListAsync();

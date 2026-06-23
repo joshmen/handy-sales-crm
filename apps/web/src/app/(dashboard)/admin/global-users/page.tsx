@@ -5,10 +5,10 @@ import { toast } from '@/hooks/useToast';
 import {
   ChevronLeft,
   ChevronRight,
-  Search,
   Users,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { SearchBar } from '@/components/common/SearchBar';
 import { tenantService } from '@/services/api/tenants';
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -121,6 +121,9 @@ export default function GlobalUsersPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Users}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('breadcrumb') },
@@ -149,16 +152,12 @@ export default function GlobalUsersPage() {
               );
             })}
           </div>
-          <div className="relative w-full sm:w-72 lg:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2.5 text-sm border border-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={(v) => setSearchTerm(v)}
+            placeholder={t('searchPlaceholder')}
+            className="w-full sm:w-72 lg:w-80"
+          />
         </div>
 
         {/* Filtros secundarios (empresa, rol) */}

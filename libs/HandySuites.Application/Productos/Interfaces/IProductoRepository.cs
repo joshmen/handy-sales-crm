@@ -28,4 +28,7 @@ public interface IProductoRepository
     /// tenant. excludeId permite excluirse a sí mismo al actualizar.
     /// </summary>
     Task<bool> ExisteCodigoBarraAsync(string codigoBarra, int tenantId, int? excludeId);
+    /// <summary>Asigna ClaveSat (+ ClaveUnidad opcional) en lote, por IDs o por categoría.
+    /// Devuelve el número de productos actualizados.</summary>
+    Task<int> BatchAsignarClaveSatAsync(ProductoBatchClaveSatDto dto, int tenantId);
 }

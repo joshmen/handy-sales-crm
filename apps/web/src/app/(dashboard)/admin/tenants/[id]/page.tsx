@@ -453,6 +453,9 @@ export default function TenantDetailPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Building2}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: tt('breadcrumb'), href: '/admin/tenants' },

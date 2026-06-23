@@ -1408,6 +1408,9 @@ export default function CrashReportsPage() {
 
   return (
     <PageHeader
+      section="empresa"
+      icon={Bug}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('title') },

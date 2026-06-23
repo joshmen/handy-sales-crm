@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import { billingApi } from '@/lib/billingApi';
+import { downloadBlob } from '@/lib/download';
 import type {
   FacturaDetail,
   CreateFacturaRequest,
@@ -145,6 +146,23 @@ export async function createFacturaFromOrder(request: CreateFacturaFromOrderRequ
   return data;
 }
 
+// ─── Factura global (consolida ventas a público general no facturadas) ───
+
+export interface FacturaGlobalRequest {
+  /** Inicio del periodo (ISO). */
+  fechaInicio: string;
+  /** Fin del periodo (ISO). */
+  fechaFin: string;
+  /** Código SAT c_Periodicidad: '01' Diario, '02' Semanal, '04' Mensual, '05' Bimestral. */
+  periodicidad: string;
+}
+
+/** Genera (y timbra) un CFDI global del periodo. Receptor fijo PÚBLICO EN GENERAL. */
+export async function crearFacturaGlobal(request: FacturaGlobalRequest): Promise<FacturaDetail> {
+  const { data } = await billingApi.post<FacturaDetail>('/api/facturas/global', request);
+  return data;
+}
+
 export async function enviarFactura(id: number, request: EnviarFacturaRequest): Promise<void> {
   await billingApi.post(`/api/facturas/${id}/enviar`, request);
 }
@@ -219,7 +237,16 @@ export async function getDashboard(params: GetDashboardParams = {}): Promise<Bil
   return data;
 }
 
-export async function getVentasPorPeriodo(params: GetDashboardParams = {}): Promise<VentasPorPeriodo[]> {
+export interface GetVentasPorPeriodoParams {
+  /** Fecha inicio (YYYY-MM-DD). El backend la bindea como `fechaInicio`. */
+  fechaInicio: string;
+  /** Fecha fin (YYYY-MM-DD). El backend la bindea como `fechaFin`. */
+  fechaFin: string;
+  /** Agrupación SAT del periodo. Default backend: 'dia'. */
+  agrupacion?: 'dia' | 'semana' | 'mes';
+}
+
+export async function getVentasPorPeriodo(params: GetVentasPorPeriodoParams): Promise<VentasPorPeriodo[]> {
   const { data } = await billingApi.get<VentasPorPeriodo[]>('/api/reportes/ventas-por-periodo', { params });
   return data;
 }
@@ -350,16 +377,9 @@ export async function getTimbres(): Promise<TimbresBalance> {
 
 // ─── Helpers ───
 
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+// downloadBlob ahora vive en @/lib/download (revoke diferido para no romper la
+// extensión en Chrome). Se re-exporta para no romper imports existentes.
+export { downloadBlob };
 
 export async function downloadFacturaPdf(id: number, folio: string, emisorRfc?: string): Promise<void> {
   const blob = await getFacturaPdf(id);

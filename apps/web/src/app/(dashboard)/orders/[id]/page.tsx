@@ -212,7 +212,7 @@ export default function OrderDetailPage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold text-foreground">
+            <h1 className="text-[22px] font-bold tracking-tight text-foreground">
               {t('orderTitle', { number: order.numeroPedido })}
             </h1>
             <StatusBadge status={estadoNorm} label={STATUS_LABELS[estadoNorm] ?? estadoNorm} />
@@ -224,7 +224,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('confirmar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'confirmar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('confirmBtn')}
@@ -234,7 +234,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('en-ruta')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'en-ruta' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('enRouteBtn')}
@@ -244,7 +244,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('entregar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'entregar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('deliverBtn')}
@@ -254,7 +254,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('cancelar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('cancelBtn')}
@@ -264,7 +264,7 @@ export default function OrderDetailPage() {
               invoice ? (
                 <button
                   onClick={() => router.push(`/billing/invoices/${invoice.facturaId}`)}
-                  className="flex items-center gap-2 border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10 text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-2 border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10 text-[13px] font-semibold px-4 py-2 rounded-full transition-colors"
                 >
                   <FileText className="w-4 h-4" />
                   {tActions('viewInvoice')}
@@ -272,7 +272,7 @@ export default function OrderDetailPage() {
               ) : (
                 <button
                   onClick={() => router.push(`/billing/pre-factura?pedidoId=${order.id}`)}
-                  className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-semibold px-4 py-2 rounded-full transition-colors"
                 >
                   <FileText className="w-4 h-4" />
                   {tActions('invoice')}

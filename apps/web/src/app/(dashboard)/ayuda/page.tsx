@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { HelpCircle } from 'lucide-react';
 import {
   MapPin,
   Package,
@@ -360,6 +361,8 @@ export default function AyudaPage() {
 
   return (
     <PageHeader
+      section="navegacion"
+      icon={HelpCircle}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbTools') },

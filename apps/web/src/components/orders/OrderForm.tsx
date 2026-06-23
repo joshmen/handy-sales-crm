@@ -13,6 +13,7 @@ import { Client, Product } from '@/types';
 import { Trash2, Package, ShoppingCart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
+import { toast } from '@/hooks/useToast';
 
 // Schema factory — needs t() for translated messages
 function createOrderFormSchema(t: (key: string) => string) {
@@ -127,7 +128,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
   const handleAddProduct = () => {
     if (!selectedProduct || quantity <= 0) {
-      alert(t('selectProductAndQty'));
+      toast.warning(t('selectProductAndQty'));
       return;
     }
 

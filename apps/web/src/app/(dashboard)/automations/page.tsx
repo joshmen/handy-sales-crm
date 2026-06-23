@@ -1,18 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { formatTimeAgo } from '@/lib/utils';
+import { ProgressRing } from '@/components/ui/ProgressRing';
+import { SegmentedBar } from '@/components/ui/SegmentedBar';
+import { Sparkline } from '@/components/ui/Sparkline';
 import { automationService } from '@/services/api/automations';
 import { ExecutionDetailDrawer } from '@/components/automations/ExecutionDetailDrawer';
 import type { AutomationTemplate, AutomationExecution } from '@/types/automations';
-import { PARAM_CONFIG, CATEGORY_COLORS, CATEGORY_LABEL_KEYS, TEMPLATE_KEYS } from '@/types/automations';
+import { PARAM_CONFIG, TEMPLATE_KEYS, CATEGORY_COLORS, CATEGORY_LABEL_KEYS } from '@/types/automations';
 import { toast } from '@/hooks/useToast';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import {
   Robot,
@@ -20,32 +23,31 @@ import {
   Clock,
   Warning,
   GearSix,
-  CaretDown,
-  CaretUp,
-  Lightning,
   Package,
-  User,
-  Users,
-  UsersThree,
   ClipboardText,
   UserPlus,
+  Users,
   BellRinging,
   UserCheck,
   Repeat,
   MapPinLine,
   Target,
-  Sparkle,
   Play,
   CircleNotch,
   Info,
+  ArrowRight,
+  CaretRight,
+  WhatsappLogo,
+  EnvelopeSimple,
+  DeviceMobile,
+  LockSimple,
+  Check,
 } from '@phosphor-icons/react';
 import type { IconProps } from '@phosphor-icons/react';
 import { Switch } from '@/components/ui/Switch';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-
-const CATEGORIES = ['Todas', ...Object.keys(CATEGORY_LABEL_KEYS)];
 
 const ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   PackageOpen: Package, ClipboardList: ClipboardText,
@@ -58,24 +60,40 @@ function getTemplateIcon(iconName: string): React.ComponentType<IconProps> {
 }
 
 const STATUS_STYLES: Record<string, { bg: string; labelKey: string; icon?: React.ComponentType<IconProps> }> = {
-  Success: { bg: 'bg-primary/10 text-primary', labelKey: 'statusSuccess', icon: CheckCircle },
-  Failed: { bg: 'bg-red-50 text-red-700', labelKey: 'statusError', icon: Warning },
+  Success: { bg: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300', labelKey: 'statusSuccess', icon: CheckCircle },
+  Failed: { bg: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300', labelKey: 'statusError', icon: Warning },
   Skipped: { bg: 'bg-surface-3 text-foreground/70', labelKey: 'statusSkipped' },
 };
 
-const DESTINATARIO_INFO: Record<string, { icon: React.ComponentType<IconProps>; labelKey: string }> = {
-  admin: { icon: User, labelKey: 'recipientAdmin' },
-  vendedores: { icon: Users, labelKey: 'recipientVendors' },
-  ambos: { icon: UsersThree, labelKey: 'recipientAll' },
+// Etiquetas amables de "Cuando…" (trigger) y "Entonces…" (action), derivadas del enum real del backend.
+const TRIGGER_KEYS: Record<string, string> = {
+  Event: 'trigger.event',
+  Cron: 'trigger.cron',
+  Condition: 'trigger.condition',
+};
+const ACTION_KEYS: Record<string, string> = {
+  Notification: 'action.notification',
+  Email: 'action.email',
+  CreateEntity: 'action.createEntity',
 };
 
-function getDestinatario(template: AutomationTemplate): string {
-  try {
-    const params = template.paramsJson || template.defaultParamsJson;
-    if (params) return JSON.parse(params).destinatario || 'admin';
-  } catch { /* fallback */ }
-  return 'admin';
-}
+// Color (hex) por categoría para acento, tint del lado "Entonces" y sparkline.
+const CATEGORY_HEX: Record<string, string> = {
+  Cobranza: '#E11D48',
+  Ventas: '#4F46E5',
+  Inventario: '#D97706',
+  Operacion: '#0891B2',
+  Clientes: '#7C3AED',
+  Equipo: '#2563EB',
+};
+
+// Canales de envío. WhatsApp/Correo seleccionables; SMS bloqueado (no conectado).
+// La preferencia se guarda en paramsJson.canales (presentación; el dispatch multi-canal es backend).
+const CHANNELS: { id: string; icon: React.ComponentType<IconProps>; labelKey: string; locked: boolean }[] = [
+  { id: 'whatsapp', icon: WhatsappLogo, labelKey: 'channels.whatsapp', locked: false },
+  { id: 'correo', icon: EnvelopeSimple, labelKey: 'channels.email', locked: false },
+  { id: 'sms', icon: DeviceMobile, labelKey: 'channels.sms', locked: true },
+];
 
 function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'xs' }) {
   const t = useTranslations('automations');
@@ -89,16 +107,30 @@ function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'x
   );
 }
 
+const HIST_PAGE_SIZE = 50;
+
+// Serie diaria (conteo de ejecuciones por día) a partir del historial REAL cargado.
+function buildDailySeries(execs: AutomationExecution[]): number[] {
+  if (!execs.length) return [];
+  const byDay: Record<string, number> = {};
+  for (const e of execs) {
+    const d = e.ejecutadoEn.slice(0, 10);
+    byDay[d] = (byDay[d] || 0) + 1;
+  }
+  return Object.keys(byDay).sort().map(k => byDay[k]);
+}
+
 export default function AutomationsPage() {
   const t = useTranslations('automations');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const showApiError = useApiErrorToast();
   const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
   const subscriptionStatus = (session?.user as Record<string, unknown>)?.subscriptionStatus as string | undefined;
   const isExpired = subscriptionStatus === 'Expired' || subscriptionStatus === 'PastDue';
 
-  // i18n helpers for automation templates
+  // i18n helpers para los templates de automatización
   const tName = (slug: string, fallback: string) => {
     const keys = TEMPLATE_KEYS[slug];
     if (!keys) return fallback;
@@ -109,38 +141,50 @@ export default function AutomationsPage() {
     if (!keys) return fallback;
     try { return t(keys.shortDescKey); } catch { return fallback; }
   };
+  const tTrigger = (type: string) => {
+    const key = TRIGGER_KEYS[type];
+    return key ? t(key) : type;
+  };
+  const tActionType = (type: string) => {
+    const key = ACTION_KEYS[type];
+    return key ? t(key) : type;
+  };
   const tCategory = (cat: string) => {
     const key = CATEGORY_LABEL_KEYS[cat];
-    if (!key) return cat;
-    try { return t(key); } catch { return cat; }
+    return key ? t(key) : cat;
   };
+  // Traduce el texto de acción ejecutada (historial), conservando el prefijo [TEST]
   const tAction = (text: string) => {
     if (!text) return '';
-    // Strip [TEST] prefix, translate the core message, re-add prefix
     const testPrefix = text.startsWith('[TEST] ') ? '[TEST] ' : '';
     const core = testPrefix ? text.slice(7) : text;
     return testPrefix + tApi(core);
   };
+
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);
   const [historial, setHistorial] = useState<AutomationExecution[]>([]);
   const [historialTotal, setHistorialTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Todas');
   const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
 
-  // Config drawer
+  // Pestañas: Plantillas | Historial
+  const [activeTab, setActiveTab] = useState<'templates' | 'history'>('templates');
+  const [histFilter, setHistFilter] = useState<'all' | 'Success' | 'Failed' | 'Skipped'>('all');
+  const [catFilter, setCatFilter] = useState<string>('__all__');
+
+  // Editor (drawer de configuración)
   const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [configTemplate, setConfigTemplate] = useState<AutomationTemplate | null>(null);
   const [configParams, setConfigParams] = useState<Record<string, string | number | boolean>>({});
   const [savingConfig, setSavingConfig] = useState(false);
   const [testingSlug, setTestingSlug] = useState<string | null>(null);
+  const [lastTest, setLastTest] = useState<{ slug: string; ok: boolean; text: string } | null>(null);
 
-  // Deactivation confirmation
+  // Confirmación de desactivación
   const [confirmDeactivate, setConfirmDeactivate] = useState<AutomationTemplate | null>(null);
 
   // Historial
-  const [showHistorial, setShowHistorial] = useState(false);
   const [historialPage, setHistorialPage] = useState(1);
   const [historialLoading, setHistorialLoading] = useState(false);
   const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
@@ -161,7 +205,7 @@ export default function AutomationsPage() {
   const loadHistorial = useCallback(async (page = 1) => {
     try {
       setHistorialLoading(true);
-      const { items, total } = await automationService.getHistorial(page, 10);
+      const { items, total } = await automationService.getHistorial(page, HIST_PAGE_SIZE);
       setHistorial(items);
       setHistorialTotal(total);
       setHistorialPage(page);
@@ -174,10 +218,11 @@ export default function AutomationsPage() {
 
   useEffect(() => {
     loadTemplates();
-  }, [loadTemplates]);
+    loadHistorial();
+  }, [loadTemplates, loadHistorial]);
 
   const handleToggle = async (template: AutomationTemplate) => {
-    // Confirm before deactivating
+    // Confirmar antes de desactivar
     if (template.activada) {
       setConfirmDeactivate(template);
       return;
@@ -197,7 +242,7 @@ export default function AutomationsPage() {
       }
       await loadTemplates();
     } catch (err: unknown) {
-      toast({ title: tc('error'), description: err instanceof Error ? tApi(err.message) : tc('error'), variant: 'destructive' });
+      showApiError(err, tc('error'));
     } finally {
       setTogglingSlug(null);
     }
@@ -212,17 +257,20 @@ export default function AutomationsPage() {
         ? JSON.parse(template.defaultParamsJson)
         : {};
 
-      // Auto-inject cooldown_horas para Condition triggers que aún no lo
-      // tienen guardado. Permite que el user configure la frecuencia desde
-      // el drawer aunque el template/tenant haya sido creado antes del feature.
+      // Auto-inyectar cooldown_horas para triggers Condition que aún no lo tengan guardado.
       if (template.triggerType === 'Condition' && !('cooldown_horas' in params)) {
         params.cooldown_horas = '1';
+      }
+      // Canal por defecto si no hay preferencia guardada.
+      if (!('canales' in params)) {
+        params.canales = 'correo';
       }
 
       setConfigParams(params);
     } catch {
-      setConfigParams({});
+      setConfigParams({ canales: 'correo' });
     }
+    setLastTest(null);
     setConfigDrawerOpen(true);
   };
 
@@ -235,16 +283,18 @@ export default function AutomationsPage() {
       setConfigDrawerOpen(false);
       await loadTemplates();
     } catch (err: unknown) {
-      toast({ title: tc('error'), description: err instanceof Error ? tApi(err.message) : tc('error'), variant: 'destructive' });
+      showApiError(err, tc('error'));
     } finally {
       setSavingConfig(false);
     }
   };
 
-  const handleTest = async (slug: string, nombre: string) => {
+  const handleTest = async (slug: string, _nombre: string) => {
     setTestingSlug(slug);
     try {
       const result = await automationService.test(slug);
+      const text = result.success ? tApi(result.action) : (tApi(result.error) || t('unknownError'));
+      setLastTest({ slug, ok: result.success, text });
       if (result.success) {
         toast({ title: t('testSuccess'), description: tApi(result.action) });
       } else {
@@ -253,32 +303,49 @@ export default function AutomationsPage() {
       await loadTemplates();
       loadHistorial();
     } catch (err: unknown) {
-      toast({ title: tc('error'), description: err instanceof Error ? tApi(err.message) : t('testError'), variant: 'destructive' });
+      showApiError(err, t('testError'));
     } finally {
       setTestingSlug(null);
     }
   };
 
-  const filtered = useMemo(() =>
-    activeCategory === 'Todas'
-      ? templates
-      : templates.filter(t => t.categoria === activeCategory),
-    [templates, activeCategory]
-  );
+  // ── Canales (drawer) ──
+  const selectedChannels = String(configParams.canales ?? 'correo').split(',').map(s => s.trim()).filter(Boolean);
+  const toggleChannel = (id: string) => {
+    const set = new Set(selectedChannels);
+    if (set.has(id)) set.delete(id); else set.add(id);
+    setConfigParams(prev => ({ ...prev, canales: Array.from(set).join(',') }));
+  };
 
-  const { activeCount, totalExecutions, lastExecution } = useMemo(() => {
-    const active = templates.filter(t => t.activada).length;
-    const total = templates.reduce((sum, t) => sum + t.totalEjecuciones, 0);
-    const last = templates
-      .filter(t => t.ultimaEjecucion)
-      .sort((a, b) => new Date(b.ultimaEjecucion!).getTime() - new Date(a.ultimaEjecucion!).getTime())[0]
-      ?.ultimaEjecucion ?? null;
-    return { activeCount: active, totalExecutions: total, lastExecution: last };
-  }, [templates]);
+  // ── Métricas derivadas (dato real + estimación etiquetada) ──
+  const activas = templates.filter(tp => tp.activada).length;
+  const totalAcciones = templates.reduce((s, tp) => s + tp.totalEjecuciones, 0);
+  const horasAhorradas = Math.round((totalAcciones * 3) / 60); // ~3 min por acción (estimación)
+  const ultimaEjecucion = templates.reduce<string | null>(
+    (max, tp) => (tp.ultimaEjecucion && (!max || tp.ultimaEjecucion > max) ? tp.ultimaEjecucion : max),
+    null
+  );
+  const heroSeries = buildDailySeries(historial);
+
+  // Filtro por categoría (pills): "Todas" + categorías reales presentes en las plantillas.
+  const categories = ['__all__', ...Array.from(new Set(templates.map(tp => tp.categoria)))];
+  const filteredTemplates = catFilter === '__all__' ? templates : templates.filter(tp => tp.categoria === catFilter);
+
+  // Historial: tasa de éxito + conteos (sobre el historial cargado = reciente)
+  const cSuccess = historial.filter(e => e.status === 'Success').length;
+  const cFailed = historial.filter(e => e.status === 'Failed').length;
+  const cSkipped = historial.filter(e => e.status === 'Skipped').length;
+  const successRate = historial.length > 0 ? Math.round((cSuccess / historial.length) * 100) : 0;
+  const filteredHist = histFilter === 'all' ? historial : historial.filter(e => e.status === histFilter);
+  // El backend a veces devuelve total=0 aunque haya items; usar el cargado como respaldo.
+  const histCount = historialTotal || historial.length;
+
+  const configHasParams = Object.keys(configParams).some(k => !!PARAM_CONFIG[k]);
 
   return (
     <>
       <PageHeader
+        section="herramientas"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: t('title') },
@@ -287,9 +354,9 @@ export default function AutomationsPage() {
         subtitle={t('subtitle')}
         actions={
           <button
-            onClick={() => loadTemplates()}
+            onClick={() => { loadTemplates(); loadHistorial(historialPage); }}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
             data-tour="automations-refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
@@ -300,345 +367,287 @@ export default function AutomationsPage() {
         <div className="space-y-6">
           {error && <ErrorBanner error={error} onRetry={() => { setError(''); loadTemplates(); }} />}
 
-          {/* KPI summary bar (data real de templates) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-tour="automations-kpis">
-            <div className="bg-card border border-primary/30 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-start justify-between">
-                <p className="text-xs font-medium text-muted-foreground">{t('activeOf', { total: templates.length })}</p>
-                <Lightning size={20} weight="fill" className="text-primary/40" />
+          {isExpired && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
+              <Warning size={20} className="text-amber-600 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">{t('subscriptionExpired')}</p>
+                <p className="text-xs text-amber-600 mt-0.5">{t('subscriptionExpiredDesc')}</p>
               </div>
-              <p className={`text-2xl sm:text-3xl font-bold text-primary tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
-                {loading ? '—' : activeCount}
-              </p>
             </div>
-            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-start justify-between">
-                <p className="text-xs font-medium text-muted-foreground">{t('totalExecutions')}</p>
-                <Sparkle size={20} weight="fill" className="text-muted-foreground/40" />
+          )}
+
+          {/* Hero: anillo activas/total + "Trabajando por ti" + badge horas (izq); 2 cards (der) */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
+              <div className="flex items-center gap-4 lg:border-r lg:border-border lg:pr-6">
+                <ProgressRing value={activas ? (activas / Math.max(1, templates.length)) * 100 : 0} color="hsl(var(--primary))" size={86} stroke={9}>
+                  <span className={`text-lg font-bold tabular-nums text-foreground ${loading ? 'animate-pulse' : ''}`}>{activas}/{templates.length}</span>
+                </ProgressRing>
+                <div>
+                  <p className="text-[16px] font-semibold text-foreground">{t('hero.title')}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('hero.activeOf', { active: activas, total: templates.length })}</p>
+                  <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                    <Clock size={12} weight="fill" /> {t('hero.hoursSavedShort', { hours: horasAhorradas })}
+                  </span>
+                </div>
               </div>
-              <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
-                {loading ? '—' : totalExecutions}
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-start justify-between">
-                <p className="text-xs font-medium text-muted-foreground">{t('lastExecution')}</p>
-                <Clock size={20} weight="fill" className="text-muted-foreground/40" />
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-xl bg-surface-1 p-3.5">
+                  <p className="text-xs font-medium text-muted-foreground">{t('hero.totalActions')}</p>
+                  <div className="flex items-end justify-between gap-2 mt-1">
+                    <p className="text-2xl font-bold text-foreground tabular-nums">{formatNumber(totalAcciones)}</p>
+                    {heroSeries.length >= 2 && <Sparkline data={heroSeries} color="hsl(var(--primary))" width={88} height={32} />}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-surface-1 p-3.5">
+                  <p className="text-xs font-medium text-muted-foreground inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-500" /> {t('hero.lastRun')}
+                  </p>
+                  <p className="text-sm font-semibold text-foreground mt-1">
+                    {ultimaEjecucion ? formatDate(ultimaEjecucion, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('hero.never')}
+                  </p>
+                </div>
               </div>
-              <p className={`text-lg sm:text-xl font-bold text-foreground tracking-tight mt-3 truncate ${loading ? 'animate-pulse' : ''}`}>
-                {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : t('noExecution')}
-              </p>
             </div>
           </div>
 
-          {/* Category tabs (segmentado azul) */}
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1 max-w-full overflow-x-auto" data-tour="automations-categories">
-            {CATEGORIES.map(cat => {
-              const active = activeCategory === cat;
+          {/* Pestañas: Plantillas | Historial (con contadores) */}
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
+            {([
+              { key: 'templates' as const, label: t('tabs.templates'), count: templates.length },
+              { key: 'history' as const, label: t('tabs.history'), count: histCount },
+            ]).map(tab => {
+              const active = activeTab === tab.key;
               return (
                 <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
                   aria-pressed={active}
-                  className={`px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`px-4 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                  {cat === 'Todas' ? t('allCategories') : tCategory(cat)}
+                  {tab.label}
+                  <span className={`ml-1.5 text-[11px] ${active ? 'text-primary-foreground/80' : 'text-muted-foreground/70'}`}>{tab.count}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Grid */}
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-3 animate-pulse">
-                  <div className="flex items-start gap-2.5 mb-3">
-                    <div className="w-9 h-9 bg-surface-3 rounded-lg" />
-                    <div className="flex-1">
-                      <div className="h-4 bg-surface-3 rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-surface-3 rounded w-full" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mb-2">
-                    <div className="h-5 bg-surface-3 rounded-md w-16" />
-                    <div className="h-5 bg-surface-3 rounded-md w-14" />
-                  </div>
-                  <div className="h-7 bg-surface-1 rounded" />
+          {/* ── Plantillas: filtros por categoría + tarjetas clicables ── */}
+          {activeTab === 'templates' && (
+            <div data-tour="automations-grid" className="space-y-4">
+              {!loading && templates.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(c => {
+                    const active = catFilter === c;
+                    const label = c === '__all__' ? t('filterAll') : tCategory(c);
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setCatFilter(c)}
+                        className={`px-3.5 py-2 rounded-full text-[12.5px] font-semibold transition-colors ${active ? 'bg-primary text-primary-foreground' : 'bg-surface-1 text-foreground/70 hover:text-foreground'}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-10 h-10 bg-surface-3 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Robot size={20} className="text-muted-foreground" />
-              </div>
-              <p className="font-semibold text-foreground/80 mb-1">{t('noCategory')}</p>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                {activeCategory !== 'Todas'
-                  ? t('noCategoryDesc', { category: tCategory(activeCategory) })
-                  : t('emptyDefault')}
-              </p>
-              {activeCategory !== 'Todas' && (
-                <button
-                  onClick={() => setActiveCategory('Todas')}
-                  className="mt-4 px-4 py-2 text-sm font-medium text-foreground/70 bg-surface-3 rounded-lg hover:bg-surface-3 transition-colors"
-                >
-                  {t('viewAll')}
-                </button>
               )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" data-tour="automations-grid">
-              {filtered.map(template => {
-                const Icon = getTemplateIcon(template.icono);
-                const isToggling = togglingSlug === template.slug;
+              {loading ? (
+                <div className="py-16 text-center"><RefreshCw className="w-6 h-6 mx-auto mb-2 text-muted-foreground/60 animate-spin" /><p className="text-sm text-muted-foreground">{tc('loading')}</p></div>
+              ) : templates.length === 0 ? (
+                <div className="py-16 text-center"><Robot size={28} className="mx-auto mb-2 text-muted-foreground/60" /><p className="text-sm text-muted-foreground">{t('emptyDefault')}</p></div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredTemplates.map(tpl => {
+                    const Icon = getTemplateIcon(tpl.icono);
+                    const isToggling = togglingSlug === tpl.slug;
+                    const series = buildDailySeries(historial.filter(e => e.templateSlug === tpl.slug));
+                    const cat = CATEGORY_HEX[tpl.categoria] ?? '#0176D3';
+                    // Destinatario derivado de los params (admin/vendedores/ambos) para el subtítulo del card.
+                    let dest: string | null = null;
+                    try {
+                      const p = JSON.parse(tpl.paramsJson || tpl.defaultParamsJson || '{}');
+                      if (p.destinatario === 'admin') dest = t('params.recipientOptions.admin');
+                      else if (p.destinatario === 'vendedores') dest = t('params.recipientOptions.vendors');
+                      else if (p.destinatario === 'ambos') dest = t('params.recipientOptions.both');
+                    } catch { /* sin params */ }
+                    return (
+                      <div
+                        key={tpl.slug}
+                        onClick={() => handleOpenConfig(tpl)}
+                        className={`relative cursor-pointer bg-card border rounded-2xl p-4 shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden ${tpl.activada ? '' : 'opacity-[0.62]'}`}
+                        style={{ borderColor: tpl.activada ? `color-mix(in srgb, ${cat} 30%, hsl(var(--border)))` : 'hsl(var(--border))' }}
+                      >
+                        {/* Barra de acento 3px (color de categoría cuando activa) */}
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: tpl.activada ? cat : 'transparent' }} />
 
-                return (
-                  <div
-                    key={template.slug}
-                    className={`bg-card rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md ${
-                      template.activada
-                        ? 'border-primary/30'
-                        : 'border-border opacity-60'
-                    }`}
-                  >
-                    <div className="p-3">
-                      {/* Header: Icon + Name + Toggle */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                            template.activada
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-surface-3 text-muted-foreground'
-                          }`}>
-                            <Icon size={20} />
+                        {/* Header: ícono + (nombre + destinatario) + toggle */}
+                        <div className="flex items-start gap-3 mb-3">
+                          <div
+                            className="w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0"
+                            style={tpl.activada
+                              ? { background: `color-mix(in srgb, ${cat} 13%, hsl(var(--card)))`, color: cat }
+                              : undefined}
+                          >
+                            <Icon size={19} weight={tpl.activada ? 'fill' : 'regular'} className={tpl.activada ? undefined : 'text-muted-foreground'} />
                           </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="font-medium text-foreground text-[13px] leading-tight truncate">
-                                {tName(template.slug, template.nombre)}
-                              </h3>
-
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              {tShortDesc(template.slug, template.descripcionCorta)}
-                            </p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13.5px] font-bold text-foreground leading-tight truncate">{tName(tpl.slug, tpl.nombre)}</p>
+                            {dest ? (
+                              <span className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1"><Users size={10} weight="bold" /> {dest}</span>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-1">{tShortDesc(tpl.slug, tpl.descripcionCorta)}</p>
+                            )}
                           </div>
-                        </div>
-                        <div className="shrink-0 mt-0.5" data-tour="automations-toggle">
-                          {isToggling ? (
-                            <RefreshCw className="w-5 h-5 text-primary animate-spin" />
-                          ) : (
-                            <Switch
-                              checked={template.activada}
-                              onCheckedChange={() => handleToggle(template)}
-                              disabled={isToggling}
-                            />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Footer: Badge + Destinatario + Stats + Config */}
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${
-                          CATEGORY_COLORS[template.categoria] || 'bg-surface-3 text-foreground/70'
-                        }`}>
-                          {tCategory(template.categoria)}
-                        </span>
-                        {(() => {
-                          const dest = getDestinatario(template);
-                          const info = DESTINATARIO_INFO[dest];
-                          if (!info) return null;
-                          const DestIcon = info.icon;
-                          return (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title={t(info.labelKey)}>
-                              <DestIcon size={11} />
-                              {t(info.labelKey)}
-                            </span>
-                          );
-                        })()}
-                        {template.activada && template.totalEjecuciones > 0 && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {t('executionCount', { count: template.totalEjecuciones })}{template.ultimaEjecucion ? ` · ${formatTimeAgo(template.ultimaEjecucion)}` : ''}
-                          </span>
-                        )}
-                        <span className="ml-auto inline-flex items-center gap-1">
                           <button
-                              onClick={() => handleTest(template.slug, tName(template.slug, template.nombre))}
-                              disabled={testingSlug === template.slug}
-                              className="text-muted-foreground hover:text-primary text-xs transition-colors disabled:opacity-50"
-                              aria-label={`${t('testNow')} ${tName(template.slug, template.nombre)}`}
-                              title={t('testNow')}
-                            >
-                              {testingSlug === template.slug ? <CircleNotch size={14} className="animate-spin" /> : <Play size={14} weight="fill" />}
-                            </button>
-                          {template.defaultParamsJson && (
-                            <button
-                              onClick={() => handleOpenConfig(template)}
-                              className="text-muted-foreground hover:text-foreground/70 text-xs transition-colors"
-                              data-tour="automations-config-btn"
-                              aria-label={`${t('configure')} ${tName(template.slug, template.nombre)}`}
-                              title={t('configure')}
-                            >
-                              <GearSix size={14} />
-                            </button>
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleToggle(tpl); }}
+                            disabled={isToggling}
+                            title={tpl.activada ? tc('deactivate') : tc('activate')}
+                            className="relative shrink-0 rounded-full disabled:opacity-60"
+                            style={{ width: 40, height: 23, padding: 0, border: 'none', background: tpl.activada ? cat : 'hsl(var(--muted-foreground) / 0.35)', transition: 'background .18s' }}
+                          >
+                            <span className="absolute rounded-full bg-white shadow-sm" style={{ top: 2, left: tpl.activada ? 19 : 2, width: 19, height: 19, transition: 'left .18s' }} />
+                          </button>
+                        </div>
+
+                        {/* Cuando → Entonces (2 partes; derecha tintada por categoría) */}
+                        <div className="flex items-stretch rounded-[10px] border border-border overflow-hidden mb-3">
+                          <div className="flex-1 min-w-0 py-2 px-2.5 bg-surface-1">
+                            <p className="text-[9px] font-bold uppercase tracking-[0.04em] text-muted-foreground">{t('columns.when')}</p>
+                            <p className="text-[11.5px] font-semibold text-foreground/80 truncate mt-0.5">{tTrigger(tpl.triggerType)}</p>
+                          </div>
+                          <div className="flex items-center px-1 shrink-0 bg-surface-1" style={{ color: cat }}>
+                            <ArrowRight size={15} weight="bold" />
+                          </div>
+                          <div className="flex-1 min-w-0 py-2 px-2.5" style={{ background: `color-mix(in srgb, ${cat} 7%, hsl(var(--card)))` }}>
+                            <p className="text-[9px] font-bold uppercase tracking-[0.04em]" style={{ color: cat }}>{t('columns.then')}</p>
+                            <p className="text-[11.5px] font-semibold text-foreground/80 truncate mt-0.5">{tActionType(tpl.actionType)}</p>
+                          </div>
+                        </div>
+
+                        {/* Caja de ejecuciones + sparkline (solo activa) */}
+                        {tpl.activada && (
+                          <div className="flex items-end justify-between gap-2.5 rounded-[10px] bg-surface-1 px-3 py-2.5 mb-2.5">
+                            <div>
+                              <p className="text-[17px] font-extrabold text-foreground tabular-nums leading-none">{formatNumber(tpl.totalEjecuciones)}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{t('columns.executions')}</p>
+                            </div>
+                            {series.length >= 2 && <Sparkline data={series} color={cat} width={86} height={26} />}
+                          </div>
+                        )}
+
+                        {/* Footer: categoría + última ejecución + Configurar */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium ${CATEGORY_COLORS[tpl.categoria] ?? 'bg-surface-3 text-foreground/70'}`}>
+                            {tCategory(tpl.categoria)}
+                          </span>
+                          {tpl.activada && tpl.ultimaEjecucion && (
+                            <span className="text-[10.5px] text-muted-foreground">{formatDate(tpl.ultimaEjecucion, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                           )}
-                        </span>
+                          <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                            {t('configure')} <CaretRight size={13} weight="bold" />
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Historial section */}
-          <div className="bg-surface-2 rounded-xl border border-border-subtle" data-tour="automations-historial">
-            <button
-              onClick={() => {
-                setShowHistorial(!showHistorial);
-                if (!showHistorial && historial.length === 0) loadHistorial();
-              }}
-              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-1 transition-colors rounded-lg"
-            >
-              <div className="flex items-center gap-2">
-                <Lightning size={18} className="text-amber-500" />
-                <span className="font-semibold text-sm text-foreground">{t('historyTitle')}</span>
-                {historialTotal > 0 && (
-                  <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-md">
-                    {historialTotal}
-                  </span>
-                )}
+          {/* ── Historial: panel enriquecido ── */}
+          {activeTab === 'history' && (
+            <div className="bg-card border border-border rounded-2xl overflow-hidden" data-tour="automations-historial">
+              {/* Cabecera: tasa de éxito + barra tricolor + filtros */}
+              <div className="p-5 border-b border-border">
+                <div className="flex items-start justify-between gap-5 flex-wrap">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('successRate')}</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">{successRate}%</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{t('recentBasis')}</p>
+                  </div>
+                  <div className="flex-1 min-w-[220px] max-w-md pt-1">
+                    <SegmentedBar
+                      segments={[
+                        { value: cSuccess, color: '#16A34A', label: t('statusSuccess') },
+                        { value: cSkipped, color: '#9AA6B6', label: t('statusSkipped') },
+                        { value: cFailed, color: '#DC2626', label: t('statusError') },
+                      ]}
+                    />
+                  </div>
+                </div>
+                {/* Filtros */}
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {([
+                    { k: 'all' as const, label: t('filterAll'), count: historial.length },
+                    { k: 'Success' as const, label: t('statusSuccess'), count: cSuccess },
+                    { k: 'Failed' as const, label: t('statusError'), count: cFailed },
+                    { k: 'Skipped' as const, label: t('statusSkipped'), count: cSkipped },
+                  ]).map(f => {
+                    const active = histFilter === f.k;
+                    return (
+                      <button
+                        key={f.k}
+                        type="button"
+                        onClick={() => setHistFilter(f.k)}
+                        className={`px-3 py-1.5 text-[12px] font-medium rounded-lg border transition-colors ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:text-foreground hover:bg-surface-1'}`}
+                      >
+                        {f.label} <span className="opacity-70">({f.count})</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              {showHistorial ? <CaretUp size={16} className="text-muted-foreground" /> : <CaretDown size={16} className="text-muted-foreground" />}
-            </button>
 
-            {showHistorial && (
-              <div className="border-t border-border-subtle">
-                {historialLoading ? (
-                  <div className="py-12 text-center">
-                    <RefreshCw className="w-6 h-6 mx-auto mb-2 text-muted-foreground/60 animate-spin" />
-                    <p className="text-sm text-muted-foreground">{tc('loading')}</p>
-                  </div>
-                ) : historial.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <Clock size={32} className="mx-auto mb-2 text-muted-foreground/40" />
-                    <p className="text-sm text-muted-foreground">{t('emptyHistoryTitle')}</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">{t('emptyHistoryDesc')}</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Desktop table */}
-                    <div className="hidden sm:block overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-surface-1 border-b border-border-subtle">
-                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.date')}</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.automation')}</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.result')}</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.action')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {historial.map(exec => (
-                            <tr
-                              key={exec.id}
-                              onClick={() => setSelectedExecution(exec)}
-                              className="border-b border-border-subtle hover:bg-surface-1/50 transition-colors cursor-pointer"
-                              title={t('clickForDetail')}
-                            >
-                              <td className="px-5 py-2.5 text-foreground/70 whitespace-nowrap">
-                                {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                              </td>
-                              <td className="px-5 py-2.5 font-medium text-foreground">
-                                <span className="inline-flex items-center gap-1.5">
-                                  {tName(exec.templateSlug, exec.templateNombre)}
-                                  <Info size={14} className="text-muted-foreground/60" />
-                                </span>
-                              </td>
-                              <td className="px-5 py-2.5">
-                                <StatusBadge status={exec.status} />
-                              </td>
-                              <td className="px-5 py-2.5 text-muted-foreground max-w-xs truncate">
-                                {tAction(exec.errorMessage || exec.actionTaken)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Mobile cards */}
-                    <div className="sm:hidden divide-y divide-border-subtle">
-                      {historial.map(exec => (
-                        <div
-                          key={exec.id}
-                          onClick={() => setSelectedExecution(exec)}
-                          className="px-4 py-3 cursor-pointer active:bg-surface-1/50"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm text-foreground inline-flex items-center gap-1.5">
-                              {tName(exec.templateSlug, exec.templateNombre)}
-                              <Info size={13} className="text-muted-foreground/60" />
-                            </span>
-                            <StatusBadge status={exec.status} size="xs" />
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate">{tAction(exec.errorMessage || exec.actionTaken)}</p>
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {formatDate(exec.ejecutadoEn)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Pagination */}
-                    {historialTotal > 10 && (
-                      <div className="flex items-center justify-center gap-2 px-5 py-3 border-t border-border-subtle">
-                        <button
-                          onClick={() => loadHistorial(historialPage - 1)}
-                          disabled={historialPage <= 1}
-                          className="text-xs text-muted-foreground hover:text-foreground/80 disabled:opacity-50 transition-colors"
-                        >
-                          {tc('previous')}
-                        </button>
-                        <span className="text-xs text-muted-foreground">
-                          {tc('page')} {historialPage} {tc('of')} {Math.ceil(historialTotal / 10)}
-                        </span>
-                        <button
-                          onClick={() => loadHistorial(historialPage + 1)}
-                          disabled={historialPage >= Math.ceil(historialTotal / 10)}
-                          className="text-xs text-muted-foreground hover:text-foreground/80 disabled:opacity-50 transition-colors"
-                        >
-                          {tc('next')}
-                        </button>
+              {/* Filas */}
+              {historialLoading ? (
+                <div className="py-12 text-center"><RefreshCw className="w-6 h-6 mx-auto mb-2 text-muted-foreground/60 animate-spin" /><p className="text-sm text-muted-foreground">{tc('loading')}</p></div>
+              ) : filteredHist.length === 0 ? (
+                <div className="py-12 text-center"><Clock size={32} className="mx-auto mb-2 text-muted-foreground/40" /><p className="text-sm text-muted-foreground">{t('emptyHistoryTitle')}</p><p className="text-xs text-muted-foreground/60 mt-1">{t('emptyHistoryDesc')}</p></div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {filteredHist.map(exec => (
+                    <button
+                      key={exec.id}
+                      onClick={() => setSelectedExecution(exec)}
+                      className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface-1 transition-colors"
+                      title={t('clickForDetail')}
+                    >
+                      <StatusBadge status={exec.status} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium text-foreground truncate inline-flex items-center gap-1.5">
+                          {tName(exec.templateSlug, exec.templateNombre)}
+                          <Info size={13} className="text-muted-foreground/60" />
+                        </p>
+                        <p className="text-[11.5px] text-muted-foreground truncate">{tAction(exec.errorMessage || exec.actionTaken)}</p>
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
+                        {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Paginación */}
+              {historialTotal > HIST_PAGE_SIZE && (
+                <div className="flex items-center justify-center gap-3 px-5 py-3 border-t border-border">
+                  <button onClick={() => loadHistorial(historialPage - 1)} disabled={historialPage <= 1} className="text-xs text-muted-foreground hover:text-foreground/80 disabled:opacity-50 transition-colors">{tc('previous')}</button>
+                  <span className="text-xs text-muted-foreground">{tc('page')} {historialPage} {tc('of')} {Math.ceil(historialTotal / HIST_PAGE_SIZE)}</span>
+                  <button onClick={() => loadHistorial(historialPage + 1)} disabled={historialPage >= Math.ceil(historialTotal / HIST_PAGE_SIZE)} className="text-xs text-muted-foreground hover:text-foreground/80 disabled:opacity-50 transition-colors">{tc('next')}</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </PageHeader>
 
-      {isExpired && (
-        <div className="mx-4 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
-          <Warning size={20} className="text-amber-600 shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-amber-800">{t('subscriptionExpired')}</p>
-            <p className="text-xs text-amber-600 mt-0.5">
-              {t('subscriptionExpiredDesc')}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Config Drawer */}
+      {/* Editor / Drawer de configuración (se abre al hacer click en una tarjeta) */}
       <Drawer
         isOpen={configDrawerOpen}
         onClose={() => setConfigDrawerOpen(false)}
@@ -646,7 +655,7 @@ export default function AutomationsPage() {
         description={t('drawerConfigDesc')}
         icon={<GearSix size={20} className="text-muted-foreground" />}
         footer={
-          <div className="flex gap-3 justify-end" data-tour="automations-drawer-actions">
+          <div className="flex items-center justify-end w-full gap-3" data-tour="automations-drawer-actions">
             <Button type="button" variant="outline" onClick={() => setConfigDrawerOpen(false)}>
               {tc('cancel')}
             </Button>
@@ -664,6 +673,45 @@ export default function AutomationsPage() {
             </p>
           )}
 
+          {/* Canales de envío (multi-selección; SMS bloqueado) */}
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-2">{t('channels.title')}</label>
+            <div className="space-y-2">
+              {CHANNELS.map(ch => {
+                const checked = selectedChannels.includes(ch.id);
+                const Icon = ch.icon;
+                return (
+                  <button
+                    key={ch.id}
+                    type="button"
+                    disabled={ch.locked}
+                    onClick={() => !ch.locked && toggleChannel(ch.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${
+                      ch.locked
+                        ? 'border-border-subtle opacity-60 cursor-not-allowed'
+                        : checked
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border-default hover:border-border-strong'
+                    }`}
+                  >
+                    <Icon size={18} weight="regular" className={checked && !ch.locked ? 'text-primary' : 'text-muted-foreground'} />
+                    <span className="flex-1 text-sm text-foreground/80">{t(ch.labelKey)}</span>
+                    {ch.locked ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><LockSimple size={12} />{t('channels.notConnected')}</span>
+                    ) : (
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center ${checked ? 'bg-primary border-primary' : 'border-border-strong'}`}>
+                        {checked && <Check size={11} weight="bold" className="text-primary-foreground" />}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedChannels.length > 1 && <p className="text-[11px] text-muted-foreground mt-2">{t('channels.order')}</p>}
+          </div>
+
+          {/* Parámetros configurables */}
+          {configHasParams && <div className="h-px bg-border" />}
           {Object.entries(configParams).map(([key, value]) => {
             const config = PARAM_CONFIG[key];
             if (!config) return null;
@@ -730,10 +778,33 @@ export default function AutomationsPage() {
               </div>
             );
           })}
+
+          {/* Probar antes de activar — envío de prueba a tu propia cuenta */}
+          <div className="rounded-lg border border-dashed border-border-strong p-3.5">
+            <p className="text-sm font-medium text-foreground/80">{t('testBeforeActivate')}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{t('testBeforeActivateDesc')}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 flex items-center gap-2"
+              onClick={() => configTemplate && handleTest(configTemplate.slug, tName(configTemplate.slug, configTemplate.nombre))}
+              disabled={!!testingSlug}
+            >
+              {testingSlug ? <CircleNotch size={15} className="animate-spin" /> : <Play size={15} weight="fill" />}
+              {t('runTest')}
+            </Button>
+            {lastTest && configTemplate && lastTest.slug === configTemplate.slug && (
+              <p className={`text-[12px] mt-2 inline-flex items-center gap-1.5 ${lastTest.ok ? 'text-green-600' : 'text-red-600'}`}>
+                {lastTest.ok ? <CheckCircle size={13} weight="fill" /> : <Warning size={13} weight="fill" />}
+                {lastTest.text}
+              </p>
+            )}
+          </div>
         </div>
       </Drawer>
 
-      {/* Deactivation confirmation modal */}
+      {/* Confirmación de desactivación */}
       <Modal
         isOpen={!!confirmDeactivate}
         onClose={() => setConfirmDeactivate(null)}
@@ -758,7 +829,7 @@ export default function AutomationsPage() {
         </div>
       </Modal>
 
-      {/* Execution detail drawer (click on a history row) */}
+      {/* Detalle de ejecución (click en una fila del historial) */}
       <ExecutionDetailDrawer
         execution={selectedExecution}
         onClose={() => setSelectedExecution(null)}

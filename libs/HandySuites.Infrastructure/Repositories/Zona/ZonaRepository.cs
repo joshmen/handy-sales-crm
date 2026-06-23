@@ -1,5 +1,6 @@
 using HandySuites.Application.Zonas.DTOs;
 using HandySuites.Application.Zonas.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -29,10 +30,134 @@ public class ZonaRepository : IZonaRepository
                 ClientesActivos = _db.Clientes.Count(c => c.IdZona == z.Id && c.TenantId == tenantId && c.Activo),
                 CentroLatitud = z.CentroLatitud,
                 CentroLongitud = z.CentroLongitud,
-                RadioKm = z.RadioKm
+                RadioKm = z.RadioKm,
+                VendedorId = z.VendedorId,
+                VendedorNombre = z.Vendedor != null ? z.Vendedor.Nombre : null,
+                Color = z.Color,
+                FrecuenciaVisita = (int)z.FrecuenciaVisita,
+                FrecuenciaNombre = z.FrecuenciaVisita.ToString()
             })
             .ToListAsync();
     }
+
+    public async Task<List<ZonaDto>> ObtenerStatsPorTenantAsync(int tenantId, DateTime desdeUtc, DateTime hastaUtc, DateTime nowUtc)
+    {
+        // 1) Zonas del tenant (entidad cruda; el mapeo a DTO se arma en memoria).
+        var zonas = await _db.Zonas
+            .AsNoTracking()
+            .Where(z => z.TenantId == tenantId)
+            .Select(z => new
+            {
+                z.Id,
+                z.Nombre,
+                z.Descripcion,
+                z.Activo,
+                z.CentroLatitud,
+                z.CentroLongitud,
+                z.RadioKm,
+                z.VendedorId,
+                VendedorNombre = z.Vendedor != null ? z.Vendedor.Nombre : null,
+                z.Color,
+                z.FrecuenciaVisita
+            })
+            .ToListAsync();
+
+        if (zonas.Count == 0)
+            return new List<ZonaDto>();
+
+        // 2) Clientes activos por zona (una sola agregación → diccionario).
+        var clientesPorZona = await _db.Clientes
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .GroupBy(c => c.IdZona)
+            .Select(g => new { ZonaId = g.Key, Total = g.Count() })
+            .ToListAsync();
+        var clientesDict = clientesPorZona.ToDictionary(x => x.ZonaId, x => x.Total);
+
+        // 3) Ventas del mes por zona: pedidos Entregado del mes, agrupados por la zona
+        //    del cliente. Una sola query con join Pedido→Cliente.
+        var ventasPorZona = await (
+            from p in _db.Pedidos.AsNoTracking()
+            join c in _db.Clientes.AsNoTracking() on p.ClienteId equals c.Id
+            where p.TenantId == tenantId
+                && p.Estado == EstadoPedido.Entregado
+                && p.FechaPedido >= desdeUtc && p.FechaPedido < hastaUtc
+            group p by c.IdZona into g
+            select new { ZonaId = g.Key, Total = g.Sum(x => x.Total), Pedidos = g.Count() }
+        ).ToListAsync();
+        var ventasDict = ventasPorZona.ToDictionary(x => x.ZonaId, x => (x.Total, x.Pedidos));
+
+        // 4) Cobertura: clientes "al día" por zona. Un cliente está al día si tiene
+        //    al menos una visita con FechaHoraInicio >= (now - frecuenciaDias(zona)).
+        //    El umbral por zona depende de su frecuencia, así que agrupamos los
+        //    distintos clientes visitados por (zona, frecuenciaDias) en memoria.
+        //
+        //    Para evitar N+1, traemos las últimas visitas (clienteId + fecha) del
+        //    tenant en una sola query y resolvemos la frecuencia con clientesZonaMap.
+        var clienteZonaMap = await _db.Clientes
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .Select(c => new { c.Id, c.IdZona })
+            .ToListAsync();
+        var clienteToZona = clienteZonaMap.ToDictionary(x => x.Id, x => x.IdZona);
+        var frecuenciaPorZona = zonas.ToDictionary(z => z.Id, z => FrecuenciaDias(z.FrecuenciaVisita));
+
+        // Última visita por cliente (max FechaHoraInicio), una sola agregación.
+        var ultimaVisitaPorCliente = await _db.ClienteVisitas
+            .AsNoTracking()
+            .Where(v => v.TenantId == tenantId && v.Activo && v.FechaHoraInicio != null)
+            .GroupBy(v => v.ClienteId)
+            .Select(g => new { ClienteId = g.Key, Ultima = g.Max(x => x.FechaHoraInicio) })
+            .ToListAsync();
+
+        // Clientes "al día" por zona (en memoria, usando el umbral de su zona).
+        var cubiertosPorZona = new Dictionary<int, int>();
+        foreach (var uv in ultimaVisitaPorCliente)
+        {
+            if (!clienteToZona.TryGetValue(uv.ClienteId, out var zonaId)) continue;
+            if (!frecuenciaPorZona.TryGetValue(zonaId, out var dias)) continue;
+            if (uv.Ultima.HasValue && uv.Ultima.Value >= nowUtc.AddDays(-dias))
+                cubiertosPorZona[zonaId] = cubiertosPorZona.GetValueOrDefault(zonaId) + 1;
+        }
+
+        // 5) Ensamblar DTOs en memoria — sin round-trips por zona.
+        return zonas.Select(z =>
+        {
+            var clientes = clientesDict.GetValueOrDefault(z.Id);
+            ventasDict.TryGetValue(z.Id, out var ventas);
+            var cubiertos = cubiertosPorZona.GetValueOrDefault(z.Id);
+
+            return new ZonaDto
+            {
+                Id = z.Id,
+                Nombre = z.Nombre,
+                Descripcion = z.Descripcion,
+                Activo = z.Activo,
+                ClientesActivos = clientes,
+                CentroLatitud = z.CentroLatitud,
+                CentroLongitud = z.CentroLongitud,
+                RadioKm = z.RadioKm,
+                VendedorId = z.VendedorId,
+                VendedorNombre = z.VendedorNombre,
+                Color = z.Color,
+                FrecuenciaVisita = (int)z.FrecuenciaVisita,
+                FrecuenciaNombre = z.FrecuenciaVisita.ToString(),
+                VentasMes = ventas.Total,
+                TicketPromedio = ventas.Pedidos > 0 ? ventas.Total / ventas.Pedidos : 0m,
+                CoberturaPct = clientes > 0
+                    ? (int)Math.Round((double)cubiertos / clientes * 100)
+                    : 0
+            };
+        }).ToList();
+    }
+
+    private static int FrecuenciaDias(FrecuenciaVisita frecuencia) => frecuencia switch
+    {
+        FrecuenciaVisita.Semanal => 7,
+        FrecuenciaVisita.Quincenal => 14,
+        FrecuenciaVisita.Mensual => 30,
+        _ => 7
+    };
 
     public async Task<ZonaDto?> ObtenerPorIdAsync(int id, int tenantId)
     {
@@ -48,7 +173,12 @@ public class ZonaRepository : IZonaRepository
                 ClientesActivos = _db.Clientes.Count(c => c.IdZona == z.Id && c.TenantId == tenantId && c.Activo),
                 CentroLatitud = z.CentroLatitud,
                 CentroLongitud = z.CentroLongitud,
-                RadioKm = z.RadioKm
+                RadioKm = z.RadioKm,
+                VendedorId = z.VendedorId,
+                VendedorNombre = z.Vendedor != null ? z.Vendedor.Nombre : null,
+                Color = z.Color,
+                FrecuenciaVisita = (int)z.FrecuenciaVisita,
+                FrecuenciaNombre = z.FrecuenciaVisita.ToString()
             })
             .FirstOrDefaultAsync();
     }
@@ -63,6 +193,9 @@ public class ZonaRepository : IZonaRepository
             CentroLatitud = dto.CentroLatitud,
             CentroLongitud = dto.CentroLongitud,
             RadioKm = dto.RadioKm,
+            VendedorId = dto.VendedorId,
+            Color = dto.Color,
+            FrecuenciaVisita = dto.FrecuenciaVisita,
             Activo = true,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = creadoPor
@@ -86,6 +219,9 @@ public class ZonaRepository : IZonaRepository
         zona.CentroLatitud = dto.CentroLatitud;
         zona.CentroLongitud = dto.CentroLongitud;
         zona.RadioKm = dto.RadioKm;
+        zona.VendedorId = dto.VendedorId;
+        zona.Color = dto.Color;
+        zona.FrecuenciaVisita = dto.FrecuenciaVisita;
         zona.ActualizadoEn = DateTime.UtcNow;
         zona.ActualizadoPor = actualizadoPor;
 
@@ -168,5 +304,13 @@ public class ZonaRepository : IZonaRepository
         if (excludeId.HasValue)
             query = query.Where(z => z.Id != excludeId.Value);
         return query.AnyAsync();
+    }
+
+    public Task<bool> EsVendedorDelTenantAsync(int vendedorId, int tenantId)
+    {
+        return _db.Usuarios.AsNoTracking()
+            .AnyAsync(u => u.Id == vendedorId
+                && u.TenantId == tenantId
+                && u.RolExplicito == RoleNames.Vendedor);
     }
 }

@@ -95,6 +95,7 @@ export default function OportunidadesReordenPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbClients'), href: '/clients' },
@@ -106,7 +107,7 @@ export default function OportunidadesReordenPage() {
         <button
           onClick={runNow}
           disabled={running}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
           data-testid="run-now-btn"
         >
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightning className="w-4 h-4" weight="fill" />}

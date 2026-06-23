@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import { SbBilling } from '@/components/layout/DashboardIcons';
 import { useTranslations } from 'next-intl';
-import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { getApiErrorMessage } from '@/lib/api';
 import { subscriptionService } from '@/services/api/subscriptions';
 import type { TimbreBalance, TimbrePackage } from '@/types/subscription';
 import { loadStripe } from '@stripe/stripe-js';
@@ -22,7 +22,6 @@ export default function BuyTimbresPage() {
   const t = useTranslations('subscription');
   const tb = useTranslations('subscription.buyTimbres');
   const tc = useTranslations('common');
-  const { tApi } = useBackendTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [timbres, setTimbres] = useState<TimbreBalance | null>(null);
@@ -43,8 +42,8 @@ export default function BuyTimbresPage() {
       // Auto-select the most popular or first package
       const popular = pkgData.find(p => p.badge === 'mostPopular');
       setSelectedPackageId(popular?.id ?? pkgData[0]?.id ?? null);
-    } catch {
-      toast({ title: tb('errorLoadingBalance'), variant: 'destructive' });
+    } catch (err) {
+      toast({ title: tb('errorLoadingBalance'), description: getApiErrorMessage(err, tb('errorLoadingBalance')), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -59,11 +58,9 @@ export default function BuyTimbresPage() {
       const { clientSecret } = await subscriptionService.createTimbreCheckout(selectedPackageId);
       setCheckoutClientSecret(clientSecret);
     } catch (err) {
-      const message = err instanceof Error ? err.message : '';
-      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       toast({
         title: tb('errorStartingPurchase'),
-        description: apiError ? tApi(apiError) : message || undefined,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
       setPurchasing(false);
@@ -84,13 +81,15 @@ export default function BuyTimbresPage() {
   if (checkoutClientSecret) {
     return (
       <PageHeader
+        section="empresa"
+        icon={ShieldCheck}
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: t('title'), href: '/subscription' },
           { label: tb('title') },
         ]}
         title={tb('title')}
-        subtitle={selectedPkg ? `${selectedPkg.cantidad} ${tb('timbres')} — ${formatMXN(selectedPkg.precioMxn)}` : ''}
+        subtitle={selectedPkg ? `${selectedPkg.cantidad} ${tb('timbres')}: ${formatMXN(selectedPkg.precioMxn)}` : ''}
         actions={
           <Button
             variant="outline"
@@ -120,6 +119,8 @@ export default function BuyTimbresPage() {
   // ── Package selection view ──
   return (
     <PageHeader
+      section="empresa"
+      icon={ShieldCheck}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title'), href: '/subscription' },

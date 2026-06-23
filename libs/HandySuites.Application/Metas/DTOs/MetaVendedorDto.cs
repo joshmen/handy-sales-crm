@@ -14,6 +14,16 @@ public class MetaVendedorDto
     public bool Activo { get; set; }
     public DateTime CreadoEn { get; set; }
     public bool AutoRenovar { get; set; }
+
+    /// <summary>
+    /// Avance LOGRADO en el período por el vendedor según el tipo de meta:
+    /// ventas = Σ Pedido.Total, pedidos = nº de pedidos, visitas = nº de visitas realizadas.
+    /// Computado on-the-fly en la proyección (sin migración). 2026-06-19.
+    /// </summary>
+    public decimal Avance { get; set; }
+
+    /// <summary>% de avance (Avance / Monto). Sin truncar; el front clampa la barra a 100.</summary>
+    public double ProgresoPct => Monto > 0 ? (double)(Avance / Monto) * 100 : 0;
 }
 
 public record CreateMetaVendedorDto(

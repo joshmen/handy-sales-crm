@@ -66,4 +66,7 @@ public class InventarioService
 
     public Task<InventarioPaginatedResult> ObtenerPorFiltroAsync(InventarioFiltroDto filtro)
         => _repo.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+
+    public Task<InventarioResumenDto> ObtenerResumenAsync()
+        => _repo.ObtenerResumenAsync(_tenant.TenantId);
 }

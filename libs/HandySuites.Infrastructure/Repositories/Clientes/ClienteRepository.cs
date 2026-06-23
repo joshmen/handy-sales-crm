@@ -226,6 +226,7 @@ public class ClienteRepository : IClienteRepository
         var pagina = filtro.Pagina ?? 1;
         var tamanoPagina = filtro.TamanoPagina ?? 20;
 
+        var hace30d = DateTime.UtcNow.AddDays(-30);
         var items = await query
             .OrderBy(c => c.Nombre)
             .Skip((pagina - 1) * tamanoPagina)
@@ -243,7 +244,9 @@ public class ClienteRepository : IClienteRepository
                 VendedorId = c.VendedorId,
                 VendedorNombre = c.Vendedor != null ? c.Vendedor.Nombre : null,
                 Activo = c.Activo,
-                EsProspecto = c.EsProspecto
+                EsProspecto = c.EsProspecto,
+                Saldo = c.Saldo,
+                Pedidos30d = _db.Pedidos.Count(p => p.ClienteId == c.Id && p.TenantId == tenantId && p.FechaPedido >= hace30d)
             })
             .ToListAsync();
 

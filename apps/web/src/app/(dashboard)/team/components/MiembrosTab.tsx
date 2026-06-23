@@ -10,7 +10,9 @@ import type { SupervisorVendedor, SupervisorDashboard } from '@/services/api/sup
 import { deviceSessionService } from '@/services/api';
 import type { DeviceSessionDto } from '@/services/api/deviceSessions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { NameAvatar } from '@/components/ui/NameAvatar';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { Drawer } from '@/components/ui/Drawer';
 import { DataGrid, type DataGridColumn, type DataGridSort } from '@/components/ui/DataGrid';
 import {
@@ -44,8 +46,9 @@ import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { usePaginatedUsers, useCreateUser, useUpdateUser } from '@/hooks/useUsers';
+import { ListPagination } from '@/components/ui/ListPagination';
 import { roleService, Role } from '@/services/api/roleService';
-import { usersService, type UsuarioUbicacion, type User as ApiUser } from '@/services/api/users';
+import { usersService, type UsuarioUbicacion, type User as ApiUser, type UsuarioKpis } from '@/services/api/users';
 import { teamLocationService, type UltimaUbicacionVendedor, type EventoGpsDelDia } from '@/services/api/teamLocation';
 import dynamic from 'next/dynamic';
 
@@ -53,11 +56,12 @@ import dynamic from 'next/dynamic';
 const GpsActivityMap = dynamic(() => import('./GpsActivityMap'), { ssr: false, loading: () => (
   <div className="flex items-center justify-center h-96 bg-surface-3 rounded-lg text-sm text-muted-foreground">Cargando mapa...</div>
 )});
-import { zoneService } from '@/services/api/zones';
 import { UserRole, UserStatus, type User } from '@/types/users';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { SearchBar } from '@/components/common/SearchBar';
 import { GoogleMapWrapper, type MapMarker } from '@/components/maps/GoogleMapWrapper';
 import Papa from 'papaparse';
+import { downloadBlob } from '@/lib/download';
 
 // ============ KPI Helpers (Supervisor view) ============
 
@@ -171,6 +175,7 @@ function SupervisorView() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [assignLoading, setAssignLoading] = useState(false);
   const [confirmDesasignar, setConfirmDesasignar] = useState<{ id: number; nombre: string } | null>(null);
+  const [page, setPage] = useState(1);
 
   const role = (session?.user as { role?: string })?.role;
   const userId = (session?.user as { id?: string })?.id;
@@ -178,6 +183,17 @@ function SupervisorView() {
 
   // Filter out the current user -- admin should not see themselves in "Mi Equipo"
   const filteredVendedores = vendedores.filter(v => String(v.id) !== userId);
+
+  // Paginacion cliente: 10 por pagina sobre la lista filtrada.
+  const PAGE_SIZE = 10;
+  const totalItems = filteredVendedores.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const pageVendedores = filteredVendedores.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset a pagina 1 cuando cambia el tamano de la lista (refetch, asignar, desasignar).
+  useEffect(() => {
+    setPage(1);
+  }, [totalItems]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -266,7 +282,7 @@ function SupervisorView() {
       {/* Actions row */}
       <div className="flex justify-end gap-2">
         <Button
-          variant="outline"
+          variant="wbOutline"
           onClick={loadData}
           className="gap-1.5"
         >
@@ -275,8 +291,9 @@ function SupervisorView() {
         </Button>
         {isAdmin && (
           <Button
+            variant="wbPrimary"
             onClick={handleOpenAsignar}
-            className="gap-1.5 bg-success hover:bg-success/90 text-white"
+            className="gap-1.5"
           >
             <UserPlus className="h-4 w-4" />
             {t("assignSellers")}
@@ -343,7 +360,7 @@ function SupervisorView() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {filteredVendedores.map(v => (
+            {pageVendedores.map(v => (
               <div key={v.id} className="px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
@@ -381,6 +398,18 @@ function SupervisorView() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-border">
+            <ListPagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </div>
@@ -494,7 +523,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   const router = useRouter();
   const showApiError = useApiErrorToast();
   const presenceLabels: PresenceLabels = { online: t('online'), agoMinutes: (min: number) => t('supervisor.minutesAgo', { min }), disconnected: t('supervisor.disconnected') };
-  const { formatDate } = useFormatters();
+  const { formatDate, formatCurrency } = useFormatters();
   const {
     users: apiUsers,
     totalCount,
@@ -504,7 +533,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     isLoading,
     loadUsers,
     goToPage,
-  } = usePaginatedUsers();
+  } = usePaginatedUsers(1, 500); // Equipos PYME: carga todo el roster para KPIs + tabs + búsqueda client-side
 
   const { data: session } = useSession();
   const createUserMutation = useCreateUser();
@@ -512,14 +541,32 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   const [roles, setRoles] = useState<Role[]>([]);
-  const [zones, setZones] = useState<{ id: string; name: string }[]>([]);
-  const [filterZona, setFilterZona] = useState('all');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterSession, setFilterSession] = useState('all');
+  // Filtro principal por rol/presencia (tabs) + búsqueda controlada (fiel al diseño Equipo).
+  const [filterTab, setFilterTab] = useState<'all' | 'sup' | 'vend' | 'alm' | 'online'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  // KPIs del miembro para el drawer de perfil (ventas del mes, pedidos, ruta/zona, clientes).
+  const [memberKpis, setMemberKpis] = useState<UsuarioKpis | null>(null);
+  const [kpisLoading, setKpisLoading] = useState(false);
+
+  // Abre el drawer de perfil/edición de un miembro y carga sus KPIs.
+  const openProfileDrawer = useCallback((user: User) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+    setMemberKpis(null);
+    setKpisLoading(true);
+    usersService.getKpis(parseInt(user.id))
+      .then(res => { if (res.success && res.data) setMemberKpis(res.data); })
+      .finally(() => setKpisLoading(false));
+  }, []);
+
+  const closeProfileDrawer = useCallback(() => {
+    setIsEditModalOpen(false);
+    setSelectedUser(null);
+    setMemberKpis(null);
+  }, []);
 
   // B4: Location modal
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -556,7 +603,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     sinEmail: false, // 2026-05-04: vendedor de campo MX sin email corporativo
   });
 
-  // Load roles and zones
+  // Load roles
   useEffect(() => {
     const loadRoles = async () => {
       try {
@@ -566,16 +613,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         console.error('Error loading roles:', error);
       }
     };
-    const loadZones = async () => {
-      try {
-        const { zones: zonesData } = await zoneService.getZones({ limit: 100 });
-        setZones(zonesData.map(z => ({ id: z.id, name: z.name })));
-      } catch (error) {
-        console.error('Error loading zones:', error);
-      }
-    };
     loadRoles();
-    loadZones();
   }, []);
 
   // Convert API users to display format
@@ -592,24 +630,24 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         createdAt: new Date(apiUser.creadoEn || Date.now()),
         updatedAt: new Date(apiUser.actualizadoEn || Date.now()),
         lastLogin: apiUser.lastActivity ? new Date(apiUser.lastActivity) : apiUser.ultimoAcceso ? new Date(apiUser.ultimoAcceso) : undefined,
+        lastActivity: apiUser.lastActivity || apiUser.ultimoAcceso || undefined,
+        isOnline: apiUser.isOnline,
+        activeSessionCount: apiUser.activeSessionCount,
       }))
     : [];
 
   // Local sorting
   const sortedUsers = useMemo(() => {
-    let filtered = filterStatus === 'all'
-      ? displayUsers
-      : displayUsers.filter(u => u.status === filterStatus);
-    if (filterSession !== 'all') {
-      const apiMap = new Map(apiUsers.map((u: ApiUser) => [String(u.id), u]));
-      filtered = filtered.filter(u => {
-        const api = apiMap.get(u.id);
-        if (!api) return false;
-        if (filterSession === 'online') return api.isOnline;
-        if (filterSession === 'with_session') return (api.activeSessionCount || 0) > 0;
-        if (filterSession === 'no_session') return (api.activeSessionCount || 0) === 0;
-        return true;
-      });
+    let filtered = displayUsers;
+    // Tabs por rol / presencia
+    if (filterTab === 'sup') filtered = filtered.filter(u => u.role === UserRole.SUPERVISOR);
+    else if (filterTab === 'vend') filtered = filtered.filter(u => u.role === UserRole.VENDEDOR);
+    else if (filterTab === 'alm') filtered = filtered.filter(u => u.role === UserRole.ALMACENISTA);
+    else if (filterTab === 'online') filtered = filtered.filter(u => u.isOnline);
+    // Búsqueda por nombre o email
+    const q = searchTerm.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
     }
     const sorted = [...filtered];
     sorted.sort((a, b) => {
@@ -633,7 +671,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [displayUsers, apiUsers, sortKey, sortDir, filterStatus, filterSession]);
+  }, [displayUsers, sortKey, sortDir, filterTab, searchTerm]);
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
@@ -643,6 +681,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         return 'bg-blue-100 text-blue-600';
       case UserRole.SUPERVISOR:
         return 'bg-green-100 text-green-600';
+      case UserRole.ALMACENISTA:
+        return 'bg-amber-100 text-amber-600';
       default:
         return 'bg-surface-3 text-foreground/70';
     }
@@ -658,6 +698,8 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         return t('roleSupervisor');
       case UserRole.VENDEDOR:
         return t('roleVendedor');
+      case UserRole.ALMACENISTA:
+        return t('roleAlmacenista');
       default:
         return t('roleViewer');
     }
@@ -763,7 +805,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
 
   const batch = useBatchOperations({
     visibleIds,
-    clearDeps: [currentPage, filterZona, filterRole],
+    clearDeps: [currentPage, filterTab, searchTerm],
   });
 
   const handleBatchToggle = async () => {
@@ -903,14 +945,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
 
     const csv = Papa.unparse(csvData);
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `usuarios_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `usuarios_${new Date().toISOString().slice(0, 10)}.csv`);
     toast.success(t('csvDownloaded'));
   };
 
@@ -996,19 +1031,9 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     </span>
   );
 
-  const renderStatusBadge = (user: User) => (
-    <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
-      user.status === UserStatus.ACTIVE
-        ? 'bg-primary/10 text-primary'
-        : 'bg-surface-3 text-muted-foreground'
-    }`}>
-      {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
-    </span>
-  );
-
   const renderLastActivity = (user: User) => (
-    <span className="text-xs text-muted-foreground">
-      {user.lastLogin ? formatDate(user.lastLogin) : t('noActivity')}
+    <span className={`text-xs ${user.isOnline ? 'text-foreground/70' : 'text-muted-foreground/60'}`}>
+      {user.lastActivity ? formatTimeAgo(user.lastActivity) : t('noActivity')}
     </span>
   );
 
@@ -1022,9 +1047,9 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       <button
         onClick={(e) => {
           e.stopPropagation();
-          // Navega a la página dedicada en lugar de abrir el drawer.
+          // Navega a la pantalla master-detail con el vendedor preseleccionado.
           // El drawer queda como fallback si la URL viene con ?openDrawer=1.
-          router.push(`/team/${user.id}/gps`);
+          router.push(`/team/gps?v=${user.id}`);
         }}
         className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
         title={`${ub.fuente} · ${ub.clienteNombre ?? ''}`}
@@ -1058,8 +1083,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
     <button
       onClick={(e) => {
         e.stopPropagation();
-        setSelectedUser(user);
-        setIsEditModalOpen(true);
+        openProfileDrawer(user);
       }}
       aria-label={`Editar ${user.name}`}
       title={`Editar ${user.name}`}
@@ -1077,18 +1101,23 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       sortable: true,
       cellRenderer: (user) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center text-sm font-semibold text-foreground/70">
-            {user.name[0]?.toUpperCase()}
-          </div>
+          <span className="relative inline-flex flex-shrink-0">
+            <NameAvatar name={user.name} size={36} />
+            <span className={`absolute -bottom-px -right-px w-[11px] h-[11px] rounded-full border-2 border-card ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
+          </span>
           <div>
-            <p className="text-[13px] font-medium text-foreground">{user.name}</p>
+            <p className="text-[13px] font-medium text-foreground flex items-center gap-1.5">
+              {user.name}
+              {user.status === UserStatus.INACTIVE && (
+                <span className="px-1.5 py-px text-[10px] font-medium rounded bg-surface-3 text-muted-foreground">{t('statusInactive')}</span>
+              )}
+            </p>
             <p className="text-[11px] text-muted-foreground">{user.email}</p>
           </div>
         </div>
       ),
     },
     { key: 'role', label: t('columnRole'), width: 120, sortable: true, cellRenderer: renderRolBadge },
-    { key: 'status', label: t('columnStatus'), width: 100, cellRenderer: renderStatusBadge },
     { key: 'lastLogin', label: t('columnLastActivity'), width: 150, sortable: true, hiddenOnMobile: true, cellRenderer: renderLastActivity },
     { key: 'gpsActivity', label: t('gpsActivity.lastGpsActivity'), width: 170, hiddenOnMobile: true, cellRenderer: renderGpsActivity },
     { key: 'sesiones', label: t('columnSessions'), width: 90, align: 'center', hiddenOnMobile: true, cellRenderer: renderSesionCount },
@@ -1115,9 +1144,10 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
           {batch.selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
         </button>
 
-        <div className="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center text-foreground/70 font-medium text-sm flex-shrink-0">
-          {getInitials(user.name)}
-        </div>
+        <span className="relative inline-flex flex-shrink-0">
+          <NameAvatar name={user.name} size={40} />
+          <span className={`absolute -bottom-px -right-px w-[11px] h-[11px] rounded-full border-2 border-card ${user.isOnline ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
+        </span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-foreground">{user.name}</div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -1147,8 +1177,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedUser(user);
-            setIsEditModalOpen(true);
+            openProfileDrawer(user);
           }}
           className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-muted/50 transition-colors flex-shrink-0"
         >
@@ -1161,94 +1190,68 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
   return (
     <>
       <div className="space-y-4">
+        {/* Count subtitle */}
+        <p className="text-[13px] text-muted-foreground">
+          {t('membersCountSubtitle', { count: totalCount, online: displayUsers.filter(u => u.isOnline).length })}
+        </p>
+
         {/* KPI Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('totalUsers')}</p>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('kpiMembers')}</p>
             <p className="text-2xl font-bold text-foreground mt-1">{totalCount}</p>
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeUsers')}</p>
-            <p className="text-2xl font-bold text-primary mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" />{t('kpiOnline')}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{displayUsers.filter(u => u.isOnline).length}</p>
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('onlineUsers')}</p>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: ApiUser) => u.isOnline).length}</p>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" />{t('kpiVendedores')}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{displayUsers.filter(u => u.role === UserRole.VENDEDOR).length}</p>
           </div>
           <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeSessions')}</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: ApiUser) => sum + (u.activeSessionCount || 0), 0)}</p>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" />{t('kpiSupervisores')}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{displayUsers.filter(u => u.role === UserRole.SUPERVISOR).length}</p>
+          </div>
+          <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" />{t('kpiAlmacen')}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{displayUsers.filter(u => u.role === UserRole.ALMACENISTA).length}</p>
           </div>
         </div>
 
-        {/* Filter Row */}
-        <div className="flex items-center gap-3">
-          {/* Zona Filter */}
-          <div className="min-w-[150px]">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('allZones') },
-                ...zones.map(z => ({ value: z.id, label: z.name })),
+        {/* Filter Row: role tabs + search */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Role tabs */}
+          <div data-tour="users-role-filter" className="min-w-0">
+            <TabBar
+              items={[
+                { id: 'all', label: t('tabAll') },
+                { id: 'sup', label: t('tabSupervisors') },
+                { id: 'vend', label: t('tabVendedores') },
+                { id: 'alm', label: t('tabAlmacen') },
+                { id: 'online', label: t('tabOnline') },
               ]}
-              value={filterZona}
-              onChange={(val) => setFilterZona(val ? String(val) : 'all')}
-              placeholder={t('allZones')}
+              value={filterTab}
+              onChange={(id) => setFilterTab(id as 'all' | 'sup' | 'vend' | 'alm' | 'online')}
             />
           </div>
 
-          {/* Roles Filter */}
-          <div className="flex-1 min-w-[200px]" data-tour="users-role-filter">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('allRoles') },
-                ...roles.map(r => ({ value: r.nombre, label: r.nombre })),
-              ]}
-              value={filterRole}
-              onChange={(val) => setFilterRole(val ? String(val) : 'all')}
-              placeholder={t('allRoles')}
-            />
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex-1 min-w-[160px]">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('allStatuses') },
-                { value: UserStatus.ACTIVE, label: t('statusActive') },
-                { value: UserStatus.INACTIVE, label: t('statusInactive') },
-              ]}
-              value={filterStatus}
-              onChange={(val) => setFilterStatus(val ? String(val) : 'all')}
-              placeholder={t('allStatuses')}
-            />
-          </div>
-
-          {/* Session Filter */}
-          <div className="flex-1 min-w-[170px]">
-            <SearchableSelect
-              options={[
-                { value: 'all', label: t('allSessions') },
-                { value: 'online', label: t('online') },
-                { value: 'with_session', label: t('withSession') },
-                { value: 'no_session', label: t('noSession') },
-              ]}
-              value={filterSession}
-              onChange={(val) => setFilterSession(val ? String(val) : 'all')}
-              placeholder={t('allSessions')}
-            />
-          </div>
+          {/* Search */}
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('searchMember')}
+            className="w-56 ml-auto"
+          />
 
           {/* Refresh */}
-          <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-          >
+          <Button variant="wbOutline" onClick={handleRefresh} className="gap-2">
             <RefreshCw className="w-4 h-4" />
             <span>{t('refresh')}</span>
-          </button>
+          </Button>
 
           {/* Secondary tools */}
-          <div className="flex items-center gap-1 ml-auto border-l border-border-subtle pl-3">
+          <div className="flex items-center gap-1 border-l border-border-subtle pl-3">
             <button
               onClick={handleOpenUbicaciones}
               title={t('location')}
@@ -1304,7 +1307,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
             },
             onClearAll: batch.handleClearSelection,
           }}
-          onRowClick={(user) => handleOpenSessionsDrawer(user)}
+          onRowClick={openProfileDrawer}
           loading={isLoading}
           loadingMessage={t('loadingUsers')}
           emptyIcon={<Users className="w-12 h-12" />}
@@ -1618,7 +1621,7 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
                       const caller = (session?.user?.role || '').toUpperCase();
                       if (caller === 'SUPER_ADMIN') return true;
                       if (caller === 'ADMIN') {
-                        return target === 'SUPERVISOR' || target === 'VIEWER' || target === 'VENDEDOR';
+                        return target === 'SUPERVISOR' || target === 'VIEWER' || target === 'VENDEDOR' || target === 'ALMACENISTA';
                       }
                       if (caller === 'SUPERVISOR') {
                         return target === 'VENDEDOR' || target === 'VIEWER';
@@ -1668,11 +1671,11 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       {/* Edit User Drawer */}
       <Drawer
         isOpen={isEditModalOpen && !!selectedUser}
-        onClose={() => { setIsEditModalOpen(false); setSelectedUser(null); }}
+        onClose={closeProfileDrawer}
         title={t("editUserTitle")}
         footer={
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => { setIsEditModalOpen(false); setSelectedUser(null); }}>
+            <Button variant="outline" onClick={closeProfileDrawer}>
               {t('cancel')}
             </Button>
             <Button variant="success" onClick={handleUpdateUser}>
@@ -1683,6 +1686,29 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
       >
         {selectedUser && (
           <div className="p-6 space-y-4">
+            {/* KPIs del miembro (ventas del mes, pedidos, ruta/zona, clientes asignados) */}
+            <div className="rounded-xl border border-border bg-surface-1 p-4">
+              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">{t('kpis.salesMonth')}</p>
+                  <p className="text-base font-bold text-foreground tabular-nums">{kpisLoading ? '…' : memberKpis ? formatCurrency(memberKpis.ventasMes) : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">{t('kpis.ordersMonth')}</p>
+                  <p className="text-base font-bold text-foreground tabular-nums">{kpisLoading ? '…' : memberKpis ? memberKpis.pedidosMes : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">{t('kpis.route')}</p>
+                  <p className="text-[13px] font-medium text-foreground truncate">
+                    {kpisLoading ? '…' : (memberKpis?.rutaNombre || '—')}{memberKpis?.zonaNombre ? ` · ${memberKpis.zonaNombre}` : ''}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">{t('kpis.clients')}</p>
+                  <p className="text-base font-bold text-foreground tabular-nums">{kpisLoading ? '…' : memberKpis ? memberKpis.clientesAsignados : '—'}</p>
+                </div>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-foreground/80 mb-1">{t("fullName")}</label>
               <input

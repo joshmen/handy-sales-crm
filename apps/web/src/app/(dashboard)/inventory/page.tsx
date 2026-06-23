@@ -6,18 +6,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { InventoryItem } from '@/types/inventory';
-import { inventoryService, UpdateInventoryRequest } from '@/services/api/inventory';
+import { inventoryService, UpdateInventoryRequest, InventorySummary } from '@/services/api/inventory';
 import { productService } from '@/services/api/products';
 import { inventoryMovementService, InventoryMovement } from '@/services/api/inventoryMovements';
 import { Product } from '@/types';
 import { toast } from '@/hooks/useToast';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
+import { SoftBadge, type SoftBadgeTone } from '@/components/ui/SoftBadge';
 import {
   Download,
   Plus,
@@ -26,6 +28,7 @@ import {
   Upload,
   Warehouse,
   Package,
+  Layers,
   RefreshCw,
   ChevronDown,
   Loader2,
@@ -88,16 +91,13 @@ type ActiveTab = 'almacen' | 'movimientos';
 export default function InventoryPage() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
 
-  const ALERTA_LABELS: Record<AlertaInventario, string> = {
-    stock_bajo: t('warehouse.lowStock'),
-    critico: t('warehouse.inZero'),
-  };
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { formatDate } = useFormatters();
+  const { formatDate, formatCurrency } = useFormatters();
 
   // ─── Tab state ─────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -108,6 +108,7 @@ export default function InventoryPage() {
   // ─── Almacén state ─────────────────────────────────────────────────
   const drawerRef = useRef<DrawerHandle>(null);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [summary, setSummary] = useState<InventorySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -197,6 +198,8 @@ export default function InventoryPage() {
       setInventoryItems(items);
       setTotalItems(alertFilter === 'critico' ? items.length : response.total);
       setTotalPages(alertFilter ? 1 : response.totalPages);
+      // KPIs catalog-wide (no por página) — agregado del backend.
+      inventoryService.getInventorySummary().then(setSummary).catch(() => { /* KPIs no críticos */ });
     } catch (err) {
       console.error('Error al cargar inventario:', err);
       setError(t('errorLoadingRetry'));
@@ -371,9 +374,12 @@ export default function InventoryPage() {
     return item.minStock > 0 && item.warehouseQuantity <= item.minStock;
   };
 
-  // KPIs derivados de la página cargada (data REAL del response actual).
-  const lowStockCount = inventoryItems.filter(isLowStock).length;
-  const zeroStockCount = inventoryItems.filter(i => i.warehouseQuantity <= 0).length;
+  // Estado del item: Crítico (agotado) / Bajo (<= mínimo) / OK. Espejo del badge del mockup.
+  const getEstado = (item: InventoryItem): { label: string; tone: SoftBadgeTone } => {
+    if (item.warehouseQuantity <= 0) return { label: t('status.critical'), tone: 'danger' };
+    if (item.minStock > 0 && item.warehouseQuantity <= item.minStock) return { label: t('status.low'), tone: 'warning' };
+    return { label: t('status.ok'), tone: 'success' };
+  };
 
   // ─── Movimientos: fetch ────────────────────────────────────────────
   const fetchMovements = useCallback(async () => {
@@ -596,7 +602,7 @@ export default function InventoryPage() {
       <div className="relative" data-tour="inventory-import-export">
         <button
           onClick={() => setShowDataMenu(!showDataMenu)}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
         >
           <Download className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -624,14 +630,10 @@ export default function InventoryPage() {
           </>
         )}
       </div>
-      <button
-        data-tour="inventory-add-btn"
-        onClick={handleOpenCreate}
-        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-      >
-        <Plus className="w-4 h-4" />
+      <Button variant="wbPrimary" data-tour="inventory-add-btn" onClick={handleOpenCreate}>
+        <Plus className="w-4 h-4 mr-2" />
         <span>{t('warehouse.newProduct')}</span>
-      </button>
+      </Button>
     </>
   );
 
@@ -640,29 +642,31 @@ export default function InventoryPage() {
       <button
         data-tour="movements-export-btn"
         onClick={() => exportToCsv('inventario')}
-        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
       >
         <Download className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="hidden sm:inline">{tc('exportCsv')}</span>
       </button>
-      <button
+      <Button
+        variant="wbPrimary"
         data-tour="movements-new-btn"
         onClick={() => {
           movResetForm({ productoId: 0, tipoMovimiento: 'ENTRADA', cantidad: 0, motivo: '', comentario: '' });
           setShowMovModal(true);
         }}
-        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
       >
-        <Plus className="w-4 h-4" />
+        <Plus className="w-4 h-4 mr-2" />
         <span>{t('movements.newMovement')}</span>
-      </button>
+      </Button>
     </div>
   );
 
   return (
     <PageHeader
+      section="operacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionOperations') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -674,27 +678,15 @@ export default function InventoryPage() {
       actionsKey={activeTab}
     >
       <div className="space-y-4">
-        {/* Tabs (segmentado azul) */}
-        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1 w-fit">
-          <button
-            onClick={() => setActiveTab('almacen')}
-            aria-pressed={activeTab === 'almacen'}
-            className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-              activeTab === 'almacen' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t('tabs.warehouse')}
-          </button>
-          <button
-            onClick={() => setActiveTab('movimientos')}
-            aria-pressed={activeTab === 'movimientos'}
-            className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-              activeTab === 'movimientos' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t('tabs.movements')}
-          </button>
-        </div>
+        {/* Tabs de vista (TabBar subrayado, teal operación) */}
+        <TabBar
+          items={[
+            { id: 'almacen', label: t('tabs.warehouse') },
+            { id: 'movimientos', label: t('tabs.movements') },
+          ]}
+          value={activeTab}
+          onChange={(id) => setActiveTab(id as typeof activeTab)}
+        />
 
         {/* ═══════════════ ALMACÉN TAB ═══════════════ */}
         {activeTab === 'almacen' && (
@@ -708,41 +700,44 @@ export default function InventoryPage() {
                 dataTour="inventory-search"
               />
 
-              {alertFilter && (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${
-                  alertFilter === 'critico'
-                    ? 'bg-red-100 text-red-700'
-                    : 'bg-amber-100 text-amber-700'
-                }`}>
-                  <AlertTriangle className="w-3 h-3" />
-                  {ALERTA_LABELS[alertFilter]}
-                  <button
-                    onClick={() => { setAlertFilter(null); router.push('/inventory'); }}
-                    className="ml-0.5 hover:opacity-70"
-                    aria-label={t('removeFilter')}
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
+              {/* Chips de filtro rápido — surfacea el alertFilter (Todos / Stock bajo / Agotados). */}
+              <div className="inline-flex items-center gap-0.5 rounded-lg border border-border-subtle bg-surface-1 p-0.5">
+                {([
+                  { v: null, label: tc('all') },
+                  { v: 'stock_bajo' as AlertaInventario, label: t('warehouse.lowStock') },
+                  { v: 'critico' as AlertaInventario, label: t('warehouse.inZero') },
+                ]).map(({ v, label }) => {
+                  const active = alertFilter === v;
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => { setAlertFilter(v); setCurrentPage(1); router.push(v ? `/inventory?alerta=${v}` : '/inventory'); }}
+                      aria-pressed={active}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
 
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
             </div>
 
-            {/* KPI Row — tarjetas (data real de la página cargada) */}
+            {/* KPI Row — agregados catalog-wide (endpoint /inventario/resumen). Tonos del mockup. */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               {[
-                { title: t('kpis.productsOnPage'), value: String(inventoryItems.length), hint: t('kpis.thisPage'), icon: Package },
-                { title: t('kpis.totalInventory'), value: String(totalItems), hint: t('kpis.allRecords'), icon: Warehouse },
-                { title: t('kpis.lowStock'), value: String(lowStockCount), hint: t('kpis.thisPage'), icon: AlertTriangle },
-                { title: t('kpis.zeroStock'), value: String(zeroStockCount), hint: t('kpis.thisPage'), icon: ArrowDownToLine },
+                { title: t('kpis.inventoryValue'), value: formatCurrency(summary?.valorInventario ?? 0), icon: Layers, valueClass: 'text-primary' },
+                { title: t('kpis.activeSkus'), value: String(summary?.skusActivos ?? 0), icon: Package, valueClass: 'text-foreground' },
+                { title: t('kpis.lowStock'), value: String(summary?.stockBajo ?? 0), icon: AlertTriangle, valueClass: 'text-amber-600' },
+                { title: t('kpis.outOfStock'), value: String(summary?.agotados ?? 0), icon: ArrowDownToLine, valueClass: 'text-red-600' },
               ].map((card) => {
                 const Icon = card.icon;
                 return (
@@ -754,10 +749,9 @@ export default function InventoryPage() {
                       <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
                       <Icon className="w-5 h-5 text-muted-foreground/40" />
                     </div>
-                    <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                    <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${card.valueClass} ${loading && !summary ? 'animate-pulse' : ''}`}>
                       {card.value}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
                   </div>
                 );
               })}
@@ -786,18 +780,15 @@ export default function InventoryPage() {
                       </div>
                     );
                   }},
-                  { key: 'unit', label: t('columns.unit'), width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-foreground/80">{item.product?.unit || 'PZA'}</span> },
-                  { key: 'totalQuantity', label: t('columns.stock'), width: 120, align: 'center', sortable: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.stockHeader')} <HelpTooltip tooltipKey="total-quantity" /></span>, cellRenderer: (item) => {
-                    const lowStock = isLowStock(item);
-                    return (
-                      <span>
-                        <span className={`text-[13px] font-medium ${lowStock ? 'text-red-600' : 'text-foreground/80'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>
-                        {lowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline-block ml-1" />}
-                      </span>
-                    );
+                  { key: 'minStock', label: t('columns.minStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">{t('columns.minStock')} <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground tabular-nums">{item.minStock || '-'}</span> },
+                  { key: 'totalQuantity', label: t('columns.stock'), width: 120, align: 'center', sortable: true, cellRenderer: (item) => {
+                    const e = getEstado(item);
+                    return <span className={`text-[13px] font-bold tabular-nums ${e.tone === 'danger' ? 'text-red-600' : e.tone === 'warning' ? 'text-amber-600' : 'text-foreground'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>;
                   }},
-                  { key: 'minStock', label: t('columns.minStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">{t('columns.minStock')} <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground">{item.minStock || '-'}</span> },
-                  { key: 'maxStock', label: t('columns.maxStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.maxStock')} <HelpTooltip tooltipKey="max-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground">{item.maxStock || '-'}</span> },
+                  { key: 'estado', label: t('columns.status'), width: 110, align: 'center', cellRenderer: (item) => {
+                    const e = getEstado(item);
+                    return <SoftBadge tone={e.tone}>{e.label}</SoftBadge>;
+                  }},
                   { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" weight="bold" /> },
                 ] as DataGridColumn<InventoryItem>[]}
                 data={inventoryItems}
@@ -889,7 +880,7 @@ export default function InventoryPage() {
               <button
                 onClick={handleMovRefresh}
                 disabled={movLoading}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${movLoading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{tc('refresh')}</span>

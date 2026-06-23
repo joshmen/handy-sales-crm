@@ -173,6 +173,7 @@ export default function TaxRatesPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: tn('sectionCatalog'), href: '/products' },
@@ -183,7 +184,7 @@ export default function TaxRatesPage() {
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{t('newRate')}</span>
@@ -199,7 +200,7 @@ export default function TaxRatesPage() {
           />
           <button
             onClick={loadTasas}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('refresh')}</span>

@@ -38,13 +38,14 @@ INSERT INTO timbre_packages (nombre, cantidad, precio_mxn, precio_unitario, stri
 ('Paquete 100', 100, 150.00, 1.50, NULL, 'bestValue', true, 3)
 ON CONFLICT DO NOTHING;
 
--- Roles (5)
+-- Roles (6)
 INSERT INTO roles (nombre, descripcion, created_at, updated_at, activo, creado_en, version) VALUES
 ('SUPER_ADMIN', 'Super administrador del sistema', NOW(), NOW(), true, NOW(), 1),
 ('ADMIN', 'Administrador de empresa', NOW(), NOW(), true, NOW(), 1),
 ('SUPERVISOR', 'Supervisor de vendedores', NOW(), NOW(), true, NOW(), 1),
 ('VENDEDOR', 'Vendedor de ruta', NOW(), NOW(), true, NOW(), 1),
-('VIEWER', 'Solo lectura', NOW(), NOW(), true, NOW(), 1)
+('VIEWER', 'Solo lectura', NOW(), NOW(), true, NOW(), 1),
+('ALMACENISTA', 'Encargado de almacen e inventario', NOW(), NOW(), true, NOW(), 1)
 ON CONFLICT (nombre) DO NOTHING;
 
 -- Automation Templates (11) -- global recipes, tenants activate via TenantAutomations

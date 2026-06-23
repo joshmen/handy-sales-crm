@@ -5,6 +5,7 @@ export enum UserRole {
   SUPERVISOR = 'SUPERVISOR', // Supervisor de vendedores
   VENDEDOR = 'VENDEDOR', // Vendedor/Repartidor
   VIEWER = 'VIEWER', // Solo lectura
+  ALMACENISTA = 'ALMACENISTA', // Encargado de almacén e inventario
 }
 
 // Estados de usuario
@@ -214,6 +215,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     PERMISSIONS.PRODUCT_READ,
     PERMISSIONS.ORDER_READ,
     PERMISSIONS.ROUTE_READ,
+  ],
+
+  [UserRole.ALMACENISTA]: [
+    PERMISSIONS.PRODUCT_READ,
+    PERMISSIONS.ORDER_READ,
+    PERMISSIONS.REPORT_INVENTORY,
   ],
 };
 

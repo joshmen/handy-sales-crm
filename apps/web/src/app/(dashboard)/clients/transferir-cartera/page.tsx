@@ -82,6 +82,7 @@ export default function TransferirCarteraPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbClients'), href: '/clients' },

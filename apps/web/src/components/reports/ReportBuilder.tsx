@@ -112,7 +112,7 @@ export function ReportBuilder() {
 
   const { exportPDF, exporting } = useReportExport({
     fileName: 'custom-report',
-    title: `${sourceName} — ${metricLabel}`,
+    title: `${sourceName}: ${metricLabel}`,
     chartRef: chartRef as React.RefObject<HTMLElement | null>,
     table: result && result.rows.length > 0 ? {
       headers: result.columns.map(c => c.label),
@@ -182,7 +182,35 @@ export function ReportBuilder() {
       </div>
 
       {loadingSources && <div className="flex flex-col items-center justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-primary mb-3" /><p className="text-sm text-muted-foreground">{tc('loading')}</p></div>}
-      {!loadingSources && !selectedSourceId && !result && <div className="flex flex-col items-center justify-center py-24 text-muted-foreground"><BarChart3 className="w-16 h-16 mb-4 text-muted-foreground/30" /><p className="text-sm font-medium">{t('configHint')}</p></div>}
+      {!loadingSources && !selectedSourceId && !result && (
+        <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+            <BarChart3 className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t('builderTitle')}</h3>
+          <p className="text-sm text-muted-foreground max-w-md mb-6">{t('builderSteps')}</p>
+          {sources.length > 0 && (
+            <div className="flex flex-col items-center gap-2.5">
+              <span className="text-xs font-medium text-muted-foreground">{t('builderExamples')}</span>
+              <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg">
+                {sources.slice(0, 4).map((s) => {
+                  let label = s.name;
+                  try { label = tSources(s.id); } catch { /* fallback al nombre */ }
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedSourceId(s.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-surface-1 text-[12px] font-medium text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                    >
+                      <TrendingUp className="w-3 h-3 text-primary" /> {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {!loadingSources && selectedSourceId && !result && !running && !error && <div className="flex flex-col items-center justify-center py-24 text-muted-foreground"><Play className="w-12 h-12 mb-4 text-muted-foreground/30" /><p className="text-sm font-medium">{t('configHint')}</p></div>}
       {running && <div className="flex flex-col items-center justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-primary mb-3" /><p className="text-sm text-muted-foreground">{t('running')}</p></div>}
       {error && !running && <div className="flex flex-col items-center justify-center py-24 text-muted-foreground"><AlertCircle className="w-12 h-12 mb-3 text-destructive/50" /><p className="text-sm font-medium">{error}</p><Button variant="outline" size="sm" className="mt-4" onClick={handleRun}>{tc('retry')}</Button></div>}

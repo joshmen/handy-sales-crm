@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -20,7 +21,6 @@ import { ListPagination } from '@/components/ui/ListPagination';
 import {
   Plus,
   ChevronDown,
-  RefreshCw,
   Percent,
   Pencil,
   Loader2,
@@ -39,7 +39,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
-import { useFormatters } from '@/hooks/useFormatters';
+import { SoftBadge } from '@/components/ui/SoftBadge';
 
 type TipoAplicacion = 'Global' | 'Producto';
 
@@ -61,7 +61,6 @@ export default function DiscountsPage() {
   const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
-  const { formatDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
 
   const [discounts, setDiscounts] = useState<DescuentoPorCantidadDto[]>([]);
@@ -134,11 +133,6 @@ export default function DiscountsPage() {
   useEffect(() => {
     fetchDiscounts();
   }, [fetchDiscounts]);
-
-  const handleRefresh = () => {
-    fetchDiscounts();
-    toast.success(t('refreshed'));
-  };
 
   const handleOpenCreate = (tipo: TipoAplicacion) => {
     setEditingDiscount(null);
@@ -281,76 +275,48 @@ export default function DiscountsPage() {
     return sorted;
   }, [paginatedDiscounts, sortKey, sortDir]);
 
-  // Column definitions
+  // Column definitions — espejo del DiscountsPage del mockup Claude Design:
+  // Descuento (icono % en caja verde + nombre) · Condición · Descuento (% verde negrita) · Estado (pill).
   const discountColumns = useMemo<DataGridColumn<DescuentoPorCantidadDto>[]>(() => [
+    {
+      key: 'nombre',
+      label: t('discount'),
+      width: 'flex',
+      cellRenderer: (d) => {
+        const name = d.tipoAplicacion === 'Producto' ? (d.productoNombre || t('productDiscount')) : t('globalDiscount');
+        return (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-[9px] bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400 flex items-center justify-center flex-shrink-0">
+              <Percent className="w-4 h-4" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-foreground truncate">{name}</div>
+              {d.tipoAplicacion === 'Producto' && d.productoCodigo && <div className="text-[11px] text-muted-foreground truncate">{d.productoCodigo}</div>}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'cantidadMinima',
+      label: t('condition'),
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (d) => <span className="text-[13px] text-muted-foreground">{t('fromUnits', { count: d.cantidadMinima })}</span>,
+    },
     {
       key: 'descuentoPorcentaje',
       label: t('discount'),
       sortable: true,
-      width: 'flex',
-      cellRenderer: (d) => (
-        <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <Percent className="w-4 h-4 text-primary" />
-          </span>
-          <span className="text-lg font-semibold text-foreground tabular-nums">{d.descuentoPorcentaje}%</span>
-        </div>
-      ),
-    },
-    {
-      key: 'cantidadMinima',
-      label: t('minQuantity'),
-      sortable: true,
-      width: 'flex',
-      cellRenderer: (d) => (
-        <div className="text-[13px] text-foreground">{d.cantidadMinima} {t('units')}</div>
-      ),
-    },
-    ...(activeTab === 'product' ? [{
-      key: 'producto',
-      label: t('product'),
-      width: 'flex' as const,
-      cellRenderer: (d: DescuentoPorCantidadDto) => (
-        <div>
-          <div className="text-[13px] font-medium text-foreground">{d.productoNombre || '-'}</div>
-          <div className="text-xs text-muted-foreground">{d.productoCodigo || ''}</div>
-        </div>
-      ),
-    }] : []),
-    {
-      key: 'creadoPor',
-      label: t('createdBy'),
-      width: 'flex',
-      hiddenOnMobile: true,
-      cellRenderer: (d) => (
-        <div>
-          <div className="text-[13px] font-medium text-foreground">{d.creadoPor || '-'}</div>
-          <div className="text-xs text-muted-foreground">{formatRelativeTime(d.creadoEn)}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'actualizadoPor',
-      label: t('lastModified'),
-      width: 'flex',
-      hiddenOnMobile: true,
-      cellRenderer: (d) => (
-        <div>
-          <div className="text-[13px] font-medium text-foreground">{d.actualizadoPor || d.creadoPor || '-'}</div>
-          <div className="text-xs text-muted-foreground">{formatRelativeTime(d.actualizadoEn || d.creadoEn)}</div>
-        </div>
-      ),
+      width: 110,
+      align: 'center',
+      cellRenderer: (d) => <span className="text-[13px] font-bold text-green-600 tabular-nums">−{d.descuentoPorcentaje}%</span>,
     },
     {
       key: 'activo',
-      label: tc('active'),
-      width: 60,
-      align: 'center' as const,
-      cellRenderer: (d) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ActiveToggle isActive={d.activo} onToggle={() => handleToggleActive(d)} disabled={loading} isLoading={togglingId === d.id} />
-        </div>
-      ),
+      label: t('status'),
+      width: 120,
+      cellRenderer: (d) => <SoftBadge tone={d.activo ? 'success' : 'default'}>{d.activo ? tc('active') : tc('inactive')}</SoftBadge>,
     },
     {
       key: 'actions',
@@ -372,7 +338,7 @@ export default function DiscountsPage() {
         </div>
       ),
     },
-  ] as DataGridColumn<DescuentoPorCantidadDto>[], [activeTab, loading, togglingId, deleteConfirmId]);
+  ] as DataGridColumn<DescuentoPorCantidadDto>[], [loading, deleteConfirmId, t, tc]);
 
   const visibleIds = sortedDiscounts.map(d => d.id);
   const batch = useBatchOperations({
@@ -405,21 +371,9 @@ export default function DiscountsPage() {
     }
   };
 
-  const formatRelativeTime = (dateStr: string | undefined) => {
-    if (!dateStr) return '-';
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return t('today');
-    if (days === 1) return t('dayAgo');
-    if (days < 7) return t('daysAgo', { count: days });
-    if (days < 30) return t('weeksAgo', { count: Math.floor(days / 7) });
-    return formatDate(date);
-  };
-
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: tn('sectionCatalog') },
@@ -433,7 +387,7 @@ export default function DiscountsPage() {
           <div className="relative" data-tour="discounts-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
             >
               <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -462,11 +416,11 @@ export default function DiscountsPage() {
             )}
           </div>
           <div className="relative group" data-tour="discounts-create-btn">
-            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors">
-              <Plus className="w-4 h-4" />
+            <Button variant="wbPrimary">
+              <Plus className="w-4 h-4 mr-2" />
               <span>{t('newDiscount')}</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
+              <ChevronDown className="w-3.5 h-3.5 ml-2" />
+            </Button>
             <div className="absolute right-0 top-full mt-1 w-56 bg-surface-2 border border-border-subtle rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
               <button
                 onClick={() => handleOpenCreate('Global')}
@@ -488,63 +442,39 @@ export default function DiscountsPage() {
         <div className="space-y-5">
           {/* Tabs segmentados (mecánica) + búsqueda */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="discounts-tabs">
-              {([
-                { value: 'global' as const, label: t('tabGlobal', { count: globalCount }) },
-                { value: 'product' as const, label: t('tabProduct', { count: productCount }) },
-              ]).map((opt) => {
-                const active = activeTab === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => { setActiveTab(opt.value); setCurrentPage(1); }}
-                    aria-pressed={active}
-                    className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
-                      active
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="w-full sm:w-72 lg:w-80" data-tour="discounts-search">
-              <SearchBar
-                value={searchTerm}
-                onChange={(v) => {
-                  if (activeTab === 'global') setSearchGlobal(v);
-                  else setSearchProduct(v);
-                  setCurrentPage(1);
-                }}
-                placeholder={activeTab === 'product' ? t('searchProduct') : t('searchGlobal')}
-                className="w-full"
+            <div className="min-w-0 lg:flex-1" data-tour="discounts-tabs">
+              <TabBar
+                items={[
+                  { id: 'global', label: t('tabGlobal', { count: globalCount }) },
+                  { id: 'product', label: t('tabProduct', { count: productCount }) },
+                ]}
+                value={activeTab}
+                onChange={(id) => { setActiveTab(id as 'global' | 'product'); setCurrentPage(1); }}
               />
             </div>
-          </div>
-
-          {/* Filtros secundarios + refrescar */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
-
-            <div data-tour="discounts-toggle-inactive" className="ml-auto">
-              <InactiveToggle
-                value={showInactive}
-                onChange={(v) => {
-                  if (activeTab === 'global') setShowInactiveGlobal(v);
-                  else setShowInactiveProduct(v);
-                  setCurrentPage(1);
-                }}
-              />
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div data-tour="discounts-toggle-inactive">
+                <InactiveToggle
+                  value={showInactive}
+                  onChange={(v) => {
+                    if (activeTab === 'global') setShowInactiveGlobal(v);
+                    else setShowInactiveProduct(v);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              <div className="flex-1 sm:w-72 lg:w-80" data-tour="discounts-search">
+                <SearchBar
+                  value={searchTerm}
+                  onChange={(v) => {
+                    if (activeTab === 'global') setSearchGlobal(v);
+                    else setSearchProduct(v);
+                    setCurrentPage(1);
+                  }}
+                  placeholder={activeTab === 'product' ? t('searchProduct') : t('searchGlobal')}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
 
@@ -620,8 +550,8 @@ export default function DiscountsPage() {
                 <>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-start gap-2 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <PercentIcon className="w-5 h-5 text-primary" weight="duotone" />
+                      <div className="w-10 h-10 rounded-[10px] bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400 flex items-center justify-center flex-shrink-0">
+                        <PercentIcon className="w-5 h-5" weight="duotone" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">{discount.descuentoPorcentaje}% {t('discount')}</p>

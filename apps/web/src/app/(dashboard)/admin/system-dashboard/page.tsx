@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Package,
   UserCheck,
-  Crown
+  Crown,
+  LayoutDashboard
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useChartTheme } from '@/hooks/useChartTheme';
@@ -279,7 +280,7 @@ export default function SystemDashboardPage() {
 
   if (loading) {
     return (
-      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="empresa" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
@@ -306,7 +307,7 @@ export default function SystemDashboardPage() {
 
   if (!metrics) {
     return (
-      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="empresa" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">{t('loadErrorShort')}</p>
         </div>
@@ -315,7 +316,7 @@ export default function SystemDashboardPage() {
   }
 
   return (
-    <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+    <PageHeader section="empresa" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

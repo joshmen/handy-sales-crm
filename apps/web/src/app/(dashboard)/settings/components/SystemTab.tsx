@@ -10,6 +10,7 @@ import { Trash2, Download, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lu
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTheme } from '@/stores/useUIStore';
+import { downloadBlob } from '@/lib/download';
 
 interface HealthResponse {
   status: string;
@@ -201,12 +202,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     const blob = new Blob([JSON.stringify(config, null, 2)], {
                       type: 'application/json',
                     });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `handysuites-config-${Date.now()}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    downloadBlob(blob, `handysuites-config-${Date.now()}.json`);
                     toast({
                       title: t('configExported'),
                       description: t('configExportedDesc'),

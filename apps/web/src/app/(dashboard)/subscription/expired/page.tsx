@@ -75,7 +75,7 @@ export default function SubscriptionExpiredPage() {
               <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-red-900 mb-1">
+              <h1 className="text-[22px] font-bold tracking-tight text-red-900 mb-1">
                 {te('title')}
               </h1>
               <p className="text-red-700 text-sm">

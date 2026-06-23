@@ -29,6 +29,10 @@ public static class TeamLocationEndpoints
             .WithName("GetUltimasUbicacionesEquipo")
             .WithSummary("Última ubicación GPS conocida de cada vendedor del tenant");
 
+        group.MapGet("/roster-gps", GetRosterGps)
+            .WithName("GetRosterGps")
+            .WithSummary("Roster enriquecido de vendedores: última ubicación + estado (en ruta / inactivo / sin señal) + zona + supervisor");
+
         group.MapGet("/usuarios/{id:int}/actividad-gps", GetActividadGpsDelDia)
             .WithName("GetActividadGpsDelDia")
             .WithSummary("Lista cronológica de eventos con GPS del vendedor en una fecha");
@@ -46,6 +50,48 @@ public static class TeamLocationEndpoints
 
         var tenantId = currentUser.TenantId;
 
+        var data = await BuildUltimasUbicacionesAsync(db, tenantId, ubicacionRepo, featureGuard);
+
+        var usuarioIds = data.Select(d => d.UsuarioId).ToList();
+        var usuarios = await db.Usuarios.AsNoTracking()
+            .Where(u => usuarioIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.Nombre, u.Email })
+            .ToDictionaryAsync(u => u.Id);
+
+        var clienteIds = data.Where(d => d.ClienteId.HasValue).Select(d => d.ClienteId!.Value).Distinct().ToList();
+        var clientes = await db.Clientes.AsNoTracking()
+            .Where(c => clienteIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Nombre })
+            .ToDictionaryAsync(c => c.Id);
+
+        var result = data.Select(d => new
+        {
+            usuarioId = d.UsuarioId,
+            nombre = usuarios.TryGetValue(d.UsuarioId, out var u) ? u.Nombre : "(desconocido)",
+            email = usuarios.TryGetValue(d.UsuarioId, out var u2) ? u2.Email : null,
+            ultimaActividad = d.Cuando,
+            ultimaLat = d.Lat,
+            ultimaLng = d.Lng,
+            fuente = d.Fuente,
+            clienteId = d.ClienteId,
+            clienteNombre = d.ClienteId.HasValue && clientes.TryGetValue(d.ClienteId.Value, out var c) ? c.Nombre : null,
+        }).OrderByDescending(x => x.ultimaActividad);
+
+        return Results.Ok(result);
+    }
+
+    /// <summary>
+    /// Construye la última ubicación conocida por vendedor del tenant, fusionando
+    /// las 3 fuentes legacy (visitas / paradas de ruta / pedidos) con los pings de
+    /// UbicacionVendedor (Fase B, solo si el plan tiene la feature `tracking_vendedor`).
+    /// Compartido entre `/ubicaciones-recientes` y `/roster-gps`.
+    /// </summary>
+    private static async Task<List<RawActivity>> BuildUltimasUbicacionesAsync(
+        HandySuitesDbContext db,
+        int tenantId,
+        IUbicacionVendedorRepository ubicacionRepo,
+        ISubscriptionFeatureGuard featureGuard)
+    {
         // Si el plan incluye tracking_vendedor, los pings de UbicacionesVendedor
         // son la fuente PRIMARIA — más frecuentes y confiables que los 3 legacy.
         // Aún así fusionamos con las 3 fuentes legacy por si el plan se activó
@@ -129,32 +175,144 @@ public static class TeamLocationEndpoints
                     0);
             }
         }
-        var data = byUsuario.Values.ToList();
+        return byUsuario.Values.ToList();
+    }
 
-        var usuarioIds = data.Select(d => d.UsuarioId).ToList();
-        var usuarios = await db.Usuarios.AsNoTracking()
-            .Where(u => usuarioIds.Contains(u.Id))
-            .Select(u => new { u.Id, u.Nombre, u.Email })
-            .ToDictionaryAsync(u => u.Id);
+    /// <summary>
+    /// Roster enriquecido para la pantalla "Histórico GPS" (master-detail). Por
+    /// cada vendedor del tenant: última ubicación conocida + estado derivado
+    /// (en ruta / inactivo / sin señal) + zona(s) de su ruta de hoy + supervisor.
+    /// </summary>
+    private static async Task<IResult> GetRosterGps(
+        [FromServices] HandySuitesDbContext db,
+        [FromServices] ICurrentTenant currentUser,
+        [FromServices] IUbicacionVendedorRepository ubicacionRepo,
+        [FromServices] ISubscriptionFeatureGuard featureGuard,
+        [FromServices] ITenantTimeZoneService tenantTz)
+    {
+        var role = currentUser.Role;
+        if (role != RoleNames.Admin && role != RoleNames.Supervisor && role != RoleNames.SuperAdmin)
+            return Results.Forbid();
 
-        var clienteIds = data.Where(d => d.ClienteId.HasValue).Select(d => d.ClienteId!.Value).Distinct().ToList();
-        var clientes = await db.Clientes.AsNoTracking()
-            .Where(c => clienteIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.Nombre })
-            .ToDictionaryAsync(c => c.Id);
+        var tenantId = currentUser.TenantId;
 
-        var result = data.Select(d => new
+        // Vendedores del tenant (activos, no eliminados vía query filter).
+        var vendedores = await db.Usuarios.AsNoTracking()
+            .Where(u => u.TenantId == tenantId && u.RolExplicito == RoleNames.Vendedor && u.Activo)
+            .Select(u => new { u.Id, u.Nombre, u.Email, u.AvatarUrl, u.SupervisorId })
+            .ToListAsync();
+
+        if (vendedores.Count == 0)
+            return Results.Ok(Array.Empty<object>());
+
+        var vendedorIds = vendedores.Select(v => v.Id).ToList();
+
+        // Nombre del supervisor (self-ref Usuario.SupervisorId).
+        var supervisorIds = vendedores.Where(v => v.SupervisorId.HasValue)
+            .Select(v => v.SupervisorId!.Value).Distinct().ToList();
+        var supervisores = supervisorIds.Count == 0
+            ? new Dictionary<int, string>()
+            : await db.Usuarios.AsNoTracking()
+                .Where(u => supervisorIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.Nombre);
+
+        // Rutas EN PROGRESO de hoy (día en TZ del tenant) → marca "en ruta" + zonas.
+        var hoyTenant = await tenantTz.GetTenantTodayAsync();
+        var (hoyInicioUtc, hoyFinUtc) = await tenantTz.GetTenantDayWindowUtcAsync(hoyTenant);
+
+        var rutasHoy = await db.Set<RutaVendedor>().AsNoTracking()
+            .Where(r => r.TenantId == tenantId
+                        && r.UsuarioId != null && vendedorIds.Contains(r.UsuarioId.Value)
+                        && r.Activo && !r.EsTemplate
+                        && r.Estado == EstadoRuta.EnProgreso
+                        && r.Fecha >= hoyInicioUtc && r.Fecha < hoyFinUtc)
+            .Select(r => new { r.Id, UsuarioId = r.UsuarioId!.Value })
+            .ToListAsync();
+
+        var rutaToUsuario = rutasHoy.ToDictionary(r => r.Id, r => r.UsuarioId);
+        var usuariosConRutaHoy = rutasHoy.Select(r => r.UsuarioId).ToHashSet();
+
+        // Zonas de esas rutas (junction multi-zona RutasZonas).
+        var rutaIds = rutasHoy.Select(r => r.Id).ToList();
+        var zonasPorUsuario = new Dictionary<int, List<string>>();
+        if (rutaIds.Count > 0)
         {
-            usuarioId = d.UsuarioId,
-            nombre = usuarios.TryGetValue(d.UsuarioId, out var u) ? u.Nombre : "(desconocido)",
-            email = usuarios.TryGetValue(d.UsuarioId, out var u2) ? u2.Email : null,
-            ultimaActividad = d.Cuando,
-            ultimaLat = d.Lat,
-            ultimaLng = d.Lng,
-            fuente = d.Fuente,
-            clienteId = d.ClienteId,
-            clienteNombre = d.ClienteId.HasValue && clientes.TryGetValue(d.ClienteId.Value, out var c) ? c.Nombre : null,
-        }).OrderByDescending(x => x.ultimaActividad);
+            var zonasRuta = await (
+                from rz in db.Set<RutaZona>().AsNoTracking()
+                join z in db.Set<Zona>().AsNoTracking() on rz.ZonaId equals z.Id
+                where rz.TenantId == tenantId && rutaIds.Contains(rz.RutaId)
+                select new { rz.RutaId, z.Nombre }).ToListAsync();
+            foreach (var zr in zonasRuta)
+            {
+                if (!rutaToUsuario.TryGetValue(zr.RutaId, out var uid)) continue;
+                if (!zonasPorUsuario.TryGetValue(uid, out var list)) { list = new(); zonasPorUsuario[uid] = list; }
+                if (!list.Contains(zr.Nombre)) list.Add(zr.Nombre);
+            }
+        }
+
+        // Fallback: zona directamente asignada al vendedor (Zona.VendedorId).
+        var zonasAsignadas = await db.Set<Zona>().AsNoTracking()
+            .Where(z => z.TenantId == tenantId && z.VendedorId != null && vendedorIds.Contains(z.VendedorId.Value))
+            .Select(z => new { VendedorId = z.VendedorId!.Value, z.Nombre })
+            .ToListAsync();
+        var zonasAsignadasPorUsuario = zonasAsignadas
+            .GroupBy(z => z.VendedorId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Nombre).Distinct().ToList());
+
+        // Última ubicación conocida (helper compartido) + nombres de cliente.
+        var ultimas = await BuildUltimasUbicacionesAsync(db, tenantId, ubicacionRepo, featureGuard);
+        var ultimaPorUsuario = ultimas.ToDictionary(d => d.UsuarioId);
+
+        var clienteIds = ultimas.Where(d => d.ClienteId.HasValue).Select(d => d.ClienteId!.Value).Distinct().ToList();
+        var clientes = clienteIds.Count == 0
+            ? new Dictionary<int, string>()
+            : await db.Clientes.AsNoTracking()
+                .Where(c => clienteIds.Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id, c => c.Nombre);
+
+        var nowUtc = DateTime.UtcNow;
+
+        var result = vendedores.Select(v =>
+        {
+            ultimaPorUsuario.TryGetValue(v.Id, out var last);
+            var tieneRutaHoy = usuariosConRutaHoy.Contains(v.Id);
+
+            // Estado: sin ruta hoy → inactivo; con ruta pero ping > 30 min (o sin
+            // ping) → sin señal; con ruta + ping reciente → en ruta.
+            string status;
+            if (!tieneRutaHoy) status = "inactivo";
+            else if (last == null || (nowUtc - last.Cuando).TotalMinutes > 30) status = "sin_senal";
+            else status = "en_ruta";
+
+            var zonas = zonasPorUsuario.TryGetValue(v.Id, out var zr)
+                ? zr
+                : zonasAsignadasPorUsuario.TryGetValue(v.Id, out var za) ? za : new List<string>();
+
+            string? clienteNombre = null;
+            if (last?.ClienteId is int cid && clientes.TryGetValue(cid, out var cn)) clienteNombre = cn;
+
+            return new
+            {
+                usuarioId = v.Id,
+                nombre = v.Nombre,
+                email = v.Email,
+                avatarUrl = v.AvatarUrl,
+                supervisorId = v.SupervisorId,
+                supervisorNombre = v.SupervisorId.HasValue && supervisores.TryGetValue(v.SupervisorId.Value, out var sn) ? sn : null,
+                zonas,
+                ultimaActividad = (DateTime?)last?.Cuando,
+                ultimaLat = (double?)last?.Lat,
+                ultimaLng = (double?)last?.Lng,
+                fuente = last?.Fuente,
+                clienteNombre,
+                status,
+                tieneRutaHoy,
+            };
+        })
+        .OrderByDescending(x => x.status == "en_ruta")
+        .ThenByDescending(x => x.ultimaActividad ?? DateTime.MinValue)
+        .ThenBy(x => x.nombre)
+        .ToList();
 
         return Results.Ok(result);
     }

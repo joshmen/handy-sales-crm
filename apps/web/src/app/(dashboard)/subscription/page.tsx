@@ -198,6 +198,7 @@ export default function SubscriptionPage() {
       : t("enterPaymentDetails");
     return (
       <PageHeader
+        section="empresa"
         breadcrumbs={[
           { label: tc("home"), href: "/dashboard" },
           { label: t("title"), href: "/subscription" },
@@ -207,7 +208,7 @@ export default function SubscriptionPage() {
         subtitle={checkoutSubtitle}
         actions={
           <Button
-            variant="outline"
+            variant="wbOutline"
             size="sm"
             onClick={() => {
               setCheckoutClientSecret(null);
@@ -252,6 +253,7 @@ export default function SubscriptionPage() {
 
   return (
     <PageHeader
+      section="empresa"
       breadcrumbs={[
         { label: tc("home"), href: "/dashboard" },
         { label: t("title") },

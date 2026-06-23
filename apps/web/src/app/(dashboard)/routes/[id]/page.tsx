@@ -41,6 +41,9 @@ import {
   Send,
   FileCheck,
   ExternalLink,
+  Lock,
+  Truck,
+  Pencil,
 } from 'lucide-react';
 import Link from 'next/link';
 import { dateOnlyToUTC } from '@/lib/formatters';
@@ -49,8 +52,7 @@ import { ResumenTab } from './components/ResumenTab';
 import { ParadasTab } from './components/ParadasTab';
 import { PedidosTab } from './components/PedidosTab';
 import { CargaTab } from './components/CargaTab';
-import { GastosTab } from './components/GastosTab';
-import { DevolucionesTab } from './components/DevolucionesTab';
+import { CorteTab } from './components/CorteTab';
 import type { ZoneOption, UsuarioOption } from './components/types';
 
 const editRouteSchema = z.object({
@@ -65,14 +67,15 @@ const editRouteSchema = z.object({
 });
 type EditRouteFormData = z.infer<typeof editRouteSchema>;
 
-type TabKey = 'resumen' | 'paradas' | 'pedidos' | 'carga' | 'gastos' | 'devoluciones';
-const VALID_TABS: TabKey[] = ['resumen', 'paradas', 'pedidos', 'carga', 'gastos', 'devoluciones'];
+type TabKey = 'resumen' | 'paradas' | 'carga' | 'corte';
+const VALID_TABS: TabKey[] = ['resumen', 'paradas', 'carga', 'corte'];
 
 export default function RouteDetailPage() {
   const t = useTranslations('routes');
   const ts = useTranslations('routes.status');
   const tt = useTranslations('routes.tabs');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -235,9 +238,15 @@ export default function RouteDetailPage() {
 
   const isPlanificada = route?.estado === 0;
   const isEnProgreso = route?.estado === 1;
+  const isCompletada = route?.estado === 2;
   const isPendienteAceptar = route?.estado === 4;
   const isCargaAceptada = route?.estado === 5;
+  const isCerrada = route?.estado === 6;
   const isEditable = isPlanificada;
+  // La ruta "inició" cuando el vendedor la arrancó (EnProgreso) o ya cerró.
+  const started = isEnProgreso || isCompletada || isCerrada;
+  // El tab Corte se desbloquea al Completar (lo cierra el vendedor en su app).
+  const corteUnlocked = isCompletada || isCerrada;
   // Vendedor activo = ya aceptó la carga o está visitando paradas. Cancelar
   // ahora aborta su jornada → modal con typing-confirm + motivo obligatorio.
   const vendedorActivo = isEnProgreso || isCargaAceptada;
@@ -337,6 +346,7 @@ export default function RouteDetailPage() {
         <Breadcrumb
           items={[
             { label: tc('home'), href: '/dashboard' },
+            { label: tn('sectionOperations') },
             { label: t('title'), href: '/routes' },
             { label: route.codigo || route.nombre },
           ]}
@@ -351,7 +361,7 @@ export default function RouteDetailPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-foreground">{route.nombre}</h1>
+              <h1 className="text-[22px] font-bold tracking-tight text-foreground">{route.nombre}</h1>
               {route.codigo && (
                 <span className="text-xs font-mono text-foreground/60 mt-0.5">{route.codigo}</span>
               )}
@@ -369,7 +379,7 @@ export default function RouteDetailPage() {
                   onClick={handleSendToLoadClick}
                   disabled={actionLoading || sending || carga.length === 0}
                   title={carga.length === 0 ? 'Asigna al menos un producto de carga' : undefined}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Play className="w-4 h-4" />
                   {t('detail.sendToLoad')}
@@ -377,7 +387,7 @@ export default function RouteDetailPage() {
                 <button
                   onClick={() => setIsCancelOpen(true)}
                   disabled={actionLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
                   {tc('cancel')}
@@ -389,7 +399,7 @@ export default function RouteDetailPage() {
                 <button
                   onClick={handleCompletar}
                   disabled={actionLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   <CheckCircle className="w-4 h-4" />
                   {t('detail.completeRoute')}
@@ -397,7 +407,7 @@ export default function RouteDetailPage() {
                 <button
                   onClick={() => setIsCancelOpen(true)}
                   disabled={actionLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
                   {tc('cancel')}
@@ -408,29 +418,29 @@ export default function RouteDetailPage() {
               <button
                 onClick={() => setIsCancelOpen(true)}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <XCircle className="w-4 h-4" />
                 {tc('cancel')}
               </button>
             )}
             {route.estado === ESTADO_RUTA.Completada && (
-              <Link
-                href={`/routes/manage/${route.id}/close`}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
+              <button
+                onClick={() => handleTabChange('corte')}
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary border border-primary/30 rounded-full hover:bg-primary/10 transition-colors"
               >
                 <FileCheck className="w-4 h-4" />
                 {t('detail.closeRoute')}
-              </Link>
+              </button>
             )}
             {route.estado === ESTADO_RUTA.Cerrada && (
-              <Link
-                href={`/routes/manage/${route.id}/close`}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
+              <button
+                onClick={() => handleTabChange('corte')}
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground/70 border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
               >
                 <ExternalLink className="w-4 h-4" />
                 {t('detail.viewClosure')}
-              </Link>
+              </button>
             )}
           </div>
         </div>
@@ -447,64 +457,93 @@ export default function RouteDetailPage() {
                 <span className="ml-1.5 text-[10px] text-muted-foreground">({route.totalParadas})</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pedidos">
-              {tt('pedidos')}
-              {pedidos.length > 0 && (
-                <span className="ml-1.5 text-[10px] text-muted-foreground">({pedidos.length})</span>
-              )}
-            </TabsTrigger>
             <TabsTrigger value="carga">
               {tt('carga')}
-              {carga.length > 0 && (
-                <span className="ml-1.5 text-[10px] text-muted-foreground">({carga.length})</span>
+              {pedidos.length + carga.length > 0 && (
+                <span className="ml-1.5 text-[10px] text-muted-foreground">({pedidos.length + carga.length})</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="gastos">{tt('gastos')}</TabsTrigger>
-            <TabsTrigger value="devoluciones">{tt('devoluciones')}</TabsTrigger>
+            <TabsTrigger value="corte">
+              <span className="inline-flex items-center gap-1.5">
+                {!corteUnlocked && <Lock className="w-3 h-3" aria-hidden="true" />}
+                {tt('corte')}
+              </span>
+            </TabsTrigger>
           </TabsList>
 
+          {/* Resumen — gobernado por estado: vacío hasta que la ruta inicia */}
           <TabsContent value="resumen" className="mt-6">
-            <ResumenTab
-              route={route}
-              isEditable={isEditable}
-              onRefetch={fetchAll}
-              pedidos={pedidos}
-              setPedidos={setPedidos}
-              carga={carga}
-              onEditClick={handleOpenEditDrawer}
-            />
+            {started ? (
+              <ResumenTab
+                route={route}
+                isEditable={isEditable}
+                onRefetch={fetchAll}
+                pedidos={pedidos}
+                setPedidos={setPedidos}
+                carga={carga}
+                onEditClick={handleOpenEditDrawer}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <Clock className="w-10 h-10 text-muted-foreground/50 mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-foreground/80">{t('detail.notStartedTitle')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('detail.notStartedDesc')}</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="paradas" className="mt-6">
             <ParadasTab route={route} isEditable={isEditable} onRefetch={fetchAll} />
           </TabsContent>
 
-          <TabsContent value="pedidos" className="mt-6">
-            <PedidosTab
-              route={route}
-              isEditable={isEditable}
-              onRefetch={fetchAll}
-              pedidos={pedidos}
-              setPedidos={setPedidos}
-            />
-          </TabsContent>
-
+          {/* Carga — fusiona pedidos cargados + producto directo (solo lectura).
+              La edición vive en la página "Armar carga", gobernada por estado. */}
           <TabsContent value="carga" className="mt-6">
-            <CargaTab
-              route={route}
-              isEditable={isEditable}
-              onRefetch={fetchAll}
-              carga={carga}
-              setCarga={setCarga}
-            />
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">{tt('carga')}</h2>
+              {isPlanificada && (
+                <button
+                  onClick={() => router.push(`/routes/${routeId}/carga/armar`)}
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                >
+                  <Truck className="w-4 h-4" />
+                  {t('detail.armarCarga')}
+                </button>
+              )}
+              {isPendienteAceptar && (
+                <button
+                  onClick={() => router.push(`/routes/${routeId}/carga/armar`)}
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  {t('detail.editarCarga')}
+                </button>
+              )}
+              {(isCargaAceptada || isEnProgreso || isCompletada || isCerrada) && (
+                <span className="text-xs text-muted-foreground">{t('detail.cargaReadonly')}</span>
+              )}
+            </div>
+            <div className="space-y-6">
+              <PedidosTab
+                route={route}
+                isEditable={false}
+                onRefetch={fetchAll}
+                pedidos={pedidos}
+                setPedidos={setPedidos}
+              />
+              <CargaTab
+                route={route}
+                isEditable={false}
+                onRefetch={fetchAll}
+                carga={carga}
+                setCarga={setCarga}
+              />
+            </div>
           </TabsContent>
 
-          <TabsContent value="gastos" className="mt-6">
-            <GastosTab route={route} isEditable={isEditable} onRefetch={fetchAll} />
-          </TabsContent>
-
-          <TabsContent value="devoluciones" className="mt-6">
-            <DevolucionesTab route={route} isEditable={isEditable} onRefetch={fetchAll} />
+          {/* Corte — tab siempre visible; CorteTab gobierna candado/activo/solo-lectura */}
+          <TabsContent value="corte" className="mt-6">
+            <CorteTab routeId={routeId} route={route} onClosed={fetchAll} />
           </TabsContent>
         </Tabs>
       </div>

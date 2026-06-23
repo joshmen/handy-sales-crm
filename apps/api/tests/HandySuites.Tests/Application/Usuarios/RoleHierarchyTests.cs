@@ -18,6 +18,7 @@ public class RoleHierarchyTests
     [InlineData(RoleNames.Supervisor)]
     [InlineData(RoleNames.Viewer)]
     [InlineData(RoleNames.Vendedor)]
+    [InlineData(RoleNames.Almacenista)]
     public void SuperAdmin_CanCreate_AnyRole(string targetRole)
     {
         RoleHierarchy.CanCreateRole(RoleNames.SuperAdmin, targetRole)
@@ -29,6 +30,7 @@ public class RoleHierarchyTests
     [InlineData(RoleNames.Supervisor)]
     [InlineData(RoleNames.Viewer)]
     [InlineData(RoleNames.Vendedor)]
+    [InlineData(RoleNames.Almacenista)]
     public void Admin_CanCreate_RolesBelow(string targetRole)
     {
         RoleHierarchy.CanCreateRole(RoleNames.Admin, targetRole)
@@ -58,16 +60,18 @@ public class RoleHierarchyTests
     [InlineData(RoleNames.SuperAdmin)]
     [InlineData(RoleNames.Admin)]
     [InlineData(RoleNames.Supervisor)] // Mismo rol — no permitido
+    [InlineData(RoleNames.Almacenista)] // SUPERVISOR no asigna ALMACENISTA (solo ADMIN+)
     public void Supervisor_CannotCreate_SameOrAbove(string targetRole)
     {
         RoleHierarchy.CanCreateRole(RoleNames.Supervisor, targetRole)
             .Should().BeFalse($"SUPERVISOR NO debe poder crear {targetRole}");
     }
 
-    // ───── VENDEDOR / VIEWER: no pueden crear nada ───────────────────────
+    // ───── VENDEDOR / VIEWER / ALMACENISTA: no pueden crear nada ─────────
     [Theory]
     [InlineData(RoleNames.Vendedor)]
     [InlineData(RoleNames.Viewer)]
+    [InlineData(RoleNames.Almacenista)]
     public void LowestRoles_CannotCreate_AnyRole(string callerRole)
     {
         foreach (var target in new[]
@@ -77,6 +81,7 @@ public class RoleHierarchyTests
             RoleNames.Supervisor,
             RoleNames.Viewer,
             RoleNames.Vendedor,
+            RoleNames.Almacenista,
         })
         {
             RoleHierarchy.CanCreateRole(callerRole, target)
@@ -126,6 +131,7 @@ public class RoleHierarchyTests
             RoleNames.Supervisor,
             RoleNames.Viewer,
             RoleNames.Vendedor,
+            RoleNames.Almacenista,
         });
     }
 
@@ -137,6 +143,13 @@ public class RoleHierarchyTests
         roles.Should().NotContain(RoleNames.Admin);
         roles.Should().Contain(RoleNames.Supervisor);
         roles.Should().Contain(RoleNames.Vendedor);
+        roles.Should().Contain(RoleNames.Almacenista);
+    }
+
+    [Fact]
+    public void AssignableRoles_Almacenista_ReturnsEmpty()
+    {
+        RoleHierarchy.AssignableRoles(RoleNames.Almacenista).Should().BeEmpty();
     }
 
     [Fact]

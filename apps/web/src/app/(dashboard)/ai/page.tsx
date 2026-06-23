@@ -626,6 +626,8 @@ export default function AiPage() {
 
   return (
     <PageHeader
+      section="herramientas"
+      icon={Sparkle}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title') },
