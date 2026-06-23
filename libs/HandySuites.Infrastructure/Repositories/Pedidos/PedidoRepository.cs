@@ -5,16 +5,19 @@ using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace HandySuites.Infrastructure.Repositories.Pedidos;
 
 public class PedidoRepository : IPedidoRepository
 {
     private readonly HandySuitesDbContext _db;
+    private readonly ILogger<PedidoRepository>? _logger;
 
-    public PedidoRepository(HandySuitesDbContext db)
+    public PedidoRepository(HandySuitesDbContext db, ILogger<PedidoRepository>? logger = null)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<int> CrearAsync(PedidoCreateDto dto, int usuarioId, int tenantId)
@@ -200,6 +203,42 @@ public class PedidoRepository : IPedidoRepository
         }
 
         var ahora = DateTime.UtcNow;
+
+        // Anti-doble-venta directa (incidente prod 2026-06-23). El móvil puede
+        // crear DOS ventas directas para la misma transacción (doble-submit), cada
+        // una con su propio mobile_record_id → la idempotencia por mrid no las
+        // colapsa. Si ya existe una VentaDirecta reciente con la MISMA huella
+        // (tenant+vendedor+cliente+total), devolvemos esa (idempotente) en vez de
+        // crear otra. Ver VentaDirectaPolicy.DedupeWindowSeconds.
+        if ((TipoVenta)dto.TipoVenta == TipoVenta.VentaDirecta && dto.Total > 0)
+        {
+            var ventana = ahora.AddSeconds(-VentaDirectaPolicy.DedupeWindowSeconds);
+            var dupReciente = await _db.Pedidos
+                .AsNoTracking()
+                .Where(p => p.TenantId == tenantId
+                         && p.UsuarioId == usuarioId
+                         && p.ClienteId == dto.ClienteId
+                         && p.TipoVenta == TipoVenta.VentaDirecta
+                         && p.MobileRecordId != dto.MobileRecordId
+                         && p.Total == dto.Total
+                         && p.CreadoEn >= ventana)
+                .OrderByDescending(p => p.CreadoEn)
+                .Select(p => new { p.Id, p.Estado, p.CreadoEn })
+                .FirstOrDefaultAsync();
+
+            if (dupReciente != null)
+            {
+                _logger?.LogWarning(
+                    "Eager-save: venta directa duplicada (tenant={Tenant} vendedor={Usuario} cliente={Cliente} total={Total} mrid={Mrid}) colapsada a Pedido {Existente}",
+                    tenantId, usuarioId, dto.ClienteId, dto.Total, dto.MobileRecordId, dupReciente.Id);
+                return new PedidoEagerSaveOutcome(
+                    ServerId: dupReciente.Id,
+                    Estado: dupReciente.Estado,
+                    AckedAt: dupReciente.CreadoEn,
+                    Idempotent: true);
+            }
+        }
+
         // NumeroPedido es NOT NULL en el schema. Generamos uno real (mismo flow que
         // CrearAsync) — el retry loop maneja race condition con UNIQUE constraint.
         // Prefix "PED" porque eager-save siempre es Borrador (preventa style); el flow

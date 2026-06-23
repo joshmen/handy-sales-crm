@@ -2,19 +2,23 @@ using HandySuites.Application.Common;
 using HandySuites.Application.Common.Time;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Application.Sync.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace HandySuites.Infrastructure.Repositories.Sync;
 
 public class SyncRepository : ISyncRepository
 {
     private readonly HandySuitesDbContext _db;
+    private readonly ILogger<SyncRepository>? _logger;
 
-    public SyncRepository(HandySuitesDbContext db)
+    public SyncRepository(HandySuitesDbContext db, ILogger<SyncRepository>? logger = null)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<List<Cliente>> GetClientesModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null)
@@ -546,6 +550,41 @@ public class SyncRepository : ISyncRepository
                     CreadoPor = userId,
                     Version = 1
                 });
+            }
+        }
+
+        // Anti-doble-venta directa (incidente prod 2026-06-23). Red de seguridad
+        // para el flujo offline donde eager-save NO corrió (sin red al vender):
+        // ambas copias llegan por sync push con dto.Id=0 y mobile_record_id
+        // distinto, así que la idempotencia por mrid no las colapsa. Si ya existe
+        // una VentaDirecta reciente con la MISMA huella (tenant+vendedor+cliente+
+        // total), devolvemos esa en vez de crear otra → no se duplica pedido,
+        // cobro ni inventario. Ver VentaDirectaPolicy.DedupeWindowSeconds.
+        if ((TipoVenta)dto.TipoVenta == TipoVenta.VentaDirecta && !string.IsNullOrEmpty(dto.LocalId))
+        {
+            var totalNuevo = newDetalles.Sum(d => d.Total);
+            if (totalNuevo > 0)
+            {
+                var ventana = DateTime.UtcNow.AddSeconds(-VentaDirectaPolicy.DedupeWindowSeconds);
+                var dupReciente = await _db.Pedidos
+                    .Include(p => p.Detalles)
+                    .Where(p => p.TenantId == tenantId
+                             && p.UsuarioId == usuarioId
+                             && p.ClienteId == dto.ClienteId
+                             && p.TipoVenta == TipoVenta.VentaDirecta
+                             && p.MobileRecordId != dto.LocalId
+                             && p.Total == totalNuevo
+                             && p.CreadoEn >= ventana)
+                    .OrderByDescending(p => p.CreadoEn)
+                    .FirstOrDefaultAsync();
+
+                if (dupReciente != null)
+                {
+                    _logger?.LogWarning(
+                        "Sync push: venta directa duplicada (tenant={Tenant} vendedor={Usuario} cliente={Cliente} total={Total} mrid={Mrid}) colapsada a Pedido {Existente}",
+                        tenantId, usuarioId, dto.ClienteId, totalNuevo, dto.LocalId, dupReciente.Id);
+                    return (dupReciente, false);
+                }
             }
         }
 
@@ -1200,6 +1239,28 @@ public class SyncRepository : ISyncRepository
                 .FirstOrDefaultAsync(p => p.Id == resolvedPedidoId.Value && p.TenantId == tenantId);
             if (pedido != null && dto.Monto > pedido.Total && pedido.Total > 0)
                 throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
+
+            // Anti-doble-cobro (incidente prod 2026-06-23): una VentaDirecta tiene UN
+            // solo cobro. Si el móvil duplicó la venta, el cobro de la copia llega con
+            // otro mobile_record_id pero apunta al MISMO pedido (tras el dedupe de
+            // pedidos en UpsertPedidoAsync/EagerSave). No creamos un segundo cobro
+            // activo — devolvemos el existente para no registrar doble pago ni
+            // decrementar el saldo del cliente dos veces.
+            if (pedido != null && pedido.TipoVenta == TipoVenta.VentaDirecta)
+            {
+                var cobroExistente = await _db.Cobros
+                    .FirstOrDefaultAsync(c => c.TenantId == tenantId
+                                           && c.PedidoId == resolvedPedidoId.Value
+                                           && c.Activo
+                                           && c.MobileRecordId != dto.LocalId);
+                if (cobroExistente != null)
+                {
+                    _logger?.LogWarning(
+                        "Sync push: cobro duplicado para venta directa (tenant={Tenant} pedido={Pedido} monto={Monto} mrid={Mrid}) colapsado a Cobro {Existente}",
+                        tenantId, resolvedPedidoId.Value, dto.Monto, dto.LocalId, cobroExistente.Id);
+                    return (cobroExistente, false);
+                }
+            }
         }
 
         // 2026-06-08 PR 4 plan eager-drifting cobros: mapear modo enviado por mobile.

@@ -108,7 +108,7 @@ public class PedidoEagerSaveTests : IDisposable
         _db.SaveChanges();
     }
 
-    private static PedidoEagerSaveDto BuildDto(string mobileRecordId, int tipoVenta = 0, int productoId = ProductoId)
+    private static PedidoEagerSaveDto BuildDto(string mobileRecordId, int tipoVenta = 0, int productoId = ProductoId, decimal total = 116m)
     {
         return new PedidoEagerSaveDto
         {
@@ -119,7 +119,7 @@ public class PedidoEagerSaveTests : IDisposable
             Subtotal = 100m,
             Descuento = 0m,
             Impuesto = 16m,
-            Total = 116m,
+            Total = total,
             Notas = "Eager save E2E",
             Detalles = new List<PedidoEagerSaveDetalleDto>
             {
@@ -258,6 +258,61 @@ public class PedidoEagerSaveTests : IDisposable
         var totalRows = await _db.Pedidos.AsNoTracking()
             .CountAsync(p => p.MobileRecordId == "wdb-id-cross-tenant");
         totalRows.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task EagerSaveAsync_CollapsesDuplicateVentaDirecta_SameFingerprintWithinWindow()
+    {
+        // Incidente prod 2026-06-23: el móvil crea DOS ventas directas para la
+        // MISMA transacción (doble-submit), cada una con distinto MobileRecordId.
+        // La idempotencia por mrid NO las colapsa. El guard de huella
+        // (tenant+vendedor+cliente+total) debe colapsar la 2a a la 1a.
+        var primera = BuildDto("wdb-vd-1", tipoVenta: 1);
+        var segunda = BuildDto("wdb-vd-2", tipoVenta: 1); // mismo cliente+total, otro mrid
+
+        var r1 = await _sut.EagerSaveAsync(primera, UsuarioId, TenantId);
+        var r2 = await _sut.EagerSaveAsync(segunda, UsuarioId, TenantId);
+
+        r1.Idempotent.Should().BeFalse();
+        r2.Idempotent.Should().BeTrue("la 2a venta directa idéntica dentro de la ventana se colapsa");
+        r2.ServerId.Should().Be(r1.ServerId);
+
+        var count = await _db.Pedidos.AsNoTracking()
+            .CountAsync(p => p.TenantId == TenantId && p.ClienteId == ClienteId && p.TipoVenta == TipoVenta.VentaDirecta);
+        count.Should().Be(1, "solo debe existir UN pedido de venta directa pese a los 2 submits");
+    }
+
+    [Fact]
+    public async Task EagerSaveAsync_DoesNotCollapsePreventa_SameFingerprint()
+    {
+        // El guard SOLO aplica a VentaDirecta. Una preventa puede legítimamente
+        // repetirse (cada una se confirma aparte) — no deben colapsarse.
+        var primera = BuildDto("wdb-pv-1", tipoVenta: 0);
+        var segunda = BuildDto("wdb-pv-2", tipoVenta: 0);
+
+        var r1 = await _sut.EagerSaveAsync(primera, UsuarioId, TenantId);
+        var r2 = await _sut.EagerSaveAsync(segunda, UsuarioId, TenantId);
+
+        r2.Idempotent.Should().BeFalse();
+        r2.ServerId.Should().NotBe(r1.ServerId);
+
+        var count = await _db.Pedidos.AsNoTracking()
+            .CountAsync(p => p.TenantId == TenantId && p.ClienteId == ClienteId);
+        count.Should().Be(2, "las preventas no se deduplican");
+    }
+
+    [Fact]
+    public async Task EagerSaveAsync_DoesNotCollapseVentaDirecta_WhenTotalDiffers()
+    {
+        // Misma huella salvo el total → es otra venta, no se colapsa.
+        var primera = BuildDto("wdb-vd-a", tipoVenta: 1, total: 116m);
+        var segunda = BuildDto("wdb-vd-b", tipoVenta: 1, total: 200m);
+
+        var r1 = await _sut.EagerSaveAsync(primera, UsuarioId, TenantId);
+        var r2 = await _sut.EagerSaveAsync(segunda, UsuarioId, TenantId);
+
+        r2.Idempotent.Should().BeFalse();
+        r2.ServerId.Should().NotBe(r1.ServerId);
     }
 
     public void Dispose()
