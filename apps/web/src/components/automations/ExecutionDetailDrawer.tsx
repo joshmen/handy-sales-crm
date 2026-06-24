@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Drawer } from '@/components/ui/Drawer';
-import { Lightning } from '@phosphor-icons/react';
+import { Zap } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useFormatters } from '@/hooks/useFormatters';
 import type { AutomationExecution } from '@/types/automations';
@@ -49,7 +49,7 @@ export function ExecutionDetailDrawer({ execution, onClose }: Props) {
       onClose={onClose}
       width="lg"
       title={templateName || ' '}
-      icon={<Lightning size={20} className="text-amber-500" />}
+      icon={<Zap size={20} className="text-amber-500" />}
     >
       {execution && (
         <div className="space-y-5">

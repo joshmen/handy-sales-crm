@@ -13,8 +13,9 @@ import {
   Trash2,
   Copy,
   Check,
+  Ticket,
+  CheckCircle2,
 } from 'lucide-react';
-import { Ticket, CheckCircle } from '@phosphor-icons/react';
 import { toast } from '@/hooks/useToast';
 import {
   cuponAdminService,
@@ -221,7 +222,7 @@ export default function CuponesAdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Ticket className="h-5 w-5 text-primary" weight="duotone" />
+            <Ticket className="h-5 w-5 text-primary" />
             {drawerMode === 'edit' ? t('drawerTitleEdit') : t('drawerTitleCreate')}
           </h2>
           <button onClick={closeDrawer} className="p-2 hover:bg-surface-3 rounded-lg transition-colors">
@@ -450,7 +451,7 @@ export default function CuponesAdminPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={Ticket}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[
@@ -485,7 +486,7 @@ export default function CuponesAdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <Ticket className="h-5 w-5 text-primary" weight="duotone" />
+              <Ticket className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('totalCoupons')}</p>
@@ -496,7 +497,7 @@ export default function CuponesAdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <CheckCircle className="h-5 w-5 text-primary" weight="duotone" />
+              <CheckCircle2 className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('activeCoupons')}</p>
@@ -507,7 +508,7 @@ export default function CuponesAdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <Ticket className="h-5 w-5 text-primary" weight="duotone" />
+              <Ticket className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('totalRedemptions')}</p>
@@ -524,7 +525,7 @@ export default function CuponesAdminPage() {
         </div>
       ) : cupones.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-sm">
-          <Ticket className="mx-auto h-12 w-12 text-muted-foreground/60" weight="duotone" />
+          <Ticket className="mx-auto h-12 w-12 text-muted-foreground/60" />
           <p className="mt-4 text-muted-foreground">{t('noCoupons')}</p>
           <button
             onClick={openCreate}

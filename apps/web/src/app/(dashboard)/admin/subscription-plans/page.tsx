@@ -10,15 +10,12 @@ import {
   Pencil,
   Power,
   PowerOff,
-} from 'lucide-react';
-import {
   CreditCard,
-  Buildings,
-  CheckCircle,
+  Building2,
+  CheckCircle2,
   Users,
   Package,
-  UsersFour,
-} from '@phosphor-icons/react';
+} from 'lucide-react';
 import { toast } from '@/hooks/useToast';
 import {
   subscriptionPlanAdminService,
@@ -214,7 +211,7 @@ export default function SubscriptionPlansAdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-blue-600" weight="duotone" />
+            <CreditCard className="h-5 w-5 text-blue-600" />
             {drawerMode === 'edit' ? t('drawerTitleEdit') : t('drawerTitleCreate')}
           </h2>
           <button onClick={closeDrawer} className="p-2 hover:bg-surface-3 rounded-lg transition-colors">
@@ -298,7 +295,7 @@ export default function SubscriptionPlansAdminPage() {
                 {t('maxUsersLabel')}
               </label>
               <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" weight="regular" />
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="number"
                   min="1"
@@ -313,7 +310,7 @@ export default function SubscriptionPlansAdminPage() {
                 {t('maxProductsLabel')}
               </label>
               <div className="relative">
-                <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" weight="regular" />
+                <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="number"
                   min="1"
@@ -328,7 +325,7 @@ export default function SubscriptionPlansAdminPage() {
                 {t('maxClientsLabel')}
               </label>
               <div className="relative">
-                <UsersFour className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" weight="regular" />
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="number"
                   min="1"
@@ -468,7 +465,7 @@ export default function SubscriptionPlansAdminPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={CreditCard}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[
@@ -503,7 +500,7 @@ export default function SubscriptionPlansAdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <CreditCard className="h-5 w-5 text-primary" weight="duotone" />
+              <CreditCard className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('totalPlans')}</p>
@@ -514,7 +511,7 @@ export default function SubscriptionPlansAdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <CheckCircle className="h-5 w-5 text-primary" weight="duotone" />
+              <CheckCircle2 className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('activePlans')}</p>
@@ -525,7 +522,7 @@ export default function SubscriptionPlansAdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <Buildings className="h-5 w-5 text-primary" weight="duotone" />
+              <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('companiesWithPlan')}</p>
@@ -542,7 +539,7 @@ export default function SubscriptionPlansAdminPage() {
         </div>
       ) : plans.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-sm">
-          <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/60" weight="duotone" />
+          <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/60" />
           <p className="mt-4 text-muted-foreground">{t('noPlans')}</p>
           <button
             onClick={openCreate}
@@ -685,11 +682,11 @@ export default function SubscriptionPlansAdminPage() {
                     <span className="text-muted-foreground">{t('tableProducts')}:</span> {plan.maxProductos}
                   </div>
                   <div className="flex items-center gap-1">
-                    <UsersFour className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-muted-foreground">{t('maxClientsLabel')}:</span> {plan.maxClientesPorMes}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Buildings className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-muted-foreground">{t('tableCompanies')}:</span> {plan.tenantCount}
                   </div>
                 </div>

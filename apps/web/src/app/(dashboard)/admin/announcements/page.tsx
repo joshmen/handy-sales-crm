@@ -212,7 +212,7 @@ export default function AnnouncementsPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={Megaphone}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[

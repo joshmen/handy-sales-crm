@@ -61,7 +61,7 @@ export function ComisionesReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "50%" } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: [chartColors.textPrimary] } },
     xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },

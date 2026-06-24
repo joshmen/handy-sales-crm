@@ -549,10 +549,10 @@ export default function ZonesPage() {
           onSave={handleSubmit(handleSaveZone)}
           footer={
             <div data-tour="zones-drawer-actions" className="flex items-center justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingZone}>
+              <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={savingZone}>
                 {tc('cancel')}
               </Button>
-              <Button type="button" variant="success" onClick={handleSubmit(handleSaveZone)} disabled={savingZone} className="flex items-center gap-2">
+              <Button type="button" variant="wbPrimary" onClick={handleSubmit(handleSaveZone)} disabled={savingZone} className="flex items-center gap-2">
                 {savingZone && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingZone ? t('drawer.saveChanges') : t('drawer.createZone')}
               </Button>

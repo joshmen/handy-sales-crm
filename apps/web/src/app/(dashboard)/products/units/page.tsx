@@ -322,10 +322,10 @@ export default function UnitsPage() {
         onSave={handleSubmit}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingUnit ? tc('saveChanges') : t('createUnit')}
             </Button>

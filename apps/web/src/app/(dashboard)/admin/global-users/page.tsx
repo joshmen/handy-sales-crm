@@ -121,7 +121,7 @@ export default function GlobalUsersPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={Users}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[

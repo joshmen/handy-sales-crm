@@ -16,52 +16,53 @@ import { PARAM_CONFIG, TEMPLATE_KEYS, CATEGORY_COLORS, CATEGORY_LABEL_KEYS } fro
 import { toast } from '@/hooks/useToast';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
-import { RefreshCw, Loader2 } from 'lucide-react';
 import {
-  Robot,
-  CheckCircle,
+  RefreshCw,
+  Loader2,
+  Bot,
+  CheckCircle2,
   Clock,
-  Warning,
-  GearSix,
+  AlertTriangle,
+  Settings,
   Package,
-  ClipboardText,
+  ClipboardList,
   UserPlus,
   Users,
-  BellRinging,
+  BellRing,
   UserCheck,
   Repeat,
-  MapPinLine,
+  MapPin,
   Target,
   Play,
-  CircleNotch,
   Info,
   ArrowRight,
-  CaretRight,
-  WhatsappLogo,
-  EnvelopeSimple,
-  DeviceMobile,
-  LockSimple,
+  ChevronRight,
+  MessageCircle,
+  Mail,
+  Smartphone,
+  Lock,
   Check,
-} from '@phosphor-icons/react';
-import type { IconProps } from '@phosphor-icons/react';
+  Zap,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/Switch';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 
-const ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
-  PackageOpen: Package, ClipboardList: ClipboardText,
-  UserPlus, BellRinging, UserCheck, Repeat, MapPinLine,
-  Target, CheckCircle, Warning, Robot,
+const ICON_MAP: Record<string, LucideIcon> = {
+  PackageOpen: Package, ClipboardList: ClipboardList,
+  UserPlus, BellRinging: BellRing, UserCheck, Repeat, MapPinLine: MapPin,
+  Target, CheckCircle: CheckCircle2, Warning: AlertTriangle, Robot: Bot,
 };
 
-function getTemplateIcon(iconName: string): React.ComponentType<IconProps> {
-  return ICON_MAP[iconName] || Robot;
+function getTemplateIcon(iconName: string): LucideIcon {
+  return ICON_MAP[iconName] || Bot;
 }
 
-const STATUS_STYLES: Record<string, { bg: string; labelKey: string; icon?: React.ComponentType<IconProps> }> = {
-  Success: { bg: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300', labelKey: 'statusSuccess', icon: CheckCircle },
-  Failed: { bg: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300', labelKey: 'statusError', icon: Warning },
+const STATUS_STYLES: Record<string, { bg: string; labelKey: string; icon?: LucideIcon }> = {
+  Success: { bg: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300', labelKey: 'statusSuccess', icon: CheckCircle2 },
+  Failed: { bg: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300', labelKey: 'statusError', icon: AlertTriangle },
   Skipped: { bg: 'bg-surface-3 text-foreground/70', labelKey: 'statusSkipped' },
 };
 
@@ -89,10 +90,10 @@ const CATEGORY_HEX: Record<string, string> = {
 
 // Canales de envío. WhatsApp/Correo seleccionables; SMS bloqueado (no conectado).
 // La preferencia se guarda en paramsJson.canales (presentación; el dispatch multi-canal es backend).
-const CHANNELS: { id: string; icon: React.ComponentType<IconProps>; labelKey: string; locked: boolean }[] = [
-  { id: 'whatsapp', icon: WhatsappLogo, labelKey: 'channels.whatsapp', locked: false },
-  { id: 'correo', icon: EnvelopeSimple, labelKey: 'channels.email', locked: false },
-  { id: 'sms', icon: DeviceMobile, labelKey: 'channels.sms', locked: true },
+const CHANNELS: { id: string; icon: LucideIcon; labelKey: string; locked: boolean }[] = [
+  { id: 'whatsapp', icon: MessageCircle, labelKey: 'channels.whatsapp', locked: false },
+  { id: 'correo', icon: Mail, labelKey: 'channels.email', locked: false },
+  { id: 'sms', icon: Smartphone, labelKey: 'channels.sms', locked: true },
 ];
 
 function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'xs' }) {
@@ -101,7 +102,7 @@ function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'x
   const IconComp = s.icon;
   return (
     <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-md ${s.bg} ${size === 'xs' ? 'text-[10px]' : 'text-xs'}`}>
-      {IconComp && <IconComp size={12} weight="fill" />}
+      {IconComp && <IconComp size={12} />}
       {t(s.labelKey)}
     </span>
   );
@@ -346,6 +347,7 @@ export default function AutomationsPage() {
     <>
       <PageHeader
         section="herramientas"
+        icon={Zap}
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: t('title') },
@@ -369,7 +371,7 @@ export default function AutomationsPage() {
 
           {isExpired && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
-              <Warning size={20} className="text-amber-600 shrink-0" />
+              <AlertTriangle size={20} className="text-amber-600 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-amber-800">{t('subscriptionExpired')}</p>
                 <p className="text-xs text-amber-600 mt-0.5">{t('subscriptionExpiredDesc')}</p>
@@ -388,7 +390,7 @@ export default function AutomationsPage() {
                   <p className="text-[16px] font-semibold text-foreground">{t('hero.title')}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{t('hero.activeOf', { active: activas, total: templates.length })}</p>
                   <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300">
-                    <Clock size={12} weight="fill" /> {t('hero.hoursSavedShort', { hours: horasAhorradas })}
+                    <Clock size={12} /> {t('hero.hoursSavedShort', { hours: horasAhorradas })}
                   </span>
                 </div>
               </div>
@@ -458,7 +460,7 @@ export default function AutomationsPage() {
               {loading ? (
                 <div className="py-16 text-center"><RefreshCw className="w-6 h-6 mx-auto mb-2 text-muted-foreground/60 animate-spin" /><p className="text-sm text-muted-foreground">{tc('loading')}</p></div>
               ) : templates.length === 0 ? (
-                <div className="py-16 text-center"><Robot size={28} className="mx-auto mb-2 text-muted-foreground/60" /><p className="text-sm text-muted-foreground">{t('emptyDefault')}</p></div>
+                <div className="py-16 text-center"><Bot size={28} className="mx-auto mb-2 text-muted-foreground/60" /><p className="text-sm text-muted-foreground">{t('emptyDefault')}</p></div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredTemplates.map(tpl => {
@@ -492,12 +494,12 @@ export default function AutomationsPage() {
                               ? { background: `color-mix(in srgb, ${cat} 13%, hsl(var(--card)))`, color: cat }
                               : undefined}
                           >
-                            <Icon size={19} weight={tpl.activada ? 'fill' : 'regular'} className={tpl.activada ? undefined : 'text-muted-foreground'} />
+                            <Icon size={19} className={tpl.activada ? undefined : 'text-muted-foreground'} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[13.5px] font-bold text-foreground leading-tight truncate">{tName(tpl.slug, tpl.nombre)}</p>
                             {dest ? (
-                              <span className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1"><Users size={10} weight="bold" /> {dest}</span>
+                              <span className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1"><Users size={10} /> {dest}</span>
                             ) : (
                               <p className="text-[11px] text-muted-foreground line-clamp-1 mt-1">{tShortDesc(tpl.slug, tpl.descripcionCorta)}</p>
                             )}
@@ -521,7 +523,7 @@ export default function AutomationsPage() {
                             <p className="text-[11.5px] font-semibold text-foreground/80 truncate mt-0.5">{tTrigger(tpl.triggerType)}</p>
                           </div>
                           <div className="flex items-center px-1 shrink-0 bg-surface-1" style={{ color: cat }}>
-                            <ArrowRight size={15} weight="bold" />
+                            <ArrowRight size={15} />
                           </div>
                           <div className="flex-1 min-w-0 py-2 px-2.5" style={{ background: `color-mix(in srgb, ${cat} 7%, hsl(var(--card)))` }}>
                             <p className="text-[9px] font-bold uppercase tracking-[0.04em]" style={{ color: cat }}>{t('columns.then')}</p>
@@ -549,7 +551,7 @@ export default function AutomationsPage() {
                             <span className="text-[10.5px] text-muted-foreground">{formatDate(tpl.ultimaEjecucion, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                           )}
                           <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                            {t('configure')} <CaretRight size={13} weight="bold" />
+                            {t('configure')} <ChevronRight size={13} />
                           </span>
                         </div>
                       </div>
@@ -653,13 +655,13 @@ export default function AutomationsPage() {
         onClose={() => setConfigDrawerOpen(false)}
         title={t('configurePrefix', { name: configTemplate ? tName(configTemplate.slug, configTemplate.nombre) : '' })}
         description={t('drawerConfigDesc')}
-        icon={<GearSix size={20} className="text-muted-foreground" />}
+        icon={<Settings size={20} className="text-muted-foreground" />}
         footer={
           <div className="flex items-center justify-end w-full gap-3" data-tour="automations-drawer-actions">
-            <Button type="button" variant="outline" onClick={() => setConfigDrawerOpen(false)}>
+            <Button type="button" variant="wbOutline" onClick={() => setConfigDrawerOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSaveConfig} disabled={savingConfig} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSaveConfig} disabled={savingConfig} className="flex items-center gap-2">
               {savingConfig && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('saveChanges')}
             </Button>
@@ -694,13 +696,13 @@ export default function AutomationsPage() {
                         : 'border-border-default hover:border-border-strong'
                     }`}
                   >
-                    <Icon size={18} weight="regular" className={checked && !ch.locked ? 'text-primary' : 'text-muted-foreground'} />
+                    <Icon size={18} className={checked && !ch.locked ? 'text-primary' : 'text-muted-foreground'} />
                     <span className="flex-1 text-sm text-foreground/80">{t(ch.labelKey)}</span>
                     {ch.locked ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><LockSimple size={12} />{t('channels.notConnected')}</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Lock size={12} />{t('channels.notConnected')}</span>
                     ) : (
                       <span className={`w-4 h-4 rounded border flex items-center justify-center ${checked ? 'bg-primary border-primary' : 'border-border-strong'}`}>
-                        {checked && <Check size={11} weight="bold" className="text-primary-foreground" />}
+                        {checked && <Check size={11} className="text-primary-foreground" />}
                       </span>
                     )}
                   </button>
@@ -791,12 +793,12 @@ export default function AutomationsPage() {
               onClick={() => configTemplate && handleTest(configTemplate.slug, tName(configTemplate.slug, configTemplate.nombre))}
               disabled={!!testingSlug}
             >
-              {testingSlug ? <CircleNotch size={15} className="animate-spin" /> : <Play size={15} weight="fill" />}
+              {testingSlug ? <Loader2 size={15} className="animate-spin" /> : <Play size={15} />}
               {t('runTest')}
             </Button>
             {lastTest && configTemplate && lastTest.slug === configTemplate.slug && (
               <p className={`text-[12px] mt-2 inline-flex items-center gap-1.5 ${lastTest.ok ? 'text-green-600' : 'text-red-600'}`}>
-                {lastTest.ok ? <CheckCircle size={13} weight="fill" /> : <Warning size={13} weight="fill" />}
+                {lastTest.ok ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
                 {lastTest.text}
               </p>
             )}

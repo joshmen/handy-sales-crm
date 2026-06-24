@@ -8,6 +8,7 @@ import { clientService } from '@/services/api/clients';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { getResumenCartera } from '@/services/api/cobranza';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
@@ -55,6 +56,7 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [totalClients, setTotalClients] = useState(0);
+  const [clientesConSaldo, setClientesConSaldo] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 10;
@@ -72,6 +74,14 @@ export default function ClientsPage() {
   // Catálogos para filtros
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
+
+  // "con saldo" para el subtítulo: conteo REAL de clientes con saldo (resumen de
+  // cartera, no solo la página). Solo admin/supervisor (mismo gating que Cobranza);
+  // best-effort: si falla o el rol no aplica, el subtítulo omite la parte de saldo.
+  useEffect(() => {
+    if (!canManageProspects) return;
+    getResumenCartera().then((r) => setClientesConSaldo(r.clientesConSaldo)).catch(() => {});
+  }, [canManageProspects]);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -365,7 +375,11 @@ export default function ClientsPage() {
           { label: t('title') },
         ]}
         title={t('title')}
-        subtitle={totalClients > 0 ? t('subtitleCartera', { count: totalClients }) : undefined}
+        subtitle={totalClients > 0
+          ? clientesConSaldo > 0
+            ? `${t('subtitleCartera', { count: totalClients })} · ${t('subtitleConSaldo', { count: clientesConSaldo })}`
+            : t('subtitleCartera', { count: totalClients })
+          : undefined}
         actions={
           <>
             <div className="relative" data-tour="clients-import-export">

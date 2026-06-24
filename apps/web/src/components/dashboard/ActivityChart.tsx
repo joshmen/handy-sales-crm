@@ -32,9 +32,9 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   // Colores para cada metrica (mismos que la version recharts)
   const colors = useMemo(
     () => ({
-      totalActivities: '#3b82f6', // Azul
-      logins: '#10b981', // Verde
-      uniqueUsers: '#8b5cf6', // Purpura
+      totalActivities: '#0176D3', // Azul
+      logins: '#1F8A5B', // Verde
+      uniqueUsers: '#5867E8', // Purpura
       errors: '#ef4444', // Rojo
     }),
     []

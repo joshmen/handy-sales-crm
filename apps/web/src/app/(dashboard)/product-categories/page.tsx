@@ -37,8 +37,8 @@ import {
   ChevronDown,
   Trash2,
   X,
+  Tag,
 } from 'lucide-react';
-import { Tag } from '@phosphor-icons/react';
 
 const formSchema = z.object({
   nombre: z.string().min(1, 'nameRequired'),
@@ -399,7 +399,7 @@ export default function ProductCategoriesPage() {
                     {batch.selectedIds.has(category.id) && <Check className="w-3 h-3" />}
                   </button>
                   <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <Tag className="w-5 h-5 text-orange-600" weight="duotone" />
+                    <Tag className="w-5 h-5 text-orange-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{category.nombre}</div>
@@ -458,10 +458,10 @@ export default function ProductCategoriesPage() {
         onSave={handleSubmit}
         footer={
           <div data-tour="product-categories-drawer-actions" className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingCategory ? tc('saveChanges') : t('drawer.createCategory')}
             </Button>

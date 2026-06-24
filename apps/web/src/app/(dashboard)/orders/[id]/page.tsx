@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, AlertCircle, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, FileText, ShoppingCart } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { getSectionAccent, accentTileBg } from '@/lib/sectionAccent';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { orderService, type OrderDetail, estadoIntToStatus } from '@/services/api/orders';
@@ -181,7 +182,7 @@ export default function OrderDetailPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
-          <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
+          <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90">
             {t('backToOrders')}
           </button>
         </div>
@@ -211,12 +212,17 @@ export default function OrderDetailPage() {
         ]} />
 
         <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold tracking-tight text-foreground">
-              {t('orderTitle', { number: order.numeroPedido })}
-            </h1>
-            <StatusBadge status={estadoNorm} label={STATUS_LABELS[estadoNorm] ?? estadoNorm} />
-            <TipoVentaBadge tipoVenta={order.tipoVenta} label={order.tipoVenta === 1 ? t('tipoVentaDirecta') : t('tipoVentaPreventa')} />
+          <div className="flex items-center gap-3.5">
+            <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center flex-shrink-0" style={{ background: accentTileBg(getSectionAccent('ventas')), color: getSectionAccent('ventas') }}>
+              <ShoppingCart size={22} />
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-[22px] font-bold tracking-tight text-foreground">
+                {t('orderTitle', { number: order.numeroPedido })}
+              </h1>
+              <StatusBadge status={estadoNorm} label={STATUS_LABELS[estadoNorm] ?? estadoNorm} />
+              <TipoVentaBadge tipoVenta={order.tipoVenta} label={order.tipoVenta === 1 ? t('tipoVentaDirecta') : t('tipoVentaPreventa')} />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

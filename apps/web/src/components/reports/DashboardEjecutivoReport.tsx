@@ -64,7 +64,7 @@ export function DashboardEjecutivoReport() {
   const barOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 600 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%' } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: [chartColors.textPrimary] }, offsetX: 5 },
     xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: chartColors.textMuted } } },

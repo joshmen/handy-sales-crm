@@ -61,7 +61,7 @@ export default function TransferirCarteraPage() {
   const handleSubmit = async () => {
     if (!fromId || !toId) return;
     if (fromId === toId) {
-      toast.error('El vendedor origen y destino no pueden ser el mismo.');
+      toast.error(t('sameSellerError'));
       return;
     }
     setSubmitting(true);

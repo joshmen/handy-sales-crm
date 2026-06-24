@@ -24,12 +24,12 @@ const TIPO_ICONS: Record<string, React.ElementType> = {
 };
 
 const TIPO_COLORS: Record<string, { bar: string; bg: string; text: string; chart: string }> = {
-  ventas:     { bar: "from-emerald-500 to-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600", chart: "#10b981" },
-  zona:       { bar: "from-blue-500 to-blue-400",      bg: "bg-blue-50",    text: "text-blue-600",    chart: "#3b82f6" },
+  ventas:     { bar: "from-emerald-500 to-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600", chart: "#1F8A5B" },
+  zona:       { bar: "from-blue-500 to-blue-400",      bg: "bg-blue-50",    text: "text-blue-600",    chart: "#0176D3" },
   inventario: { bar: "from-red-500 to-red-400",        bg: "bg-red-50",     text: "text-red-500",     chart: "#ef4444" },
-  visitas:    { bar: "from-violet-500 to-violet-400",   bg: "bg-violet-50",  text: "text-violet-600",  chart: "#8b5cf6" },
-  producto:   { bar: "from-amber-500 to-amber-400",     bg: "bg-amber-50",   text: "text-amber-600",   chart: "#f59e0b" },
-  clientes:   { bar: "from-teal-500 to-teal-400",       bg: "bg-teal-50",    text: "text-teal-600",    chart: "#14b8a6" },
+  visitas:    { bar: "from-violet-500 to-violet-400",   bg: "bg-violet-50",  text: "text-violet-600",  chart: "#5867E8" },
+  producto:   { bar: "from-amber-500 to-amber-400",     bg: "bg-amber-50",   text: "text-amber-600",   chart: "#D97706" },
+  clientes:   { bar: "from-teal-500 to-teal-400",       bg: "bg-teal-50",    text: "text-teal-600",    chart: "#06A59A" },
 };
 
 /** Translate backend-generated insight texts (Spanish→locale) */

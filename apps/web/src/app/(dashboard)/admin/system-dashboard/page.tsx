@@ -25,7 +25,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444'];
+const CHART_COLORS = ['#0176D3', '#5867E8', '#06A59A', '#D97706', '#1F8A5B', '#ef4444'];
 
 // Period labels are set dynamically using translations inside the component
 const PERIOD_VALUES = [7, 15, 30, 90];
@@ -182,7 +182,7 @@ export default function SystemDashboardPage() {
         animations: { enabled: true, speed: 600 },
         zoom: { enabled: false },
       },
-      colors: ['#3b82f6', '#8b5cf6'],
+      colors: ['#0176D3', '#5867E8'],
       dataLabels: { enabled: false },
       stroke: { curve: 'smooth', width: 2 },
       markers: { size: 0, hover: { size: 4 } },
@@ -280,7 +280,7 @@ export default function SystemDashboardPage() {
 
   if (loading) {
     return (
-      <PageHeader section="empresa" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
@@ -307,7 +307,7 @@ export default function SystemDashboardPage() {
 
   if (!metrics) {
     return (
-      <PageHeader section="empresa" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">{t('loadErrorShort')}</p>
         </div>
@@ -316,7 +316,7 @@ export default function SystemDashboardPage() {
   }
 
   return (
-    <PageHeader section="empresa" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+    <PageHeader section="superadmin" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

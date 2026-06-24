@@ -72,7 +72,7 @@ export function VentasPeriodoReport() {
       animations: { enabled: true, speed: 800 },
       zoom: { enabled: agrupacion === 'dia' },
     },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     stroke: { curve: 'smooth', width: agrupacion === 'dia' ? 2.5 : 0 },
     fill: agrupacion === 'dia'
       ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] } }

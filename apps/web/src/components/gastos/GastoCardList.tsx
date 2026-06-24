@@ -12,6 +12,7 @@ import {
 } from '@/services/api/gastos';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 /**
  * Componente compartido para listar gastos de una ruta + lightbox foto +
@@ -40,6 +41,7 @@ export function GastoCardList({
   variant = 'drawer',
 }: GastoCardListProps) {
   const { formatCurrency, formatDate } = useFormatters();
+  const t = useTranslations('gastos');
   const [gastos, setGastos] = useState<GastoListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [invalidatingId, setInvalidatingId] = useState<number | null>(null);
@@ -66,11 +68,11 @@ export function GastoCardList({
       setGastos(data.items);
     } catch (err) {
       console.error(err);
-      toast.error('No se pudieron cargar los gastos');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
-  }, [rutaId]);
+  }, [rutaId, t]);
 
   useEffect(() => {
     fetchGastos();
@@ -107,7 +109,7 @@ export function GastoCardList({
     setInvalidatingId(invalidarTarget.id);
     try {
       await gastosService.invalidar(invalidarTarget.id, invalidarMotivo.trim() || undefined);
-      toast.success('Gasto invalidado');
+      toast.success(t('invalidated'));
       onGastoInvalidated?.(invalidarTarget.id);
       setInvalidarTarget(null);
       setInvalidarMotivo('');
@@ -115,11 +117,11 @@ export function GastoCardList({
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : 'Error desconocido';
-      toast.error(`No se pudo invalidar: ${message}`);
+      toast.error(t('cantInvalidate', { message }));
     } finally {
       setInvalidatingId(null);
     }
-  }, [invalidarTarget, invalidarMotivo, fetchGastos, onGastoInvalidated]);
+  }, [invalidarTarget, invalidarMotivo, fetchGastos, onGastoInvalidated, t]);
 
   const openLightbox = useCallback((gasto: GastoListItem) => {
     if (!gasto.comprobanteUrl) return;

@@ -24,16 +24,17 @@ import {
   Trash2,
   Eye,
   ShoppingCart,
+  ShoppingCart as ShoppingCartIcon,
   X,
   ChevronRight,
   Tag,
   CheckCircle2,
   FileEdit,
+  Receipt,
 } from 'lucide-react';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
 import { TabBar } from '@/components/ui/TabBar';
-import { ShoppingCart as ShoppingCartIcon, Receipt } from '@phosphor-icons/react';
 import { getInvoicedOrders, type InvoicedOrder } from '@/services/api/billing';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
@@ -41,8 +42,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { NameAvatar } from '@/components/ui/NameAvatar';
 import { DateFilter } from '@/components/ui/DateFilter';
+import { dayFilterLabel, addDaysIso } from '@/components/ui/dateFilterUtils';
 import { useFormatters } from '@/hooks/useFormatters';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 // Audit M-4: estilos de estado centralizados en lib/constants/orderStatusStyles.ts
 // (antes 22 strings de Tailwind hardcoded en este archivo).
@@ -149,6 +151,8 @@ export default function OrdersPage() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
+  const locale = useLocale();
+  const intlLocale = locale === 'en' ? 'en-US' : 'es-MX';
   const showApiError = useApiErrorToast();
   const { formatCurrency, formatDate, tenantToday } = useFormatters();
   const { data: session } = useSession();
@@ -175,6 +179,7 @@ export default function OrdersPage() {
   const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
   const [estadoFilter, setEstadoFilter] = useState('');
   const [diaFiltro, setDiaFiltro] = useState(() => tenantToday());
+  const [summary, setSummary] = useState({ totalVendido: 0, ticketPromedio: 0, confirmados: 0, borradores: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -186,19 +191,13 @@ export default function OrdersPage() {
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
   const router = useRouter();
 
-  // Calcular total de montos
-  const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
-
-  // KPIs derivados de la página cargada (data REAL del response actual).
-  // No hay endpoint de agregados de pedidos en esta página, así que las
-  // tarjetas resumen lo que está visible en la página vigente. Hint i18n
-  // lo declara explícitamente ("En esta página") para no engañar al usuario.
-  const ordersOnPage = orders.length;
-  const avgTicket = ordersOnPage > 0 ? totalAmount / ordersOnPage : 0;
-  const confirmedCount = orders.filter((o) => o.status === 'confirmed').length;
-  const draftCount = orders.filter((o) => o.status === 'draft').length;
-
-  const periodLabel = (() => { const s = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); })();
+  // Etiqueta del día seleccionado para el subtítulo (Hoy / Ayer / fecha corta).
+  const today = tenantToday();
+  const yesterday = addDaysIso(today, -1);
+  const dateLabel = dayFilterLabel(diaFiltro, {
+    todayIso: today, yesterdayIso: yesterday,
+    todayLabel: tc('today'), yesterdayLabel: tc('yesterday'), locale: intlLocale,
+  });
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -249,12 +248,36 @@ export default function OrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
+  // Resumen del DÍA seleccionado para las KPI cards (no de la página): hasta 200
+  // pedidos del día (tope backend). Sin `estado` para que Confirmados/Borradores
+  // muestren el desglose completo aunque el tab de estado esté en otro valor.
+  const fetchSummary = useCallback(async () => {
+    try {
+      const params: { page: number; pageSize: number; usuarioId?: number; tipoVenta?: number; fechaInicio?: string; fechaFin?: string } = { page: 1, pageSize: 200 };
+      if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
+      if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
+      if (diaFiltro) { params.fechaInicio = diaFiltro; params.fechaFin = diaFiltro; }
+      const res = await orderService.getOrders(params);
+      const items = res.items.map(mapApiOrderToOrder);
+      const noCancel = items.filter((o) => o.status !== 'cancelled');
+      const totalVendido = noCancel.reduce((s, o) => s + o.total, 0);
+      setSummary({
+        totalVendido,
+        ticketPromedio: noCancel.length ? totalVendido / noCancel.length : 0,
+        confirmados: items.filter((o) => o.status === 'confirmed').length,
+        borradores: items.filter((o) => o.status === 'draft').length,
+      });
+    } catch { /* best-effort: las cards conservan su último valor */ }
+  }, [diaFiltro, filterUser, tipoVentaFilter]);
+
+  useEffect(() => { fetchSummary(); }, [fetchSummary]);
+
   // Real-time: refresh orders when mobile creates/updates pedidos
   const { on, off } = useSignalR();
   useEffect(() => {
     const handleUpdate = (...args: unknown[]) => {
       const data = args[0] as { tipo?: string } | undefined;
-      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') fetchOrders();
+      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') { fetchOrders(); fetchSummary(); }
     };
     on('DashboardUpdate', handleUpdate);
     on('PedidoCreated', handleUpdate);
@@ -262,7 +285,7 @@ export default function OrdersPage() {
       off('DashboardUpdate', handleUpdate);
       off('PedidoCreated', handleUpdate);
     };
-  }, [on, off, fetchOrders]);
+  }, [on, off, fetchOrders, fetchSummary]);
 
   // Cargar lista de vendedores (solo para admin)
   useEffect(() => {
@@ -627,7 +650,7 @@ export default function OrdersPage() {
           { label: t('title') },
         ]}
         title={t('title')}
-        subtitle={totalItems > 0 ? `${periodLabel} · ${t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' })}` : undefined}
+        subtitle={`${dateLabel} · ${t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' })}`}
         actions={
           <>
             <div data-tour="orders-date-filter">
@@ -675,10 +698,10 @@ export default function OrdersPage() {
           {/* KPI Row — 4 StatCards estilo mockup (icono en caja + valor por tono). Data real de la página. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {([
-              { title: t('kpis.shownTotal'), value: formatCurrency(totalAmount), hint: t('kpis.shownTotalHint'), icon: ShoppingCart, tone: 'primary' as const },
-              { title: t('kpis.avgTicket'), value: formatCurrency(avgTicket), hint: t('kpis.avgTicketHint'), icon: Tag, tone: 'default' as const },
-              { title: t('kpis.confirmed'), value: String(confirmedCount), hint: t('kpis.confirmedHint'), icon: CheckCircle2, tone: 'default' as const },
-              { title: t('kpis.drafts'), value: String(draftCount), hint: t('kpis.draftsHint'), icon: FileEdit, tone: 'warning' as const },
+              { title: t('kpis.shownTotal'), value: formatCurrency(summary.totalVendido), hint: t('kpis.shownTotalHint'), icon: ShoppingCart, tone: 'primary' as const },
+              { title: t('kpis.avgTicket'), value: formatCurrency(summary.ticketPromedio), hint: t('kpis.avgTicketHint'), icon: Tag, tone: 'default' as const },
+              { title: t('kpis.confirmed'), value: String(summary.confirmados), hint: t('kpis.confirmedHint'), icon: CheckCircle2, tone: 'default' as const },
+              { title: t('kpis.drafts'), value: String(summary.borradores), hint: t('kpis.draftsHint'), icon: FileEdit, tone: 'warning' as const },
             ]).map((card) => {
               const Icon = card.icon;
               const valueTone = card.tone === 'primary' ? 'text-primary' : card.tone === 'warning' ? 'text-amber-600 dark:text-amber-500' : 'text-foreground';
@@ -769,7 +792,7 @@ export default function OrdersPage() {
                     <>
                       <div className="flex items-start gap-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <ShoppingCartIcon className="w-5 h-5 text-blue-600" weight="duotone" />
+                          <ShoppingCartIcon className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-foreground truncate">{order.code}</p>
@@ -815,7 +838,7 @@ export default function OrdersPage() {
                             </button>
                           ) : (
                             <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
-                              <Receipt className="w-3.5 h-3.5 text-primary" weight="bold" /> {t('actions.invoice')}
+                              <Receipt className="w-3.5 h-3.5 text-primary" /> {t('actions.invoice')}
                             </button>
                           );
                         })()}
@@ -865,11 +888,11 @@ export default function OrdersPage() {
         onSave={isViewOnlyMode ? undefined : () => orderFormRef.current?.submit()}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()}>
               {isViewOnlyMode ? tc('close') : tc('cancel')}
             </Button>
             {!isViewOnlyMode && (
-              <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
+              <Button type="button" variant="wbPrimary" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
                 {editingOrder ? t('saveChanges') : t('createOrder')}
               </Button>
             )}

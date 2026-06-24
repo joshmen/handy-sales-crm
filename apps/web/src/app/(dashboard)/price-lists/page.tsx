@@ -28,11 +28,11 @@ import {
   ChevronDown,
   Trash2,
   X,
+  DollarSign,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
-import { CurrencyDollar } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 
@@ -399,7 +399,7 @@ export default function PriceListsPage() {
             sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
             loading={loading}
             loadingMessage={t('loadingLists')}
-            emptyIcon={<CurrencyDollar className="w-16 h-16 text-primary/30" weight="duotone" />}
+            emptyIcon={<DollarSign className="w-16 h-16 text-primary/30" />}
             emptyTitle={
               hasSearchNoMatch
                 ? t('noMatchingLists')
@@ -435,7 +435,7 @@ export default function PriceListsPage() {
                     {batch.selectedIds.has(list.id) && <Check className="w-3 h-3" />}
                   </button>
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <CurrencyDollar className="w-5 h-5 text-primary" weight="duotone" />
+                    <DollarSign className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{list.nombre}</div>
@@ -491,10 +491,10 @@ export default function PriceListsPage() {
         onSave={handleSaveList}
         footer={
           <div data-tour="pricelists-drawer-actions" className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingList}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={savingList}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSaveList} disabled={savingList} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSaveList} disabled={savingList} className="flex items-center gap-2">
               {savingList && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingList ? tc('saveChanges') : t('newList')}
             </Button>

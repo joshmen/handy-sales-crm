@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, type LucideIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 export interface ReportColumn<T> {
   key: string;
@@ -20,6 +23,13 @@ interface ReportTableProps<T> {
   maxHeight?: string;
   showIndex?: boolean;
   footerRow?: Record<string, React.ReactNode>;
+  /** Estados reutilizables (SLDS Claude Design). Opcionales y retrocompatibles. */
+  loading?: boolean;
+  error?: boolean | string;
+  onRetry?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyIcon?: LucideIcon;
 }
 
 export function ReportTable<T extends Record<string, unknown>>({
@@ -29,6 +39,12 @@ export function ReportTable<T extends Record<string, unknown>>({
   maxHeight = '500px',
   showIndex,
   footerRow,
+  loading,
+  error,
+  onRetry,
+  emptyTitle,
+  emptyDescription,
+  emptyIcon,
 }: ReportTableProps<T>) {
   const tc = useTranslations('reports.common');
   const resolvedEmptyMessage = emptyMessage || tc('noData');
@@ -60,10 +76,26 @@ export function ReportTable<T extends Record<string, unknown>>({
     }
   };
 
+  if (loading) {
+    return (
+      <div className="overflow-hidden border border-border-subtle rounded-lg">
+        <TableSkeleton columns={columns.length + (showIndex ? 1 : 0)} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="border border-border-subtle rounded-lg">
+        <ErrorState message={typeof error === 'string' ? error : undefined} onRetry={onRetry} compact />
+      </div>
+    );
+  }
+
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        {resolvedEmptyMessage}
+      <div className="border border-border-subtle rounded-lg">
+        <EmptyState title={emptyTitle || resolvedEmptyMessage} description={emptyDescription} icon={emptyIcon} compact />
       </div>
     );
   }

@@ -31,6 +31,7 @@ import {
   Layers,
   RefreshCw,
   ChevronDown,
+  ChevronRight,
   Loader2,
   Calendar,
   ArrowLeftRight,
@@ -39,11 +40,11 @@ import {
   ArrowUpFromLine,
   SlidersHorizontal,
   ArrowRight,
+  Package as PackageIcon,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { Package as PackageIcon, CaretRight } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { useBusinessEvents } from '@/hooks/useBusinessEvents';
@@ -671,7 +672,7 @@ export default function InventoryPage() {
       ]}
       title={t('title')}
       subtitle={activeTab === 'almacen'
-        ? (totalItems > 0 ? t('subtitle', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined)
+        ? ((summary?.skusActivos ?? 0) > 0 ? t('subtitle', { skus: summary?.skusActivos ?? 0 }) : undefined)
         : (movTotalItems > 0 ? t('movementsSubtitle', { count: movTotalItems, plural: movTotalItems !== 1 ? 's' : '' }) : undefined)
       }
       actions={activeTab === 'almacen' ? almacenActions : movimientosActions}
@@ -770,7 +771,7 @@ export default function InventoryPage() {
                           <img src={item.product.images[0]} alt={item.product.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
                         ) : (
                           <div className={`w-8 h-8 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
-                            <PackageIcon className={`w-4 h-4 ${color.icon}`} weight="duotone" />
+                            <PackageIcon className={`w-4 h-4 ${color.icon}`} />
                           </div>
                         )}
                         <div className="min-w-0">
@@ -789,7 +790,7 @@ export default function InventoryPage() {
                     const e = getEstado(item);
                     return <SoftBadge tone={e.tone}>{e.label}</SoftBadge>;
                   }},
-                  { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" weight="bold" /> },
+                  { key: 'arrow', label: '', width: 32, cellRenderer: () => <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" /> },
                 ] as DataGridColumn<InventoryItem>[]}
                 data={inventoryItems}
                 keyExtractor={(item) => item.id}
@@ -810,7 +811,7 @@ export default function InventoryPage() {
                           <img src={item.product.images[0]} alt={item.product.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
                         ) : (
                           <div className={`w-10 h-10 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
-                            <PackageIcon className={`w-5 h-5 ${color.icon}`} weight="duotone" />
+                            <PackageIcon className={`w-5 h-5 ${color.icon}`} />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
@@ -1060,10 +1061,10 @@ export default function InventoryPage() {
         onSave={handleSubmit}
         footer={
           <div data-tour="inventory-drawer-actions" className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={submitting}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={submitting}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {modalMode === 'create' ? t('drawer.createAdjustment') : t('drawer.saveChanges')}
             </Button>

@@ -21,7 +21,7 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 type Periodo = 'semana' | 'mes' | 'trimestre';
 
 // Paleta del donut por categoría (vibra del mockup Claude Design: azul primario, ámbar, azul, verde…).
-const CATEGORY_PALETTE = ['#0176D3', '#D97706', '#2563EB', '#16A34A', '#DB2777', '#0891B2', '#94A3B8'];
+const CATEGORY_PALETTE = ['#0176D3', '#D97706', '#2563EB', '#1F8A5B', '#DB2777', '#0891B2', '#94A3B8'];
 
 /** Rango de fechas + agrupación del gráfico según el período seleccionado. */
 function rangeForPeriodo(periodo: Periodo): { desde: string; hasta: string; agrupacion: 'dia' | 'semana' | 'mes' } {

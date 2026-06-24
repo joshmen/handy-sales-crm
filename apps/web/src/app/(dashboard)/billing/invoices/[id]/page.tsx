@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Receipt } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { getSectionAccent, accentTileBg } from '@/lib/sectionAccent';
 import {
   getFactura,
   timbrarFactura,
@@ -221,6 +222,9 @@ export default function InvoiceDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
+            <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center flex-shrink-0" style={{ background: accentTileBg(getSectionAccent('empresa')), color: getSectionAccent('empresa') }}>
+              <Receipt size={22} />
+            </div>
             <h1 className="text-[22px] font-bold tracking-tight text-foreground">
               {t('invoiceTitle', { folio: folioDisplay })}
             </h1>

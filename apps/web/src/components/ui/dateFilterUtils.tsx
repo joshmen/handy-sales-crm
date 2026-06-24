@@ -61,6 +61,34 @@ export function fmtShortIso(iso: string, intlLocale: string): string {
   return `${d} ${mon}`;
 }
 
+/**
+ * Etiqueta del día seleccionado para subtítulos: "Hoy" / "Ayer" / "12 jun".
+ * Los textos "Hoy"/"Ayer" los inyecta el caller con i18n (common.today/yesterday).
+ */
+export function dayFilterLabel(
+  iso: string,
+  opts: { todayIso: string; yesterdayIso: string; todayLabel: string; yesterdayLabel: string; locale: string },
+): string {
+  if (iso === opts.todayIso) return opts.todayLabel;
+  if (iso === opts.yesterdayIso) return opts.yesterdayLabel;
+  return fmtShortIso(iso, opts.locale);
+}
+
+/**
+ * Etiqueta del rango seleccionado para subtítulos: "Esta semana" / "Este mes" /
+ * "Este trimestre" / "1 jun a 30 jun". Los textos de atajo los inyecta el caller
+ * con i18n (dateFilters.week/month/quarter). Sin guiones largos/medios en UI.
+ */
+export function rangeFilterLabel(
+  range: { mode: string; from: string; to: string },
+  opts: { locale: string; weekLabel: string; monthLabel: string; quarterLabel: string },
+): string {
+  if (range.mode === 'semana') return opts.weekLabel;
+  if (range.mode === 'mes') return opts.monthLabel;
+  if (range.mode === 'trimestre') return opts.quarterLabel;
+  return `${fmtShortIso(range.from, opts.locale)} a ${fmtShortIso(range.to, opts.locale)}`;
+}
+
 /** "Junio 2026" — encabezado del calendario. */
 export function monthLabel(y: number, m: number, intlLocale: string): string {
   const dt = new Date(Date.UTC(y, m - 1, 1, 12));
@@ -135,9 +163,9 @@ export function MonthGrid({ view, onPrev, onNext, minIso, maxIso, intlLocale, ce
                 disabled
                   ? 'text-muted-foreground/40 cursor-not-allowed'
                   : st.selected
-                    ? 'bg-success text-success-foreground font-bold'
+                    ? 'bg-primary text-primary-foreground font-bold'
                     : st.inRange
-                      ? 'bg-success/15 text-success'
+                      ? 'bg-primary/15 text-primary'
                       : 'text-foreground hover:bg-surface-2'
               )}
             >

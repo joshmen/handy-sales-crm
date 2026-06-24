@@ -14,6 +14,7 @@ import {
 } from '@/services/api/devoluciones';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 /**
  * Componente compartido para listar devoluciones de pedidos de una ruta + lightbox foto +
@@ -43,6 +44,7 @@ export function DevolucionCardList({
   variant = 'drawer',
 }: DevolucionCardListProps) {
   const { formatCurrency, formatDate } = useFormatters();
+  const t = useTranslations('returns');
   const [devoluciones, setDevoluciones] = useState<DevolucionListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [anulandoId, setAnulandoId] = useState<number | null>(null);
@@ -67,11 +69,11 @@ export function DevolucionCardList({
       setDevoluciones(data.items);
     } catch (err) {
       console.error(err);
-      toast.error('No se pudieron cargar las devoluciones');
+      toast.error(t('loadError'));
     } finally {
       setLoading(false);
     }
-  }, [rutaId]);
+  }, [rutaId, t]);
 
   useEffect(() => {
     fetchDevoluciones();
@@ -108,7 +110,7 @@ export function DevolucionCardList({
     setAnulandoId(anularTarget.id);
     try {
       await devolucionesService.anular(anularTarget.id, anularMotivo.trim() || undefined);
-      toast.success('Devolución anulada');
+      toast.success(t('annulled'));
       onDevolucionAnulada?.(anularTarget.id);
       setAnularTarget(null);
       setAnularMotivo('');
@@ -116,11 +118,11 @@ export function DevolucionCardList({
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : 'Error desconocido';
-      toast.error(`No se pudo anular: ${message}`);
+      toast.error(t('cantAnnul', { message }));
     } finally {
       setAnulandoId(null);
     }
-  }, [anularTarget, anularMotivo, fetchDevoluciones, onDevolucionAnulada]);
+  }, [anularTarget, anularMotivo, fetchDevoluciones, onDevolucionAnulada, t]);
 
   const openLightbox = useCallback((dev: DevolucionListItem) => {
     if (!dev.fotoEvidenciaUrl) return;

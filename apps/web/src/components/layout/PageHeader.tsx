@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, Package, Truck, BarChart3, Users, Receipt } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Truck, BarChart3, Users, Receipt, Shield } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem } from '@/components/ui/Breadcrumb';
 import { getSectionAccent, accentTileBg, SECTION_LABEL, type SectionKey } from '@/lib/sectionAccent';
 
@@ -15,6 +15,7 @@ const SECTION_DEFAULT_ICON: Record<SectionKey, HeaderIcon> = {
   herramientas: BarChart3,
   equipo: Users,
   empresa: Receipt,
+  superadmin: Shield,
 };
 
 interface PageHeaderProps {

@@ -29,7 +29,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   title,
   subtitle,
   type = "area",
-  color = "#06b6d4",
+  color = "#0176D3",
   height = 300,
   isLoading = false,
   className = "",

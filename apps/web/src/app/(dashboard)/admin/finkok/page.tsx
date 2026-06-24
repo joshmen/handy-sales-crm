@@ -172,7 +172,7 @@ export default function FinkokAdminPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={Coins}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[

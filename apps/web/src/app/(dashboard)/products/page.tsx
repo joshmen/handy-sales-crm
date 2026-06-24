@@ -29,6 +29,7 @@ import {
   Download,
   ChevronDown,
   Package,
+  Package as PackageIcon,
   Trash2,
   X,
   AlertTriangle,
@@ -36,7 +37,6 @@ import {
 import { BatchAutocomplete } from '@/components/billing/SatAutocomplete';
 import { searchCatalogoProdServ, searchCatalogoUnidad } from '@/services/api/billing';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { Package as PackageIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
@@ -447,7 +447,7 @@ export default function ProductsPage() {
             <img src={product.images[0]} alt={product.name} className="w-9 h-9 rounded-[9px] object-cover flex-shrink-0" />
           ) : (
             <div className="w-9 h-9 rounded-[9px] bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <PackageIcon className="w-[18px] h-[18px] text-primary" weight="duotone" />
+              <PackageIcon className="w-[18px] h-[18px] text-primary" />
             </div>
           )}
           <div className="min-w-0">
@@ -748,7 +748,7 @@ export default function ProductsPage() {
                           <img src={product.images[0]} alt={product.name} className="w-10 h-10 rounded-md object-cover" />
                         ) : (
                           <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                            <PackageIcon className="w-5 h-5 text-primary" weight="duotone" />
+                            <PackageIcon className="w-5 h-5 text-primary" />
                           </div>
                         )}
                       </div>
@@ -873,10 +873,10 @@ export default function ProductsPage() {
           }}
           footer={
             <div className="flex justify-end gap-3" data-tour="product-drawer-actions">
-              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
+              <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
                 {tc('cancel')}
               </Button>
-              <Button type="submit" form="product-form" variant="success" disabled={savingProduct || loadingCatalogs || !watch('familiaId')} className="flex items-center gap-2">
+              <Button type="submit" form="product-form" variant="wbPrimary" disabled={savingProduct || loadingCatalogs || !watch('familiaId')} className="flex items-center gap-2">
                 {savingProduct && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingProduct ? tc('saveChanges') : t('drawer.createProduct')}
               </Button>

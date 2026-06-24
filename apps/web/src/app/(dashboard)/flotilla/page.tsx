@@ -486,10 +486,10 @@ export default function FlotillaPage() {
         }}
         footer={
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingVehicle}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={savingVehicle}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" form="vehicle-form" variant="success" disabled={savingVehicle} className="flex items-center gap-2">
+            <Button type="submit" form="vehicle-form" variant="wbPrimary" disabled={savingVehicle} className="flex items-center gap-2">
               {savingVehicle && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('drawer.save')}
             </Button>

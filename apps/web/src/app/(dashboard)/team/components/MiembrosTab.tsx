@@ -1675,10 +1675,10 @@ function AdminUsersView({ onExportReady, onCreateReady }: { onExportReady?: (fn:
         title={t("editUserTitle")}
         footer={
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={closeProfileDrawer}>
+            <Button variant="wbOutline" onClick={closeProfileDrawer}>
               {t('cancel')}
             </Button>
-            <Button variant="success" onClick={handleUpdateUser}>
+            <Button variant="wbPrimary" onClick={handleUpdateUser}>
               {t('saveChanges')}
             </Button>
           </div>

@@ -24,7 +24,7 @@ interface QueryResult { source: string; columns: { name: string; label: string; 
 
 type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'table';
 
-const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316', '#ec4899'];
+const CHART_COLORS = ['#0176D3', '#1F8A5B', '#D97706', '#5867E8', '#06A59A', '#9050E9', '#ef4444', '#94A3B8'];
 
 const AGGREGATE_OPTIONS: SearchableSelectOption[] = [
   { value: 'SUM', label: 'SUM' }, { value: 'AVG', label: 'AVG' },

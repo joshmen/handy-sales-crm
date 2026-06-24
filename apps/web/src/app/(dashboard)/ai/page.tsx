@@ -2,29 +2,32 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import {
-  Atom, Sparkle, FileText, ChartBar, TrendUp, ChatCircle,
-  Lightning, Question, PaperPlaneTilt,
-  User as UserIcon, Users, MagnifyingGlass, Target,
-  CalendarPlus, CurrencyDollar, MapPin, Package, CheckCircle, Warning,
-} from '@phosphor-icons/react';
-import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
-import { Loader2 } from 'lucide-react';
+  Loader2,
+  Atom, Sparkles, FileText, BarChart3, TrendingUp, MessageCircle,
+  Zap, CircleHelp, Send,
+  User as UserIcon, Target,
+  CalendarPlus, DollarSign, MapPin, Package, AlertTriangle,
+  Wallet, Users, ShoppingCart, Plus, MessageSquare,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   SbClients, SbBarChart, SbLightbulb, SbTrendingUp, SbSearch, SbGoals,
 } from '@/components/layout/DashboardIcons';
 import { queryAi, getAiCredits, getAiUsageStats, executeAiAction } from '@/services/api/ai';
 import type { AiCreditBalance, AiUsageStats, AiSuggestedAction } from '@/services/api/ai';
+import { matchLocal, AI_INSIGHTS, type MatchListItem, type MatchNavAction, type AiInsight } from './_matcher';
 
 // ─── Action type config ──────────────────────────────────────────
 const ACTION_TYPES = [
   { value: 'resumen', labelKey: 'actionTypes.resumen', icon: FileText, cost: 1, color: 'emerald', descKey: 'actionTypes.resumenDesc' },
-  { value: 'insight', labelKey: 'actionTypes.insight', icon: ChartBar, cost: 2, color: 'violet', descKey: 'actionTypes.insightDesc' },
-  { value: 'pregunta', labelKey: 'actionTypes.pregunta', icon: ChatCircle, cost: 3, color: 'sky', descKey: 'actionTypes.preguntaDesc' },
-  { value: 'pronostico', labelKey: 'actionTypes.pronostico', icon: TrendUp, cost: 5, color: 'amber', descKey: 'actionTypes.pronosticoDesc' },
+  { value: 'insight', labelKey: 'actionTypes.insight', icon: BarChart3, cost: 2, color: 'violet', descKey: 'actionTypes.insightDesc' },
+  { value: 'pregunta', labelKey: 'actionTypes.pregunta', icon: MessageCircle, cost: 3, color: 'sky', descKey: 'actionTypes.preguntaDesc' },
+  { value: 'pronostico', labelKey: 'actionTypes.pronostico', icon: TrendingUp, cost: 5, color: 'amber', descKey: 'actionTypes.pronosticoDesc' },
 ] as const;
 
 type ActionType = typeof ACTION_TYPES[number]['value'];
@@ -49,14 +52,16 @@ interface ChatMessage {
   latenciaMs?: number;
   timestamp: Date;
   accionesSugeridas?: AiSuggestedAction[];
+  list?: MatchListItem[];
+  navActions?: MatchNavAction[];
 }
 
 // ─── AI Hero icon ──
 function AiHeroGem() {
   return (
     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary flex items-center justify-center">
-      <Atom size={28} weight="duotone" className="text-primary-foreground sm:hidden" />
-      <Atom size={32} weight="duotone" className="text-primary-foreground hidden sm:block" />
+      <Atom size={28} className="text-primary-foreground sm:hidden" />
+      <Atom size={32} className="text-primary-foreground hidden sm:block" />
     </div>
   );
 }
@@ -65,7 +70,7 @@ function AiHeroGem() {
 function AiChatAvatar() {
   return (
     <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 mt-1">
-      <Sparkle size={14} weight="fill" className="text-primary-foreground" />
+      <Sparkles size={14} className="text-primary-foreground" />
     </div>
   );
 }
@@ -98,7 +103,7 @@ function HelpTooltip() {
         className="flex items-center justify-center w-8 h-8 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-all duration-200 hover:shadow-sm"
         aria-label={t('helpTitle')}
       >
-        <Question size={15} weight="bold" />
+        <CircleHelp size={15} />
       </button>
       {open && (
         <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
@@ -109,7 +114,7 @@ function HelpTooltip() {
               return (
                 <div key={a.value} className="flex items-start gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${colorMap[a.color]}`}>
-                    <Icon size={16} weight="fill" />
+                    <Icon size={16} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -188,7 +193,7 @@ function WelcomeState({
                   </span>
                   <div className="flex items-center gap-1.5 mt-2">
                     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${actionBadgeColor[s.action]}`}>
-                      {React.createElement(actionConfig.icon, { size: 10, weight: 'fill' as const })}
+                      {React.createElement(actionConfig.icon, { size: 10 })}
                       {t(actionConfig.labelKey)}
                     </span>
                     <span className="text-[10px] text-muted-foreground">{actionConfig.cost} {t('creditUnit')}</span>
@@ -203,43 +208,83 @@ function WelcomeState({
   );
 }
 
-// ─── No plan gate ────────────────────────────────────────────────
-function NoPlanGate() {
-  const t = useTranslations('ai');
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
-      <div className="relative mb-8 opacity-0 animate-ai-fade-up" style={{ animationFillMode: 'forwards' }}>
-        <div className="w-16 h-16 rounded-2xl bg-amber-500 dark:bg-amber-600 flex items-center justify-center">
-          <Lightning size={32} weight="fill" className="text-white" />
-        </div>
-      </div>
-      <h2 className="text-2xl font-bold text-foreground dark:text-white mb-3 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-        {t('notAvailable')}
-      </h2>
-      <p className="text-sm text-muted-foreground dark:text-muted-foreground max-w-md mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
-        {t('notAvailableDesc')}
-      </p>
-      <div className="opacity-0 animate-ai-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
-        <Button
-          onClick={() => window.location.href = '/subscription'}
-          className="!rounded-xl !px-6 !py-3 !bg-primary hover:!bg-primary/90 !text-primary-foreground !border-0"
-        >
-          <Sparkle size={18} weight="fill" className="mr-2" />
-          {t('viewPlans')}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Action icon map ─────────────────────────────────────────────
-const ACTION_ICON_MAP: Record<string, PhosphorIcon> = {
+const ACTION_ICON_MAP: Record<string, LucideIcon> = {
   calendar: CalendarPlus,
-  money: CurrencyDollar,
+  money: DollarSign,
   target: Target,
   route: MapPin,
   package: Package,
 };
+
+// ─── Nav action icon map (local matcher) ─────────────────────────
+const NAV_ICONS: Record<string, LucideIcon> = {
+  wallet: Wallet,
+  package: Package,
+  users: Users,
+  route: MapPin,
+  chart: BarChart3,
+  cart: ShoppingCart,
+};
+
+// ─── Insight tone config (local matcher) ─────────────────────────
+const INSIGHT_TONE: Record<AiInsight['tone'], string> = {
+  primary: '#0176D3',
+  warning: '#D97706',
+  danger: '#EF4444',
+};
+
+const INSIGHT_ICONS: Record<AiInsight['icon'], LucideIcon> = {
+  users: Users,
+  trending: TrendingUp,
+  package: Package,
+};
+
+// Initials from a name: "Carlos Mendoza" → "CM"
+function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
+// ─── Proactive insight cards ─────────────────────────────────────
+function InsightsRow({ onAsk }: { onAsk: (question: string) => void }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      {AI_INSIGHTS.map((insight) => {
+        const Icon = INSIGHT_ICONS[insight.icon];
+        const color = INSIGHT_TONE[insight.tone];
+        return (
+          <button
+            key={insight.id}
+            onClick={() => onAsk(insight.question)}
+            className="group text-left bg-card border border-border rounded-2xl p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+            style={{ borderLeftWidth: 3, borderLeftColor: color }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+                  color,
+                }}
+              >
+                <Icon size={17} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-sm text-foreground dark:text-white">{insight.title}</div>
+                <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-0.5">{insight.desc}</p>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Action buttons for AI suggestions ───────────────────────────
 function ActionButtons({
@@ -281,7 +326,7 @@ function ActionButtons({
     <div className="flex flex-col gap-2 mt-3">
       <p className="text-[11px] font-semibold text-muted-foreground dark:text-muted-foreground">{t('suggestedActions')}</p>
       {actions.map((action) => {
-        const Icon = ACTION_ICON_MAP[action.icon] || Lightning;
+        const Icon = ACTION_ICON_MAP[action.icon] || Zap;
         const isConfirming = confirming === action.actionId;
         const isExecuting = executing === action.actionId;
 
@@ -314,9 +359,9 @@ function ActionButtons({
               {isExecuting ? (
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               ) : isConfirming ? (
-                <Warning size={16} weight="fill" />
+                <AlertTriangle size={16} />
               ) : (
-                <Icon size={16} weight="duotone" />
+                <Icon size={16} />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -345,7 +390,7 @@ function ActionButtons({
 }
 
 // ─── Chat message bubble ─────────────────────────────────────────
-function MessageBubble({ message, isLatest, onActionExecute, executingAction }: { message: ChatMessage; isLatest: boolean; onActionExecute: (action: AiSuggestedAction) => void; executingAction: string | null }) {
+function MessageBubble({ message, isLatest, onActionExecute, executingAction, onNavigate }: { message: ChatMessage; isLatest: boolean; onActionExecute: (action: AiSuggestedAction) => void; executingAction: string | null; onNavigate: (href: string) => void }) {
   const t = useTranslations('ai');
   const locale = useLocale();
   const isUser = message.role === 'user';
@@ -376,12 +421,54 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
           <div className="whitespace-pre-wrap break-words">{message.content}</div>
         </div>
 
+        {/* Local matcher list (assistant only) */}
+        {!isUser && message.list && message.list.length > 0 && (
+          <div className="mt-2 rounded-2xl border border-border bg-card divide-y divide-border overflow-hidden shadow-sm">
+            {message.list.map((item, i) => (
+              <div key={`${item.name}-${i}`} className="flex items-center gap-3 px-3 py-2.5">
+                <div className="w-8 h-8 rounded-full bg-surface-2 text-muted-foreground flex items-center justify-center shrink-0 text-[11px] font-semibold">
+                  {initialsOf(item.name)}
+                </div>
+                <span className="flex-1 min-w-0 text-sm font-medium text-foreground dark:text-gray-200 truncate">
+                  {item.name}
+                </span>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-semibold text-foreground dark:text-white tabular-nums">{item.value}</div>
+                  {item.sub && (
+                    <div className="text-[10px] text-muted-foreground dark:text-muted-foreground">{item.sub}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Local matcher nav actions (assistant only) */}
+        {!isUser && message.navActions && message.navActions.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
+            {message.navActions.map((action, i) => {
+              const Icon = action.icon ? NAV_ICONS[action.icon] || Sparkles : Sparkles;
+              return (
+                <Button
+                  key={`${action.href}-${i}`}
+                  variant="wbOutline"
+                  size="sm"
+                  onClick={() => onNavigate(action.href)}
+                >
+                  <Icon size={14} className="mr-1.5" />
+                  {action.label}
+                </Button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Metadata line for assistant messages */}
         {!isUser && (actionConfig || message.latenciaMs) && (
           <div className="flex items-center gap-2 mt-1.5 px-1">
             {actionConfig && message.tipoAccion && (
               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${actionBadgeColor[message.tipoAccion]}`}>
-                {React.createElement(actionConfig.icon, { size: 10, weight: 'fill' as const })}
+                {React.createElement(actionConfig.icon, { size: 10 })}
                 {t(actionConfig.labelKey)}
               </span>
             )}
@@ -420,7 +507,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
       {/* User avatar */}
       {isUser && (
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center shrink-0 mt-1 shadow-sm">
-          <UserIcon size={15} weight="fill" className="text-muted-foreground dark:text-muted-foreground/60" />
+          <UserIcon size={15} className="text-muted-foreground dark:text-muted-foreground/60" />
         </div>
       )}
     </div>
@@ -449,11 +536,13 @@ function TypingIndicator() {
 export default function AiPage() {
   const t = useTranslations('ai');
   const tc = useTranslations('common');
+  const router = useRouter();
   const [credits, setCredits] = useState<AiCreditBalance | null>(null);
   const [, setStats] = useState<AiUsageStats | null>(null);
   const [selectedAction, setSelectedAction] = useState<ActionType>('pregunta');
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCredits, setLoadingCredits] = useState(true);
   const [inputFocused, setInputFocused] = useState(false);
@@ -488,27 +577,46 @@ export default function AiPage() {
     }
   }, [prompt]);
 
-  // ── Submit message ────────────────────────────────────────────
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const text = prompt.trim();
+  // ── Derived: does this tenant lack an AI plan? (local demo mode) ─
+  const isNoPlan = !loadingCredits && !!credits && (credits.plan === 'free' || credits.plan === 'basico');
+
+  // ── Submit message (hybrid: local matcher OR real backend) ─────
+  const submitPrompt = async (text: string, action: ActionType) => {
     if (!text || loading) return;
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content: text,
-      tipoAccion: selectedAction,
+      tipoAccion: action,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setPrompt('');
     setLoading(true);
 
+    // ── Local demo mode (no AI plan): keyword matcher, no credits ──
+    if (isNoPlan) {
+      setTimeout(() => {
+        const match = matchLocal(text);
+        const assistantMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: match.content,
+          list: match.list,
+          navActions: match.actions,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+        setLoading(false);
+      }, 600);
+      return;
+    }
+
+    // ── Real backend path (unchanged) ────────────────────────────
     try {
       const result = await queryAi({
-        tipoAccion: selectedAction,
+        tipoAccion: action,
         prompt: text,
       });
 
@@ -516,7 +624,7 @@ export default function AiPage() {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: result.respuesta,
-        tipoAccion: selectedAction,
+        tipoAccion: action,
         creditosUsados: result.creditosUsados,
         latenciaMs: result.latenciaMs,
         timestamp: new Date(),
@@ -543,6 +651,25 @@ export default function AiPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Submit handler (form / Enter) ─────────────────────────────
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = prompt.trim();
+    if (!text || loading) return;
+    setPrompt('');
+    submitPrompt(text, selectedAction);
+  };
+
+  // ── Start a new conversation (presentation-only history) ──────
+  const newConversation = () => {
+    const firstUser = messages.find((m) => m.role === 'user');
+    if (firstUser) {
+      setConversations((prev) => [{ id: crypto.randomUUID(), title: firstUser.content }, ...prev]);
+    }
+    setMessages([]);
+    setPrompt('');
   };
 
   // ── Handle action execute ────────────────────────────────────
@@ -584,11 +711,10 @@ export default function AiPage() {
     }
   };
 
-  // ── Handle suggestion click ───────────────────────────────────
+  // ── Handle suggestion click (immediately asks + answers) ──────
   const handleSuggestion = (text: string, action: ActionType) => {
     setSelectedAction(action);
-    setPrompt(text);
-    setTimeout(() => textareaRef.current?.focus(), 50);
+    submitPrompt(text, action);
   };
 
   // ── Handle keyboard shortcut ──────────────────────────────────
@@ -602,7 +728,7 @@ export default function AiPage() {
   // ── Derived state ─────────────────────────────────────────────
   const selectedActionConfig = ACTION_TYPES.find((a) => a.value === selectedAction)!;
   const hasCredits = credits && credits.disponibles > 0;
-  const noPlan = !loadingCredits && credits && (credits.plan === 'free' || credits.plan === 'basico');
+  const noPlan = isNoPlan;
   const hasMessages = messages.length > 0;
 
   const actionPillColors: Record<string, { active: string; inactive: string }> = {
@@ -627,7 +753,7 @@ export default function AiPage() {
   return (
     <PageHeader
       section="herramientas"
-      icon={Sparkle}
+      icon={Sparkles}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title') },
@@ -635,30 +761,59 @@ export default function AiPage() {
       title={t('title')}
       subtitle={t('subtitle')}
     >
-      {/* Container — full height chat layout */}
-      <div className="flex flex-col h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)] min-h-[400px] sm:min-h-[500px]">
+      {/* Container — full height chat layout (rail + chat column) */}
+      <div className="flex gap-4 h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)] min-h-[400px] sm:min-h-[500px]">
 
-        {/* ── Top bar: Credit pill + Help ─────────────────────── */}
-        {!noPlan && (
-          <div className="flex items-center justify-end gap-2.5 pb-3">
-            {!loadingCredits && credits && (
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-card border border-border text-sm shadow-sm">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
-                    <Lightning size={11} weight="fill" className="text-white" />
-                  </div>
-                  <span className="font-bold text-foreground tabular-nums">
-                    {credits.disponibles}
-                  </span>
-                  <span className="text-muted-foreground text-xs">{t('credits')}</span>
+        {/* ── Conversations rail (desktop) ────────────────────── */}
+        <aside className="hidden lg:flex flex-col lg:w-[230px] shrink-0 gap-3">
+          <Button variant="wbPrimary" size="sm" onClick={newConversation} className="w-full justify-center">
+            <Plus size={15} className="mr-1.5" />
+            {t('newConversation')}
+          </Button>
+          {conversations.length > 0 && (
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => setMessages([])}
+                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-surface-1 hover:text-foreground transition-colors"
+                >
+                  <MessageSquare size={14} className="shrink-0" />
+                  <span className="truncate">{conv.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </aside>
+
+        {/* ── Chat column ─────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col min-w-0">
+
+        {/* ── Top bar: Credit pill (plan) or demo badge + Help ── */}
+        <div className="flex items-center justify-end gap-2.5 pb-3">
+          {noPlan && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
+              <Sparkles size={12} />
+              {t('demoMode')}
+            </span>
+          )}
+          {!noPlan && !loadingCredits && credits && (
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-card border border-border text-sm shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
+                  <Zap size={11} className="text-white" />
                 </div>
-                <div className="w-px h-4 bg-border" />
-                <span className="text-xs font-medium text-primary capitalize">{credits.plan}</span>
+                <span className="font-bold text-foreground tabular-nums">
+                  {credits.disponibles}
+                </span>
+                <span className="text-muted-foreground text-xs">{t('credits')}</span>
               </div>
-            )}
-            <HelpTooltip />
-          </div>
-        )}
+              <div className="w-px h-4 bg-border" />
+              <span className="text-xs font-medium text-primary capitalize">{credits.plan}</span>
+            </div>
+          )}
+          <HelpTooltip />
+        </div>
 
         {/* ── Main content area ───────────────────────────────── */}
         {loadingCredits ? (
@@ -668,23 +823,33 @@ export default function AiPage() {
             </div>
             <p className="text-sm text-muted-foreground">{t('loadingAssistant')}</p>
           </div>
-        ) : noPlan ? (
-          <NoPlanGate />
-        ) : !hasMessages ? (
-          <WelcomeState onSelectSuggestion={handleSuggestion} />
         ) : (
-          /* ── Chat messages ──────────────────────────────────── */
-          <div className="flex-1 overflow-y-auto px-1 pb-4 space-y-4 scroll-smooth">
-            {messages.map((msg, idx) => (
-              <MessageBubble key={msg.id} message={msg} isLatest={idx >= messages.length - 2} onActionExecute={handleActionExecute} executingAction={executingAction} />
-            ))}
-            {loading && <TypingIndicator />}
-            <div ref={messagesEndRef} />
+          /* ── Insights + welcome/messages ────────────────────── */
+          <div className="flex-1 overflow-y-auto px-1 pb-4 scroll-smooth flex flex-col">
+            <InsightsRow onAsk={(q) => submitPrompt(q, 'pregunta')} />
+            {!hasMessages ? (
+              <WelcomeState onSelectSuggestion={handleSuggestion} />
+            ) : (
+              <div className="space-y-4">
+                {messages.map((msg, idx) => (
+                  <MessageBubble
+                    key={msg.id}
+                    message={msg}
+                    isLatest={idx >= messages.length - 2}
+                    onActionExecute={handleActionExecute}
+                    executingAction={executingAction}
+                    onNavigate={(href) => router.push(href)}
+                  />
+                ))}
+                {loading && <TypingIndicator />}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
         )}
 
         {/* ── Input bar ───────────────────────────────────────── */}
-        {!noPlan && !loadingCredits && (
+        {!loadingCredits && (
           <div className="mt-auto pt-3">
             {/* Action type pills */}
             <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-3 flex-wrap">
@@ -701,9 +866,9 @@ export default function AiPage() {
                         : actionPillColors[action.value].inactive
                     }`}
                   >
-                    <Icon size={13} weight={isSelected ? 'fill' : 'regular'} />
+                    <Icon size={13} />
                     {t(action.labelKey)}
-                    <span className="text-[10px] opacity-60">{action.cost}{t('creditUnit')}</span>
+                    {!noPlan && <span className="text-[10px] opacity-60">{action.cost}{t('creditUnit')}</span>}
                   </button>
                 );
               })}
@@ -732,7 +897,7 @@ export default function AiPage() {
                   />
                   <Button
                     type="submit"
-                    disabled={!prompt.trim() || loading || !hasCredits}
+                    disabled={!prompt.trim() || loading || (!noPlan && !hasCredits)}
                     className={`!rounded-xl !p-2.5 shrink-0 transition-all duration-200 ${
                       prompt.trim() && !loading
                         ? '!bg-primary hover:!bg-primary/90 !text-primary-foreground !border-0 !shadow-sm'
@@ -742,7 +907,7 @@ export default function AiPage() {
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <PaperPlaneTilt size={18} weight="fill" />
+                      <Send size={18} />
                     )}
                   </Button>
                 </div>
@@ -752,11 +917,13 @@ export default function AiPage() {
             {/* Cost hint */}
             <div className="flex items-center justify-between mt-1.5 sm:mt-2 px-1 sm:px-2">
               <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  {React.createElement(selectedActionConfig.icon, { size: 10, weight: 'fill' as const })}
-                  {selectedActionConfig.cost} {t('creditUnit')}
-                </span>
-                {credits && (
+                {!noPlan && (
+                  <span className="inline-flex items-center gap-1">
+                    {React.createElement(selectedActionConfig.icon, { size: 10 })}
+                    {selectedActionConfig.cost} {t('creditUnit')}
+                  </span>
+                )}
+                {!noPlan && credits && (
                   <span className="ml-1">· {credits.disponibles} {t('available')}</span>
                 )}
               </p>
@@ -771,6 +938,7 @@ export default function AiPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </PageHeader>
   );

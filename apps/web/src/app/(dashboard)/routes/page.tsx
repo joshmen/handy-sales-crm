@@ -40,7 +40,6 @@ import {
 import { exportToCsv } from '@/services/api/importExport';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { SoftBadge, type SoftBadgeTone } from '@/components/ui/SoftBadge';
-import { Path } from '@phosphor-icons/react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { usePermissions } from '@/hooks/usePermissions';
 import { dateOnlyToUTC } from '@/lib/formatters';
@@ -253,7 +252,7 @@ export default function RoutesPage() {
       key: 'zona', label: t('columns.zone'), width: 'flex', cellRenderer: (d) => (
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0" style={{ background: d.atrasada ? 'rgba(220,38,38,0.10)' : 'rgba(1,118,211,0.10)', color: d.atrasada ? '#DC2626' : '#0176D3' }}>
-            <Path className="w-[18px] h-[18px]" weight="duotone" />
+            <RouteIcon className="w-[18px] h-[18px]" />
           </div>
           <div className="min-w-0">
             <p className="text-[13px] font-semibold text-foreground truncate">{d.r.zonaNombre || d.r.nombre}</p>
@@ -340,7 +339,7 @@ export default function RoutesPage() {
         { label: t('title') },
       ]}
       title={isVendedor ? t('myRoute') : t('title')}
-      subtitle={t('dashboard.subtitle')}
+      subtitle={t('subtitle')}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {canViewTeam && (
@@ -408,7 +407,7 @@ export default function RoutesPage() {
           onRowClick={(d) => setDetailRoute(d.r)}
           loading={activeLoading}
           loadingMessage={t('loadingMessage')}
-          emptyIcon={<Path className="w-8 h-8 text-muted-foreground/60" weight="duotone" />}
+          emptyIcon={<RouteIcon className="w-8 h-8 text-muted-foreground/60" />}
           emptyTitle={t('dashboard.emptyTitle')}
           emptyMessage={t('dashboard.emptyHint')}
           mobileCardRenderer={(d) => {
@@ -418,7 +417,7 @@ export default function RoutesPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0" style={{ background: d.atrasada ? 'rgba(220,38,38,0.10)' : 'rgba(1,118,211,0.10)', color: d.atrasada ? '#DC2626' : '#0176D3' }}>
-                      <Path className="w-[18px] h-[18px]" weight="duotone" />
+                      <RouteIcon className="w-[18px] h-[18px]" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{d.r.zonaNombre || d.r.nombre}</p>
@@ -443,7 +442,7 @@ export default function RoutesPage() {
         isOpen={!!detailRoute}
         onClose={() => setDetailRoute(null)}
         title={detailRoute ? (detailRoute.zonaNombre || detailRoute.nombre) : ''}
-        icon={<Path className="w-5 h-5 text-primary" weight="duotone" />}
+        icon={<RouteIcon className="w-5 h-5 text-primary" />}
         width="md"
         footer={
           <div className="flex items-center justify-between w-full gap-3">

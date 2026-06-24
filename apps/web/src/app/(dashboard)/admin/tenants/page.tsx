@@ -396,7 +396,7 @@ export default function TenantsPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={Building2}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[

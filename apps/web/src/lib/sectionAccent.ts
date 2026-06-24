@@ -10,7 +10,8 @@ export type SectionKey =
   | 'operacion'
   | 'herramientas'
   | 'equipo'
-  | 'empresa';
+  | 'empresa'
+  | 'superadmin';
 
 export const SECTION_ACCENT: Record<SectionKey, string> = {
   navegacion: '#0176D3', // azul (Navegación / general)
@@ -20,6 +21,7 @@ export const SECTION_ACCENT: Record<SectionKey, string> = {
   herramientas: '#0176D3', // azul
   equipo: '#9050E9', // violeta
   empresa: '#C77B05', // ámbar (Facturación / Empresa)
+  superadmin: '#0176D3', // azul (Administración / Super Admin)
 };
 
 /** Default Spanish eyebrow label per section (override per-page when needed). */
@@ -31,6 +33,7 @@ export const SECTION_LABEL: Record<SectionKey, string> = {
   herramientas: 'Herramientas',
   equipo: 'Equipo',
   empresa: 'Empresa',
+  superadmin: 'Administración',
 };
 
 /** Resolve a section's accent hex; falls back to the brand blue. */

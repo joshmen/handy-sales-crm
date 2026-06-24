@@ -68,7 +68,7 @@ export function AnalisisABCReport() {
     chart: { type: "line", toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     stroke: { width: [0, 3], curve: "smooth" },
     plotOptions: { bar: { borderRadius: 4, columnWidth: "60%" } },
-    colors: [chartColors.series.green, chartColors.series.blue],
+    colors: [chartColors.series.blue, chartColors.series.amber],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
     xaxis: { categories: top20.map(i => i.nombre.substring(0, 15)), labels: { style: { fontSize: "9px", colors: chartColors.textMuted }, rotate: -30 } },

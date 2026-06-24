@@ -97,15 +97,15 @@ export default function DashboardPage() {
     if (!err) return;
     authErrorShown.current = true;
     if (err === 'unauthorized') {
-      toast.error('No tienes permisos para acceder a esa sección.');
+      toast.error(t('unauthorizedSection'));
     } else if (err === 'no_permission') {
-      toast.error('No tienes el permiso requerido para esa acción.');
+      toast.error(t('noPermissionAction'));
     }
     // Limpia el query param para que el toast no se muestre de nuevo al recargar.
     const url = new URL(window.location.href);
     url.searchParams.delete('error');
     window.history.replaceState({}, '', url.toString());
-  }, [searchParams]);
+  }, [searchParams, t]);
   const { isImpersonating } = useImpersonationStore();
   const [isLoading, setIsLoading] = useState(true);
   const [vendedorPerf, setVendedorPerf] = useState<VendedorPerformance | null>(null);

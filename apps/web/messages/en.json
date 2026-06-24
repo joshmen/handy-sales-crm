@@ -890,6 +890,8 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Sales and activity overview",
+    "unauthorizedSection": "You don't have permission to access that section.",
+    "noPermissionAction": "You don't have the required permission for that action.",
     "execSummary": "Executive summary",
     "execSummaryWith": "Executive summary · {company}",
     "deliveriesByStatus": "Breakdown by delivery status",
@@ -1060,13 +1062,13 @@
     "to": "To",
     "kpis": {
       "shownTotal": "Shown total",
-      "shownTotalHint": "On this page",
+      "shownTotalHint": "Total for the period",
       "avgTicket": "Average ticket",
-      "avgTicketHint": "Per order on page",
+      "avgTicketHint": "Per order",
       "confirmed": "Confirmed",
-      "confirmedHint": "On this page",
+      "confirmedHint": "In the period",
       "drafts": "Drafts",
-      "draftsHint": "On this page"
+      "draftsHint": "In the period"
     },
     "tabs": {
       "all": "All",
@@ -1248,7 +1250,8 @@
       "searchPlaceholder": "Search vendor…",
       "onlyActive": "Only active clients (recommended)",
       "submit": "Reassign portfolio",
-      "submitting": "Transferring…"
+      "submitting": "Transferring…",
+      "sameSellerError": "The source and target vendor cannot be the same."
     },
     "newClient": "New client",
     "searchPlaceholder": "Search client...",
@@ -1280,6 +1283,7 @@
     },
     "upToDate": "Up to date",
     "subtitleCartera": "{count} in portfolio",
+    "subtitleConSaldo": "{count} with balance",
     "noZone": "No zone",
     "noCategory": "No category",
     "filters": {
@@ -1723,6 +1727,7 @@
   },
   "routes": {
     "title": "Routes",
+    "subtitle": "Today · route planning and progress",
     "myRoute": "My route",
     "armarCarga": {
       "title": "Build van-load",
@@ -2439,7 +2444,7 @@
       "shrinkage": "Shrinkage",
       "transfer": "Transfer"
     },
-    "subtitle": "{count} product{plural}",
+    "subtitle": "{skus} SKUs",
     "movementsSubtitle": "{count} movement{plural}",
     "columns": {
       "product": "Product",
@@ -2843,6 +2848,7 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Company and system settings",
+    "comingSoonCustomRoles": "Coming soon: create custom roles",
     "tabs": {
       "companyProfile": "Profile",
       "brand": "Brand",
@@ -3236,6 +3242,7 @@
       "runNow": "Analyze now",
       "runNowSuccess": "Analysis completed",
       "lastRun": "Last updated: {when}",
+      "subtitleDesc": "Clients likely to reorder, based on their frequency",
       "noData": "No analysis data yet",
       "noDataHint": "Click 'Analyze now' to run the automation for the first time",
       "noLocationHint": "No flagged clients have a registered location; they only appear in the table.",
@@ -4682,6 +4689,7 @@
   "gastos": {
     "title": "Expenses",
     "subtitle": "Accounting expenses for the period feeding your income statement, VAT and DIOT",
+    "subtitleRange": "{from} to {to} · {count} expense{plural}",
     "newExpense": "New expense",
     "apply": "Apply",
     "from": "From",
@@ -4704,6 +4712,8 @@
     "deleted": "Expense deleted",
     "errorLoading": "Could not load expenses",
     "errorDeleting": "Could not delete the expense",
+    "invalidated": "Expense invalidated",
+    "cantInvalidate": "Could not invalidate: {message}",
     "emptyTitle": "No expenses in the period",
     "emptyMessage": "Record your first expense to feed the income statement.",
     "emptySearchTitle": "No results",
@@ -4727,6 +4737,11 @@
       "supplierName": "Supplier name",
       "supplierNamePlaceholder": "E.g. Inmobiliaria del Centro SA"
     }
+  },
+  "returns": {
+    "loadError": "Could not load returns",
+    "annulled": "Return annulled",
+    "cantAnnul": "Could not annul: {message}"
   },
   "goals": {
     "title": "Goals",
@@ -4811,7 +4826,7 @@
   },
   "flotilla": {
     "title": "Fleet",
-    "subtitle": "{count} vehicles",
+    "subtitle": "Delivery fleet · {count} units",
     "newVehicle": "New vehicle",
     "searchPlaceholder": "Search by plate or driver...",
     "noDriver": "Unassigned",
@@ -5360,6 +5375,8 @@
     "available": "avail.",
     "send": "send",
     "newLine": "new line",
+    "newConversation": "New conversation",
+    "demoMode": "Demo mode",
     "placeholders": {
       "resumen": "Paste the notes or data you want to summarize...",
       "insight": "Describe the data you want to analyze...",
@@ -5919,8 +5936,8 @@
       "active": "Active",
       "all": "All"
     },
-    "listSingular": "list",
-    "listPlural": "lists",
+    "listSingular": "active list",
+    "listPlural": "active lists",
     "newList": "New list",
     "searchPlaceholder": "Search price list...",
     "showInactive": "Show inactive",
@@ -6304,7 +6321,10 @@
       "repeatTour": "Repeat tour for this page",
       "notNow": "Not now",
       "dontShowAgain": "Don't show again"
-    }
+    },
+    "comingSoon": "Coming soon: {label}",
+    "comingSoonCall": "Coming soon: call support",
+    "comingSoonWrite": "Coming soon: write to support"
   },
   "announcements": {
     "closeBanner": "Close announcement",
@@ -6515,7 +6535,16 @@
     "categoryPayments": "Payments",
     "statusAvailable": "Available",
     "statusComingSoon": "Coming soon",
-    "statusDiscontinued": "Discontinued"
+    "statusDiscontinued": "Discontinued",
+    "connectionSuccess": "Connection successful",
+    "credentialsSaved": "Credentials saved",
+    "copiedToClipboard": "Copied to clipboard",
+    "apiKeyRevoked": "API key revoked",
+    "apiKeyGenerated": "API key generated",
+    "webhookAdded": "Webhook added",
+    "webhookEnabled": "Webhook enabled",
+    "webhookDisabled": "Webhook disabled",
+    "retryQueued": "Retry queued"
   },
   "admin": {
     "breadcrumb": "Administration",

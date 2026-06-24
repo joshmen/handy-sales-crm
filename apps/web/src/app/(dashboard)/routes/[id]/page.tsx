@@ -20,6 +20,7 @@ import { zoneService } from '@/services/api/zones';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { getSectionAccent, accentTileBg } from '@/lib/sectionAccent';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
@@ -360,6 +361,9 @@ export default function RouteDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
+            <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center flex-shrink-0" style={{ background: accentTileBg(getSectionAccent('operacion')), color: getSectionAccent('operacion') }}>
+              <Truck size={22} />
+            </div>
             <div className="flex flex-col">
               <h1 className="text-[22px] font-bold tracking-tight text-foreground">{route.nombre}</h1>
               {route.codigo && (

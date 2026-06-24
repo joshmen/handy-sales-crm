@@ -57,7 +57,7 @@ export function RentabilidadClienteReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: "65%" } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: [chartColors.textPrimary] }, offsetX: 5 },
     xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: "11px", colors: chartColors.textMuted } } },

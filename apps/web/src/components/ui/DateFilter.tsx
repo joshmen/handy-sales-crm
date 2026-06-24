@@ -43,15 +43,16 @@ export function DateFilter({ value, onChange, retentionDays, note }: DateFilterP
   const isCustom = !isHoy && !isAyer;
   const dateLabel = isCustom && value ? fmtShortIso(value, intlLocale) : t('pickDate');
 
+  // Espejo del `.web-seg` del Claude Design: activo = azul sólido + texto blanco.
   const seg = (active: boolean) =>
-    cn('px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
-      active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground');
+    cn('px-3.5 py-[7px] text-[13px] font-semibold rounded-[9px] transition-colors',
+      active ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground');
 
   const prevMonth = () => setView(v => (v.m === 1 ? { y: v.y - 1, m: 12 } : { y: v.y, m: v.m - 1 }));
   const nextMonth = () => setView(v => (v.m === 12 ? { y: v.y + 1, m: 1 } : { y: v.y, m: v.m + 1 }));
 
   return (
-    <div className="inline-flex rounded-lg border border-border-subtle bg-surface-1 p-0.5">
+    <div className="inline-flex rounded-[11px] bg-surface-3 p-[3px]">
       <button type="button" onClick={() => onChange(today)} aria-pressed={isHoy} className={seg(isHoy)}>{tc('today')}</button>
       <button type="button" onClick={() => onChange(yesterday)} aria-pressed={isAyer} className={seg(isAyer)}>{tc('yesterday')}</button>
       <Popover open={open} onOpenChange={setOpen}>

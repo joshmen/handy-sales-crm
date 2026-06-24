@@ -74,7 +74,7 @@ export function CumplimientoMetasReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "40%" } },
-    colors: [chartColors.textMuted, chartColors.series.green],
+    colors: [chartColors.textMuted, chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
     xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },

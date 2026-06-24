@@ -26,12 +26,12 @@ import {
   Trash2,
   Check,
   X,
+  Users,
 } from 'lucide-react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
-import { UsersThree } from '@phosphor-icons/react';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 
@@ -318,14 +318,14 @@ export default function ClientCategoriesPage() {
                 sort={{ key: sortKey, direction: sortDir, onSort: handleSort }}
                 loading={loading}
                 loadingMessage={t('loadingCategories')}
-                emptyIcon={<UsersThree className="w-10 h-10 text-muted-foreground" weight="duotone" />}
+                emptyIcon={<Users className="w-10 h-10 text-muted-foreground" />}
                 emptyTitle={searchTerm ? t('emptySearchTitle') : t('emptyTitle')}
                 emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
                 mobileCardRenderer={(category) => (
                   <div className={!category.activo ? 'opacity-60' : ''}>
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded bg-foreground flex items-center justify-center flex-shrink-0">
-                        <UsersThree className="w-5 h-5 text-white" weight="duotone" />
+                        <Users className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-foreground truncate">{category.nombre}</div>
@@ -357,16 +357,16 @@ export default function ClientCategoriesPage() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title={editingCategory ? t('drawer.titleEdit') : t('drawer.titleNew')}
-          icon={<UsersThree className="w-5 h-5" weight="duotone" />}
+          icon={<Users className="w-5 h-5" />}
           width="sm"
           isDirty={isDirty}
           onSave={handleSubmit}
           footer={
             <div data-tour="client-categories-drawer-actions" className="flex items-center justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+              <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
                 {tc('cancel')}
               </Button>
-              <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+              <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingCategory ? tc('saveChanges') : t('drawer.createCategory')}
               </Button>

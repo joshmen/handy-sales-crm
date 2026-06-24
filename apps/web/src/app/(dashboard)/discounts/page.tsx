@@ -34,7 +34,6 @@ import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
-import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
@@ -551,7 +550,7 @@ export default function DiscountsPage() {
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-start gap-2 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-[10px] bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400 flex items-center justify-center flex-shrink-0">
-                        <PercentIcon className="w-5 h-5" weight="duotone" />
+                        <Percent className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">{discount.descuentoPorcentaje}% {t('discount')}</p>
@@ -598,10 +597,10 @@ export default function DiscountsPage() {
         onSave={handleSubmit}
         footer={
           <div className="flex justify-end gap-3" data-tour="discounts-drawer-actions">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingDiscount ? tc('saveChanges') : t('newDiscount')}
             </Button>

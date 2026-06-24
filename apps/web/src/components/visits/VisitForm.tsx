@@ -156,10 +156,10 @@ export const VisitForm: React.FC<VisitFormProps> = ({
 
       {/* Botones */}
       <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="wbOutline" onClick={onCancel}>
           {tc('cancel')}
         </Button>
-        <Button type="submit" variant="success">
+        <Button type="submit" variant="wbPrimary">
           {t('scheduleVisit')}
         </Button>
       </div>

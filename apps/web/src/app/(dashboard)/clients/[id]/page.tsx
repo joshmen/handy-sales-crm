@@ -4,8 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Users } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { getSectionAccent, accentTileBg } from '@/lib/sectionAccent';
 import { clientService } from '@/services/api/clients';
 import { orderService, type OrderListItem } from '@/services/api/orders';
 import type { Client } from '@/types';
@@ -118,16 +119,21 @@ export default function ClientDetailPage() {
         ]} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl sm:text-[22px] font-bold tracking-tight text-foreground">{client.name}</h1>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-primary bg-primary/10' : 'text-foreground/80 bg-surface-3'}`}>
-              {client.isActive ? tc('active') : tc('inactive')}
-            </span>
-            {client.esProspecto && (
-              <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-50">
-                {tc('prospect')}
+          <div className="flex items-center gap-3.5">
+            <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center flex-shrink-0" style={{ background: accentTileBg(getSectionAccent('catalogo')), color: getSectionAccent('catalogo') }}>
+              <Users size={22} />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-[22px] font-bold tracking-tight text-foreground">{client.name}</h1>
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-primary bg-primary/10' : 'text-foreground/80 bg-surface-3'}`}>
+                {client.isActive ? tc('active') : tc('inactive')}
               </span>
-            )}
+              {client.esProspecto && (
+                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-50">
+                  {tc('prospect')}
+                </span>
+              )}
+            </div>
           </div>
 
           <Link

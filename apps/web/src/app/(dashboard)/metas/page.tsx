@@ -15,6 +15,7 @@ import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { rangeFilterLabel } from '@/components/ui/dateFilterUtils';
 import { startOfMonthIso } from '@/components/ui/dateFilterUtils';
 import { NameAvatar } from '@/components/ui/NameAvatar';
 import { SoftBadge, type SoftBadgeTone } from '@/components/ui/SoftBadge';
@@ -38,9 +39,9 @@ import {
   RefreshCw,
   TrendingUp,
   AlertTriangle,
+  Target,
 } from 'lucide-react';
-import { Target } from '@phosphor-icons/react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -106,6 +107,9 @@ const nextMonthStrFromTenantToday = (today: string) => {
 export default function MetasPage() {
   const t = useTranslations('goals');
   const tc = useTranslations('common');
+  const td = useTranslations('dateFilters');
+  const locale = useLocale();
+  const intlLocale = locale === 'en' ? 'en-US' : 'es-MX';
   const showApiError = useApiErrorToast();
   const { formatDate, formatDateOnly, formatNumber, tenantToday } = useFormatters();
   const todayStr = () => todayStrFromTenantToday(tenantToday());
@@ -277,6 +281,10 @@ export default function MetasPage() {
   // en camino >=70 (verde) / por debajo 40-69 (ambar) / en riesgo <40 (rojo).
   const metasActivasList = metas.filter(m => m.activo);
   const metasActivas = metasActivasList.length;
+  // Etiqueta del rango seleccionado para el subtítulo (Esta semana / Este mes / rango).
+  const rangeLabel = rangeFilterLabel(rango, {
+    locale: intlLocale, weekLabel: td('week'), monthLabel: td('month'), quarterLabel: td('quarter'),
+  });
   const teamAvance = metasActivas > 0
     ? Math.round(metasActivasList.reduce((s, m) => s + Math.min(100, m.progresoPct), 0) / metasActivas)
     : 0;
@@ -418,7 +426,7 @@ export default function MetasPage() {
         { label: t('vendorGoals') },
       ]}
       title={t('vendorGoals')}
-      subtitle={t('teamObjectives')}
+      subtitle={`${rangeLabel} · ${t('summary.nActiveGoals', { count: metasActivas })}`}
       actions={
         <div className="flex items-center gap-2">
           <DateRangeFilter
@@ -603,7 +611,7 @@ export default function MetasPage() {
           sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
           loading={loading}
           loadingMessage={t('loadingGoals')}
-          emptyIcon={<Target className="w-8 h-8 text-muted-foreground/60" weight="duotone" />}
+          emptyIcon={<Target className="w-8 h-8 text-muted-foreground/60" />}
           emptyTitle={searchTerm || filterTipo ? t('emptyFiltered') : t('emptyDefault')}
           mobileCardRenderer={(meta) => (
             <div className="space-y-3">
@@ -663,7 +671,7 @@ export default function MetasPage() {
         isOpen={isDrawerOpen}
         onClose={closeDrawer}
         title={editingMeta ? t('editGoal') : t('newGoal')}
-        icon={<Target className="w-5 h-5" weight="duotone" />}
+        icon={<Target className="w-5 h-5" />}
         isDirty={isDirty}
       >
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -806,10 +814,10 @@ export default function MetasPage() {
 
           {/* Buttons */}
           <div className="flex gap-3 pt-2" data-tour="metas-drawer-actions">
-            <Button type="button" variant="outline" onClick={closeDrawer} className="flex-1">
+            <Button type="button" variant="wbOutline" onClick={closeDrawer} className="flex-1">
               {tc('cancel')}
             </Button>
-            <Button type="submit" variant="success" disabled={actionLoading} className="flex-1 flex items-center justify-center gap-2">
+            <Button type="submit" variant="wbPrimary" disabled={actionLoading} className="flex-1 flex items-center justify-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingMeta ? t('saveChanges') : t('createGoal')}
             </Button>

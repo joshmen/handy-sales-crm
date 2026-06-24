@@ -64,7 +64,7 @@ export function VentasZonaReport() {
   const donutOptions: ApexCharts.ApexOptions = {
     chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
     labels: zonesWithSales.map(z => z.nombre),
-    colors: [chartColors.series.green, chartColors.series.blue, chartColors.series.amber, chartColors.series.red, chartColors.series.purple, chartColors.series.cyan, '#ec4899', '#14b8a6'],
+    colors: [...chartColors.categorical, chartColors.series.cyan, chartColors.series.red],
     plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: tc('total'), fontSize: '12px', color: chartColors.textSecondary, formatter: () => fmt(data?.totales.totalVentas || 0) } } } } },
     legend: { position: 'bottom', fontSize: '12px' },
     dataLabels: { enabled: true, formatter: (val) => `${Number(val).toFixed(0)}%` },

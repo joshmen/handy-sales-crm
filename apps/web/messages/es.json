@@ -890,6 +890,8 @@
   "dashboard": {
     "title": "Tablero",
     "subtitle": "Resumen de ventas y actividad",
+    "unauthorizedSection": "No tienes permisos para acceder a esa sección.",
+    "noPermissionAction": "No tienes el permiso requerido para esa acción.",
     "execSummary": "Resumen ejecutivo",
     "execSummaryWith": "Resumen ejecutivo · {company}",
     "deliveriesByStatus": "Distribución por estado de entrega",
@@ -1060,13 +1062,13 @@
     "to": "Hasta",
     "kpis": {
       "shownTotal": "Total mostrado",
-      "shownTotalHint": "En esta página",
+      "shownTotalHint": "Total del período",
       "avgTicket": "Ticket promedio",
-      "avgTicketHint": "Por pedido en página",
+      "avgTicketHint": "Por pedido",
       "confirmed": "Confirmados",
-      "confirmedHint": "En esta página",
+      "confirmedHint": "En el período",
       "drafts": "Borradores",
-      "draftsHint": "En esta página"
+      "draftsHint": "En el período"
     },
     "tabs": {
       "all": "Todos",
@@ -1248,7 +1250,8 @@
       "searchPlaceholder": "Buscar vendedor…",
       "onlyActive": "Solo clientes activos (recomendado)",
       "submit": "Reasignar cartera",
-      "submitting": "Transfiriendo…"
+      "submitting": "Transfiriendo…",
+      "sameSellerError": "El vendedor origen y destino no pueden ser el mismo."
     },
     "newClient": "Nuevo cliente",
     "searchPlaceholder": "Buscar cliente...",
@@ -1280,6 +1283,7 @@
     },
     "upToDate": "Al día",
     "subtitleCartera": "{count} en cartera",
+    "subtitleConSaldo": "{count} con saldo",
     "noZone": "Sin zona",
     "noCategory": "Sin categoría",
     "filters": {
@@ -1723,6 +1727,7 @@
   },
   "routes": {
     "title": "Rutas",
+    "subtitle": "Hoy · planeación y avance de la jornada",
     "myRoute": "Mi ruta",
     "armarCarga": {
       "title": "Armar carga",
@@ -2439,7 +2444,7 @@
       "shrinkage": "Merma",
       "transfer": "Transferencia"
     },
-    "subtitle": "{count} producto{plural}",
+    "subtitle": "{skus} SKUs",
     "movementsSubtitle": "{count} movimiento{plural}",
     "columns": {
       "product": "Producto",
@@ -2843,6 +2848,7 @@
   "settings": {
     "title": "Configuración",
     "subtitle": "Configuración de la empresa y el sistema",
+    "comingSoonCustomRoles": "Próximamente: crear roles personalizados",
     "tabs": {
       "companyProfile": "Perfil",
       "brand": "Marca",
@@ -3236,6 +3242,7 @@
       "runNow": "Analizar ahora",
       "runNowSuccess": "Análisis completado",
       "lastRun": "Última actualización: {when}",
+      "subtitleDesc": "Clientes que probablemente necesitan resurtir, según su frecuencia",
       "noData": "Sin datos del análisis todavía",
       "noDataHint": "Click 'Analizar ahora' para correr la automatización por primera vez",
       "noLocationHint": "Ningún cliente flaggeado tiene ubicación registrada; aparecen solo en la tabla.",
@@ -4682,6 +4689,7 @@
   "gastos": {
     "title": "Gastos",
     "subtitle": "Gastos contables del período para tu estado de resultados, IVA y DIOT",
+    "subtitleRange": "{from} a {to} · {count} gasto{plural}",
     "newExpense": "Nuevo gasto",
     "apply": "Consultar",
     "from": "Desde",
@@ -4704,6 +4712,8 @@
     "deleted": "Gasto eliminado",
     "errorLoading": "No se pudieron cargar los gastos",
     "errorDeleting": "No se pudo eliminar el gasto",
+    "invalidated": "Gasto invalidado",
+    "cantInvalidate": "No se pudo invalidar: {message}",
     "emptyTitle": "Sin gastos en el período",
     "emptyMessage": "Registra tu primer gasto para alimentar el estado de resultados.",
     "emptySearchTitle": "Sin resultados",
@@ -4727,6 +4737,11 @@
       "supplierName": "Nombre del proveedor",
       "supplierNamePlaceholder": "Ej. Inmobiliaria del Centro SA"
     }
+  },
+  "returns": {
+    "loadError": "No se pudieron cargar las devoluciones",
+    "annulled": "Devolución anulada",
+    "cantAnnul": "No se pudo anular: {message}"
   },
   "goals": {
     "title": "Metas",
@@ -4811,7 +4826,7 @@
   },
   "flotilla": {
     "title": "Flotilla",
-    "subtitle": "{count} vehículos",
+    "subtitle": "Flotilla de reparto · {count} unidades",
     "newVehicle": "Nuevo vehículo",
     "searchPlaceholder": "Buscar por placa o chofer...",
     "noDriver": "Sin asignar",
@@ -5360,6 +5375,8 @@
     "available": "disp.",
     "send": "enviar",
     "newLine": "nueva línea",
+    "newConversation": "Nueva conversación",
+    "demoMode": "Modo demo",
     "placeholders": {
       "resumen": "Pega las notas o datos que quieras resumir...",
       "insight": "Describe los datos que quieres analizar...",
@@ -5919,8 +5936,8 @@
       "active": "Activas",
       "all": "Todas"
     },
-    "listSingular": "lista",
-    "listPlural": "listas",
+    "listSingular": "lista activa",
+    "listPlural": "listas activas",
     "newList": "Nueva lista",
     "searchPlaceholder": "Buscar lista de precios...",
     "showInactive": "Mostrar inactivas",
@@ -6304,7 +6321,10 @@
       "repeatTour": "Repetir tour de esta página",
       "notNow": "Ahora no",
       "dontShowAgain": "No volver a mostrar"
-    }
+    },
+    "comingSoon": "Próximamente: {label}",
+    "comingSoonCall": "Próximamente: llamar a soporte",
+    "comingSoonWrite": "Próximamente: escribir a soporte"
   },
   "announcements": {
     "closeBanner": "Cerrar anuncio",
@@ -6515,7 +6535,16 @@
     "categoryPayments": "Pagos",
     "statusAvailable": "Disponible",
     "statusComingSoon": "Próximamente",
-    "statusDiscontinued": "Descontinuado"
+    "statusDiscontinued": "Descontinuado",
+    "connectionSuccess": "Conexión exitosa",
+    "credentialsSaved": "Credenciales guardadas",
+    "copiedToClipboard": "Copiada al portapapeles",
+    "apiKeyRevoked": "API key revocada",
+    "apiKeyGenerated": "API key generada",
+    "webhookAdded": "Webhook agregado",
+    "webhookEnabled": "Webhook activado",
+    "webhookDisabled": "Webhook desactivado",
+    "retryQueued": "Reintento encolado"
   },
   "admin": {
     "breadcrumb": "Administración",

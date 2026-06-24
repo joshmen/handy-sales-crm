@@ -8,25 +8,20 @@ import {
   RefreshCw,
   Search,
   X,
-} from 'lucide-react';
-import {
   Bug,
-  Warning,
-  ShieldWarning,
-  CheckCircle,
+  AlertTriangle,
+  ShieldAlert,
+  CheckCircle2,
   Clock,
-  DeviceMobile,
+  Smartphone,
   Code,
   User,
-  Buildings,
-  CalendarDots,
-  CloudArrowUp,
-  ArrowsClockwise,
-  CaretDown,
-  CaretRight,
-  GearSix,
-  WarningCircle,
-} from '@phosphor-icons/react';
+  Building2,
+  CalendarDays,
+  UploadCloud,
+  Settings,
+  AlertCircle,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -72,21 +67,21 @@ function getSeverityBadge(severity: string) {
     case 'CRASH':
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-          <ShieldWarning size={14} weight="fill" className="text-red-600" />
+          <ShieldAlert size={14} className="text-red-600" />
           Crash
         </span>
       );
     case 'ERROR':
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-800">
-          <Bug size={14} weight="fill" className="text-orange-600" />
+          <Bug size={14} className="text-orange-600" />
           Error
         </span>
       );
     case 'WARNING':
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">
-          <Warning size={14} weight="fill" className="text-yellow-600" />
+          <AlertTriangle size={14} className="text-yellow-600" />
           Warning
         </span>
       );
@@ -99,14 +94,14 @@ function getEstadoBadge(resuelto: boolean, labels: { resolved: string; pending: 
   if (resuelto) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-        <CheckCircle size={14} weight="fill" className="text-primary" />
+        <CheckCircle2 size={14} className="text-primary" />
         {labels.resolved}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
-      <Clock size={14} weight="fill" className="text-muted-foreground" />
+      <Clock size={14} className="text-muted-foreground" />
       {labels.pending}
     </span>
   );
@@ -245,13 +240,13 @@ function LogLevelControls() {
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
-          <GearSix size={18} weight="duotone" className="text-muted-foreground" />
+          <Settings size={18} className="text-muted-foreground" />
           {t('logLevel')}
         </span>
         {open ? (
-          <CaretDown size={16} className="text-muted-foreground" />
+          <ChevronDown size={16} className="text-muted-foreground" />
         ) : (
-          <CaretRight size={16} className="text-muted-foreground" />
+          <ChevronRight size={16} className="text-muted-foreground" />
         )}
       </button>
 
@@ -295,7 +290,7 @@ function LogLevelControls() {
 
               {hasVerboseLevel && (
                 <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2.5 text-xs text-amber-900 dark:text-amber-100">
-                  <WarningCircle size={16} weight="fill" className="text-amber-600 shrink-0 mt-0.5" />
+                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
                   <span>
                     Niveles Info o Debug activos: genera más logs y aumenta costos de CloudWatch.
                     Revertir a Errores cuando termine el diagnóstico.
@@ -480,7 +475,7 @@ function CloudWatchTab() {
                 : 'bg-surface-2 border-border-subtle text-muted-foreground hover:bg-surface-1'
             }`}
           >
-            <ArrowsClockwise size={14} weight={autoRefresh ? 'fill' : 'regular'} className={autoRefresh ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={autoRefresh ? 'animate-spin' : ''} />
             Auto (30s)
           </button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
@@ -505,7 +500,7 @@ function CloudWatchTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orange-100">
-              <Bug size={24} weight="duotone" className="text-orange-600" />
+              <Bug size={24} className="text-orange-600" />
             </div>
           </div>
         </div>
@@ -523,7 +518,7 @@ function CloudWatchTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-yellow-100">
-              <Warning size={24} weight="duotone" className="text-yellow-600" />
+              <AlertTriangle size={24} className="text-yellow-600" />
             </div>
           </div>
         </div>
@@ -541,7 +536,7 @@ function CloudWatchTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-red-100">
-              <ShieldWarning size={24} weight="duotone" className="text-red-600" />
+              <ShieldAlert size={24} className="text-red-600" />
             </div>
           </div>
         </div>
@@ -559,7 +554,7 @@ function CloudWatchTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-              <CloudArrowUp size={24} weight="duotone" className="text-blue-600" />
+              <UploadCloud size={24} className="text-blue-600" />
             </div>
           </div>
         </div>
@@ -601,7 +596,7 @@ function CloudWatchTab() {
           </div>
         ) : recentErrors.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <CheckCircle size={48} weight="duotone" className="mx-auto text-primary/30 mb-3" />
+            <CheckCircle2 size={48} className="mx-auto text-primary/30 mb-3" />
             <p className="text-muted-foreground text-sm">{t('noRecentErrors')}</p>
             <p className="text-muted-foreground text-xs mt-1">{t('noRecentErrorsDesc')}</p>
           </div>
@@ -628,9 +623,9 @@ function CloudWatchTab() {
                       >
                         <td className="px-6 py-3">
                           {expandedRows.has(idx) ? (
-                            <CaretDown size={14} className="text-muted-foreground" />
+                            <ChevronDown size={14} className="text-muted-foreground" />
                           ) : (
-                            <CaretRight size={14} className="text-muted-foreground" />
+                            <ChevronRight size={14} className="text-muted-foreground" />
                           )}
                         </td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm text-foreground/70">
@@ -922,7 +917,7 @@ function MobileCrashesTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-              <CalendarDots size={24} weight="duotone" className="text-blue-600" />
+              <CalendarDays size={24} className="text-blue-600" />
             </div>
           </div>
         </div>
@@ -940,7 +935,7 @@ function MobileCrashesTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-amber-100">
-              <Clock size={24} weight="duotone" className="text-amber-600" />
+              <Clock size={24} className="text-amber-600" />
             </div>
           </div>
         </div>
@@ -958,7 +953,7 @@ function MobileCrashesTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-red-100">
-              <ShieldWarning size={24} weight="duotone" className="text-red-600" />
+              <ShieldAlert size={24} className="text-red-600" />
             </div>
           </div>
         </div>
@@ -976,7 +971,7 @@ function MobileCrashesTab() {
               </p>
             </div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orange-100">
-              <Bug size={24} weight="duotone" className="text-orange-600" />
+              <Bug size={24} className="text-orange-600" />
             </div>
           </div>
         </div>
@@ -1075,7 +1070,7 @@ function MobileCrashesTab() {
               ) : reports.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
-                    <Bug size={48} weight="duotone" className="mx-auto text-muted-foreground/60 mb-3" />
+                    <Bug size={48} className="mx-auto text-muted-foreground/60 mb-3" />
                     <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
                     <p className="text-muted-foreground text-xs mt-1">Ajusta los filtros o espera a que se reporten errores</p>
                   </td>
@@ -1149,7 +1144,7 @@ function MobileCrashesTab() {
           ))
         ) : reports.length === 0 ? (
           <div className="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
-            <Bug size={48} weight="duotone" className="mx-auto text-muted-foreground/60 mb-3" />
+            <Bug size={48} className="mx-auto text-muted-foreground/60 mb-3" />
             <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
           </div>
         ) : (
@@ -1171,7 +1166,7 @@ function MobileCrashesTab() {
               )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <DeviceMobile size={12} />
+                  <Smartphone size={12} />
                   {report.deviceName || report.deviceId || '-'}
                 </span>
                 <span>{formatDate(report.creadoEn)}</span>
@@ -1203,7 +1198,7 @@ function MobileCrashesTab() {
         isOpen={drawerOpen}
         onClose={handleCloseDrawer}
         title="Detalle del Crash Report"
-        icon={<Bug size={22} weight="duotone" className="text-red-500" />}
+        icon={<Bug size={22} className="text-red-500" />}
         width="lg"
         footer={
           selectedReport && !selectedReport.resuelto ? (
@@ -1239,7 +1234,7 @@ function MobileCrashesTab() {
                       {resolverLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-1" />
                       ) : (
-                        <CheckCircle size={16} weight="fill" className="mr-1" />
+                        <CheckCircle2 size={16} className="mr-1" />
                       )}
                       Confirmar
                     </Button>
@@ -1250,14 +1245,14 @@ function MobileCrashesTab() {
                   onClick={() => setResolverOpen(true)}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
-                  <CheckCircle size={16} weight="fill" className="mr-2" />
+                  <CheckCircle2 size={16} className="mr-2" />
                   Marcar como resuelto
                 </Button>
               )}
             </div>
           ) : selectedReport?.resuelto ? (
             <div className="flex items-center gap-2 text-sm text-primary bg-primary/5 rounded-lg px-4 py-3">
-              <CheckCircle size={18} weight="fill" className="text-primary" />
+              <CheckCircle2 size={18} className="text-primary" />
               <div>
                 <span className="font-medium">Resuelto</span>
                 {selectedReport.resueltoPorNombre && (
@@ -1288,7 +1283,7 @@ function MobileCrashesTab() {
 
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Warning size={14} className="text-orange-500" />
+                <AlertTriangle size={14} className="text-orange-500" />
                 {t('errorMessage')}
               </h3>
               <p className="text-sm text-foreground bg-red-50 rounded-lg p-3 border border-red-100">
@@ -1322,7 +1317,7 @@ function MobileCrashesTab() {
 
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
-                <DeviceMobile size={14} className="text-cyan-500" />
+                <Smartphone size={14} className="text-cyan-500" />
                 Dispositivo
               </h3>
               <div className="grid grid-cols-2 gap-3">
@@ -1353,7 +1348,7 @@ function MobileCrashesTab() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Buildings size={12} />
+                    <Building2 size={12} />
                     Empresa
                   </p>
                   <p className="text-sm text-foreground font-medium">
@@ -1375,7 +1370,7 @@ function MobileCrashesTab() {
 
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                <CalendarDots size={14} className="text-blue-500" />
+                <CalendarDays size={14} className="text-blue-500" />
                 {t('reportDate')}
               </h3>
               <p className="text-sm text-foreground">{formatDate(selectedReport.creadoEn)}</p>
@@ -1384,7 +1379,7 @@ function MobileCrashesTab() {
             {selectedReport.resuelto && selectedReport.notaResolucion && (
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <CheckCircle size={14} className="text-primary" />
+                  <CheckCircle2 size={14} className="text-primary" />
                   {t('resolutionNoteLabel')}
                 </h3>
                 <p className="text-sm text-foreground bg-primary/5 rounded-lg p-3 border border-primary/10">
@@ -1408,7 +1403,7 @@ export default function CrashReportsPage() {
 
   return (
     <PageHeader
-      section="empresa"
+      section="superadmin"
       icon={Bug}
       eyebrow={ta('breadcrumb')}
       breadcrumbs={[
@@ -1431,7 +1426,7 @@ export default function CrashReportsPage() {
             }`}
           >
             <span className="flex items-center gap-2">
-              <CloudArrowUp size={16} weight="duotone" />
+              <UploadCloud size={16} />
               {t('tabCloudWatch')}
             </span>
           </button>
@@ -1444,7 +1439,7 @@ export default function CrashReportsPage() {
             }`}
           >
             <span className="flex items-center gap-2">
-              <DeviceMobile size={16} weight="duotone" />
+              <Smartphone size={16} />
               {t('tabMobileCrashes')}
             </span>
           </button>

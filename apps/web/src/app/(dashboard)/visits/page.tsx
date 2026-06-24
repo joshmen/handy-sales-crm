@@ -485,6 +485,7 @@ function VisitsPageContent() {
     const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String((r as Record<string, unknown>)[h] ?? '')}"`).join(','))].join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     downloadBlob(blob, `visitas-${segment}-${tenantToday()}.csv`);
+    toast.success(tc('csvDownloaded'));
   };
 
   const headerActions = (

@@ -126,7 +126,7 @@ export default function GlobalSettingsPage() {
 
   if (isLoading) {
     return (
-      <PageHeader section="empresa" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -136,7 +136,7 @@ export default function GlobalSettingsPage() {
 
   if (!settings) {
     return (
-      <PageHeader section="empresa" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">{t('errorLoading')}</p>
         </div>
@@ -145,7 +145,7 @@ export default function GlobalSettingsPage() {
   }
 
   return (
-    <PageHeader section="empresa" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+    <PageHeader section="superadmin" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
           <div className="mb-6 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
             <Shield className="h-4 w-4 mr-1" />
             {t('superAdminOnly')}
@@ -211,7 +211,7 @@ export default function GlobalSettingsPage() {
                       onChange={e =>
                         setSettings({ ...settings, platformPrimaryColor: e.target.value })
                       }
-                      placeholder="#3B82F6"
+                      placeholder="#0176D3"
                       className="flex-1"
                     />
                   </div>
@@ -235,7 +235,7 @@ export default function GlobalSettingsPage() {
                       onChange={e =>
                         setSettings({ ...settings, platformSecondaryColor: e.target.value })
                       }
-                      placeholder="#8B5CF6"
+                      placeholder="#0B5CAB"
                       className="flex-1"
                     />
                   </div>
@@ -398,7 +398,7 @@ export default function GlobalSettingsPage() {
             {/* Save Actions */}
             <div className="flex justify-end space-x-4">
               <Button
-                variant="outline"
+                variant="wbOutline"
                 onClick={() => window.location.reload()}
                 disabled={isUpdating}
               >
@@ -407,10 +407,10 @@ export default function GlobalSettingsPage() {
               </Button>
 
               <Button
+                variant="wbPrimary"
                 data-tour="settings-save"
                 onClick={handleSave}
                 disabled={isUpdating}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {isUpdating ? (
                   <>
