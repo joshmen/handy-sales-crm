@@ -24,8 +24,9 @@ export const ROUTES = {
 // User Roles
 export const USER_ROLES = {
   ADMIN: "ADMIN",
-  SUPERVISOR: "SUPERVISOR", 
+  SUPERVISOR: "SUPERVISOR",
   VENDEDOR: "VENDEDOR",
+  ALMACENISTA: "ALMACENISTA",
 } as const
 
 // Status Types

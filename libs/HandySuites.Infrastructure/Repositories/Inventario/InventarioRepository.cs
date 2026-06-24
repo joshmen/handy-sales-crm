@@ -168,6 +168,25 @@ public class InventarioRepository : IInventarioRepository
         };
     }
 
+    public async Task<InventarioResumenDto> ObtenerResumenAsync(int tenantId)
+    {
+        var inv = _db.Inventarios.AsNoTracking().Where(i => i.TenantId == tenantId);
+
+        // Valor a precio de venta (Producto.PrecioBase). Soft-deleted products contribute 0 (LEFT JOIN null → SUM ignora).
+        var valor = await inv.SumAsync(i => (decimal?)(i.CantidadActual * i.Producto.PrecioBase)) ?? 0m;
+        var skus = await inv.CountAsync();
+        var stockBajo = await inv.CountAsync(i => i.StockMinimo > 0 && i.CantidadActual > 0 && i.CantidadActual <= i.StockMinimo);
+        var agotados = await inv.CountAsync(i => i.CantidadActual <= 0);
+
+        return new InventarioResumenDto
+        {
+            ValorInventario = valor,
+            SkusActivos = skus,
+            StockBajo = stockBajo,
+            Agotados = agotados
+        };
+    }
+
     public Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId)
         => _db.Productos.AsNoTracking()
             .AnyAsync(p => p.Id == productoId && p.TenantId == tenantId);

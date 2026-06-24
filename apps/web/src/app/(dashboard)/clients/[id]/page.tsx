@@ -4,8 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Users } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { getSectionAccent, accentTileBg } from '@/lib/sectionAccent';
 import { clientService } from '@/services/api/clients';
 import { orderService, type OrderListItem } from '@/services/api/orders';
 import type { Client } from '@/types';
@@ -29,7 +30,7 @@ const ORDER_STATUS_STYLES: Record<string, { statusKey: string; color: string; bg
   EN_PREPARACION: { statusKey: 'inPrep',     color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { statusKey: 'readyToShip', color: 'text-purple-700', bg: 'bg-purple-100' },
   ENVIADA:        { statusKey: 'enRoute',    color: 'text-amber-700', bg: 'bg-amber-100' },
-  ENTREGADA:      { statusKey: 'delivered',  color: 'text-green-700', bg: 'bg-green-100' },
+  ENTREGADA:      { statusKey: 'delivered',  color: 'text-primary', bg: 'bg-primary/10' },
   CANCELADA:      { statusKey: 'cancelled',  color: 'text-red-700',   bg: 'bg-red-100' },
 };
 
@@ -80,7 +81,7 @@ export default function ClientDetailPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="text-foreground/70">{t('loadingClient')}</span>
         </div>
       </div>
@@ -94,7 +95,7 @@ export default function ClientDetailPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
-          <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
+          <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
             {t('backToClients')}
           </button>
         </div>
@@ -110,29 +111,34 @@ export default function ClientDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
+      <div className="bg-card px-4 sm:px-8 py-4 sm:py-6 border-b border-border">
         <Breadcrumb items={[
           { label: tc('home'), href: '/dashboard' },
           { label: tClients('title'), href: '/clients' },
           { label: client.name },
         ]} />
 
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold text-foreground">{client.name}</h1>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-foreground/80 bg-surface-3'}`}>
-              {client.isActive ? tc('active') : tc('inactive')}
-            </span>
-            {client.esProspecto && (
-              <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-purple-700 bg-purple-100">
-                {tc('prospect')}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
+          <div className="flex items-center gap-3.5">
+            <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center flex-shrink-0" style={{ background: accentTileBg(getSectionAccent('catalogo')), color: getSectionAccent('catalogo') }}>
+              <Users size={22} />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-[22px] font-bold tracking-tight text-foreground">{client.name}</h1>
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-primary bg-primary/10' : 'text-foreground/80 bg-surface-3'}`}>
+                {client.isActive ? tc('active') : tc('inactive')}
               </span>
-            )}
+              {client.esProspecto && (
+                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-50">
+                  {tc('prospect')}
+                </span>
+              )}
+            </div>
           </div>
 
           <Link
             href={`/clients/${clientId}/edit`}
-            className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-5 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium px-5 py-2 rounded-full transition-colors w-fit"
           >
             {tc('edit')}
           </Link>
@@ -143,22 +149,22 @@ export default function ClientDetailPage() {
       <div className="p-4 sm:p-8 space-y-6">
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalOrders')}</p>
-            <p className="text-2xl font-bold text-foreground">{totalPedidos}</p>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+            <p className="text-xs font-medium text-muted-foreground">{t('totalOrders')}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3">{totalPedidos}</p>
           </div>
-          <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalSales')}</p>
-            <p className="text-2xl font-bold text-foreground">{fmt(totalVentas)}</p>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+            <p className="text-xs font-medium text-muted-foreground">{t('totalSales')}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3">{fmt(totalVentas)}</p>
           </div>
-          <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{t('pendingOrders')}</p>
-            <p className="text-2xl font-bold text-foreground">{pedidosPendientes}</p>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+            <p className="text-xs font-medium text-muted-foreground">{t('pendingOrders')}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3">{pedidosPendientes}</p>
           </div>
         </div>
 
         {/* Client info card */}
-        <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-foreground mb-4">{t('clientInfo')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div className="flex justify-between">
@@ -206,7 +212,7 @@ export default function ClientDetailPage() {
 
         {/* Fiscal data section */}
         {client.facturable && (
-          <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-foreground mb-4">{t('fiscalData')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div className="flex justify-between">
@@ -234,8 +240,8 @@ export default function ClientDetailPage() {
         )}
 
         {/* Tabs */}
-        <div className="bg-surface-2 rounded-xl border border-border-subtle">
-          <div className="border-b border-border-subtle px-6">
+        <div className="bg-card border border-border rounded-2xl shadow-sm">
+          <div className="border-b border-border px-6">
             <div className="flex gap-6">
               {([
                 { key: 'pedidos' as Tab, label: t('tabs.orders') },
@@ -246,7 +252,7 @@ export default function ClientDetailPage() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.key
-                      ? 'border-green-600 text-green-600'
+                      ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground/80'
                   }`}
                 >

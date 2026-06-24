@@ -30,7 +30,7 @@ export function NuevosClientesReport() {
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<{ clientes: NuevoCliente[]; total: number; porMes: { mes: string; cantidad: number }[] } | null>(null);
   const [loading, setLoading] = useState(false);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: 'nuevos-clientes',
     title: t('reportTitle'),
     dateRange: dates,
@@ -61,7 +61,7 @@ export function NuevosClientesReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: true, style: { fontSize: '11px', colors: [chartColors.textPrimary] } },
     xaxis: { categories: data?.porMes.map(m => m.mes) || [], labels: { style: { fontSize: '11px', colors: chartColors.textMuted } } },
@@ -71,7 +71,7 @@ export function NuevosClientesReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.clientes.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.clientes.length > 0 ? exportPDF : undefined} onExportExcel={data && data.clientes.length > 0 ? exportExcel : undefined} exporting={exporting} />
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-sm">{tc("clickApply")}</p>

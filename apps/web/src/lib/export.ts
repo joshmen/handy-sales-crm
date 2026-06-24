@@ -1,5 +1,6 @@
 // Utilidades genéricas para exportación de datos
 import { formatCurrency as libFmtCurrency, formatDate as libFmtDate } from '@/lib/formatters';
+import { downloadTextFile } from '@/lib/download';
 
 export const EXPORT_ERROR_CODES = {
   NO_DATA: 'EXPORT_NO_DATA',
@@ -109,20 +110,7 @@ function formatCellValue(value: unknown): string {
 
 // Función para descargar archivo
 function downloadFile(content: string, filename: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = filename;
-  link.style.display = 'none';
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  // Limpiar URL
-  setTimeout(() => URL.revokeObjectURL(url), 100);
+  downloadTextFile(content, filename, mimeType);
 }
 
 // Formatters comunes para reutilizar

@@ -112,7 +112,7 @@ export function CargaTab({ route, isEditable, onRefetch, carga, setCarga }: Carg
                 value={cantidadVenta}
                 onChange={(e) => setCantidadVenta(e.target.value)}
                 min="1"
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div className="w-28">
@@ -122,7 +122,7 @@ export function CargaTab({ route, isEditable, onRefetch, carga, setCarga }: Carg
                 value={precioVenta}
                 onChange={(e) => setPrecioVenta(e.target.value)}
                 step="0.01"
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <button
@@ -205,7 +205,7 @@ export function CargaTab({ route, isEditable, onRefetch, carga, setCarga }: Carg
                   </td>
                   <td></td>
                   <td></td>
-                  <td className="py-2 px-3 text-right text-[13px] font-bold text-green-600">{formatCurrency(totalAsignado)}</td>
+                  <td className="py-2 px-3 text-right text-[13px] font-bold text-primary">{formatCurrency(totalAsignado)}</td>
                   <td></td>
                 </tr>
               </tfoot>

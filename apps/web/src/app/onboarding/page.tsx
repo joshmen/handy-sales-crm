@@ -47,7 +47,7 @@ interface WizardData {
   avatarFile: File | null;
   avatarPreview: string | null;
   telefono: string;
-  // Step 2: Company — General
+  // Step 2: Company: General
   logoFile: File | null;
   logoPreview: string | null;
   nombreComercial: string;
@@ -57,7 +57,7 @@ interface WizardData {
   emailEmpresa: string;
   contacto: string;
   sitioWeb: string;
-  // Step 2: Company — Fiscal (optional)
+  // Step 2: Company: Fiscal (optional)
   showFiscal: boolean;
   razonSocial: string;
   identificadorFiscal: string;
@@ -238,7 +238,7 @@ export default function OnboardingPage() {
     }
   }, [session, router]);
 
-  // Prevent back-button from going to login — replace history entry
+  // Prevent back-button from going to login: replace history entry
   useEffect(() => {
     window.history.replaceState(null, '', '/onboarding');
   }, []);
@@ -306,7 +306,7 @@ export default function OnboardingPage() {
   // ─── Navigation ───
 
   const goNext = () => {
-    // Validate Step 1: Profile — phone is required
+    // Validate Step 1: Profile: phone is required
     if (currentStep === 1) {
       if (!data.telefono || data.telefono.replace(/[^\d]/g, '').length < 7) {
         toast({ title: 'Ingresa tu número de teléfono', variant: 'destructive' });
@@ -314,7 +314,7 @@ export default function OnboardingPage() {
       }
     }
 
-    // Validate Step 2: Company — nombre comercial required + fiscal fields if filled
+    // Validate Step 2: Company: nombre comercial required + fiscal fields if filled
     if (currentStep === 2) {
       if (!data.nombreComercial.trim()) {
         toast({ title: 'El nombre comercial es obligatorio', variant: 'destructive' });
@@ -330,7 +330,7 @@ export default function OnboardingPage() {
       }
     }
 
-    // Validate Step 3: Team — validate emails if any are filled
+    // Validate Step 3: Team: validate emails if any are filled
     if (currentStep === 3) {
       for (const invite of data.invites) {
         if (invite.email.trim() && !invite.email.includes('@')) {
@@ -406,11 +406,11 @@ export default function OnboardingPage() {
         }
       }
 
-      // 5. Send team invites — backend creates user + sends invitation email with "set password" link
+      // 5. Send team invites: backend creates user + sends invitation email with "set password" link
       const validInvites = data.invites.filter(inv => inv.email.trim() && inv.email.includes('@'));
       for (const invite of validInvites) {
         try {
-          // Random placeholder password — user will set their own via invitation email link
+          // Random placeholder password: user will set their own via invitation email link
           const placeholder = crypto.randomUUID().replace(/-/g, '') + '!A1';
           await usersService.createUser({
             email: invite.email.trim(),
@@ -451,7 +451,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* Onboarding animations (kept minimal — only fade-up for form fields + celebration) */}
+      {/* Onboarding animations (kept minimal: only fade-up for form fields + celebration) */}
       <style>{`
         @keyframes onb-fade-up {
           from { opacity: 0; transform: translateY(12px); }
@@ -486,7 +486,7 @@ export default function OnboardingPage() {
         .onb-stagger-3 { animation-delay: 0.15s; }
       `}</style>
 
-      {/* Left Side — Form */}
+      {/* Left Side: Form */}
       <div className="flex flex-1 flex-col px-6 py-8 lg:px-16 lg:py-12 lg:max-w-[55%]">
         {/* Header */}
         <div className="mb-8">
@@ -516,7 +516,7 @@ export default function OnboardingPage() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
-            Paso {currentStep} de {TOTAL_STEPS} — {STEPS[currentStep - 1].label}
+            Paso {currentStep} de {TOTAL_STEPS}: {STEPS[currentStep - 1].label}
           </p>
         </div>
 
@@ -609,7 +609,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Right Side — Preview (desktop only, static) */}
+      {/* Right Side: Preview (desktop only, static) */}
       <div className="hidden lg:flex lg:w-[45%] bg-zinc-950 items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 right-0 w-96 h-96 bg-green-600/20 rounded-full blur-3xl" />
@@ -863,7 +863,7 @@ function StepCompany({
         </div>
       </div>
 
-      {/* Fiscal Data — Collapsible */}
+      {/* Fiscal Data: Collapsible */}
       <div className="border border-border rounded-xl overflow-hidden">
         <button
           type="button"
@@ -873,7 +873,7 @@ function StepCompany({
           <div className="flex items-center gap-2">
             <Receipt size={18} className="text-muted-foreground" />
             <span>Datos fiscales</span>
-            <span className="text-xs text-muted-foreground font-normal">(opcional — solo si vas a facturar)</span>
+            <span className="text-xs text-muted-foreground font-normal">(opcional: solo si vas a facturar)</span>
           </div>
           <CaretDown
             size={16}
@@ -1110,7 +1110,7 @@ function StepReady({ userName }: { userName: string }) {
 }
 
 // ─── Preview Panel (Desktop Right Side) ───
-// Static sidebar preview — shows all sections, updates company footer in real-time
+// Static sidebar preview: shows all sections, updates company footer in real-time
 
 function PreviewPanel({
   step,
@@ -1123,7 +1123,7 @@ function PreviewPanel({
 }) {
   return (
     <div className="relative z-10 w-full max-w-sm">
-      {/* Mock Sidebar — matches real sidebar structure */}
+      {/* Mock Sidebar: matches real sidebar structure */}
       <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden shadow-2xl">
 
         {/* Nav Items with Sections */}

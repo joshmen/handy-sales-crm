@@ -24,12 +24,12 @@ const TIPO_ICONS: Record<string, React.ElementType> = {
 };
 
 const TIPO_COLORS: Record<string, { bar: string; bg: string; text: string; chart: string }> = {
-  ventas:     { bar: "from-emerald-500 to-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600", chart: "#10b981" },
-  zona:       { bar: "from-blue-500 to-blue-400",      bg: "bg-blue-50",    text: "text-blue-600",    chart: "#3b82f6" },
+  ventas:     { bar: "from-emerald-500 to-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600", chart: "#1F8A5B" },
+  zona:       { bar: "from-blue-500 to-blue-400",      bg: "bg-blue-50",    text: "text-blue-600",    chart: "#0176D3" },
   inventario: { bar: "from-red-500 to-red-400",        bg: "bg-red-50",     text: "text-red-500",     chart: "#ef4444" },
-  visitas:    { bar: "from-violet-500 to-violet-400",   bg: "bg-violet-50",  text: "text-violet-600",  chart: "#8b5cf6" },
-  producto:   { bar: "from-amber-500 to-amber-400",     bg: "bg-amber-50",   text: "text-amber-600",   chart: "#f59e0b" },
-  clientes:   { bar: "from-teal-500 to-teal-400",       bg: "bg-teal-50",    text: "text-teal-600",    chart: "#14b8a6" },
+  visitas:    { bar: "from-violet-500 to-violet-400",   bg: "bg-violet-50",  text: "text-violet-600",  chart: "#5867E8" },
+  producto:   { bar: "from-amber-500 to-amber-400",     bg: "bg-amber-50",   text: "text-amber-600",   chart: "#D97706" },
+  clientes:   { bar: "from-teal-500 to-teal-400",       bg: "bg-teal-50",    text: "text-teal-600",    chart: "#06A59A" },
 };
 
 /** Translate backend-generated insight texts (Spanish→locale) */
@@ -65,7 +65,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
   const isUp = insight.tendencia === "up";
   const isDown = insight.tendencia === "down";
   const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
-  const trendColor = isUp ? "text-emerald-600" : isDown ? "text-red-500" : "text-muted-foreground";
+  const trendColor = isUp ? "text-primary" : isDown ? "text-red-500" : "text-muted-foreground";
 
   // Mini sparkline for each card
   const sparkOptions: ApexCharts.ApexOptions = {
@@ -99,7 +99,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
           </div>
           {insight.valor !== undefined && (
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-              isUp ? "bg-emerald-50 text-emerald-700" : isDown ? "bg-red-50 text-red-600" : "bg-surface-3 text-muted-foreground"
+              isUp ? "bg-primary/5 text-primary" : isDown ? "bg-red-50 text-red-600" : "bg-surface-3 text-muted-foreground"
             }`}>
               <TrendIcon className="w-3.5 h-3.5" />
               {Math.abs(insight.valor)}%

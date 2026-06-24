@@ -5,14 +5,6 @@ import { Card } from "@/components/ui/Card";
 import { toast } from "@/hooks/useToast";
 import { Layout } from "@/components/layout/Layout";
 import { notFound } from "next/navigation";
-import {
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Info,
-  Loader2
-} from "lucide-react";
-import { useState } from "react";
 
 export default function TestToastPage() {
   // Sprint pre-prod #37 audit 2026-06-06: esta page era de QA dev pero
@@ -22,72 +14,43 @@ export default function TestToastPage() {
   if (process.env.NODE_ENV === 'production') {
     notFound();
   }
-  const [isLoading, setIsLoading] = useState(false);
 
-  const showSuccessToast = () => {
-    toast.success("La operación se completó correctamente");
+  const successToast = () =>
+    toast.success("Pedido guardado", "P-2841 de Abarrotes Don Pepe se registro correctamente.");
+
+  const errorToast = () =>
+    toast.error("No se pudo timbrar", "El RFC del receptor no es valido. Revisa los datos fiscales.");
+
+  const infoToast = () =>
+    toast.info("Sincronizacion en curso", "Se estan subiendo 3 pedidos guardados sin conexion.");
+
+  const warningToast = () =>
+    toast.warning("Saldo vencido", "Deposito El Rancho tiene $6,100 con 22 dias de atraso.");
+
+  const loadingToast = () => {
+    const t = toast.loading("Timbrando factura…", "Conectando con el PAC (Finkok).");
+    setTimeout(() => t.resolve("success", "Factura timbrada", "CFDI A3F1-9X emitido y enviado por correo."), 2200);
   };
 
-  const showErrorToast = () => {
-    toast.error("Algo salió mal. Por favor intenta de nuevo");
-  };
+  const undoToast = () =>
+    toast.undo("Cliente eliminado", "Mini Super Rosa se movio a la papelera.", () =>
+      toast.success("Accion deshecha", "Mini Super Rosa fue restaurado.")
+    );
 
-  const showInfoToast = () => {
-    toast.info("Este es un mensaje informativo");
-  };
+  const viewToast = () =>
+    toast.view("Factura creada", "CFDI F-1042 listo para descargar.", "Ver factura", () =>
+      toast.info("Abriendo factura…", "F-1042 · Abarrotes Don Pepe")
+    );
 
-  const showWarningToast = () => {
-    toast.warning("Ten cuidado con esta acción");
-  };
-
-  const simulateAsyncOperation = async () => {
-    setIsLoading(true);
-    
-    toast({
-      title: "Procesando...",
-      description: "Por favor espera mientras procesamos tu solicitud",
-    });
-
-    try {
-      // Simular operación asíncrona
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "¡Operación exitosa!",
-        description: "El proceso se completó correctamente",
-      });
-    } catch (_error) {
-      toast({
-        title: "Error en la operación",
-        description: "No se pudo completar el proceso",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+  const stackToast = () => {
+    for (let i = 1; i <= 6; i++) {
+      setTimeout(() => toast.info(`Toast ${i}`, "Apilado: el mas viejo se cierra al pasar de 4."), i * 350);
     }
   };
 
-  const showMultipleToasts = () => {
-    toast({
-      title: "Primer mensaje",
-      description: "Este es el primer toast",
-    });
-
-    setTimeout(() => {
-      toast({
-        title: "Segundo mensaje",
-        description: "Este aparece después de 1 segundo",
-      });
-    }, 1000);
-
-    setTimeout(() => {
-      toast({
-        title: "Tercer mensaje",
-        description: "Y este después de 2 segundos",
-        variant: "destructive",
-      });
-    }, 2000);
-  };
+  // Back-compat: forma vieja del objeto base
+  const legacyToast = () =>
+    toast({ title: "Forma vieja", description: "toast({title, description, variant})", variant: "destructive" });
 
   return (
     <Layout>
@@ -95,183 +58,35 @@ export default function TestToastPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">Sistema de Notificaciones Toast</h1>
           <p className="text-muted-foreground">
-            Ejemplos de uso del sistema de notificaciones toast en la aplicación
+            Toast con accion: apilado abajo-derecha, barra de progreso, pausa al hover, error persistente.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Toasts básicos */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              Toast de Éxito
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Muestra un mensaje de éxito cuando una operación se completa correctamente.
-            </p>
-            <Button onClick={showSuccessToast} className="w-full">
-              Mostrar Toast de Éxito
-            </Button>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-500" />
-              Toast de Error
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Muestra un mensaje de error cuando algo sale mal.
-            </p>
-            <Button 
-              onClick={showErrorToast} 
-              variant="destructive"
-              className="w-full"
-            >
-              Mostrar Toast de Error
-            </Button>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Info className="h-5 w-5 text-blue-500" />
-              Toast Informativo
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Muestra información general al usuario.
-            </p>
-            <Button 
-              onClick={showInfoToast}
-              variant="outline"
-              className="w-full"
-            >
-              Mostrar Toast Informativo
-            </Button>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Toast de Advertencia
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Alerta al usuario sobre acciones importantes.
-            </p>
-            <Button 
-              onClick={showWarningToast}
-              variant="outline"
-              className="w-full border-yellow-500 text-yellow-600 hover:bg-yellow-50"
-            >
-              Mostrar Toast de Advertencia
-            </Button>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Loader2 className="h-5 w-5 text-purple-500" />
-              Operación Asíncrona
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Simula una operación asíncrona con toasts de progreso.
-            </p>
-            <Button 
-              onClick={simulateAsyncOperation}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Procesando...
-                </>
-              ) : (
-                "Iniciar Operación"
-              )}
-            </Button>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Múltiples Toasts
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Muestra varios toasts en secuencia.
-            </p>
-            <Button 
-              onClick={showMultipleToasts}
-              variant="outline"
-              className="w-full"
-            >
-              Mostrar Múltiples Toasts
-            </Button>
-          </Card>
-        </div>
-
-        {/* Ejemplos de código */}
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Cómo usar los Toasts</h3>
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2">1. Importar el hook:</h4>
-              <pre className="bg-muted p-3 rounded-lg text-sm">
-                <code>{`import { toast } from "@/hooks/useToast"`}</code>
-              </pre>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">2. Toast de éxito:</h4>
-              <pre className="bg-muted p-3 rounded-lg text-sm">
-                <code>{`toast.success("Operación completada")`}</code>
-              </pre>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">3. Toast de error:</h4>
-              <pre className="bg-muted p-3 rounded-lg text-sm">
-                <code>{`toast.error("Algo salió mal")`}</code>
-              </pre>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">4. En operaciones asíncronas:</h4>
-              <pre className="bg-muted p-3 rounded-lg text-sm overflow-x-auto">
-                <code>{`try {
-  const result = await apiCall();
-  toast.success("Datos guardados correctamente");
-} catch (error) {
-  toast.error(error.message);
-}`}</code>
-              </pre>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <Button onClick={successToast} className="w-full">Success</Button>
+            <Button onClick={errorToast} variant="destructive" className="w-full">Error (persiste)</Button>
+            <Button onClick={infoToast} variant="outline" className="w-full">Info</Button>
+            <Button onClick={warningToast} variant="outline" className="w-full">Warning</Button>
+            <Button onClick={loadingToast} variant="outline" className="w-full">Loading → resolve</Button>
+            <Button onClick={undoToast} variant="outline" className="w-full">Undo (Deshacer)</Button>
+            <Button onClick={viewToast} variant="outline" className="w-full">View (Ver)</Button>
+            <Button onClick={stackToast} variant="outline" className="w-full">Apilar 6 (cap 4)</Button>
+            <Button onClick={legacyToast} variant="outline" className="w-full">Back-compat</Button>
           </div>
         </Card>
 
-        {/* Guía de uso */}
-        <Card className="p-6 bg-blue-50 border-blue-200">
-          <h3 className="text-lg font-semibold mb-4 text-blue-900">
-            📝 Guía de Buenas Prácticas
-          </h3>
-          <ul className="space-y-2 text-sm text-blue-800">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Usa toasts para confirmar acciones del usuario (guardar, eliminar, actualizar)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Mantén los mensajes cortos y claros</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Usa variant=&quot;destructive&quot; solo para errores importantes</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>No uses toasts para información crítica que el usuario debe leer</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span>Evita mostrar demasiados toasts al mismo tiempo</span>
-            </li>
-          </ul>
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Como usar</h3>
+          <pre className="bg-muted p-3 rounded-lg text-sm overflow-x-auto">
+            <code>{`import { toast } from "@/hooks/useToast"
+
+toast.success("Titulo", "Descripcion opcional")
+toast.error("Algo salio mal")            // persistente
+toast.loading("Procesando…").resolve("success", "Listo")
+toast.undo("Eliminado", "X", onUndo)     // boton Deshacer
+toast.view("Creado", "X", "Ver", onView) // boton Ver`}</code>
+          </pre>
         </Card>
       </div>
     </Layout>

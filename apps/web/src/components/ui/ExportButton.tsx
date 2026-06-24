@@ -23,7 +23,7 @@ interface ExportButtonProps<T = unknown> {
   columns?: ExportColumn<T>[];
   filename?: string;
   disabled?: boolean;
-  variant?: 'default' | 'outline' | 'ghost';
+  variant?: 'default' | 'outline' | 'ghost' | 'wbPrimary' | 'wbOutline' | 'wbSoft';
   size?: 'sm' | 'default' | 'lg';
   className?: string;
   showConfigDialog?: boolean;
@@ -34,7 +34,7 @@ export function ExportButton<T = unknown>({
   columns,
   filename = 'export',
   disabled = false,
-  variant = 'outline',
+  variant = 'wbOutline',
   size = 'sm',
   className = '',
   showConfigDialog = true,

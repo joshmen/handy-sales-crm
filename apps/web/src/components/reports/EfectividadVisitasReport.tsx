@@ -27,7 +27,7 @@ export function EfectividadVisitasReport() {
   const [data, setData] = useState<EfectividadVisitasResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: "efectividad-visitas", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalVisits"), value: data.resumen.totalVisitas },
@@ -51,7 +51,7 @@ export function EfectividadVisitasReport() {
     { key: "totalVisitas", header: t("visits"), align: "right", sortable: true },
     { key: "visitasConVenta", header: t("withSaleCol"), align: "right", sortable: true },
     { key: "tasaConversion", header: t("ratePct"), align: "right", sortable: true, render: (r) => {
-      const color = r.tasaConversion >= 50 ? "text-green-600" : r.tasaConversion >= 30 ? "text-amber-600" : "text-red-600";
+      const color = r.tasaConversion >= 50 ? "text-primary" : r.tasaConversion >= 30 ? "text-amber-600" : "text-red-600";
       return <span className={`font-semibold ${color}`}>{r.tasaConversion}%</span>;
     }},
     { key: "duracionPromedio", header: t("avgDuration"), align: "right" },
@@ -60,7 +60,7 @@ export function EfectividadVisitasReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "45%" } },
-    colors: [chartColors.textMuted, chartColors.series.green],
+    colors: [chartColors.textMuted, chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
     xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
@@ -71,7 +71,7 @@ export function EfectividadVisitasReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.vendedores.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.vendedores.length > 0 ? exportPDF : undefined} onExportExcel={data && data.vendedores.length > 0 ? exportExcel : undefined} exporting={exporting} />
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-sm">{tc("clickApply")}</p>

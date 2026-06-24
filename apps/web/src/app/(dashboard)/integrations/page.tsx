@@ -1,315 +1,257 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
-import { integrationService } from "@/services/api/integrations";
-import type { IntegrationCatalog } from "@/types/integration";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { SoftBadge } from "@/components/ui/SoftBadge";
+import { TabBar } from "@/components/ui/TabBar";
+import { SearchBar } from "@/components/common/SearchBar";
+import { getSectionAccent, accentTileBg } from "@/lib/sectionAccent";
+import { MOCK_INTEGRATIONS, type MockIntegration } from "./_mock";
 import {
-  Loader2,
-  Check,
-  Clock,
-  Zap,
+  Plug,
   Receipt,
-  MessageSquare,
-  MapPin,
+  Map as MapIcon,
   CreditCard,
+  MessageCircle,
+  BookOpen,
+  Mail,
+  Zap,
+  Settings,
+  Code,
+  Clock,
 } from "lucide-react";
 
-const estadoBadgeStyles: Record<string, string> = {
-  DISPONIBLE: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  PROXIMO: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  DESCONTINUADO: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground",
+const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  receipt: Receipt,
+  map: MapIcon,
+  card: CreditCard,
+  message: MessageCircle,
+  book: BookOpen,
+  mail: Mail,
+  zap: Zap,
+  plug: Plug,
 };
 
-const iconMap: Record<string, React.ReactNode> = {
-  receipt: <Receipt className="h-6 w-6" />,
-  "message-square": <MessageSquare className="h-6 w-6" />,
-  "map-pin": <MapPin className="h-6 w-6" />,
-  "credit-card": <CreditCard className="h-6 w-6" />,
-};
+const ACCENT = getSectionAccent("herramientas");
 
 function IntegrationCard({
   integration,
-  onActivate,
-  onDeactivate,
-  loading,
-  t,
+  connected,
+  onOpen,
+  onToggle,
 }: {
-  integration: IntegrationCatalog;
-  onActivate: (slug: string) => void;
-  onDeactivate: (slug: string) => void;
-  loading: boolean;
-  t: (key: string, values?: Record<string, string | number | Date>) => string;
+  integration: MockIntegration;
+  connected: boolean;
+  onOpen: (slug: string) => void;
+  onToggle: (slug: string, next: boolean) => void;
 }) {
-  const estadoLabelMap: Record<string, string> = {
-    DISPONIBLE: t("statusAvailable"),
-    PROXIMO: t("statusComingSoon"),
-    DESCONTINUADO: t("statusDiscontinued"),
-  };
-  const categoryLabelMap: Record<string, string> = {
-    facturacion: t("categoryBilling"),
-    comunicacion: t("categoryCommunication"),
-    mapas: t("categoryMaps"),
-    pagos: t("categoryPayments"),
-  };
-  const badgeClassName = estadoBadgeStyles[integration.estado] || estadoBadgeStyles.DISPONIBLE;
-  const badgeLabel = estadoLabelMap[integration.estado] || estadoLabelMap.DISPONIBLE;
-  const isAvailable = integration.estado === "DISPONIBLE";
-  const icon = iconMap[integration.icono || ""] || <Zap className="h-6 w-6" />;
+  const Icon = ICONS[integration.icon] ?? Plug;
+  const open = () => onOpen(integration.slug);
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 border-border-subtle dark:border-border-strong">
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={`p-3 rounded-xl ${
-            integration.isActivated
-              ? "bg-green-100 dark:bg-green-900/30 text-green-600"
-              : isAvailable
-                ? "bg-surface-3 dark:bg-surface-3 text-foreground/70 dark:text-muted-foreground"
-                : "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
-          }`}>
-            {icon}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      }}
+      className="group block cursor-pointer rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-200 hover:border-border-strong hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      <div className="flex items-start gap-4">
+        <div
+          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl"
+          style={{ background: accentTileBg(ACCENT), color: ACCENT }}
+        >
+          <Icon size={22} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-foreground">{integration.nombre}</h3>
+            {integration.pac && <SoftBadge tone="info" dot={false}>PAC</SoftBadge>}
+            {integration.official && <SoftBadge tone="primary" dot={false}>Oficial</SoftBadge>}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-foreground dark:text-white">{integration.nombre}</h3>
-              <Badge className={badgeClassName}>{badgeLabel}</Badge>
-              {integration.isActivated && (
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                  <Check className="h-3 w-3 mr-1" /> {t("activeLabel")}
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {integration.descripcion}
-            </p>
-            <div className="flex items-center gap-3 mt-3">
-              <span className="text-xs text-muted-foreground font-medium">
-                {categoryLabelMap[integration.categoria] || integration.categoria}
-              </span>
-              {integration.precioMXN > 0 && (
-                <span className="text-xs font-semibold text-foreground/80 dark:text-muted-foreground/60">
-                  ${integration.precioMXN.toLocaleString("es-MX")} MXN
-                  {integration.tipoPrecio === "MENSUAL" ? t("perMonth") : ""}
-                </span>
-              )}
-              {integration.precioMXN === 0 && (
-                <span className="text-xs font-semibold text-green-600">{t("free")}</span>
-              )}
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            {integration.isActivated ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onDeactivate(integration.slug)}
-                disabled={loading}
-                className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
-              >
-                {t("deactivate")}
-              </Button>
-            ) : isAvailable ? (
-              <Button
-                size="sm"
-                onClick={() => onActivate(integration.slug)}
-                disabled={loading}
-                className="bg-success hover:bg-success/90 text-white"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("activate")}
-              </Button>
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{integration.descripcion}</p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-medium text-muted-foreground">{integration.categoria}</span>
+            {connected ? (
+              integration.health === "error" ? (
+                <SoftBadge tone="danger">Error</SoftBadge>
+              ) : (
+                <SoftBadge tone="success">Operativa</SoftBadge>
+              )
             ) : (
-              <Button size="sm" variant="outline" disabled className="opacity-50">
-                <Clock className="h-4 w-4 mr-1" /> {t("comingSoon")}
-              </Button>
+              <span className="text-xs font-medium text-muted-foreground/70">Sin conectar</span>
+            )}
+            {connected && integration.lastSync && (
+              <span className="text-xs text-muted-foreground/70">Última sync: {integration.lastSync}</span>
             )}
           </div>
         </div>
 
-        {integration.isActivated && integration.fechaActivacion && (
-          <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border-subtle dark:border-gray-800">
-            {t("activatedOn", { date: new Date(integration.fechaActivacion).toLocaleDateString() })}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function IntegrationsPage() {
-  useRequireAdmin();
-  const t = useTranslations("integrations");
-  const tc = useTranslations("common");
-  const [integrations, setIntegrations] = useState<IntegrationCatalog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "active" | "available">("all");
-
-  const fetchData = useCallback(async () => {
-    try {
-      const data = await integrationService.getCatalog();
-      setIntegrations(data);
-    } catch {
-      toast.error(t("errorLoading"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const handleActivate = async (slug: string) => {
-    setActionLoading(slug);
-    try {
-      await integrationService.activate(slug);
-      toast({ title: t("activated") });
-      await fetchData();
-    } catch {
-      toast.error(t("errorActivating"));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const [deactivateSlug, setDeactivateSlug] = useState<string | null>(null);
-
-  const handleDeactivate = (slug: string) => {
-    setDeactivateSlug(slug);
-  };
-
-  const confirmDeactivate = async () => {
-    if (!deactivateSlug) return;
-    const slug = deactivateSlug;
-    setDeactivateSlug(null);
-    setActionLoading(slug);
-    try {
-      await integrationService.deactivate(slug);
-      toast({ title: t("deactivated") });
-      await fetchData();
-    } catch {
-      toast.error(t("errorDeactivating"));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const filtered = integrations.filter((i) => {
-    if (filter === "active") return i.isActivated;
-    if (filter === "available") return i.estado === "DISPONIBLE" && !i.isActivated;
-    return true;
-  });
-
-  const activeCount = integrations.filter((i) => i.isActivated).length;
-
-  if (loading) {
-    return (
-      <div role="status" className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-        <span className="sr-only">Loading...</span>
-      </div>
-    );
-  }
-
-  return (
-    <PageHeader
-      breadcrumbs={[
-        { label: tc("home"), href: "/dashboard" },
-        { label: t("breadcrumbIntegrations") },
-      ]}
-      title={t("title")}
-      subtitle={activeCount !== 1 ? t("subtitlePlural", { active: activeCount, total: integrations.length }) : t("subtitle", { active: activeCount, total: integrations.length })}
-    >
-      <div className="space-y-4">
-        {/* Estado actual: módulo deshabilitado en Sidebar (Sidebar.tsx:319) porque
-            las integraciones no son funcionales aún. El UI catalog se mantiene
-            como preview pero los handlers de activate/deactivate no van a producir
-            un side-effect real. Se accede solo vía URL directa. */}
-        <div className="rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30 p-4">
-          <div className="flex gap-3">
-            <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-900 dark:text-amber-200">
-              <p className="font-semibold">Próximamente</p>
-              <p className="mt-1">
-                El módulo de integraciones aún está en desarrollo. Las opciones que
-                veas a continuación son una vista previa del catálogo planeado;
-                activarlas no producirá ningún efecto real todavía.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2">
-          {(["all", "active", "available"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              aria-pressed={filter === f}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                filter === f
-                  ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Button
+            variant="wbOutline"
+            size="sm"
+            className="inline-flex items-center gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              open();
+            }}
+          >
+            <Settings size={14} /> Configurar
+          </Button>
+          {connected ? (
+            <Button
+              variant="wbSoft"
+              size="sm"
+              className="text-red-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(integration.slug, false);
+              }}
             >
-              {f === "all" ? t("filterAll") : f === "active" ? t("filterActive") : t("filterAvailable")}
-            </button>
-          ))}
-        </div>
-
-        {/* Integration cards */}
-        <div className="grid grid-cols-1 gap-3">
-          {filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {t("emptyCategory")}
-            </div>
+              Desconectar
+            </Button>
           ) : (
-            filtered.map((integration) => (
-              <IntegrationCard
-                key={integration.id}
-                integration={integration}
-                onActivate={handleActivate}
-                onDeactivate={handleDeactivate}
-                loading={actionLoading === integration.slug}
-                t={t}
-              />
-            ))
+            <Button
+              variant="wbPrimary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(integration.slug, true);
+              }}
+            >
+              Conectar
+            </Button>
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Deactivate Confirmation Dialog */}
-      {deactivateSlug && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setDeactivateSlug(null)}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="deactivate-dialog-title"
-            className="bg-card rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 text-center"
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 id="deactivate-dialog-title" className="text-lg font-semibold text-foreground mb-2">
-              {t("deactivateTitle")}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-5">
-              {t("deactivateDesc")}
+type Tab = "all" | "connected" | "official" | "marketplace";
+
+export default function IntegrationsPage() {
+  useRequireAdmin();
+  const router = useRouter();
+
+  // Estado de conexión local (presentación). PENDIENTE BACKEND: cablear a
+  // integrationService.activate/deactivate cuando el catálogo real coincida.
+  const [connected, setConnected] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(MOCK_INTEGRATIONS.map((i) => [i.slug, i.connected])),
+  );
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<Tab>("all");
+
+  const handleToggle = (slug: string, next: boolean) => {
+    setConnected((prev) => ({ ...prev, [slug]: next }));
+    const nombre = MOCK_INTEGRATIONS.find((i) => i.slug === slug)?.nombre ?? "Integración";
+    toast.success(next ? `${nombre} conectada` : `${nombre} desconectada`);
+  };
+
+  const counts = useMemo(() => {
+    const conectadas = MOCK_INTEGRATIONS.filter((i) => connected[i.slug]).length;
+    const atencion = MOCK_INTEGRATIONS.filter((i) => connected[i.slug] && i.health === "error").length;
+    return { conectadas, atencion, disponibles: MOCK_INTEGRATIONS.length };
+  }, [connected]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return MOCK_INTEGRATIONS.filter((i) => {
+      if (tab === "connected" && !connected[i.slug]) return false;
+      if (tab === "official" && !i.official) return false;
+      if (tab === "marketplace" && !i.marketplace) return false;
+      if (!q) return true;
+      return (
+        i.nombre.toLowerCase().includes(q) ||
+        i.categoria.toLowerCase().includes(q) ||
+        i.descripcion.toLowerCase().includes(q)
+      );
+    });
+  }, [search, tab, connected]);
+
+  const tabs = [
+    { id: "all", label: "Todas" },
+    { id: "connected", label: "Conectadas", count: counts.conectadas },
+    { id: "official", label: "Oficiales" },
+    { id: "marketplace", label: "Marketplace" },
+  ];
+
+  return (
+    <PageHeader
+      section="herramientas"
+      icon={Plug}
+      breadcrumbs={[
+        { label: "Inicio", href: "/dashboard" },
+        { label: "Integraciones" },
+      ]}
+      title="Integraciones"
+      subtitle="Conecta Handy Sales con tus servicios de facturación, pagos, mapas y más."
+      actions={
+        <Button
+          variant="wbOutline"
+          size="sm"
+          className="inline-flex items-center gap-1.5"
+          onClick={() => router.push("/integrations/api")}
+        >
+          <Code size={14} /> API y Webhooks
+        </Button>
+      }
+    >
+      <div className="space-y-5">
+        {/* Aviso de honestidad: módulo en preview, sin efecto real todavía. */}
+        <div className="flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/30">
+          <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="text-sm text-amber-900 dark:text-amber-200">
+            <p className="font-semibold">Próximamente</p>
+            <p className="mt-1">
+              Vista previa del catálogo de integraciones. Conectar o desconectar aquí aún no produce un efecto real.
             </p>
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setDeactivateSlug(null)}>
-                {tc("cancel")}
-              </Button>
-              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={confirmDeactivate}>
-                {t("deactivate")}
-              </Button>
-            </div>
           </div>
         </div>
-      )}
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard label="Conectadas" value={counts.conectadas} tone="primary" icon={Plug} />
+          <StatCard label="Requieren atención" value={counts.atencion} tone={counts.atencion ? "danger" : "default"} icon={Clock} />
+          <StatCard label="Disponibles" value={counts.disponibles} icon={Zap} />
+        </div>
+
+        {/* Buscador + tabs */}
+        <SearchBar value={search} onChange={setSearch} placeholder="Buscar integración" className="w-full sm:w-72" />
+        <TabBar items={tabs} value={tab} onChange={(id) => setTab(id as Tab)} accent={ACCENT} />
+
+        {/* Tarjetas */}
+        {filtered.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No se encontraron integraciones con ese filtro.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3">
+            {filtered.map((integration) => (
+              <IntegrationCard
+                key={integration.slug}
+                integration={integration}
+                connected={!!connected[integration.slug]}
+                onOpen={(slug) => router.push(`/integrations/${slug}`)}
+                onToggle={handleToggle}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </PageHeader>
   );
 }

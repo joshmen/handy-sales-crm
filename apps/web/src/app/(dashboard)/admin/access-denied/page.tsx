@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ShieldWarning, ArrowLeft, Buildings } from '@phosphor-icons/react';
+import { ShieldAlert, ArrowLeft, Building2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export default function AccessDeniedPage() {
@@ -11,9 +11,9 @@ export default function AccessDeniedPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
       <div className="bg-surface-2 rounded-2xl shadow-sm border border-border-subtle p-8 sm:p-12 max-w-lg w-full">
         <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-6">
-          <ShieldWarning size={32} className="text-amber-600" weight="duotone" />
+          <ShieldAlert size={32} className="text-amber-600" />
         </div>
-        <h1 className="text-xl font-semibold text-foreground mb-2">
+        <h1 className="text-[22px] font-bold tracking-tight text-foreground mb-2">
           {t('title')}
         </h1>
         <p className="text-muted-foreground mb-2">
@@ -36,7 +36,7 @@ export default function AccessDeniedPage() {
             href="/admin/tenants"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-2 text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 transition-colors text-sm font-medium"
           >
-            <Buildings size={18} />
+            <Building2 size={18} />
             {t('viewCompanies')}
           </Link>
         </div>

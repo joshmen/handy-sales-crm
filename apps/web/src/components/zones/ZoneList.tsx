@@ -131,7 +131,7 @@ export function ZoneList({
                   <div className="flex items-center gap-2">
                     {zone.isEnabled ? (
                       <>
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <div className="h-2 w-2 rounded-full bg-primary" />
                         <span className="text-sm">{t('active')}</span>
                       </>
                     ) : (
@@ -173,7 +173,7 @@ export function ZoneList({
                       {zone.isEnabled ? (
                         <PowerOff className="h-4 w-4 text-red-500" />
                       ) : (
-                        <Power className="h-4 w-4 text-green-500" />
+                        <Power className="h-4 w-4 text-primary" />
                       )}
                     </Button>
 

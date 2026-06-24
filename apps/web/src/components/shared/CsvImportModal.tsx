@@ -389,10 +389,10 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
         const isCompleted = (['upload', 'preview', 'result'].indexOf(step)) > i;
         return (
           <React.Fragment key={s}>
-            {i > 0 && <div className={`flex-1 h-px ${isCompleted ? 'bg-green-400' : 'bg-surface-3'}`} />}
+            {i > 0 && <div className={`flex-1 h-px ${isCompleted ? 'bg-success' : 'bg-surface-3'}`} />}
             <div className="flex items-center gap-1.5">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium ${
-                isCompleted ? 'bg-green-100 text-green-700' :
+                isCompleted ? 'bg-success/15 text-success' :
                 isActive ? 'bg-success text-success-foreground' :
                 'bg-surface-3 text-muted-foreground'
               }`}>
@@ -414,7 +414,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
       isOpen={isOpen}
       onClose={handleClose}
       title={t('importTitle', { entity: entityLabel })}
-      icon={<Upload className="w-5 h-5 text-green-600" />}
+      icon={<Upload className="w-5 h-5 text-success" />}
       width="xl"
       isDirty={step === 'preview'}
       footer={footerContent}
@@ -460,7 +460,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               onDragLeave={() => setDragOver(false)}
               onClick={() => fileInputRef.current?.click()}
               className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                dragOver ? 'border-green-400 bg-green-50' : 'border-border-default hover:border-border-strong hover:bg-surface-1'
+                dragOver ? 'border-success bg-success/10' : 'border-border-default hover:border-border-strong hover:bg-surface-1'
               }`}
             >
               <SbDownload size={40} className="mb-3" />
@@ -495,7 +495,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
           <>
             {/* File info bar */}
             <div className="flex items-center gap-3 p-3 bg-surface-1 rounded-lg">
-              <FileText className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <FileText className="w-5 h-5 text-success flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -534,7 +534,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                 placeholder={searchConfig.placeholder}
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
-                className="w-full pl-9 pr-8 py-2 text-xs border border-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-9 pr-8 py-2 text-xs border border-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {searchTerm && (
                 <button
@@ -547,20 +547,20 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             </div>
 
             {/* Selection bar */}
-            <div className="flex items-center justify-between px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center justify-between px-3 py-2 bg-success/10 border border-success/30 rounded-lg">
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleAllVisible}
                   className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
-                    allVisibleSelected ? 'bg-green-600 border-green-600' :
-                    someVisibleSelected ? 'bg-green-600 border-green-600' :
-                    'border-border-default bg-white hover:border-green-400'
+                    allVisibleSelected ? 'bg-success border-success' :
+                    someVisibleSelected ? 'bg-success border-success' :
+                    'border-border-default bg-white hover:border-success'
                   }`}
                 >
                   {allVisibleSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                   {someVisibleSelected && <Minus className="w-3 h-3 text-white" strokeWidth={3} />}
                 </button>
-                <span className="text-xs font-medium text-green-800">
+                <span className="text-xs font-medium text-success">
                   {selectedCount === 0 ? t('noneSelected') :
                    selectedCount === totalRows ? t('allSelected') :
                    t('selectedOfTotal', { selected: selectedCount, total: totalRows })}
@@ -570,7 +570,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               {selectedCount > 0 && (
                 <button
                   onClick={() => setSelectedIndices(new Set())}
-                  className="text-xs text-green-700 hover:text-green-900 underline"
+                  className="text-xs text-success hover:text-success/80 underline"
                 >
                   {t('deselectAll')}
                 </button>
@@ -582,7 +582,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               <div className="flex flex-col items-center py-8 text-muted-foreground">
                 <Search className="w-8 h-8 mb-2" />
                 <p className="text-sm">{t('noRowsFound')} &quot;{searchTerm}&quot;</p>
-                <button onClick={() => setSearchTerm('')} className="text-xs text-green-600 hover:text-green-700 mt-1 underline">
+                <button onClick={() => setSearchTerm('')} className="text-xs text-success hover:text-success/80 mt-1 underline">
                   {t('clearSearch')}
                 </button>
               </div>
@@ -599,9 +599,9 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                       <button
                         onClick={toggleAllVisible}
                         className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
-                          allVisibleSelected ? 'bg-green-600 border-green-600' :
-                          someVisibleSelected ? 'bg-green-600 border-green-600' :
-                          'border-border-default bg-white hover:border-green-400'
+                          allVisibleSelected ? 'bg-success border-success' :
+                          someVisibleSelected ? 'bg-success border-success' :
+                          'border-border-default bg-white hover:border-success'
                         }`}
                       >
                         {allVisibleSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -625,7 +625,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                         onClick={() => !empty && toggleRow(index)}
                         className={`border-t border-border-subtle cursor-pointer transition-colors ${
                           empty ? 'opacity-40 cursor-not-allowed' :
-                          isSelected ? 'bg-green-50/50 hover:bg-green-50' :
+                          isSelected ? 'bg-success/5 hover:bg-success/10' :
                           'bg-white hover:bg-surface-1'
                         }`}
                       >
@@ -633,7 +633,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                           {!empty && (
                             <div
                               className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
-                                isSelected ? 'bg-green-600 border-green-600' : 'border-border-default bg-white'
+                                isSelected ? 'bg-success border-success' : 'border-border-default bg-white'
                               }`}
                             >
                               {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -716,11 +716,11 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                 </p>
                 <p className="text-xs text-muted-foreground">{t('totalRows')}</p>
               </div>
-              <div className="p-3 bg-green-50 rounded-lg text-center">
-                <p className="text-2xl font-bold text-green-700">
+              <div className="p-3 bg-success/10 rounded-lg text-center">
+                <p className="text-2xl font-bold text-success">
                   {result.importados}
                 </p>
-                <p className="text-xs text-green-600">{t('imported')}</p>
+                <p className="text-xs text-success">{t('imported')}</p>
               </div>
               <div className={`p-3 rounded-lg text-center ${result.errores > 0 ? 'bg-red-50' : 'bg-surface-1'}`}>
                 <p className={`text-2xl font-bold ${result.errores > 0 ? 'text-red-700' : 'text-muted-foreground'}`}>
@@ -732,9 +732,9 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
 
             {/* Success message */}
             {result.importados > 0 && (
-              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <p className="text-sm text-green-800">
+              <div className="flex items-center gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
+                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                <p className="text-sm text-success">
                   {t('importedSuccessfully', { count: result.importados, entity: entityLabel })}
                 </p>
               </div>

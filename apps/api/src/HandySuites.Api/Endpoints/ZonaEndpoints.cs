@@ -38,6 +38,12 @@ public static class ZonasEndpoints
             return Results.Ok(zonas);
         }).RequireAuthorization();
 
+        app.MapGet("/zonas/stats", async ([FromServices] ZonaService servicio) =>
+        {
+            var zonas = await servicio.ObtenerStatsAsync();
+            return Results.Ok(zonas);
+        }).RequireAuthorization();
+
         app.MapGet("/zonas/{id:int}", async (int id, [FromServices] ZonaService servicio) =>
         {
             var zona = await servicio.ObtenerPorIdAsync(id);

@@ -38,7 +38,7 @@ interface DiscountTableProps {
 }
 
 const statusColors = {
-  [DiscountStatus.ACTIVE]: 'bg-green-100 text-green-800',
+  [DiscountStatus.ACTIVE]: 'bg-primary/10 text-primary',
   [DiscountStatus.INACTIVE]: 'bg-surface-3 text-foreground',
   [DiscountStatus.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
@@ -153,7 +153,7 @@ export function DiscountTable({
 
               <TableCell>
                 <div className="text-sm">
-                  <div className="font-medium text-green-600">
+                  <div className="font-medium text-primary">
                     ${discount.totalSavings?.toLocaleString() || '0'}
                   </div>
                   <div className="text-muted-foreground">
@@ -192,7 +192,7 @@ export function DiscountTable({
                   {onToggleStatus && (
                     <Button
                       variant="ghost" size="sm" onClick={() => onToggleStatus(discount)}
-                      className={`h-8 w-8 p-0 ${discount.status === DiscountStatus.ACTIVE ? 'text-yellow-600' : 'text-green-600'}`}
+                      className={`h-8 w-8 p-0 ${discount.status === DiscountStatus.ACTIVE ? 'text-yellow-600' : 'text-primary'}`}
                     >
                       {discount.status === DiscountStatus.ACTIVE ? <Pause size={16} /> : <Play size={16} />}
                     </Button>

@@ -48,14 +48,15 @@ INSERT INTO timbre_packages (nombre, cantidad, precio_mxn, precio_unitario, stri
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- SECTION 3: SYSTEM ROLES (4 — no VIEWER)
+-- SECTION 3: SYSTEM ROLES (5 — no VIEWER)
 -- =====================================================
 
 INSERT INTO roles (nombre, descripcion, created_at, updated_at, activo, creado_en, version) VALUES
 ('SUPER_ADMIN', 'Super administrador del sistema', NOW(), NOW(), true, NOW(), 1),
 ('ADMIN', 'Administrador de empresa', NOW(), NOW(), true, NOW(), 1),
 ('SUPERVISOR', 'Supervisor de vendedores', NOW(), NOW(), true, NOW(), 1),
-('VENDEDOR', 'Vendedor de ruta', NOW(), NOW(), true, NOW(), 1)
+('VENDEDOR', 'Vendedor de ruta', NOW(), NOW(), true, NOW(), 1),
+('ALMACENISTA', 'Encargado de almacen e inventario', NOW(), NOW(), true, NOW(), 1)
 ON CONFLICT (nombre) DO NOTHING;
 
 -- =====================================================

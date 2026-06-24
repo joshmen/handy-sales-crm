@@ -145,7 +145,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
           {...register('notas')}
           rows={3}
           placeholder={t('notesPlaceholder')}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
             errors.notas ? 'border-red-500' : 'border-border-default'
           }`}
         />
@@ -156,10 +156,10 @@ export const VisitForm: React.FC<VisitFormProps> = ({
 
       {/* Botones */}
       <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="wbOutline" onClick={onCancel}>
           {tc('cancel')}
         </Button>
-        <Button type="submit" variant="success">
+        <Button type="submit" variant="wbPrimary">
           {t('scheduleVisit')}
         </Button>
       </div>

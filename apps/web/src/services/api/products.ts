@@ -12,11 +12,15 @@ interface ProductoListaDto {
   categoriaNombre?: string;
   unidadNombre?: string;
   precioBase: number;
+  costo?: number;
   cantidadActual: number;
   stockMinimo: number;
   activo: boolean;
   precioIncluyeIva?: boolean;
   tasaImpuestoId?: number | null;
+  claveSat?: string | null;
+  claveUnidad?: string | null;
+  facturable: boolean;
 }
 
 interface ProductoDto {
@@ -29,6 +33,8 @@ interface ProductoDto {
   categoraId: number;
   unidadMedidaId: number;
   precioBase: number;
+  /** Costo unitario del producto (para reportes de margen/valorizado). */
+  costo?: number;
   activo: boolean;
   /** Si true (default), precioBase ya incluye IVA. */
   precioIncluyeIva?: boolean;
@@ -36,6 +42,9 @@ interface ProductoDto {
   tasaImpuestoId?: number | null;
   tasaImpuestoNombre?: string | null;
   tasaImpuestoTasa?: number | null;
+  claveSat?: string | null;
+  claveUnidad?: string | null;
+  facturable: boolean;
 }
 
 interface ProductoPaginatedResult {
@@ -44,6 +53,7 @@ interface ProductoPaginatedResult {
   pagina: number;
   tamanoPagina: number;
   totalPaginas: number;
+  sinClaveSatCount: number;
 }
 
 // Frontend interfaces
@@ -54,6 +64,8 @@ export interface ProductsListParams {
   categoryId?: number;
   familyId?: number;
   isActive?: boolean;
+  /** Tab "Sin clave SAT": solo facturables sin ClaveProdServ. */
+  sinClaveSat?: boolean;
 }
 
 export interface ProductsListResponse {
@@ -62,6 +74,8 @@ export interface ProductsListResponse {
   page: number;
   limit: number;
   totalPages: number;
+  /** Conteo (a nivel tenant) de productos facturables sin clave SAT. */
+  sinClaveSatCount: number;
 }
 
 export interface CreateProductRequest {
@@ -72,10 +86,18 @@ export interface CreateProductRequest {
   categoraId: number;
   unidadMedidaId: number;
   precioBase: number;
+  /** Costo unitario del producto (para reportes de margen/valorizado). */
+  costo?: number;
   /** Si true (default), precioBase es lo que el cliente paga al final (IVA incluido). */
   precioIncluyeIva?: boolean;
   /** FK al catálogo TasasImpuesto. Si null, usa la tasa default del tenant. */
   tasaImpuestoId?: number | null;
+  /** ClaveProdServ del SAT (opcional). */
+  claveSat?: string | null;
+  /** ClaveUnidad del SAT (opcional, ej. "H87"). */
+  claveUnidad?: string | null;
+  /** Si false, el producto no es facturable. */
+  facturable?: boolean;
 }
 
 export interface UpdateProductRequest extends Partial<CreateProductRequest> {
@@ -93,10 +115,14 @@ function mapProductoToProduct(dto: ProductoListaDto): Product {
     family: dto.familiaNombre,
     unit: dto.unidadNombre || '',
     price: dto.precioBase,
+    cost: dto.costo,
     stock: dto.cantidadActual,
     minStock: dto.stockMinimo,
     isActive: dto.activo,
     images: dto.imagenUrl ? [dto.imagenUrl] : [],
+    claveSat: dto.claveSat ?? undefined,
+    claveUnidad: dto.claveUnidad ?? undefined,
+    facturable: dto.facturable,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -111,10 +137,14 @@ function mapProductoDtoToProduct(dto: ProductoDto): Product {
     category: '',
     unit: '',
     price: dto.precioBase,
+    cost: dto.costo,
     stock: 0,
     minStock: 0,
     isActive: dto.activo,
     images: dto.imagenUrl ? [dto.imagenUrl] : [],
+    claveSat: dto.claveSat ?? undefined,
+    claveUnidad: dto.claveUnidad ?? undefined,
+    facturable: dto.facturable,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -134,6 +164,7 @@ class ProductService {
       if (rest.categoryId) queryParams.append('categoriaId', rest.categoryId.toString());
       if (rest.familyId) queryParams.append('familiaId', rest.familyId.toString());
       if (rest.isActive !== undefined) queryParams.append('activo', rest.isActive.toString());
+      if (rest.sinClaveSat) queryParams.append('sinClaveSat', 'true');
 
       const response = await api.get<ProductoPaginatedResult>(
         `${this.basePath}?${queryParams.toString()}`,
@@ -147,6 +178,7 @@ class ProductService {
         page: data.pagina,
         limit: data.tamanoPagina,
         totalPages: data.totalPaginas,
+        sinClaveSatCount: data.sinClaveSatCount ?? 0,
       };
     } catch (error) {
       throw handleApiError(error);
@@ -193,6 +225,16 @@ class ProductService {
   async searchProducts(query: string): Promise<Product[]> {
     const response = await this.getProducts({ search: query, limit: 50 });
     return response.products;
+  }
+
+  /** Asigna clave SAT (+ unidad opcional) en lote: por selección de IDs o por categoría. */
+  async batchAsignarClaveSat(req: { ids?: number[]; categoriaId?: number; claveSat: string; claveUnidad?: string }): Promise<{ actualizados: number }> {
+    try {
+      const response = await api.patch<{ actualizados: number }>(`${this.basePath}/batch-clave-sat`, req);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
   }
 
   async toggleActive(id: string | number, activo: boolean): Promise<void> {

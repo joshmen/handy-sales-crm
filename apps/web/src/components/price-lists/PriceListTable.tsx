@@ -128,7 +128,7 @@ export const PriceListTable: React.FC<PriceListTableProps> = ({
                     size="sm"
                     onClick={() => onToggleStatus(priceList)}
                     className={`h-8 w-8 p-0 ${
-                      priceList.isEnabled ? 'text-yellow-600' : 'text-green-600'
+                      priceList.isEnabled ? 'text-yellow-600' : 'text-primary'
                     }`}
                   >
                     {priceList.isEnabled ? <PowerOff size={16} /> : <Power size={16} />}

@@ -32,7 +32,7 @@ npm run lint:fix
 - **Framework**: Next.js 15.4.6 (App Router, Turbopack dev)
 - **UI**: React 19.1.0, TypeScript 5 (strict), Tailwind CSS 3.4
 - **Components**: Radix UI primitives + custom components
-- **Icons**: Phosphor Icons (primary), Lucide React (secondary/legacy)
+- **Icons**: Lucide React (primary, mono stroke — matches the SLDS redesign). Phosphor only remains in the onboarding wizard.
 - **Forms**: React Hook Form + Zod validation
 - **State**: Zustand stores
 - **Auth**: NextAuth.js (JWT strategy, credentials + Google OAuth)
@@ -72,8 +72,8 @@ src/
 - Responsive: table on desktop, cards on mobile
 - PageHeader component for consistent page headers
 - Drawer pattern for create/edit forms (not modals)
-- Phosphor Icons with semantic colors (blue=search, red=delete, amber=edit, etc.)
-- Buttons: `rounded-lg` (8px) standard, company green `#16A34A` for primary CTAs
+- Lucide React mono icons with semantic colors (blue=search, red=delete, amber=edit, etc.)
+- Buttons: SLDS pill variants in `Button.tsx` (`wbPrimary` blue pill for primary CTAs, `wbOutline` for cancel/secondary). Primary brand is blue `#0176D3` (token `--primary`); success/positive semantics use green `--success`
 - RBAC: middleware.ts + Sidebar filter by role (SuperAdmin, Admin, Supervisor, Vendedor, Viewer)
 - Impersonation: SuperAdmin can impersonate tenant Admin with visual banner
 

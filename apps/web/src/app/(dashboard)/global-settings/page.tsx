@@ -126,7 +126,7 @@ export default function GlobalSettingsPage() {
 
   if (isLoading) {
     return (
-      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -136,7 +136,7 @@ export default function GlobalSettingsPage() {
 
   if (!settings) {
     return (
-      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">{t('errorLoading')}</p>
         </div>
@@ -145,7 +145,7 @@ export default function GlobalSettingsPage() {
   }
 
   return (
-    <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+    <PageHeader section="superadmin" icon={Settings} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
           <div className="mb-6 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
             <Shield className="h-4 w-4 mr-1" />
             {t('superAdminOnly')}
@@ -153,11 +153,11 @@ export default function GlobalSettingsPage() {
 
           <div className="space-y-6">
             {/* Platform Branding */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-6">
-                <Palette className="h-5 w-5 text-blue-600" />
+                <Palette className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{t('branding.title')}</h2>
-                <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">{t('branding.activeHint')}</span>
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{t('branding.activeHint')}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -211,7 +211,7 @@ export default function GlobalSettingsPage() {
                       onChange={e =>
                         setSettings({ ...settings, platformPrimaryColor: e.target.value })
                       }
-                      placeholder="#3B82F6"
+                      placeholder="#0176D3"
                       className="flex-1"
                     />
                   </div>
@@ -235,7 +235,7 @@ export default function GlobalSettingsPage() {
                       onChange={e =>
                         setSettings({ ...settings, platformSecondaryColor: e.target.value })
                       }
-                      placeholder="#8B5CF6"
+                      placeholder="#0B5CAB"
                       className="flex-1"
                     />
                   </div>
@@ -244,9 +244,9 @@ export default function GlobalSettingsPage() {
             </Card>
 
             {/* Regional Settings */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-6">
-                <Globe className="h-5 w-5 text-green-600" />
+                <Globe className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{t('regional.title')}</h2>
                 <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-full">{t('regional.comingSoon')}</span>
               </div>
@@ -287,9 +287,9 @@ export default function GlobalSettingsPage() {
             </Card>
 
             {/* Security & Access */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-6">
-                <Shield className="h-5 w-5 text-orange-600" />
+                <Shield className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">{t('security.title')}</h2>
               </div>
 
@@ -366,7 +366,7 @@ export default function GlobalSettingsPage() {
             </Card>
 
             {/* H9: Maintenance Mode — redirected to Announcements */}
-            <Card className="p-6">
+            <Card className="p-6 border border-border rounded-2xl shadow-sm">
               <div className="flex items-center space-x-3 mb-4">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 <h2 className="text-xl font-semibold text-foreground">{t('maintenance.title')}</h2>
@@ -381,7 +381,7 @@ export default function GlobalSettingsPage() {
                     {t('maintenance.currentStatus')} {settings.maintenanceMode ? (
                       <span className="text-red-600 font-medium">{t('maintenance.statusActive')}</span>
                     ) : (
-                      <span className="text-green-600 font-medium">{t('maintenance.statusInactive')}</span>
+                      <span className="text-primary font-medium">{t('maintenance.statusInactive')}</span>
                     )}
                   </p>
                 </div>
@@ -398,7 +398,7 @@ export default function GlobalSettingsPage() {
             {/* Save Actions */}
             <div className="flex justify-end space-x-4">
               <Button
-                variant="outline"
+                variant="wbOutline"
                 onClick={() => window.location.reload()}
                 disabled={isUpdating}
               >
@@ -407,10 +407,10 @@ export default function GlobalSettingsPage() {
               </Button>
 
               <Button
+                variant="wbPrimary"
                 data-tour="settings-save"
                 onClick={handleSave}
                 disabled={isUpdating}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {isUpdating ? (
                   <>

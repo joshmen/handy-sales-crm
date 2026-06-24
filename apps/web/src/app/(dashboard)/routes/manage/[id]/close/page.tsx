@@ -2,204 +2,68 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, CierreResumen, RetornoItem, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
+import {
+  routeService,
+  RouteDetail,
+  ESTADO_RUTA,
+  ESTADO_RUTA_KEYS,
+  ESTADO_RUTA_COLORS,
+} from '@/services/api/routes';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
-import { Modal } from '@/components/ui/Modal';
-import {
-  Loader2,
-  User,
-  ArrowDown,
-  ArrowUp,
-  Minus as MinusIcon,
-  Plus as PlusIcon,
-  Lock,
-  AlertTriangle,
-  X,
-  Package,
-  Info,
-  Receipt,
-  RotateCcw,
-} from 'lucide-react';
-import { RutaGastosDrawer } from '@/components/gastos/RutaGastosDrawer';
-import { RutaDevolucionesDrawer } from '@/components/devoluciones/RutaDevolucionesDrawer';
-import { useFormatters } from '@/hooks/useFormatters';
+import { Loader2, AlertTriangle, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { RouteLifecycleStepper } from '@/components/routes/RouteLifecycleStepper';
+import { CorteTab } from '../../../[id]/components/CorteTab';
 
+/**
+ * Página standalone de cierre de ruta. El cuerpo del corte (conciliación,
+ * caja, steppers, drawers, modal de cierre) vive en `<CorteTab />`, compartido
+ * con el tab del detalle de ruta. Esta página solo provee el shell
+ * (breadcrumb + título + estado + stepper de lifecycle + cancelar).
+ */
 export default function CloseRoutePage() {
-  const { formatCurrency, formatDate } = useFormatters();
   const ts = useTranslations('routes.status');
-  const tl = useTranslations('routes.detail');
   const t = useTranslations('routes.close');
   const tc = useTranslations('common');
-  const showApiError = useApiErrorToast();
 
-  // Bug #4-web (audit 2026-05-07): la definición inline de LIFECYCLE_STEPS
-  // se reemplazó por el componente <RouteLifecycleStepper /> con icons
-  // dedicados, padding correcto y design system. Ver
-  // `apps/web/src/components/routes/RouteLifecycleStepper.tsx`.
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
 
   const [ruta, setRuta] = useState<RouteDetail | null>(null);
-  const [resumen, setResumen] = useState<CierreResumen | null>(null);
-  const [retorno, setRetorno] = useState<RetornoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [closing, setClosing] = useState(false);
-  const [montoRecibido, setMontoRecibido] = useState<string>('');
 
-  // Drawer de gastos: trigger desde la linea "Ver gastos" en card Otros movimientos.
-  // El Drawer maneja su propio fetch + lightbox de fotos. Refresca el resumen del
-  // close screen cuando se invalida un gasto para que aRecibir y el count se actualicen.
-  const [gastosDrawerOpen, setGastosDrawerOpen] = useState(false);
-  // Drawer de devoluciones: igual patron que gastos. Anular devolucion refresca
-  // resumen (aRecibir cambia si Efectivo, cliente.saldo cambia si SaldoFavor).
-  const [devolucionesDrawerOpen, setDevolucionesDrawerOpen] = useState(false);
-
-  const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
-
-  const fetchData = useCallback(async () => {
+  const fetchRuta = useCallback(async () => {
     try {
       setLoading(true);
-      const [rutaData, resumenData, retornoData] = await Promise.all([
-        routeService.getRuta(rutaId),
-        routeService.getResumenCierre(rutaId),
-        routeService.getRetornoInventario(rutaId),
-      ]);
+      const rutaData = await routeService.getRuta(rutaId);
       setRuta(rutaData);
-      setResumen(resumenData);
-      setRetorno(retornoData);
-      setMontoRecibido(rutaData.montoRecibido?.toString() || '');
     } catch (err) {
       console.error('Error:', err);
-      toast.error(t('errorLoading'));
+      toast.error(t('errorLoadingClose'));
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rutaId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const handleRetornoChange = async (productoId: number, field: 'mermas' | 'recAlmacen' | 'cargaVehiculo' | 'recargaExterna', delta: number) => {
-    const item = retorno.find(r => r.productoId === productoId);
-    if (!item || isReadonly) return;
-
-    const newValue = Math.max(0, item[field] + delta);
-    const updated = retorno.map(r =>
-      r.productoId === productoId
-        ? {
-            ...r,
-            [field]: newValue,
-            // Recarga SUMA al inicial efectivo; resto de campos restan.
-            diferencia: r.cantidadInicial + (field === 'recargaExterna' ? newValue : r.recargaExterna)
-              - r.vendidos - r.entregados - r.devueltos
-              - (field === 'mermas' ? newValue : r.mermas)
-              - (field === 'recAlmacen' ? newValue : r.recAlmacen)
-              - (field === 'cargaVehiculo' ? newValue : r.cargaVehiculo),
-          }
-        : r
-    );
-    setRetorno(updated);
-
-    try {
-      const updatedItem = updated.find(r => r.productoId === productoId)!;
-      await routeService.updateRetorno(rutaId, productoId, {
-        mermas: updatedItem.mermas,
-        recAlmacen: updatedItem.recAlmacen,
-        cargaVehiculo: updatedItem.cargaVehiculo,
-        recargaExterna: updatedItem.recargaExterna,
-      });
-    } catch (err) {
-      showApiError(err, t('errorUpdatingReturn'));
-      fetchData();
-    }
-  };
-
-  /**
-   * Quick-action que cuadra todas las filas pendientes:
-   * - Sobrante (Diferencia > 0): asigna el sobrante a recAlmacen/cargaVehiculo (resta del inicial).
-   * - Overage (Diferencia < 0): asigna |diferencia| a recargaExterna (SUMA al inicial). Esto resuelve
-   *   el caso del vendedor que vendió más de lo cargado porque recargó del almacén mid-ruta.
-   */
-  const handleSetAllDiferencia = (target: 'recAlmacen' | 'cargaVehiculo' | 'recargaExterna') => {
-    if (isReadonly) return;
-    const updated = retorno.map(r => {
-      // Recarga aplica solo a overage; los otros dos aplican solo a sobrante.
-      if (target === 'recargaExterna') {
-        if (r.diferencia >= 0) return r;
-        const newVal = r.recargaExterna + Math.abs(r.diferencia);
-        return { ...r, recargaExterna: newVal, diferencia: 0 };
-      }
-      if (r.diferencia <= 0) return r;
-      const newVal = r[target] + r.diferencia;
-      return { ...r, [target]: newVal, diferencia: 0 };
-    });
-    setRetorno(updated);
-
-    // Batch update — solo filas modificadas
-    Promise.all(
-      updated.map((item) =>
-        routeService.updateRetorno(rutaId, item.productoId, {
-          mermas: item.mermas,
-          recAlmacen: item.recAlmacen,
-          cargaVehiculo: item.cargaVehiculo,
-          recargaExterna: item.recargaExterna,
-        }).catch(() => { /* silent */ })
-      )
-    );
-  };
-
-  const [showCloseModal, setShowCloseModal] = useState(false);
-
-  const handleCerrarRuta = () => {
-    if (!montoRecibido) {
-      toast.error(t('enterAmountReceived'));
-      return;
-    }
-    // Reemplaza confirm() nativo por Modal (feedback del user).
-    setShowCloseModal(true);
-  };
-
-  const submitCerrarRuta = async () => {
-    try {
-      setClosing(true);
-      await routeService.cerrarRuta(rutaId, {
-        montoRecibido: parseFloat(montoRecibido),
-        retornos: retorno.map(r => ({
-          productoId: r.productoId,
-          mermas: r.mermas,
-          recAlmacen: r.recAlmacen,
-          cargaVehiculo: r.cargaVehiculo,
-          recargaExterna: r.recargaExterna,
-        })),
-      });
-      toast.success(t('closedSuccess'));
-      setShowCloseModal(false);
-      fetchData();
-    } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || t('errorClosing'));
-    } finally {
-      setClosing(false);
-    }
-  };
+    fetchRuta();
+  }, [fetchRuta]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <span className="text-sm text-muted-foreground">{t('loading')}</span>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">{t('loadingClose')}</span>
         </div>
       </div>
     );
   }
 
-  if (!ruta || !resumen) {
+  if (!ruta) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">{t('notFound')}</p>
@@ -209,51 +73,37 @@ export default function CloseRoutePage() {
 
   const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
   const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-foreground';
-  const diferencia = montoRecibido ? parseFloat(montoRecibido) - resumen.aRecibir : null;
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header shell */}
       <div className="bg-surface-2 px-8 py-6 border-b border-border-subtle">
-        <Breadcrumb items={[
-          { label: t('breadcrumbRoutes'), href: '/routes' },
-          { label: ruta.nombre, href: `/routes/${ruta.id}` },
-          { label: t('title') },
-        ]} />
+        <Breadcrumb
+          items={[
+            { label: t('breadcrumbRoutes'), href: '/routes' },
+            { label: ruta.nombre, href: `/routes/${ruta.id}` },
+            { label: t('title') },
+          ]}
+        />
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground">
-              {t('title')}
-            </h1>
-            <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
+            <h1 className="text-[22px] font-bold tracking-tight text-foreground">{t('title')}</h1>
+            <span
+              className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}
+            >
               {estadoBadge}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {ruta.estado === ESTADO_RUTA.Completada && (
-              <button
-                data-tour="routes-close-btn"
-                onClick={handleCerrarRuta}
-                disabled={closing}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
-              >
-                {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                {t('closeRoute')}
-              </button>
-            )}
-            <button
-              onClick={() => router.push('/routes')}
-              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1"
-            >
-              <X className="w-4 h-4" />
-              {tc('cancel')}
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/routes')}
+            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1"
+          >
+            <X className="w-4 h-4" />
+            {tc('cancel')}
+          </button>
         </div>
 
-        {/* Bug #4-web: nuevo stepper con padding propio, iconos lucide,
-            tamaño aumentado, sin negative margin hack. */}
         <div data-tour="routes-close-tabs" className="mt-4">
           <RouteLifecycleStepper
             estado={ruta.estado}
@@ -262,449 +112,17 @@ export default function CloseRoutePage() {
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
-        {/* Alert if not in correct state */}
+      {/* Body — delegado a CorteTab */}
+      <div className="flex-1 px-8 py-6 overflow-auto">
         {ruta.estado === ESTADO_RUTA.PendienteAceptar && (
-          <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <p className="text-sm text-yellow-800">{t('pendingInventoryAlert')}</p>
+          <div className="mb-6 flex items-center gap-3 p-4 bg-warning-50 dark:bg-warning-900/20 border border-warning-300 dark:border-warning-700 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-warning-600 flex-shrink-0" />
+            <p className="text-sm text-foreground">{t('pendingAcceptAlert')}</p>
           </div>
         )}
 
-        {/* Section: Route Details */}
-        <div data-tour="routes-close-details" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-foreground mb-4">{t('routeDetails')}</h2>
-          <div className="flex items-center gap-4 p-3 bg-surface-1 rounded-lg">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-              <User className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">{ruta.usuarioNombre}</p>
-              <p className="text-xs text-muted-foreground">
-                {t('routeLabel')}: {ruta.nombre} | {t('zoneLabel')}: {ruta.zonaNombre || t('noZone')} | {t('created')}: {formatDate(ruta.creadoEn)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Financial Summary */}
-        <div data-tour="routes-close-financial" className="grid grid-cols-3 gap-4">
-          {/* Efectivo entrante */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <ArrowDown className="w-4 h-4 text-green-600" />
-              <h3 className="text-xs font-semibold text-foreground/80">{t('incomingCash')}</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('cashSales')} ({resumen.ventasContadoCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.ventasContado)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('paidDeliveries')} ({resumen.entregasCobradasCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.entregasCobradas)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('debtCollection')} ({resumen.cobranzaAdeudosCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.cobranzaAdeudos)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Movimientos a saldo */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <ArrowUp className="w-4 h-4 text-blue-600" />
-              <h3 className="text-xs font-semibold text-foreground/80">{t('balanceMovements')}</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('creditSales')} ({resumen.ventasCreditoCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.ventasCredito)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('creditDeliveries')} ({resumen.entregasCreditoCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.entregasCredito)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('creditBalance')} ({resumen.entregasContadoSaldoFavorCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.entregasContadoSaldoFavor)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Otros movimientos */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Package className="w-4 h-4 text-foreground/70" />
-              <h3 className="text-xs font-semibold text-foreground/80">{t('otherMovements')}</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('presaleOrders')} ({resumen.pedidosPreventaCount})</span>
-                <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
-              </div>
-              {/* v23 (2026-05-29): Devoluciones a saldo a favor (informativo, no resta de aRecibir) */}
-              {(resumen.devolucionesSaldoFavorCount ?? 0) > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground inline-flex items-center gap-1">
-                    Devoluciones a saldo favor ({resumen.devolucionesSaldoFavorCount})
-                  </span>
-                  <span className="font-medium text-foreground/70">{formatCurrency(resumen.devolucionesSaldoFavor ?? 0)}</span>
-                </div>
-              )}
-              {/* v23: Devoluciones efectivo (restan de aRecibir) */}
-              {(resumen.devolucionesEfectivoCount ?? 0) > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Devoluciones en efectivo ({resumen.devolucionesEfectivoCount})</span>
-                  <span className="font-medium text-red-600">-{formatCurrency(resumen.devolucionesEfectivo ?? 0)}</span>
-                </div>
-              )}
-              {/* v23 + redesign 30/5: Gastos del vendedor — boton abre Drawer con
-                  detalle completo (foto grande, invalidar, audit). Antes era una
-                  mini-tabla inline dentro del card de 1/3 width que el usuario
-                  reporto demasiado pequena para leer tickets. */}
-              {(resumen.gastosCount ?? 0) > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setGastosDrawerOpen(true)}
-                  className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={`Ver gastos de la ruta (${resumen.gastosCount})`}
-                >
-                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
-                    <Receipt className="w-3.5 h-3.5" />
-                    Ver gastos ({resumen.gastosCount})
-                  </span>
-                  <span className="font-medium text-red-600">-{formatCurrency(resumen.gastos ?? 0)}</span>
-                </button>
-              )}
-              {/* v24 (2026-05-31): Devoluciones — boton abre Drawer con detalle por
-                  cliente + foto grande + anular. Las lineas de arriba muestran el
-                  resumen monetario (Efectivo vs SaldoFavor); el Drawer da audit completo. */}
-              {(resumen.devolucionesCount ?? 0) > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setDevolucionesDrawerOpen(true)}
-                  className="w-full flex justify-between items-center text-xs hover:bg-surface-3 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={`Ver devoluciones de la ruta (${resumen.devolucionesCount})`}
-                >
-                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Ver devoluciones ({resumen.devolucionesCount})
-                  </span>
-                  <span className="font-medium text-red-600">-{formatCurrency(resumen.devoluciones ?? 0)}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Drawer compartido — abre con detalle + lightbox interno. Refetch del resumen
-            si se invalida un gasto para que aRecibir y count se actualicen. */}
-        <RutaGastosDrawer
-          isOpen={gastosDrawerOpen}
-          onClose={() => setGastosDrawerOpen(false)}
-          rutaId={rutaId}
-          rutaCodigo={ruta?.codigo}
-          onGastoInvalidated={() => fetchData()}
-        />
-
-        {/* Drawer de devoluciones — mirror del de gastos. Refetch si se anula porque
-            aRecibir (Efectivo) o cliente.saldo (SaldoFavor) cambian. */}
-        <RutaDevolucionesDrawer
-          isOpen={devolucionesDrawerOpen}
-          onClose={() => setDevolucionesDrawerOpen(false)}
-          rutaId={rutaId}
-          rutaCodigo={ruta?.codigo}
-          onDevolucionAnulada={() => fetchData()}
-        />
-
-        {/* Al inicio vs Al cierre */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Al inicio */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-foreground/80 mb-3">{t('atStart')}</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('routeValue')}</span>
-                <span className="font-medium text-lg">{formatCurrency(resumen.valorRuta)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('initialCash')}</span>
-                <span className="font-medium">{formatCurrency(resumen.efectivoInicial)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Al cierre */}
-          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-foreground/80 mb-3">{t('atClose')}</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t('toReceive')}</span>
-                <span className="font-medium text-lg">{formatCurrency(resumen.aRecibir)}</span>
-              </div>
-              <div className="flex justify-between text-xs items-center">
-                <span className="text-muted-foreground">{t('received')}</span>
-                {isReadonly ? (
-                  <span className="font-medium">{formatCurrency(resumen.recibido ?? 0)}</span>
-                ) : (
-                  <input
-                    type="number"
-                    value={montoRecibido}
-                    onChange={(e) => setMontoRecibido(e.target.value)}
-                    step="0.01"
-                    className="w-32 px-2 py-1 text-right text-sm border border-border-default rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                   
-                  />
-                )}
-              </div>
-              {diferencia !== null && (
-                <div className="flex justify-between text-xs pt-1 border-t">
-                  <span className="text-muted-foreground">{t('difference')}</span>
-                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-foreground'}`}>
-                    {diferencia >= 0 ? '+' : ''}{formatCurrency(diferencia)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Overage banner — al menos un producto con vendidos+entregados > cantidadInicial.
-            Reportado prod 2026-05-26: vendedor empieza a vender pre-ruta y al sumar las
-            ventas previas a la ruta la cantidad consumida puede exceder lo cargado. Esto
-            no es error: significa que hubo stock externo (carga extra durante el día,
-            vehículo con inventario previo, etc.). El usuario lo reconcilia con los
-            steppers Mermas / Rec. almacén / Carga vehículo de la tabla. */}
-        {!loading && retorno.some(r => (r.vendidos + r.entregados) > (r.cantidadInicial + r.recargaExterna)) && (
-          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-900 dark:text-amber-200 flex-1">
-              <p className="font-semibold mb-1">Hay productos con más unidades vendidas que las cargadas inicialmente.</p>
-              <p className="text-xs leading-relaxed">
-                Si el vendedor regresó al almacén a recargar durante la ruta, usa el stepper <strong>Recarga</strong> (o el botón
-                rápido <strong>&rarr; Recarga</strong>) para registrar las unidades adicionales. También puedes ajustar con Mermas,
-                Rec. almacén o Carga vehículo si aplica.
-              </p>
-            </div>
-            {!isReadonly && (
-              <button
-                onClick={() => handleSetAllDiferencia('recargaExterna')}
-                className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded transition-colors"
-                title="Asigna automáticamente las unidades faltantes al stepper Recarga"
-              >
-                &rarr; Recarga
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Inventario de retorno */}
-        <div data-tour="routes-close-inventory" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">{t('returnInventory')}</h2>
-            {!isReadonly && (
-              <div data-tour="routes-close-actions" className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{t('differenceTo')}:</span>
-                <button
-                  onClick={() => handleSetAllDiferencia('recAlmacen')}
-                  className="px-3 py-1 text-xs font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
-                >
-                  {t('warehouse')}
-                </button>
-                <button
-                  onClick={() => handleSetAllDiferencia('cargaVehiculo')}
-                  className="px-3 py-1 text-xs font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
-                >
-                  {t('vehicleLoad')}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {retorno.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-8">{t('noReturnInventory')}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border-subtle">
-                    <th className="text-left py-2 px-2 text-[10px] font-semibold text-foreground/70">Producto</th>
-                    <th className="text-right py-2 px-2 text-[10px] font-semibold text-foreground/70">Ventas($)</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Inicial</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Vendidos</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Entregados</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Devueltos</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Mermas</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Rec. almacén</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Carga veh.</th>
-                    <th
-                      className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70"
-                      title="Unidades que el vendedor recargó del almacén durante la ruta — SUMA al inicial efectivo."
-                    >
-                      Recarga
-                    </th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Dif.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {retorno.map((item) => (
-                    <tr key={item.id} className="border-b border-border-subtle hover:bg-surface-1">
-                      <td className="py-2 px-2">
-                        <span className="text-[12px] text-foreground">{item.productoNombre}</span>
-                      </td>
-                      <td className="py-2 px-2 text-right text-[12px] text-foreground/70">
-                        {formatCurrency(item.ventasMonto)}
-                      </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-foreground font-medium">
-                        {item.cantidadInicial}
-                      </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-foreground/70">
-                        {item.vendidos}
-                      </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-foreground/70">
-                        {item.entregados}
-                      </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-foreground/70">
-                        {item.devueltos}
-                      </td>
-                      {/* Mermas stepper */}
-                      <td className="py-1 px-1 text-center">
-                        <Stepper
-                          value={item.mermas}
-                          onDecrement={() => handleRetornoChange(item.productoId, 'mermas', -1)}
-                          onIncrement={() => handleRetornoChange(item.productoId, 'mermas', 1)}
-                          disabled={isReadonly}
-                        />
-                      </td>
-                      {/* Rec almacen stepper */}
-                      <td className="py-1 px-1 text-center">
-                        <Stepper
-                          value={item.recAlmacen}
-                          onDecrement={() => handleRetornoChange(item.productoId, 'recAlmacen', -1)}
-                          onIncrement={() => handleRetornoChange(item.productoId, 'recAlmacen', 1)}
-                          disabled={isReadonly}
-                        />
-                      </td>
-                      {/* Carga vehiculo stepper */}
-                      <td className="py-1 px-1 text-center">
-                        <Stepper
-                          value={item.cargaVehiculo}
-                          onDecrement={() => handleRetornoChange(item.productoId, 'cargaVehiculo', -1)}
-                          onIncrement={() => handleRetornoChange(item.productoId, 'cargaVehiculo', 1)}
-                          disabled={isReadonly}
-                        />
-                      </td>
-                      {/* Recarga externa stepper — SUMA al inicial efectivo (overage). */}
-                      <td className="py-1 px-1 text-center">
-                        <Stepper
-                          value={item.recargaExterna}
-                          onDecrement={() => handleRetornoChange(item.productoId, 'recargaExterna', -1)}
-                          onIncrement={() => handleRetornoChange(item.productoId, 'recargaExterna', 1)}
-                          disabled={isReadonly}
-                        />
-                      </td>
-                      {/* Diferencia badge — overage explícito cuando vendidos+entregados > inicial+recarga */}
-                      <td className="py-2 px-2 text-center">
-                        {(() => {
-                          const inicialEfectivo = item.cantidadInicial + item.recargaExterna;
-                          const excedente = item.vendidos + item.entregados - inicialEfectivo;
-                          if (excedente > 0) {
-                            return (
-                              <span
-                                title={`Vendido ${excedente} unidades más del inicial efectivo (inicial ${item.cantidadInicial} + recarga ${item.recargaExterna}). Sube Recarga si el vendedor regresó al almacén.`}
-                                className="inline-flex items-center gap-1 min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700"
-                              >
-                                {item.diferencia}
-                              </span>
-                            );
-                          }
-                          return (
-                            <span
-                              className={`inline-flex min-w-[28px] justify-center px-1.5 py-0.5 text-[11px] font-bold rounded-full ${
-                                item.diferencia > 0
-                                  ? 'bg-red-100 text-red-700'
-                                  : item.diferencia < 0
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
-                              }`}
-                            >
-                              {item.diferencia}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <CorteTab routeId={rutaId} route={ruta} onClosed={fetchRuta} />
       </div>
-
-      {/* Modal: confirmar cierre de ruta (reemplaza confirm() nativo). */}
-      <Modal
-        isOpen={showCloseModal}
-        onClose={() => { if (!closing) setShowCloseModal(false); }}
-        title={t('closeRouteTitle', { defaultValue: 'Cerrar ruta' })}
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-foreground/80">{t('confirmClose')}</p>
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowCloseModal(false)}
-              disabled={closing}
-              className="px-4 py-2 text-sm font-medium text-foreground/80 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={submitCerrarRuta}
-              disabled={closing}
-              className="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
-            >
-              {closing && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('closeAction', { defaultValue: 'Cerrar ruta' })}
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </div>
-  );
-}
-
-// Stepper component
-function Stepper({ value, onDecrement, onIncrement, disabled }: {
-  value: number;
-  onDecrement: () => void;
-  onIncrement: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="inline-flex items-center gap-0.5">
-      <button
-        onClick={onDecrement}
-        disabled={disabled || value <= 0}
-        className="w-5 h-5 flex items-center justify-center rounded bg-surface-3 hover:bg-surface-3 text-foreground/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <MinusIcon className="w-3 h-3" />
-      </button>
-      <span className="w-6 text-center text-[12px] font-medium">
-        {value}
-      </span>
-      <button
-        onClick={onIncrement}
-        disabled={disabled}
-        className="w-5 h-5 flex items-center justify-center rounded bg-surface-3 hover:bg-surface-3 text-foreground/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <PlusIcon className="w-3 h-3" />
-      </button>
     </div>
   );
 }

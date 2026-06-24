@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 24,
+  version: 25,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -235,6 +235,11 @@ export const schema = appSchema({
         { name: 'ruta_id', type: 'string', isOptional: true },
         { name: 'tipo', type: 'number' }, // 0=Programada..2=Espontanea
         { name: 'resultado', type: 'number' }, // 0=Pendiente..4=Reagendada
+        // v25 (2026-06-21): fecha programada de una visita agendada desde la web
+        // (ClienteVisita.FechaProgramada). Antes el mapper la descartaba porque no
+        // existía esta columna — el vendedor no veía las visitas agendadas. Optional
+        // porque las visitas espontaneas (check-in directo) no tienen fecha agendada.
+        { name: 'fecha_programada', type: 'number', isOptional: true },
         { name: 'check_in_at', type: 'number', isOptional: true, isIndexed: true },
         { name: 'check_out_at', type: 'number', isOptional: true },
         { name: 'latitud_check_in', type: 'number', isOptional: true },

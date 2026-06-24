@@ -8,33 +8,39 @@ public class ReportAccessService : IReportAccessService
 {
     private readonly HandySuitesDbContext _db;
 
-    // Tier definitions — hardcoded to avoid migration
+    // Tier definitions — 3 tiers fieles al rediseño Claude Design (Free / PRO / Contabilidad).
+    // Subconjuntos: free ⊂ pro ⊂ contabilidad. Incluye IDs existentes + los nuevos del mock
+    // (algunos aún sin vista — quedan gateados/placeholder hasta sus fases).
+    private static readonly string[] FreeReports =
+    {
+        "ejecutivo", "ventas-periodo", "ventas-vendedor", "cartera-vencida",
+        "estado-cuenta", "cobranza-periodo", "inv-valorizado", "kardex",
+        "cumplimiento-metas", "efectividad-visitas", "inventario", "nuevos-clientes",
+    };
+    private static readonly string[] ProExtra =
+    {
+        "ventas-producto", "analisis-abc", "ventas-zona", "ventas-cliente",
+        "rentabilidad-cliente", "comparativo", "insights",
+        "comisiones", "margen", "rotacion", "por-vencer",
+    };
+    private static readonly string[] ContabilidadExtra =
+    {
+        "edo-resultados", "balance-general", "balanza",
+        "iva", "diot", "conta-elec", "paquete-contador",
+    };
+
     private static readonly Dictionary<string, HashSet<string>> TierReports = new()
     {
-        ["free"] = new HashSet<string>
-        {
-            "ejecutivo", "ventas-periodo", "inventario", "nuevos-clientes"
-        },
-        ["basico"] = new HashSet<string>
-        {
-            "ejecutivo", "ventas-periodo", "inventario", "nuevos-clientes",
-            "ventas-vendedor", "ventas-producto", "ventas-zona", "actividad-clientes",
-            "cartera-vencida", "cumplimiento-metas", "comparativo", "efectividad-visitas"
-        },
-        ["profesional"] = new HashSet<string>
-        {
-            "ejecutivo", "ventas-periodo", "inventario", "nuevos-clientes",
-            "ventas-vendedor", "ventas-producto", "ventas-zona", "actividad-clientes",
-            "cartera-vencida", "cumplimiento-metas", "comparativo", "efectividad-visitas",
-            "comisiones", "rentabilidad-cliente", "analisis-abc", "insights"
-        }
+        ["free"] = new HashSet<string>(FreeReports),
+        ["pro"] = new HashSet<string>(FreeReports.Concat(ProExtra)),
+        ["contabilidad"] = new HashSet<string>(FreeReports.Concat(ProExtra).Concat(ContabilidadExtra)),
     };
 
     private static readonly Dictionary<string, int?> TierMaxDays = new()
     {
         ["free"] = 7,
-        ["basico"] = null,       // unlimited
-        ["profesional"] = null   // unlimited
+        ["pro"] = null,           // unlimited
+        ["contabilidad"] = null,  // unlimited
     };
 
     public ReportAccessService(HandySuitesDbContext db) => _db = db;
@@ -43,17 +49,14 @@ public class ReportAccessService : IReportAccessService
     {
         var tier = await GetTierForTenantAsync(tenantId);
 
-        if (tier == "profesional" || tier == "enterprise")
-            return new ReportAccessResult(true);
-
         var allowed = TierReports.GetValueOrDefault(tier, TierReports["free"]);
         if (allowed.Contains(reportSlug))
             return new ReportAccessResult(true);
 
-        // Find the minimum tier that includes this report
-        var requiredTier = "profesional";
-        if (TierReports["basico"].Contains(reportSlug))
-            requiredTier = "basico";
+        // Tier mínimo que incluye este reporte (free → pro → contabilidad).
+        var requiredTier = TierReports["free"].Contains(reportSlug) ? "free"
+            : TierReports["pro"].Contains(reportSlug) ? "pro"
+            : "contabilidad";
 
         return new ReportAccessResult(
             false,
@@ -86,9 +89,10 @@ public class ReportAccessService : IReportAccessService
         return tenant.ToLower() switch
         {
             "free" or "gratis" => "free",
-            "basico" or "basic" => "basico",
-            "profesional" or "professional" or "pro" => "profesional",
-            "enterprise" or "empresa" => "enterprise",
+            // Planes comerciales intermedios mapean a PRO (acceso a reportes analíticos).
+            "basico" or "basic" or "profesional" or "professional" or "pro" or "business" => "pro",
+            // Tier contable (add-on) o enterprise = acceso total incl. financieros/fiscales.
+            "contabilidad" or "accounting" or "enterprise" or "empresa" => "contabilidad",
             _ => "free"
         };
     }

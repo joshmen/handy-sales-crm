@@ -29,10 +29,18 @@ export function useApiErrorToast() {
   return useCallback(
     (err: unknown, fallbackMessage: string): void => {
       const responseData = (err as { response?: { data?: unknown } })?.response?.data as
-        | { message?: string; errors?: string[]; [k: string]: unknown }
+        | { message?: string; error?: string; detail?: string; title?: string; errors?: string[]; [k: string]: unknown }
         | undefined;
 
-      const backendMsg = responseData?.message ?? (err as { message?: string })?.message;
+      // Cubre todas las formas del backend: { message }, { error }, { code, message },
+      // { success, message }, ProblemDetails { detail/title }. Con ApiException (sin
+      // .response) cae a err.message, que ya es el mensaje real extraído.
+      const backendMsg =
+        responseData?.message ??
+        responseData?.error ??
+        responseData?.detail ??
+        responseData?.title ??
+        (err as { message?: string })?.message;
 
       // FluentValidation devuelve { "FieldName": ["error1", ...] } sin .message.
       // Extraer el primer error de validación si está presente, para evitar

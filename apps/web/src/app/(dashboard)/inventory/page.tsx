@@ -6,18 +6,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { InventoryItem } from '@/types/inventory';
-import { inventoryService, UpdateInventoryRequest } from '@/services/api/inventory';
+import { inventoryService, UpdateInventoryRequest, InventorySummary } from '@/services/api/inventory';
 import { productService } from '@/services/api/products';
 import { inventoryMovementService, InventoryMovement } from '@/services/api/inventoryMovements';
 import { Product } from '@/types';
 import { toast } from '@/hooks/useToast';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
+import { SoftBadge, type SoftBadgeTone } from '@/components/ui/SoftBadge';
 import {
   Download,
   Plus,
@@ -26,8 +28,10 @@ import {
   Upload,
   Warehouse,
   Package,
+  Layers,
   RefreshCw,
   ChevronDown,
+  ChevronRight,
   Loader2,
   Calendar,
   ArrowLeftRight,
@@ -36,11 +40,11 @@ import {
   ArrowUpFromLine,
   SlidersHorizontal,
   ArrowRight,
+  Package as PackageIcon,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { Package as PackageIcon, CaretRight } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { useBusinessEvents } from '@/hooks/useBusinessEvents';
@@ -88,16 +92,13 @@ type ActiveTab = 'almacen' | 'movimientos';
 export default function InventoryPage() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
 
-  const ALERTA_LABELS: Record<AlertaInventario, string> = {
-    stock_bajo: t('warehouse.lowStock'),
-    critico: t('warehouse.inZero'),
-  };
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { formatDate } = useFormatters();
+  const { formatDate, formatCurrency } = useFormatters();
 
   // ─── Tab state ─────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -108,6 +109,7 @@ export default function InventoryPage() {
   // ─── Almacén state ─────────────────────────────────────────────────
   const drawerRef = useRef<DrawerHandle>(null);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [summary, setSummary] = useState<InventorySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -197,6 +199,8 @@ export default function InventoryPage() {
       setInventoryItems(items);
       setTotalItems(alertFilter === 'critico' ? items.length : response.total);
       setTotalPages(alertFilter ? 1 : response.totalPages);
+      // KPIs catalog-wide (no por página) — agregado del backend.
+      inventoryService.getInventorySummary().then(setSummary).catch(() => { /* KPIs no críticos */ });
     } catch (err) {
       console.error('Error al cargar inventario:', err);
       setError(t('errorLoadingRetry'));
@@ -369,6 +373,13 @@ export default function InventoryPage() {
 
   const isLowStock = (item: InventoryItem) => {
     return item.minStock > 0 && item.warehouseQuantity <= item.minStock;
+  };
+
+  // Estado del item: Crítico (agotado) / Bajo (<= mínimo) / OK. Espejo del badge del mockup.
+  const getEstado = (item: InventoryItem): { label: string; tone: SoftBadgeTone } => {
+    if (item.warehouseQuantity <= 0) return { label: t('status.critical'), tone: 'danger' };
+    if (item.minStock > 0 && item.warehouseQuantity <= item.minStock) return { label: t('status.low'), tone: 'warning' };
+    return { label: t('status.ok'), tone: 'success' };
   };
 
   // ─── Movimientos: fetch ────────────────────────────────────────────
@@ -592,9 +603,9 @@ export default function InventoryPage() {
       <div className="relative" data-tour="inventory-import-export">
         <button
           onClick={() => setShowDataMenu(!showDataMenu)}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
         >
-          <Download className="w-3.5 h-3.5 text-emerald-500" />
+          <Download className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="hidden sm:inline">{tc('importExport')}</span>
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </button>
@@ -620,14 +631,10 @@ export default function InventoryPage() {
           </>
         )}
       </div>
-      <button
-        data-tour="inventory-add-btn"
-        onClick={handleOpenCreate}
-        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-      >
-        <Plus className="w-4 h-4" />
+      <Button variant="wbPrimary" data-tour="inventory-add-btn" onClick={handleOpenCreate}>
+        <Plus className="w-4 h-4 mr-2" />
         <span>{t('warehouse.newProduct')}</span>
-      </button>
+      </Button>
     </>
   );
 
@@ -636,59 +643,51 @@ export default function InventoryPage() {
       <button
         data-tour="movements-export-btn"
         onClick={() => exportToCsv('inventario')}
-        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
       >
-        <Download className="w-3.5 h-3.5 text-emerald-500" />
+        <Download className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="hidden sm:inline">{tc('exportCsv')}</span>
       </button>
-      <button
+      <Button
+        variant="wbPrimary"
         data-tour="movements-new-btn"
         onClick={() => {
           movResetForm({ productoId: 0, tipoMovimiento: 'ENTRADA', cantidad: 0, motivo: '', comentario: '' });
           setShowMovModal(true);
         }}
-        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
       >
-        <Plus className="w-4 h-4" />
+        <Plus className="w-4 h-4 mr-2" />
         <span>{t('movements.newMovement')}</span>
-      </button>
+      </Button>
     </div>
   );
 
   return (
     <PageHeader
+      section="operacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionOperations') },
         { label: t('title') },
       ]}
       title={t('title')}
       subtitle={activeTab === 'almacen'
-        ? (totalItems > 0 ? t('subtitle', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined)
+        ? ((summary?.skusActivos ?? 0) > 0 ? t('subtitle', { skus: summary?.skusActivos ?? 0 }) : undefined)
         : (movTotalItems > 0 ? t('movementsSubtitle', { count: movTotalItems, plural: movTotalItems !== 1 ? 's' : '' }) : undefined)
       }
       actions={activeTab === 'almacen' ? almacenActions : movimientosActions}
       actionsKey={activeTab}
     >
       <div className="space-y-4">
-        {/* Tabs */}
-        <div className="flex gap-1 bg-surface-3 rounded-lg p-1 w-fit">
-          <button
-            onClick={() => setActiveTab('almacen')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'almacen' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
-            }`}
-          >
-            {t('tabs.warehouse')}
-          </button>
-          <button
-            onClick={() => setActiveTab('movimientos')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'movimientos' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
-            }`}
-          >
-            {t('tabs.movements')}
-          </button>
-        </div>
+        {/* Tabs de vista (TabBar subrayado, teal operación) */}
+        <TabBar
+          items={[
+            { id: 'almacen', label: t('tabs.warehouse') },
+            { id: 'movimientos', label: t('tabs.movements') },
+          ]}
+          value={activeTab}
+          onChange={(id) => setActiveTab(id as typeof activeTab)}
+        />
 
         {/* ═══════════════ ALMACÉN TAB ═══════════════ */}
         {activeTab === 'almacen' && (
@@ -702,32 +701,61 @@ export default function InventoryPage() {
                 dataTour="inventory-search"
               />
 
-              {alertFilter && (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${
-                  alertFilter === 'critico'
-                    ? 'bg-red-100 text-red-700'
-                    : 'bg-amber-100 text-amber-700'
-                }`}>
-                  <AlertTriangle className="w-3 h-3" />
-                  {ALERTA_LABELS[alertFilter]}
-                  <button
-                    onClick={() => { setAlertFilter(null); router.push('/inventory'); }}
-                    className="ml-0.5 hover:opacity-70"
-                    aria-label={t('removeFilter')}
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
+              {/* Chips de filtro rápido — surfacea el alertFilter (Todos / Stock bajo / Agotados). */}
+              <div className="inline-flex items-center gap-0.5 rounded-lg border border-border-subtle bg-surface-1 p-0.5">
+                {([
+                  { v: null, label: tc('all') },
+                  { v: 'stock_bajo' as AlertaInventario, label: t('warehouse.lowStock') },
+                  { v: 'critico' as AlertaInventario, label: t('warehouse.inZero') },
+                ]).map(({ v, label }) => {
+                  const active = alertFilter === v;
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => { setAlertFilter(v); setCurrentPage(1); router.push(v ? `/inventory?alerta=${v}` : '/inventory'); }}
+                      aria-pressed={active}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
 
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
+            </div>
+
+            {/* KPI Row — agregados catalog-wide (endpoint /inventario/resumen). Tonos del mockup. */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {[
+                { title: t('kpis.inventoryValue'), value: formatCurrency(summary?.valorInventario ?? 0), icon: Layers, valueClass: 'text-primary' },
+                { title: t('kpis.activeSkus'), value: String(summary?.skusActivos ?? 0), icon: Package, valueClass: 'text-foreground' },
+                { title: t('kpis.lowStock'), value: String(summary?.stockBajo ?? 0), icon: AlertTriangle, valueClass: 'text-amber-600' },
+                { title: t('kpis.outOfStock'), value: String(summary?.agotados ?? 0), icon: ArrowDownToLine, valueClass: 'text-red-600' },
+              ].map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.title}
+                    className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                      <Icon className="w-5 h-5 text-muted-foreground/40" />
+                    </div>
+                    <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${card.valueClass} ${loading && !summary ? 'animate-pulse' : ''}`}>
+                      {card.value}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
             <ErrorBanner error={error} onRetry={fetchInventory} />
@@ -743,7 +771,7 @@ export default function InventoryPage() {
                           <img src={item.product.images[0]} alt={item.product.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
                         ) : (
                           <div className={`w-8 h-8 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
-                            <PackageIcon className={`w-4 h-4 ${color.icon}`} weight="duotone" />
+                            <PackageIcon className={`w-4 h-4 ${color.icon}`} />
                           </div>
                         )}
                         <div className="min-w-0">
@@ -753,19 +781,16 @@ export default function InventoryPage() {
                       </div>
                     );
                   }},
-                  { key: 'unit', label: t('columns.unit'), width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-foreground/80">{item.product?.unit || 'PZA'}</span> },
-                  { key: 'totalQuantity', label: t('columns.stock'), width: 120, align: 'center', sortable: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.stockHeader')} <HelpTooltip tooltipKey="total-quantity" /></span>, cellRenderer: (item) => {
-                    const lowStock = isLowStock(item);
-                    return (
-                      <span>
-                        <span className={`text-[13px] font-medium ${lowStock ? 'text-red-600' : 'text-foreground/80'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>
-                        {lowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline-block ml-1" />}
-                      </span>
-                    );
+                  { key: 'minStock', label: t('columns.minStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">{t('columns.minStock')} <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground tabular-nums">{item.minStock || '-'}</span> },
+                  { key: 'totalQuantity', label: t('columns.stock'), width: 120, align: 'center', sortable: true, cellRenderer: (item) => {
+                    const e = getEstado(item);
+                    return <span className={`text-[13px] font-bold tabular-nums ${e.tone === 'danger' ? 'text-red-600' : e.tone === 'warning' ? 'text-amber-600' : 'text-foreground'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>;
                   }},
-                  { key: 'minStock', label: t('columns.minStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">{t('columns.minStock')} <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground">{item.minStock || '-'}</span> },
-                  { key: 'maxStock', label: t('columns.maxStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.maxStock')} <HelpTooltip tooltipKey="max-stock" /></span>, cellRenderer: (item) => <span className="text-muted-foreground">{item.maxStock || '-'}</span> },
-                  { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" weight="bold" /> },
+                  { key: 'estado', label: t('columns.status'), width: 110, align: 'center', cellRenderer: (item) => {
+                    const e = getEstado(item);
+                    return <SoftBadge tone={e.tone}>{e.label}</SoftBadge>;
+                  }},
+                  { key: 'arrow', label: '', width: 32, cellRenderer: () => <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-amber-500 transition-colors" /> },
                 ] as DataGridColumn<InventoryItem>[]}
                 data={inventoryItems}
                 keyExtractor={(item) => item.id}
@@ -786,7 +811,7 @@ export default function InventoryPage() {
                           <img src={item.product.images[0]} alt={item.product.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
                         ) : (
                           <div className={`w-10 h-10 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
-                            <PackageIcon className={`w-5 h-5 ${color.icon}`} weight="duotone" />
+                            <PackageIcon className={`w-5 h-5 ${color.icon}`} />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
@@ -856,9 +881,9 @@ export default function InventoryPage() {
               <button
                 onClick={handleMovRefresh}
                 disabled={movLoading}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-white ${movLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${movLoading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
             </div>
@@ -956,7 +981,7 @@ export default function InventoryPage() {
                       return (
                         <div
                           key={movement.id}
-                          className="flex items-center px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-amber-50 transition-colors min-w-[1100px]"
+                          className="flex items-center px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-surface-1 transition-colors min-w-[1100px]"
                         >
                           <div className="w-[130px]">
                             <span className="text-[13px] text-foreground">
@@ -1030,16 +1055,16 @@ export default function InventoryPage() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={modalMode === 'create' ? t('drawer.addTitle') : t('drawer.editTitle')}
-        icon={<Warehouse className="w-5 h-5 text-green-600" />}
+        icon={<Warehouse className="w-5 h-5 text-primary" />}
         width="md"
         isDirty={isDirty || imageFile !== null}
         onSave={handleSubmit}
         footer={
           <div data-tour="inventory-drawer-actions" className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={submitting}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={submitting}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {modalMode === 'create' ? t('drawer.createAdjustment') : t('drawer.saveChanges')}
             </Button>
@@ -1054,7 +1079,7 @@ export default function InventoryPage() {
               </label>
               {loadingProducts ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-border-subtle rounded text-sm text-muted-foreground">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
                   {t('drawer.loadingProducts')}
                 </div>
               ) : products.length === 0 ? (
@@ -1126,7 +1151,7 @@ export default function InventoryPage() {
               type="number"
               min="0"
               {...register('cantidadActual', { valueAsNumber: true })}
-              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               placeholder="0"
             />
             {errors.cantidadActual && (
@@ -1141,7 +1166,7 @@ export default function InventoryPage() {
                 type="number"
                 min="0"
                 {...register('stockMinimo', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                 placeholder="0"
               />
               {errors.stockMinimo && (
@@ -1154,7 +1179,7 @@ export default function InventoryPage() {
                 type="number"
                 min="0"
                 {...register('stockMaximo', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                 placeholder="0"
               />
               {errors.stockMaximo && (
@@ -1200,7 +1225,7 @@ export default function InventoryPage() {
                   setModalOpen(false);
                   setActiveTab('movimientos');
                 }}
-                className="mt-3 text-xs font-medium text-green-600 hover:text-green-700 transition-colors"
+                className="mt-3 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
               >
                 {t('drawer.viewAll')}
               </button>
@@ -1275,14 +1300,14 @@ export default function InventoryPage() {
                   <span className="text-xs text-red-700">{t('movementDrawer.zeroStock')}</span>
                 </div>
               ) : currentStock !== null ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded border border-green-200">
-                  <Package className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-xs text-green-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded border border-primary/20">
+                  <Package className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-xs text-primary">
                     {t('movementDrawer.currentStock')} <strong>{currentStock}</strong>
                     {projectedStock !== null && (
                       <span className="ml-2 text-muted-foreground">
                         <ArrowRight className="w-3 h-3 inline mx-1" />
-                        <strong className={projectedStock < 0 ? 'text-red-600' : 'text-green-700'}>{projectedStock}</strong>
+                        <strong className={projectedStock < 0 ? 'text-red-600' : 'text-primary'}>{projectedStock}</strong>
                       </span>
                     )}
                   </span>
@@ -1335,7 +1360,7 @@ export default function InventoryPage() {
               min="0"
               step="0.01"
               {...movRegister('cantidad', { valueAsNumber: true })}
-              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               placeholder="0"
             />
             {movErrors.cantidad && (
@@ -1365,7 +1390,7 @@ export default function InventoryPage() {
             <textarea
               {...movRegister('comentario')}
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 resize-none"
+              className="w-full px-3 py-2 text-sm border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
               placeholder={t('movementDrawer.commentPlaceholder')}
             />
           </div>

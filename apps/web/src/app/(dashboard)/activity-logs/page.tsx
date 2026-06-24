@@ -5,18 +5,32 @@ import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import {
   Download,
-  ChevronLeft,
-  ChevronRight,
-  Search,
   FileText,
+  ShoppingCart,
+  Package,
+  Store,
+  UserPlus,
+  Lock,
+  Settings,
+  ShieldAlert,
+  XCircle,
+  Pencil,
+  Smartphone,
+  Globe,
+  type LucideIcon,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { SearchBar } from '@/components/common/SearchBar';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { DateFilter } from '@/components/ui/DateFilter';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { Drawer } from '@/components/ui/Drawer';
 import { useTranslations } from 'next-intl';
 import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
 import { tenantService } from '@/services/api/tenants';
-import { getInitials } from '@/lib/utils';
+import { NameAvatar } from '@/components/ui/NameAvatar';
 import { useFormatters } from '@/hooks/useFormatters';
+import { downloadBlob } from '@/lib/download';
 import type { Tenant } from '@/types/tenant';
 
 // Action labels resolved via useTranslations at render time
@@ -35,43 +49,51 @@ const actionColors: Record<string, string> = {
 // Category labels resolved via useTranslations at render time
 
 const statusColors: Record<string, string> = {
-  success: 'text-green-600',
+  success: 'text-primary',
   failed: 'text-red-600',
   warning: 'text-yellow-600',
   pending: 'text-muted-foreground',
   info: 'text-blue-600',
 };
 
-const userColorPool = [
-  'bg-blue-100 text-blue-600',
-  'bg-red-100 text-red-600',
-  'bg-indigo-100 text-indigo-600',
-  'bg-green-100 text-green-600',
-  'bg-amber-100 text-amber-600',
-  'bg-purple-100 text-purple-600',
-  'bg-pink-100 text-pink-600',
-  'bg-cyan-100 text-cyan-600',
-];
+// Cuadro tintado por tono para el ícono de acción (mismo patrón que Reportes/Automatizaciones).
+const toneBadge: Record<string, string> = {
+  success: 'bg-green-100 text-green-700',
+  primary: 'bg-primary/10 text-primary',
+  warning: 'bg-amber-100 text-amber-700',
+  danger: 'bg-red-100 text-red-700',
+  info: 'bg-cyan-100 text-cyan-700',
+  default: 'bg-surface-3 text-muted-foreground',
+};
 
-function getUserColor(userId: number): string {
-  return userColorPool[userId % userColorPool.length];
+// Ícono + tono por acción. Destructivas (delete / cancelación / fallo) en rojo.
+// El tono primario se deriva de la categoría real (orders/products/clients/...).
+function getActionVisual(log: ActivityLogDto): { Icon: LucideIcon; tone: string } {
+  const type = (log.activityType || '').toLowerCase();
+  const cat = (log.activityCategory || '').toLowerCase();
+  const desc = (log.description || '').toLowerCase();
+
+  if (type === 'delete' || type === 'error' || log.activityStatus === 'failed' || /cancel/.test(desc)) {
+    return { Icon: XCircle, tone: 'danger' };
+  }
+  if (type === 'export') return { Icon: Download, tone: 'default' };
+  if (type === 'login' || type === 'logout' || cat === 'auth') return { Icon: Lock, tone: 'default' };
+
+  switch (cat) {
+    case 'orders': return { Icon: ShoppingCart, tone: 'success' };
+    case 'products': return { Icon: Package, tone: 'warning' };
+    case 'clients': return { Icon: Store, tone: 'info' };
+    case 'users': return { Icon: UserPlus, tone: 'info' };
+    case 'security': return { Icon: ShieldAlert, tone: 'warning' };
+    case 'system': return { Icon: Settings, tone: 'default' };
+    default: return { Icon: Pencil, tone: 'default' };
+  }
 }
 
-function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
-  const now = new Date();
-  if (filter === 'today') {
-    const today = now.toISOString().split('T')[0];
-    return { dateFrom: today, dateTo: today };
-  }
-  if (filter === '7days') {
-    const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return { dateFrom: from.toISOString().split('T')[0] };
-  }
-  if (filter === '30days') {
-    const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return { dateFrom: from.toISOString().split('T')[0] };
-  }
-  return {};
+// Móvil (app) vs Web según deviceType (desktop/mobile/tablet/web).
+function isMobileOrigin(log: ActivityLogDto): boolean {
+  const dt = (log.deviceType || '').toLowerCase();
+  return dt === 'mobile' || dt === 'tablet';
 }
 
 export default function ActivityLogsPage() {
@@ -80,7 +102,7 @@ export default function ActivityLogsPage() {
   const ta = useTranslations('admin');
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
-  const { formatDate, formatNumber } = useFormatters();
+  const { formatDate, tenantToday } = useFormatters();
 
   const actionLabels: Record<string, string> = {
     create: t('actions.create'),
@@ -108,12 +130,12 @@ export default function ActivityLogsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterAction, setFilterAction] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [filterDate, setFilterDate] = useState('7days');
+  const [diaFiltro, setDiaFiltro] = useState(() => tenantToday());
   const [filterTenant, setFilterTenant] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const [selectedLog, setSelectedLog] = useState<ActivityLogDto | null>(null);
+  const pageSize = 10;
 
   // Load tenants for SuperAdmin filter
   useEffect(() => {
@@ -127,15 +149,14 @@ export default function ActivityLogsPage() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const dateRange = getDateRange(filterDate);
       const result = await activityLogService.getAll({
         page: currentPage,
         pageSize,
-        activityType: filterAction !== 'all' ? filterAction : undefined,
         activityCategory: filterCategory !== 'all' ? filterCategory : undefined,
         search: searchTerm || undefined,
         tenantId: isSuperAdmin && filterTenant !== 'all' ? Number(filterTenant) : undefined,
-        ...dateRange,
+        dateFrom: diaFiltro,
+        dateTo: diaFiltro,
       });
       setLogs(result.items);
       setTotalCount(result.totalCount);
@@ -148,7 +169,7 @@ export default function ActivityLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterAction, filterCategory, filterDate, filterTenant, searchTerm, isSuperAdmin]);
+  }, [currentPage, filterCategory, diaFiltro, filterTenant, searchTerm, isSuperAdmin]);
 
   useEffect(() => {
     fetchLogs();
@@ -157,7 +178,7 @@ export default function ActivityLogsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterAction, filterCategory, filterDate, filterTenant, searchTerm]);
+  }, [filterCategory, diaFiltro, filterTenant, searchTerm]);
 
   const handleExport = () => {
     if (logs.length === 0) {
@@ -176,14 +197,7 @@ export default function ActivityLogsPage() {
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `activity-logs-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `activity-logs-${new Date().toISOString().split('T')[0]}.csv`);
     toast.success(t('exported'));
   };
 
@@ -199,116 +213,98 @@ export default function ActivityLogsPage() {
     });
   };
 
-  const startItem = totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalCount);
-
   return (
     <PageHeader
+      section="equipo"
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('title') },
       ]}
       title={t('title')}
       actions={
-        <button
-          data-tour="logs-export-btn"
-          onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-foreground/80 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          <span>{tc('export')}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <DateFilter value={diaFiltro} onChange={setDiaFiltro} retentionDays={730} />
+          <button
+            data-tour="logs-export-btn"
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
+          >
+            <Download className="w-4 h-4 text-muted-foreground" />
+            <span>{tc('export')}</span>
+          </button>
+        </div>
       }
     >
-          {/* Filter Row */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                data-tour="logs-search"
-                type="text"
-                placeholder={t('searchPlaceholder')}
+          {/* Filters: category chips + search */}
+          <div className="space-y-3 mb-6">
+            {/* Category chips */}
+            <div data-tour="logs-filter-category" className="flex flex-wrap items-center gap-2">
+              {[
+                { id: 'all', label: t('chipAll') },
+                { id: 'orders', label: t('categories.orders') },
+                { id: 'clients', label: t('categories.clients') },
+                { id: 'products', label: t('categories.products') },
+                { id: 'users', label: t('categories.users') },
+                { id: 'auth', label: t('categories.auth') },
+                { id: 'system', label: t('categories.system') },
+                { id: 'security', label: t('categories.security') },
+              ].map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => setFilterCategory(chip.id)}
+                  className={`px-3 py-1.5 text-[13px] font-medium rounded-lg border transition-colors ${
+                    filterCategory === chip.id
+                      ? 'bg-primary text-primary-foreground border-transparent'
+                      : 'bg-card text-foreground/70 border-border hover:bg-surface-1'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search + company (SuperAdmin) */}
+            <div className="flex flex-wrap items-center gap-3">
+              <SearchBar
+                dataTour="logs-search"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                onChange={(v) => setSearchTerm(v)}
+                placeholder={t('searchPlaceholder')}
+                className="w-[280px]"
               />
-            </div>
 
-            {/* Action Filter */}
-            <div data-tour="logs-filter-action" className="min-w-[170px]">
-              <SearchableSelect
-                options={[
-                  { value: 'all', label: t('allActions') },
-                  ...Object.entries(actionLabels).map(([k, v]) => ({ value: k, label: v })),
-                ]}
-                value={filterAction}
-                onChange={(val) => setFilterAction(val ? String(val) : 'all')}
-                placeholder={t('allActions')}
-              />
+              {/* Tenant Filter (SuperAdmin only) */}
+              {isSuperAdmin && (
+                <div className="min-w-[200px]">
+                  <SearchableSelect
+                    options={[
+                      { value: 'all', label: t('allCompanies') },
+                      ...tenants.map((t) => ({ value: String(t.id), label: t.nombreEmpresa })),
+                    ]}
+                    value={filterTenant}
+                    onChange={(val) => setFilterTenant(val ? String(val) : 'all')}
+                    placeholder={t('allCompanies')}
+                  />
+                </div>
+              )}
             </div>
-
-            {/* Category Filter */}
-            <div className="min-w-[170px]">
-              <SearchableSelect
-                options={[
-                  { value: 'all', label: t('allCategories') },
-                  ...Object.entries(categoryLabels).map(([k, v]) => ({ value: k, label: v })),
-                ]}
-                value={filterCategory}
-                onChange={(val) => setFilterCategory(val ? String(val) : 'all')}
-                placeholder={t('allCategories')}
-              />
-            </div>
-
-            {/* Date Filter */}
-            <div className="min-w-[170px]">
-              <SearchableSelect
-                options={[
-                  { value: 'today', label: t('today') },
-                  { value: '7days', label: t('last7Days') },
-                  { value: '30days', label: t('last30Days') },
-                  { value: 'all', label: t('allTime') },
-                ]}
-                value={filterDate}
-                onChange={(val) => setFilterDate(val ? String(val) : '7days')}
-                placeholder={t('last7Days')}
-              />
-            </div>
-
-            {/* Tenant Filter (SuperAdmin only) */}
-            {isSuperAdmin && (
-              <div className="min-w-[200px]">
-                <SearchableSelect
-                  options={[
-                    { value: 'all', label: t('allCompanies') },
-                    ...tenants.map((t) => ({ value: String(t.id), label: t.nombreEmpresa })),
-                  ]}
-                  value={filterTenant}
-                  onChange={(val) => setFilterTenant(val ? String(val) : 'all')}
-                  placeholder={t('allCompanies')}
-                />
-              </div>
-            )}
           </div>
             {/* Table */}
-            <div data-tour="logs-table" className="bg-card border border-border rounded-lg overflow-hidden">
+            <div data-tour="logs-table" className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
               {loading ? (
                 // Skeleton rows alineadas a las columnas reales — mismo patrón que
                 // DataGrid (clients/products/orders) para consistencia entre catálogos.
                 <>
                   {/* Header placeholder (mismo header que se muestra cargado) */}
                   <div className="hidden md:flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle">
-                    <div className="w-[160px] text-xs font-semibold text-foreground/70">{t('columns.user')}</div>
+                    <div className="w-[180px] text-xs font-semibold text-foreground/70">{t('columns.user')}</div>
                     {isSuperAdmin && (
                       <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.company')}</div>
                     )}
-                    <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('columns.action')}</div>
-                    <div className="w-[110px] text-xs font-semibold text-foreground/70">{t('columns.category')}</div>
-                    <div className="w-[80px] text-xs font-semibold text-foreground/70">{t('columns.status')}</div>
+                    <div className="w-[180px] text-xs font-semibold text-foreground/70">{t('columns.action')}</div>
                     <div className="flex-1 text-xs font-semibold text-foreground/70">{t('columns.description')}</div>
+                    <div className="w-[170px] text-xs font-semibold text-foreground/70">{t('columns.origin')}</div>
                     <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.dateTime')}</div>
-                    <div className="w-[120px] text-xs font-semibold text-foreground/70">{t('columns.ip')}</div>
                   </div>
                   <div role="status" aria-label={t('loadingRecords')}>
                     {Array.from({ length: 8 }).map((_, i) => (
@@ -317,19 +313,20 @@ export default function ActivityLogsPage() {
                         className="hidden md:flex items-center px-4 py-3 border-b border-border-subtle animate-pulse"
                         style={{ animationDelay: `${i * 75}ms` }}
                       >
-                        <div className="w-[160px] flex items-center gap-2">
+                        <div className="w-[180px] flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-surface-3 shrink-0" />
                           <div className="h-4 bg-surface-3 rounded w-3/4" />
                         </div>
                         {isSuperAdmin && (
                           <div className="w-[140px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
                         )}
-                        <div className="w-[100px]"><div className="h-4 bg-surface-3 rounded w-16" /></div>
-                        <div className="w-[110px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
-                        <div className="w-[80px]"><div className="h-4 bg-surface-3 rounded w-12" /></div>
+                        <div className="w-[180px] flex items-center gap-2.5">
+                          <div className="w-[26px] h-[26px] rounded-lg bg-surface-3 shrink-0" />
+                          <div className="h-4 bg-surface-3 rounded w-16" />
+                        </div>
                         <div className="flex-1 pr-4"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
+                        <div className="w-[170px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
                         <div className="w-[140px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
-                        <div className="w-[120px]"><div className="h-4 bg-surface-3 rounded w-3/4" /></div>
                       </div>
                     ))}
                     {/* Mobile skeleton — más simple */}
@@ -360,28 +357,30 @@ export default function ActivityLogsPage() {
                   <div className="hidden md:block">
                     {/* Table Header */}
                     <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle">
-                      <div className="w-[160px] text-xs font-semibold text-foreground/70">{t('columns.user')}</div>
+                      <div className="w-[180px] text-xs font-semibold text-foreground/70">{t('columns.user')}</div>
                       {isSuperAdmin && (
                         <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.company')}</div>
                       )}
-                      <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('columns.action')}</div>
-                      <div className="w-[110px] text-xs font-semibold text-foreground/70">{t('columns.category')}</div>
-                      <div className="w-[80px] text-xs font-semibold text-foreground/70">{t('columns.status')}</div>
+                      <div className="w-[180px] text-xs font-semibold text-foreground/70">{t('columns.action')}</div>
                       <div className="flex-1 text-xs font-semibold text-foreground/70">{t('columns.description')}</div>
+                      <div className="w-[170px] text-xs font-semibold text-foreground/70">{t('columns.origin')}</div>
                       <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.dateTime')}</div>
-                      <div className="w-[120px] text-xs font-semibold text-foreground/70">{t('columns.ip')}</div>
                     </div>
 
                     {/* Table Rows */}
-                    {logs.map((log) => (
+                    {logs.map((log) => {
+                      const { Icon, tone } = getActionVisual(log);
+                      const isMobile = isMobileOrigin(log);
+                      const isDanger = tone === 'danger';
+                      return (
                       <div
                         key={log.id}
-                        className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors"
+                        onClick={() => setSelectedLog(log)}
+                        title={t('detail.viewDetail')}
+                        className="flex items-center px-4 py-3 border-b border-border-subtle hover:bg-surface-1 transition-colors cursor-pointer"
                       >
-                        <div className="w-[160px] flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium shrink-0`}>
-                            {getInitials(log.userName)}
-                          </div>
+                        <div className="w-[180px] flex items-center gap-2">
+                          <NameAvatar name={log.userName} size={28} />
                           <span className="text-[13px] text-foreground truncate">{log.userName}</span>
                         </div>
 
@@ -391,19 +390,12 @@ export default function ActivityLogsPage() {
                           </div>
                         )}
 
-                        <div className="w-[100px]">
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-foreground/80'}`}>
-                            {actionLabels[log.activityType] || log.activityType}
+                        <div className="w-[180px] flex items-center gap-2.5">
+                          <span className={`w-[26px] h-[26px] rounded-lg flex items-center justify-center shrink-0 ${toneBadge[tone]}`}>
+                            <Icon className="w-3.5 h-3.5" />
                           </span>
-                        </div>
-
-                        <div className="w-[110px] text-[13px] text-foreground/80">
-                          {categoryLabels[log.activityCategory] || log.activityCategory}
-                        </div>
-
-                        <div className="w-[80px]">
-                          <span className={`text-[12px] font-medium ${statusColors[log.activityStatus] || 'text-muted-foreground'}`}>
-                            {log.activityStatus}
+                          <span className={`text-[13px] font-medium truncate ${isDanger ? 'text-red-600' : 'text-foreground'}`}>
+                            {actionLabels[log.activityType] || log.activityType}
                           </span>
                         </div>
 
@@ -411,99 +403,135 @@ export default function ActivityLogsPage() {
                           {log.description || '-'}
                         </div>
 
+                        <div className="w-[170px] flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                          {isMobile ? <Smartphone className="w-3.5 h-3.5 shrink-0" /> : <Globe className="w-3.5 h-3.5 shrink-0" />}
+                          <span className="truncate">
+                            {isMobile ? t('mobileApp') : (log.ipAddress ? `${t('webOrigin')} · ${log.ipAddress}` : t('webOrigin'))}
+                          </span>
+                        </div>
+
                         <div className="w-[140px] text-[13px] text-muted-foreground">
                           {formatDateTime(log.createdAt)}
                         </div>
-
-                        <div className="w-[120px] text-[13px] text-muted-foreground font-mono">
-                          {log.ipAddress || '-'}
-                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Mobile Cards */}
                   <div className="md:hidden space-y-2 p-3">
-                    {logs.map((log) => (
-                      <div key={log.id} className="border border-border-subtle rounded-lg p-3 space-y-2">
+                    {logs.map((log) => {
+                      const { Icon, tone } = getActionVisual(log);
+                      const isMobile = isMobileOrigin(log);
+                      const isDanger = tone === 'danger';
+                      return (
+                      <div key={log.id} onClick={() => setSelectedLog(log)} className="border border-border-subtle rounded-lg p-3 space-y-2 cursor-pointer active:bg-surface-1/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium`}>
-                              {getInitials(log.userName)}
-                            </div>
+                            <NameAvatar name={log.userName} size={28} />
                             <span className="text-[13px] font-medium text-foreground">{log.userName}</span>
                           </div>
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-foreground/80'}`}>
-                            {actionLabels[log.activityType] || log.activityType}
+                          <span className={`w-[26px] h-[26px] rounded-lg flex items-center justify-center shrink-0 ${toneBadge[tone]}`}>
+                            <Icon className="w-3.5 h-3.5" />
                           </span>
                         </div>
+                        <p className={`text-[13px] font-medium ${isDanger ? 'text-red-600' : 'text-foreground'}`}>
+                          {actionLabels[log.activityType] || log.activityType}
+                        </p>
                         <p className="text-[13px] text-foreground/80">{log.description || '-'}</p>
                         <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-                          <span>{categoryLabels[log.activityCategory] || log.activityCategory}</span>
+                          <span className="flex items-center gap-1">
+                            {isMobile ? <Smartphone className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                            {isMobile ? t('mobileApp') : t('webOrigin')}
+                          </span>
                           <span>{formatDateTime(log.createdAt)}</span>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
             </div>
 
             {/* Pagination */}
-            {!loading && totalCount > 0 && (
-              <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-muted-foreground">
-                  {t('showingRange', { start: startItem, end: endItem, total: formatNumber(totalCount) })}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-foreground/70 border border-border-subtle rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span>{tc('previous')}</span>
-                  </button>
-
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    let page: number;
-                    if (totalPages <= 5) {
-                      page = i + 1;
-                    } else if (currentPage <= 3) {
-                      page = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      page = totalPages - 4 + i;
-                    } else {
-                      page = currentPage - 2 + i;
-                    }
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                          page === currentPage
-                            ? 'bg-success text-success-foreground'
-                            : 'text-foreground/70 hover:bg-surface-3'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-foreground/70 border border-border-subtle rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-
-                  >
-                    <span>{tc('next')}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+            {!loading && totalPages > 1 && (
+              <div className="pt-4">
+                <ListPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
+
+      {/* Detalle de auditoría (solo lectura, inmutable) */}
+      <Drawer
+        isOpen={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        title={t('detail.title')}
+        width="md"
+        footer={
+          <div className="flex justify-end">
+            <button
+              onClick={() => setSelectedLog(null)}
+              className="px-4 py-2 text-sm font-medium text-foreground/80 border border-border-default rounded-md hover:bg-surface-1 transition-colors"
+            >
+              {tc('close')}
+            </button>
+          </div>
+        }
+      >
+        {selectedLog && (
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[selectedLog.activityType] || 'bg-surface-3 text-foreground/80'}`}>
+                {actionLabels[selectedLog.activityType] || selectedLog.activityType}
+              </span>
+              <span className={`text-[12px] font-medium ${statusColors[selectedLog.activityStatus] || 'text-muted-foreground'}`}>
+                {selectedLog.activityStatus}
+              </span>
+            </div>
+
+            {selectedLog.description && <p className="text-sm text-foreground/80">{selectedLog.description}</p>}
+
+            <div>
+              <DetailRow label={t('columns.user')} value={selectedLog.userName} />
+              {isSuperAdmin && <DetailRow label={t('columns.company')} value={selectedLog.tenantName || '—'} />}
+              <DetailRow
+                label={t('detail.affectedObject')}
+                value={selectedLog.entityType
+                  ? `${selectedLog.entityType}${selectedLog.entityName ? ` · ${selectedLog.entityName}` : ''}${selectedLog.entityId ? ` (#${selectedLog.entityId})` : ''}`
+                  : '—'}
+              />
+              <DetailRow label={t('columns.category')} value={categoryLabels[selectedLog.activityCategory] || selectedLog.activityCategory} />
+              <DetailRow label={t('columns.dateTime')} value={formatDateTime(selectedLog.createdAt)} />
+            </div>
+
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1">{t('detail.origin')}</h4>
+              <DetailRow label={t('detail.device')} value={selectedLog.deviceType || '—'} />
+              <DetailRow label={t('detail.browser')} value={selectedLog.browser || '—'} />
+              <DetailRow label={t('detail.os')} value={selectedLog.operatingSystem || '—'} />
+              <DetailRow label={t('columns.ip')} value={selectedLog.ipAddress || '—'} mono />
+              <DetailRow label={t('detail.location')} value={[selectedLog.city, selectedLog.countryName].filter(Boolean).join(', ') || '—'} />
+            </div>
+
+            <p className="text-[11px] text-muted-foreground italic">{t('detail.immutableNote')}</p>
+          </div>
+        )}
+      </Drawer>
     </PageHeader>
+  );
+}
+
+function DetailRow({ label, value, mono }: { label: string; value?: React.ReactNode; mono?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-border-subtle last:border-0">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className={`text-[13px] text-foreground text-right break-words ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
+    </div>
   );
 }

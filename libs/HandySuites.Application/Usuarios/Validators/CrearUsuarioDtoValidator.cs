@@ -30,6 +30,7 @@ public class CrearUsuarioDtoValidator : AbstractValidator<CrearUsuarioDto>
         RoleNames.Supervisor,
         RoleNames.Viewer,
         RoleNames.Vendedor,
+        RoleNames.Almacenista,
     };
 
     public CrearUsuarioDtoValidator()
@@ -42,7 +43,7 @@ public class CrearUsuarioDtoValidator : AbstractValidator<CrearUsuarioDto>
         RuleFor(x => x.Rol)
             .NotEmpty().WithMessage("El rol es obligatorio.")
             .Must(r => ValidRoles.Contains(r))
-            .WithMessage("El rol no es válido. Valores aceptados: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.");
+            .WithMessage("El rol no es válido. Valores aceptados: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR, ALMACENISTA.");
 
         // Telefono opcional con regex permisivo (consistente con UsuarioUpdateDtoValidator).
         RuleFor(x => x.Telefono)

@@ -41,6 +41,14 @@ export interface InventoryListResponse {
   totalPages: number;
 }
 
+/** Resumen agregado catalog-wide para los KPIs de Inventario. */
+export interface InventorySummary {
+  valorInventario: number;
+  skusActivos: number;
+  stockBajo: number;
+  agotados: number;
+}
+
 export interface UpdateInventoryRequest {
   cantidadActual: number;
   stockMinimo: number;
@@ -111,6 +119,15 @@ class InventoryService {
         limit: data.tamanoPagina,
         totalPages: data.totalPaginas,
       };
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async getInventorySummary(): Promise<InventorySummary> {
+    try {
+      const response = await api.get<InventorySummary>(`${this.basePath}/resumen`);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }

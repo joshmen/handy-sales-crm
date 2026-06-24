@@ -16,7 +16,7 @@ import { useChartTheme } from '@/hooks/useChartTheme';
 const estadoColorMap: Record<string, { bg: string; text: string; key: string; pie: string }> = {
   sin_stock: { bg: 'bg-red-100', text: 'text-red-700', key: 'outOfStock', pie: '#dc2626' },
   bajo: { bg: 'bg-amber-100', text: 'text-amber-700', key: 'lowStock', pie: '#d97706' },
-  normal: { bg: 'bg-green-100', text: 'text-green-700', key: 'normal', pie: '#16a34a' },
+  normal: { bg: 'bg-green-100', text: 'text-green-700', key: 'normal', pie: '#1F8A5B' },
   exceso: { bg: 'bg-blue-100', text: 'text-blue-700', key: 'excess', pie: '#2563eb' },
 };
 

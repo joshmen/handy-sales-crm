@@ -33,7 +33,7 @@ export function VentasPeriodoReport() {
   const [data, setData] = useState<VentasPeriodoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: 'ventas-periodo',
     title: t('reportTitle'),
     dateRange: dates,
@@ -72,7 +72,7 @@ export function VentasPeriodoReport() {
       animations: { enabled: true, speed: 800 },
       zoom: { enabled: agrupacion === 'dia' },
     },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     stroke: { curve: 'smooth', width: agrupacion === 'dia' ? 2.5 : 0 },
     fill: agrupacion === 'dia'
       ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] } }
@@ -94,7 +94,7 @@ export function VentasPeriodoReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} onExportExcel={data ? exportExcel : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-foreground/70">{t('groupBy')}</label>
           <select value={agrupacion} onChange={e => setAgrupacion(e.target.value as 'dia' | 'semana' | 'mes')} className="px-3 py-2 text-sm border border-border-default rounded-md">

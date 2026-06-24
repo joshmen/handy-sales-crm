@@ -2,6 +2,7 @@
 export const MAP_COLORS = {
   VISITED_TODAY: '#22c55e',    // green
   PENDING_ROUTE: '#f59e0b',    // amber
+  SCHEDULED_TODAY: '#0ea5e9',  // sky blue — visita agendada hoy pendiente
   ACTIVE_STOP: '#4338CA',      // indigo (primary)
   COMPLETED_STOP: '#22c55e',   // green
   SKIPPED_STOP: '#94a3b8',     // gray
@@ -30,13 +31,21 @@ export const ROUTE_ESTADO = {
 
 /**
  * Determines the marker color for a client on the map.
- * Priority: inactive → active stop → pending route → visited today → default
+ * Priority: inactive → active stop → pending route → scheduled today → visited today → default
+ *
+ * `scheduledTodaySet` (opcional) son clientes con una visita agendada para hoy
+ * (ClienteVisita.FechaProgramada) que aún no tienen check-in. Se colorean en azul
+ * "Agendado hoy" para que el vendedor las distinga de clientes regulares. Rankea
+ * por debajo de las paradas de ruta (la ruta manda) pero por encima de "visitado
+ * hoy" sería incorrecto: si ya hay check-in la visita deja de ser pendiente y no
+ * está en el set, así que el orden visitado-hoy → default queda intacto.
  */
 export function getClientMarkerColor(
   clienteId: string,
   routeStopMap: Map<string, number>,
   todayVisitSet: Set<string>,
-  isActive: boolean
+  isActive: boolean,
+  scheduledTodaySet?: Set<string>
 ): string {
   if (!isActive) return MAP_COLORS.INACTIVE;
 
@@ -53,6 +62,8 @@ export function getClientMarkerColor(
         return MAP_COLORS.PENDING_ROUTE;
     }
   }
+
+  if (scheduledTodaySet?.has(clienteId)) return MAP_COLORS.SCHEDULED_TODAY;
 
   if (todayVisitSet.has(clienteId)) return MAP_COLORS.VISITED_TODAY;
 

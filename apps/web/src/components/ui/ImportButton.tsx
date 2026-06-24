@@ -26,6 +26,7 @@ import {
   ImportResult,
   ImportError,
 } from '@/lib/import';
+import { downloadBlob } from '@/lib/download';
 
 interface ImportButtonProps<T = unknown> {
   columns: ImportColumn<T>[];
@@ -158,12 +159,7 @@ export function ImportButton<T = unknown>({
     const blob = new Blob([content], {
       type: format === 'csv' ? 'text/csv' : 'application/json',
     });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `template.${format}`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `template.${format}`);
   };
 
   return (
@@ -289,7 +285,7 @@ export function ImportButton<T = unknown>({
             <div className="space-y-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-success" />
                   <span className="font-medium">
                     Vista previa - {importResult.validRows} registros válidos
                   </span>
@@ -343,7 +339,7 @@ export function ImportButton<T = unknown>({
               <div className="text-center space-y-2">
                 {importResult.errors.length === 0 ? (
                   <>
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+                    <CheckCircle className="h-12 w-12 text-success mx-auto" />
                     <h3 className="font-medium">¡Importación exitosa!</h3>
                     <p className="text-sm text-foreground/70">
                       {importResult.validRows} de {importResult.totalRows} registros importados

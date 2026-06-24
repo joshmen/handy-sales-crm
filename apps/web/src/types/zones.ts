@@ -9,10 +9,21 @@ export interface Zone extends BaseEntity {
   
   // Relaciones
   userIds: string[];       // IDs de usuarios asignados a esta zona
+  vendedorId?: number | null;  // Vendedor (Usuario rol VENDEDOR) responsable de la zona
+  vendedorName?: string;       // Nombre del vendedor asignado (para mostrar en la lista)
   clientCount?: number;    // Número de clientes en esta zona (calculado)
   projectCount?: number;   // Número de proyectos/habilidades en esta zona (calculado)
   prospectCount?: number;  // Número de prospectos en esta zona (calculado)
-  
+
+  // Frecuencia de visita
+  frecuenciaVisita?: number;   // 0=Semanal, 1=Quincenal, 2=Mensual
+  frecuenciaNombre?: string;   // Etiqueta del backend (Semanal/Quincenal/Mensual)
+
+  // Métricas (de GET /zonas/stats)
+  ventasMes?: number;          // Ventas del mes en moneda
+  ticketPromedio?: number;     // Ticket promedio en moneda
+  coberturaPct?: number;       // % de cobertura (0-100)
+
   // Configuración del mapa (para futuro zonificador)
   boundaries?: ZoneBoundary[];
   mapSettings?: {
@@ -64,23 +75,18 @@ export interface ZoneMetrics {
   totalClientsInZones: number;
 }
 
-// Colores predefinidos para las zonas
+// Paleta categórica alineada al diseño Claude (blue-forward, sin pastels random).
 export const ZONE_COLORS = [
-  '#FF6B6B', // Rojo
-  '#4ECDC4', // Turquesa
-  '#45B7D1', // Azul
-  '#96CEB4', // Verde claro
-  '#FFEAA7', // Amarillo
-  '#DDA0DD', // Lila
-  '#98D8C8', // Verde agua
-  '#F7DC6F', // Amarillo dorado
-  '#BB8FCE', // Púrpura claro
-  '#85C1E9', // Azul claro
-  '#F8C471', // Naranja claro
-  '#82E0AA', // Verde menta
-  '#F1948A', // Rosa salmón
-  '#85929E', // Gris azulado
-  '#D7BDE2', // Lavanda
+  '#0176D3', // Azul primario
+  '#2563EB', // Azul
+  '#7C3AED', // Violeta
+  '#D97706', // Ámbar
+  '#DC2626', // Rojo
+  '#0891B2', // Cian
+  '#DB2777', // Rosa
+  '#65A30D', // Verde
+  '#0D8A7A', // Verde azulado
+  '#6366F1', // Índigo
 ] as const;
 
 export type ZoneColor = typeof ZONE_COLORS[number];

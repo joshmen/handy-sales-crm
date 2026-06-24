@@ -5,6 +5,7 @@ using HandySuites.Application.Automations.DTOs;
 using HandySuites.Application.Automations.Interfaces;
 using HandySuites.Application.Automations.Services;
 using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
@@ -65,7 +66,7 @@ public static class AutomationEndpoints
             // Validate subscription is active (Trial or Active)
             var db = context.RequestServices.GetRequiredService<HandySuitesDbContext>();
             var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId);
-            if (tenant?.SubscriptionStatus is not ("Trial" or "Active"))
+            if (!SubscriptionStatuses.IsActiveOrTrial(tenant?.SubscriptionStatus))
                 return Results.Json(new { error = "Tu suscripción ha expirado. Suscríbete para activar automatizaciones." }, statusCode: 402);
 
             try
@@ -149,7 +150,7 @@ public static class AutomationEndpoints
 
             // Verify active subscription before allowing test execution
             var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId, ct);
-            if (tenant?.SubscriptionStatus is not ("Trial" or "Active"))
+            if (!SubscriptionStatuses.IsActiveOrTrial(tenant?.SubscriptionStatus))
                 return Results.Json(new { error = "Tu suscripción ha expirado. Suscríbete para ejecutar automatizaciones." }, statusCode: 402);
 
             var template = await repo.GetTemplateBySlugAsync(slug);

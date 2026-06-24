@@ -14,6 +14,7 @@ import { Loader2, RefreshCw, CheckCircle, AlertCircle, AlertTriangle, Pause, Pla
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Modal } from '@/components/ui/Modal';
 import { toast } from '@/hooks/useToast';
+import { getApiErrorMessage } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import {
   listEmitters,
@@ -48,7 +49,7 @@ export default function FinkokAdminPage() {
       const result = await listEmitters(1);
       setEmitters(result.items);
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      const msg = getApiErrorMessage(err)
         || 'Error al consultar Finkok';
       toast({ title: msg, variant: 'destructive' });
     } finally {
@@ -73,7 +74,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al suspender',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -90,7 +91,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al reactivar',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -108,7 +109,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: t('creditReportError'),
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -133,7 +134,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al asignar créditos',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -152,7 +153,7 @@ export default function FinkokAdminPage() {
     } catch (err) {
       toast({
         title: 'Error al cambiar modalidad',
-        description: (err as { response?: { data?: { error?: string } } })?.response?.data?.error,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
@@ -171,6 +172,9 @@ export default function FinkokAdminPage() {
 
   return (
     <PageHeader
+      section="superadmin"
+      icon={Coins}
+      eyebrow={ta('breadcrumb')}
       breadcrumbs={[
         { label: ta('breadcrumb') },
         { label: t('breadcrumb') },
@@ -192,7 +196,7 @@ export default function FinkokAdminPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3" data-testid="finkok-kpis">
           <KpiCard label={t('kpi.total')} value={kpis.total} />
-          <KpiCard label={t('kpi.active')} value={kpis.active} accent="text-green-600" />
+          <KpiCard label={t('kpi.active')} value={kpis.active} accent="text-primary" />
           <KpiCard label={t('kpi.suspended')} value={kpis.suspended} accent="text-red-500" />
           <KpiCard label={t('kpi.prepaid')} value={kpis.prepaid} />
           <KpiCard label={t('kpi.unlimited')} value={kpis.unlimited} />
@@ -229,7 +233,7 @@ export default function FinkokAdminPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-xl border border-border-subtle bg-surface-2 overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
           {loading && emitters.length === 0 ? (
             <div className="py-16 text-center">
               <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-muted-foreground" />
@@ -313,7 +317,7 @@ export default function FinkokAdminPage() {
                               disabled={actionLoadingRfc === e.rfc}
                               title={t('actions.reactivate')}
                               aria-label={t('actions.reactivate')}
-                              className="p-1.5 rounded hover:bg-green-50 dark:hover:bg-green-950/30 text-green-600 disabled:opacity-50"
+                              className="p-1.5 rounded hover:bg-primary/10 dark:hover:bg-primary/20 text-primary disabled:opacity-50"
                               data-testid={`reactivate-${e.rfc}`}
                             >
                               <Play className="w-4 h-4" />
@@ -326,7 +330,7 @@ export default function FinkokAdminPage() {
                                 disabled={actionLoadingRfc === e.rfc}
                                 title={t('actions.creditReport')}
                                 aria-label={t('actions.creditReport')}
-                                className="p-1.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 disabled:opacity-50"
+                                className="p-1.5 rounded hover:bg-primary/10 dark:hover:bg-primary/20 text-primary disabled:opacity-50"
                                 data-testid={`credit-report-${e.rfc}`}
                               >
                                 <RefreshCw className="w-4 h-4" />
@@ -346,7 +350,7 @@ export default function FinkokAdminPage() {
                             onClick={() => { setSwitchModalRfc(e.rfc); setSwitchNewMode(e.typeUser === 'O' ? 'P' : 'O'); }}
                             title={t('actions.switchMode')}
                             aria-label={t('actions.switchMode')}
-                            className="p-1.5 rounded hover:bg-purple-50 dark:hover:bg-purple-950/30 text-purple-600"
+                            className="p-1.5 rounded hover:bg-primary/10 dark:hover:bg-primary/20 text-primary"
                             data-testid={`switch-mode-${e.rfc}`}
                           >
                             <ArrowLeftRight className="w-4 h-4" />
@@ -389,7 +393,7 @@ export default function FinkokAdminPage() {
             <button
               onClick={handleAssignCredits}
               disabled={!creditsInput || actionLoadingRfc === creditsModalRfc}
-              className="px-4 py-2 text-sm font-medium bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
               data-testid="confirm-assign-credits"
             >
               {actionLoadingRfc === creditsModalRfc && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -430,7 +434,7 @@ export default function FinkokAdminPage() {
             <button
               onClick={handleSwitchMode}
               disabled={actionLoadingRfc === switchModalRfc}
-              className="px-4 py-2 text-sm font-medium bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
               data-testid="confirm-switch-mode"
             >
               {actionLoadingRfc === switchModalRfc && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -445,9 +449,9 @@ export default function FinkokAdminPage() {
 
 function KpiCard({ label, value, accent = 'text-foreground' }: { label: string; value: number; accent?: string }) {
   return (
-    <div className="rounded-xl bg-surface-2 border border-border-subtle px-4 py-3">
+    <div className="rounded-2xl bg-card border border-border shadow-sm px-4 py-3">
       <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className={`text-2xl font-bold ${accent}`}>{value}</div>
+      <div className={`text-2xl font-bold tabular-nums ${accent}`}>{value}</div>
     </div>
   );
 }
@@ -463,7 +467,7 @@ function Th({ children, className = '' }: { children: React.ReactNode; className
 function StatusBadge({ status }: { status: string | null }) {
   if (!status) return <span className="text-muted-foreground text-xs">desconocido</span>;
   const styles: Record<string, string> = {
-    active: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
+    active: 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary',
     suspended: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
     frozen: 'bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
   };

@@ -64,7 +64,7 @@ export function DashboardEjecutivoReport() {
   const barOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 600 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%' } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: [chartColors.textPrimary] }, offsetX: 5 },
     xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: chartColors.textMuted } } },
@@ -165,7 +165,7 @@ export function DashboardEjecutivoReport() {
             </Card>
 
             <Card className="lg:col-span-3 page-animate page-animate-delay-3">
-              <Text className="!font-semibold !text-foreground mb-4">{t('salesTitle')} — {periodoLabel}</Text>
+              <Text className="!font-semibold !text-foreground mb-4">{t('salesTitle')}: {periodoLabel}</Text>
               <Chart key={chartColors.isDark ? 'dark' : 'light'} type="bar" options={barOptions} series={barSeries} height={200} />
             </Card>
           </div>
@@ -199,10 +199,10 @@ export function DashboardEjecutivoReport() {
               ) : <Text className="mt-4 !text-muted-foreground">{t('noData')}</Text>}
             </Card>
 
-            <Card decoration="top" decorationColor={data.alertas.inventarioBajo > 0 ? 'red' : 'green'}>
+            <Card decoration="top" decorationColor={data.alertas.inventarioBajo > 0 ? 'red' : 'blue'}>
               <Flex justifyContent="start" className="gap-2">
-                <div className={`p-1.5 rounded-lg ${data.alertas.inventarioBajo > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                  <AlertTriangle className={`w-4 h-4 ${data.alertas.inventarioBajo > 0 ? 'text-red-500' : 'text-green-500'}`} />
+                <div className={`p-1.5 rounded-lg ${data.alertas.inventarioBajo > 0 ? 'bg-red-50' : 'bg-primary/5'}`}>
+                  <AlertTriangle className={`w-4 h-4 ${data.alertas.inventarioBajo > 0 ? 'text-red-500' : 'text-primary'}`} />
                 </div>
                 <Text className="!font-semibold !text-foreground">{t('alertsTitle')}</Text>
               </Flex>
@@ -214,7 +214,7 @@ export function DashboardEjecutivoReport() {
                   </>
                 ) : (
                   <>
-                    <Metric className="!text-green-600">✓</Metric>
+                    <Metric className="!text-primary">✓</Metric>
                     <Text className="mt-1">{tCommon('noData')}</Text>
                   </>
                 )}

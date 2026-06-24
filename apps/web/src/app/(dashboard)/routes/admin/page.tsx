@@ -13,8 +13,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
+import { SearchBar } from '@/components/common/SearchBar';
 import {
   Plus,
   Pencil,
@@ -327,6 +326,7 @@ export default function RouteAdminPage() {
 
   return (
     <PageHeader
+      section="operacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title'), href: '/routes' },
@@ -341,7 +341,7 @@ export default function RouteAdminPage() {
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{t('templates.newTemplate')}</span>
@@ -349,59 +349,35 @@ export default function RouteAdminPage() {
       }
     >
       <div className="space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-foreground/70">{t('templates.stats.templates')}</p>
-                <p className="text-2xl font-bold">{totalTemplates}</p>
-              </div>
-              <Map size={24} className="text-blue-500" />
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-foreground/70">{t('templates.stats.zonesCovered')}</p>
-                <p className="text-2xl font-bold">{zonasCubiertas}</p>
-              </div>
-              <MapPin size={24} className="text-green-500" />
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-foreground/70">{t('templates.stats.totalStops')}</p>
-                <p className="text-2xl font-bold">{totalParadas}</p>
-              </div>
-              <Users size={24} className="text-purple-500" />
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-foreground/70">{t('templates.stats.avgDistance')}</p>
-                <p className="text-2xl font-bold">
-                  {distanciaPromedio > 0 ? `${distanciaPromedio} km` : '--'}
+        {/* KPI Row — tarjetas (data real de las plantillas cargadas) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { title: t('templates.stats.templates'), value: String(totalTemplates), icon: Map },
+            { title: t('templates.stats.zonesCovered'), value: String(zonasCubiertas), icon: MapPin },
+            { title: t('templates.stats.totalStops'), value: String(totalParadas), icon: Users },
+            { title: t('templates.stats.avgDistance'), value: distanciaPromedio > 0 ? `${distanciaPromedio} km` : '--', icon: Navigation },
+          ].map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.title}
+                className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                  <Icon className="w-5 h-5 text-muted-foreground/40" />
+                </div>
+                <p className={`text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums mt-3 ${loading ? 'animate-pulse' : ''}`}>
+                  {card.value}
                 </p>
               </div>
-              <Navigation size={24} className="text-orange-500" />
-            </div>
-          </Card>
+            );
+          })}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder={t('templates.searchPlaceholder')}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="min-w-[180px]">
+        {/* Filtros — búsqueda + zona */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-[180px] sm:w-56">
             <SearchableSelect
               options={zonaOptions}
               value={filterZone}
@@ -409,12 +385,18 @@ export default function RouteAdminPage() {
               placeholder={t('allZones')}
             />
           </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={(v) => setSearchTerm(v)}
+            placeholder={t('templates.searchPlaceholder')}
+            className="w-full sm:w-72 lg:w-80"
+          />
         </div>
 
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
@@ -430,7 +412,7 @@ export default function RouteAdminPage() {
             {!searchTerm && filterZone === 'all' && (
               <button
                 onClick={handleOpenCreate}
-                className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
+                className="mt-4 text-sm text-primary hover:text-primary/80 font-medium"
               >
                 {t('templates.createFirst')}
               </button>
@@ -442,7 +424,7 @@ export default function RouteAdminPage() {
         {!loading && filteredTemplates.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
             {filteredTemplates.map(template => (
-              <Card key={template.id} className="hover:shadow-lg transition-shadow">
+              <div key={template.id} className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div className="min-w-0 flex-1">
@@ -487,7 +469,7 @@ export default function RouteAdminPage() {
                     <button
                       onClick={() => handleOpenAssign(template)}
                       disabled={actionLoading}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors disabled:opacity-50"
                       title={t('templates.assignTooltip')}
                     >
                       <CalendarPlus size={14} />
@@ -519,7 +501,7 @@ export default function RouteAdminPage() {
                     </button>
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         )}
@@ -546,7 +528,7 @@ export default function RouteAdminPage() {
               type="button"
               onClick={rhfSubmit(handleSubmitTemplate)}
               disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingTemplate ? t('templates.update') : t('templates.create')}
@@ -562,7 +544,7 @@ export default function RouteAdminPage() {
             <input
               {...register('nombre')}
               placeholder={t('templates.namePlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
             />
             {errors.nombre && (
               <FieldError message={errors.nombre?.message} />
@@ -575,7 +557,7 @@ export default function RouteAdminPage() {
               {...register('descripcion')}
               rows={3}
               placeholder={t('templates.descriptionPlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary resize-none"
             />
           </div>
 
@@ -595,7 +577,7 @@ export default function RouteAdminPage() {
               {...register('notas')}
               rows={2}
               placeholder={t('templates.notesPlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary resize-none"
             />
           </div>
         </form>
@@ -666,7 +648,7 @@ export default function RouteAdminPage() {
               <button
                 type="submit"
                 disabled={actionLoading || !watchAssign('usuarioId')}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50"
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('templates.assignRoute')}

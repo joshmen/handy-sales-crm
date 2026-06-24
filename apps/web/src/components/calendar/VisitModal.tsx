@@ -121,7 +121,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={visit ? t('editVisit') : t('newVisit')}
-      icon={<Calendar className="w-5 h-5 text-green-600" />}
+      icon={<Calendar className="w-5 h-5 text-primary" />}
       width="md"
       isDirty={isDirty}
       onSave={handleSave}

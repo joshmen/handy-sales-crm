@@ -146,6 +146,26 @@ public static class ProductoEndpoints
             return Results.Ok(new { actualizados });
         }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
 
+        // Asignar clave SAT (+ unidad opcional) en lote: por selección de IDs o por categoría.
+        app.MapPatch("/productos/batch-clave-sat", async (
+            ProductoBatchClaveSatDto request,
+            [FromServices] ProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.ClaveSat))
+                return Results.BadRequest(new { error = "La clave SAT es obligatoria." });
+            if (request.CategoriaId is null && (request.Ids == null || request.Ids.Count == 0))
+                return Results.BadRequest(new { error = "Selecciona productos o una categoría." });
+            if (request.Ids != null && request.Ids.Count > 1000)
+                return Results.BadRequest(new { error = "Máximo 1000 productos por lote." });
+
+            var actualizados = await servicio.BatchAsignarClaveSatAsync(request);
+            if (actualizados > 0)
+                await NotifyProductosActualizados(hubContext, currentTenant.TenantId);
+            return Results.Ok(new { actualizados });
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN"));
+
         app.MapPost("/productos/{id:int}/imagen", async (
             int id,
             IFormFile file,

@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { downloadBlob } from '@/lib/download';
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -38,13 +39,7 @@ export async function exportToCsv(
 
   // Create download link
   const blob = new Blob([response.data as BlobPart], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${entity}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  downloadBlob(blob, `${entity}.csv`);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -55,13 +50,7 @@ export async function downloadTemplate(entity: ImportEntity): Promise<void> {
   const response = await api.get(`/api/import/template/${entity}`, { responseType: 'blob' });
 
   const blob = new Blob([response.data as BlobPart], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `template_${entity}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  downloadBlob(blob, `template_${entity}.csv`);
 }
 
 // ═══════════════════════════════════════════════════════

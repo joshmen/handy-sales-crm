@@ -128,13 +128,13 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
       };
       document.addEventListener('keydown', handleKeyDown);
 
-      // Move focus into drawer on open + restore on close.
+      // Move focus into drawer on open + restore on close. Enfocamos el PANEL
+      // (role=dialog, tabIndex=-1), no el primer boton: asi el lector de pantalla
+      // anuncia el dialogo y el Tab entra al contenido, pero la X de cerrar no
+      // queda resaltada con el focus-ring al abrir (se veria como "color" en la X).
       const previouslyFocused = document.activeElement as HTMLElement | null;
       setTimeout(() => {
-        const focusables = drawerEl?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
-        );
-        focusables?.[0]?.focus();
+        drawerEl?.focus();
       }, 50);
 
       return () => {
@@ -167,9 +167,10 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
         data-drawer-panel
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'relative w-full flex flex-col bg-surface-4 shadow-elevation-3 transition-transform duration-300 ease-out',
+          'relative w-full flex flex-col bg-surface-4 shadow-elevation-3 transition-transform duration-300 ease-out outline-none',
           entered ? 'translate-x-0' : 'translate-x-full',
           widthClasses[width]
         )}
@@ -184,7 +185,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
             <button
               onClick={handleRequestClose}
               aria-label={tc('close')}
-              className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent hover:bg-accent/80 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
+              className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             >
               <X className="w-[18px] h-[18px] text-muted-foreground" />
             </button>

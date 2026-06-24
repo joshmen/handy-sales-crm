@@ -37,8 +37,8 @@ import {
   ChevronDown,
   Trash2,
   X,
+  Tag,
 } from 'lucide-react';
-import { Tag } from '@phosphor-icons/react';
 
 const formSchema = z.object({
   nombre: z.string().min(1, 'nameRequired'),
@@ -49,6 +49,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ProductCategoriesPage() {
   const t = useTranslations('productCategories');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
   // State
@@ -248,8 +249,10 @@ export default function ProductCategoriesPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionCatalog') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -259,9 +262,9 @@ export default function ProductCategoriesPage() {
           <div className="relative" data-tour="product-categories-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -290,7 +293,7 @@ export default function ProductCategoriesPage() {
           <button
             onClick={handleOpenCreate}
             data-tour="product-categories-create-btn"
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>{t('newCategory')}</span>
@@ -309,9 +312,9 @@ export default function ProductCategoriesPage() {
           />
           <button
             onClick={loadCategories}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
@@ -339,7 +342,12 @@ export default function ProductCategoriesPage() {
           <DataGrid<ProductCategory>
             columns={[
               { key: 'id', label: tc('id'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
-              { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.nombre}</span> },
+              { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => (
+                <span className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${item.activo ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                  <span className="font-medium text-foreground truncate">{item.nombre}</span>
+                </span>
+              )},
               { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-muted-foreground truncate">{item.descripcion || '-'}</span> },
               { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                 <div onClick={e => e.stopPropagation()}>
@@ -385,13 +393,13 @@ export default function ProductCategoriesPage() {
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       batch.selectedIds.has(category.id)
                         ? 'bg-success border-success text-success-foreground'
-                        : 'border-border-default hover:border-green-500'
+                        : 'border-border-default hover:border-primary'
                     }`}
                   >
                     {batch.selectedIds.has(category.id) && <Check className="w-3 h-3" />}
                   </button>
                   <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <Tag className="w-5 h-5 text-orange-600" weight="duotone" />
+                    <Tag className="w-5 h-5 text-orange-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{category.nombre}</div>
@@ -450,10 +458,10 @@ export default function ProductCategoriesPage() {
         onSave={handleSubmit}
         footer={
           <div data-tour="product-categories-drawer-actions" className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingCategory ? tc('saveChanges') : t('drawer.createCategory')}
             </Button>

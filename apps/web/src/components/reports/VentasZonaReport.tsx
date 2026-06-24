@@ -30,7 +30,7 @@ export function VentasZonaReport() {
   const [data, setData] = useState<VentasZonaResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: 'ventas-zona', title: t('reportTitle'), dateRange: dates,
     kpis: data ? [
       { label: t('totalSales'), value: fmt(data.totales.totalVentas) },
@@ -64,7 +64,7 @@ export function VentasZonaReport() {
   const donutOptions: ApexCharts.ApexOptions = {
     chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
     labels: zonesWithSales.map(z => z.nombre),
-    colors: [chartColors.series.green, chartColors.series.blue, chartColors.series.amber, chartColors.series.red, chartColors.series.purple, chartColors.series.cyan, '#ec4899', '#14b8a6'],
+    colors: [...chartColors.categorical, chartColors.series.cyan, chartColors.series.red],
     plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: tc('total'), fontSize: '12px', color: chartColors.textSecondary, formatter: () => fmt(data?.totales.totalVentas || 0) } } } } },
     legend: { position: 'bottom', fontSize: '12px' },
     dataLabels: { enabled: true, formatter: (val) => `${Number(val).toFixed(0)}%` },
@@ -73,7 +73,7 @@ export function VentasZonaReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.zonas.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.zonas.length > 0 ? exportPDF : undefined} onExportExcel={data && data.zonas.length > 0 ? exportExcel : undefined} exporting={exporting} />
 
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">

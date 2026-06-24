@@ -19,7 +19,10 @@ test.describe('Automations Page', () => {
   test('should load automations page with cards', async ({ page }) => {
     await navigateToAutomations(page);
     await expect(page.getByRole('heading', { name: 'Automatizaciones', exact: true })).toBeVisible();
-    const cards = page.locator('[data-tour="automations-grid"] > div');
+    // 2026-06: el rediseño agrupó el grid (data-tour="automations-grid" envuelve
+    // un layout, ya no las cards como hijos directos). Contamos las cards por su
+    // toggle Activar/Desactivar (1 por plantilla), robusto a la estructura.
+    const cards = page.locator('[data-tour="automations-grid"]').getByRole('button', { name: /Activar|Desactivar/ });
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(5);
   });

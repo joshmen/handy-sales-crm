@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Package,
   UserCheck,
-  Crown
+  Crown,
+  LayoutDashboard
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useChartTheme } from '@/hooks/useChartTheme';
@@ -24,7 +25,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444'];
+const CHART_COLORS = ['#0176D3', '#5867E8', '#06A59A', '#D97706', '#1F8A5B', '#ef4444'];
 
 // Period labels are set dynamically using translations inside the component
 const PERIOD_VALUES = [7, 15, 30, 90];
@@ -117,7 +118,7 @@ export default function SystemDashboardPage() {
         animations: { enabled: true, speed: 600 },
         zoom: { enabled: false },
       },
-      colors: ['#10b981'],
+      colors: ['#0176D3'],
       dataLabels: { enabled: false },
       stroke: { curve: 'smooth', width: 2 },
       fill: {
@@ -181,7 +182,7 @@ export default function SystemDashboardPage() {
         animations: { enabled: true, speed: 600 },
         zoom: { enabled: false },
       },
-      colors: ['#3b82f6', '#8b5cf6'],
+      colors: ['#0176D3', '#5867E8'],
       dataLabels: { enabled: false },
       stroke: { curve: 'smooth', width: 2 },
       markers: { size: 0, hover: { size: 4 } },
@@ -279,11 +280,11 @@ export default function SystemDashboardPage() {
 
   if (loading) {
     return (
-      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+              <div key={i} className="bg-card rounded-2xl border border-border p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="h-4 w-24 bg-surface-3 rounded-md animate-pulse mb-3" />
@@ -296,7 +297,7 @@ export default function SystemDashboardPage() {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm h-80 animate-pulse" />
+              <div key={i} className="bg-card rounded-2xl border border-border p-6 shadow-sm h-80 animate-pulse" />
             ))}
           </div>
         </div>
@@ -306,7 +307,7 @@ export default function SystemDashboardPage() {
 
   if (!metrics) {
     return (
-      <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+      <PageHeader section="superadmin" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">{t('loadErrorShort')}</p>
         </div>
@@ -315,33 +316,33 @@ export default function SystemDashboardPage() {
   }
 
   return (
-    <PageHeader breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
+    <PageHeader section="superadmin" icon={LayoutDashboard} eyebrow={ta('breadcrumb')} breadcrumbs={breadcrumbs} title={t('title')} subtitle={t('subtitle')}>
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('totalCompanies')}</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
                 {formatNumber(metrics.totalTenants)}
               </p>
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+              <p className="text-xs text-primary mt-1 flex items-center gap-1">
                 <UserCheck className="h-3 w-3" />
                 {formatNumber(metrics.activeTenants)} {t('activeCompanies')}
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-blue-600" />
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Building2 className="h-6 w-6 text-primary" />
             </div>
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('activeUsers')}</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
                 {formatNumber(metrics.totalUsuarios)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -354,11 +355,11 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('totalOrders')}</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
                 {formatNumber(metrics.totalPedidos)}
               </p>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -372,20 +373,20 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t('totalSales')}</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
                 {formatCurrency(metrics.totalVentas)}
               </p>
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+              <p className="text-xs text-primary mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
                 {t('accumulated')}
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg bg-green-50 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-6 w-6 text-primary" />
             </div>
           </div>
         </div>
@@ -397,15 +398,16 @@ export default function SystemDashboardPage() {
           {/* Period Selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">{t('period')}:</span>
-            <div className="flex gap-1 bg-surface-3 rounded-lg p-1">
+            <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
               {PERIOD_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setTrendDays(opt.value)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  aria-pressed={trendDays === opt.value}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     trendDays === opt.value
-                      ? 'bg-surface-2 text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground/80'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {opt.label}
@@ -416,7 +418,7 @@ export default function SystemDashboardPage() {
 
           {/* Revenue Chart (full width) */}
           {trends.revenueByDay.length > 0 && (
-            <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
               <h3 className="text-base font-semibold text-foreground mb-4">
                 {t('revenueByDay')}
               </h3>
@@ -434,7 +436,7 @@ export default function SystemDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Tenant & User Growth */}
             {(trends.tenantGrowth.length > 0 || trends.userGrowth.length > 0) && (
-              <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+              <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-foreground mb-4">
                   {t('growth')}
                 </h3>
@@ -460,7 +462,7 @@ export default function SystemDashboardPage() {
 
             {/* Plan Distribution */}
             {trends.planBreakdown.length > 0 && (
-              <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+              <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-foreground mb-4">
                   {t('planDistribution')}
                 </h3>
@@ -480,7 +482,7 @@ export default function SystemDashboardPage() {
       {/* Bottom Sections — Top Tenants + Recent Tenants */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Tenants */}
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Crown className="h-5 w-5 text-amber-500" />
             <h2 className="text-lg font-semibold text-foreground">{t('topCompanies')}</h2>
@@ -534,9 +536,9 @@ export default function SystemDashboardPage() {
         </div>
 
         {/* Recent Tenants */}
-        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="h-5 w-5 text-blue-500" />
+            <Clock className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">{t('recentCompanies')}</h2>
           </div>
 
@@ -555,7 +557,7 @@ export default function SystemDashboardPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium text-foreground">{tenant.nombreEmpresa}</p>
                       {tenant.activo ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary">
                           {t('activeCompanies')}
                         </span>
                       ) : (
@@ -577,7 +579,7 @@ export default function SystemDashboardPage() {
                   </div>
 
                   {tenant.suscripcionActiva ? (
-                    <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                    <div className="flex items-center gap-1 text-primary text-sm font-medium">
                       <TrendingUp className="h-4 w-4" />
                       {t('activeSubscription')}
                     </div>

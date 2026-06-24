@@ -121,5 +121,13 @@ namespace HandySuites.Tests.Application.Reports
             var response = await _client.GetAsync("/api/reports/ejecutivo?periodo=mes");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
+
+        [Fact]
+        public async Task Ejecutivo_DeberiaRetornarDatos_ConRangoLibre()
+        {
+            _client.DefaultRequestHeaders.Add("Authorization", "Bearer fake-jwt-token");
+            var response = await _client.GetAsync("/api/reports/ejecutivo?desde=2026-06-01&hasta=2026-06-30");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
     }
 }

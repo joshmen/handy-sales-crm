@@ -13,6 +13,9 @@ import { crashReporter } from '@/services/crashReporter';
 LogBox.ignoreLogs([
   "Cannot read property 'initializeJSI'",
   'Require cycle:',
+  // Expo Go SDK 53+ removió push notifications remotas; el aviso es benigno en
+  // Expo Go (en dev/standalone build no aparece) y satura el LogBox.
+  'expo-notifications: Android Push notifications',
 ]);
 
 // Global error handler — captura errores fuera del árbol React

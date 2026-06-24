@@ -21,10 +21,14 @@ export { useOfflineProducts, useOfflineProductById } from './useOfflineProducts'
 export { useOfflineOrders, useOfflineOrderById, useOfflineOrderDetalles } from './useOfflineOrders';
 export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles, useOfflineRutaPedidos, useOfflineRutaCarga } from './useOfflineRoutes';
 export { useOfflineVisits, useOfflineVisitById, useOfflineTodayVisits } from './useOfflineVisits';
+export { useOfflineScheduledVisits } from './useOfflineScheduledVisits';
 export { useOfflineCobros, useOfflineCobroById, useOfflineTodayCobros } from './useOfflineCobros';
 export { useOfflineSalesToday } from './useOfflineSalesToday';
 export { usePendingCount } from './usePendingCount';
-export { useClientNameMap } from './useClientNameMap';
+export { useClientNameMap, useClientInfoMap } from './useClientNameMap';
+export type { ClientInfo } from './useClientNameMap';
+export { useCheckInFlow } from './useCheckInFlow';
+export type { CheckInStartParams } from './useCheckInFlow';
 
 // Evidence hooks
 export { useAttachmentsForEvent, usePendingAttachmentCount } from './useOfflineAttachments';

@@ -24,7 +24,11 @@ public class ClienteVisitaService
         if (!await _repository.ExisteClienteEnTenantAsync(dto.ClienteId, _tenant.TenantId))
             throw new InvalidOperationException("El cliente especificado no existe o no pertenece a tu empresa.");
 
-        var usuarioId = int.Parse(_tenant.UserId);
+        // La visita agendada se asigna al vendedor dueño de la cartera del cliente, para
+        // que le aparezca en su app móvil (el sync mobile filtra por UsuarioId). Si el
+        // cliente no tiene vendedor asignado, cae al usuario actual.
+        var vendedorCliente = await _repository.ObtenerVendedorIdDeClienteAsync(dto.ClienteId, _tenant.TenantId);
+        var usuarioId = vendedorCliente ?? int.Parse(_tenant.UserId);
         return await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
     }
 
@@ -131,5 +135,11 @@ public class ClienteVisitaService
     {
         var fechaConsulta = fecha ?? DateTime.UtcNow;
         return await _repository.ObtenerResumenDiarioAsync(usuarioId, fechaConsulta, _tenant.TenantId);
+    }
+
+    // Cobertura — estado de visita de los clientes activos con zona vs su frecuencia.
+    public async Task<List<CoberturaClienteDto>> ObtenerCoberturaAsync()
+    {
+        return await _repository.ObtenerCoberturaAsync(_tenant.TenantId, DateTime.UtcNow);
     }
 }

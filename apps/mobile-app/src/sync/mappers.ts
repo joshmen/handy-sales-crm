@@ -503,6 +503,9 @@ function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<
     ruta_id: null,
     tipo: 0,
     resultado: v.estado ?? 0,
+    // v25: fecha agendada de la visita programada desde la web. Antes se descartaba
+    // (no había columna local) → el vendedor no veía las visitas agendadas pendientes.
+    fecha_programada: toNullableTimestamp(v.fechaProgramada),
     check_in_at: toNullableTimestamp(v.fechaHoraInicio),
     check_out_at: toNullableTimestamp(v.fechaHoraFin),
     latitud_check_in: v.latitudInicio ?? null,

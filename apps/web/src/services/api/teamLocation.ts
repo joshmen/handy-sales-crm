@@ -38,6 +38,29 @@ export interface UltimaUbicacionVendedor {
   clienteNombre: string | null;
 }
 
+export type EstadoVendedorGps = 'en_ruta' | 'inactivo' | 'sin_senal';
+
+/**
+ * Roster enriquecido para la pantalla "Histórico GPS" (master-detail).
+ * `ultimaActividad` puede ser null si el vendedor no tiene actividad reciente.
+ */
+export interface RosterGpsItem {
+  usuarioId: number;
+  nombre: string;
+  email: string | null;
+  avatarUrl: string | null;
+  supervisorId: number | null;
+  supervisorNombre: string | null;
+  zonas: string[];
+  ultimaActividad: string | null;
+  ultimaLat: number | null;
+  ultimaLng: number | null;
+  fuente: FuenteUbicacion | null;
+  clienteNombre: string | null;
+  status: EstadoVendedorGps;
+  tieneRutaHoy: boolean;
+}
+
 export interface EventoGpsDelDia {
   tipo: FuenteUbicacion;
   cuando: string;
@@ -62,6 +85,18 @@ class TeamLocationService {
     try {
       const response = await api.get<UltimaUbicacionVendedor[]>(`${this.basePath}/ubicaciones-recientes`);
       return response.data.map(u => ({ ...u, ultimaActividad: ensureUtc(u.ultimaActividad) }));
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async getRosterGps(): Promise<RosterGpsItem[]> {
+    try {
+      const response = await api.get<RosterGpsItem[]>(`${this.basePath}/roster-gps`);
+      return response.data.map(r => ({
+        ...r,
+        ultimaActividad: r.ultimaActividad ? ensureUtc(r.ultimaActividad) : null,
+      }));
     } catch (error) {
       throw handleApiError(error);
     }

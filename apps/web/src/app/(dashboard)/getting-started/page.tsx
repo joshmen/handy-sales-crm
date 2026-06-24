@@ -29,6 +29,7 @@ import {
   Compass,
   Loader2,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { productService } from '@/services/api/products';
 import { productCategoryService } from '@/services/api/productCategories';
 import { productFamilyService } from '@/services/api/productFamilies';
@@ -159,14 +160,14 @@ export default function GettingStartedPage() {
         id: 'base',
         title: t('phases.base.title'),
         description: t('phases.base.description'),
-        colorDot: 'bg-slate-500',
-        colorBg: 'bg-slate-50',
-        colorText: 'text-slate-700',
-        colorBorder: 'border-slate-200',
-        colorProgress: 'bg-slate-500',
+        colorDot: 'bg-slate-600',
+        colorBg: 'bg-card',
+        colorText: 'text-slate-600',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-slate-600',
         colorButton: '#475569',
-        colorCompletedBg: 'bg-slate-50/50',
-        colorCompletedBorder: 'border-slate-200',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'company',
@@ -192,14 +193,14 @@ export default function GettingStartedPage() {
         id: 'catalog',
         title: t('phases.catalog.title'),
         description: t('phases.catalog.description'),
-        colorDot: 'bg-amber-500',
-        colorBg: 'bg-amber-50',
+        colorDot: 'bg-amber-700',
+        colorBg: 'bg-card',
         colorText: 'text-amber-700',
-        colorBorder: 'border-amber-200',
-        colorProgress: 'bg-amber-500',
-        colorButton: '#b45309',
-        colorCompletedBg: 'bg-amber-50/40',
-        colorCompletedBorder: 'border-amber-200',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-amber-700',
+        colorButton: '#B45309',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'product-categories',
@@ -261,14 +262,14 @@ export default function GettingStartedPage() {
         id: 'clients',
         title: t('phases.clients.title'),
         description: t('phases.clients.description'),
-        colorDot: 'bg-blue-500',
-        colorBg: 'bg-blue-50',
+        colorDot: 'bg-blue-700',
+        colorBg: 'bg-card',
         colorText: 'text-blue-700',
-        colorBorder: 'border-blue-200',
-        colorProgress: 'bg-blue-500',
-        colorButton: '#1d4ed8',
-        colorCompletedBg: 'bg-blue-50/40',
-        colorCompletedBorder: 'border-blue-200',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-blue-700',
+        colorButton: '#1D4ED8',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'client-categories',
@@ -294,14 +295,14 @@ export default function GettingStartedPage() {
         id: 'territory',
         title: t('phases.territory.title'),
         description: t('phases.territory.description'),
-        colorDot: 'bg-violet-500',
-        colorBg: 'bg-violet-50',
+        colorDot: 'bg-violet-700',
+        colorBg: 'bg-card',
         colorText: 'text-violet-700',
-        colorBorder: 'border-violet-200',
-        colorProgress: 'bg-violet-500',
-        colorButton: '#6d28d9',
-        colorCompletedBg: 'bg-violet-50/40',
-        colorCompletedBorder: 'border-violet-200',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-violet-700',
+        colorButton: '#6D28D9',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'team',
@@ -327,14 +328,14 @@ export default function GettingStartedPage() {
         id: 'operations',
         title: t('phases.operations.title'),
         description: t('phases.operations.description'),
-        colorDot: 'bg-green-500',
-        colorBg: 'bg-green-50',
-        colorText: 'text-green-700',
-        colorBorder: 'border-green-200',
-        colorProgress: 'bg-green-500',
-        colorButton: '#15803d',
-        colorCompletedBg: 'bg-green-50/40',
-        colorCompletedBorder: 'border-green-200',
+        colorDot: 'bg-[#0B5CAB]',
+        colorBg: 'bg-card',
+        colorText: 'text-[#0B5CAB]',
+        colorBorder: 'border-border',
+        colorProgress: 'bg-[#0B5CAB]',
+        colorButton: '#0B5CAB',
+        colorCompletedBg: 'bg-card',
+        colorCompletedBorder: 'border-border',
         steps: [
           {
             id: 'routes',
@@ -379,6 +380,14 @@ export default function GettingStartedPage() {
     } else {
       localStorage.removeItem('onboarding-completed');
     }
+
+    // Persistir progreso para que el sidebar muestre el badge real (X/N)
+    try {
+      const totalCount = newPhases.reduce((s, p) => s + p.steps.length, 0);
+      const doneCount = newPhases.reduce((s, p) => s + p.steps.filter(x => x.completed).length, 0);
+      localStorage.setItem('onboarding-progress', JSON.stringify({ completed: doneCount, total: totalCount }));
+      window.dispatchEvent(new Event('onboarding-progress'));
+    } catch { /* ignore */ }
 
     return newPhases;
   }, [t]);
@@ -457,7 +466,7 @@ export default function GettingStartedPage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">{t('loading')}</span>
     </div>
   );
@@ -472,54 +481,41 @@ export default function GettingStartedPage() {
   const allDone = completedSteps === totalSteps;
 
   return (
-    <div className="flex flex-col">
-      {/* Header */}
-      <div className="bg-surface-2 px-4 py-4 sm:px-8 sm:py-6 border-b border-border-subtle">
-        <div className="page-animate">
-          <div className="flex items-center gap-2 text-sm mb-3">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground/80 transition-colors">
-              {tc('home')}
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium">{t('breadcrumbTitle')}</span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between page-animate page-animate-delay-1">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-              {t('title')}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
-            <button
-              onClick={handleDismiss}
-              className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span className="sm:hidden">{t('skipShort')}</span>
-              <span className="hidden sm:inline">{t('skipFull')}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <PageHeader
+      section="navegacion"
+      breadcrumbs={[
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('breadcrumbTitle') },
+      ]}
+      title={t('title')}
+      subtitle={t('subtitle')}
+      actions={
+        <>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{tc('refresh')}</span>
+          </button>
+          <button
+            onClick={handleDismiss}
+            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
+          >
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="sm:hidden">{t('skipShort')}</span>
+            <span className="hidden sm:inline">{t('skipFull')}</span>
+          </button>
+        </>
+      }
+    >
       {/* Body */}
-      <div className="px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full space-y-6">
+      <div className="max-w-3xl mx-auto w-full space-y-6">
 
         {/* Global Progress */}
         <div className="page-animate page-animate-delay-2">
-          <div className="bg-surface-2 border border-border-subtle rounded-xl p-5 sm:p-6">
+          <div className="bg-card border border-border rounded-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 {allDone ? (
@@ -550,7 +546,7 @@ export default function GettingStartedPage() {
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${progressPercent}%`,
-                  backgroundColor: allDone ? '#16a34a' : 'var(--company-primary-color, #2563eb)',
+                  backgroundColor: '#16a34a',
                 }}
               />
             </div>
@@ -560,7 +556,7 @@ export default function GettingStartedPage() {
         {/* Confetti message */}
         {showConfetti && allDone && (
           <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center page-animate">
-            <p className="text-green-800 font-medium">
+            <p className="text-green-700 font-medium">
               {t('congratulations')}
             </p>
             <p className="text-sm text-green-600 mt-1">
@@ -604,7 +600,7 @@ export default function GettingStartedPage() {
                         {phase.title}
                       </h3>
                       {phaseCompleted && (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{phase.description}</p>
@@ -630,15 +626,15 @@ export default function GettingStartedPage() {
                           {/* Check icon */}
                           <div className="flex-shrink-0">
                             {step.completed ? (
-                              <CheckCircle2 className="w-5 h-5 text-green-500" />
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
                             ) : (
                               <Circle className="w-5 h-5 text-muted-foreground/60" />
                             )}
                           </div>
 
                           {/* Icon */}
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.completed ? 'bg-green-50' : phase.colorBg}`}>
-                            <step.icon className={`w-4 h-4 ${step.completed ? 'text-green-500' : phase.colorText}`} />
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.completed ? 'bg-green-100' : phase.colorBg}`}>
+                            <step.icon className={`w-4 h-4 ${step.completed ? 'text-green-600' : phase.colorText}`} />
                           </div>
 
                           {/* Text */}
@@ -685,7 +681,7 @@ export default function GettingStartedPage() {
                                   scheduleTourContinuation(step.tourId!);
                                   router.push(step.href);
                                 }}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                                 title={t('repeatTour')}
                               >
                                 <Compass className="w-3 h-3" />
@@ -695,7 +691,7 @@ export default function GettingStartedPage() {
                             {step.completed && (
                               <Link
                                 href={step.href}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               >
                                 {t('view')}
                                 <ChevronRight className="w-3 h-3" />
@@ -719,6 +715,6 @@ export default function GettingStartedPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageHeader>
   );
 }

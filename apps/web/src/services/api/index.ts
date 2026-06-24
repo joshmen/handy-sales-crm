@@ -9,6 +9,7 @@ import { inventoryService } from './inventory';
 import { inventoryMovementService } from './inventoryMovements';
 import { promotionService } from './promotions';
 import { zoneService } from './zones';
+import { vehiclesService } from './vehicles';
 import { orderService } from './orders';
 import { discountService } from './discounts';
 import { deliveryService } from './deliveries';
@@ -34,6 +35,7 @@ export * from './inventory';
 export * from './inventoryMovements';
 export * from './promotions';
 export * from './zones';
+export * from './vehicles';
 export * from './orders';
 export * from './discounts';
 export * from './deliveries';
@@ -60,6 +62,7 @@ export {
   inventoryMovementService,
   promotionService,
   zoneService,
+  vehiclesService,
   orderService,
   discountService,
   deliveryService,
@@ -88,6 +91,7 @@ export const services = {
   inventoryMovements: inventoryMovementService,
   promotions: promotionService,
   zones: zoneService,
+  vehicles: vehiclesService,
   orders: orderService,
   discounts: discountService,
   deliveries: deliveryService,

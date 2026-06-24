@@ -9,44 +9,47 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  // Iconos mono (lucide) del diseño nuevo — aliaseados a los nombres Sb* para
+  // re-skinear todo el sidebar con una sola edición. Heredan currentColor:
+  // blancos sobre el pill azul activo, grises cuando inactivos.
+  LayoutGrid as SbDashboard,
+  ShoppingCart as SbOrders,
+  Wallet as SbPayments,
+  Users as SbClients,
+  Package as SbProducts,
+  Tag as SbPriceLists,
+  Percent as SbDiscounts,
+  Gift as SbPromotions,
+  Route as SbRoutes,
+  Truck as SbFleet,
+  Layers as SbInventory,
+  MapPin as SbZones,
+  MapPinned as SbVisits,
+  Compass as SbForms,
+  BarChart3 as SbReports,
+  UsersRound as SbTeam,
+  Smartphone as SbDevices,
+  Zap as SbAutomations,
+  Target as SbGoals,
+  Bot as SbAI,
+  Settings as SbSettings,
+  Shield as SbAdmin,
+  User as SbUsers,
+  CreditCard as SbSubscription,
+  Activity as SbActivityLog,
+  LifeBuoy as SbHelp,
+  Megaphone as SbAnnouncements,
+  Building2 as SbBuildings,
+  Bug as SbBug,
+  Tags as SbCategory,
+  Folder as SbFolders,
+  Scale as SbUnits,
+  ArrowLeftRight as SbMovements,
+  Users as SbUsersGlobal,
+  Plug as SbIntegrations,
+  Receipt as SbBilling,
+  Banknote as SbExpenses,
 } from 'lucide-react';
-import {
-  SbDashboard,
-  SbOrders,
-  SbPayments,
-  SbClients,
-  SbProducts,
-  SbPriceLists,
-  SbDiscounts,
-  SbPromotions,
-  SbRoutes,
-  SbInventory,
-  SbZones,
-  SbVisits,
-  SbForms,
-  SbReports,
-  SbTeam,
-  SbDevices,
-  SbAutomations,
-  SbGoals,
-  SbAI,
-  SbSettings,
-  SbAdmin,
-  SbUsers,
-  SbSubscription,
-  SbActivityLog,
-  SbHelp,
-  SbAnnouncements,
-  SbBuildings,
-  SbBug,
-  SbCategory,
-  SbFolders,
-  SbUnits,
-  SbMovements,
-  SbUsersGlobal,
-  SbIntegrations,
-  SbBilling,
-} from '@/components/layout/DashboardIcons';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
@@ -76,6 +79,14 @@ const sidebarItems: SidebarItem[] = [
     href: '/dashboard',
     permission: 'view_dashboard',
   },
+  // — PRIMEROS PASOS (item propio bajo Tablero, como el diseño Claude) —
+  {
+    id: 'getting-started',
+    label: 'Primeros pasos',
+    icon: SbForms,
+    href: '/getting-started',
+    permission: 'view_company_settings',
+  },
 
   // — VENTAS —
   {
@@ -93,8 +104,15 @@ const sidebarItems: SidebarItem[] = [
     href: '/cobranza',
     permission: 'view_orders',
   },
-  // Gastos eliminados del sidebar (redesign 30/5): se reportan desde mobile y
-  // se auditan ahora desde el tab "Gastos" del detalle de ruta + Drawer en close.
+  // Gastos contables (deducibles): alimentan P&L / IVA / DIOT. NO confundir con
+  // los gastos de ruta del móvil (auditados en el detalle de ruta + Drawer close).
+  {
+    id: 'gastos',
+    label: 'Gastos',
+    icon: SbExpenses,
+    href: '/gastos',
+    permission: 'view_orders',
+  },
 
   // — CATÁLOGO —
   {
@@ -227,6 +245,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_routes',
       },
       {
+        id: 'routes-carga-liquidacion',
+        label: 'Carga y liquidación',
+        icon: SbProducts,
+        href: '/routes/carga-liquidacion',
+        permission: 'view_routes',
+      },
+      {
         id: 'routes-templates',
         label: 'Plantillas',
         icon: SbForms,
@@ -234,6 +259,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_routes',
       },
     ],
+  },
+  {
+    id: 'flotilla',
+    label: 'Flotilla',
+    icon: SbFleet,
+    href: '/flotilla',
+    permission: 'view_routes',
   },
   {
     id: 'inventory',
@@ -264,6 +296,7 @@ const sidebarItems: SidebarItem[] = [
     icon: SbReports,
     href: '/reports',
     permission: 'view_reports',
+    section: 'Herramientas',
   },
   {
     id: 'metas',
@@ -335,13 +368,6 @@ const sidebarItems: SidebarItem[] = [
         label: 'Facturas',
         icon: SbOrders,
         href: '/billing/invoices',
-        permission: 'manage_billing',
-      },
-      {
-        id: 'billing-fiscal-mapping',
-        label: 'Mapeo Fiscal',
-        icon: SbProducts,
-        href: '/billing/fiscal-mapping',
         permission: 'manage_billing',
       },
       {
@@ -462,13 +488,13 @@ interface SidebarProps {
 
 // Translation map: sidebar label → i18n key
 const LABEL_KEYS: Record<string, string> = {
-  'Tablero': 'nav.dashboard', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections',
+  'Tablero': 'nav.dashboard', 'Primeros pasos': 'nav.gettingStarted', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections', 'Gastos': 'nav.expenses',
   'Clientes': 'nav.clients', 'Lista de clientes': 'nav.clientsList', 'Categorías de clientes': 'nav.clientCategories',
   'Productos': 'nav.products', 'Lista de productos': 'nav.productsList', 'Familias de productos': 'nav.productFamilies',
   'Categorías de productos': 'nav.productCategories', 'Unidades de medida': 'nav.units', 'Tasas de impuesto': 'nav.taxRates',
   'Precios': 'nav.pricing', 'Listas de precios': 'nav.priceLists', 'Descuentos': 'nav.discounts', 'Promociones': 'nav.promotions',
-  'Rutas': 'nav.routes', 'Lista de rutas': 'nav.routesList', 'Plantillas': 'nav.routeTemplates',
-  'Inventario': 'nav.inventory', 'Zonas': 'nav.zones', 'Visitas': 'nav.visits',
+  'Rutas': 'nav.routes', 'Lista de rutas': 'nav.routesList', 'Carga y liquidación': 'nav.routesLoadSettlement', 'Plantillas': 'nav.routeTemplates',
+  'Flotilla': 'nav.flotilla', 'Inventario': 'nav.inventory', 'Zonas': 'nav.zones', 'Visitas': 'nav.visits',
   'Reportes': 'nav.reports', 'Metas': 'nav.goals', 'Automatizaciones': 'nav.automations',
   'Equipo': 'nav.team', 'Miembros': 'nav.teamMembers', 'Histórico GPS': 'nav.teamGpsHistory',
   'Registro de actividad': 'nav.activityLog',
@@ -480,7 +506,7 @@ const LABEL_KEYS: Record<string, string> = {
   'Monitor de Errores': 'nav.saCrashReports',
   // Sections
   'Ventas': 'nav.sectionSales', 'Catálogo': 'nav.sectionCatalog', 'Operación': 'nav.sectionOperations',
-  'Empresa': 'nav.sectionCompany',
+  'Herramientas': 'nav.sectionTools', 'Empresa': 'nav.sectionCompany',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonatingProp }) => {
@@ -509,6 +535,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     return toExpand;
   });
   const [isDesktop, setIsDesktop] = useState(false);
+
+  // Badge de progreso de onboarding ("X/N") para el item "Primeros pasos".
+  // La página /getting-started persiste el conteo real en localStorage; aquí lo
+  // leemos y escuchamos sus eventos. Si el onboarding ya está completo, sin badge.
+  const [onboardingBadge, setOnboardingBadge] = useState<string | null>(null);
+  useEffect(() => {
+    const readProgress = () => {
+      try {
+        const raw = localStorage.getItem('onboarding-progress');
+        if (!raw) { setOnboardingBadge(null); return; }
+        const { completed, total } = JSON.parse(raw);
+        // Mostrar el badge SOLO cuando faltan pasos (rojo = atención);
+        // al completar (X === N) se oculta.
+        if (typeof completed === 'number' && typeof total === 'number' && total > 0 && completed < total) {
+          setOnboardingBadge(`${completed}/${total}`);
+        } else {
+          setOnboardingBadge(null);
+        }
+      } catch { setOnboardingBadge(null); }
+    };
+    readProgress();
+    window.addEventListener('onboarding-progress', readProgress);
+    window.addEventListener('onboarding-completed', readProgress);
+    window.addEventListener('storage', readProgress);
+    return () => {
+      window.removeEventListener('onboarding-progress', readProgress);
+      window.removeEventListener('onboarding-completed', readProgress);
+      window.removeEventListener('storage', readProgress);
+    };
+  }, []);
 
   // Scroll to active sidebar item on mount
   useEffect(() => {
@@ -668,7 +724,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       !item.href && 'w-full',
       level > 0 && 'ml-6 py-2',
       activeState
-        ? item.href ? 'bg-primary/10 text-primary shadow-sm' : 'bg-primary/5 text-primary'
+        ? item.href ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-primary/10 text-primary'
         : 'text-muted-foreground hover:bg-accent hover:text-foreground',
       !showLabels && 'justify-center px-2'
     );
@@ -784,22 +840,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                         </div>
                       </div>
                     )}
-                    {renderSidebarItem(item)}
+                    {renderSidebarItem(item.id === 'getting-started' && onboardingBadge ? { ...item, badge: onboardingBadge } : item)}
                   </React.Fragment>
                 );
               })}
             </nav>
-
-          {/* Getting Started Progress (non-SuperAdmin, non-collapsed) */}
-          {!sidebarCollapsed && session?.user && session.user.role !== 'SUPER_ADMIN' && !isImpersonating && (
-            <Link
-              href="/getting-started"
-              className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors group"
-            >
-              <SbForms size={16} className="text-muted-foreground group-hover:text-green-600 flex-shrink-0" />
-              <span className="truncate">{t('nav.gettingStarted')}</span>
-            </Link>
-          )}
 
           {/* Bottom User Section */}
           {!sidebarCollapsed && session?.user && (
@@ -843,7 +888,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                       alt={companySettings?.companyName || 'Mi Empresa'}
                       className="object-contain rounded-lg bg-card"
                     />
-                    <AvatarFallback className="rounded-lg bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-sm font-semibold">
+                    <AvatarFallback className="rounded-lg bg-primary/15 text-primary dark:text-primary text-sm font-semibold">
                       {getInitials(companySettings?.companyName || 'Mi Empresa')}
                     </AvatarFallback>
                   </Avatar>

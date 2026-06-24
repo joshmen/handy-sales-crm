@@ -18,7 +18,7 @@ namespace HandySuites.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
@@ -1529,6 +1529,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
+                    b.Property<int>("GeocercaRadioMetros")
+                        .HasColumnType("integer")
+                        .HasColumnName("geocerca_radio_metros");
+
                     b.Property<TimeOnly>("HoraFinJornada")
                         .HasColumnType("time without time zone")
                         .HasColumnName("hora_fin_jornada");
@@ -2380,6 +2384,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("cantidad_bonificada");
 
+                    b.Property<decimal>("CostoUnitario")
+                        .HasColumnType("numeric")
+                        .HasColumnName("costo_unitario");
+
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
@@ -2911,6 +2919,108 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasIndex("TenantId", "UsuarioId", "FechaGasto");
 
                     b.ToTable("Gastos", (string)null);
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.GastoContable", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<decimal>("Base")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("base");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("categoria");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("creado_por");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("fecha");
+
+                    b.Property<decimal>("Iva")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("iva");
+
+                    b.Property<string>("ProveedorNombre")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("proveedor_nombre");
+
+                    b.Property<string>("ProveedorRfc")
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)")
+                        .HasColumnName("proveedor_rfc");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("total");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Categoria");
+
+                    b.HasIndex("TenantId", "Fecha");
+
+                    b.HasIndex("TenantId", "ProveedorRfc");
+
+                    b.ToTable("GastosContables", (string)null);
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.GlobalSettings", b =>
@@ -4057,10 +4167,18 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("clave_sat");
 
+                    b.Property<string>("ClaveUnidad")
+                        .HasColumnType("text")
+                        .HasColumnName("clave_unidad");
+
                     b.Property<string>("CodigoBarra")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("codigo_barra");
+
+                    b.Property<decimal>("Costo")
+                        .HasColumnType("numeric")
+                        .HasColumnName("costo");
 
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp without time zone")
@@ -4082,6 +4200,12 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<string>("EliminadoPor")
                         .HasColumnType("text")
                         .HasColumnName("eliminado_por");
+
+                    b.Property<bool>("Facturable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("facturable");
 
                     b.Property<int>("FamiliaId")
                         .HasColumnType("integer")
@@ -4872,6 +4996,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
+                    b.Property<int?>("VehiculoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("vehiculo_id");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint")
@@ -4884,6 +5012,8 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UsuarioId");
+
+                    b.HasIndex("VehiculoId");
 
                     b.HasIndex("ZonaId");
 
@@ -5857,6 +5987,93 @@ namespace HandySuites.Infrastructure.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.Vehiculo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<int>("CapacidadUnidades")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacidad_unidades");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("creado_por");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer")
+                        .HasColumnName("estado");
+
+                    b.Property<int?>("Kilometraje")
+                        .HasColumnType("integer")
+                        .HasColumnName("kilometraje");
+
+                    b.Property<string>("Placa")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("placa");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo");
+
+                    b.Property<int?>("VendedorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("vendedor_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VendedorId");
+
+                    b.HasIndex("TenantId", "Estado");
+
+                    b.HasIndex("TenantId", "Placa")
+                        .IsUnique()
+                        .HasFilter("\"eliminado_en\" IS NULL");
+
+                    b.HasIndex("TenantId", "VendedorId");
+
+                    b.ToTable("Vehiculos");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.Zona", b =>
                 {
                     b.Property<int>("Id")
@@ -5886,6 +6103,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("centro_longitud");
 
+                    b.Property<string>("Color")
+                        .HasColumnType("text")
+                        .HasColumnName("color");
+
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
@@ -5906,6 +6127,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
+                    b.Property<int>("FrecuenciaVisita")
+                        .HasColumnType("integer")
+                        .HasColumnName("frecuencia_visita");
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("text")
@@ -5919,6 +6144,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
+                    b.Property<int?>("VendedorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("vendedor_id");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint")
@@ -5926,7 +6155,9 @@ namespace HandySuites.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("VendedorId");
+
+                    b.HasIndex("TenantId", "VendedorId");
 
                     b.ToTable("Zonas");
                 });
@@ -6542,6 +6773,17 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.GastoContable", b =>
+                {
+                    b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.ImpersonationSession", b =>
                 {
                     b.HasOne("HandySuites.Domain.Entities.Usuario", "SuperAdmin")
@@ -6977,6 +7219,11 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("HandySuites.Domain.Entities.Vehiculo", "Vehiculo")
+                        .WithMany()
+                        .HasForeignKey("VehiculoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HandySuites.Domain.Entities.Zona", "Zona")
                         .WithMany()
                         .HasForeignKey("ZonaId")
@@ -6985,6 +7232,8 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Navigation("Tenant");
 
                     b.Navigation("Usuario");
+
+                    b.Navigation("Vehiculo");
 
                     b.Navigation("Zona");
                 });
@@ -7157,6 +7406,24 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.Vehiculo", b =>
+                {
+                    b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HandySuites.Domain.Entities.Usuario", "Vendedor")
+                        .WithMany()
+                        .HasForeignKey("VendedorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("Vendedor");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.Zona", b =>
                 {
                     b.HasOne("HandySuites.Domain.Entities.Tenant", "Tenant")
@@ -7165,7 +7432,14 @@ namespace HandySuites.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HandySuites.Domain.Entities.Usuario", "Vendedor")
+                        .WithMany()
+                        .HasForeignKey("VendedorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Tenant");
+
+                    b.Navigation("Vendedor");
                 });
 
             modelBuilder.Entity("UnidadMedida", b =>

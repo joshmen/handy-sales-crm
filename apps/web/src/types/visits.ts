@@ -44,6 +44,8 @@ export interface ClienteVisitaDto {
   fotos?: string[];
   duracionMinutos?: number;
   creadoEn: string;
+  /** True si la visita fue planeada (tiene fechaProgramada); false si fue ad-hoc/en campo. */
+  esProgramada?: boolean;
 }
 
 // DTO para listados (versión simplificada)
@@ -52,6 +54,8 @@ export interface ClienteVisitaListaDto {
   clienteId: number;
   clienteNombre: string;
   clienteDireccion?: string;
+  /** Vendedor que registró la visita en campo. */
+  vendedorNombre?: string;
   fechaProgramada?: string;
   fechaHoraInicio?: string;
   fechaHoraFin?: string;
@@ -61,6 +65,26 @@ export interface ClienteVisitaListaDto {
   resultadoNombre: string;
   duracionMinutos?: number;
   tienePedido: boolean;
+  /** Distancia (m) del check-in a la ubicación del cliente; null si no hubo GPS. */
+  distanciaCliente?: number;
+  /** Total del pedido vinculado; null si la visita no generó pedido. */
+  monto?: number;
+  /** True si la visita fue planeada (tiene fechaProgramada); false si fue ad-hoc/en campo. */
+  esProgramada?: boolean;
+}
+
+// Cobertura por frecuencia — espejo de CoberturaClienteDto (GET /visitas/cobertura)
+export interface CoberturaCliente {
+  clienteId: number;
+  clienteNombre: string;
+  zonaNombre?: string;
+  vendedorNombre?: string;
+  ultimaVisita?: string;
+  frecuencia: number;
+  frecuenciaNombre: string;
+  diasDesdeUltima?: number | null;
+  diasVencido: number;
+  estado: 'Vencida' | 'PorVisitar';
 }
 
 // DTO para crear visita

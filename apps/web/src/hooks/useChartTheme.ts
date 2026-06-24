@@ -29,16 +29,21 @@ export function useChartTheme() {
       cardBg: isDark ? '#172025' : '#ffffff',
       // Donut "empty" segment
       emptySegment: isDark ? '#2b3539' : '#e5e7eb',
-      // Chart series (same in both modes — sufficient contrast)
+      // Chart series — paleta de marca del Claude Design (SLDS azul-led).
+      // Serie única/primaria = azul de marca; categórica = donut del diseño
+      // (#1F8A5B verde, azul, ámbar, slate) extendida con índigo/violeta.
       series: {
-        blue: '#3b82f6',
-        green: '#10b981',
-        red: '#ef4444',
-        amber: '#f59e0b',
-        purple: '#8b5cf6',
-        cyan: '#06b6d4',
-        brandGreen: '#16a34a',
+        blue: '#0176D3', // primary brand (var --primary)
+        green: '#1F8A5B', // verde del diseño (donut/positivo)
+        red: '#EF4444',
+        amber: '#D97706', // ámbar del diseño
+        purple: '#5867E8', // índigo (catálogo)
+        cyan: '#06A59A', // teal (operación)
+        brandGreen: '#1F8A5B',
+        slate: '#94A3B8', // 4ª categoría neutra del donut
       },
+      // Orden categórico para charts multi-serie (donut/zona), igual al mock.
+      categorical: ['#1F8A5B', '#0176D3', '#D97706', '#94A3B8', '#5867E8', '#9050E9'],
     };
   }, [theme]);
 }

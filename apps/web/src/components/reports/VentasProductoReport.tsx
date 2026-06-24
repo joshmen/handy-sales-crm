@@ -33,7 +33,7 @@ export function VentasProductoReport() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>('masVendidos');
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: 'ventas-producto', title: tr('reportTitle'), dateRange: dates,
     kpis: data ? [
       { label: tr('totalSales'), value: fmt(data.totalGeneral) },
@@ -86,7 +86,7 @@ export function VentasProductoReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.masVendidos.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.masVendidos.length > 0 ? exportPDF : undefined} onExportExcel={data && data.masVendidos.length > 0 ? exportExcel : undefined} exporting={exporting} />
 
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">

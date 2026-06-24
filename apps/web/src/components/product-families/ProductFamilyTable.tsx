@@ -142,7 +142,7 @@ export const ProductFamilyTable: React.FC<ProductFamilyTableProps> = ({
                     size="sm"
                     onClick={() => onToggleStatus(productFamily)}
                     className={`h-8 w-8 p-0 ${
-                      productFamily.isEnabled ? 'text-yellow-600' : 'text-green-600'
+                      productFamily.isEnabled ? 'text-yellow-600' : 'text-primary'
                     }`}
                   >
                     {productFamily.isEnabled ? <PowerOff size={16} /> : <Power size={16} />}

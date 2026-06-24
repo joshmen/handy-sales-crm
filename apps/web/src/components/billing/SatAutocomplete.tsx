@@ -121,7 +121,7 @@ export function AutocompleteDropdown<T extends { clave: string }>({
         onChange={e => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full px-2 py-1 text-sm border border-green-500 rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+        className="w-full px-2 py-1 text-sm border border-primary rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       {showDropdown && dropdownPos && createPortal(
         <div
@@ -150,7 +150,7 @@ export function AutocompleteDropdown<T extends { clave: string }>({
                 i === activeIndex ? 'bg-muted' : 'hover:bg-muted/50'
               }`}
             >
-              <span className="font-mono font-medium text-green-600 dark:text-green-400">{item.clave}</span>
+              <span className="font-mono font-medium text-primary">{item.clave}</span>
               <span className="ml-2 text-muted-foreground">{renderLabel(item)}</span>
             </button>
           ))}
@@ -247,7 +247,7 @@ export function BatchAutocomplete<T extends { clave: string }>({
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
+          className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>
       {showDropdown && (
@@ -277,7 +277,7 @@ export function BatchAutocomplete<T extends { clave: string }>({
                 setOpen(false);
               }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors border-b border-border last:border-0 ${
-                i === activeIndex ? 'bg-muted' : value === item.clave ? 'bg-green-50 dark:bg-green-900/20' : 'hover:bg-muted/50'
+                i === activeIndex ? 'bg-muted' : value === item.clave ? 'bg-primary/10 dark:bg-primary/20' : 'hover:bg-muted/50'
               }`}
             >
               {renderLabel(item)}

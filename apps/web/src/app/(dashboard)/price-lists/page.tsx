@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -22,21 +23,18 @@ import {
   Loader2,
   Check,
   ListOrdered,
-  RefreshCw,
   Download,
   Upload,
   ChevronDown,
   Trash2,
   X,
+  DollarSign,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
-import { CurrencyDollar } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
-import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
-import { useFormatters } from '@/hooks/useFormatters';
 
 interface ListaPrecio {
   id: number;
@@ -45,6 +43,8 @@ interface ListaPrecio {
   activo: boolean;
   creadoEn: string;
   actualizadoEn?: string;
+  cantidadClientes: number;
+  cantidadProductos: number;
 }
 
 const formSchema = z.object({
@@ -57,9 +57,9 @@ export default function PriceListsPage() {
   const t = useTranslations('priceLists');
   const tv = useTranslations('formValidation');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
-  const { formatDate: _fmtDate } = useFormatters();
   // State
   const [priceLists, setPriceLists] = useState<ListaPrecio[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -274,24 +274,13 @@ export default function PriceListsPage() {
     }
   };
 
-  // Format date
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return t('today');
-    if (days === 1) return t('dayAgo');
-    if (days < 7) return t('daysAgo', { count: days });
-    if (days < 30) return t('weeksAgo', { count: Math.floor(days / 7) });
-    return _fmtDate(date);
-  };
-
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionCatalog') },
+        { label: tn('pricing') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -301,9 +290,9 @@ export default function PriceListsPage() {
           <div className="relative" data-tour="pricelists-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -329,39 +318,32 @@ export default function PriceListsPage() {
               </>
             )}
           </div>
-          <button
-            data-tour="pricelists-new-btn"
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+          <Button variant="wbPrimary" data-tour="pricelists-new-btn" onClick={handleOpenCreate}>
+            <Plus className="w-4 h-4 mr-2" />
             <span>{t('newList')}</span>
-          </button>
+          </Button>
         </>
       }
     >
-      <div className="space-y-4">
-        {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <SearchBar
-            value={searchTerm}
-            onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder={t('searchPlaceholder')}
-            dataTour="pricelists-search"
-          />
-          <button
-            onClick={loadPriceLists}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{tc('refresh')}</span>
-          </button>
-
-          <div data-tour="pricelists-toggle-inactive" className="ml-auto">
-            <InactiveToggle
-              value={showInactive}
-              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-              label={t('showInactive')}
+      <div className="space-y-5">
+        {/* Filtros segmentados (estado) + búsqueda */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 lg:flex-1">
+            <TabBar
+              items={[
+                { id: 'active', label: t('statusFilter.active') },
+                { id: 'all', label: t('statusFilter.all') },
+              ]}
+              value={showInactive ? 'all' : 'active'}
+              onChange={(id) => { setShowInactive(id === 'all'); setCurrentPage(1); }}
+            />
+          </div>
+          <div className="w-full sm:w-72 lg:w-80" data-tour="pricelists-search">
+            <SearchBar
+              value={searchTerm}
+              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full"
             />
           </div>
         </div>
@@ -381,10 +363,9 @@ export default function PriceListsPage() {
         <div data-tour="pricelists-table">
           <DataGrid<ListaPrecio>
             columns={[
-              { key: 'id', label: tc('id'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
-              { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.nombre}</span> },
-              { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-muted-foreground truncate">{item.descripcion || '-'}</span> },
-              { key: 'actualizadoEn', label: t('modification'), width: 140, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-muted-foreground">{formatDate(item.actualizadoEn || item.creadoEn)}</span> },
+              { key: 'nombre', label: t('columns.list'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="text-[13px] font-bold text-foreground">{item.nombre}</span> },
+              { key: 'cantidadClientes', label: t('columns.clients'), width: 110, align: 'center', sortable: true, cellRenderer: (item) => <span className="text-[13px] text-foreground tabular-nums">{item.cantidadClientes ?? 0}</span> },
+              { key: 'cantidadProductos', label: t('columns.products'), width: 110, align: 'center', sortable: true, cellRenderer: (item) => <span className="text-[13px] text-foreground tabular-nums">{item.cantidadProductos ?? 0}</span> },
               { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                 <div onClick={e => e.stopPropagation()}>
                   <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} />
@@ -418,7 +399,7 @@ export default function PriceListsPage() {
             sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
             loading={loading}
             loadingMessage={t('loadingLists')}
-            emptyIcon={<CurrencyDollar className="w-16 h-16 text-green-300" weight="duotone" />}
+            emptyIcon={<DollarSign className="w-16 h-16 text-primary/30" />}
             emptyTitle={
               hasSearchNoMatch
                 ? t('noMatchingLists')
@@ -441,7 +422,7 @@ export default function PriceListsPage() {
                     setShowInactive(true);
                     setCurrentPage(1);
                   }}
-                  className="px-4 py-2 rounded-md bg-success text-success-foreground hover:opacity-90 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium"
                 >
                   {t('showAllLists')}
                 </button>
@@ -450,11 +431,11 @@ export default function PriceListsPage() {
             mobileCardRenderer={(list) => (
               <div className={!list.activo ? 'opacity-60' : ''}>
                 <div className="flex items-center gap-3 mb-2">
-                  <button onClick={() => batch.handleToggleSelect(list.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(list.id) ? 'bg-green-600 border-green-600 text-white' : 'border-border-default hover:border-green-500'}`}>
+                  <button onClick={() => batch.handleToggleSelect(list.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(list.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-border-default hover:border-primary'}`}>
                     {batch.selectedIds.has(list.id) && <Check className="w-3 h-3" />}
                   </button>
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <CurrencyDollar className="w-5 h-5 text-green-600" weight="duotone" />
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{list.nombre}</div>
@@ -463,7 +444,8 @@ export default function PriceListsPage() {
                   <ActiveToggle isActive={list.activo} onToggle={() => handleToggleActive(list)} disabled={loading} isLoading={togglingId === list.id} />
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-1 text-foreground/70 text-xs font-medium">{formatDate(list.actualizadoEn || list.creadoEn)}</span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-1 text-foreground/70 text-xs font-medium">{t('columns.clients')}: {list.cantidadClientes ?? 0}</span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-1 text-foreground/70 text-xs font-medium">{t('columns.products')}: {list.cantidadProductos ?? 0}</span>
                 </div>
                 <div className="flex justify-end gap-1">
                   <button onClick={() => handleOpenEdit(list)} disabled={loading} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 transition-colors">
@@ -509,10 +491,10 @@ export default function PriceListsPage() {
         onSave={handleSaveList}
         footer={
           <div data-tour="pricelists-drawer-actions" className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingList}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={savingList}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSaveList} disabled={savingList} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSaveList} disabled={savingList} className="flex items-center gap-2">
               {savingList && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingList ? tc('saveChanges') : t('newList')}
             </Button>

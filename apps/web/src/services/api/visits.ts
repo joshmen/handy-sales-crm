@@ -9,6 +9,7 @@ import {
   CheckOutDto,
   VisitaResumenDiarioDto,
   VisitasPaginatedResult,
+  CoberturaCliente,
 } from '@/types/visits';
 
 class VisitService {
@@ -38,6 +39,16 @@ class VisitService {
       const response = await api.get<VisitasPaginatedResult>(
         `${this.basePath}?${queryParams.toString()}`
       );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  // Cobertura por frecuencia: clientes cuya última visita superó la frecuencia pactada
+  async getCobertura(): Promise<CoberturaCliente[]> {
+    try {
+      const response = await api.get<CoberturaCliente[]>(`${this.basePath}/cobertura`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

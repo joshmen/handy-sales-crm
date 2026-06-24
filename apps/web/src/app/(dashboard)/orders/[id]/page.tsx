@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, FileText, ShoppingCart } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { getSectionAccent, accentTileBg } from '@/lib/sectionAccent';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { orderService, type OrderDetail, estadoIntToStatus } from '@/services/api/orders';
+import { getInvoicedOrders, type InvoicedOrder } from '@/services/api/billing';
 import { OrderStatus } from '@/types';
 import { toast } from '@/hooks/useToast';
 
@@ -19,7 +21,7 @@ const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
   EN_PREPARACION: { color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { color: 'text-purple-700', bg: 'bg-purple-100' },
   ENVIADA:        { color: 'text-amber-700',  bg: 'bg-amber-100' },
-  ENTREGADA:      { color: 'text-green-700',  bg: 'bg-green-100' },
+  ENTREGADA:      { color: 'text-primary',  bg: 'bg-primary/10' },
   CANCELADA:      { color: 'text-red-700',    bg: 'bg-red-100' },
 };
 
@@ -66,6 +68,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const t = useTranslations('orders.detailPage');
   const tc = useTranslations('common');
+  const tActions = useTranslations('orders.actions');
   const orderId = Number(params.id);
 
   const STATUS_LABELS: Record<string, string> = {
@@ -84,6 +87,15 @@ export default function OrderDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [invoice, setInvoice] = useState<InvoicedOrder | null>(null);
+
+  // Lookup de factura emitida (best-effort) para decidir Facturar vs Ver factura.
+  useEffect(() => {
+    if (!orderId) return;
+    getInvoicedOrders()
+      .then((map) => setInvoice(map[orderId] ?? null))
+      .catch(() => { /* best-effort */ });
+  }, [orderId]);
 
   const loadOrder = useCallback(async () => {
     try {
@@ -156,7 +168,7 @@ export default function OrderDetailPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="text-foreground/70">{t('loadingOrder')}</span>
         </div>
       </div>
@@ -170,7 +182,7 @@ export default function OrderDetailPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">{t('notFound')}</h2>
           <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
-          <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
+          <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90">
             {t('backToOrders')}
           </button>
         </div>
@@ -200,12 +212,17 @@ export default function OrderDetailPage() {
         ]} />
 
         <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold text-foreground">
-              {t('orderTitle', { number: order.numeroPedido })}
-            </h1>
-            <StatusBadge status={estadoNorm} label={STATUS_LABELS[estadoNorm] ?? estadoNorm} />
-            <TipoVentaBadge tipoVenta={order.tipoVenta} label={order.tipoVenta === 1 ? t('tipoVentaDirecta') : t('tipoVentaPreventa')} />
+          <div className="flex items-center gap-3.5">
+            <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center flex-shrink-0" style={{ background: accentTileBg(getSectionAccent('ventas')), color: getSectionAccent('ventas') }}>
+              <ShoppingCart size={22} />
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-[22px] font-bold tracking-tight text-foreground">
+                {t('orderTitle', { number: order.numeroPedido })}
+              </h1>
+              <StatusBadge status={estadoNorm} label={STATUS_LABELS[estadoNorm] ?? estadoNorm} />
+              <TipoVentaBadge tipoVenta={order.tipoVenta} label={order.tipoVenta === 1 ? t('tipoVentaDirecta') : t('tipoVentaPreventa')} />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -213,7 +230,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('confirmar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'confirmar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('confirmBtn')}
@@ -223,7 +240,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('en-ruta')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'en-ruta' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('enRouteBtn')}
@@ -233,7 +250,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('entregar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'entregar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('deliverBtn')}
@@ -243,11 +260,30 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('cancelar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('cancelBtn')}
               </button>
+            )}
+            {isDelivered && (
+              invoice ? (
+                <button
+                  onClick={() => router.push(`/billing/invoices/${invoice.facturaId}`)}
+                  className="flex items-center gap-2 border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10 text-[13px] font-semibold px-4 py-2 rounded-full transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  {tActions('viewInvoice')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push(`/billing/pre-factura?pedidoId=${order.id}`)}
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-semibold px-4 py-2 rounded-full transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  {tActions('invoice')}
+                </button>
+              )
             )}
           </div>
         </div>
@@ -266,11 +302,11 @@ export default function OrderDetailPage() {
                 return (
                   <React.Fragment key={step}>
                     {i > 0 && (
-                      <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-surface-3'}`} />
+                      <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-primary' : 'bg-surface-3'}`} />
                     )}
                     <div className="flex flex-col items-center gap-1">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
-                        ${isCurrent ? 'bg-success text-success-foreground ring-2 ring-green-200' : isCompleted ? 'bg-success text-success-foreground' : 'bg-surface-3 text-muted-foreground'}`}>
+                        ${isCurrent ? 'bg-success text-success-foreground ring-2 ring-primary/30' : isCompleted ? 'bg-success text-success-foreground' : 'bg-surface-3 text-muted-foreground'}`}>
                         {isCompleted ? '\u2713' : i + 1}
                       </div>
                       <span className={`text-xs ${isCurrent ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>

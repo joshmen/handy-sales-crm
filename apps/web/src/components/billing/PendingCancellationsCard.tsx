@@ -113,7 +113,7 @@ export function PendingCancellationsCard() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
+                    className="border-primary/40 text-primary hover:bg-primary/5 dark:border-primary/50 dark:text-primary"
                     onClick={() => setConfirm({ uuid, aceptar: true })}
                     data-testid={`accept-cancel-${uuid}`}
                   >

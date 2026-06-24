@@ -83,7 +83,7 @@ export function AlertBanners({
       {subscription.subscriptionStatus === "Trial" && subscription.daysRemaining !== null && (
         <div className={`flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/40 dark:bg-muted/30 border-l-4 ${
           subscription.trialCardCollected
-            ? "border-l-green-500"
+            ? "border-l-primary"
             : subscription.daysRemaining > 7
               ? "border-l-blue-500"
               : subscription.daysRemaining > 3
@@ -92,7 +92,7 @@ export function AlertBanners({
         }`}>
           <div className="p-1.5 rounded-lg bg-muted dark:bg-muted/60">
             {subscription.trialCardCollected ? (
-              <CreditCard className="h-5 w-5 text-green-600" />
+              <CreditCard className="h-5 w-5 text-primary" />
             ) : (
               <Sparkles className="h-5 w-5 text-blue-600" />
             )}
@@ -100,7 +100,7 @@ export function AlertBanners({
           <div className="flex-1">
             <p className={`font-semibold ${
               subscription.trialCardCollected
-                ? "text-green-800 dark:text-green-300"
+                ? "text-primary"
                 : subscription.daysRemaining > 7
                   ? "text-blue-800 dark:text-blue-300"
                   : subscription.daysRemaining > 3
@@ -127,7 +127,7 @@ export function AlertBanners({
               size="sm"
               onClick={onTrialCheckout}
               disabled={trialCheckoutLoading}
-              className="bg-success hover:bg-success/90 text-white flex-shrink-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0"
             >
               {trialCheckoutLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

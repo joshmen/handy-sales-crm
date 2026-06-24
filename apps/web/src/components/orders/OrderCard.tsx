@@ -26,7 +26,7 @@ const statusStyles = {
   draft: { color: "bg-surface-3 text-foreground", dotColor: "bg-muted-foreground" },
   confirmed: { color: "bg-blue-100 text-blue-800", dotColor: "bg-blue-400" },
   en_route: { color: "bg-cyan-100 text-cyan-800", dotColor: "bg-cyan-400" },
-  delivered: { color: "bg-green-100 text-green-800", dotColor: "bg-green-400" },
+  delivered: { color: "bg-primary/10 text-primary", dotColor: "bg-primary" },
   cancelled: { color: "bg-red-100 text-red-800", dotColor: "bg-red-400" },
 };
 

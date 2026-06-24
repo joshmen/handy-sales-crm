@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Figtree } from "next/font/google";
 import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -8,8 +8,9 @@ import { CookieConsentBanner } from "@/components/ui/CookieConsentBanner";
 import { ErrorListener } from "@/components/ErrorListener";
 import "@/lib/suppress-hydration-warnings";
 
-const inter = Inter({
+const figtree = Figtree({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
   preload: true,
 });
@@ -71,7 +72,7 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#16a34a" />
+        <meta name="theme-color" content="#0176D3" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -107,14 +108,14 @@ export default async function RootLayout({
                 } catch (e) {
                   // Si localStorage no está disponible, usar valores por defecto
                   document.documentElement.classList.add('light');
-                  document.documentElement.style.setProperty('--company-primary-color', '#16a34a');
+                  document.documentElement.style.setProperty('--company-primary-color', '#0176D3');
                 }
               })();
             `,
           }}
         />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={figtree.className} suppressHydrationWarning>
         {/* Skip-link: texto fijo en español (UI principal en es-MX). Antes
             había un inline script que mutaba el textContent leyendo
             localStorage tras el render del server, causando React error #418

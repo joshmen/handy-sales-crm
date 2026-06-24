@@ -38,8 +38,8 @@ export function InventoryMetrics({ metrics, loading = false }: InventoryMetricsP
       title: t('totalValue'),
       value: `$${metrics.totalValue.toLocaleString()}`,
       icon: DollarSign,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
     },
   ];
 

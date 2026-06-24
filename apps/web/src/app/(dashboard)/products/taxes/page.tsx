@@ -40,6 +40,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function TaxRatesPage() {
   const t = useTranslations('taxes');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const showApiError = useApiErrorToast();
 
   const [tasas, setTasas] = useState<TasaImpuesto[]>([]);
@@ -172,9 +173,10 @@ export default function TaxRatesPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
-        { label: t('breadcrumbProducts'), href: '/products' },
+        { label: tn('sectionCatalog'), href: '/products' },
         { label: t('breadcrumbTaxes') },
       ]}
       title={t('title')}
@@ -182,7 +184,7 @@ export default function TaxRatesPage() {
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{t('newRate')}</span>
@@ -198,9 +200,9 @@ export default function TaxRatesPage() {
           />
           <button
             onClick={loadTasas}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
           <div className="ml-auto">
@@ -301,10 +303,10 @@ export default function TaxRatesPage() {
         onSave={handleSubmit}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               {tc('cancel')}
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+            <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editing ? tc('saveChanges') : t('create')}
             </Button>
@@ -341,7 +343,7 @@ export default function TaxRatesPage() {
               type="checkbox"
               checked={esDefaultValue ?? false}
               onChange={(e) => setValue('esDefault', e.target.checked, { shouldDirty: true })}
-              className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500 mt-0.5"
+              className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary mt-0.5"
             />
             <div>
               <p className="text-sm font-medium text-foreground">{t('isDefault')}</p>

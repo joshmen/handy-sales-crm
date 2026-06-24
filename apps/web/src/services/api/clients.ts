@@ -12,8 +12,12 @@ interface ClienteListaDto {
   idZona?: number;
   zonaNombre?: string;
   categoriaNombre?: string;
+  vendedorId?: number;
+  vendedorNombre?: string;
   activo: boolean;
   esProspecto: boolean;
+  saldo: number;
+  pedidos30d: number;
 }
 
 interface ClienteDto {
@@ -135,9 +139,13 @@ function mapClienteToClient(dto: ClienteListaDto): Client {
     zoneId: dto.idZona,
     zoneName: dto.zonaNombre,
     categoryName: dto.categoriaNombre,
+    vendedorId: dto.vendedorId,
+    vendedorName: dto.vendedorNombre,
     type: ClientType.MINORISTA,
     isActive: dto.activo,
     esProspecto: dto.esProspecto,
+    saldo: dto.saldo,
+    pedidos30d: dto.pedidos30d,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

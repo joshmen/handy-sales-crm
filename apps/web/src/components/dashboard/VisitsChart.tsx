@@ -42,8 +42,8 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
   // Colores por tipo de visita (mismos que la version recharts)
   const colors = useMemo(
     () => ({
-      completadas: "#10b981", // Verde
-      pendientes: "#f59e0b", // Amarillo/Naranja
+      completadas: "#1F8A5B", // Verde
+      pendientes: "#D97706", // Amarillo/Naranja
       canceladas: "#ef4444", // Rojo
     }),
     []

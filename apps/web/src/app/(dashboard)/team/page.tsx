@@ -27,6 +27,7 @@ function TeamPageContent() {
 
   return (
     <PageHeader
+      section="equipo"
       breadcrumbs={[
         { label: tCommon('home'), href: '/dashboard' },
         { label: t('title') },
@@ -38,7 +39,7 @@ function TeamPageContent() {
           {exportFn && (
             <button
               onClick={exportFn}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tCommon('export')}</span>
@@ -47,7 +48,7 @@ function TeamPageContent() {
           {createFn && (
             <button
               onClick={createFn}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-full hover:bg-success/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('members.newUser')}</span>
@@ -64,7 +65,7 @@ function TeamPageContent() {
           onClick={() => setActiveTab('miembros')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'miembros'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -76,7 +77,7 @@ function TeamPageContent() {
           onClick={() => setActiveTab('dispositivos')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'dispositivos'
-              ? 'border-green-600 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -92,7 +93,7 @@ function TeamPageContent() {
 
 export default function TeamPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" /><SrLoadingText /></div>}>
       <TeamPageContent />
     </Suspense>
   );

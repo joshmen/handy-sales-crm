@@ -43,3 +43,15 @@ public class InventarioPaginatedResult
     public int TamanoPagina { get; set; }
     public int TotalPaginas => (int)Math.Ceiling((double)TotalItems / TamanoPagina);
 }
+
+/// <summary>
+/// Resumen agregado del inventario del tenant (KPIs de la página de Inventario).
+/// Catalog-wide, no por página. ValorInventario = Σ(cantidadActual × precioBase). 2026-06-18.
+/// </summary>
+public class InventarioResumenDto
+{
+    public decimal ValorInventario { get; set; }
+    public int SkusActivos { get; set; }
+    public int StockBajo { get; set; }
+    public int Agotados { get; set; }
+}

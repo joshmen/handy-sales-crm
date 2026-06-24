@@ -1,22 +1,25 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { SearchBar } from '@/components/common/SearchBar';
+import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { Drawer } from '@/components/ui/Drawer';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { VisitSummary } from '@/components/visits/VisitSummary';
+import { SoftBadge, SoftBadgeTone } from '@/components/ui/SoftBadge';
+import { NameAvatar } from '@/components/ui/NameAvatar';
+import { MetricCard } from '@/components/dashboard/MetricCard';
 import { VisitForm } from '@/components/visits';
-import { VisitCalendarView } from '@/components/visits/VisitCalendarView';
+import { DateFilter } from '@/components/ui/DateFilter';
 import { GoogleMapWrapper, MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { Client } from '@/types';
 import {
   ClienteVisitaListaDto,
   ClienteVisitaDto,
   ClienteVisitaCreateDto,
+  CoberturaCliente,
   ResultadoVisita,
   TipoVisita,
 } from '@/types/visits';
@@ -24,78 +27,32 @@ import { visitService } from '@/services/api/visits';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
 import {
-  List, CalendarDays, Plus, RefreshCw, Eye, CheckCircle,
-  ShoppingCart, User, MapPin, Calendar, Clock, X,
+  Plus, Eye, ShoppingCart, User, MapPin, Calendar, Clock, CalendarDays,
+  CheckCircle, Percent, Timer, XCircle, AlertTriangle, Download, CalendarPlus,
 } from 'lucide-react';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, subWeeks, subMonths } from 'date-fns';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
+import { downloadBlob } from '@/lib/download';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useCompany } from '@/contexts/CompanyContext';
 
-type ViewMode = 'list' | 'calendar';
+type Segment = 'today' | 'coverage';
 
 const PAGE_SIZE = 10;
+const DASH = '-';
 
 // API returns enums as integers (0-5) — colors are static, labels resolved via i18n inside component
 const resultadoKeys = ['pending', 'withSale', 'noSale', 'notFound', 'rescheduled', 'cancelled'];
-const resultadoColorArr = [
-  { color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
-  { color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
-  { color: 'bg-surface-3 text-foreground', dotColor: 'bg-muted-foreground' },
-  { color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
-  { color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
-  { color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
-];
+const resultadoToneArr: SoftBadgeTone[] = ['warning', 'success', 'default', 'danger', 'info', 'danger'];
 const resultadoStringMap: Record<string, number> = {
   Pendiente: 0, Venta: 1, SinVenta: 2, NoEncontrado: 3, Reprogramada: 4, Cancelada: 5,
 };
 
 const tipoKeys = ['routine', 'collection', 'delivery', 'prospecting', 'followUp', 'other'];
-const tipoColorArr = ['text-blue-600', 'text-green-600', 'text-purple-600', 'text-orange-600', 'text-cyan-600', 'text-foreground/70'];
 const tipoStringMap: Record<string, number> = {
   Rutina: 0, Cobranza: 1, Entrega: 2, Prospeccion: 3, Seguimiento: 4, Otro: 5,
-};
-
-function getDateRange(preset: string): { desde?: string; hasta?: string } {
-  const now = new Date();
-  switch (preset) {
-    case 'today': {
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const end = new Date(start);
-      end.setDate(end.getDate() + 1);
-      return { desde: start.toISOString(), hasta: end.toISOString() };
-    }
-    case 'yesterday': {
-      const start = subDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), 1);
-      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      return { desde: start.toISOString(), hasta: end.toISOString() };
-    }
-    case 'this_week': {
-      const start = startOfWeek(now, { weekStartsOn: 1 });
-      const end = endOfWeek(now, { weekStartsOn: 1 });
-      return { desde: start.toISOString(), hasta: end.toISOString() };
-    }
-    case 'last_week': {
-      const lastWeek = subWeeks(now, 1);
-      const start = startOfWeek(lastWeek, { weekStartsOn: 1 });
-      const end = endOfWeek(lastWeek, { weekStartsOn: 1 });
-      return { desde: start.toISOString(), hasta: end.toISOString() };
-    }
-    case 'this_month':
-      return { desde: startOfMonth(now).toISOString(), hasta: endOfMonth(now).toISOString() };
-    case 'last_month': {
-      const lastMonth = subMonths(now, 1);
-      return { desde: startOfMonth(lastMonth).toISOString(), hasta: endOfMonth(lastMonth).toISOString() };
-    }
-    default:
-      return {};
-  }
-}
-
-const formatDate = (dateStr?: string) => {
-  if (!dateStr) return '-';
-  return libFmtDate(dateStr, null, { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 const formatTime = (dateStr?: string) => {
@@ -107,58 +64,57 @@ function VisitsPageContent() {
   const t = useTranslations('visits');
   const tc = useTranslations('common');
   const { tApi } = useBackendTranslation();
+  const { tenantToday, formatCurrency } = useFormatters();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const viewParam = searchParams.get('view') as ViewMode | null;
-  const currentView: ViewMode = viewParam === 'calendar' ? 'calendar' : 'list';
+  const { isAdminValue, hasRole, isVendedorValue } = usePermissions();
+  const { settings } = useCompany();
+
+  const geofenceRadius = settings?.geocercaRadioMetros ?? 80;
+  const canSchedule = !!isAdminValue || hasRole('SUPERVISOR');
 
   // Translated helpers for enums
   const getResultado = (val: ResultadoVisita | number) => {
     const idx = typeof val === 'number' ? val : (resultadoStringMap[val] ?? 0);
-    const style = resultadoColorArr[idx] ?? resultadoColorArr[0];
-    return { label: t(`results.${resultadoKeys[idx] ?? 'pending'}`), ...style };
+    return { label: t(`results.${resultadoKeys[idx] ?? 'pending'}`), tone: resultadoToneArr[idx] ?? 'default' };
   };
   const getTipo = (val: TipoVisita | number) => {
     const idx = typeof val === 'number' ? val : (tipoStringMap[val] ?? 5);
-    return { label: t(`types.${tipoKeys[idx] ?? 'other'}`), color: tipoColorArr[idx] ?? tipoColorArr[5] };
+    return t(`types.${tipoKeys[idx] ?? 'other'}`);
   };
 
-  // Data state
-  const [visits, setVisits] = useState<ClienteVisitaListaDto[]>([]);
-  const [calendarVisits, setCalendarVisits] = useState<ClienteVisitaListaDto[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [calendarLoading, setCalendarLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Segment
+  const [segment, setSegment] = useState<Segment>('today');
 
-  // Pagination
+  // Registro de hoy — datos
+  const [visits, setVisits] = useState<ClienteVisitaListaDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const [diaFiltro, setDiaFiltro] = useState<string>(() => tenantToday());
 
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [tipoFilter, setTipoFilter] = useState('');
-  const [resultadoFilter, setResultadoFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-
-  // Summary
+  // Resumen diario (KPIs vendedor)
   const [summary, setSummary] = useState({ totalVisitas: 0, visitasCompletadas: 0, visitasConVenta: 0, visitasPendientes: 0, visitasCanceladas: 0, tasaConversion: 0 });
 
-  // Modals/Drawers
+  // Cobertura — datos
+  const [cobertura, setCobertura] = useState<CoberturaCliente[]>([]);
+  const [coberturaLoading, setCoberturaLoading] = useState(false);
+  const [coberturaLoaded, setCoberturaLoaded] = useState(false);
+  const [coberturaPage, setCoberturaPage] = useState(1);
+
+  // Clientes para el form de agendar
+  const [clients, setClients] = useState<Client[]>([]);
+
+  // Drawers
   const [showVisitForm, setShowVisitForm] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
   const [visitDetail, setVisitDetail] = useState<ClienteVisitaDto | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [prefilledDate, setPrefilledDate] = useState<string | undefined>();
   const [prefilledClienteId, setPrefilledClienteId] = useState<number | undefined>();
 
-  // Honra ?clienteId=X (deep link desde email "Programar visita" o
-  // desde /clients/reorder-opportunities) — abre el drawer con cliente
-  // pre-seleccionado. Como fetchClients() solo trae los primeros 100,
-  // el cliente del deep-link puede no estar en la lista; en ese caso
-  // lo fetcheamos por id y lo agregamos antes de abrir el drawer.
-  // useRef previene re-fetch si el query param no cambió.
+  // Honra ?clienteId=X (deep link desde email "Programar visita" o reorder-opportunities):
+  // abre el drawer de agendar con cliente pre-seleccionado.
   const handledClienteIdRef = useRef<string | null>(null);
   useEffect(() => {
     const clienteIdParam = searchParams.get('clienteId');
@@ -169,22 +125,16 @@ function VisitsPageContent() {
     if (handledClienteIdRef.current === clienteIdParam) return;
     const parsed = parseInt(clienteIdParam, 10);
     if (isNaN(parsed) || parsed <= 0) return;
-
-    // Esperar a que el primer fetch de clients termine (clients.length > 0)
-    // para evitar competir con el cleanup del fetchClients inicial.
     if (clients.length === 0) return;
 
     handledClienteIdRef.current = clienteIdParam;
 
-    // Si el cliente ya está en la lista cargada, abrir el drawer directo.
     const exists = clients.some(c => parseInt(c.id) === parsed);
     if (exists) {
       setPrefilledClienteId(parsed);
       setShowVisitForm(true);
       return;
     }
-
-    // No está en los primeros 100 — fetchear por id e inyectar en clients[].
     (async () => {
       try {
         const cliente = await clientService.getClientById(parsed);
@@ -192,29 +142,21 @@ function VisitsPageContent() {
         setPrefilledClienteId(parsed);
         setShowVisitForm(true);
       } catch {
-        // Cliente no existe o error — abrir drawer vacío, el user selecciona manualmente
         setShowVisitForm(true);
       }
     })();
   }, [searchParams, clients]);
 
-  const setView = (view: ViewMode) => {
-    router.push(`/visits${view === 'calendar' ? '?view=calendar' : ''}`, { scroll: false });
-  };
-
-  // Fetch paginated visits
+  // Fetch del día (registro de hoy)
   const fetchVisits = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const dateRange = getDateRange(dateFilter);
       const response = await visitService.getVisits({
         pagina: currentPage,
         tamanoPagina: PAGE_SIZE,
-        tipoVisita: tipoFilter ? (Number(tipoFilter) as TipoVisita) : undefined,
-        resultado: resultadoFilter ? (Number(resultadoFilter) as ResultadoVisita) : undefined,
-        fechaDesde: dateRange.desde,
-        fechaHasta: dateRange.hasta,
+        fechaDesde: diaFiltro ? `${diaFiltro}T00:00:00` : undefined,
+        fechaHasta: diaFiltro ? `${diaFiltro}T23:59:59` : undefined,
       });
       setVisits(response.items);
       setTotalItems(response.totalItems);
@@ -225,36 +167,17 @@ function VisitsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, tipoFilter, resultadoFilter, dateFilter]);
+  }, [currentPage, diaFiltro]);
 
-  // Fetch summary
   const fetchSummary = useCallback(async () => {
     try {
       const data = await visitService.getMyDailySummary();
       setSummary(data);
     } catch {
-      // Summary is non-critical, don't show error
+      // non-critical
     }
   }, []);
 
-  // Fetch calendar visits
-  const fetchCalendarVisits = useCallback(async (start: Date, end: Date) => {
-    try {
-      setCalendarLoading(true);
-      const response = await visitService.getVisits({
-        fechaDesde: start.toISOString(),
-        fechaHasta: end.toISOString(),
-        tamanoPagina: 500,
-      });
-      setCalendarVisits(response.items);
-    } catch (err) {
-      console.error('Error al cargar visitas del calendario:', err);
-    } finally {
-      setCalendarLoading(false);
-    }
-  }, []);
-
-  // Fetch clients for form
   const fetchClients = useCallback(async () => {
     try {
       const res = await clientService.getClients({ limit: 100 });
@@ -264,147 +187,239 @@ function VisitsPageContent() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchVisits();
-  }, [fetchVisits]);
-
-  useEffect(() => {
-    fetchSummary();
-    fetchClients();
-  }, [fetchSummary, fetchClients]);
-
-  useEffect(() => {
-    if (currentView === 'calendar' && calendarVisits.length === 0) {
-      const now = new Date();
-      fetchCalendarVisits(startOfMonth(now), endOfMonth(now));
+  const fetchCobertura = useCallback(async () => {
+    try {
+      setCoberturaLoading(true);
+      const data = await visitService.getCobertura();
+      setCobertura(data);
+      setCoberturaLoaded(true);
+    } catch (err) {
+      console.error('Error al cargar cobertura:', err);
+    } finally {
+      setCoberturaLoading(false);
     }
-  }, [currentView, calendarVisits.length, fetchCalendarVisits]);
+  }, []);
 
-  // Reset page on filter change
+  useEffect(() => { fetchVisits(); }, [fetchVisits]);
+  useEffect(() => { fetchSummary(); fetchClients(); }, [fetchSummary, fetchClients]);
+
+  // Carga la cobertura la primera vez que se abre esa pestaña.
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, tipoFilter, resultadoFilter, dateFilter]);
+    if (segment === 'coverage' && !coberturaLoaded) fetchCobertura();
+  }, [segment, coberturaLoaded, fetchCobertura]);
 
-  // Sort state
-  const [sortKey, setSortKey] = useState('fechaProgramada');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  useEffect(() => { setCurrentPage(1); }, [diaFiltro]);
+  useEffect(() => { setCoberturaPage(1); }, [cobertura]);
 
-  const handleSort = useCallback((key: string) => {
-    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
-    setSortKey(key);
-  }, [sortKey]);
+  // KPIs "Registro de hoy" derivados del resumen diario.
+  const todayMetrics = useMemo(() => {
+    const total = summary.totalVisitas;
+    const done = summary.visitasCompletadas;
+    const effectiveness = done > 0 ? Math.round((summary.visitasConVenta / done) * 100) : 0;
+    const durations = visits.map(v => v.duracionMinutos).filter((d): d is number => typeof d === 'number' && d > 0);
+    const avg = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+    const noSale = visits.filter(v => v.resultado === ResultadoVisita.SinVenta).length;
+    return { total, done, effectiveness, avg, noSale };
+  }, [summary, visits]);
 
-  // Client-side search filter (search is not sent to API)
-  const filteredVisits = searchTerm
-    ? visits.filter(v =>
-        v.clienteNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (v.clienteDireccion && v.clienteDireccion.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    : visits;
+  // KPIs "Cobertura" derivados del dataset de cobertura.
+  const coverageMetrics = useMemo(() => {
+    const totalClientes = cobertura.length;
+    const dentroFrecuencia = cobertura.filter(c => c.estado === 'PorVisitar').length;
+    const monthCoverage = totalClientes > 0 ? Math.round((dentroFrecuencia / totalClientes) * 100) : 0;
+    // diasDesdeUltima null = nunca visitado → cuenta como atrasado.
+    const noVisit7 = cobertura.filter(c => c.diasDesdeUltima == null || c.diasDesdeUltima >= 7).length;
+    const noVisit14 = cobertura.filter(c => c.diasDesdeUltima == null || c.diasDesdeUltima >= 14).length;
+    const atRisk = cobertura.filter(c => c.estado === 'Vencida').length;
+    return { monthCoverage, noVisit7, noVisit14, atRisk };
+  }, [cobertura]);
 
-  const sortedVisits = useMemo(() => {
-    const sorted = [...filteredVisits];
-    sorted.sort((a, b) => {
-      let cmp = 0;
-      switch (sortKey) {
-        case 'clienteNombre': cmp = a.clienteNombre.localeCompare(b.clienteNombre); break;
-        case 'fechaProgramada': cmp = (a.fechaProgramada || '').localeCompare(b.fechaProgramada || ''); break;
-        default: cmp = 0;
-      }
-      return sortDir === 'desc' ? -cmp : cmp;
-    });
-    return sorted;
-  }, [filteredVisits, sortKey, sortDir]);
+  // Geocerca dentro/fuera por distancia vs radio del tenant.
+  const renderGeofence = (distancia?: number) => {
+    if (distancia == null) return <span className="text-muted-foreground">{DASH}</span>;
+    const d = Math.round(distancia);
+    const inside = d <= geofenceRadius;
+    return <SoftBadge tone={inside ? 'success' : 'danger'}>{t(inside ? 'geofence.inside' : 'geofence.outside', { d })}</SoftBadge>;
+  };
 
-  // Column definitions
-  const visitColumns = useMemo<DataGridColumn<ClienteVisitaListaDto>[]>(() => [
+  // Columnas Registro de hoy
+  const visitColumns = useMemo<DataGridColumn<ClienteVisitaListaDto>[]>(() => {
+    const cols: DataGridColumn<ClienteVisitaListaDto>[] = [
+      {
+        key: 'clienteNombre',
+        label: t('columns.client'),
+        width: 'flex',
+        cellRenderer: (v) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <NameAvatar name={v.clienteNombre} size={32} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-foreground truncate">{v.clienteNombre}</p>
+              {v.clienteDireccion && <p className="text-[11px] text-muted-foreground truncate">{v.clienteDireccion}</p>}
+            </div>
+          </div>
+        ),
+      },
+    ];
+
+    // El vendedor no necesita ver la columna "Vendedor" (todas son suyas).
+    if (!isVendedorValue) {
+      cols.push({
+        key: 'vendedorNombre',
+        label: t('vendorColumn'),
+        width: 150,
+        cellRenderer: (v) => <span className="text-[12px] text-foreground/70 truncate">{v.vendedorNombre || t('noVendor')}</span>,
+      });
+    }
+
+    cols.push(
+      {
+        key: 'hora',
+        label: t('timeColumn'),
+        width: 80,
+        cellRenderer: (v) => <span className="text-[12px] text-foreground/70">{v.fechaHoraInicio ? formatTime(v.fechaHoraInicio) : DASH}</span>,
+      },
+      {
+        key: 'duracion',
+        label: t('columns.duration'),
+        width: 80,
+        align: 'center',
+        cellRenderer: (v) => <span className="text-[13px] text-foreground/70">{v.duracionMinutos ? `${v.duracionMinutos} min` : DASH}</span>,
+      },
+      {
+        key: 'tipoPlaneacion',
+        label: t('columns.type'),
+        width: 110,
+        cellRenderer: (v) => {
+          const planeada = v.esProgramada ?? !!v.fechaProgramada;
+          return <SoftBadge tone={planeada ? 'info' : 'warning'}>{t(planeada ? 'planeada' : 'adHoc')}</SoftBadge>;
+        },
+      },
+      {
+        key: 'resultado',
+        label: t('columns.result'),
+        width: 130,
+        cellRenderer: (v) => { const r = getResultado(v.resultado); return <SoftBadge tone={r.tone}>{r.label}</SoftBadge>; },
+      },
+      {
+        key: 'monto',
+        label: t('amountColumn'),
+        width: 110,
+        align: 'right',
+        cellRenderer: (v) => v.monto != null
+          ? <span className="text-[13px] font-medium text-foreground">{formatCurrency(v.monto)}</span>
+          : <span className="text-[13px] text-muted-foreground">{DASH}</span>,
+      },
+      {
+        key: 'geocerca',
+        label: t('geofenceColumn'),
+        width: 130,
+        cellRenderer: (v) => renderGeofence(v.distanciaCliente),
+      },
+    );
+
+    return cols;
+  }, [isVendedorValue, geofenceRadius]);
+
+  // Cobertura paginada en cliente.
+  const coberturaPaged = useMemo(() => {
+    const start = (coberturaPage - 1) * PAGE_SIZE;
+    return cobertura.slice(start, start + PAGE_SIZE);
+  }, [cobertura, coberturaPage]);
+  const coberturaTotalPages = Math.max(1, Math.ceil(cobertura.length / PAGE_SIZE));
+
+  const renderLastVisit = (c: CoberturaCliente) => {
+    if (c.diasDesdeUltima == null) {
+      return <span className="text-[12px] font-medium text-red-600">{t('lastVisitNever')}</span>;
+    }
+    const cls = c.estado === 'Vencida' ? 'text-red-600' : 'text-foreground/70';
+    return <span className={`text-[12px] ${cls}`}>{t('lastVisitRelative', { days: c.diasDesdeUltima })}</span>;
+  };
+
+  const coberturaColumns = useMemo<DataGridColumn<CoberturaCliente>[]>(() => [
     {
       key: 'clienteNombre',
       label: t('columns.client'),
-      sortable: true,
       width: 'flex',
-      cellRenderer: (visit) => (
-        <div>
-          <p className="text-[13px] font-medium text-foreground truncate">{visit.clienteNombre}</p>
-          {visit.clienteDireccion && <p className="text-[11px] text-muted-foreground truncate">{visit.clienteDireccion}</p>}
+      cellRenderer: (c) => (
+        <div className="flex items-center gap-2.5 min-w-0">
+          <NameAvatar name={c.clienteNombre} size={32} />
+          <p className="text-[13px] font-medium text-foreground truncate">{c.clienteNombre}</p>
         </div>
       ),
     },
     {
-      key: 'tipoVisita',
-      label: t('columns.type'),
-      width: 100,
-      cellRenderer: (visit) => {
-        const tipo = getTipo(visit.tipoVisita);
-        return <span className={`text-[12px] font-medium ${tipo.color}`}>{tipo.label}</span>;
-      },
+      key: 'zonaNombre',
+      label: t('coverageColumns.zone'),
+      width: 140,
+      cellRenderer: (c) => <span className="text-[12px] text-foreground/70 truncate">{c.zonaNombre || DASH}</span>,
     },
     {
-      key: 'fechaProgramada',
-      label: t('columns.date'),
-      sortable: true,
+      key: 'vendedorNombre',
+      label: t('coverageColumns.vendor'),
+      width: 150,
+      cellRenderer: (c) => <span className="text-[12px] text-foreground/70 truncate">{c.vendedorNombre || t('noVendor')}</span>,
+    },
+    {
+      key: 'frecuencia',
+      label: t('coverageColumns.frequency'),
       width: 110,
-      cellRenderer: (visit) => (
-        <div className="text-[12px] text-foreground/70">
-          {formatDate(visit.fechaProgramada)}
-          {visit.fechaHoraInicio && <span className="block text-[11px] text-muted-foreground">{formatTime(visit.fechaHoraInicio)}</span>}
-        </div>
-      ),
+      cellRenderer: (c) => <SoftBadge tone="info" dot={false}>{tApi(c.frecuenciaNombre) || c.frecuenciaNombre}</SoftBadge>,
     },
     {
-      key: 'resultado',
-      label: t('columns.result'),
+      key: 'ultimaVisita',
+      label: t('coverageColumns.lastVisit'),
       width: 120,
-      cellRenderer: (visit) => {
-        const res = getResultado(visit.resultado);
-        return (
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${res.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${res.dotColor}`} />
-            {res.label}
-          </span>
-        );
-      },
+      cellRenderer: (c) => renderLastVisit(c),
     },
     {
-      key: 'duracion',
-      label: t('columns.duration'),
-      width: 70,
-      align: 'center',
-      cellRenderer: (visit) => <span className="text-[13px] text-foreground/70">{visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}</span>,
-    },
-    {
-      key: 'pedido',
-      label: '',
-      width: 30,
-      cellRenderer: (visit) => visit.tienePedido ? <ShoppingCart className="w-4 h-4 text-green-500" /> : null,
+      key: 'estado',
+      label: t('coverageColumns.status'),
+      width: 120,
+      cellRenderer: (c) => (
+        <SoftBadge tone={c.estado === 'Vencida' ? 'danger' : 'warning'}>
+          {t(c.estado === 'Vencida' ? 'coverageStatus.overdue' : 'coverageStatus.toVisit')}
+        </SoftBadge>
+      ),
     },
     {
       key: 'actions',
       label: tc('actions'),
-      width: 130,
+      width: 120,
       align: 'right',
-      cellRenderer: (visit) => {
-        const isCompleted = !!visit.fechaHoraFin;
-        return (
-          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => handleViewDetails(visit.id)} className="p-1.5 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title={t('view')}>
-              <Eye className="w-4 h-4" />
-            </button>
-            {isCompleted && (
-              <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600">
-                <CheckCircle className="w-3.5 h-3.5" />
-              </span>
-            )}
-          </div>
-        );
-      },
+      cellRenderer: (c) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => handleScheduleFor(c.clienteId, c.clienteNombre)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <CalendarPlus className="w-3.5 h-3.5" />
+            {t('schedule')}
+          </button>
+        </div>
+      ),
     },
   ], []);
 
   // Handlers
-  const handleCreateVisit = () => {
-    setPrefilledDate(undefined);
+  const handleOpenSchedule = () => {
     setPrefilledClienteId(undefined);
+    setShowVisitForm(true);
+  };
+
+  const handleScheduleFor = async (clienteId: number, clienteNombre: string) => {
+    // Asegura que el cliente esté en la lista del SearchableSelect del form.
+    if (!clients.some(c => parseInt(c.id) === clienteId)) {
+      try {
+        const cliente = await clientService.getClientById(clienteId);
+        setClients(prev => prev.some(c => c.id === cliente.id) ? prev : [...prev, cliente]);
+      } catch {
+        // Inyecta un mínimo viable si el fetch falla, para que el nombre aparezca.
+        setClients(prev => prev.some(c => parseInt(c.id) === clienteId)
+          ? prev
+          : [...prev, { id: String(clienteId), name: clienteNombre } as Client]);
+      }
+    }
+    setPrefilledClienteId(clienteId);
     setShowVisitForm(true);
   };
 
@@ -423,264 +438,233 @@ function VisitsPageContent() {
   };
 
   const handleSaveVisit = async (data: ClienteVisitaCreateDto) => {
+    // Modelo: la web solo AGENDA visitas futuras. Si el form no trae fecha,
+    // por defecto se agenda para mañana (nunca una visita inmediata/ad-hoc).
+    let fechaProgramada = data.fechaProgramada;
+    if (!fechaProgramada) {
+      const manana = new Date();
+      manana.setDate(manana.getDate() + 1);
+      manana.setHours(9, 0, 0, 0);
+      fechaProgramada = manana.toISOString();
+    }
     try {
-      await visitService.createVisit(data);
+      await visitService.createVisit({ ...data, fechaProgramada });
       toast.success(t('visitCreated'));
       await fetchVisits();
       await fetchSummary();
-      if (currentView === 'calendar') {
-        const now = new Date();
-        await fetchCalendarVisits(startOfMonth(now), endOfMonth(now));
-      }
+      if (coberturaLoaded) await fetchCobertura();
       setShowVisitForm(false);
+      setPrefilledClienteId(undefined);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
       toast.error(tApi(e?.response?.data?.message) || tApi(e?.message) || t('errorCreating'));
     }
   };
 
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setTipoFilter('');
-    setResultadoFilter('');
-    setDateFilter('');
+  const handleExport = () => {
+    const rows = segment === 'today'
+      ? visits.map(v => ({
+          cliente: v.clienteNombre,
+          vendedor: v.vendedorNombre || '',
+          hora: v.fechaHoraInicio ? formatTime(v.fechaHoraInicio) : '',
+          duracion: v.duracionMinutos ?? '',
+          resultado: getResultado(v.resultado).label,
+          monto: v.monto ?? '',
+          distancia: v.distanciaCliente ?? '',
+        }))
+      : cobertura.map(c => ({
+          cliente: c.clienteNombre,
+          zona: c.zonaNombre || '',
+          vendedor: c.vendedorNombre || '',
+          frecuencia: c.frecuenciaNombre,
+          diasDesdeUltima: c.diasDesdeUltima ?? '',
+          estado: c.estado,
+        }));
+    if (rows.length === 0) { toast.error(t('errorLoading')); return; }
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String((r as Record<string, unknown>)[h] ?? '')}"`).join(','))].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `visitas-${segment}-${tenantToday()}.csv`);
+    toast.success(tc('csvDownloaded'));
   };
 
-  const hasFilters = searchTerm || tipoFilter || resultadoFilter || dateFilter;
-
-  // Calendar handlers
-  const handleDateRangeChange = useCallback((start: Date, end: Date) => {
-    fetchCalendarVisits(start, end);
-  }, [fetchCalendarVisits]);
-
-  const handleCalendarEventClick = useCallback((visitId: number) => {
-    handleViewDetails(visitId);
-  }, []);
-
-  const handleCalendarSlotClick = useCallback((date: Date) => {
-    setPrefilledDate(date.toISOString().split('T')[0]);
-    setShowVisitForm(true);
-  }, []);
-
-  // View toggle + create button for actions
   const headerActions = (
     <>
-      <div className="inline-flex bg-surface-3 rounded-lg p-1">
-        <button
-          onClick={() => setView('list')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'list' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
-          }`}
-        >
-          <List className="w-4 h-4" />
-          {t('views.list')}
-        </button>
-        <button
-          onClick={() => setView('calendar')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'calendar' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
-          }`}
-        >
-          <CalendarDays className="w-4 h-4" />
-          {t('views.calendar')}
-        </button>
-      </div>
+      <DateFilter
+        value={diaFiltro}
+        onChange={(iso) => { setDiaFiltro(iso); setCurrentPage(1); }}
+        retentionDays={180}
+        note={t('retentionNote')}
+      />
+      {canSchedule && (
+        <Button variant="wbPrimary" onClick={handleOpenSchedule}>
+          <Plus className="w-4 h-4 mr-2" />
+          {t('scheduleVisit')}
+        </Button>
+      )}
       <button
-        onClick={handleCreateVisit}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+        onClick={handleExport}
+        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
       >
-        <Plus className="w-4 h-4" />
-        <span className="hidden sm:inline">{t('newVisit')}</span>
-        <span className="sm:hidden">{t('newVisitShort')}</span>
+        <Download className="w-4 h-4 text-muted-foreground" />
+        <span className="hidden sm:inline">{t('export')}</span>
       </button>
     </>
   );
 
   return (
     <PageHeader
+      section="operacion"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: t('breadcrumbOperation') },
         { label: t('title') },
       ]}
       title={t('title')}
-      subtitle={t('subtitle')}
+      subtitle={t('subtitleToday', { count: summary.totalVisitas })}
       actions={headerActions}
     >
       <div className="space-y-4">
-        {/* Summary KPIs */}
-        <VisitSummary
-          totalVisits={summary.totalVisitas}
-          completedVisits={summary.visitasCompletadas}
-          visitsWithSale={summary.visitasConVenta}
-          pendingVisits={summary.visitasPendientes}
-          cancelledVisits={summary.visitasCanceladas}
-          conversionRate={summary.tasaConversion}
+        {/* Segment tabs (TabBar subrayado, teal operación) */}
+        <TabBar
+          items={[
+            { id: 'today', label: t('segments.today') },
+            { id: 'coverage', label: t('segments.coverage') },
+          ]}
+          value={segment}
+          onChange={(id) => setSegment(id as Segment)}
         />
 
-        {/* Filters */}
-        {currentView === 'list' && (
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <SearchBar
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder={t('searchPlaceholder')}
-            />
-            <div className="w-[150px]">
-              <SearchableSelect
-                options={[
-                  { value: '', label: t('filters.allTypes') },
-                  { value: TipoVisita.Rutina, label: t('types.routine') },
-                  { value: TipoVisita.Cobranza, label: t('types.collection') },
-                  { value: TipoVisita.Entrega, label: t('types.delivery') },
-                  { value: TipoVisita.Prospeccion, label: t('types.prospecting') },
-                  { value: TipoVisita.Seguimiento, label: t('types.followUp') },
-                  { value: TipoVisita.Otro, label: t('types.other') },
-                ]}
-                value={tipoFilter || null}
-                onChange={(val) => setTipoFilter(val ? String(val) : '')}
-                placeholder={t('columns.type')}
-              />
-            </div>
-            <div className="w-[170px]">
-              <SearchableSelect
-                options={[
-                  { value: '', label: t('filters.allResults') },
-                  { value: ResultadoVisita.Pendiente, label: t('results.pending') },
-                  { value: ResultadoVisita.Venta, label: t('results.withSale') },
-                  { value: ResultadoVisita.SinVenta, label: t('results.noSale') },
-                  { value: ResultadoVisita.NoEncontrado, label: t('results.notFound') },
-                  { value: ResultadoVisita.Reprogramada, label: t('results.rescheduled') },
-                  { value: ResultadoVisita.Cancelada, label: t('results.cancelled') },
-                ]}
-                value={resultadoFilter || null}
-                onChange={(val) => setResultadoFilter(val ? String(val) : '')}
-                placeholder={t('columns.result')}
-              />
-            </div>
-            <div className="w-[160px]">
-              <SearchableSelect
-                options={[
-                  { value: '', label: t('filters.allDates') },
-                  { value: 'today', label: t('filters.today') },
-                  { value: 'yesterday', label: t('filters.yesterday') },
-                  { value: 'this_week', label: t('filters.thisWeek') },
-                  { value: 'last_week', label: t('filters.lastWeek') },
-                  { value: 'this_month', label: t('filters.thisMonth') },
-                  { value: 'last_month', label: t('filters.lastMonth') },
-                ]}
-                value={dateFilter || null}
-                onChange={(val) => setDateFilter(val ? String(val) : '')}
-                placeholder={t('columns.date')}
-              />
-            </div>
-            <button
-              onClick={() => fetchVisits()}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
-            {hasFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-foreground/80 border border-border-subtle rounded hover:bg-surface-1"
-              >
-                <X className="w-3.5 h-3.5" />
-                {t('clearFilters')}
-              </button>
-            )}
-          </div>
-        )}
-
-        <ErrorBanner error={error} onRetry={fetchVisits} />
-
-        {/* List View */}
-        {currentView === 'list' && (
+        {/* ─────────── Registro de hoy ─────────── */}
+        {segment === 'today' && (
           <>
-            {/* Visits DataGrid */}
+            <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-[13px] leading-relaxed text-foreground/80">
+                <span className="font-semibold text-foreground">{t('todayBanner.title')}</span>{' '}
+                {t('todayBanner.before')}
+                <span className="font-semibold text-foreground">{t('todayBanner.bold')}</span>
+                {t('todayBanner.after')}
+                <span className="font-semibold text-foreground">{t('todayBanner.tab')}</span>
+                {t('todayBanner.end')}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard title={t('todayMetrics.visitsToday')} value={`${todayMetrics.done} / ${todayMetrics.total}`} icon={CheckCircle} color="blue" />
+              <MetricCard title={t('todayMetrics.effectiveness')} value={`${todayMetrics.effectiveness}%`} icon={Percent} color="green" />
+              <MetricCard title={t('todayMetrics.avgDuration')} value={`${todayMetrics.avg} min`} icon={Timer} color="purple" />
+              <MetricCard title={t('todayMetrics.noSale')} value={todayMetrics.noSale} icon={XCircle} color="orange" />
+            </div>
+
+            <ErrorBanner error={error} onRetry={fetchVisits} />
+
             <DataGrid<ClienteVisitaListaDto>
               columns={visitColumns}
-              data={sortedVisits}
+              data={visits}
               keyExtractor={(v) => v.id}
               loading={loading}
               loadingMessage={t('loadingVisits')}
+              onRowClick={(v) => handleViewDetails(v.id)}
               emptyIcon={<MapPin className="w-12 h-12 text-muted-foreground/60" />}
               emptyTitle={t('emptyTitle')}
               emptyMessage={t('emptyDefault')}
-              sort={{
-                key: sortKey,
-                direction: sortDir,
-                onSort: handleSort,
-              }}
-              pagination={{
-                currentPage,
-                totalPages,
-                totalItems,
-                pageSize: PAGE_SIZE,
-                onPageChange: setCurrentPage,
-              }}
-              mobileCardRenderer={(visit) => {
-                const res = getResultado(visit.resultado);
-                const tipo = getTipo(visit.tipoVisita);
+              pagination={{ currentPage, totalPages, totalItems, pageSize: PAGE_SIZE, onPageChange: setCurrentPage }}
+              mobileCardRenderer={(v) => {
+                const r = getResultado(v.resultado);
                 return (
-                  <>
+                  <div onClick={() => handleViewDetails(v.id)}>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${res.color}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${res.dotColor}`} />
-                          {res.label}
-                        </span>
-                        <span className={`text-xs font-medium ${tipo.color}`}>{tipo.label}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <NameAvatar name={v.clienteNombre} size={28} />
+                        <span className="text-sm font-medium truncate">{v.clienteNombre}</span>
                       </div>
-                      {visit.tienePedido && <ShoppingCart className="w-4 h-4 text-green-600" />}
+                      <SoftBadge tone={r.tone}>{r.label}</SoftBadge>
                     </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-sm font-medium truncate">{visit.clienteNombre}</span>
-                    </div>
-                    {visit.clienteDireccion && (
+                    {!isVendedorValue && v.vendedorNombre && (
                       <div className="flex items-center gap-2 mb-1">
-                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground truncate">{visit.clienteDireccion}</span>
+                        <User className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground truncate">{v.vendedorNombre}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{formatDate(visit.fechaProgramada)}</span>
-                      {visit.duracionMinutos && <span className="text-xs text-muted-foreground ml-auto">{visit.duracionMinutos} min</span>}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
+                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{v.fechaHoraInicio ? formatTime(v.fechaHoraInicio) : DASH}</span>
+                      {v.duracionMinutos ? <span>{v.duracionMinutos} min</span> : null}
+                      {v.monto != null && <span className="font-medium text-foreground ml-auto">{formatCurrency(v.monto)}</span>}
                     </div>
-                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => handleViewDetails(visit.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border-subtle rounded hover:bg-surface-1">
-                        <Eye className="w-3.5 h-3.5" /> Ver
-                      </button>
-                    </div>
-                  </>
+                    <div className="mt-1">{renderGeofence(v.distanciaCliente)}</div>
+                  </div>
                 );
               }}
             />
           </>
         )}
 
-        {/* Calendar View */}
-        {currentView === 'calendar' && (
-          <div data-tour="visits-calendar">
-            <VisitCalendarView
-              visits={calendarVisits}
-              onDateRangeChange={handleDateRangeChange}
-              onEventClick={handleCalendarEventClick}
-              onSlotClick={handleCalendarSlotClick}
-              loading={calendarLoading}
+        {/* ─────────── Cobertura ─────────── */}
+        {segment === 'coverage' && (
+          <>
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
+              <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[13px] leading-relaxed text-foreground/80">
+                <span className="font-semibold text-foreground">{t('coverageBanner.title')}</span>{' '}
+                {t('coverageBanner.body')}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard title={t('coverageMetrics.monthCoverage')} value={`${coverageMetrics.monthCoverage}%`} icon={Percent} color="blue" />
+              <MetricCard title={t('coverageMetrics.noVisit7')} value={coverageMetrics.noVisit7} icon={Clock} color="orange" />
+              <MetricCard title={t('coverageMetrics.noVisit14')} value={coverageMetrics.noVisit14} icon={AlertTriangle} color="orange" />
+              <MetricCard title={t('coverageMetrics.atRisk')} value={coverageMetrics.atRisk} icon={XCircle} color="red" />
+            </div>
+
+            <DataGrid<CoberturaCliente>
+              columns={coberturaColumns}
+              data={coberturaPaged}
+              keyExtractor={(c) => c.clienteId}
+              loading={coberturaLoading}
+              loadingMessage={t('loadingVisits')}
+              emptyIcon={<CheckCircle className="w-12 h-12 text-muted-foreground/60" />}
+              emptyTitle={t('coverageEmptyTitle')}
+              emptyMessage={t('coverageEmptyMessage')}
+              pagination={{ currentPage: coberturaPage, totalPages: coberturaTotalPages, totalItems: cobertura.length, pageSize: PAGE_SIZE, onPageChange: setCoberturaPage }}
+              mobileCardRenderer={(c) => (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <NameAvatar name={c.clienteNombre} size={28} />
+                      <span className="text-sm font-medium truncate">{c.clienteNombre}</span>
+                    </div>
+                    <SoftBadge tone={c.estado === 'Vencida' ? 'danger' : 'warning'}>
+                      {t(c.estado === 'Vencida' ? 'coverageStatus.overdue' : 'coverageStatus.toVisit')}
+                    </SoftBadge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+                    {c.zonaNombre && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{c.zonaNombre}</span>}
+                    {c.vendedorNombre && <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{c.vendedorNombre}</span>}
+                    <span>{renderLastVisit(c)}</span>
+                  </div>
+                  <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleScheduleFor(c.clienteId, c.clienteNombre)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5" />{t('schedule')}
+                    </button>
+                  </div>
+                </div>
+              )}
             />
-          </div>
+          </>
         )}
       </div>
 
-      {/* Drawer: Programar Visita */}
+      {/* Drawer: Agendar visita (futura) */}
       <Drawer
         isOpen={showVisitForm}
         onClose={() => { setShowVisitForm(false); setPrefilledClienteId(undefined); }}
-        title={t('detail.scheduleTitle')}
-        icon={<CalendarDays className="w-5 h-5 text-green-600" />}
+        title={t('scheduleDrawerTitle')}
+        icon={<CalendarDays className="w-5 h-5 text-primary" />}
         width="md"
       >
         <div className="p-6">
@@ -688,13 +672,12 @@ function VisitsPageContent() {
             clients={clients}
             onSave={handleSaveVisit}
             onCancel={() => { setShowVisitForm(false); setPrefilledClienteId(undefined); }}
-            defaultDate={prefilledDate}
             initialClienteId={prefilledClienteId}
           />
         </div>
       </Drawer>
 
-      {/* Drawer: Detalle de Visita */}
+      {/* Drawer: Detalle de visita */}
       <Drawer
         isOpen={showDetailDrawer}
         onClose={() => { setShowDetailDrawer(false); setVisitDetail(null); }}
@@ -704,23 +687,16 @@ function VisitsPageContent() {
       >
         {detailLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         )}
         {!detailLoading && visitDetail && (
           <div className="space-y-5 p-6">
-            {/* Estado */}
             <div className="flex items-center gap-3">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getResultado(visitDetail.resultado).color}`}>
-                <span className={`w-2 h-2 rounded-full ${getResultado(visitDetail.resultado).dotColor}`} />
-                {getResultado(visitDetail.resultado).label}
-              </span>
-              <span className={`text-sm font-medium ${getTipo(visitDetail.tipoVisita).color}`}>
-                {getTipo(visitDetail.tipoVisita).label}
-              </span>
+              <SoftBadge tone={getResultado(visitDetail.resultado).tone}>{getResultado(visitDetail.resultado).label}</SoftBadge>
+              <span className="text-sm font-medium text-foreground/70">{getTipo(visitDetail.tipoVisita)}</span>
             </div>
 
-            {/* Cliente */}
             <div className="bg-surface-1 rounded-lg p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-muted-foreground" />
@@ -738,27 +714,26 @@ function VisitsPageContent() {
               </div>
             </div>
 
-            {/* Fechas */}
             <div className="space-y-2">
               {visitDetail.fechaProgramada && (
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <span className="text-muted-foreground">{t('detail.scheduled')}:</span>
-                  <span>{formatDate(visitDetail.fechaProgramada)}</span>
+                  <span>{libFmtDate(visitDetail.fechaProgramada, null, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                 </div>
               )}
               {visitDetail.fechaHoraInicio && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <span className="text-muted-foreground">{t('detail.start')}:</span>
-                  <span>{formatDate(visitDetail.fechaHoraInicio)} {formatTime(visitDetail.fechaHoraInicio)}</span>
+                  <span>{libFmtDate(visitDetail.fechaHoraInicio, null, { day: '2-digit', month: '2-digit', year: 'numeric' })} {formatTime(visitDetail.fechaHoraInicio)}</span>
                 </div>
               )}
               {visitDetail.fechaHoraFin && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <span className="text-muted-foreground">{t('detail.end')}:</span>
-                  <span>{formatDate(visitDetail.fechaHoraFin)} {formatTime(visitDetail.fechaHoraFin)}</span>
+                  <span>{libFmtDate(visitDetail.fechaHoraFin, null, { day: '2-digit', month: '2-digit', year: 'numeric' })} {formatTime(visitDetail.fechaHoraFin)}</span>
                 </div>
               )}
               {visitDetail.duracionMinutos && (
@@ -770,15 +745,13 @@ function VisitsPageContent() {
               )}
             </div>
 
-            {/* Pedido asociado */}
             {visitDetail.numeroPedido && (
               <div className="flex items-center gap-2 p-3 bg-surface-1 rounded-lg text-sm">
-                <ShoppingCart className="w-4 h-4 text-green-600" />
+                <ShoppingCart className="w-4 h-4 text-primary" />
                 <span className="text-foreground/80 font-medium">{t('detail.linkedOrder', { number: visitDetail.numeroPedido })}</span>
               </div>
             )}
 
-            {/* Notas */}
             {visitDetail.notas && (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">{t('detail.notes')}</p>
@@ -786,37 +759,18 @@ function VisitsPageContent() {
               </div>
             )}
 
-            {/* Ubicación con mapa */}
             {(visitDetail.latitudInicio || visitDetail.latitudFin) && (() => {
               const markers: MapMarker[] = [];
               if (visitDetail.latitudInicio && visitDetail.longitudInicio) {
-                markers.push({
-                  id: 'checkin',
-                  lat: visitDetail.latitudInicio,
-                  lng: visitDetail.longitudInicio,
-                  title: t('detail.checkIn'),
-                  label: t('detail.checkIn'),
-                  color: 'green',
-                });
+                markers.push({ id: 'checkin', lat: visitDetail.latitudInicio, lng: visitDetail.longitudInicio, title: t('detail.checkIn'), label: t('detail.checkIn'), color: 'green' });
               }
               if (visitDetail.latitudFin && visitDetail.longitudFin) {
-                markers.push({
-                  id: 'checkout',
-                  lat: visitDetail.latitudFin,
-                  lng: visitDetail.longitudFin,
-                  title: t('detail.checkOut'),
-                  label: t('detail.checkOut'),
-                  color: 'blue',
-                });
+                markers.push({ id: 'checkout', lat: visitDetail.latitudFin, lng: visitDetail.longitudFin, title: t('detail.checkOut'), label: t('detail.checkOut'), color: 'blue' });
               }
               return (
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">{t('detail.location')}</p>
-                  <GoogleMapWrapper
-                    markers={markers}
-                    zoom={15}
-                    height="200px"
-                  />
+                  <GoogleMapWrapper markers={markers} zoom={15} height="200px" />
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {visitDetail.latitudInicio && (
                       <span className="flex items-center gap-1">
@@ -841,20 +795,17 @@ function VisitsPageContent() {
               );
             })()}
 
-            {/* Check-in/out only available from mobile app */}
             <p className="text-sm text-muted-foreground text-center py-3">{t('detail.mobileOnlyHint')}</p>
           </div>
         )}
       </Drawer>
-
     </PageHeader>
   );
 }
 
 export default function VisitsPage() {
-  const { formatDate } = useFormatters();
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <VisitsPageContent />
     </Suspense>
   );

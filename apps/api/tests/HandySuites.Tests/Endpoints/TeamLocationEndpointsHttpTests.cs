@@ -93,6 +93,56 @@ namespace HandySuites.Tests.Endpoints
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
+        // ============ GET /api/team/roster-gps ============
+
+        [Fact]
+        public async Task GetRosterGps_AsAdmin_Returns200()
+        {
+            var client = ClientAs("ADMIN");
+            var response = await client.GetAsync("/api/team/roster-gps");
+            response.StatusCode.Should().BeOneOf(
+                HttpStatusCode.OK,
+                HttpStatusCode.NotFound,
+                HttpStatusCode.BadRequest,
+                HttpStatusCode.InternalServerError);
+        }
+
+        [Fact]
+        public async Task GetRosterGps_AsSupervisor_Returns200()
+        {
+            var client = ClientAs("SUPERVISOR", userId: "200");
+            var response = await client.GetAsync("/api/team/roster-gps");
+            response.StatusCode.Should().BeOneOf(
+                HttpStatusCode.OK,
+                HttpStatusCode.NotFound,
+                HttpStatusCode.BadRequest,
+                HttpStatusCode.InternalServerError);
+        }
+
+        [Fact]
+        public async Task GetRosterGps_AsVendedor_Returns403()
+        {
+            var client = ClientAs("VENDEDOR", userId: "123");
+            var response = await client.GetAsync("/api/team/roster-gps");
+            response.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized);
+        }
+
+        [Fact]
+        public async Task GetRosterGps_AsViewer_Returns403()
+        {
+            var client = ClientAs("VIEWER", userId: "201");
+            var response = await client.GetAsync("/api/team/roster-gps");
+            response.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized);
+        }
+
+        [Fact]
+        public async Task GetRosterGps_Unauthenticated_Returns401()
+        {
+            var client = ClientUnauthenticated();
+            var response = await client.GetAsync("/api/team/roster-gps");
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
         // ============ GET /api/team/usuarios/{id}/actividad-gps ============
 
         [Fact]

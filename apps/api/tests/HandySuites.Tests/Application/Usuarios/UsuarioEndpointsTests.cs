@@ -63,5 +63,33 @@ namespace HandySuites.Tests.Integration.Usuarios
             resp.StatusCode.Should().Be(HttpStatusCode.OK,
                 because: "PUT con {nombre,rol,activo,telefono} sin email NO debe ser 400");
         }
+
+        /// <summary>
+        /// GET /api/usuarios/{id}/kpis alimenta el drawer de perfil en Equipo.
+        /// Debe responder 200 con la forma de KPIs (ventasMes/pedidosMes/clientesAsignados
+        /// numéricos ≥ 0; rutaNombre/zonaNombre presentes aunque sean null).
+        /// </summary>
+        [Fact]
+        public async Task GetUsuarioKpis_DeberiaRetornarOK_ConFormaDeKpis()
+        {
+            _client.DefaultRequestHeaders.Add("Authorization", "Bearer fake-jwt-token");
+
+            var listResp = await _client.GetAsync("/api/usuarios");
+            listResp.StatusCode.Should().Be(HttpStatusCode.OK);
+            var list = await listResp.Content.ReadFromJsonAsync<JsonElement>();
+            var firstId = list[0].GetProperty("id").GetInt32();
+
+            var resp = await _client.GetAsync($"/api/usuarios/{firstId}/kpis");
+
+            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+            var kpis = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            kpis.GetProperty("ventasMes").GetDecimal().Should().BeGreaterThanOrEqualTo(0);
+            kpis.GetProperty("pedidosMes").GetInt32().Should().BeGreaterThanOrEqualTo(0);
+            kpis.GetProperty("clientesAsignados").GetInt32().Should().BeGreaterThanOrEqualTo(0);
+            // rutaNombre / zonaNombre pueden ser null si el usuario no tiene ruta activa,
+            // pero las propiedades deben existir en la respuesta.
+            kpis.TryGetProperty("rutaNombre", out _).Should().BeTrue();
+            kpis.TryGetProperty("zonaNombre", out _).Should().BeTrue();
+        }
     }
 }

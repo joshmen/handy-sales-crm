@@ -7,10 +7,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { GoogleMapWrapper, type MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { automationService } from '@/services/api/automations';
 import type { AutomationExecution } from '@/types/automations';
-import { useFormatters } from '@/hooks/useFormatters';
 import { toast } from '@/hooks/useToast';
-import { Lightning, Eye, CalendarPlus, MapPin, Storefront, Flame, CurrencyDollar } from '@phosphor-icons/react';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import { RefreshCw, Loader2, Zap, Eye, CalendarPlus, MapPin, Store, Flame, DollarSign } from 'lucide-react';
 
 interface UrgenteCliente {
   clienteId: number;
@@ -36,7 +34,6 @@ export default function OportunidadesReordenPage() {
   const t = useTranslations('automations.oportunidadesReorden');
   const tc = useTranslations('common');
   const router = useRouter();
-  const { formatDate } = useFormatters();
 
   const [exec, setExec] = useState<AutomationExecution | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,21 +92,22 @@ export default function OportunidadesReordenPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('breadcrumbClients'), href: '/clients' },
         { label: t('title') },
       ]}
       title={t('title')}
-      subtitle={exec ? t('lastRun', { when: formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : undefined}
+      subtitle={t('subtitleDesc')}
       actions={
         <button
           onClick={runNow}
           disabled={running}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
           data-testid="run-now-btn"
         >
-          {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lightning className="w-3.5 h-3.5 text-amber-500" weight="fill" />}
+          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
           {running ? tc('processing') : t('runNow')}
         </button>
       }
@@ -122,29 +120,29 @@ export default function OportunidadesReordenPage() {
           </div>
         ) : !detalle ? (
           <div className="rounded-xl border border-border-subtle bg-surface-2 py-16 text-center">
-            <Storefront size={40} className="mx-auto mb-3 text-muted-foreground/40" />
+            <Store size={40} className="mx-auto mb-3 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">{t('noData')}</p>
             <p className="text-xs text-muted-foreground/60 mt-1">{t('noDataHint')}</p>
           </div>
         ) : (
           <>
             {/* KPI cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid="kpis">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="kpis">
               <KpiCard
                 label={t('kpi.evaluados')}
                 value={detalle.clientesEvaluados}
-                icon={<Storefront size={20} className="text-blue-600" weight="duotone" />}
+                icon={<Store size={20} className="text-blue-600" />}
               />
               <KpiCard
                 label={t('kpi.urgentes')}
                 value={urgentes.length}
                 accent={veryUrgent > 0 ? 'text-red-600' : 'text-amber-700'}
-                icon={<Flame size={20} className={veryUrgent > 0 ? 'text-red-500' : 'text-amber-500'} weight="duotone" />}
+                icon={<Flame size={20} className={veryUrgent > 0 ? 'text-red-500' : 'text-amber-500'} />}
               />
               <KpiCard
                 label={t('kpi.valorEstimado')}
                 value={`~${valorEstimado.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 })}`}
-                icon={<CurrencyDollar size={20} className="text-green-600" weight="duotone" />}
+                icon={<DollarSign size={20} className="text-primary" />}
               />
             </div>
 
@@ -153,7 +151,7 @@ export default function OportunidadesReordenPage() {
               <div className="rounded-xl border border-border-subtle bg-surface-2 overflow-hidden" data-testid="map-container">
                 <div className="px-4 py-2.5 border-b border-border-subtle">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <MapPin size={16} className="text-blue-500" weight="duotone" />
+                    <MapPin size={16} className="text-blue-500" />
                     {t('mapTitle', { count: markers.length })}
                   </h3>
                 </div>
@@ -219,16 +217,16 @@ export default function OportunidadesReordenPage() {
                                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-700 border border-blue-200 hover:bg-blue-50 rounded transition-colors"
                                 data-testid={`view-cliente-${u.clienteId}`}
                               >
-                                <Eye size={14} weight="duotone" />
+                                <Eye size={14} />
                                 <span className="hidden sm:inline">{t('action.view')}</span>
                               </button>
                               <button
                                 onClick={() => router.push(`/visits?clienteId=${u.clienteId}`)}
                                 title={t('action.scheduleVisit')}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white bg-primary hover:bg-primary/90 rounded transition-colors"
                                 data-testid={`visit-cliente-${u.clienteId}`}
                               >
-                                <CalendarPlus size={14} weight="duotone" />
+                                <CalendarPlus size={14} />
                                 <span className="hidden sm:inline">{t('action.visit')}</span>
                               </button>
                             </div>
@@ -256,12 +254,12 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, icon, accent = 'text-foreground' }: KpiCardProps) {
   return (
-    <div className="rounded-xl bg-surface-2 border border-border-subtle px-4 py-3">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="flex items-start justify-between">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         {icon}
       </div>
-      <div className={`text-2xl font-bold ${accent}`}>{value}</div>
+      <p className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums mt-3 ${accent}`}>{value}</p>
     </div>
   );
 }

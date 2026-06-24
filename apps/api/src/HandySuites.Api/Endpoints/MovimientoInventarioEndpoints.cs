@@ -34,7 +34,7 @@ public static class MovimientoInventarioEndpoints
             return Results.Ok(items);
         });
 
-        // Crear un nuevo movimiento de inventario (solo ADMIN/SUPER_ADMIN/SUPERVISOR)
+        // Crear un nuevo movimiento de inventario (ADMIN/SUPER_ADMIN/SUPERVISOR/ALMACENISTA)
         group.MapPost("", async (
             MovimientoInventarioCreateDto dto,
             IValidator<MovimientoInventarioCreateDto> validator,
@@ -52,6 +52,6 @@ public static class MovimientoInventarioEndpoints
             }
 
             return Results.Created($"/movimientos-inventario/{movimientoId}", new { id = movimientoId });
-        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR"));
+        }).RequireAuthorization(p => p.RequireRole("ADMIN", "SUPER_ADMIN", "SUPERVISOR", "ALMACENISTA"));
     }
 }

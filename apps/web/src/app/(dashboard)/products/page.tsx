@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { Product } from '@/types';
 import { productService } from '@/services/api/products';
 import { productCategoryService, unitService } from '@/services/api';
@@ -20,7 +22,6 @@ import { useBusinessEvents } from '@/hooks/useBusinessEvents';
 import {
   Plus,
   Pencil,
-  RefreshCw,
   DollarSign,
   Loader2,
   Check,
@@ -28,16 +29,20 @@ import {
   Download,
   ChevronDown,
   Package,
+  Package as PackageIcon,
   Trash2,
   X,
+  AlertTriangle,
 } from 'lucide-react';
+import { BatchAutocomplete } from '@/components/billing/SatAutocomplete';
+import { searchCatalogoProdServ, searchCatalogoUnidad } from '@/services/api/billing';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { Package as PackageIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { SoftBadge } from '@/components/ui/SoftBadge';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -76,9 +81,13 @@ interface ProductoDetalle {
   categoraId: number;
   unidadMedidaId: number;
   precioBase: number;
+  costo?: number;
   activo: boolean;
   precioIncluyeIva?: boolean;
   tasaImpuestoId?: number | null;
+  claveSat?: string | null;
+  claveUnidad?: string | null;
+  facturable?: boolean;
 }
 
 // Zod schema para validación del formulario
@@ -90,8 +99,12 @@ const productSchema = z.object({
   categoraId: z.number().min(1, 'selectCategoryRequired'),
   unidadMedidaId: z.number().min(1, 'selectUnitRequired'),
   precioBase: z.number().min(0.01, 'priceGreaterThanZero'),
+  costo: z.number().min(0),
   precioIncluyeIva: z.boolean(),
   tasaImpuestoId: z.number().nullable(),
+  claveSat: z.string().optional(),
+  claveUnidad: z.string().optional(),
+  facturable: z.boolean(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -99,6 +112,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 export default function ProductsPage() {
   const t = useTranslations('products');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
   const { formatCurrency } = useFormatters();
@@ -111,7 +125,7 @@ export default function ProductsPage() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 12;
+  const pageSize = 10;
   const [savingProduct, setSavingProduct] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -124,9 +138,22 @@ export default function ProductsPage() {
   const [loadingCatalogs, setLoadingCatalogs] = useState(false);
 
   // Filtros
-  const [selectedFamiliaId, setSelectedFamiliaId] = useState<number | null>(null);
   const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  // Tab "Por revisar": filtro client-side de productos sin precio (price <= 0).
+  // No existe endpoint de servidor para esto; se aplica sobre la data ya
+  // cargada (igual que el search local de orders). El backend NO se toca.
+  const [showSinPrecio, setShowSinPrecio] = useState(false);
+  // Tab "Sin clave SAT": filtro server-side (productos facturables sin ClaveProdServ).
+  const [showSinClaveSat, setShowSinClaveSat] = useState(false);
+  // Conteo (a nivel tenant) de productos facturables sin clave SAT — banner + tab + subtítulo.
+  const [sinClaveSatCount, setSinClaveSatCount] = useState(0);
+  // Modal "Asignar clave SAT en lote"
+  const [showClaveSatModal, setShowClaveSatModal] = useState(false);
+  const [modalClaveSat, setModalClaveSat] = useState('');
+  const [modalClaveUnidad, setModalClaveUnidad] = useState('');
+  const [modalAplicarCategoria, setModalAplicarCategoria] = useState(false);
+  const [modalClaveSatLoading, setModalClaveSatLoading] = useState(false);
 
   // React Hook Form
   const { register, handleSubmit: rhfSubmit, reset: resetForm, setValue, watch, formState: { errors, isDirty: isFormDirty } } = useForm<ProductFormData>({
@@ -139,8 +166,12 @@ export default function ProductsPage() {
       categoraId: 0,
       unidadMedidaId: 0,
       precioBase: 0,
+      costo: 0,
       precioIncluyeIva: true, // default: precio = lo que cobras al cliente
       tasaImpuestoId: null,
+      claveSat: '',
+      claveUnidad: '',
+      facturable: true,
     },
   });
 
@@ -190,13 +221,14 @@ export default function ProductsPage() {
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
-        familyId: selectedFamiliaId || undefined,
         categoryId: selectedCategoriaId || undefined,
         isActive: showInactive ? undefined : true,
+        sinClaveSat: showSinClaveSat || undefined,
       });
       setProducts(response.products);
       setTotalProducts(response.total);
       setTotalPages(response.totalPages);
+      setSinClaveSatCount(response.sinClaveSatCount);
     } catch (err) {
       console.error('Error al cargar productos:', err);
       setError(t('errorLoadingRetry'));
@@ -204,7 +236,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, selectedFamiliaId, selectedCategoriaId, showInactive]);
+  }, [currentPage, searchTerm, selectedCategoriaId, showInactive, showSinClaveSat]);
 
   // Load catalogs only once on mount
   useEffect(() => {
@@ -235,8 +267,12 @@ export default function ProductsPage() {
       categoraId: categorias[0]?.id || 0,
       unidadMedidaId: unidades[0]?.id || 0,
       precioBase: 0,
+      costo: 0,
       precioIncluyeIva: true,
       tasaImpuestoId: null,
+      claveSat: '',
+      claveUnidad: '',
+      facturable: true,
     });
     setImageFile(null);
     setImagePreview(null);
@@ -263,8 +299,12 @@ export default function ProductsPage() {
         categoraId: detalle.categoraId,
         unidadMedidaId: detalle.unidadMedidaId,
         precioBase: detalle.precioBase,
+        costo: detalle.costo ?? 0,
         precioIncluyeIva: detalle.precioIncluyeIva ?? true,
         tasaImpuestoId: detalle.tasaImpuestoId ?? null,
+        claveSat: detalle.claveSat ?? '',
+        claveUnidad: detalle.claveUnidad ?? '',
+        facturable: detalle.facturable ?? true,
       });
     } catch (err) {
       console.error('Error al obtener detalles del producto:', err);
@@ -277,8 +317,12 @@ export default function ProductsPage() {
         categoraId: categorias[0]?.id || 0,
         unidadMedidaId: unidades[0]?.id || 0,
         precioBase: product.price,
+        costo: product.cost ?? 0,
         precioIncluyeIva: true,
         tasaImpuestoId: null,
+        claveSat: product.claveSat ?? '',
+        claveUnidad: product.claveUnidad ?? '',
+        facturable: product.facturable ?? true,
       });
     }
 
@@ -372,7 +416,9 @@ export default function ProductsPage() {
   }, [sortKey]);
 
   const sortedProducts = useMemo(() => {
-    const sorted = [...products];
+    // "Por revisar" = sin precio (price <= 0). Filtro local sobre la página cargada.
+    const base = showSinPrecio ? products.filter(p => p.price <= 0) : products;
+    const sorted = [...base];
     sorted.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
@@ -384,76 +430,79 @@ export default function ProductsPage() {
       return sortDir === 'desc' ? -cmp : cmp;
     });
     return sorted;
-  }, [products, sortKey, sortDir]);
+  }, [products, sortKey, sortDir, showSinPrecio]);
 
-  // Column definitions
+  // Column definitions — espejo del ProductsPage del mockup Claude Design:
+  // Producto (thumb 36 + nombre + SKU subtítulo) · Categoría (badge) · Stock (rojo <20)
+  // · Precio (negrita / badge "Sin precio") · acciones (editar + eliminar).
   const productColumns = useMemo<DataGridColumn<Product>[]>(() => [
     {
-      key: 'image',
-      label: t('columns.image'),
-      width: 45,
-      cellRenderer: (product) => product.images[0] ? (
-        <img src={product.images[0]} alt={product.name} className="w-9 h-9 rounded-md object-cover" />
-      ) : (
-        <div className="w-9 h-9 rounded-md bg-green-100 flex items-center justify-center">
-          <PackageIcon className="w-[18px] h-[18px] text-green-600" weight="duotone" />
+      key: 'name',
+      label: t('columns.product'),
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (product) => (
+        <div className="flex items-center gap-2.5 min-w-0">
+          {product.images[0] ? (
+            <img src={product.images[0]} alt={product.name} className="w-9 h-9 rounded-[9px] object-cover flex-shrink-0" />
+          ) : (
+            <div className="w-9 h-9 rounded-[9px] bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <PackageIcon className="w-[18px] h-[18px] text-primary" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-foreground truncate">{product.name}</div>
+            <div className="text-[11px] text-muted-foreground font-mono truncate">{product.code}</div>
+          </div>
         </div>
       ),
     },
     {
-      key: 'code',
-      label: t('columns.code'),
-      width: 95,
-      cellRenderer: (product) => <span className="text-[13px] font-mono text-muted-foreground truncate block">{product.code}</span>,
-    },
-    {
-      key: 'name',
-      label: t('columns.name'),
-      sortable: true,
-      width: 'flex',
-      cellRenderer: (product) => <span className="text-[13px] font-medium text-foreground truncate block">{product.name}</span>,
-    },
-    {
-      key: 'price',
-      label: t('columns.price'),
-      sortable: true,
-      width: 90,
-      cellRenderer: (product) => <span className="text-[13px] font-medium text-foreground">{formatCurrency(product.price)}</span>,
+      key: 'category',
+      label: t('columns.category'),
+      width: 150,
+      hiddenOnMobile: true,
+      cellRenderer: (product) => (
+        <SoftBadge tone={product.price > 0 ? 'default' : 'warning'}>
+          {product.category || t('unassigned')}
+        </SoftBadge>
+      ),
     },
     {
       key: 'stock',
       label: t('columns.stock'),
       sortable: true,
       width: 90,
+      align: 'center',
       cellRenderer: (product) => (
-        <span className={`text-[13px] font-medium ${product.stock <= product.minStock ? 'text-red-600' : 'text-foreground'}`}>
+        <span className={`text-[13px] font-medium tabular-nums ${product.stock < 20 ? 'text-red-600' : 'text-foreground'}`}>
           {product.stock}
         </span>
       ),
     },
     {
-      key: 'family',
-      label: t('columns.family'),
-      width: 100,
+      key: 'claveSat',
+      label: t('columns.satKey'),
+      width: 140,
       hiddenOnMobile: true,
-      cellRenderer: (product) => <span className="text-[13px] text-blue-600 truncate block">{product.family || '-'}</span>,
+      cellRenderer: (product) => !product.facturable ? (
+        <span className="text-xs text-muted-foreground">{t('notInvoiceable')}</span>
+      ) : product.claveSat ? (
+        <span className="font-mono text-xs text-foreground">{product.claveSat}</span>
+      ) : (
+        <SoftBadge tone="warning">{t('satKeyMissing')}</SoftBadge>
+      ),
     },
     {
-      key: 'category',
-      label: t('columns.category'),
-      width: 130,
-      hiddenOnMobile: true,
-      cellRenderer: (product) => <span className="text-[13px] text-muted-foreground truncate block">{product.category || '-'}</span>,
-    },
-    {
-      key: 'isActive',
-      label: t('columns.active'),
-      width: 50,
-      align: 'center',
-      cellRenderer: (product) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? t('deactivateProduct') : t('activateProduct')} />
-        </div>
+      key: 'price',
+      label: t('columns.price'),
+      sortable: true,
+      width: 120,
+      align: 'right',
+      cellRenderer: (product) => product.price > 0 ? (
+        <span className="text-[13px] font-bold text-foreground tabular-nums">{formatCurrency(product.price)}</span>
+      ) : (
+        <SoftBadge tone="warning">{t('noPrice')}</SoftBadge>
       ),
     },
     {
@@ -476,12 +525,12 @@ export default function ProductsPage() {
         </div>
       ),
     },
-  ], [loading, togglingId, deleteConfirmId, formatCurrency]);
+  ], [loading, deleteConfirmId, formatCurrency, t, tc]);
 
   const visibleIds = sortedProducts.map(p => parseInt(p.id));
   const batch = useBatchOperations({
     visibleIds,
-    clearDeps: [currentPage, searchTerm, selectedFamiliaId, selectedCategoriaId, showInactive],
+    clearDeps: [currentPage, searchTerm, selectedCategoriaId, showInactive],
   });
 
   const handleDelete = async (id: string) => {
@@ -523,22 +572,47 @@ export default function ProductsPage() {
       batch.setBatchLoading(false);
     }
   };
+
+  const handleBatchClaveSat = async () => {
+    if (!modalClaveSat.trim()) { toast.error(t('satKeyMissing')); return; }
+    const aplicarCat = modalAplicarCategoria && selectedCategoriaId != null;
+    if (!aplicarCat && batch.selectedCount === 0) return;
+    try {
+      setModalClaveSatLoading(true);
+      const claveUnidad = modalClaveUnidad.trim() || undefined;
+      const req = aplicarCat
+        ? { categoriaId: selectedCategoriaId as number, claveSat: modalClaveSat.trim(), claveUnidad }
+        : { ids: Array.from(batch.selectedIds), claveSat: modalClaveSat.trim(), claveUnidad };
+      const { actualizados } = await productService.batchAsignarClaveSat(req);
+      toast.success(t('batchSatSuccess', { count: actualizados }));
+      setShowClaveSatModal(false);
+      setModalClaveSat(''); setModalClaveUnidad(''); setModalAplicarCategoria(false);
+      batch.completeBatch();
+      await fetchProducts();
+    } catch (err) {
+      showApiError(err, t('errorSaving'));
+    } finally {
+      setModalClaveSatLoading(false);
+    }
+  };
   return (
       <PageHeader
+        section="catalogo"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionCatalog') },
           { label: t('title') },
         ]}
         title={t('title')}
-        subtitle={totalProducts > 0 ? t('subtitle', { count: totalProducts, plural: totalProducts !== 1 ? 's' : '' }) : undefined}
+        subtitle={totalProducts > 0 ? `${t('subtitleSkus', { count: totalProducts, plural: totalProducts !== 1 ? 's' : '' })}${sinClaveSatCount > 0 ? ` · ${t('subtitleNoSat', { count: sinClaveSatCount })}` : ''}` : undefined}
         actions={
           <>
             <div className="relative" data-tour="products-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-500" />
+                <Upload className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="hidden sm:inline">{tc('importExport')}</span>
                 <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
@@ -564,61 +638,57 @@ export default function ProductsPage() {
                 </>
               )}
             </div>
-            <button
-              data-tour="products-new-btn"
-              onClick={handleCreateProduct}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
+            <Button variant="wbPrimary" data-tour="products-new-btn" onClick={handleCreateProduct}>
+              <Plus className="w-4 h-4 mr-2" />
               <span>{t('newProduct')}</span>
-            </button>
+            </Button>
           </>
         }
       >
-        <div className="space-y-4">
-          {/* Filter Row */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder={t('searchPlaceholder')} dataTour="products-search" />
-            <div className="min-w-[180px] max-w-[300px]" data-tour="products-family-filter">
-              <SearchableSelect
-                options={familias.map(f => ({ value: f.id, label: f.nombre, description: f.descripcion }))}
-                value={selectedFamiliaId}
-                onChange={(val) => {
-                  setSelectedFamiliaId(val ? Number(val) : null);
-                  setCurrentPage(1);
-                }}
-                placeholder={t('filters.allFamilies')}
-                searchPlaceholder={t('filters.searchFamily')}
-              />
-            </div>
-            <div className="min-w-[150px] max-w-[250px]" data-tour="products-category-filter">
-              <SearchableSelect
-                options={categorias.map(c => ({ value: c.id, label: c.nombre, description: c.descripcion }))}
-                value={selectedCategoriaId}
-                onChange={(val) => {
-                  setSelectedCategoriaId(val ? Number(val) : null);
-                  setCurrentPage(1);
-                }}
-                placeholder={t('filters.allCategories')}
-                searchPlaceholder={t('filters.searchCategory')}
-              />
-            </div>
-            <button
-              onClick={fetchProducts}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
+        <div className="space-y-5">
+          {/* Error message */}
+          <ErrorBanner error={error} onRetry={fetchProducts} />
 
-            {/* Toggle para mostrar inactivos */}
-            <div data-tour="products-toggle-inactive" className="ml-auto">
-              <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} />
+          {/* Tabs de categoría (TabBar subrayado, índigo catálogo) + búsqueda — reusa los filtros
+              reales selectedCategoriaId / showSinPrecio / showSinClaveSat vía un value unificado. */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div data-tour="products-category-filter" className="min-w-0 lg:flex-1">
+              <TabBar
+                items={[
+                  { id: 'all', label: t('tabs.all') },
+                  ...categorias.map((cat) => ({ id: `cat-${cat.id}`, label: cat.nombre })),
+                  { id: 'sinPrecio', label: t('tabs.toReview') },
+                  { id: 'sinClaveSat', label: t('tabs.noSatKey'), count: sinClaveSatCount > 0 ? sinClaveSatCount : undefined },
+                ]}
+                value={showSinPrecio ? 'sinPrecio' : showSinClaveSat ? 'sinClaveSat' : selectedCategoriaId !== null ? `cat-${selectedCategoriaId}` : 'all'}
+                onChange={(id) => {
+                  setCurrentPage(1);
+                  if (id === 'sinPrecio') { setShowSinPrecio(true); setShowSinClaveSat(false); setSelectedCategoriaId(null); }
+                  else if (id === 'sinClaveSat') { setShowSinClaveSat(true); setShowSinPrecio(false); setSelectedCategoriaId(null); }
+                  else if (id.startsWith('cat-')) { setShowSinPrecio(false); setShowSinClaveSat(false); setSelectedCategoriaId(parseInt(id.slice(4), 10)); }
+                  else { setShowSinPrecio(false); setShowSinClaveSat(false); setSelectedCategoriaId(null); }
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div data-tour="products-toggle-inactive">
+                <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} />
+              </div>
+              <div className="flex-1 sm:w-72 lg:w-80" data-tour="products-search">
+                <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder={t('searchPlaceholder')} className="w-full" />
+              </div>
             </div>
           </div>
 
-          {/* Error message */}
-          <ErrorBanner error={error} onRetry={fetchProducts} />
+          {/* Banner: productos facturables sin clave SAT */}
+          {sinClaveSatCount > 0 && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 px-3.5 py-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <span className="text-[13px] text-foreground/80">
+                <strong className="text-amber-700 dark:text-amber-400">{t('satBanner.count', { count: sinClaveSatCount, plural: sinClaveSatCount !== 1 ? 's' : '' })}</strong> {t('satBanner.text')}
+              </span>
+            </div>
+          )}
 
           {/* Selection Action Bar */}
           <BatchActionBar
@@ -630,6 +700,15 @@ export default function ProductsPage() {
             onClear={batch.handleClearSelection}
             loading={batch.batchLoading}
           />
+
+          {/* Asignar clave SAT en lote (sobre la selección o por categoría) */}
+          {batch.selectedCount > 0 && (
+            <div className="flex">
+              <Button variant="wbSoft" onClick={() => setShowClaveSatModal(true)}>
+                {t('assignSat')} ({batch.selectedCount})
+              </Button>
+            </div>
+          )}
 
           {/* Products DataGrid */}
           <div data-tour="products-table">
@@ -668,8 +747,8 @@ export default function ProductsPage() {
                         {product.images[0] ? (
                           <img src={product.images[0]} alt={product.name} className="w-10 h-10 rounded-md object-cover" />
                         ) : (
-                          <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center">
-                            <PackageIcon className="w-5 h-5 text-green-600" weight="duotone" />
+                          <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
+                            <PackageIcon className="w-5 h-5 text-primary" />
                           </div>
                         )}
                       </div>
@@ -683,13 +762,12 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">{formatCurrency(product.price)}</span>
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock <= product.minStock ? 'bg-red-50 text-red-600' : 'bg-surface-3 text-foreground/80'}`}>Stock: {product.stock}</span>
-                    {product.family && <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{product.family}</span>}
-                    {product.category && <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">{product.category}</span>}
+                    <span className="px-2 py-1 bg-primary/5 text-primary rounded-md text-xs font-medium">{formatCurrency(product.price)}</span>
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock < 20 ? 'bg-red-50 text-red-600' : 'bg-surface-3 text-foreground/80'}`}>Stock: {product.stock}</span>
+                    {product.category && <span className="px-2 py-1 bg-surface-3 text-foreground/80 rounded-md text-xs">{product.category}</span>}
                   </div>
                   <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
+                    <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
                       <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                     </button>
                     {deleteConfirmId === product.id ? (
@@ -729,13 +807,64 @@ export default function ProductsPage() {
           consequenceActivate={t('consequenceActivate')}
         />
 
+        {/* Modal: Asignar clave SAT en lote */}
+        {showClaveSatModal && createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => { if (!modalClaveSatLoading) setShowClaveSatModal(false); }}
+          >
+            <div className="bg-card border border-border rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-foreground">{t('assignSatTitle')}</h2>
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('drawer.satKey')}</label>
+                <BatchAutocomplete
+                  value={modalClaveSat}
+                  onChange={setModalClaveSat}
+                  searchFn={(q) => searchCatalogoProdServ(q)}
+                  renderLabel={(item) => `${item.clave} · ${item.descripcion}`}
+                  placeholder={t('drawer.satKeyPlaceholder')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">{t('drawer.satUnit')}</label>
+                <BatchAutocomplete
+                  value={modalClaveUnidad}
+                  onChange={setModalClaveUnidad}
+                  searchFn={(q) => searchCatalogoUnidad(q)}
+                  renderLabel={(item) => `${item.clave} · ${item.nombre}`}
+                  placeholder={t('drawer.satUnitPlaceholder')}
+                />
+              </div>
+              {selectedCategoriaId != null && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={modalAplicarCategoria}
+                    onChange={(e) => setModalAplicarCategoria(e.target.checked)}
+                    className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-foreground">{t('assignSatToCategory')}</span>
+                </label>
+              )}
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="wbOutline" onClick={() => setShowClaveSatModal(false)} disabled={modalClaveSatLoading}>{tc('cancel')}</Button>
+                <Button variant="wbPrimary" onClick={handleBatchClaveSat} disabled={modalClaveSatLoading || !modalClaveSat.trim()} className="gap-2">
+                  {modalClaveSatLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('assignSat')}
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
         {/* Product Form Drawer */}
         <Drawer
           ref={drawerRef}
           isOpen={showProductForm}
           onClose={handleCancelForm}
           title={editingProduct ? t('drawer.titleEdit') : t('drawer.titleNew')}
-          icon={<Package className="w-5 h-5 text-green-600" />}
+          icon={<Package className="w-5 h-5 text-primary" />}
           width="lg"
           isDirty={formIsDirtyWithImage}
           onSave={() => {
@@ -744,10 +873,10 @@ export default function ProductsPage() {
           }}
           footer={
             <div className="flex justify-end gap-3" data-tour="product-drawer-actions">
-              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
+              <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
                 {tc('cancel')}
               </Button>
-              <Button type="submit" form="product-form" variant="success" disabled={savingProduct || loadingCatalogs || !watch('familiaId')} className="flex items-center gap-2">
+              <Button type="submit" form="product-form" variant="wbPrimary" disabled={savingProduct || loadingCatalogs || !watch('familiaId')} className="flex items-center gap-2">
                 {savingProduct && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingProduct ? tc('saveChanges') : t('drawer.createProduct')}
               </Button>
@@ -763,7 +892,7 @@ export default function ProductsPage() {
                 <input
                   type="text"
                   {...register('nombre')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder={t('drawer.namePlaceholder')}
                 />
                 {errors.nombre && <FieldError message={errors.nombre.message} />}
@@ -777,7 +906,7 @@ export default function ProductsPage() {
                 <input
                   type="text"
                   {...register('codigoBarra')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent font-mono"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono"
                   placeholder={t('drawer.barcodePlaceholder')}
                 />
                 {errors.codigoBarra && <FieldError message={errors.codigoBarra.message} />}
@@ -790,7 +919,7 @@ export default function ProductsPage() {
                 </label>
                 <textarea
                   {...register('descripcion')}
-                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder={t('drawer.descriptionPlaceholder')}
                   rows={2}
                 />
@@ -910,17 +1039,37 @@ export default function ProductsPage() {
                   {t('drawer.basePrice')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                   <input
                     type="number"
                     min="0.01"
                     step="0.01"
                     {...register('precioBase', { valueAsNumber: true })}
-                    className="w-full pl-10 pr-4 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
                 {errors.precioBase && <FieldError message={errors.precioBase.message} />}
+              </div>
+
+              {/* Costo unitario (para reportes de margen / valorizado) */}
+              <div data-tour="product-drawer-cost">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
+                  {t('drawer.cost')}
+                </label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register('costo', { valueAsNumber: true })}
+                    className="w-full pl-10 pr-4 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">{t('drawer.costHint')}</p>
+                {errors.costo && <FieldError message={errors.costo.message} />}
               </div>
 
               {/* Tasa de impuesto + flag IVA incluido */}
@@ -936,7 +1085,7 @@ export default function ProductsPage() {
                         shouldDirty: true,
                       })
                     }
-                    className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">
                       {tasasImpuesto.find((t) => t.esDefault)
@@ -951,7 +1100,7 @@ export default function ProductsPage() {
                   </select>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Si dejas en default, usa la tasa marcada como default en{' '}
-                    <a href="/settings?tab=impuestos" className="text-green-600 hover:underline">
+                    <a href="/settings?tab=impuestos" className="text-primary hover:underline">
                       Configuración → Impuestos
                     </a>
                     .
@@ -963,7 +1112,7 @@ export default function ProductsPage() {
                     type="checkbox"
                     checked={watch('precioIncluyeIva')}
                     onChange={(e) => setValue('precioIncluyeIva', e.target.checked, { shouldDirty: true })}
-                    className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500 mt-0.5"
+                    className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary mt-0.5"
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">El precio ya incluye IVA</p>
@@ -975,6 +1124,55 @@ export default function ProductsPage() {
                     </p>
                   </div>
                 </label>
+              </div>
+
+              {/* Datos fiscales (CFDI 4.0) */}
+              <div className="bg-surface-1 dark:bg-surface-2 border border-border-subtle rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground/80">{t('drawer.fiscalSection')}</p>
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={watch('facturable')}
+                    onChange={(e) => setValue('facturable', e.target.checked, { shouldDirty: true })}
+                    className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{t('drawer.invoiceable')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('drawer.invoiceableHint')}</p>
+                  </div>
+                </label>
+
+                {watch('facturable') && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground/80 mb-1">{t('drawer.satKey')}</label>
+                      {watch('claveSat') && (
+                        <p className="text-[11px] text-muted-foreground mb-1">{t('drawer.current')}: <span className="font-mono text-foreground">{watch('claveSat')}</span></p>
+                      )}
+                      <BatchAutocomplete
+                        value={watch('claveSat') || ''}
+                        onChange={(c) => setValue('claveSat', c, { shouldDirty: true })}
+                        searchFn={(q) => searchCatalogoProdServ(q)}
+                        renderLabel={(item) => `${item.clave} · ${item.descripcion}`}
+                        placeholder={t('drawer.satKeyPlaceholder')}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground/80 mb-1">{t('drawer.satUnit')}</label>
+                      {watch('claveUnidad') && (
+                        <p className="text-[11px] text-muted-foreground mb-1">{t('drawer.current')}: <span className="font-mono text-foreground">{watch('claveUnidad')}</span></p>
+                      )}
+                      <BatchAutocomplete
+                        value={watch('claveUnidad') || ''}
+                        onChange={(c) => setValue('claveUnidad', c, { shouldDirty: true })}
+                        searchFn={(q) => searchCatalogoUnidad(q)}
+                        renderLabel={(item) => `${item.clave} · ${item.nombre}`}
+                        placeholder={t('drawer.satUnitPlaceholder')}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </form>
         </Drawer>

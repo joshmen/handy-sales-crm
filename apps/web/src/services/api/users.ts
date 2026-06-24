@@ -65,6 +65,20 @@ export interface UpdateUserRequest {
   verificado?: boolean;
 }
 
+/** KPIs por miembro para el drawer de perfil en Equipo (GET /api/usuarios/{id}/kpis). */
+export interface UsuarioKpis {
+  /** Σ ventas del usuario en el mes actual (excl. cancelados). */
+  ventasMes: number;
+  /** Nº de pedidos del usuario en el mes actual. */
+  pedidosMes: number;
+  /** Nombre de la ruta activa más reciente del usuario (null si no tiene). */
+  rutaNombre: string | null;
+  /** Zona de esa ruta (null si no aplica). */
+  zonaNombre: string | null;
+  /** Nº de clientes asignados al usuario. */
+  clientesAsignados: number;
+}
+
 class UsersService {
   private async request<T>(
     endpoint: string,
@@ -160,6 +174,11 @@ class UsersService {
 
   async getUbicaciones(): Promise<ApiResponse<UsuarioUbicacion[]>> {
     return this.request<UsuarioUbicacion[]>('/api/usuarios/ubicaciones', { method: 'GET' });
+  }
+
+  /** KPIs del miembro para el drawer de perfil (ventas del mes, pedidos, ruta/zona, clientes). */
+  async getKpis(id: number): Promise<ApiResponse<UsuarioKpis>> {
+    return this.request<UsuarioKpis>(`/api/usuarios/${id}/kpis`, { method: 'GET' });
   }
 
   async batchToggleActive(ids: number[], activo: boolean): Promise<ApiResponse<{ actualizados: number }>> {

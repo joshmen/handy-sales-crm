@@ -39,7 +39,7 @@ export const STATUS_DOT_COLORS: Record<string, string> = {
   draft: 'bg-muted-foreground ring-2 ring-border-subtle ring-offset-1',
   confirmed: 'bg-blue-500 ring-2 ring-blue-200 ring-offset-1',
   en_route: 'bg-cyan-500 ring-2 ring-cyan-200 ring-offset-1',
-  delivered: 'bg-emerald-500',
+  delivered: 'bg-primary',
   cancelled: 'bg-red-400',
 };
 
@@ -47,7 +47,7 @@ export const STATUS_TEXT_COLORS: Record<string, string> = {
   draft: 'text-muted-foreground',
   confirmed: 'text-blue-700',
   en_route: 'text-cyan-700',
-  delivered: 'text-emerald-700',
+  delivered: 'text-primary',
   cancelled: 'text-red-500',
 };
 
@@ -71,7 +71,7 @@ export function getNextAction(apiEstado?: string): { label: string; action: stri
     case 'Confirmado':
       return { label: 'Enviar a Ruta', action: 'en-ruta', colorClasses: 'border border-cyan-300 text-cyan-700 hover:bg-cyan-50' };
     case 'EnRuta':
-      return { label: 'Entregar', action: 'entregar', colorClasses: 'bg-emerald-600 text-white hover:bg-emerald-700' };
+      return { label: 'Entregar', action: 'entregar', colorClasses: 'bg-primary text-white hover:bg-primary/90' };
     default:
       return null;
   }

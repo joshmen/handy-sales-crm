@@ -9,6 +9,7 @@ export interface PriceListDto {
   descripcion?: string;
   activo: boolean;
   esDefault: boolean;
+  cantidadClientes: number;
   cantidadProductos: number;
   creadoEn: string;
   actualizadoEn?: string;

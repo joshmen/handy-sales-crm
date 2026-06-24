@@ -21,6 +21,10 @@ using HandySuites.Infrastructure.Repositories;
 using HandySuites.Application.Zonas.Interfaces;
 using HandySuites.Infrastructure.Zonas.Repositories;
 using HandySuites.Application.Zonas.Services;
+using HandySuites.Application.Vehiculos.Interfaces;
+using HandySuites.Infrastructure.Vehiculos.Repositories;
+using HandySuites.Application.Vehiculos.Services;
+using HandySuites.Application.Vehiculos.Validators;
 using HandySuites.Application.Metas.Interfaces;
 using HandySuites.Infrastructure.Repositories.Metas;
 using HandySuites.Application.Metas.Services;
@@ -215,10 +219,14 @@ public static class ServiceRegistrationExtensions
 
         services.AddScoped<IZonaRepository, ZonaRepository>();
         services.AddScoped<ZonaService>();
+        services.AddScoped<IVehiculoRepository, VehiculoRepository>();
+        services.AddScoped<VehiculoService>();
         services.AddScoped<IMetaVendedorRepository, MetaVendedorRepository>();
         services.AddScoped<MetaVendedorService>();
         services.AddValidatorsFromAssemblyContaining<ZonaCreateDtoValidator>();
         services.AddValidatorsFromAssemblyContaining<ZonaUpdateDtoValidator>();
+        services.AddValidatorsFromAssemblyContaining<VehiculoCreateDtoValidator>();
+        services.AddValidatorsFromAssemblyContaining<VehiculoUpdateDtoValidator>();
 
         services.AddScoped<IFamiliaProductoRepository, FamiliaProductoRepository>();
         services.AddScoped<FamiliaProductoService>();
@@ -395,6 +403,10 @@ public static class ServiceRegistrationExtensions
 
         services.AddScoped<IGeoQueryService, GeoQueryService>();
         services.AddScoped<IReportAccessService, ReportAccessService>();
+
+        // CORE Contable (partida doble, on-demand)
+        services.AddScoped<HandySuites.Application.Contabilidad.IContabilidadService,
+                            HandySuites.Infrastructure.Services.ContabilidadService>();
 
         // Integration Marketplace
         services.AddScoped<IIntegrationRepository, IntegrationRepository>();

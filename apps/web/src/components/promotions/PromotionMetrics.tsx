@@ -26,8 +26,8 @@ export const PromotionMetrics: React.FC<PromotionMetricsProps> = ({ promotions }
       title: 'Promociones Activas',
       value: activePromotions.length.toString(),
       subtitle: `${promotions.length} total`,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-primary',
+      bgColor: 'bg-primary/5',
       icon: '🎁'
     },
     {
