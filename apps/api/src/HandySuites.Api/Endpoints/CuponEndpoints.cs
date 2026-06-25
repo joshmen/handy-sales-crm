@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
@@ -162,7 +163,8 @@ public static class CuponEndpoints
     private static async Task<IResult> RedimirCupon(
         [FromBody] RedimirCuponRequest request,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySuitesDbContext db)
+        [FromServices] HandySuitesDbContext db,
+        [FromServices] ITenantTimeZoneService tz)
     {
         if (!currentTenant.IsStrictAdmin)
             return Results.Forbid();
@@ -181,7 +183,11 @@ public static class CuponEndpoints
         if (!cupon.Activo)
             return Results.BadRequest(new { message = "Este cupón no está activo" });
 
-        if (cupon.FechaExpiracion.HasValue && cupon.FechaExpiracion.Value < DateTime.UtcNow)
+        // FechaExpiracion es date-only (medianoche UTC). Comparar contra UtcNow
+        // expiraba el cupón a medianoche UTC en vez de al final del día del tenant.
+        // Un cupón que vence HOY sigue siendo válido durante el día tenant de hoy.
+        var hoyMid = await tz.GetTenantTodayMidnightUtcAsync();
+        if (cupon.FechaExpiracion.HasValue && cupon.FechaExpiracion.Value < hoyMid)
             return Results.BadRequest(new { message = "Este cupón ha expirado" });
 
         // Race condition guard: dos requests concurrentes podían leer UsosActuales=N-1

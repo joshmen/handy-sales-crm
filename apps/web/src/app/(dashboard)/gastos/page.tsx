@@ -38,25 +38,28 @@ const formSchema = z.object({
 });
 type FormData = z.infer<typeof formSchema>;
 
-function defaultDates() {
-  const h = new Date();
-  const d = new Date(h);
-  d.setDate(1);
-  return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
+// "Hoy" y "1° del mes" calculados sobre el día calendario del tenant
+// (se inyecta `today` desde `useFormatters().tenantToday()`).
+// Antes usaban `new Date()` (TZ del browser), desfasando los defaults
+// del filtro para tenants en TZ distinta a la del navegador.
+function defaultDates(today: string) {
+  const [y, m] = today.split('-').map(Number);
+  const desde = `${String(y ?? 0).padStart(4, '0')}-${String(m ?? 1).padStart(2, '0')}-01`;
+  return { desde, hasta: today };
 }
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+function todayIso(today: string) {
+  return today;
 }
 
 export default function GastosPage() {
   const t = useTranslations('gastos');
   const tc = useTranslations('common');
-  const { formatCurrency, formatDateOnly } = useFormatters();
+  const { formatCurrency, formatDateOnly, tenantToday } = useFormatters();
   const showApiError = useApiErrorToast();
   const fmt = (n: number) => formatCurrency(n);
 
-  const [dates, setDates] = useState(defaultDates);
+  const [dates, setDates] = useState(() => defaultDates(tenantToday()));
   const [data, setData] = useState<GastosContablesListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +72,7 @@ export default function GastosPage() {
 
   const { register, handleSubmit: rhfSubmit, reset, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fecha: todayIso(), categoria: 'Otros', descripcion: '', base: 0, iva: 0, proveedorRfc: '', proveedorNombre: '' },
+    defaultValues: { fecha: todayIso(tenantToday()), categoria: 'Otros', descripcion: '', base: 0, iva: 0, proveedorRfc: '', proveedorNombre: '' },
   });
 
   const loadData = useCallback(async () => {
@@ -103,7 +106,7 @@ export default function GastosPage() {
 
   const handleOpenCreate = () => {
     setEditing(null);
-    reset({ fecha: todayIso(), categoria: 'Otros', descripcion: '', base: 0, iva: 0, proveedorRfc: '', proveedorNombre: '' });
+    reset({ fecha: todayIso(tenantToday()), categoria: 'Otros', descripcion: '', base: 0, iva: 0, proveedorRfc: '', proveedorNombre: '' });
     setIsModalOpen(true);
   };
 
