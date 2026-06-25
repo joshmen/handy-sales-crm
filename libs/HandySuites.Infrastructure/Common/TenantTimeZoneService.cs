@@ -70,6 +70,21 @@ public class TenantTimeZoneService : ITenantTimeZoneService
         return (inicioUtc, finUtc);
     }
 
+    public (DateTime InicioUtc, DateTime FinUtc) GetCalendarDayWindowUtc(DateOnly dia)
+    {
+        // MEDIANOCHE UTC del día calendario (sin shift de TZ). Los campos
+        // date-only se guardan a 00:00 UTC (.Date) o 12:00 UTC (dateOnlyToUTC);
+        // ambos caen en [00:00, +1 día). La window tz-shifted los excluiría.
+        var inicioUtc = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
+        return (inicioUtc, inicioUtc.AddDays(1));
+    }
+
+    public async Task<DateTime> GetTenantTodayMidnightUtcAsync(CancellationToken ct = default)
+    {
+        var hoy = await GetTenantTodayAsync(ct);
+        return GetCalendarDayWindowUtc(hoy).InicioUtc;
+    }
+
     public async Task<DateTime> ConvertTenantDateToUtcAsync(DateOnly tenantDate, CancellationToken ct = default)
     {
         var tz = await GetTenantTimeZoneAsync(ct);
