@@ -222,7 +222,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         {
             diaBusqueda = await _tenantTz.GetTenantTodayAsync();
         }
-        var (inicioUtc, finUtc) = await _tenantTz.GetTenantDayWindowUtcAsync(diaBusqueda);
+        // Fecha es date-only (medianoche UTC) → window de día-calendario, NO tz-shifted.
+        var (inicioUtc, finUtc) = _tenantTz.GetCalendarDayWindowUtc(diaBusqueda);
 
         var ruta = await _db.RutasVendedor
             .AsNoTracking()
@@ -244,7 +245,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     {
         // "Hoy" en TZ tenant (no día UTC del servidor).
         var hoyTenant = await _tenantTz.GetTenantTodayAsync();
-        var (hoyInicioUtc, _) = await _tenantTz.GetTenantDayWindowUtcAsync(hoyTenant);
+        // Fecha es date-only (medianoche UTC) → window de día-calendario, NO tz-shifted.
+        var (hoyInicioUtc, _) = _tenantTz.GetCalendarDayWindowUtc(hoyTenant);
         var rutas = await _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Usuario)
@@ -273,7 +275,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     public async Task<List<RutaVendedorDto>> ObtenerRutasActivasParaMapaAsync(int tenantId, int? usuarioId)
     {
         var hoyTenant = await _tenantTz.GetTenantTodayAsync();
-        var (inicioUtc, finUtc) = await _tenantTz.GetTenantDayWindowUtcAsync(hoyTenant);
+        // Fecha es date-only (medianoche UTC) → window de día-calendario, NO tz-shifted.
+        var (inicioUtc, finUtc) = _tenantTz.GetCalendarDayWindowUtc(hoyTenant);
 
         var query = _db.RutasVendedor
             .AsNoTracking()

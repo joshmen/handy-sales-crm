@@ -59,6 +59,20 @@ public class RutaVendedorRepositoryTests : IDisposable
                 var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
                 return (inicio, inicio.AddDays(1));
             });
+        // Window de día-calendario (medianoche UTC, sin shift) — la usan las queries
+        // de rutas para campos date-only. Refleja la impl real.
+        _tzMock.Setup(t => t.GetCalendarDayWindowUtc(It.IsAny<DateOnly>()))
+            .Returns<DateOnly>(dia =>
+            {
+                var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
+                return (inicio, inicio.AddDays(1));
+            });
+        _tzMock.Setup(t => t.GetTenantTodayMidnightUtcAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+                return new DateTime(hoy.Year, hoy.Month, hoy.Day, 0, 0, 0, DateTimeKind.Utc);
+            });
         _tzMock.Setup(t => t.GetTenantDayFromUtcAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync<DateTime, CancellationToken, ITenantTimeZoneService, DateOnly>((utc, _) => DateOnly.FromDateTime(utc));
 
@@ -273,6 +287,33 @@ public class RutaVendedorRepositoryTests : IDisposable
         rutas.Single(r => r.Id == 801).Activo.Should().BeFalse();
         rutas.Single(r => r.Id == 802).Activo.Should().BeFalse();
         rutas.Single(r => r.Id == 803).Activo.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ObtenerRutasActivasParaMapaAsync_IncluyeRutaDeHoy_AunqueLaWindowTzEsteDesplazada()
+    {
+        // Regresión 2026-06-25 (rutas vacías en prod): RutaVendedor.Fecha es
+        // date-only (medianoche UTC). El query "jornada" filtraba con la window
+        // tz-shifted (México arranca 06:00 UTC) y excluía TODA ruta del día. El
+        // fix usa GetCalendarDayWindowUtc (medianoche UTC). Simulamos un tenant
+        // con offset negativo: si el código volviera a usar la window tz-shifted,
+        // la ruta a medianoche UTC quedaría fuera y este test fallaría.
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        _tzMock.Setup(t => t.GetTenantDayWindowUtcAsync(It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync<DateOnly?, CancellationToken, ITenantTimeZoneService, (DateTime, DateTime)>((d, _) =>
+            {
+                var dia = d ?? hoy;
+                var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 6, 0, 0, DateTimeKind.Utc); // shift +6h
+                return (inicio, inicio.AddDays(1));
+            });
+
+        var fechaMidnightUtc = new DateTime(hoy.Year, hoy.Month, hoy.Day, 0, 0, 0, DateTimeKind.Utc);
+        AddRuta(900, fechaMidnightUtc, EstadoRuta.EnProgreso);
+
+        var rutas = await _sut.ObtenerRutasActivasParaMapaAsync(TenantId, null);
+
+        rutas.Should().Contain(r => r.Id == 900,
+            "una ruta date-only de hoy (medianoche UTC) debe aparecer en la jornada aunque la window tz esté desplazada");
     }
 
     public void Dispose()
