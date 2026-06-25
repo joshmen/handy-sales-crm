@@ -784,8 +784,14 @@ public class PedidoRepository : IPedidoRepository
         // Mismo filtro que `SyncRepository.UpsertPedidoAsync` post-fix 0d9a4e13.
         if (!rutaId.HasValue && pedido.TipoVenta == TipoVenta.VentaDirecta)
         {
-            var fechaInicio = pedido.FechaPedido.Date;
-            var fechaFin = fechaInicio.AddDays(1);
+            // FECHA-CALENDARIO DEL TENANT, no UTC. pedido.FechaPedido es un instante real;
+            // .Date daba el día UTC, por lo que una venta de la tarde/noche en México (UTC-6)
+            // caía al día UTC siguiente y NO encontraba la ruta de hoy -> CantidadVendida no se
+            // incrementaba (el cierre subcontaba "Vendió"). r.Fecha es date-only (guardado a
+            // medianoche UTC) -> se matchea con la window de día-calendario, igual que el lookup
+            // de rutas por fecha en RutaVendedorRepository.
+            var diaTenant = await _tenantTz.GetTenantDayFromUtcAsync(pedido.FechaPedido);
+            var (fechaInicio, fechaFin) = _tenantTz.GetCalendarDayWindowUtc(diaTenant);
             var query = _db.RutasVendedor.AsNoTracking()
                 .Where(r => r.UsuarioId == pedido.UsuarioId
                          && r.TenantId == tenantId

@@ -50,6 +50,15 @@ public class RutaVendedorRepositoryHuerfanosTests : IDisposable
         var tz = new Mock<ITenantTimeZoneService>();
         tz.Setup(t => t.GetTenantTimeZoneAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(TimeZoneInfo.Utc);
+        // El sweep filtra p.FechaPedido (timestamp real) con la ventana tz-shifted del día
+        // de la ruta. Mock UTC por defecto: window = [día 00:00 UTC, +1).
+        tz.Setup(t => t.GetTenantDayWindowUtcAsync(It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync<DateOnly?, CancellationToken, ITenantTimeZoneService, (DateTime, DateTime)>((d, _) =>
+            {
+                var dia = d ?? DateOnly.FromDateTime(DateTime.UtcNow);
+                var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
+                return (inicio, inicio.AddDays(1));
+            });
         _sut = new RutaVendedorRepository(_db, tz.Object);
 
         SeedFixtures();
@@ -196,6 +205,38 @@ public class RutaVendedorRepositoryHuerfanosTests : IDisposable
 
         // Assert
         result.PedidosVinculados.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task VincularHuerfanos_VentaNocturnaMexicoTz_SeVinculaAunqueCaeDiaUtcSiguiente()
+    {
+        // Regresión 2026-06-25 (cierre subcontaba "Vendió"): una venta de la noche en México
+        // (UTC-6) tiene FechaPedido en el día UTC SIGUIENTE. Con .Date la ventana del sweep era
+        // [medianoche UTC, +1) y la dejaba fuera -> huérfano no recuperado. El fix usa la ventana
+        // tz-shifted del día de la ruta (GetTenantDayWindowUtcAsync). Si se revierte a .Date, falla.
+        var tz = new Mock<ITenantTimeZoneService>();
+        tz.Setup(t => t.GetTenantTimeZoneAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TimeZoneInfo.Utc);
+        tz.Setup(t => t.GetTenantDayWindowUtcAsync(It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync<DateOnly?, CancellationToken, ITenantTimeZoneService, (DateTime, DateTime)>((d, _) =>
+            {
+                var dia = d ?? DateOnly.FromDateTime(DateTime.UtcNow);
+                var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 6, 0, 0, DateTimeKind.Utc); // México UTC-6
+                return (inicio, inicio.AddDays(1));
+            });
+        var sut = new RutaVendedorRepository(_db, tz.Object);
+
+        // Venta nocturna: 2026-05-26 20:00 México = 2026-05-27 02:00 UTC (cae al día UTC siguiente).
+        CreatePedidoEntregado(id: 2010, UsuarioId, new DateTime(2026, 5, 27, 2, 0, 0, DateTimeKind.Utc), cantidad: 6);
+
+        // Act
+        var result = await sut.VincularPedidosHuerfanosAsync(RutaId, TenantId);
+
+        // Assert — la venta de la noche se vincula a la ruta del día y suma a CantidadVendida.
+        result.PedidosVinculados.Should().Be(1);
+        result.UnidadesTotales.Should().Be(6);
+        var carga = await _db.RutasCarga.AsNoTracking().FirstAsync(c => c.RutaId == RutaId);
+        carga.CantidadVendida.Should().Be(6);
     }
 
     public void Dispose()
