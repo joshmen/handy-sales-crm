@@ -602,7 +602,29 @@ public class SyncService
                     Tasa = tasa
                 };
             }).ToList();
-            response.Summary.ProductosPulled = productos.Count;
+
+            // Bug 3 fix 2026-06-25: propagar productos soft-deleted desde el último
+            // sync para que el móvil purgue el registro local (de otro modo queda
+            // como "fantasma" vendible con server_id obsoleto). Solo en sync
+            // incremental (since != null) y no paginado — el full sync (since=null)
+            // ya refleja el catálogo vivo; la paginación re-mandaría duplicados.
+            if (since.HasValue && !maxRecords.HasValue)
+            {
+                var eliminadosIds = await _repo.GetProductosEliminadosIdsSinceAsync(tenantId, since.Value);
+                if (eliminadosIds.Count > 0)
+                {
+                    foreach (var deletedId in eliminadosIds)
+                    {
+                        response.ServerChanges.Productos.Add(new SyncProductoDto
+                        {
+                            Id = deletedId,
+                            IsDeleted = true
+                        });
+                    }
+                }
+            }
+
+            response.Summary.ProductosPulled = response.ServerChanges.Productos.Count;
         }
 
         // Pull Pedidos for this user

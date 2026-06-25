@@ -88,6 +88,20 @@ public class SyncRepository : ISyncRepository
             : await ordered.ToListAsync();
     }
 
+    public async Task<List<int>> GetProductosEliminadosIdsSinceAsync(int tenantId, DateTime since)
+    {
+        // IgnoreQueryFilters: el filtro global excluye eliminado_en != null, pero
+        // justamente necesitamos los soft-deleted para propagar el borrado al móvil.
+        return await _db.Productos
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId
+                        && p.EliminadoEn != null
+                        && p.EliminadoEn > since)
+            .Select(p => p.Id)
+            .ToListAsync();
+    }
+
     public async Task<Dictionary<int, (decimal cantidad, decimal minimo)>> GetStockMapAsync(int tenantId)
     {
         return await _db.Set<HandySuites.Domain.Entities.Inventario>()

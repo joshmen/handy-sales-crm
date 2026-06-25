@@ -897,6 +897,35 @@ public class SyncRepositoryTests : IDisposable
         todos.Should().BeEquivalentTo(new[] { ProductoId, 2300, 2301 });
     }
 
+    // === GetProductosEliminadosIdsSinceAsync (Bug 3 fix 2026-06-25) ===
+
+    [Fact]
+    public async Task GetProductosEliminadosIdsSince_RetornaSoloSoftDeletedDelTenantDespuesDeSince()
+    {
+        var since = DateTime.UtcNow.AddMinutes(-10);
+
+        // Producto activo (ProductoId=200 del seed) NO debe aparecer.
+        _db.Productos.Add(new Producto { Id = 2400, TenantId = TenantId, Nombre = "Del", CodigoBarra = "D1", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        _db.Productos.Add(new Producto { Id = 2401, TenantId = OtherTenantId, Nombre = "DelOtro", CodigoBarra = "D2", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        await _db.SaveChangesAsync();
+
+        // Soft-delete ambos: el override de SaveChanges pone EliminadoEn = UtcNow.
+        var aBorrar = await _db.Productos.IgnoreQueryFilters()
+            .Where(p => p.Id == 2400 || p.Id == 2401)
+            .ToListAsync();
+        _db.Productos.RemoveRange(aBorrar);
+        await _db.SaveChangesAsync();
+
+        // since ANTES del borrado → trae el soft-deleted del tenant; NO el de otro
+        // tenant, NO el activo.
+        var result = await _sut.GetProductosEliminadosIdsSinceAsync(TenantId, since);
+        result.Should().BeEquivalentTo(new[] { 2400 });
+
+        // since DESPUÉS del borrado → vacío (no re-propaga borrados viejos).
+        var resultFuturo = await _sut.GetProductosEliminadosIdsSinceAsync(TenantId, DateTime.UtcNow.AddMinutes(10));
+        resultFuturo.Should().BeEmpty();
+    }
+
     // === UpsertRutaDetalleAsync (estado de parada, fix sync jun 2026) ===
     // El repo ya NO guarda internamente (caller hace el save unico) y NO destruye
     // vinculos VisitaId/PedidoId cuando el movil manda null. Retorna (found, entity).

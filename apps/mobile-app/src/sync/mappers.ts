@@ -213,7 +213,7 @@ function mapClienteToRaw(c: any, clienteMap: Map<number, string>): DirtyRaw {
   };
 }
 
-function mapProductoToRaw(p: any): DirtyRaw {
+export function mapProductoToRaw(p: any): DirtyRaw {
   return {
     id: String(p.id),
     server_id: p.id,

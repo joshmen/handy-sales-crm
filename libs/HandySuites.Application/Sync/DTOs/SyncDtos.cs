@@ -549,7 +549,14 @@ public class SyncProductoDto
     public int? TasaImpuestoId { get; set; }
     /// <summary>Tasa decimal denormalizada (0.16, 0.08, 0.00). Resuelta en backend desde TasaImpuesto o default tenant.</summary>
     public decimal Tasa { get; set; } = 0.16m;
-    // Products are read-only from mobile, no Operation needed
+    /// <summary>
+    /// Bug 3 fix 2026-06-25: true = producto soft-deleted en el server. El sync
+    /// incremental lo incluye para que el móvil purgue el registro local
+    /// (splitByOperation lo rutea a `deleted[]`). Los productos read-only no se
+    /// escriben desde mobile, pero SÍ deben poder borrarse para no quedar como
+    /// "fantasmas" vendibles con server_id obsoleto.
+    /// </summary>
+    public bool IsDeleted { get; set; }
 }
 
 public class SyncCobroDto
