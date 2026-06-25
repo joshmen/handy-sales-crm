@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { routeService, RouteCreateRequest, RouteDetail, RouteStop } from '@/services/api/routes';
+import { routeService, RouteCreateRequest, RouteDetail, RouteStop, RouteListItem } from '@/services/api/routes';
 import { zoneService } from '@/services/api/zones';
 import { vehiclesService, type Vehiculo } from '@/services/api/vehicles';
 import { api } from '@/lib/api';
@@ -112,7 +112,7 @@ export default function RoutesPage() {
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
   const router = useRouter();
-  const { tenantToday } = useFormatters();
+  const { tenantToday, formatDateOnly } = useFormatters();
   const { data: session } = useSession();
   const { hasPermission } = usePermissions();
   const isVendedor = session?.user?.role === 'VENDEDOR';
@@ -127,6 +127,24 @@ export default function RoutesPage() {
   // Filtros del tablero
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'onTrack' | 'behind'>('all');
+
+  // Vista de la página: "jornada" (default, solo rutas activas de hoy) o "todas"
+  // (lista completa: canceladas, completadas, de cualquier día).
+  const [viewMode, setViewMode] = useState<'jornada' | 'todas'>('jornada');
+
+  // ── Estado de la vista "Todas las rutas" (lista completa paginada) ──
+  const [allRoutes, setAllRoutes] = useState<RouteListItem[]>([]);
+  const [allLoading, setAllLoading] = useState(false);
+  const [allError, setAllError] = useState<string | null>(null);
+  const [allSearch, setAllSearch] = useState('');
+  const [allEstado, setAllEstado] = useState<string>('all');
+  const [allUsuario, setAllUsuario] = useState<string>('all');
+  const [allFechaDesde, setAllFechaDesde] = useState('');
+  const [allFechaHasta, setAllFechaHasta] = useState('');
+  const [allPage, setAllPage] = useState(1);
+  const [allTotalItems, setAllTotalItems] = useState(0);
+  const [allTotalPages, setAllTotalPages] = useState(1);
+  const allPageSize = 20;
 
   // Drawer de detalle de ruta
   const [detailRoute, setDetailRoute] = useState<RouteDetail | null>(null);
@@ -193,6 +211,37 @@ export default function RoutesPage() {
   useEffect(() => {
     fetchActiveRoutes();
   }, [fetchActiveRoutes]);
+
+  // ── Vista "Todas las rutas": lista completa paginada ──
+  const fetchAllRoutes = useCallback(async () => {
+    try {
+      setAllLoading(true);
+      setAllError(null);
+      const response = await routeService.getRutas({
+        page: allPage,
+        limit: allPageSize,
+        search: allSearch || undefined,
+        estado: allEstado !== 'all' ? parseInt(allEstado) : undefined,
+        usuarioId: allUsuario !== 'all' ? parseInt(allUsuario) : undefined,
+        fechaDesde: allFechaDesde || undefined,
+        fechaHasta: allFechaHasta || undefined,
+        mostrarInactivos: true,
+      });
+      setAllRoutes(response.items);
+      setAllTotalItems(response.total);
+      setAllTotalPages(Math.ceil(response.total / allPageSize) || 1);
+    } catch {
+      setAllError(t('errorLoadingRetry'));
+      toast.error(t('errorLoading'));
+    } finally {
+      setAllLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPage, allSearch, allEstado, allUsuario, allFechaDesde, allFechaHasta]);
+
+  useEffect(() => {
+    if (viewMode === 'todas') fetchAllRoutes();
+  }, [viewMode, fetchAllRoutes]);
 
   const fetchVehiculos = async () => {
     try {
@@ -276,6 +325,68 @@ export default function RoutesPage() {
     { key: 'eta', label: t('dashboard.colEstClose'), width: 110, align: 'center', cellRenderer: (d) => <span className="text-[13px] text-foreground tabular-nums">{fmtEta(d.r.horaFinEstimada)}</span> },
     { key: 'estado', label: t('columns.status'), width: 120, align: 'center', cellRenderer: (d) => <SoftBadge tone={d.atrasada ? 'danger' : 'success'}>{d.atrasada ? t('delayed') : t('dashboard.statusOnTime')}</SoftBadge> },
     { key: 'chev', label: '', width: 44, align: 'center', cellRenderer: () => <ChevronRight className="w-4 h-4 text-muted-foreground/50" /> },
+  ];
+
+  // ── Vista "Todas las rutas": estado (badge SLDS), opciones de filtro y columnas ──
+  // EstadoRuta: 0 Planificada · 1 EnProgreso · 2 Completada · 3 Cancelada ·
+  //             4 PendienteAceptar · 5 CargaAceptada · 6 Cerrada.
+  const getEstadoBadge = (estado: number): { tone: SoftBadgeTone; label: string } => {
+    switch (estado) {
+      case 0: return { tone: 'default', label: t('status.planned') };
+      case 1: return { tone: 'info', label: t('status.inProgress') };
+      case 2: return { tone: 'success', label: t('status.completed') };
+      case 3: return { tone: 'danger', label: t('status.cancelled') };
+      case 4: return { tone: 'warning', label: t('status.pendingAccept') };
+      case 5: return { tone: 'primary', label: t('status.loadAccepted') };
+      case 6: return { tone: 'success', label: t('status.closed') };
+      default: return { tone: 'default', label: t('status.unknown') };
+    }
+  };
+
+  const estadoOptions = [
+    { value: 'all', label: t('filters.allStatuses') },
+    { value: '0', label: t('status.planned') },
+    { value: '1', label: t('status.inProgress') },
+    { value: '2', label: t('status.completed') },
+    { value: '3', label: t('status.cancelled') },
+    { value: '4', label: t('status.pendingAccept') },
+    { value: '5', label: t('status.loadAccepted') },
+    { value: '6', label: t('status.closed') },
+  ];
+
+  const allColumns: DataGridColumn<RouteListItem>[] = [
+    {
+      key: 'codigo', label: t('allRoutes.colCode'), width: 150,
+      cellRenderer: (r) => <span className="text-[12px] font-mono text-muted-foreground truncate block">{r.codigo || '-'}</span>,
+    },
+    {
+      key: 'nombre', label: t('columns.name'), width: 'flex',
+      cellRenderer: (r) => <span className="text-[13px] font-medium text-foreground truncate block">{r.nombre}</span>,
+    },
+    {
+      key: 'zonaNombre', label: t('columns.zone'), width: 120,
+      cellRenderer: (r) => <span className="text-[13px] text-muted-foreground truncate block">{r.zonaNombre || '-'}</span>,
+    },
+    {
+      key: 'usuarioNombre', label: t('columns.user'), width: 150,
+      cellRenderer: (r) => <span className="text-[13px] text-foreground/80 truncate block">{r.usuarioNombre}</span>,
+    },
+    {
+      key: 'fecha', label: t('columns.date'), width: 110,
+      cellRenderer: (r) => <span className="text-[13px] text-foreground tabular-nums">{formatDateOnly(r.fecha)}</span>,
+    },
+    {
+      key: 'estado', label: t('columns.status'), width: 130, align: 'center',
+      cellRenderer: (r) => { const b = getEstadoBadge(r.estado); return <SoftBadge tone={b.tone}>{b.label}</SoftBadge>; },
+    },
+    {
+      key: 'paradas', label: t('columns.stops'), width: 90, align: 'center',
+      cellRenderer: (r) => (
+        <span className="text-[13px] text-foreground/80 tabular-nums">
+          <span className={r.paradasCompletadas === r.totalParadas && r.totalParadas > 0 ? 'text-green-600 font-semibold' : ''}>{r.paradasCompletadas}</span>/{r.totalParadas}
+        </span>
+      ),
+    },
   ];
 
   // Create handlers
@@ -364,6 +475,18 @@ export default function RoutesPage() {
       }
     >
       <div className="space-y-5">
+        {/* Tabs de nivel superior: jornada de hoy vs lista completa de rutas */}
+        <TabBar
+          items={[
+            { id: 'jornada', label: t('viewTabs.today') },
+            { id: 'todas', label: t('viewTabs.all') },
+          ]}
+          value={viewMode}
+          onChange={(id) => setViewMode(id as typeof viewMode)}
+        />
+
+        {viewMode === 'jornada' && (
+        <>
         <ErrorBanner error={error} onRetry={fetchActiveRoutes} />
 
         {/* KPI Row — espejo del mockup RoutesPage */}
@@ -435,6 +558,109 @@ export default function RoutesPage() {
             );
           }}
         />
+        </>
+        )}
+
+        {viewMode === 'todas' && (
+        <>
+        <ErrorBanner error={allError} onRetry={fetchAllRoutes} />
+
+        {/* Barra de filtros de la lista completa */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-full sm:w-72">
+            <SearchBar
+              value={allSearch}
+              onChange={(v) => { setAllSearch(v); setAllPage(1); }}
+              placeholder={t('allRoutes.searchPlaceholder')}
+              className="w-full"
+            />
+          </div>
+
+          <div className="min-w-[160px]">
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1">{t('columns.status')}</label>
+            <SearchableSelect
+              options={estadoOptions}
+              value={allEstado}
+              onChange={(val) => { setAllEstado(val ? String(val) : 'all'); setAllPage(1); }}
+              placeholder={t('filters.allStatuses')}
+            />
+          </div>
+
+          {!isVendedor && (
+          <div className="min-w-[160px]">
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1">{t('drawer.vendor')}</label>
+            <SearchableSelect
+              options={[
+                { value: 'all', label: t('filters.allVendors') },
+                ...usuarios.map((u) => ({ value: u.id.toString(), label: u.nombre })),
+              ]}
+              value={allUsuario}
+              onChange={(val) => { setAllUsuario(val ? String(val) : 'all'); setAllPage(1); }}
+              placeholder={t('filters.allVendors')}
+            />
+          </div>
+          )}
+
+          <div>
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1">{tc('from')}</label>
+            <input
+              type="date"
+              value={allFechaDesde}
+              onChange={(e) => { setAllFechaDesde(e.target.value); setAllPage(1); }}
+              className="px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1">{tc('to')}</label>
+            <input
+              type="date"
+              value={allFechaHasta}
+              onChange={(e) => { setAllFechaHasta(e.target.value); setAllPage(1); }}
+              className="px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Lista completa de rutas (cualquier estado / cualquier día) */}
+        <DataGrid<RouteListItem>
+          columns={allColumns}
+          data={allRoutes}
+          keyExtractor={(r) => r.id}
+          onRowClick={(r) => router.push(`/routes/${r.id}`)}
+          loading={allLoading}
+          loadingMessage={t('loadingMessage')}
+          emptyIcon={<RouteIcon className="w-8 h-8 text-muted-foreground/60" />}
+          emptyTitle={t('emptyTitle')}
+          emptyMessage={allSearch || allEstado !== 'all' || allUsuario !== 'all' || allFechaDesde || allFechaHasta ? t('emptyFiltered') : t('emptyDefault')}
+          pagination={{
+            currentPage: allPage,
+            totalPages: allTotalPages,
+            totalItems: allTotalItems,
+            pageSize: allPageSize,
+            onPageChange: setAllPage,
+          }}
+          mobileCardRenderer={(r) => {
+            const b = getEstadoBadge(r.estado);
+            return (
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{r.nombre}</p>
+                    {r.codigo && <p className="text-[11px] font-mono text-muted-foreground truncate">{r.codigo}</p>}
+                    <p className="text-xs text-muted-foreground truncate">{r.zonaNombre || t('noZone')}</p>
+                  </div>
+                  <SoftBadge tone={b.tone}>{b.label}</SoftBadge>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="truncate">{r.usuarioNombre}</span>
+                  <span className="tabular-nums">{formatDateOnly(r.fecha)} · {r.paradasCompletadas}/{r.totalParadas}</span>
+                </div>
+              </div>
+            );
+          }}
+        />
+        </>
+        )}
       </div>
 
       {/* Drawer de detalle de ruta (paradas visitadas/pendientes) */}
