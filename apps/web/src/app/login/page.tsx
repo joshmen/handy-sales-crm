@@ -409,7 +409,7 @@ function LoginContent() {
                     <label htmlFor="password" className="block text-[14px] font-medium text-[#374151]">
                       {t('password')}
                     </label>
-                    <a href="/forgot-password" className="text-[13px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                    <a href="/forgot-password" className="text-[13px] font-medium text-primary hover:text-primary/80 transition-colors">
                       {t('forgotPassword')}
                     </a>
                   </div>
@@ -446,7 +446,7 @@ function LoginContent() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-[18px] h-[18px] rounded border-[#D1D5DB] text-indigo-600 focus:ring-indigo-500 transition-colors"
+                    className="w-[18px] h-[18px] rounded border-[#D1D5DB] text-primary focus:ring-primary transition-colors"
                   />
                   <span className="text-[14px] text-[#374151]">{t('rememberSession')}</span>
                 </label>
@@ -455,7 +455,7 @@ function LoginContent() {
                   <button
                     type="submit"
                     disabled={isDisabled}
-                    className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
+                    className="w-full h-12 bg-gradient-to-r from-primary to-[#0B5CAB] hover:from-[#0166BC] hover:to-[#094E91] text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                   >
                     {signingIn ? (<>{spinnerSvg}{t('signingIn')}</>) : t('signInButton')}
                   </button>
@@ -495,7 +495,7 @@ function LoginContent() {
 
               <p className="text-center text-[14px] text-[#64748B] auth-animate auth-animate-delay-7">
                 {t('noAccount')}{' '}
-                <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                <a href="/register" className="font-medium text-primary hover:text-primary/80 transition-colors">
                   {t('registerFree')}
                 </a>
               </p>
@@ -548,8 +548,8 @@ function LoginContent() {
 
               <div className="space-y-6">
                 <div className="flex flex-col items-center gap-4 auth-animate auth-animate-delay-3">
-                  <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center">
-                    <Shield className="h-8 w-8 text-indigo-600" />
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-primary" />
                   </div>
 
                   <input
@@ -576,7 +576,7 @@ function LoginContent() {
                     type="button"
                     onClick={handleVerify2FA}
                     disabled={totpCode.replace(/\s/g, '').length !== 6 || verifying2FA}
-                    className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
+                    className="w-full h-12 bg-gradient-to-r from-primary to-[#0B5CAB] hover:from-[#0166BC] hover:to-[#094E91] text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                   >
                     {verifying2FA ? (<>{spinnerSvg}{t('signingIn')}</>) : t('verifyAndContinue')}
                   </button>
@@ -613,7 +613,7 @@ function LoginContent() {
                   type="button"
                   onClick={handleForceLogin}
                   disabled={forcingLogin}
-                  className="w-full h-12 bg-success hover:bg-success/90 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                 >
                   {forcingLogin ? (<>{spinnerSvg}{t('connecting')}</>) : t('continueHere')}
                 </button>
@@ -644,7 +644,7 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? ''}>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><Spinner size="lg" className="text-green-600" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><Spinner size="lg" className="text-primary" /></div>}>
         <LoginContent />
       </Suspense>
     </GoogleReCaptchaProvider>

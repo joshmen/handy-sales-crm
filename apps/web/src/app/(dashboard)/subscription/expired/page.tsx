@@ -75,7 +75,7 @@ export default function SubscriptionExpiredPage() {
               <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-red-900 mb-1">
+              <h1 className="text-[22px] font-bold tracking-tight text-red-900 mb-1">
                 {te('title')}
               </h1>
               <p className="text-red-700 text-sm">
@@ -131,7 +131,7 @@ export default function SubscriptionExpiredPage() {
                         <span className="text-sm font-normal text-muted-foreground">{te('perMonth')}</span>
                       </div>
                       {plan.precioAnual > 0 && (
-                        <p className="text-xs text-green-600 mt-1">
+                        <p className="text-xs text-primary mt-1">
                           {formatPrice(plan.precioAnual)}{te('perYear')} ({te('savePercent', { percent: Math.round((1 - plan.precioAnual / (plan.precioMensual * 12)) * 100) })})
                         </p>
                       )}
@@ -139,26 +139,26 @@ export default function SubscriptionExpiredPage() {
 
                     <ul className="space-y-2.5 mb-6">
                       <li className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                         {te('upToUsers', { count: plan.maxUsuarios })}
                       </li>
                       <li className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                         {plan.maxProductos > 0 ? te('products', { count: plan.maxProductos }) : te('unlimitedProducts')}
                       </li>
                       <li className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                         {plan.maxClientesPorMes > 0 ? te('clientsPerMonth', { count: plan.maxClientesPorMes }) : te('unlimitedClients')}
                       </li>
                       {plan.incluyeReportes && (
                         <li className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                           {te('advancedReports')}
                         </li>
                       )}
                       {plan.incluyeSoportePrioritario && (
                         <li className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                           {te('prioritySupport')}
                         </li>
                       )}

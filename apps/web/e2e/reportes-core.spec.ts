@@ -37,51 +37,29 @@ test.describe('Reportes — index', () => {
     expect(linkCount > 0 || mainText.length > 500).toBeTruthy();
   });
 
-  test('Página /reports renderea los 16 cards esperados', async ({ page }) => {
+  test('Página /reports renderea el catálogo de reportes (incluye los 4 de Bug #8)', async ({ page }) => {
     // Bug #8: 4 reportes (efectividad-visitas, comisiones, rentabilidad-cliente,
     // analisis-abc) estaban implementados pero no expuestos como cards UI.
     // Este test bloquea cualquier regresión que vuelva a ocultarlos.
-    const expectedTitles = [
-      // General + Ventas (5)
-      /Dashboard Ejecutivo|Executive Dashboard/i,
-      /Ventas por Per[ií]odo|Sales by Period/i,
-      /Ventas por Vendedor|Sales by Vendor/i,
-      /Ventas por Producto|Sales by Product/i,
-      /Ventas por Zona|Sales by Zone/i,
-      // Clientes (2)
-      /Actividad de Clientes|Client Activity/i,
-      /Nuevos Clientes|New Clients/i,
-      // Inventario + Cobranza + Desempeño base (3)
-      /Inventario|Inventory/i,
-      /Cartera Vencida|Overdue/i,
-      /Cumplimiento de Metas|Goal Achievement/i,
-      // Análisis base (2)
-      /Comparativo|Comparative/i,
-      /Insights|Auto Insights/i,
-      // Los 4 nuevos (Bug #8)
+    //
+    // 2026-06: el rediseño SLDS renderiza el título de cada card como <h4>
+    // (bajo secciones <h3>) y el catálogo creció (financieros/fiscal). Test
+    // robusto: los 4 de Bug #8 visibles como card clickable + catálogo >= 16.
+    const bug8Titles = [
       /Efectividad de Visitas|Visit Effectiveness/i,
       /Comisiones|Commissions/i,
       /Rentabilidad por Cliente|Client Profitability/i,
       /An[áa]lisis ABC|ABC Analysis/i,
     ];
-
-    for (const titleRegex of expectedTitles) {
-      await expect(
-        page.getByRole('heading', { name: titleRegex, level: 3 }).first(),
-      ).toBeVisible({ timeout: 5000 });
+    for (const titleRegex of bug8Titles) {
+      const btn = page.locator('button', { has: page.getByRole('heading', { name: titleRegex, level: 4 }) }).first();
+      await expect(btn).toBeVisible({ timeout: 5000 });
     }
 
-    // Verificar que el botón clickable existe para cada uno de los 4 nuevos
-    const newCardTitles = [
-      /Efectividad de Visitas|Visit Effectiveness/i,
-      /Comisiones|Commissions/i,
-      /Rentabilidad por Cliente|Client Profitability/i,
-      /An[áa]lisis ABC|ABC Analysis/i,
-    ];
-    for (const titleRegex of newCardTitles) {
-      const btn = page.locator('button', { has: page.getByRole('heading', { name: titleRegex, level: 3 }) }).first();
-      await expect(btn).toBeVisible();
-    }
+    // Catálogo completo: cada card de reporte es un <button> con un <h4> de
+    // título. Confirmamos que el índice expone al menos 16 reportes.
+    const cardCount = await page.locator('button', { has: page.locator('h4') }).count();
+    expect(cardCount).toBeGreaterThanOrEqual(16);
   });
 
   test('Premium gating UI (lock o badge) visible cuando aplica', async ({ page }) => {

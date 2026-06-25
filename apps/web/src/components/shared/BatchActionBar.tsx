@@ -52,7 +52,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
         <button
           onClick={onActivate}
           disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success bg-white border border-success/30 rounded hover:bg-success/10 transition-colors disabled:opacity-50"
         >
           <Power className="w-3 h-3" />
           <span>{tc('activate')}</span>

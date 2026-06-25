@@ -89,6 +89,11 @@ namespace HandySuites.Application.CompanySettings.DTOs
         // si el tenant esta en free trial sin plan o el endpoint omite el campo.
         [JsonPropertyName("permitirAnticiposEnCampo")]
         public bool PermitirAnticiposEnCampo { get; set; } = false;
+
+        // Radio (en metros) de la geocerca usada para validar el check-in del
+        // vendedor contra la ubicación del cliente. Default 80m.
+        [JsonPropertyName("geocercaRadioMetros")]
+        public int GeocercaRadioMetros { get; set; } = 80;
     }
 
     public class UpdateCompanySettingsRequest
@@ -118,6 +123,9 @@ namespace HandySuites.Application.CompanySettings.DTOs
         public string? DiasLaborables { get; set; }
         [JsonPropertyName("modoVentaDefault")]
         public string? ModoVentaDefault { get; set; }
+
+        [JsonPropertyName("geocercaRadioMetros")]
+        public int? GeocercaRadioMetros { get; set; }
     }
 
     public class UploadLogoResponse

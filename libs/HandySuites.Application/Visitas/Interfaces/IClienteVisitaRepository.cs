@@ -28,4 +28,10 @@ public interface IClienteVisitaRepository
 
     // Existence check
     Task<bool> ExisteClienteEnTenantAsync(int clienteId, int tenantId);
+
+    // Vendedor asignado al cliente (para agendar la visita al vendedor dueño de la cartera).
+    Task<int?> ObtenerVendedorIdDeClienteAsync(int clienteId, int tenantId);
+
+    // Cobertura — clientes activos con zona asignada y su estado de visita vs frecuencia.
+    Task<List<CoberturaClienteDto>> ObtenerCoberturaAsync(int tenantId, DateTime nowUtc);
 }

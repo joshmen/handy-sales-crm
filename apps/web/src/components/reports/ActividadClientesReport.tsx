@@ -32,7 +32,7 @@ export function ActividadClientesReport() {
   const limit = 30;
   const datesRef = useRef(dates);
   datesRef.current = dates;
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: 'actividad-clientes',
     title: t('reportTitle'),
     dateRange: dates,
@@ -84,7 +84,7 @@ export function ActividadClientesReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} onExportPDF={data && data.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} onExportPDF={data && data.length > 0 ? exportPDF : undefined} onExportExcel={data && data.length > 0 ? exportExcel : undefined} exporting={exporting} />
 
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">

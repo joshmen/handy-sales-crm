@@ -33,7 +33,7 @@ export function CumplimientoMetasReport() {
   const [data, setData] = useState<CumplimientoMetasResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: "cumplimiento-metas", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalGoals"), value: data.resumen.totalMetas },
@@ -62,11 +62,11 @@ export function CumplimientoMetasReport() {
     { key: "meta", header: t("goal"), align: "right", sortable: true, render: (r) => r.tipo === "ventas" ? fmt(r.meta) : String(r.meta) },
     { key: "actual", header: t("actual"), align: "right", sortable: true, render: (r) => r.tipo === "ventas" ? fmt(r.actual) : String(r.actual) },
     { key: "porcentajeCumplimiento", header: t("achievementPct"), align: "right", sortable: true, render: (r) => {
-      const color = r.porcentajeCumplimiento >= 100 ? "text-green-600" : r.porcentajeCumplimiento >= 70 ? "text-amber-600" : "text-red-600";
+      const color = r.porcentajeCumplimiento >= 100 ? "text-primary" : r.porcentajeCumplimiento >= 70 ? "text-amber-600" : "text-red-600";
       return <span className={`font-semibold ${color}`}>{r.porcentajeCumplimiento}%</span>;
     }},
     { key: "cumplida", header: t("status"), render: (r) => r.cumplida
-      ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">{t("statusAchieved")}</span>
+      ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/5 text-primary">{t("statusAchieved")}</span>
       : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">{t("statusPending")}</span>
     },
   ];
@@ -74,7 +74,7 @@ export function CumplimientoMetasReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "40%" } },
-    colors: [chartColors.textMuted, chartColors.series.green],
+    colors: [chartColors.textMuted, chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
     xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
@@ -85,7 +85,7 @@ export function CumplimientoMetasReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.metas.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.metas.length > 0 ? exportPDF : undefined} onExportExcel={data && data.metas.length > 0 ? exportExcel : undefined} exporting={exporting} />
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-sm">{tc("clickApply")}</p>

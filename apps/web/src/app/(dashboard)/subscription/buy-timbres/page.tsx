@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import { SbBilling } from '@/components/layout/DashboardIcons';
 import { useTranslations } from 'next-intl';
-import { useBackendTranslation } from '@/hooks/useBackendTranslation';
+import { getApiErrorMessage } from '@/lib/api';
 import { subscriptionService } from '@/services/api/subscriptions';
 import type { TimbreBalance, TimbrePackage } from '@/types/subscription';
 import { loadStripe } from '@stripe/stripe-js';
@@ -22,7 +22,6 @@ export default function BuyTimbresPage() {
   const t = useTranslations('subscription');
   const tb = useTranslations('subscription.buyTimbres');
   const tc = useTranslations('common');
-  const { tApi } = useBackendTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [timbres, setTimbres] = useState<TimbreBalance | null>(null);
@@ -43,8 +42,8 @@ export default function BuyTimbresPage() {
       // Auto-select the most popular or first package
       const popular = pkgData.find(p => p.badge === 'mostPopular');
       setSelectedPackageId(popular?.id ?? pkgData[0]?.id ?? null);
-    } catch {
-      toast({ title: tb('errorLoadingBalance'), variant: 'destructive' });
+    } catch (err) {
+      toast({ title: tb('errorLoadingBalance'), description: getApiErrorMessage(err, tb('errorLoadingBalance')), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -59,11 +58,9 @@ export default function BuyTimbresPage() {
       const { clientSecret } = await subscriptionService.createTimbreCheckout(selectedPackageId);
       setCheckoutClientSecret(clientSecret);
     } catch (err) {
-      const message = err instanceof Error ? err.message : '';
-      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       toast({
         title: tb('errorStartingPurchase'),
-        description: apiError ? tApi(apiError) : message || undefined,
+        description: getApiErrorMessage(err),
         variant: 'destructive',
       });
       setPurchasing(false);
@@ -75,7 +72,7 @@ export default function BuyTimbresPage() {
 
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
       <span className="sr-only">Loading...</span>
     </div>
   );
@@ -84,13 +81,15 @@ export default function BuyTimbresPage() {
   if (checkoutClientSecret) {
     return (
       <PageHeader
+        section="empresa"
+        icon={ShieldCheck}
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
           { label: t('title'), href: '/subscription' },
           { label: tb('title') },
         ]}
         title={tb('title')}
-        subtitle={selectedPkg ? `${selectedPkg.cantidad} ${tb('timbres')} — ${formatMXN(selectedPkg.precioMxn)}` : ''}
+        subtitle={selectedPkg ? `${selectedPkg.cantidad} ${tb('timbres')}: ${formatMXN(selectedPkg.precioMxn)}` : ''}
         actions={
           <Button
             variant="outline"
@@ -120,6 +119,8 @@ export default function BuyTimbresPage() {
   // ── Package selection view ──
   return (
     <PageHeader
+      section="empresa"
+      icon={ShieldCheck}
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
         { label: t('title'), href: '/subscription' },
@@ -131,7 +132,7 @@ export default function BuyTimbresPage() {
       <div className="max-w-3xl mx-auto">
         {/* Current balance */}
         {timbres && (
-          <div className="bg-card rounded-xl border border-border p-5 mb-6">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-5 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center"><SbBilling size={32} /></div>
               <div>
@@ -139,7 +140,7 @@ export default function BuyTimbresPage() {
                 <p className="text-xs text-muted-foreground">
                   {tb('usedThisMonth', { used: timbres.usados, max: timbres.maximo })}
                   {timbres.extras > 0 && ` · ${tb('extrasAvailable', { extras: timbres.extras })}`}
-                  {' · '}<span className="font-semibold text-green-600">{tb('available', { count: timbres.disponibles })}</span>
+                  {' · '}<span className="font-semibold text-primary">{tb('available', { count: timbres.disponibles })}</span>
                 </p>
               </div>
             </div>
@@ -155,20 +156,20 @@ export default function BuyTimbresPage() {
               role="radio"
               aria-checked={selectedPackageId === pkg.id}
               onClick={() => setSelectedPackageId(pkg.id)}
-              className={`relative p-5 rounded-xl border-2 text-left transition-all ${
+              className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
                 selectedPackageId === pkg.id
-                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg'
+                  ? 'border-primary bg-primary/5 dark:bg-primary/15 shadow-lg'
                   : 'border-border bg-card hover:border-muted-foreground/30'
               }`}
             >
               {pkg.badge && (
-                <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-success text-success-foreground rounded-full">
+                <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-primary text-primary-foreground rounded-full">
                   {tb(pkg.badge)}
                 </span>
               )}
               {selectedPackageId === pkg.id && (
-                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
                 </div>
               )}
               <p className="text-3xl font-bold mb-1">{pkg.cantidad}</p>
@@ -191,7 +192,7 @@ export default function BuyTimbresPage() {
           <Button
             onClick={handlePurchase}
             disabled={purchasing || !selectedPkg}
-            className="h-11 px-8 bg-success hover:bg-success/90 text-white font-medium rounded-xl"
+            className="h-11 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-xl"
           >
             {purchasing ? (
               <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {tb('processing')}</>

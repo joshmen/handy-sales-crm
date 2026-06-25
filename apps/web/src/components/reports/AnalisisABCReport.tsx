@@ -33,7 +33,7 @@ export function AnalisisABCReport() {
   const [data, setData] = useState<AnalisisABCResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: "analisis-abc", title: `${t('reportTitle')} (${tipo === 'clientes' ? t('clients') : t('products')})`, dateRange: dates,
     kpis: data ? [
       { label: t("classA"), value: data.resumen.claseA },
@@ -68,7 +68,7 @@ export function AnalisisABCReport() {
     chart: { type: "line", toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     stroke: { width: [0, 3], curve: "smooth" },
     plotOptions: { bar: { borderRadius: 4, columnWidth: "60%" } },
-    colors: [chartColors.series.green, chartColors.series.blue],
+    colors: [chartColors.series.blue, chartColors.series.amber],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: false },
     xaxis: { categories: top20.map(i => i.nombre.substring(0, 15)), labels: { style: { fontSize: "9px", colors: chartColors.textMuted }, rotate: -30 } },
@@ -82,7 +82,7 @@ export function AnalisisABCReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} onExportExcel={data ? exportExcel : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-foreground/70">{t("analyze")}</label>
           <select value={tipo} onChange={e => setTipo(e.target.value as "clientes" | "productos")} className="px-3 py-2 text-sm border border-border-default rounded-md">

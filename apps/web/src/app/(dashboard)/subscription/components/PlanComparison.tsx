@@ -111,8 +111,8 @@ export function PlanComparisonPage({
             aria-checked={billingInterval === "year"}
             aria-label={t('annualBillingLabel')}
             onClick={() => setBillingInterval(billingInterval === "month" ? "year" : "month")}
-            className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-            style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
+            className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            style={{ backgroundColor: billingInterval === "year" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)" }}
           >
             <div
               className="absolute top-[3px] w-[22px] h-[22px] bg-surface-2 rounded-full shadow-md transition-all duration-300"
@@ -123,7 +123,7 @@ export function PlanComparisonPage({
             {t('annual')}
           </span>
           {billingInterval === "year" && (
-            <span className="text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2.5 py-0.5 rounded-full animate-[subFadeIn_0.3s_ease-out]">
+            <span className="text-xs font-bold text-primary bg-primary/10 dark:bg-primary/20 px-2.5 py-0.5 rounded-full animate-[subFadeIn_0.3s_ease-out]">
               {t('discount')}
             </span>
           )}
@@ -187,7 +187,7 @@ export function QuickPlanComparison({
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-muted-foreground">{t('availablePlans')}</h3>
-          <Button variant="ghost" size="sm" onClick={onShowFullComparison} className="text-green-600 hover:text-green-700 hover:bg-muted/40 dark:hover:bg-muted/30">
+          <Button variant="ghost" size="sm" onClick={onShowFullComparison} className="text-primary hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/15">
             {t('viewFullComparison')}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
@@ -207,10 +207,10 @@ export function QuickPlanComparison({
                 key={plan.id}
                 className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                   isCurrent
-                    ? "border-green-200 dark:border-green-800 bg-muted/30 dark:bg-muted/20"
+                    ? "border-primary/30 dark:border-primary/40 bg-primary/5 dark:bg-primary/10"
                     : isRenewable
                       ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10"
-                      : "border-border hover:border-green-200 dark:hover:border-green-800 hover:bg-accent/50"
+                      : "border-border hover:border-primary/30 dark:hover:border-primary/40 hover:bg-accent/50"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -218,7 +218,7 @@ export function QuickPlanComparison({
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground">{plan.nombre}</span>
                       {isCurrent && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
                           {t('current')}
                         </span>
                       )}
@@ -240,7 +240,7 @@ export function QuickPlanComparison({
                     variant={isRenewable ? "default" : downgrade.isDowngrade ? "outline" : "default"}
                     onClick={() => onUpgrade(plan.codigo)}
                     disabled={processing}
-                    className={isRenewable ? "bg-success hover:bg-success/90 text-white" : downgrade.isDowngrade ? "" : "bg-success hover:bg-success/90 text-white"}
+                    className={isRenewable ? "bg-primary hover:bg-primary/90 text-primary-foreground" : downgrade.isDowngrade ? "" : "bg-primary hover:bg-primary/90 text-primary-foreground"}
                   >
                     {isRenewable ? t('renew') : downgrade.isDowngrade ? t('change') : t('upgrade')}
                   </Button>
@@ -281,14 +281,14 @@ function PlanCard({
       <div
         className={`group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
           isPopular
-            ? "border-2 border-green-500 dark:border-green-400 shadow-lg"
+            ? "border-2 border-primary dark:border-primary shadow-lg"
             : "border border-border-subtle dark:border-border-strong shadow-sm hover:shadow-md hover:border-border-default dark:hover:border-gray-600"
-        } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
+        } ${isCurrent ? "ring-2 ring-primary/30" : ""}`}
       >
         <div className="relative bg-card rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
           {isPopular && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-              <span className="bg-success text-success-foreground text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
+              <span className="bg-primary text-primary-foreground text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
                 {t('mostPopular')}
               </span>
@@ -298,7 +298,7 @@ function PlanCard({
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-xl font-bold text-foreground dark:text-white">{plan.nombre}</h3>
             {isCurrent && (
-              <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
                 {t('currentPlan')}
               </span>
             )}
@@ -317,7 +317,7 @@ function PlanCard({
               )}
             </div>
             {price > 0 && billingInterval === "year" && (
-              <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1.5 animate-[subFadeIn_0.3s_ease-out]">
+              <p className="text-xs text-primary font-medium mt-1.5 animate-[subFadeIn_0.3s_ease-out]">
                 {t('billedAnnually', { price: price.toLocaleString() })}
               </p>
             )}
@@ -325,20 +325,20 @@ function PlanCard({
 
           <ul className="space-y-2.5 flex-1">
             <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              <Check className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.5} />
               {t('users', { count: plan.maxUsuarios })}
             </li>
             <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              <Check className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.5} />
               {t('products', { count: plan.maxProductos.toLocaleString() })}
             </li>
             <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-muted-foreground/60">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              <Check className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.5} />
               {t('clientsPerMonth', { count: plan.maxClientesPorMes })}
             </li>
             <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-foreground/70 dark:text-muted-foreground/60" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeReportes ? (
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+                <Check className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.5} />
               ) : (
                 <X className="h-4 w-4 text-muted-foreground/60 dark:text-foreground/80 flex-shrink-0" />
               )}
@@ -346,7 +346,7 @@ function PlanCard({
             </li>
             <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-foreground/70 dark:text-muted-foreground/60" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeSoportePrioritario ? (
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+                <Check className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.5} />
               ) : (
                 <X className="h-4 w-4 text-muted-foreground/60 dark:text-foreground/80 flex-shrink-0" />
               )}
@@ -382,11 +382,11 @@ function PlanCard({
                 : isDisabled
                   ? "bg-surface-3 dark:bg-surface-3 text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
                   : isRenewable
-                    ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
                     : downgrade.isDowngrade
                       ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
                       : isPopular
-                        ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
                         : "bg-foreground dark:bg-surface-2 text-white dark:text-foreground hover:bg-foreground dark:hover:bg-surface-3"
             }`}
             disabled={isDisabled}

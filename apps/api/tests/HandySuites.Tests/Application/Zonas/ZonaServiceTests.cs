@@ -1,6 +1,7 @@
 using Xunit;
 using Moq;
 using FluentAssertions;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Zonas.DTOs;
 using HandySuites.Application.Zonas.Interfaces;
 using HandySuites.Application.Zonas.Services;
@@ -14,12 +15,13 @@ namespace HandySuites.Tests.Application.Zonas
     {
         private readonly Mock<IZonaRepository> _repoMock = new();
         private readonly Mock<ICurrentTenant> _tenantMock = new();
+        private readonly Mock<ITenantTimeZoneService> _tenantTzMock = new();
         private readonly ZonaService _service;
 
         public ZonaServiceTests()
         {
             _tenantMock.Setup(x => x.TenantId).Returns(1);
-            _service = new ZonaService(_repoMock.Object, _tenantMock.Object);
+            _service = new ZonaService(_repoMock.Object, _tenantMock.Object, _tenantTzMock.Object);
         }
 
         [Fact]

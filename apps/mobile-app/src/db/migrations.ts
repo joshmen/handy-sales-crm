@@ -624,5 +624,21 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // v25 (2026-06-21): fecha_programada en visitas. El backend ya enviaba
+      // SyncVisitaDto.FechaProgramada (visita agendada desde la web con
+      // ClienteVisita.FechaProgramada) pero el mapper la descartaba porque no
+      // existía columna local — el vendedor nunca veía las visitas agendadas.
+      // Optional: visitas espontaneas (check-in directo) no tienen fecha agendada.
+      toVersion: 25,
+      steps: [
+        addColumns({
+          table: 'visitas',
+          columns: [
+            { name: 'fecha_programada', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

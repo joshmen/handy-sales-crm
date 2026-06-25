@@ -16,6 +16,7 @@ public interface IRutaVendedorRepository
     Task<List<RutaVendedorDto>> ObtenerPorUsuarioAsync(int tenantId, int usuarioId);
     Task<RutaVendedorDto?> ObtenerRutaDelDiaAsync(int tenantId, int usuarioId, DateTime? fecha = null);
     Task<List<RutaVendedorDto>> ObtenerRutasPendientesAsync(int tenantId, int usuarioId);
+    Task<List<RutaVendedorDto>> ObtenerRutasActivasParaMapaAsync(int tenantId, int? usuarioId);
 
     // Gestión de estado
     Task<bool> IniciarRutaAsync(int id, DateTime horaInicio);
@@ -98,4 +99,5 @@ public interface IRutaVendedorRepository
     // === Existence checks ===
     Task<bool> ExisteUsuarioEnTenantAsync(int usuarioId, int tenantId);
     Task<bool> ExisteZonaEnTenantAsync(int zonaId, int tenantId);
+    Task<bool> ExisteVehiculoEnTenantAsync(int vehiculoId, int tenantId);
 }

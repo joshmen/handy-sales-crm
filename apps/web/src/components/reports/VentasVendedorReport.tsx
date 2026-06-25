@@ -31,7 +31,7 @@ export function VentasVendedorReport() {
   const [data, setData] = useState<VentaVendedor[] | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: 'ventas-vendedor',
     title: t('reportTitle'),
     dateRange: dates,
@@ -64,7 +64,7 @@ export function VentasVendedorReport() {
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: 'bar', toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
     plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '65%' } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: [chartColors.textPrimary] }, offsetX: 5 },
     xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: chartColors.textMuted } } },
@@ -74,7 +74,7 @@ export function VentasVendedorReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data && data.length > 0 ? exportPDF : undefined} onExportExcel={data && data.length > 0 ? exportExcel : undefined} exporting={exporting} />
 
       {!data && !loading && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">

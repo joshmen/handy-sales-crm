@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Drawer } from '@/components/ui/Drawer';
-import { Lightning } from '@phosphor-icons/react';
+import { Zap } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useFormatters } from '@/hooks/useFormatters';
 import type { AutomationExecution } from '@/types/automations';
@@ -49,7 +49,7 @@ export function ExecutionDetailDrawer({ execution, onClose }: Props) {
       onClose={onClose}
       width="lg"
       title={templateName || ' '}
-      icon={<Lightning size={20} className="text-amber-500" />}
+      icon={<Zap size={20} className="text-amber-500" />}
     >
       {execution && (
         <div className="space-y-5">
@@ -65,7 +65,7 @@ export function ExecutionDetailDrawer({ execution, onClose }: Props) {
             <div>
               <span className="font-medium">{t('detailDrawer.statusLabel')}: </span>
               <span className={
-                execution.status === 'Success' ? 'text-green-600' :
+                execution.status === 'Success' ? 'text-primary' :
                 execution.status === 'Failed' ? 'text-red-600' :
                 'text-amber-600'
               }>{t(`status.${execution.status.toLowerCase()}` as never)}</span>
@@ -330,7 +330,7 @@ function CobroExitosoDetail({ data }: { data: CobroExitosoData }) {
   return (
     <div className="space-y-4">
       {data.totalMonto !== undefined && (
-        <Kpi label={t('totalCobrado')} value={fmtMoney(data.totalMonto)} accent="text-green-700" />
+        <Kpi label={t('totalCobrado')} value={fmtMoney(data.totalMonto)} accent="text-primary" />
       )}
       <DataTable
         headers={[t('cCliente'), t('cMonto'), t('cFecha')]}
@@ -384,7 +384,7 @@ function ClienteInactivoDetail({ data }: { data: ClienteInactivoData }) {
   return (
     <div className="space-y-4">
       {data.visitasAgendadas !== undefined && (
-        <Kpi label={t('visitasAgendadas')} value={data.visitasAgendadas} accent="text-green-700" />
+        <Kpi label={t('visitasAgendadas')} value={data.visitasAgendadas} accent="text-primary" />
       )}
       <DataTable
         headers={[t('cCliente'), t('cVendedor'), t('cDiasInactivo'), t('cUltimaVisita')]}

@@ -9,6 +9,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { TabBar } from '@/components/ui/TabBar';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PromocionDto, PromocionCreateRequest, promotionService } from '@/services/api/promotions';
@@ -21,7 +22,6 @@ import {
   Plus,
   Gift,
   Pencil,
-  RefreshCw,
   Calendar,
   Package,
   Check,
@@ -32,16 +32,16 @@ import {
   Upload,
   ChevronDown,
   Trash2,
+  Megaphone,
 } from 'lucide-react';
 import { SearchBar } from '@/components/common/SearchBar';
-import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { SoftBadge } from '@/components/ui/SoftBadge';
 import { useTranslations } from 'next-intl';
 import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { useApiErrorToast } from '@/hooks/useApiErrorToast';
 import { FieldError } from '@/components/forms/FieldError';
-import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { useFormatters } from '@/hooks/useFormatters';
 
@@ -84,6 +84,7 @@ type PromotionFormData = z.infer<typeof promotionSchema>;
 export default function PromotionsPage() {
   const t = useTranslations('promotions');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
   const { formatDate: _fmtDate } = useFormatters();
@@ -190,65 +191,48 @@ export default function PromotionsPage() {
     return sorted;
   }, [paginatedPromotions, sortKey, sortDir]);
 
-  // Column definitions
+  // Estado de la promoción a partir de activo + vigencia (espejo del Estado pill del mockup).
+  const getPromoEstado = useCallback((promo: PromocionDto): { label: string; tone: 'success' | 'info' | 'default' } => {
+    if (!promo.activo) return { label: t('statusInactive'), tone: 'default' };
+    if (isExpired(promo.fechaFin)) return { label: t('statusFinished'), tone: 'default' };
+    if (promo.fechaInicio && new Date(promo.fechaInicio) > new Date()) return { label: t('statusScheduled'), tone: 'info' };
+    return { label: t('statusActive'), tone: 'success' };
+  }, [t]);
+
+  // Mecánica legible a partir del tipo de promoción.
+  const getPromoMecanica = useCallback((promo: PromocionDto): string => {
+    if (promo.tipoPromocion === 'Regalo' && promo.cantidadCompra && promo.cantidadBonificada) {
+      return t('bogoMechanic', { n: promo.cantidadCompra, m: promo.cantidadBonificada });
+    }
+    return t('percentMechanic', { pct: promo.descuentoPorcentaje });
+  }, [t]);
+
+  // Column definitions — espejo del PromotionsPage del mockup Claude Design:
+  // Promoción (icono regalo en caja ámbar + nombre) · Mecánica · Vigencia · Estado (pill).
   const promoColumns = useMemo<DataGridColumn<PromocionDto>[]>(() => [
     {
       key: 'nombre',
-      label: t('name'),
+      label: t('promotionColumn'),
       sortable: true,
       width: 'flex',
       cellRenderer: (promo) => (
-        <div className={`${!promo.activo ? 'opacity-50' : ''}`}>
-          <div className="text-[13px] font-medium text-foreground truncate">{promo.nombre}</div>
-          {promo.descripcion && <div className="text-xs text-muted-foreground truncate mt-0.5">{promo.descripcion}</div>}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-8 h-8 rounded-[9px] bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+            <Gift className="w-4 h-4" />
+          </span>
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-foreground truncate">{promo.nombre}</div>
+            {promo.descripcion && <div className="text-[11px] text-muted-foreground truncate">{promo.descripcion}</div>}
+          </div>
         </div>
       ),
     },
     {
-      key: 'productos',
-      label: t('products'),
-      width: 200,
-      cellRenderer: (promo) => promo.productos && promo.productos.length > 0 ? (
-        <div className="group relative">
-          <div className="flex items-center gap-1.5">
-            <Package className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-            <span className="text-[13px] text-foreground/80">
-              {promo.productos.length === 1 ? promo.productos[0].productoNombre : t('productsCount', { count: promo.productos.length, plural: 's' })}
-            </span>
-          </div>
-          <div className="invisible group-hover:visible absolute z-20 left-0 top-full mt-1 w-56 bg-foreground text-white text-xs rounded-lg shadow-lg p-2 max-h-[200px] overflow-y-auto">
-            <div className="font-medium text-muted-foreground/60 mb-1 px-1">{t('productsCount', { count: promo.productos.length, plural: promo.productos.length !== 1 ? 's' : '' })}:</div>
-            {promo.productos.map((prod) => (
-              <div key={prod.productoId} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-foreground">
-                <Package className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">{prod.productoNombre}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : <span className="text-[11px] text-muted-foreground">{t('noProducts')}</span>,
-    },
-    {
-      key: 'descuentoPorcentaje',
-      label: t('discountOrGift'),
-      sortable: true,
-      width: 110,
-      align: 'center',
-      cellRenderer: (promo) => {
-        if (promo.tipoPromocion === 'Regalo' && promo.cantidadCompra && promo.cantidadBonificada) {
-          return (
-            <span
-              className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[13px] font-medium text-amber-800 bg-amber-50 rounded-full"
-              title={promo.productoBonificadoNombre ? t('bogoBadgeDistinto', { n: promo.cantidadCompra, m: promo.cantidadBonificada, producto: promo.productoBonificadoNombre }) : t('bogoBadgeMismo', { n: promo.cantidadCompra, m: promo.cantidadBonificada })}
-            >
-              {promo.cantidadCompra}+{promo.cantidadBonificada}
-            </span>
-          );
-        }
-        return (
-          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[13px] font-medium text-blue-700 bg-blue-50 rounded-full">{promo.descuentoPorcentaje}%</span>
-        );
-      },
+      key: 'mecanica',
+      label: t('mechanic'),
+      width: 'flex',
+      hiddenOnMobile: true,
+      cellRenderer: (promo) => <span className="text-[13px] text-muted-foreground">{getPromoMecanica(promo)}</span>,
     },
     {
       key: 'fechaInicio',
@@ -256,25 +240,20 @@ export default function PromotionsPage() {
       sortable: true,
       width: 200,
       cellRenderer: (promo) => (
-        <div>
-          <div className="flex items-center gap-1.5 text-[13px] text-foreground/70">
-            <Calendar className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
-            <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
-          </div>
-          {isExpired(promo.fechaFin) && <span className="text-[11px] text-red-500 ml-5">{t('expired')}</span>}
+        <div className="flex items-center gap-1.5 text-[13px] text-foreground/70">
+          <Calendar className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+          <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
         </div>
       ),
     },
     {
       key: 'activo',
-      label: tc('active'),
-      width: 50,
-      align: 'center',
-      cellRenderer: (promo) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ActiveToggle isActive={promo.activo} onToggle={() => handleToggleActive(promo)} disabled={loading} isLoading={togglingId === promo.id} />
-        </div>
-      ),
+      label: t('status'),
+      width: 120,
+      cellRenderer: (promo) => {
+        const estado = getPromoEstado(promo);
+        return <SoftBadge tone={estado.tone}>{estado.label}</SoftBadge>;
+      },
     },
     {
       key: 'actions',
@@ -296,7 +275,7 @@ export default function PromotionsPage() {
         </div>
       ),
     },
-  ], [loading, togglingId, deleteConfirmId, formatDate, isExpired]);
+  ], [loading, deleteConfirmId, formatDate, getPromoEstado, getPromoMecanica, t, tc]);
 
   // Batch operations
   const visibleIds = sortedPromotions.map(p => p.id);
@@ -335,11 +314,6 @@ export default function PromotionsPage() {
       batch.setBatchLoading(false);
       await fetchPromotions();
     }
-  };
-
-  const handleRefresh = () => {
-    fetchPromotions();
-    toast.success(t('refreshed'));
   };
 
   const handleOpenCreate = () => {
@@ -440,8 +414,11 @@ export default function PromotionsPage() {
 
   return (
     <PageHeader
+      section="catalogo"
       breadcrumbs={[
         { label: tc('home'), href: '/dashboard' },
+        { label: tn('sectionCatalog') },
+        { label: tn('pricing') },
         { label: t('title') },
       ]}
       title={t('title')}
@@ -451,9 +428,9 @@ export default function PromotionsPage() {
           <div className="relative" data-tour="promotions-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-foreground border border-border-subtle rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -479,40 +456,32 @@ export default function PromotionsPage() {
               </>
             )}
           </div>
-          <button
-            data-tour="promotions-create-btn"
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+          <Button variant="wbPrimary" data-tour="promotions-create-btn" onClick={handleOpenCreate}>
+            <Plus className="w-4 h-4 mr-2" />
             <span>{t('newPromotion')}</span>
-          </button>
+          </Button>
         </>
       }
     >
-      <div className="space-y-4">
-        {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <SearchBar
-            value={search}
-            onChange={(v) => { setSearch(v); setCurrentPage(1); }}
-            placeholder={t('searchPlaceholder')}
-            dataTour="promotions-search"
-          />
-
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{tc('refresh')}</span>
-          </button>
-
-          <div data-tour="promotions-toggle-inactive" className="ml-auto">
-            <InactiveToggle
-              value={showInactive}
-              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+      <div className="space-y-5">
+        {/* Filtros segmentados (estado) + búsqueda */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 lg:flex-1">
+            <TabBar
+              items={[
+                { id: 'active', label: t('statusFilter.active') },
+                { id: 'all', label: t('statusFilter.all') },
+              ]}
+              value={showInactive ? 'all' : 'active'}
+              onChange={(id) => { setShowInactive(id === 'all'); setCurrentPage(1); }}
+            />
+          </div>
+          <div className="w-full sm:w-72 lg:w-80" data-tour="promotions-search">
+            <SearchBar
+              value={search}
+              onChange={(v) => { setSearch(v); setCurrentPage(1); }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full"
             />
           </div>
         </div>
@@ -561,8 +530,8 @@ export default function PromotionsPage() {
               <div className={`${!promo.activo ? 'opacity-60' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <Megaphone className="w-5 h-5 text-purple-600" weight="duotone" />
+                    <div className="w-10 h-10 rounded-[10px] bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                      <Megaphone className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{promo.nombre}</p>
@@ -575,7 +544,8 @@ export default function PromotionsPage() {
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><Package className="w-3 h-3 text-blue-400" /> {t('productsCount', { count: promo.productos?.length || 0, plural: (promo.productos?.length || 0) !== 1 ? 's' : '' })}</span>
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">{promo.descuentoPorcentaje}%</span>
+                  <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-medium">{getPromoMecanica(promo)}</span>
+                  {(() => { const e = getPromoEstado(promo); return <SoftBadge tone={e.tone}>{e.label}</SoftBadge>; })()}
                 </div>
                 <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                   <Calendar className="w-3 h-3 text-violet-500" />
@@ -583,7 +553,7 @@ export default function PromotionsPage() {
                   {isExpired(promo.fechaFin) && <span className="text-red-500 ml-1">{t('expired')}</span>}
                 </div>
                 <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-border-subtle pt-2" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                  <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                   </button>
                   {deleteConfirmId === promo.id ? (
@@ -643,7 +613,7 @@ export default function PromotionsPage() {
               type="text"
               {...register('nombre')}
               placeholder={t('namePlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {errors.nombre && <FieldError message={errors.nombre.message} />}
           </div>
@@ -654,7 +624,7 @@ export default function PromotionsPage() {
               type="text"
               {...register('descripcion')}
               placeholder={t('descriptionPlaceholder')}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
@@ -666,12 +636,12 @@ export default function PromotionsPage() {
                 {watch('productoIds').map(id => {
                   const prod = productos.find(p => p.id === id);
                   return (
-                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full">
+                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/5 text-primary border border-primary/20 rounded-full">
                       {prod?.nombre || `#${id}`}
                       <button
                         type="button"
                         onClick={() => setValue('productoIds', watch('productoIds').filter(pid => pid !== id), { shouldDirty: true })}
-                        className="ml-0.5 p-0.5 hover:bg-green-100 rounded-full transition-colors"
+                        className="ml-0.5 p-0.5 hover:bg-primary/10 rounded-full transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -713,7 +683,7 @@ export default function PromotionsPage() {
           <div data-tour="promotions-drawer-tipo">
             <label className="block text-sm font-medium text-foreground/80 mb-2">{t('promotionType')}</label>
             <div className="grid grid-cols-2 gap-2">
-              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Porcentaje' ? 'border-green-500 bg-green-50' : 'border-border-default hover:border-border-strong'}`}>
+              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Porcentaje' ? 'border-primary bg-primary/5' : 'border-border-default hover:border-border-strong'}`}>
                 <input
                   type="radio"
                   value="Porcentaje"
@@ -726,7 +696,7 @@ export default function PromotionsPage() {
                   <p className="text-[11px] text-muted-foreground">{t('tipoPorcentajeHint')}</p>
                 </div>
               </label>
-              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Regalo' ? 'border-green-500 bg-green-50' : 'border-border-default hover:border-border-strong'}`}>
+              <label className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${watch('tipoPromocion') === 'Regalo' ? 'border-primary bg-primary/5' : 'border-border-default hover:border-border-strong'}`}>
                 <input
                   type="radio"
                   value="Regalo"
@@ -751,7 +721,7 @@ export default function PromotionsPage() {
                 max="100"
                 {...register('descuentoPorcentaje', { valueAsNumber: true })}
                 placeholder={t('discountPlaceholder')}
-                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
             </div>
@@ -766,7 +736,7 @@ export default function PromotionsPage() {
                     step="1"
                     {...register('cantidadCompra', { valueAsNumber: true })}
                     placeholder="10"
-                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   {errors.cantidadCompra && <FieldError message={errors.cantidadCompra.message} />}
                 </div>
@@ -778,7 +748,7 @@ export default function PromotionsPage() {
                     step="1"
                     {...register('cantidadBonificada', { valueAsNumber: true })}
                     placeholder="1"
-                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   {errors.cantidadBonificada && <FieldError message={errors.cantidadBonificada.message} />}
                 </div>

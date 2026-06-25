@@ -191,6 +191,25 @@ export async function getVentasProducto(params: {
   return res.data;
 }
 
+export interface VentaCategoria {
+  categoria: string;
+  totalVentas: number;
+  porcentajeDelTotal: number;
+}
+export interface VentasCategoriaResponse {
+  categorias: VentaCategoria[];
+  totalGeneral: number;
+}
+
+/** Ventas agrupadas por categoría de producto (donut del dashboard de Reportes). */
+export async function getVentasCategoria(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<VentasCategoriaResponse> {
+  const res = await api.get<VentasCategoriaResponse>(`/api/reports/ventas-categoria${formatParams(params)}`);
+  return res.data;
+}
+
 export async function getVentasZona(params: {
   desde?: string;
   hasta?: string;
@@ -226,6 +245,9 @@ export async function getInventario(): Promise<InventarioResponse> {
 
 export async function getDashboardEjecutivo(params: {
   periodo?: 'semana' | 'mes' | 'trimestre';
+  /** Rango libre (YYYY-MM-DD, días tenant). Si se envían, tienen prioridad sobre `periodo`. */
+  desde?: string;
+  hasta?: string;
 }): Promise<DashboardEjecutivoResponse> {
   const res = await api.get<DashboardEjecutivoResponse>(`/api/reports/ejecutivo${formatParams(params)}`);
   return res.data;
@@ -234,6 +256,26 @@ export async function getDashboardEjecutivo(params: {
 // ═══════════════════════════════════════════════════════
 // R9-R12 TYPES
 // ═══════════════════════════════════════════════════════
+
+/** Fila de antigüedad de saldos (agrupada por cliente o vendedor). */
+export interface CarteraFila {
+  nombre: string;
+  porVencer: number;
+  b0_30: number;
+  b1_31_60: number;
+  b2_61_90: number;
+  b3_mas90: number;
+  total: number;
+}
+
+export interface CarteraTotalesBucket {
+  porVencer: number;
+  b0_30: number;
+  b1_31_60: number;
+  b2_61_90: number;
+  b3_mas90: number;
+  total: number;
+}
 
 export interface CarteraVencidaResponse {
   clientes: CarteraCliente[];
@@ -245,6 +287,10 @@ export interface CarteraVencidaResponse {
   };
   totalCartera: number;
   totalClientes: number;
+  // Antigüedad de saldos (vista mejorada — buckets por fila + totales por bucket).
+  filas: CarteraFila[];
+  totalesPorBucket: CarteraTotalesBucket;
+  agrupar: string;
 }
 
 export interface CarteraCliente {
@@ -320,8 +366,97 @@ export interface Insight {
 export async function getCarteraVencida(params: {
   desde?: string;
   hasta?: string;
+  agrupar?: 'cliente' | 'vendedor';
 }): Promise<CarteraVencidaResponse> {
   const res = await api.get<CarteraVencidaResponse>(`/api/reports/cartera-vencida${formatParams(params)}`);
+  return res.data;
+}
+
+// ═══════════════════════════════════════════════════════
+// COBRANZA (CxC) — estado-cuenta / cobranza-periodo / por-vencer
+// ═══════════════════════════════════════════════════════
+
+export interface EstadoCuentaClienteOption {
+  id: number;
+  nombre: string;
+}
+
+export interface EstadoCuentaMovimiento {
+  fecha: string;
+  concepto: string;
+  cargo: number;
+  abono: number;
+  saldo: number;
+}
+
+export interface EstadoCuentaResponse {
+  clientes: EstadoCuentaClienteOption[];
+  clienteId: number;
+  clienteNombre: string;
+  clienteRfc: string;
+  movimientos: EstadoCuentaMovimiento[];
+  cargosTotal: number;
+  abonosTotal: number;
+  saldoActual: number;
+}
+
+export async function getEstadoCuenta(params: {
+  clienteId?: number;
+  desde?: string;
+  hasta?: string;
+}): Promise<EstadoCuentaResponse> {
+  const res = await api.get<EstadoCuentaResponse>(`/api/reports/estado-cuenta${formatParams(params)}`);
+  return res.data;
+}
+
+export interface CobranzaCobro {
+  fecha: string;
+  cliente: string;
+  vendedor: string;
+  formaPago: string;
+  monto: number;
+}
+
+export interface CobranzaPorForma {
+  forma: string;
+  monto: number;
+  porcentaje: number;
+}
+
+export interface CobranzaPeriodoResponse {
+  cobros: CobranzaCobro[];
+  total: number;
+  count: number;
+  porForma: CobranzaPorForma[];
+}
+
+export async function getCobranzaPeriodo(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<CobranzaPeriodoResponse> {
+  const res = await api.get<CobranzaPeriodoResponse>(`/api/reports/cobranza-periodo${formatParams(params)}`);
+  return res.data;
+}
+
+export interface PorVencerDocumento {
+  cliente: string;
+  folio: string;
+  vence: string;
+  dias: number;
+  monto: number;
+}
+
+export interface PorVencerResponse {
+  documentos: PorVencerDocumento[];
+  totalPorVencer: number;
+  dso: number;
+  count: number;
+}
+
+export async function getPorVencer(params: {
+  dias?: number;
+}): Promise<PorVencerResponse> {
+  const res = await api.get<PorVencerResponse>(`/api/reports/por-vencer${formatParams(params)}`);
   return res.data;
 }
 
@@ -364,6 +499,16 @@ export interface ReportTierInfo {
 
 export async function getReportTierInfo(): Promise<ReportTierInfo> {
   const res = await api.get<ReportTierInfo>('/api/reports/tier-info');
+  return res.data;
+}
+
+/**
+ * Mini-tendencias reales por reporte (clave = reportId del catálogo) para los
+ * sparklines de las filas. Solo incluye reportes con agregado barato disponible;
+ * los reportes sin serie no aparecen y el front omite su sparkline (no inventa data).
+ */
+export async function getReportSparklines(): Promise<Record<string, number[]>> {
+  const res = await api.get<Record<string, number[]>>('/api/reports/sparklines');
   return res.data;
 }
 
@@ -469,5 +614,229 @@ export async function getAnalisisABC(params: {
   tipo?: 'clientes' | 'productos';
 }): Promise<AnalisisABCResponse> {
   const res = await api.get<AnalisisABCResponse>(`/api/reports/analisis-abc${formatParams(params)}`);
+  return res.data;
+}
+
+// ═══════════════════════════════════════════════════════
+// COSTEO — inventario valorizado / margen / rotación
+// ═══════════════════════════════════════════════════════
+
+export interface InvValorizadoProducto {
+  productoId: number;
+  nombre: string;
+  existencia: number;
+  costo: number;
+  valor: number;
+}
+
+export interface InvValorizadoResponse {
+  productos: InvValorizadoProducto[];
+  totalValorizado: number;
+  totalSkus: number;
+  totalUnidades: number;
+}
+
+/** Inventario valorizado (sin rango). Costo promedio ponderado por SKU. */
+export async function getInventarioValorizado(): Promise<InvValorizadoResponse> {
+  const res = await api.get<InvValorizadoResponse>('/api/reports/inventario-valorizado');
+  return res.data;
+}
+
+export interface MargenProducto {
+  nombre: string;
+  precio: number;
+  costo: number;
+  margenUnitario: number;
+  margenPct: number;
+  utilidad: number;
+}
+
+export interface MargenResponse {
+  productos: MargenProducto[];
+  utilidadBruta: number;
+  margenPromedio: number;
+}
+
+/** Margen / rentabilidad por producto en un rango de fechas. */
+export async function getMargen(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<MargenResponse> {
+  const res = await api.get<MargenResponse>(`/api/reports/margen${formatParams(params)}`);
+  return res.data;
+}
+
+export type RotacionEstado = 'Reordenar' | 'Exceso' | 'OK';
+
+export interface RotacionProducto {
+  nombre: string;
+  existencia: number;
+  minimo: number;
+  rotacion: number;
+  diasInv: number;
+  estado: RotacionEstado;
+}
+
+export interface RotacionResponse {
+  productos: RotacionProducto[];
+}
+
+/** Rotación de inventario y reorden en un rango de fechas. */
+export async function getRotacion(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<RotacionResponse> {
+  const res = await api.get<RotacionResponse>(`/api/reports/rotacion${formatParams(params)}`);
+  return res.data;
+}
+
+// ═══════════════════════════════════════════════════════
+// FINANCIEROS / FISCALES (Contabilidad)
+// ═══════════════════════════════════════════════════════
+
+/** Balanza de comprobación: saldos deudores/acreedores por cuenta contable. */
+export interface BalanzaFila {
+  codigo: string;
+  nombre: string;
+  debe: number;
+  haber: number;
+}
+
+export interface BalanzaResponse {
+  filas: BalanzaFila[];
+  totalDebe: number;
+  totalHaber: number;
+  cuadrada: boolean;
+}
+
+export async function getBalanza(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<BalanzaResponse> {
+  const res = await api.get<BalanzaResponse>(`/api/reports/balanza${formatParams(params)}`);
+  return res.data;
+}
+
+/** Estado de resultados: ingresos, costos y utilidad del período. */
+export interface EstadoResultadosGasto {
+  categoria: string;
+  monto: number;
+}
+
+export interface EstadoResultadosResponse {
+  ventasNetas: number;
+  costoVentas: number;
+  utilidadBruta: number;
+  gastos: EstadoResultadosGasto[];
+  totalGastos: number;
+  utilidadOperacion: number;
+  utilidadNeta: number;
+  vertical: {
+    costoVentas: number;
+    utilidadBruta: number;
+    gastos: number;
+    utilidadOperacion: number;
+    utilidadNeta: number;
+  };
+}
+
+export async function getEstadoResultados(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<EstadoResultadosResponse> {
+  const res = await api.get<EstadoResultadosResponse>(`/api/reports/estado-resultados${formatParams(params)}`);
+  return res.data;
+}
+
+/** Balance general: activo, pasivo y capital a una fecha de corte. */
+export interface BalanceGeneralCuenta {
+  cuenta: string;
+  nombre: string;
+  monto: number;
+}
+
+export interface BalanceGeneralResponse {
+  activo: BalanceGeneralCuenta[];
+  totalActivo: number;
+  pasivo: BalanceGeneralCuenta[];
+  totalPasivo: number;
+  capital: BalanceGeneralCuenta[];
+  totalCapital: number;
+  totalPasivoCapital: number;
+  cuadrado: boolean;
+}
+
+export async function getBalanceGeneral(params: {
+  hasta?: string;
+}): Promise<BalanceGeneralResponse> {
+  const res = await api.get<BalanceGeneralResponse>(`/api/reports/balance-general${formatParams(params)}`);
+  return res.data;
+}
+
+/** Reporte de IVA: trasladado vs acreditable y saldo del período. */
+export interface ReporteIvaResponse {
+  trasladado: number;
+  acreditable: number;
+  saldo: number;
+  aCargo: boolean;
+  ventasGravadas: number;
+  comprasGravadas: number;
+}
+
+export async function getReporteIva(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<ReporteIvaResponse> {
+  const res = await api.get<ReporteIvaResponse>(`/api/reports/reporte-iva${formatParams(params)}`);
+  return res.data;
+}
+
+/** DIOT: declaración informativa de operaciones con terceros. */
+export interface DiotProveedor {
+  rfc: string;
+  nombre: string;
+  tipoTercero: string;
+  base: number;
+  ivaPagado: number;
+}
+
+export interface DiotResponse {
+  proveedores: DiotProveedor[];
+  totalBase: number;
+  totalIva: number;
+}
+
+export async function getDiot(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<DiotResponse> {
+  const res = await api.get<DiotResponse>(`/api/reports/diot${formatParams(params)}`);
+  return res.data;
+}
+
+/** Contabilidad electrónica: catálogo, balanza y pólizas en XML para el SAT. */
+export interface ContabilidadElectronicaResponse {
+  periodo: string;
+  catalogoXml: string;
+  balanzaXml: string;
+  polizasXml: string;
+}
+
+export async function getContabilidadElectronica(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<ContabilidadElectronicaResponse> {
+  const res = await api.get<ContabilidadElectronicaResponse>(`/api/reports/contabilidad-electronica${formatParams(params)}`);
+  return res.data;
+}
+
+/** Paquete para el contador: ZIP con todos los reportes financieros y fiscales del mes. */
+export async function descargarPaqueteContador(params: {
+  desde?: string;
+  hasta?: string;
+}): Promise<Blob> {
+  const res = await api.get<Blob>(`/api/reports/paquete-contador${formatParams(params)}`, {
+    responseType: 'blob',
+  });
   return res.data;
 }

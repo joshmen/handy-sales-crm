@@ -4,11 +4,13 @@ import { useCallback, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF, { GState } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useSession } from 'next-auth/react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { datosEmpresaService } from '@/services/api/datosEmpresa';
 import type { DatosEmpresa } from '@/types/datosEmpresa';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFormatDate } from '@/lib/formatters';
+import { downloadBlob } from '@/lib/download';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -35,7 +37,7 @@ export interface ReportExportConfig {
 
 // ─── Constants ──────────────────────────────────────────────────
 
-const DEFAULT_PRIMARY = '#16a34a';
+const DEFAULT_PRIMARY = '#0176D3';
 const MARGIN = 12;
 const HEADER_H = 30;
 const FOOTER_H = 10;
@@ -89,8 +91,14 @@ export function useReportExport(config: ReportExportConfig) {
   const { formatDate, formatCurrency } = useFormatters();
   const [exporting, setExporting] = useState(false);
   const { settings } = useCompany();
+  const { data: session } = useSession();
   const cfgRef = useRef(config);
   cfgRef.current = config;
+
+  // Usuario que genera el reporte — para el membrete (spec PDF). Se lee de la
+  // sesión (next-auth) por robustez: siempre disponible bajo SessionProvider.
+  const userRef = useRef<string>('');
+  userRef.current = session?.user?.name || '';
 
   const datosRef = useRef<DatosEmpresa | null>(null);
   const logo64Ref = useRef<string | null>(null);
@@ -145,6 +153,12 @@ export function useReportExport(config: ReportExportConfig) {
 
         const contact = [datosRef.current?.telefono ? `Tel: ${datosRef.current.telefono}` : null, datosRef.current?.email].filter(Boolean);
         if (contact.length) { pdf.text(contact.join(' · '), lx, sy); }
+
+        // Usuario que genera (membrete, esquina superior derecha)
+        if (userRef.current) {
+          pdf.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(110, 110, 110);
+          pdf.text(`Generado por: ${userRef.current}`, pw - MARGIN, MARGIN + 6, { align: 'right' });
+        }
 
         // Colored divider
         pdf.setDrawColor(pr, pg, pb).setLineWidth(0.7);
@@ -246,6 +260,17 @@ export function useReportExport(config: ReportExportConfig) {
           headStyles: { fillColor: [pr, pg, pb], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5 },
           footStyles: { fillColor: [242, 242, 242], textColor: [30, 30, 30], fontStyle: 'bold' },
           alternateRowStyles: { fillColor: [249, 249, 249] },
+          // Negativos (y totales negativos) en rojo — spec PDF.
+          didParseCell: (data) => {
+            if (data.section === 'body' || data.section === 'foot') {
+              const txt = String(data.cell.raw ?? '').trim();
+              const isNeg = txt.startsWith('-')
+                || (txt.startsWith('(') && txt.endsWith(')'))
+                || /-\s*\$/.test(txt)
+                || /^\$\s*-/.test(txt);
+              if (isNeg) data.cell.styles.textColor = [200, 30, 30];
+            }
+          },
           didDrawPage: () => {
             tablePageCount++;
             // Only draw company header on the first page (already drawn above)
@@ -287,20 +312,93 @@ export function useReportExport(config: ReportExportConfig) {
       const fullFileName = `${slug}_${cfg.fileName}_${dateStamp}_${shortId}.pdf`;
 
       const blob = pdf.output('blob');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fullFileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, fullFileName);
     } finally {
       setExporting(false);
     }
   }, [settings]);
 
-  return { exportPDF, exporting };
+  // ── Excel export (.xlsx via exceljs, dynamic import para no inflar bundle) ──
+  const exportExcel = useCallback(async () => {
+    setExporting(true);
+    const cfg = cfgRef.current;
+    try {
+      const now = Date.now();
+      if (!datosRef.current || now - cacheAtRef.current > TTL) {
+        try { datosRef.current = await datosEmpresaService.get(); cacheAtRef.current = now; } catch { /* noop */ }
+      }
+      const name = datosRef.current?.razonSocial || settings?.companyName || 'Reporte';
+      const primaryArgb = 'FF' + (settings?.companyPrimaryColor || DEFAULT_PRIMARY).replace('#', '').toUpperCase().substring(0, 6);
+
+      const ExcelJS = await import('exceljs');
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Handy Suites';
+      const ws = wb.addWorksheet((cfg.title || 'Reporte').substring(0, 28).replace(/[*?:\\/[\]]/g, ' '));
+
+      const isNeg = (v: unknown) => {
+        const t = String(v ?? '').trim();
+        return t.startsWith('-') || (t.startsWith('(') && t.endsWith(')')) || /-\s*\$/.test(t) || /^\$\s*-/.test(t);
+      };
+
+      // ── Membrete ──
+      ws.addRow([name]).font = { bold: true, size: 14 };
+      const sub: string[] = [];
+      if (datosRef.current?.identificadorFiscal) sub.push(`ID Fiscal: ${datosRef.current.identificadorFiscal}`);
+      const addr = [datosRef.current?.direccion, datosRef.current?.ciudad, datosRef.current?.estado, datosRef.current?.codigoPostal].filter(Boolean);
+      if (addr.length) sub.push(addr.join(', '));
+      if (sub.length) ws.addRow([sub.join('   ·   ')]).font = { size: 9, color: { argb: 'FF6E6E6E' } };
+      ws.addRow([cfg.title.toUpperCase()]).font = { bold: true, size: 12, color: { argb: primaryArgb } };
+      if (cfg.dateRange) ws.addRow([`${fmtDateLocale(cfg.dateRange.desde)} - ${fmtDateLocale(cfg.dateRange.hasta)}`]).font = { size: 9 };
+      if (userRef.current) ws.addRow([`Generado por: ${userRef.current}`]).font = { size: 9, color: { argb: 'FF6E6E6E' } };
+      ws.addRow([]);
+
+      // ── KPIs ──
+      if (cfg.kpis?.length) {
+        ws.addRow(cfg.kpis.map(k => k.label)).font = { bold: true, size: 9, color: { argb: 'FF6E6E6E' } };
+        ws.addRow(cfg.kpis.map(k => String(k.value))).font = { bold: true, size: 11 };
+        ws.addRow([]);
+      }
+
+      // ── Tabla ──
+      if (cfg.table) {
+        const tbl = cfg.table;
+        const headerRow = ws.addRow(tbl.headers);
+        headerRow.eachCell((cell) => {
+          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+        });
+        tbl.rows.forEach((r) => {
+          const row = ws.addRow(r);
+          row.eachCell((cell, col) => { if (isNeg(r[col - 1])) cell.font = { color: { argb: 'FFC81E1E' } }; });
+        });
+        if (tbl.footerRow) {
+          const footer = tbl.footerRow;
+          const fr = ws.addRow(footer);
+          fr.eachCell((cell, col) => {
+            cell.font = { bold: true, color: { argb: isNeg(footer[col - 1]) ? 'FFC81E1E' : 'FF1E1E1E' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+          });
+        }
+        // Ancho de columnas según contenido
+        const allRows: (string | number)[][] = [tbl.headers, ...tbl.rows, ...(tbl.footerRow ? [tbl.footerRow] : [])];
+        tbl.headers.forEach((_, i) => {
+          let max = 10;
+          allRows.forEach(r => { const l = String(r[i] ?? '').length; if (l > max) max = l; });
+          ws.getColumn(i + 1).width = Math.min(max + 2, 42);
+        });
+      }
+
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const slug = (name || 'report').replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 30).toLowerCase();
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `${slug}_${cfg.fileName}_${dateStamp}.xlsx`);
+    } finally {
+      setExporting(false);
+    }
+  }, [settings]);
+
+  return { exportPDF, exportExcel, exporting };
 }
 
 // ─── Footer ─────────────────────────────────────────────────────

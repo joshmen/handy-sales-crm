@@ -60,6 +60,8 @@ public class ClienteListaDto
     public string? VendedorNombre { get; set; }
     public bool Activo { get; set; }
     public bool EsProspecto { get; set; }
+    public decimal Saldo { get; set; }
+    public int Pedidos30d { get; set; }
 }
 
 public class ClienteFiltroDto

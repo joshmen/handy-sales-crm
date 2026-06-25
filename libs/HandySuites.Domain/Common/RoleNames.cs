@@ -12,4 +12,5 @@ public static class RoleNames
     public const string Supervisor = "SUPERVISOR";
     public const string Viewer = "VIEWER";
     public const string Vendedor = "VENDEDOR";
+    public const string Almacenista = "ALMACENISTA";
 }

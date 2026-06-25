@@ -2,6 +2,7 @@ using System.Text.Json;
 using HandySuites.Api.Automations;
 using HandySuites.Application.Automations.Interfaces;
 using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
 using HandySuites.Shared.Email;
@@ -92,7 +93,7 @@ public class AutomationEngine : BackgroundService
         {
             // Skip automations for tenants with expired/inactive subscriptions
             var subStatus = tenantStatuses.GetValueOrDefault(automation.TenantId);
-            if (subStatus is not ("Trial" or "Active"))
+            if (!SubscriptionStatuses.IsActiveOrTrial(subStatus))
             {
                 _logger.LogWarning("Skipping automation {Slug} for tenant {TenantId}: subscription {Status}",
                     automation.Template.Slug, automation.TenantId, subStatus ?? "unknown");
@@ -123,7 +124,7 @@ public class AutomationEngine : BackgroundService
                 .Where(t => t.Id == automation.TenantId)
                 .Select(t => t.SubscriptionStatus)
                 .FirstOrDefaultAsync(ct);
-            if (freshStatus is not ("Trial" or "Active"))
+            if (!SubscriptionStatuses.IsActiveOrTrial(freshStatus))
             {
                 _logger.LogWarning("Skipping automation {Slug} for tenant {TenantId}: subscription expired during processing",
                     automation.Template.Slug, automation.TenantId);

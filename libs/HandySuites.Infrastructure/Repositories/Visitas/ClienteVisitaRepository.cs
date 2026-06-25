@@ -127,13 +127,16 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
                 ClienteId = v.ClienteId,
                 ClienteNombre = v.Cliente.Nombre,
                 ClienteDireccion = v.Cliente.Direccion,
+                VendedorNombre = v.Usuario.Nombre,
                 FechaProgramada = v.FechaProgramada,
                 FechaHoraInicio = v.FechaHoraInicio,
                 FechaHoraFin = v.FechaHoraFin,
                 TipoVisita = v.TipoVisita,
                 Resultado = v.Resultado,
                 DuracionMinutos = v.DuracionMinutos,
-                TienePedido = v.PedidoId.HasValue
+                TienePedido = v.PedidoId.HasValue,
+                DistanciaCliente = v.DistanciaCliente,
+                Monto = v.PedidoId != null ? (decimal?)v.Pedido!.Total : null
             })
             .ToListAsync();
 
@@ -386,6 +389,10 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         var completadas = visitas.Where(v => v.FechaHoraFin.HasValue).ToList();
         var conVenta = visitas.Where(v => v.Resultado == ResultadoVisita.Venta).ToList();
 
+        // Planeada (FechaProgramada set) vs Ad-hoc (registrada en campo, sin FechaProgramada).
+        var programadas = visitas.Where(v => v.FechaProgramada.HasValue).ToList();
+        var adHoc = visitas.Where(v => !v.FechaProgramada.HasValue).ToList();
+
         return new VisitaResumenDiarioDto
         {
             Fecha = fecha.Date,
@@ -396,7 +403,11 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
             VisitasCanceladas = visitas.Count(v => v.Resultado == ResultadoVisita.Cancelada),
             TasaConversion = completadas.Count > 0
                 ? Math.Round((decimal)conVenta.Count / completadas.Count * 100, 2)
-                : 0
+                : 0,
+            VisitasProgramadas = programadas.Count,
+            VisitasAdHoc = adHoc.Count,
+            VisitasCompletadasProgramadas = programadas.Count(v => v.FechaHoraFin.HasValue),
+            VisitasCompletadasAdHoc = adHoc.Count(v => v.FechaHoraFin.HasValue)
         };
     }
 
@@ -417,4 +428,88 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
     public Task<bool> ExisteClienteEnTenantAsync(int clienteId, int tenantId)
         => _db.Clientes.AsNoTracking()
             .AnyAsync(c => c.Id == clienteId && c.TenantId == tenantId);
+
+    public Task<int?> ObtenerVendedorIdDeClienteAsync(int clienteId, int tenantId)
+        => _db.Clientes.AsNoTracking()
+            .Where(c => c.Id == clienteId && c.TenantId == tenantId)
+            .Select(c => c.VendedorId)
+            .FirstOrDefaultAsync();
+
+    public async Task<List<CoberturaClienteDto>> ObtenerCoberturaAsync(int tenantId, DateTime nowUtc)
+    {
+        // 1) Clientes activos con zona asignada (join a Zonas → descarta IdZona huérfanos),
+        //    una sola query con los datos que necesitamos (zona, frecuencia, vendedor).
+        var clientes = await (
+            from c in _db.Clientes.AsNoTracking()
+            join z in _db.Zonas.AsNoTracking() on c.IdZona equals z.Id
+            where c.TenantId == tenantId && c.Activo
+            select new
+            {
+                c.Id,
+                c.Nombre,
+                ZonaNombre = (string?)z.Nombre,
+                z.FrecuenciaVisita,
+                VendedorNombre = c.Vendedor != null ? c.Vendedor.Nombre : null
+            }
+        ).ToListAsync();
+
+        if (clientes.Count == 0)
+            return new List<CoberturaClienteDto>();
+
+        // 2) Última visita (max FechaHoraInicio) por cliente — una sola agregación.
+        var clienteIds = clientes.Select(c => c.Id).ToList();
+        var ultimasVisitas = await _db.ClienteVisitas
+            .AsNoTracking()
+            .Where(v => v.TenantId == tenantId && v.Activo
+                && v.FechaHoraInicio != null
+                && clienteIds.Contains(v.ClienteId))
+            .GroupBy(v => v.ClienteId)
+            .Select(g => new { ClienteId = g.Key, Ultima = g.Max(x => x.FechaHoraInicio) })
+            .ToListAsync();
+        var ultimaPorCliente = ultimasVisitas.ToDictionary(x => x.ClienteId, x => x.Ultima);
+
+        // 3) Ensamblar DTOs en memoria — Estado/DiasVencido derivados de la frecuencia.
+        var resultado = clientes.Select(c =>
+        {
+            var frecuenciaDias = FrecuenciaDias(c.FrecuenciaVisita);
+            ultimaPorCliente.TryGetValue(c.Id, out var ultima);
+
+            int? diasDesdeUltima = ultima.HasValue
+                ? Math.Max(0, (int)(nowUtc - ultima.Value).TotalDays)
+                : (int?)null;
+
+            bool vencida = diasDesdeUltima == null || diasDesdeUltima > frecuenciaDias;
+            int diasVencido = diasDesdeUltima.HasValue
+                ? Math.Max(0, diasDesdeUltima.Value - frecuenciaDias)
+                // Nunca visitado: vencido por mucho. Usamos un valor grande para que
+                // ordene primero (días desde el "inicio de los tiempos" del cliente).
+                : int.MaxValue;
+
+            return new CoberturaClienteDto
+            {
+                ClienteId = c.Id,
+                ClienteNombre = c.Nombre,
+                ZonaNombre = c.ZonaNombre,
+                VendedorNombre = c.VendedorNombre,
+                UltimaVisita = ultima,
+                Frecuencia = (int)c.FrecuenciaVisita,
+                FrecuenciaNombre = c.FrecuenciaVisita.ToString(),
+                DiasDesdeUltima = diasDesdeUltima,
+                DiasVencido = diasVencido,
+                Estado = vencida ? "Vencida" : "PorVisitar"
+            };
+        })
+        .OrderByDescending(c => c.DiasVencido)
+        .ToList();
+
+        return resultado;
+    }
+
+    private static int FrecuenciaDias(FrecuenciaVisita frecuencia) => frecuencia switch
+    {
+        FrecuenciaVisita.Semanal => 7,
+        FrecuenciaVisita.Quincenal => 14,
+        FrecuenciaVisita.Mensual => 30,
+        _ => 7
+    };
 }

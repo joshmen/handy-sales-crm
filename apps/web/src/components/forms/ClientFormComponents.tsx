@@ -90,7 +90,7 @@ export function FormField({
 // === Input class helper ===
 
 export function inputClass(error?: { message?: string }) {
-  return `w-full h-9 px-3 text-[13px] border rounded focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent ${
+  return `w-full h-9 px-3 text-[13px] border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
     error ? 'border-red-500' : 'border-border-default'
   }`;
 }

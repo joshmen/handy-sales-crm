@@ -23,8 +23,8 @@ export const ActiveToggle: React.FC<ActiveToggleProps> = ({
       role="switch"
       aria-checked={isActive}
       aria-label={title ?? (isActive ? 'Desactivar' : 'Activar')}
-      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
-        isActive ? 'bg-green-500' : 'bg-surface-3'
+      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        isActive ? 'bg-success' : 'bg-surface-3'
       } ${isLoading ? 'opacity-50' : ''}`}
       title={title ?? (isActive ? 'Desactivar' : 'Activar')}
     >
@@ -35,7 +35,7 @@ export const ActiveToggle: React.FC<ActiveToggleProps> = ({
         }`}
       >
         {isActive ? (
-          <Check className="w-2.5 h-2.5 text-green-600" />
+          <Check className="w-2.5 h-2.5 text-success" />
         ) : (
           <X className="w-2.5 h-2.5 text-muted-foreground" />
         )}

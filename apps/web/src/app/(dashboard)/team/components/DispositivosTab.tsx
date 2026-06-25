@@ -48,7 +48,7 @@ function getStatusKey(status: number): string {
 
 function getStatusClassName(status: number): string {
   switch (status) {
-    case 0: return 'text-green-700 bg-green-100';
+    case 0: return 'text-primary bg-primary/10';
     case 1: case 2: return 'text-foreground/70 bg-surface-3';
     case 3: return 'text-red-700 bg-red-100';
     case 4: return 'text-orange-700 bg-orange-100';
@@ -209,9 +209,9 @@ export function DispositivosTab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" placeholder={t('searchPlaceholder')} aria-label={t('searchLabel')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+          <input type="text" placeholder={t('searchPlaceholder')} aria-label={t('searchLabel')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
         </div>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} aria-label={t('filterLabel')} className="w-full sm:w-48 px-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} aria-label={t('filterLabel')} className="w-full sm:w-48 px-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-surface-2">
           <option value="all">{t('allStatuses')}</option>
           <option value="0">{t('activeStatus')}</option>
           <option value="1">{t('loggedOut')}</option>
@@ -228,7 +228,7 @@ export function DispositivosTab() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-foreground/80 bg-surface-1 border-border-subtle' },
-            { label: t('activeLabel'), value: stats.active, icon: Wifi, color: 'text-green-700 bg-green-50 border-green-200' },
+            { label: t('activeLabel'), value: stats.active, icon: Wifi, color: 'text-primary bg-primary/5 border-primary/20' },
             { label: 'Android', value: stats.android, icon: Smartphone, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'iOS', value: stats.ios, icon: Smartphone, color: 'text-blue-700 bg-blue-50 border-blue-200' },
             { label: 'Web', value: stats.web, icon: Monitor, color: 'text-amber-700 bg-amber-50 border-amber-200' },
@@ -257,13 +257,13 @@ export function DispositivosTab() {
             const sKey = getStatusKey(session.status);
             const sClass = getStatusClassName(session.status);
             return (
-              <div key={session.id} className={`border border-border-subtle rounded-lg p-4 bg-surface-2 ${session.esSesionActual ? 'ring-2 ring-green-200 border-green-300' : ''}`}>
+              <div key={session.id} className={`border border-border-subtle rounded-lg p-4 bg-surface-2 ${session.esSesionActual ? 'ring-2 ring-primary/20 border-primary/30' : ''}`}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center flex-shrink-0"><DeviceIcon className="w-5 h-5 text-muted-foreground" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground truncate">{session.usuarioNombre}</span>
-                      {session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}
+                      {session.esSesionActual && <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{session.deviceName || session.deviceTypeNombre}{session.osVersion && ` - ${session.osVersion}`}</div>
                   </div>
@@ -307,8 +307,8 @@ export function DispositivosTab() {
                   const sKey = getStatusKey(session.status);
                   const sClass = getStatusClassName(session.status);
                   return (
-                    <tr key={session.id} className={`hover:bg-amber-50 transition-colors ${session.esSesionActual ? 'bg-green-50/40' : ''}`}>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div><div className="text-sm font-medium text-foreground">{session.usuarioNombre}</div>{session.ipAddress && <div className="text-[11px] text-muted-foreground">{session.ipAddress}</div>}</div>{session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}</div></td>
+                    <tr key={session.id} className={`hover:bg-amber-50 transition-colors ${session.esSesionActual ? 'bg-primary/5' : ''}`}>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div><div className="text-sm font-medium text-foreground">{session.usuarioNombre}</div>{session.ipAddress && <div className="text-[11px] text-muted-foreground">{session.ipAddress}</div>}</div>{session.esSesionActual && <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}</div></td>
                       <td className="px-4 py-3"><div className="flex items-center gap-2"><DeviceIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" /><div><div className="text-sm text-foreground">{session.deviceName || session.deviceTypeNombre}</div><div className="text-[11px] text-muted-foreground">{[session.osVersion, session.appVersion ? `v${session.appVersion}` : null, session.deviceModel].filter(Boolean).join(' / ')}</div></div></div></td>
                       <td className="px-4 py-3"><div className="text-sm text-foreground/80" title={formatDate(session.loggedInAt)}>{formatDate(session.loggedInAt, { day: '2-digit', month: 'short' })}</div><div className="text-[11px] text-muted-foreground">{formatDate(session.loggedInAt, { hour: '2-digit', minute: '2-digit' })}</div></td>
                       <td className="px-4 py-3"><div className="text-sm text-foreground/80" title={formatDate(session.lastActivity)}>{formatTimeAgo(session.lastActivity)}</div></td>

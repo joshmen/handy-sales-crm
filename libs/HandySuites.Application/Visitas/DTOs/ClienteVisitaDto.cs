@@ -29,6 +29,8 @@ public class ClienteVisitaDto
     public List<string>? Fotos { get; set; }
     public int? DuracionMinutos { get; set; }
     public DateTime CreadoEn { get; set; }
+    /// <summary>True si la visita fue planeada (tiene FechaProgramada); false si fue ad-hoc/en campo.</summary>
+    public bool EsProgramada => FechaProgramada.HasValue;
 }
 
 public class ClienteVisitaListaDto
@@ -37,6 +39,7 @@ public class ClienteVisitaListaDto
     public int ClienteId { get; set; }
     public required string ClienteNombre { get; set; }
     public string? ClienteDireccion { get; set; }
+    public string? VendedorNombre { get; set; }
     public DateTime? FechaProgramada { get; set; }
     public DateTime? FechaHoraInicio { get; set; }
     public DateTime? FechaHoraFin { get; set; }
@@ -46,6 +49,12 @@ public class ClienteVisitaListaDto
     public string ResultadoNombre => Resultado.ToString();
     public int? DuracionMinutos { get; set; }
     public bool TienePedido { get; set; }
+    /// <summary>Distancia (m) entre el check-in y la ubicación del cliente; null si no hubo check-in con GPS.</summary>
+    public double? DistanciaCliente { get; set; }
+    /// <summary>Total del pedido vinculado a la visita; null si la visita no generó pedido.</summary>
+    public decimal? Monto { get; set; }
+    /// <summary>True si la visita fue planeada (tiene FechaProgramada); false si fue ad-hoc/en campo.</summary>
+    public bool EsProgramada => FechaProgramada.HasValue;
 }
 
 public class ClienteVisitaCreateDto
@@ -87,6 +96,25 @@ public class ClienteVisitaFiltroDto
     public int? TamanoPagina { get; set; }
 }
 
+/// <summary>
+/// Estado de cobertura de un cliente respecto a la frecuencia de visita pactada
+/// por su zona. "Vencida" si nunca se le visitó o si pasó más tiempo que el
+/// permitido por la frecuencia; "PorVisitar" en caso contrario.
+/// </summary>
+public class CoberturaClienteDto
+{
+    public int ClienteId { get; set; }
+    public required string ClienteNombre { get; set; }
+    public string? ZonaNombre { get; set; }
+    public string? VendedorNombre { get; set; }
+    public DateTime? UltimaVisita { get; set; }
+    public int Frecuencia { get; set; }
+    public required string FrecuenciaNombre { get; set; }
+    public int? DiasDesdeUltima { get; set; }
+    public int DiasVencido { get; set; }
+    public required string Estado { get; set; }
+}
+
 public class VisitaResumenDiarioDto
 {
     public DateTime Fecha { get; set; }
@@ -96,4 +124,12 @@ public class VisitaResumenDiarioDto
     public int VisitasPendientes { get; set; }
     public int VisitasCanceladas { get; set; }
     public decimal TasaConversion { get; set; }
+    /// <summary>Visitas planeadas (con FechaProgramada) del día.</summary>
+    public int VisitasProgramadas { get; set; }
+    /// <summary>Visitas ad-hoc (sin FechaProgramada, registradas en campo) del día.</summary>
+    public int VisitasAdHoc { get; set; }
+    /// <summary>Visitas planeadas completadas (con check-out) del día.</summary>
+    public int VisitasCompletadasProgramadas { get; set; }
+    /// <summary>Visitas ad-hoc completadas (con check-out) del día.</summary>
+    public int VisitasCompletadasAdHoc { get; set; }
 }

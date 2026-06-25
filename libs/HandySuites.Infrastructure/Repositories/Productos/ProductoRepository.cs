@@ -27,7 +27,8 @@ public class ProductoRepository : IProductoRepository
                 CodigoBarra = p.CodigoBarra,
                 Descripcion = p.Descripcion,
                 ImagenUrl = p.ImagenUrl,
-                PrecioBase = p.PrecioBase
+                PrecioBase = p.PrecioBase,
+                Costo = p.Costo
             })
             .ToListAsync();
     }
@@ -49,11 +50,15 @@ public class ProductoRepository : IProductoRepository
                 CategoraId = p.CategoraId,
                 UnidadMedidaId = p.UnidadMedidaId,
                 PrecioBase = p.PrecioBase,
+                Costo = p.Costo,
                 Activo = p.Activo,
                 PrecioIncluyeIva = p.PrecioIncluyeIva,
                 TasaImpuestoId = p.TasaImpuestoId,
                 TasaImpuestoNombre = p.TasaImpuesto != null ? p.TasaImpuesto.Nombre : null,
-                TasaImpuestoTasa = p.TasaImpuesto != null ? p.TasaImpuesto.Tasa : (decimal?)null
+                TasaImpuestoTasa = p.TasaImpuesto != null ? p.TasaImpuesto.Tasa : (decimal?)null,
+                ClaveSat = p.ClaveSat,
+                ClaveUnidad = p.ClaveUnidad,
+                Facturable = p.Facturable
             })
             .FirstOrDefaultAsync();
     }
@@ -70,8 +75,12 @@ public class ProductoRepository : IProductoRepository
             CategoraId = dto.CategoraId,
             UnidadMedidaId = dto.UnidadMedidaId,
             PrecioBase = dto.PrecioBase,
+            Costo = dto.Costo ?? 0m,
             PrecioIncluyeIva = dto.PrecioIncluyeIva ?? true,
             TasaImpuestoId = dto.TasaImpuestoId,
+            ClaveSat = string.IsNullOrWhiteSpace(dto.ClaveSat) ? null : dto.ClaveSat.Trim(),
+            ClaveUnidad = string.IsNullOrWhiteSpace(dto.ClaveUnidad) ? null : dto.ClaveUnidad.Trim(),
+            Facturable = dto.Facturable ?? true,
             CreadoEn = DateTime.UtcNow
         };
 
@@ -94,8 +103,12 @@ public class ProductoRepository : IProductoRepository
         entity.CategoraId = dto.CategoraId;
         entity.UnidadMedidaId = dto.UnidadMedidaId;
         entity.PrecioBase = dto.PrecioBase;
+        if (dto.Costo.HasValue) entity.Costo = dto.Costo.Value;
         if (dto.PrecioIncluyeIva.HasValue) entity.PrecioIncluyeIva = dto.PrecioIncluyeIva.Value;
         entity.TasaImpuestoId = dto.TasaImpuestoId;
+        entity.ClaveSat = string.IsNullOrWhiteSpace(dto.ClaveSat) ? null : dto.ClaveSat.Trim();
+        entity.ClaveUnidad = string.IsNullOrWhiteSpace(dto.ClaveUnidad) ? null : dto.ClaveUnidad.Trim();
+        if (dto.Facturable.HasValue) entity.Facturable = dto.Facturable.Value;
         entity.ActualizadoEn = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -153,6 +166,10 @@ public class ProductoRepository : IProductoRepository
         if (filtro.CategoriaId.HasValue)
             query = query.Where(p => p.CategoraId == filtro.CategoriaId.Value);
 
+        // Tab "Sin clave SAT": facturables sin ClaveProdServ asignada
+        if (filtro.SinClaveSat == true)
+            query = query.Where(p => p.Facturable && (p.ClaveSat == null || p.ClaveSat == ""));
+
         // Búsqueda por texto
         if (!string.IsNullOrWhiteSpace(filtro.Busqueda))
         {
@@ -180,20 +197,30 @@ public class ProductoRepository : IProductoRepository
                 CategoriaNombre = p.Categoria.Nombre,
                 UnidadNombre = p.UnidadMedida.Nombre,
                 PrecioBase = p.PrecioBase,
+                Costo = p.Costo,
                 CantidadActual = p.Inventario != null ? p.Inventario.CantidadActual : 0,
                 StockMinimo = p.Inventario != null ? p.Inventario.StockMinimo : 0,
                 Activo = p.Activo,
                 PrecioIncluyeIva = p.PrecioIncluyeIva,
-                TasaImpuestoId = p.TasaImpuestoId
+                TasaImpuestoId = p.TasaImpuestoId,
+                ClaveSat = p.ClaveSat,
+                ClaveUnidad = p.ClaveUnidad,
+                Facturable = p.Facturable
             })
             .ToListAsync();
+
+        // Conteo a nivel tenant (independiente de filtros/paginación) de productos
+        // facturables sin ClaveSat — alimenta banner, subtítulo y badge del tab.
+        var sinClaveSatCount = await _db.Productos.AsNoTracking()
+            .CountAsync(p => p.TenantId == tenantId && p.Facturable && (p.ClaveSat == null || p.ClaveSat == ""));
 
         return new ProductoPaginatedResult
         {
             Items = items,
             TotalItems = totalItems,
             Pagina = filtro.PaginaEfectiva,
-            TamanoPagina = filtro.TamanoPaginaEfectivo
+            TamanoPagina = filtro.TamanoPaginaEfectivo,
+            SinClaveSatCount = sinClaveSatCount
         };
     }
 
@@ -246,4 +273,29 @@ public class ProductoRepository : IProductoRepository
         => await _db.UnidadesMedida.AsNoTracking()
             .AnyAsync(u => u.Id == unidadId);
     // Nota: UnidadesMedida aplica global filter por tenant; la query filter se encarga de RLS.
+
+    public async Task<int> BatchAsignarClaveSatAsync(ProductoBatchClaveSatDto dto, int tenantId)
+    {
+        var query = _db.Productos.Where(p => p.TenantId == tenantId);
+        // Por categoría (aplica a todos) o por lista de IDs.
+        if (dto.CategoriaId.HasValue)
+            query = query.Where(p => p.CategoraId == dto.CategoriaId.Value);
+        else
+            query = query.Where(p => dto.Ids.Contains(p.Id));
+
+        var claveSat = string.IsNullOrWhiteSpace(dto.ClaveSat) ? null : dto.ClaveSat.Trim();
+        var claveUnidad = string.IsNullOrWhiteSpace(dto.ClaveUnidad) ? null : dto.ClaveUnidad.Trim();
+        var now = DateTime.UtcNow;
+
+        // Si viene unidad, se setea junto con la clave; si no, solo la clave (no borra la unidad existente).
+        if (claveUnidad != null)
+            return await query.ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.ClaveSat, claveSat)
+                .SetProperty(e => e.ClaveUnidad, claveUnidad)
+                .SetProperty(e => e.ActualizadoEn, now));
+
+        return await query.ExecuteUpdateAsync(s => s
+            .SetProperty(e => e.ClaveSat, claveSat)
+            .SetProperty(e => e.ActualizadoEn, now));
+    }
 }

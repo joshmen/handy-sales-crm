@@ -11,6 +11,9 @@ export default class Visita extends Model {
   @field('ruta_id') rutaId!: string | null;
   @field('tipo') tipo!: number;
   @field('resultado') resultado!: number;
+  /** Fecha agendada de una visita programada desde la web (ClienteVisita.FechaProgramada).
+   *  null para visitas espontaneas (check-in directo sin agenda previa). */
+  @date('fecha_programada') fechaProgramada!: Date | null;
   @date('check_in_at') checkInAt!: Date | null;
   @date('check_out_at') checkOutAt!: Date | null;
   @field('latitud_check_in') latitudCheckIn!: number | null;

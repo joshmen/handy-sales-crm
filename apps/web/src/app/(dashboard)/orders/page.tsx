@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
-import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
 import { Order, OrderItem } from '@/types/orders';
@@ -25,19 +24,27 @@ import {
   Trash2,
   Eye,
   ShoppingCart,
+  ShoppingCart as ShoppingCartIcon,
   X,
   ChevronRight,
+  Tag,
+  CheckCircle2,
+  FileEdit,
+  Receipt,
 } from 'lucide-react';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
-import { ShoppingCart as ShoppingCartIcon, Receipt } from '@phosphor-icons/react';
+import { TabBar } from '@/components/ui/TabBar';
 import { getInvoicedOrders, type InvoicedOrder } from '@/services/api/billing';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { NameAvatar } from '@/components/ui/NameAvatar';
+import { DateFilter } from '@/components/ui/DateFilter';
+import { dayFilterLabel, addDaysIso } from '@/components/ui/dateFilterUtils';
 import { useFormatters } from '@/hooks/useFormatters';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 // Audit M-4: estilos de estado centralizados en lib/constants/orderStatusStyles.ts
 // (antes 22 strings de Tailwind hardcoded en este archivo).
@@ -126,6 +133,15 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
   };
 }
 
+// Pill de estado (soft) — espejo del StatusBadge del mockup: bg suave + texto del tono + dot.
+const STATUS_PILL: Record<string, { wrap: string; dot: string }> = {
+  draft: { wrap: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
+  confirmed: { wrap: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300', dot: 'bg-blue-500' },
+  en_route: { wrap: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300', dot: 'bg-cyan-500' },
+  delivered: { wrap: 'bg-success/10 text-success', dot: 'bg-success' },
+  cancelled: { wrap: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300', dot: 'bg-red-500' },
+};
+
 interface UsuarioOption {
   id: number;
   nombre: string;
@@ -134,10 +150,14 @@ interface UsuarioOption {
 export default function OrdersPage() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
+  const locale = useLocale();
+  const intlLocale = locale === 'en' ? 'en-US' : 'es-MX';
   const showApiError = useApiErrorToast();
-  const { formatCurrency, formatDate } = useFormatters();
+  const { formatCurrency, formatDate, tenantToday } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+  const isVendedor = session?.user?.role === 'VENDEDOR';
   const canAdvanceOrders = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'SUPERVISOR';
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -158,11 +178,8 @@ export default function OrdersPage() {
   const [filterUser, setFilterUser] = useState('all');
   const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
   const [estadoFilter, setEstadoFilter] = useState('');
-  const [fechaDesde, setFechaDesde] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
-  });
-  const [fechaHasta, setFechaHasta] = useState(() => new Date().toISOString().split('T')[0]);
+  const [diaFiltro, setDiaFiltro] = useState(() => tenantToday());
+  const [summary, setSummary] = useState({ totalVendido: 0, ticketPromedio: 0, confirmados: 0, borradores: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -174,8 +191,13 @@ export default function OrdersPage() {
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
   const router = useRouter();
 
-  // Calcular total de montos
-  const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
+  // Etiqueta del día seleccionado para el subtítulo (Hoy / Ayer / fecha corta).
+  const today = tenantToday();
+  const yesterday = addDaysIso(today, -1);
+  const dateLabel = dayFilterLabel(diaFiltro, {
+    todayIso: today, yesterdayIso: yesterday,
+    todayLabel: tc('today'), yesterdayLabel: tc('yesterday'), locale: intlLocale,
+  });
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -185,8 +207,7 @@ export default function OrdersPage() {
       if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
       if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
       if (estadoFilter) params.estado = estadoFilter;
-      if (fechaDesde) params.fechaInicio = fechaDesde;
-      if (fechaHasta) params.fechaFin = fechaHasta;
+      if (diaFiltro) { params.fechaInicio = diaFiltro; params.fechaFin = diaFiltro; }
       const response = await orderService.getOrders(params);
       const mappedOrders = response.items.map(mapApiOrderToOrder);
       setOrders(mappedOrders);
@@ -205,7 +226,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, fechaDesde, fechaHasta]);
+  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, diaFiltro]);
 
   const fetchFormData = useCallback(async () => {
     // Load clients and products independently so one failure doesn't block the other
@@ -227,12 +248,36 @@ export default function OrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
+  // Resumen del DÍA seleccionado para las KPI cards (no de la página): hasta 200
+  // pedidos del día (tope backend). Sin `estado` para que Confirmados/Borradores
+  // muestren el desglose completo aunque el tab de estado esté en otro valor.
+  const fetchSummary = useCallback(async () => {
+    try {
+      const params: { page: number; pageSize: number; usuarioId?: number; tipoVenta?: number; fechaInicio?: string; fechaFin?: string } = { page: 1, pageSize: 200 };
+      if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
+      if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
+      if (diaFiltro) { params.fechaInicio = diaFiltro; params.fechaFin = diaFiltro; }
+      const res = await orderService.getOrders(params);
+      const items = res.items.map(mapApiOrderToOrder);
+      const noCancel = items.filter((o) => o.status !== 'cancelled');
+      const totalVendido = noCancel.reduce((s, o) => s + o.total, 0);
+      setSummary({
+        totalVendido,
+        ticketPromedio: noCancel.length ? totalVendido / noCancel.length : 0,
+        confirmados: items.filter((o) => o.status === 'confirmed').length,
+        borradores: items.filter((o) => o.status === 'draft').length,
+      });
+    } catch { /* best-effort: las cards conservan su último valor */ }
+  }, [diaFiltro, filterUser, tipoVentaFilter]);
+
+  useEffect(() => { fetchSummary(); }, [fetchSummary]);
+
   // Real-time: refresh orders when mobile creates/updates pedidos
   const { on, off } = useSignalR();
   useEffect(() => {
     const handleUpdate = (...args: unknown[]) => {
       const data = args[0] as { tipo?: string } | undefined;
-      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') fetchOrders();
+      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') { fetchOrders(); fetchSummary(); }
     };
     on('DashboardUpdate', handleUpdate);
     on('PedidoCreated', handleUpdate);
@@ -240,7 +285,7 @@ export default function OrdersPage() {
       off('DashboardUpdate', handleUpdate);
       off('PedidoCreated', handleUpdate);
     };
-  }, [on, off, fetchOrders]);
+  }, [on, off, fetchOrders, fetchSummary]);
 
   // Cargar lista de vendedores (solo para admin)
   useEffect(() => {
@@ -499,210 +544,189 @@ export default function OrdersPage() {
   }, [filteredOrders, sortKey, sortDir]);
 
   // Column definitions
-  const orderColumns = useMemo<DataGridColumn<Order>[]>(() => [
-    {
-      key: 'code',
-      label: t('columns.orderNumber'),
-      sortable: true,
-      width: 150,
-      cellRenderer: (order) => (
-        <div className="flex items-center gap-2">
-          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDotColors[order.status]}`} />
-          <span className="text-[13px] text-foreground font-mono">{order.code}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'client',
-      label: t('columns.client'),
-      sortable: true,
-      width: 'flex',
-      cellRenderer: (order) => (
-        <div className="text-[13px] text-foreground font-medium truncate">{order.client.name}</div>
-      ),
-    },
-    {
-      key: 'vendor',
-      label: t('columns.vendor'),
-      width: 140,
-      hiddenOnMobile: true,
-      cellRenderer: (order) => <span className="text-[13px] text-muted-foreground truncate block">{order.user.name}</span>,
-    },
-    {
-      key: 'orderDate',
-      label: t('columns.date'),
-      sortable: true,
-      width: 120,
-      cellRenderer: (order) => (
-        <div className="text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
-          <div>{order.orderDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-          <div className="text-[11px] text-muted-foreground">{order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      label: t('columns.status'),
-      width: 90,
-      cellRenderer: (order) => (
-        <span className={`text-[12px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>
-          {t(`status.${order.status === 'en_route' ? 'enRoute' : order.status}`)}
-        </span>
-      ),
-    },
-    {
-      key: 'tipoVenta',
-      label: t('columns.type'),
-      width: 85,
-      hiddenOnMobile: true,
-      cellRenderer: (order) => (
-        <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-          {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
-        </span>
-      ),
-    },
-    {
-      key: 'total',
-      label: 'Total',
-      sortable: true,
-      width: 90,
-      align: 'right',
-      cellRenderer: (order) => (
-        <span className="text-[13px] text-foreground font-semibold whitespace-nowrap tabular-nums">
-          {formatCurrency(order.total)}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: tc('actions'),
-      width: 180,
-      align: 'center',
-      cellRenderer: (order) => {
-        const nextAction = getNextAction(order.apiEstado);
-        const canCancel = cancellableEstados.has(order.apiEstado || '');
-        return (
-          <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
-            {canAdvanceOrders && nextAction && (
-              <button
-                onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
-                className={`flex items-center gap-0.5 text-[11px] px-2.5 py-1 rounded font-semibold transition-colors whitespace-nowrap ${nextAction.colorClasses}`}
-              >
-                {nextAction.action === 'confirmar' ? t('actions.confirm') : nextAction.action === 'en-ruta' ? t('actions.sendToRoute') : t('actions.deliver')}
-              </button>
-            )}
-            {order.status === 'delivered' && (() => {
-              const inv = invoicedOrders[parseInt(order.id)];
-              return inv ? (
-                <button
-                  onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)}
-                  className="text-[11px] px-2.5 py-1 rounded font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors whitespace-nowrap flex items-center gap-1"
-                >
-                  <FileText className="w-3 h-3" />
-                  {t('actions.viewInvoice')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleFacturar(order.id)}
-                  className="text-[11px] px-2.5 py-1 rounded font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors whitespace-nowrap"
-                >
-                  {t('actions.invoice')}
-                </button>
-              );
-            })()}
-            <div className="flex items-center gap-0.5 border border-border-subtle rounded-md px-0.5 py-0.5">
-              {canAdvanceOrders && canCancel && (
-                <button onClick={() => handleCancelOrderStatus(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={t('actions.cancelOrder')}>
-                  <X className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
-                </button>
-              )}
-              <button onClick={() => handleDeleteOrder(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={tc('delete')}>
-                <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
-              </button>
-            </div>
-          </div>
-        );
+  const orderColumns = useMemo<DataGridColumn<Order>[]>(() => {
+    const cols: DataGridColumn<Order>[] = [
+      {
+        key: 'code',
+        label: t('columns.orderNumber'),
+        sortable: true,
+        width: 120,
+        cellRenderer: (order) => (
+          <span className="text-[13px] font-bold text-foreground whitespace-nowrap">{order.code}</span>
+        ),
       },
-    },
-  ], [canAdvanceOrders, formatCurrency, invoicedOrders]);
+      {
+        key: 'client',
+        label: t('columns.client'),
+        sortable: true,
+        width: 'flex',
+        cellRenderer: (order) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <NameAvatar name={order.client.name} />
+            <span className="text-[13px] font-semibold text-foreground truncate">{order.client.name}</span>
+          </div>
+        ),
+      },
+    ];
+    // Vendedor: el mockup oculta esta columna para el rol vendedor (ve solo sus pedidos).
+    if (!isVendedor) {
+      cols.push({
+        key: 'vendor',
+        label: t('columns.vendor'),
+        width: 140,
+        hiddenOnMobile: true,
+        cellRenderer: (order) => <span className="text-[13px] text-muted-foreground truncate block">{order.user.name}</span>,
+      });
+    }
+    cols.push(
+      {
+        key: 'items',
+        label: t('columns.products'),
+        width: 72,
+        align: 'center',
+        hiddenOnMobile: true,
+        cellRenderer: (order) => <span className="text-[13px] text-foreground tabular-nums">{order.items.length}</span>,
+      },
+      {
+        key: 'orderDate',
+        label: t('columns.date'),
+        sortable: true,
+        width: 130,
+        cellRenderer: (order) => (
+          <span className="text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
+            {order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}{' '}
+            {order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        ),
+      },
+      {
+        key: 'tipoVenta',
+        label: t('columns.type'),
+        width: 95,
+        hiddenOnMobile: true,
+        cellRenderer: (order) => (
+          <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+            {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
+          </span>
+        ),
+      },
+      {
+        key: 'status',
+        label: t('columns.status'),
+        width: 130,
+        cellRenderer: (order) => {
+          const pill = STATUS_PILL[order.status] ?? STATUS_PILL.draft;
+          return (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap ${pill.wrap}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} />
+              {t(`status.${order.status === 'en_route' ? 'enRoute' : order.status}`)}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'total',
+        label: t('columns.total'),
+        sortable: true,
+        width: 100,
+        align: 'right',
+        cellRenderer: (order) => (
+          <span className="text-[13px] text-foreground font-bold whitespace-nowrap tabular-nums">
+            {formatCurrency(order.total)}
+          </span>
+        ),
+      },
+    );
+    return cols;
+  }, [formatCurrency, isVendedor, t]);
 
   return (
     <>
       <PageHeader
+        section="ventas"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionSales') },
           { label: t('title') },
         ]}
         title={t('title')}
-        subtitle={totalItems > 0 ? t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined}
+        subtitle={`${dateLabel} · ${t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' })}`}
         actions={
           <>
-            <ExportButton entity="pedidos" params={{ desde: fechaDesde, hasta: fechaHasta }} />
-            <button
-              data-tour="orders-create-btn"
-              onClick={handleCreateOrder}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
+            <div data-tour="orders-date-filter">
+              <DateFilter value={diaFiltro} onChange={(iso) => { setDiaFiltro(iso); setCurrentPage(1); }} retentionDays={365} />
+            </div>
+            <ExportButton entity="pedidos" params={{ desde: diaFiltro, hasta: diaFiltro }} />
+            <Button variant="wbPrimary" data-tour="orders-create-btn" onClick={handleCreateOrder}>
+              <Plus className="w-4 h-4 mr-2" />
               <span>{t('newOrder')}</span>
-            </button>
+            </Button>
           </>
         }
       >
+        <div className="space-y-5">
           {error && (
-            <div className="mb-4">
-              <ErrorBanner error={error} onRetry={fetchOrders} />
-            </div>
+            <ErrorBanner error={error} onRetry={fetchOrders} />
           )}
 
-          {/* Search */}
-          <div className="mb-3 w-full sm:w-1/2 lg:w-1/3" data-tour="orders-search">
-            <SearchBar
-              value={searchTerm}
-              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-              placeholder={t('searchPlaceholder')}
-              className="w-full"
-            />
+          {/* Tabs de estado (TabBar subrayado, verde ventas) + búsqueda — reusa estadoFilter real */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0 lg:flex-1" data-tour="orders-estado-filter">
+              <TabBar
+                items={[
+                  { id: 'all', label: t('tabs.all') },
+                  { id: 'Borrador', label: t('status.draft') },
+                  { id: 'Confirmado', label: t('status.confirmed') },
+                  { id: 'EnRuta', label: t('status.enRoute') },
+                  { id: 'Entregado', label: t('status.delivered') },
+                  { id: 'Cancelado', label: t('status.cancelled') },
+                ]}
+                value={estadoFilter === '' ? 'all' : estadoFilter}
+                onChange={(id) => { setEstadoFilter(id === 'all' ? '' : id); setCurrentPage(1); }}
+              />
+            </div>
+            <div className="w-full sm:w-72 lg:w-80" data-tour="orders-search">
+              <SearchBar
+                value={searchTerm}
+                onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+                placeholder={t('searchPlaceholder')}
+                className="w-full"
+              />
+            </div>
           </div>
 
-          {/* Filter Row */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            {/* Date Filters */}
-            <div data-tour="orders-date-filter">
-              <DateTimePicker
-                compact
-                mode="date"
-                value={fechaDesde}
-                onChange={(val) => { setFechaDesde(val); setCurrentPage(1); }}
-                placeholder="Desde"
-              />
-            </div>
-            <div>
-              <DateTimePicker
-                compact
-                mode="date"
-                value={fechaHasta}
-                onChange={(val) => { setFechaHasta(val); setCurrentPage(1); }}
-                placeholder="Hasta"
-                min={fechaDesde}
-              />
-            </div>
+          {/* KPI Row — 4 StatCards estilo mockup (icono en caja + valor por tono). Data real de la página. */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {([
+              { title: t('kpis.shownTotal'), value: formatCurrency(summary.totalVendido), hint: t('kpis.shownTotalHint'), icon: ShoppingCart, tone: 'primary' as const },
+              { title: t('kpis.avgTicket'), value: formatCurrency(summary.ticketPromedio), hint: t('kpis.avgTicketHint'), icon: Tag, tone: 'default' as const },
+              { title: t('kpis.confirmed'), value: String(summary.confirmados), hint: t('kpis.confirmedHint'), icon: CheckCircle2, tone: 'default' as const },
+              { title: t('kpis.drafts'), value: String(summary.borradores), hint: t('kpis.draftsHint'), icon: FileEdit, tone: 'warning' as const },
+            ]).map((card) => {
+              const Icon = card.icon;
+              const valueTone = card.tone === 'primary' ? 'text-primary' : card.tone === 'warning' ? 'text-amber-600 dark:text-amber-500' : 'text-foreground';
+              return (
+                <div
+                  key={card.title}
+                  className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12.5px] font-semibold text-muted-foreground">{card.title}</p>
+                    <span className="w-[34px] h-[34px] rounded-[10px] bg-surface-2 text-muted-foreground flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-[18px] h-[18px]" />
+                    </span>
+                  </div>
+                  <p className={`text-[28px] font-bold tracking-tight tabular-nums mt-2.5 leading-none ${valueTone} ${loading ? 'animate-pulse' : ''}`}>
+                    {card.value}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">{card.hint}</p>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Estado Filter */}
-            <select
-              data-tour="orders-estado-filter"
-              value={estadoFilter}
-              onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">{t('filters.allStatuses')}</option>
-              <option value="Borrador">{t('status.draft')}</option>
-              <option value="Confirmado">{t('status.confirmed')}</option>
-              <option value="EnRuta">{t('status.enRoute')}</option>
-              <option value="Entregado">{t('status.delivered')}</option>
-              <option value="Cancelado">{t('status.cancelled')}</option>
-            </select>
-
+          {/* Filtros secundarios (vendedor, tipo) + refrescar */}
+          <div className="flex flex-wrap items-center gap-3">
             {/* Users Filter - solo visible para Admin */}
             {isAdmin && (
             <div className="min-w-[200px] max-w-[260px]" data-tour="orders-user-filter">
@@ -723,7 +747,7 @@ export default function OrdersPage() {
               data-tour="orders-tipo-filter"
               value={tipoVentaFilter}
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-foreground/80 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">{t('filters.allTypes')}</option>
               <option value="0">{t('filters.preventa')}</option>
@@ -731,14 +755,12 @@ export default function OrdersPage() {
             </select>
 
             {/* Refresh Button */}
-            <button
-              onClick={handleRefresh}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
+            <Button variant="wbOutline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
-            </button>
+            </Button>
           </div>
+
             {/* Orders DataGrid */}
             <div data-tour="orders-table">
               <DataGrid<Order>
@@ -770,7 +792,7 @@ export default function OrdersPage() {
                     <>
                       <div className="flex items-start gap-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <ShoppingCartIcon className="w-5 h-5 text-blue-600" weight="duotone" />
+                          <ShoppingCartIcon className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-foreground truncate">{order.code}</p>
@@ -782,7 +804,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div className="flex justify-end mt-1">
-                        <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                        <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
                           {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
                         </span>
                       </div>
@@ -800,7 +822,7 @@ export default function OrdersPage() {
                         {/* Regla de negocio: editar y borrar solo en Borrador — backend rechaza cualquier otro estado con 400/409. */}
                         {order.apiEstado === 'Borrador' && (
                           <>
-                            <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
+                            <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
                               <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
                             </button>
                             <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
@@ -815,8 +837,8 @@ export default function OrdersPage() {
                               <FileText className="w-3.5 h-3.5 text-blue-500" /> {t('actions.viewInvoice')}
                             </button>
                           ) : (
-                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-emerald-600 hover:bg-emerald-50 rounded">
-                              <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> {t('actions.invoice')}
+                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-primary hover:bg-primary/5 rounded">
+                              <Receipt className="w-3.5 h-3.5 text-primary" /> {t('actions.invoice')}
                             </button>
                           );
                         })()}
@@ -840,6 +862,7 @@ export default function OrdersPage() {
                 }}
               />
             </div>
+        </div>
       </PageHeader>
 
       {/* Drawer lateral para crear/editar pedidos */}
@@ -859,23 +882,42 @@ export default function OrdersPage() {
               ? t('drawerTitleView')
               : t('drawerTitleEdit')
         }
-        icon={<ShoppingCart className="w-5 h-5 text-green-600" />}
+        icon={<ShoppingCart className="w-5 h-5 text-primary" />}
         width="lg"
         isDirty={isViewOnlyMode ? false : formIsDirty}
         onSave={isViewOnlyMode ? undefined : () => orderFormRef.current?.submit()}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()}>
+            <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()}>
               {isViewOnlyMode ? tc('close') : tc('cancel')}
             </Button>
             {!isViewOnlyMode && (
-              <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
+              <Button type="button" variant="wbPrimary" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
                 {editingOrder ? t('saveChanges') : t('createOrder')}
               </Button>
             )}
           </div>
         }
       >
+        {/* Acciones de Borrador dentro del drawer (la tabla ya no tiene columna de acciones). */}
+        {editingOrder && !isViewOnlyMode && editingOrder.apiEstado === 'Borrador' && (
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border-subtle">
+            <button
+              type="button"
+              onClick={() => { const id = editingOrder.id; setShowOrderForm(false); setEditingOrder(null); handleAdvanceStatus(id, 'confirmar'); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10 transition-colors"
+            >
+              <CheckCircle2 className="w-4 h-4" /> {t('actions.confirm')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { const id = editingOrder.id; setShowOrderForm(false); setEditingOrder(null); handleDeleteOrder(id); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-lg border border-border-subtle text-muted-foreground hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> {tc('delete')}
+            </button>
+          </div>
+        )}
         <OrderForm
           ref={orderFormRef}
           order={editingOrder}

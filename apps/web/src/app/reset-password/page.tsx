@@ -60,7 +60,7 @@ function ResetPasswordForm() {
         </p>
         <Link
           href="/forgot-password"
-          className="inline-block px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-semibold rounded-[10px] hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-sm"
+          className="inline-block px-6 py-2.5 bg-gradient-to-r from-primary to-[#0B5CAB] text-white text-sm font-semibold rounded-[10px] hover:from-[#0166BC] hover:to-[#094E91] transition-all shadow-sm"
         >
           {t('requestNewLink')}
         </Link>
@@ -92,8 +92,8 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="text-center">
-        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-emerald-600" />
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle className="w-8 h-8 text-success" />
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">
           {t('passwordUpdated')}
@@ -103,7 +103,7 @@ function ResetPasswordForm() {
         </p>
         <Link
           href="/login"
-          className="inline-block px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-semibold rounded-[10px] hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-sm"
+          className="inline-block px-6 py-2.5 bg-gradient-to-r from-primary to-[#0B5CAB] text-white text-sm font-semibold rounded-[10px] hover:from-[#0166BC] hover:to-[#094E91] transition-all shadow-sm"
         >
           {t('goToLogin')}
         </Link>
@@ -114,8 +114,8 @@ function ResetPasswordForm() {
   return (
     <>
       <div className="text-center mb-6">
-        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Lock className="w-7 h-7 text-indigo-600" />
+        <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Lock className="w-7 h-7 text-primary" />
         </div>
         <h2 className="text-xl font-bold text-foreground mb-1">
           {t('newPassword')}
@@ -136,7 +136,7 @@ function ResetPasswordForm() {
               type={showPassword ? 'text' : 'password'}
               {...register('password')}
               placeholder={t('minChars')}
-              className="w-full h-12 px-3.5 pr-10 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full h-12 px-3.5 pr-10 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
               autoFocus
             />
             <button
@@ -167,7 +167,7 @@ function ResetPasswordForm() {
               type={showConfirm ? 'text' : 'password'}
               {...register('confirmPassword')}
               placeholder={t('repeatPassword')}
-              className="w-full h-12 px-3.5 pr-10 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full h-12 px-3.5 pr-10 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
             />
             <button
               type="button"
@@ -198,7 +198,7 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+          className="w-full h-12 bg-gradient-to-r from-primary to-[#0B5CAB] hover:from-[#0166BC] hover:to-[#094E91] text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -214,7 +214,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <AuthLayout>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
         <ResetPasswordForm />
       </Suspense>
     </AuthLayout>

@@ -55,6 +55,9 @@ export interface CompanySettings {
   // Default false (fail-closed) si el backend omite el campo o el tenant esta
   // en free trial sin plan asignado.
   permitirAnticiposEnCampo?: boolean;
+  // Radio (m) de la geocerca para validar el check-in del vendedor contra la
+  // ubicación del cliente. Default 80m si el backend lo omite.
+  geocercaRadioMetros?: number;
 }
 
 export interface UpdateGlobalSettingsRequest {

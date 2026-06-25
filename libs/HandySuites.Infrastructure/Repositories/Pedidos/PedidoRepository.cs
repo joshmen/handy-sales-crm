@@ -150,6 +150,8 @@ public class PedidoRepository : IPedidoRepository
                 ProductoId = detalleDto.ProductoId,
                 Cantidad = detalleDto.Cantidad,
                 PrecioUnitario = precioUnitario,
+                // Snapshot del costo actual del producto al momento de la venta (COGS/margen histórico).
+                CostoUnitario = producto.Costo,
                 Descuento = descuento,
                 PorcentajeDescuento = detalleDto.PorcentajeDescuento ?? 0,
                 Subtotal = amounts.Subtotal,
@@ -657,6 +659,7 @@ public class PedidoRepository : IPedidoRepository
                     ProductoId = detalleDto.ProductoId,
                     Cantidad = detalleDto.Cantidad,
                     PrecioUnitario = precioUnitario,
+                    CostoUnitario = producto.Costo,
                     Descuento = descuento,
                     PorcentajeDescuento = detalleDto.PorcentajeDescuento ?? 0,
                     Subtotal = amounts.Subtotal,
@@ -854,6 +857,7 @@ public class PedidoRepository : IPedidoRepository
             ProductoId = dto.ProductoId,
             Cantidad = dto.Cantidad,
             PrecioUnitario = precioUnitario,
+            CostoUnitario = producto.Costo,
             Descuento = descuento,
             PorcentajeDescuento = dto.PorcentajeDescuento ?? 0,
             Subtotal = amounts.Subtotal,
@@ -897,6 +901,7 @@ public class PedidoRepository : IPedidoRepository
         detalle.ProductoId = dto.ProductoId;
         detalle.Cantidad = dto.Cantidad;
         detalle.PrecioUnitario = precioUnitario;
+        detalle.CostoUnitario = producto.Costo;
         detalle.Descuento = descuento;
         detalle.PorcentajeDescuento = dto.PorcentajeDescuento ?? 0;
         detalle.Subtotal = amounts.Subtotal;
@@ -1136,6 +1141,7 @@ public class PedidoRepository : IPedidoRepository
             ProductoId = productoY.Id,
             Cantidad = bogo.CantidadBonificada,
             PrecioUnitario = precioY,
+            CostoUnitario = productoY.Costo,
             Descuento = descuentoY,
             PorcentajeDescuento = 0,
             Subtotal = amountsY.Subtotal,

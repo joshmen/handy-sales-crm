@@ -6,13 +6,13 @@ namespace HandySuites.Domain.Common;
 /// backend (`UsuarioService.CrearUsuarioAsync`) — la lógica server-side es
 /// la fuente de verdad por seguridad.
 ///
-/// Reglas (decididas con owner 2026-05-04):
+/// Reglas (decididas con owner 2026-05-04; ALMACENISTA agregado 2026-06-21):
 /// - SUPER_ADMIN puede asignar cualquier rol.
-/// - ADMIN puede asignar SUPERVISOR, VIEWER, VENDEDOR. NO ADMIN ni SUPER_ADMIN.
+/// - ADMIN puede asignar SUPERVISOR, VIEWER, VENDEDOR, ALMACENISTA. NO ADMIN ni SUPER_ADMIN.
 ///   (Decisión más restrictiva que la industria. Si owner necesita otro
 ///   ADMIN, debe pedirlo a SUPER_ADMIN.)
 /// - SUPERVISOR puede asignar VENDEDOR, VIEWER.
-/// - VIEWER y VENDEDOR no pueden crear usuarios (rechazado en endpoint).
+/// - VIEWER, VENDEDOR y ALMACENISTA no pueden crear usuarios (rechazado en endpoint).
 ///
 /// Referencias:
 /// - NIST SP 800-63B Rev. 4 §3.1.1.2 (initial-secret rotation)
@@ -38,7 +38,8 @@ public static class RoleHierarchy
             && target != RoleNames.Admin
             && target != RoleNames.Supervisor
             && target != RoleNames.Viewer
-            && target != RoleNames.Vendedor)
+            && target != RoleNames.Vendedor
+            && target != RoleNames.Almacenista)
         {
             return false;
         }
@@ -48,10 +49,11 @@ public static class RoleHierarchy
             RoleNames.SuperAdmin => true, // todos los roles
             RoleNames.Admin => target == RoleNames.Supervisor
                             || target == RoleNames.Viewer
-                            || target == RoleNames.Vendedor,
+                            || target == RoleNames.Vendedor
+                            || target == RoleNames.Almacenista,
             RoleNames.Supervisor => target == RoleNames.Vendedor
                                  || target == RoleNames.Viewer,
-            _ => false, // Viewer, Vendedor, o cualquier otro: no pueden crear
+            _ => false, // Viewer, Vendedor, Almacenista, o cualquier otro: no pueden crear
         };
     }
 
@@ -73,12 +75,14 @@ public static class RoleHierarchy
                 RoleNames.Supervisor,
                 RoleNames.Viewer,
                 RoleNames.Vendedor,
+                RoleNames.Almacenista,
             },
             RoleNames.Admin => new[]
             {
                 RoleNames.Supervisor,
                 RoleNames.Viewer,
                 RoleNames.Vendedor,
+                RoleNames.Almacenista,
             },
             RoleNames.Supervisor => new[]
             {

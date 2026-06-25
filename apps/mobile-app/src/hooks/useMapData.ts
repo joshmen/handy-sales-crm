@@ -4,6 +4,7 @@ import {
   useOfflineRutaHoy,
   useOfflineRutaDetalles,
   useOfflineTodayVisits,
+  useOfflineScheduledVisits,
 } from '@/hooks';
 import type Cliente from '@/db/models/Cliente';
 import type RutaDetalle from '@/db/models/RutaDetalle';
@@ -35,6 +36,7 @@ export function useMapData(search?: string, zonaId?: number) {
   const route = (rutas && rutas.length > 0 ? rutas[0] : null) as Ruta | null;
   const { data: stops } = useOfflineRutaDetalles(route?.id ?? '');
   const { data: todayVisits } = useOfflineTodayVisits();
+  const { data: scheduledVisits } = useOfflineScheduledVisits();
 
   // Clients with valid coordinates
   const mappableClients = useMemo<MapClient[]>(() => {
@@ -83,6 +85,22 @@ export function useMapData(search?: string, zonaId?: number) {
     }
     return set;
   }, [todayVisits]);
+
+  // Set of clienteIds with a scheduled visit for today still pending check-in
+  // ("Agendado hoy"). Indexamos por clienteId WDB local Y por cliente_server_id
+  // (string) porque algunas visitas pulled traen el server id como cliente_id si el
+  // cliente aún no estaba en el mapa local — así el marcador hace match igual.
+  const scheduledTodaySet = useMemo(() => {
+    const set = new Set<string>();
+    if (!scheduledVisits) return set;
+    for (const v of scheduledVisits) {
+      const clienteId = (v as any).clienteId;
+      if (clienteId) set.add(String(clienteId));
+      const clienteServerId = (v as any).clienteServerId;
+      if (clienteServerId != null) set.add(String(clienteServerId));
+    }
+    return set;
+  }, [scheduledVisits]);
 
   // Ordered route coordinates for polyline
   const routeCoordinates = useMemo(() => {
@@ -160,6 +178,7 @@ export function useMapData(search?: string, zonaId?: number) {
     routeCoordinates,
     routeStopMap,
     todayVisitSet,
+    scheduledTodaySet,
     currentStopIndex,
     nextStop,
     routeProgress,

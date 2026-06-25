@@ -13,6 +13,12 @@ public class RutaVendedorDto
     public string? ZonaNombre { get; set; }
     /// <summary>Multi-zona: lista completa de zonas que cubre la ruta. Source of truth nuevo.</summary>
     public List<ZonaResumenDto> Zonas { get; set; } = new();
+    /// <summary>Vehículo de reparto asignado a la ruta (opcional).</summary>
+    public int? VehiculoId { get; set; }
+    /// <summary>Placa del vehículo asignado, para mostrar en el detalle de ruta.</summary>
+    public string? VehiculoPlaca { get; set; }
+    /// <summary>Capacidad (unidades) del vehículo asignado.</summary>
+    public int? VehiculoCapacidad { get; set; }
     /// <summary>
     /// Codigo unico auto-generado (RT-YYYYMMDD-NNNN o TPL-NNNN). Inmutable.
     /// Para distinguir rutas con mismo Nombre en listados.
@@ -77,6 +83,8 @@ public class RutaVendedorCreateDto
     public int? ZonaId { get; set; }
     /// <summary>Multi-zona: lista de zonas que cubre la ruta. Si está null y ZonaId tiene valor, se usa [ZonaId].</summary>
     public List<int>? ZonaIds { get; set; }
+    /// <summary>Vehículo de reparto a asignar a la ruta (opcional).</summary>
+    public int? VehiculoId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
@@ -103,6 +111,8 @@ public class RutaVendedorUpdateDto
     public int? ZonaId { get; set; }
     /// <summary>Multi-zona: si se manda, reemplaza completamente el set de zonas de la ruta.</summary>
     public List<int>? ZonaIds { get; set; }
+    /// <summary>Vehículo asignado. Si se manda con valor, lo asigna/reasigna. 0 = quitar asignación.</summary>
+    public int? VehiculoId { get; set; }
     public string? Nombre { get; set; }
     public string? Descripcion { get; set; }
     public DateTime? Fecha { get; set; }

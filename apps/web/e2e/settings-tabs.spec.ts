@@ -25,14 +25,24 @@ test.describe('Settings — tabs accesibles', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('Tabs presentes (al menos 3)', async ({ page }) => {
+  test('Rail de secciones presente (al menos 2 items)', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/settings');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
-    const tabs = page.locator('[role="tab"]');
-    const count = await tabs.count();
-    expect(count).toBeGreaterThanOrEqual(2);
+    // 2026-06: el rediseño SLDS reemplazó los Radix tabs (role="tab") por un
+    // rail lateral de secciones (botones/links que intercambian paneles).
+    // Verificamos que el rail exponga >= 2 secciones navegables.
+    const railLabels = [
+      /Perfil de empresa/i, /^Marca$/i, /Apariencia/i, /^Sistema$/i,
+      /Notificaciones/i, /Roles y permisos/i, /Configuración fiscal/i,
+    ];
+    let found = 0;
+    for (const lbl of railLabels) {
+      const loc = page.getByRole('button', { name: lbl }).or(page.getByRole('link', { name: lbl }));
+      if (await loc.first().isVisible({ timeout: 2000 }).catch(() => false)) found++;
+    }
+    expect(found).toBeGreaterThanOrEqual(2);
   });
 
   test('Tab "Apariencia" o "Branding" accesible', async ({ page }, testInfo) => {

@@ -31,7 +31,7 @@ export function ComisionesReport() {
   const [data, setData] = useState<ComisionesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
-  const { exportPDF, exporting } = useReportExport({
+  const { exportPDF, exportExcel, exporting } = useReportExport({
     fileName: "comisiones", title: t("reportTitle"), dateRange: dates,
     kpis: data ? [
       { label: t("totalSales"), value: fmt(data.totalVentas) },
@@ -55,13 +55,13 @@ export function ComisionesReport() {
     { key: "nombre", header: t("vendor"), sortable: true },
     { key: "totalVentas", header: t("sales"), align: "right", sortable: true, render: r => fmt(r.totalVentas) },
     { key: "cantidadPedidos", header: t("orders"), align: "right", sortable: true },
-    { key: "comision", header: t("commission"), align: "right", sortable: true, render: r => <span className="font-semibold text-green-600">{fmt(r.comision)}</span> },
+    { key: "comision", header: t("commission"), align: "right", sortable: true, render: r => <span className="font-semibold text-primary">{fmt(r.comision)}</span> },
   ];
 
   const chartOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
     plotOptions: { bar: { borderRadius: 6, columnWidth: "50%" } },
-    colors: [chartColors.series.green],
+    colors: [chartColors.series.blue],
     grid: { borderColor: chartColors.grid, strokeDashArray: 3 },
     dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: "11px", colors: [chartColors.textPrimary] } },
     xaxis: { categories: data?.vendedores.map(v => v.nombre) || [], labels: { style: { fontSize: "11px", colors: chartColors.textMuted } } },
@@ -71,7 +71,7 @@ export function ComisionesReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data ? exportPDF : undefined} onExportExcel={data ? exportExcel : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-foreground/70">{t("commissionPct")}</label>
           <input type="number" value={porcentaje} onChange={e => setPorcentaje(Number(e.target.value))} min={0} max={100} step={0.5} className="px-3 py-2 text-sm border border-border-default rounded-md w-20" />

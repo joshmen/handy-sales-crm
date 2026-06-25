@@ -1,95 +1,239 @@
 'use client';
 
-import { toast as sonnerToast } from 'sonner';
-import { getMessages } from '@/i18n/messages';
+import { create } from 'zustand';
 import { translateError } from '@/lib/translateError';
 
-// Read current locale from localStorage (same source as CompanyContext)
-function getLocaleMessages() {
+/**
+ * Sistema de toasts "con acción" (estilo del diseño claude.ai/design).
+ * Reemplaza Sonner. Motor propio: store Zustand + singleton `toast` + hook `useToast`.
+ *
+ * - Apilado abajo-derecha, anclado al marco de la app (ver Toaster.tsx), máx 4 visibles.
+ * - Duración por tipo: loading/error persistentes; con acción 6s; resto 4.5s.
+ * - Barra de progreso + pausa al hover (en Toaster.tsx).
+ * - API nueva (success/error/info/warning/loading/undo/view) + back-compat con la
+ *   firma anterior (`toast({title, description, variant})` y `toast.success(msg)`).
+ */
+
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'loading';
+
+export interface ToastAction {
+  kind: 'undo' | 'view';
+  label: string;
+  onAct: () => void;
+}
+
+export interface ToastItem {
+  id: number;
+  type: ToastType;
+  title: string;
+  desc?: string;
+  action?: ToastAction;
+  /** ms; Infinity = persistente (no auto-cierra) */
+  duration: number;
+  /** marcado para animación de salida antes de remover */
+  closing?: boolean;
+}
+
+const MAX_VISIBLE = 4;
+const EXIT_MS = 320;
+
+// ── Store ──────────────────────────────────────────────────────────────────
+interface ToastStore {
+  toasts: ToastItem[];
+  add: (item: ToastItem) => void;
+  startClose: (id: number) => void;
+  remove: (id: number) => void;
+}
+
+export const useToastStore = create<ToastStore>(set => ({
+  toasts: [],
+  add: item =>
+    set(s => {
+      // Cap a MAX_VISIBLE: descartar los más viejos si se acumulan.
+      const next = [...s.toasts, item];
+      return { toasts: next.length > MAX_VISIBLE ? next.slice(next.length - MAX_VISIBLE) : next };
+    }),
+  startClose: id =>
+    set(s => ({ toasts: s.toasts.map(t => (t.id === id ? { ...t, closing: true } : t)) })),
+  remove: id => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+}));
+
+// ── Locale (misma fuente que CompanyContext) ────────────────────────────────
+export function getToastLocale(): 'es' | 'en' {
   try {
     const settings = JSON.parse(localStorage.getItem('company_settings') || '{}');
-    return getMessages(settings.language || 'es');
+    return settings.language === 'en' ? 'en' : 'es';
   } catch {
-    return getMessages('es');
+    return 'es';
   }
 }
 
-// Tipos compatibles con la API anterior
-interface ToastProps {
+const DEFAULT_TITLES: Record<'es' | 'en', Record<ToastType, string>> = {
+  es: {
+    success: 'Listo',
+    error: 'Algo salió mal',
+    info: 'Información',
+    warning: 'Atención',
+    loading: 'Procesando…',
+  },
+  en: {
+    success: 'Done',
+    error: 'Something went wrong',
+    info: 'Information',
+    warning: 'Attention',
+    loading: 'Processing…',
+  },
+};
+
+const ACTION_LABELS: Record<'es' | 'en', { undo: string; view: string; dismiss: string }> = {
+  es: { undo: 'Deshacer', view: 'Ver', dismiss: 'Descartar' },
+  en: { undo: 'Undo', view: 'View', dismiss: 'Dismiss' },
+};
+
+export function getToastDismissLabel(): string {
+  return ACTION_LABELS[getToastLocale()].dismiss;
+}
+
+// ── Core ────────────────────────────────────────────────────────────────────
+let seq = 0;
+
+function computeDuration(type: ToastType, hasAction: boolean, explicit?: number): number {
+  if (explicit != null) return explicit;
+  if (type === 'loading' || type === 'error') return Infinity;
+  if (hasAction) return 6000;
+  return 4500;
+}
+
+function showToast(input: {
+  type: ToastType;
   title?: string;
+  desc?: string;
+  action?: ToastAction;
+  duration?: number;
+}): number {
+  const type = input.type;
+  const title = input.title || DEFAULT_TITLES[getToastLocale()][type];
+  const duration = computeDuration(type, !!input.action, input.duration);
+  const id = ++seq;
+  useToastStore.getState().add({ id, type, title, desc: input.desc, action: input.action, duration });
+  return id;
+}
+
+/** Marca el toast para salida y lo remueve tras la animación. */
+export function dismissToast(id: number): void {
+  const store = useToastStore.getState();
+  const t = store.toasts.find(x => x.id === id);
+  if (!t || t.closing) return;
+  store.startClose(id);
+  setTimeout(() => useToastStore.getState().remove(id), EXIT_MS);
+}
+
+// ── API singleton ────────────────────────────────────────────────────────────
+type ToastReturn = { id: number; dismiss: () => void };
+type LoadingReturn = ToastReturn & {
+  resolve: (type: ToastType, title?: string, desc?: string, opts?: HelperOpts) => void;
+};
+
+// Opts de helper: soporta la API nueva (desc/action/duration) y la vieja
+// (title/description/variant) para back-compat. `label` para undo/view.
+export interface HelperOpts {
+  desc?: string;
   description?: string;
+  action?: ToastAction;
+  duration?: number;
+  label?: string;
+  title?: string;
   variant?: 'default' | 'destructive';
 }
 
-type ToastReturn = {
-  id: string | number;
-  dismiss: () => void;
+interface ToastInput extends HelperOpts {
+  type?: ToastType;
+}
+
+function mkHandle(id: number): ToastReturn {
+  return { id, dismiss: () => dismissToast(id) };
+}
+
+/** Normaliza `(descOrOpts?, opts?)`: si el 2º arg es objeto, es opts. */
+function norm(descOrOpts?: string | HelperOpts, opts?: HelperOpts): { desc?: string; o: HelperOpts } {
+  if (descOrOpts && typeof descOrOpts === 'object') {
+    return { desc: descOrOpts.desc ?? descOrOpts.description, o: descOrOpts };
+  }
+  return { desc: descOrOpts, o: opts || {} };
+}
+
+// Base: acepta API nueva { type, title, desc, action, duration } y la vieja
+// { title, description, variant: 'destructive' }.
+function toastBase(opts: ToastInput): ToastReturn {
+  const type: ToastType = opts.type || (opts.variant === 'destructive' ? 'error' : 'success');
+  let desc = opts.desc ?? opts.description;
+  if (type === 'error' && desc) desc = translateError(desc);
+  return mkHandle(showToast({ type, title: opts.title, desc, action: opts.action, duration: opts.duration }));
+}
+
+type ToastAPI = typeof toastBase & {
+  success: (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts) => ToastReturn;
+  error: (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts) => ToastReturn;
+  info: (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts) => ToastReturn;
+  warning: (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts) => ToastReturn;
+  loading: (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts) => LoadingReturn;
+  undo: (title: string, desc: string, onUndo: () => void, opts?: HelperOpts) => ToastReturn;
+  view: (title: string, desc: string, label: string, onView: () => void, opts?: HelperOpts) => ToastReturn;
 };
 
-// Función principal: acepta objeto { title, description, variant }
-function toast(props: ToastProps): ToastReturn {
-  let id: string | number;
-  const m = getLocaleMessages();
-
-  if (props.variant === 'destructive') {
-    id = sonnerToast.error(props.title || m.common.error, {
-      description: translateError(props.description || ''),
-    });
-  } else {
-    id = sonnerToast.success(props.title || m.common.success, {
-      description: props.description,
-    });
-  }
-
-  return {
-    id,
-    dismiss: () => sonnerToast.dismiss(id),
+function makeSimple(type: ToastType) {
+  return (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts): ToastReturn => {
+    const { desc, o } = norm(descOrOpts, opts);
+    const text = type === 'error' ? translateError(title) : title;
+    return mkHandle(showToast({ type, title: text, desc, action: o.action, duration: o.duration }));
   };
 }
 
-// Helpers compatibles con la API anterior
-type HelperOpts = Partial<ToastProps>;
-
-type ToastAPI = typeof toast & {
-  success: (message: string, opts?: HelperOpts) => ToastReturn;
-  error: (message: string, opts?: HelperOpts) => ToastReturn;
-  info: (message: string, opts?: HelperOpts) => ToastReturn;
-  warning: (message: string, opts?: HelperOpts) => ToastReturn;
-};
-
-const toastWithHelpers = Object.assign(toast, {
-  success: (message: string, opts?: HelperOpts): ToastReturn => {
-    const m = getLocaleMessages();
-    const id = sonnerToast.success(opts?.title || m.common.success, { description: message });
-    return { id, dismiss: () => sonnerToast.dismiss(id) };
+const toast = Object.assign(toastBase, {
+  success: makeSimple('success'),
+  error: makeSimple('error'),
+  info: makeSimple('info'),
+  warning: makeSimple('warning'),
+  loading: (title: string, descOrOpts?: string | HelperOpts, opts?: HelperOpts): LoadingReturn => {
+    const { desc, o } = norm(descOrOpts, opts);
+    const id = showToast({ type: 'loading', title, desc, duration: o.duration });
+    return {
+      id,
+      dismiss: () => dismissToast(id),
+      resolve: (rtype, rtitle, rdesc, ropts) => {
+        dismissToast(id);
+        setTimeout(
+          () => showToast({ type: rtype, title: rtitle, desc: rdesc, action: ropts?.action, duration: ropts?.duration }),
+          200
+        );
+      },
+    };
   },
-  error: (message: string, opts?: HelperOpts): ToastReturn => {
-    const m = getLocaleMessages();
-    const id = sonnerToast.error(opts?.title || m.common.error, { description: translateError(message) });
-    return { id, dismiss: () => sonnerToast.dismiss(id) };
+  undo: (title: string, desc: string, onUndo: () => void, opts?: HelperOpts): ToastReturn => {
+    const label = opts?.label || ACTION_LABELS[getToastLocale()].undo;
+    return mkHandle(
+      showToast({ type: 'warning', title, desc, action: { kind: 'undo', label, onAct: onUndo }, duration: opts?.duration })
+    );
   },
-  info: (message: string, opts?: HelperOpts): ToastReturn => {
-    const m = getLocaleMessages();
-    const id = sonnerToast.info(opts?.title || m.common.info, { description: message });
-    return { id, dismiss: () => sonnerToast.dismiss(id) };
-  },
-  warning: (message: string, opts?: HelperOpts): ToastReturn => {
-    const m = getLocaleMessages();
-    const id = sonnerToast.warning(opts?.title || m.common.warning, { description: message });
-    return { id, dismiss: () => sonnerToast.dismiss(id) };
+  view: (title: string, desc: string, label: string, onView: () => void, opts?: HelperOpts): ToastReturn => {
+    const lbl = label || ACTION_LABELS[getToastLocale()].view;
+    return mkHandle(
+      showToast({ type: 'success', title, desc, action: { kind: 'view', label: lbl, onAct: onView }, duration: opts?.duration })
+    );
   },
 }) as ToastAPI;
 
-// Hook compatible: devuelve { toast, dismiss }
+// ── Hook (back-compat: { toast, dismiss, toasts }) ───────────────────────────
 function useToast() {
+  const toasts = useToastStore(s => s.toasts);
   return {
-    toast: toastWithHelpers,
-    dismiss: (id?: string | number) => {
-      if (id) sonnerToast.dismiss(id);
-      else sonnerToast.dismiss();
+    toast,
+    dismiss: (id?: number) => {
+      if (id != null) dismissToast(id);
+      else useToastStore.getState().toasts.forEach(t => dismissToast(t.id));
     },
-    toasts: [] as never[],
+    toasts,
   };
 }
 
-export { useToast, toastWithHelpers as toast };
+export { useToast, toast };

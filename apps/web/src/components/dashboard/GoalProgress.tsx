@@ -232,7 +232,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({
                     {progress >= 100 && (
                       <CheckCircle
                         size={16}
-                        className="text-green-500 ml-auto"
+                        className="text-success ml-auto"
                       />
                     )}
                   </div>

@@ -31,8 +31,9 @@ test.describe('Rutas — lista y filtros', () => {
 
   test('Lista de rutas renderea con columnas estándar', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /^Rutas$/i }).first()).toBeVisible({ timeout: 10000 });
-    // Botón nueva ruta debe estar disponible para admin
-    const newBtn = page.getByRole('button', { name: /Nueva ruta|Crear ruta|Plantillas/i }).first();
+    // Botón de creación/planeación de rutas disponible para admin.
+    // 2026-06: el rediseño "jornada" renombró el CTA a "Planear rutas".
+    const newBtn = page.getByRole('button', { name: /Planear rutas|Nueva ruta|Crear ruta|Plantillas/i }).first();
     await expect(newBtn).toBeVisible({ timeout: 8000 });
   });
 

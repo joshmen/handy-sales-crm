@@ -8,7 +8,7 @@ import { Marker, Polyline, type Region } from 'react-native-maps';
 
 // react-native-map-clustering exports a class component incompatible with React 19 JSX types
 const ClusteredMapView: any = _ClusteredMapView;
-import { MapPin, Locate, Route as RouteIcon } from 'lucide-react-native';
+import { MapPin, Locate, Route as RouteIcon, CalendarClock } from 'lucide-react-native';
 
 import { useMapData, type MapClient } from '@/hooks/useMapData';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
@@ -58,7 +58,8 @@ function MapaScreenContent() {
   // Selection state
   const [selectedClient, setSelectedClient] = useState<MapClient | null>(null);
   const [checkInTarget, setCheckInTarget] = useState<{
-    stopId: string;
+    // null cuando el check-in es de un cliente suelto "Agendado hoy" (sin parada de ruta).
+    stopId: string | null;
     clienteId: string;
     clienteNombre: string;
     clienteServerId: number | null;
@@ -77,6 +78,7 @@ function MapaScreenContent() {
     routeCoordinates,
     routeStopMap,
     todayVisitSet,
+    scheduledTodaySet,
     currentStopIndex,
     nextStop,
     routeProgress,
@@ -105,6 +107,15 @@ function MapaScreenContent() {
     }
   }, [locError, locLoading, locErrorShown]);
   const currentPos = trackingPosition || (location ? { latitude: location.latitude, longitude: location.longitude } : null);
+
+  // Conteo de clientes mapeables con visita agendada hoy pendiente (para el badge
+  // del header "Agendado hoy" que da significado al color azul del marcador).
+  const scheduledTodayCount = useMemo(() => {
+    if (scheduledTodaySet.size === 0) return 0;
+    return mappableClients.filter(
+      (c) => scheduledTodaySet.has(c.id) || (c.serverId != null && scheduledTodaySet.has(String(c.serverId)))
+    ).length;
+  }, [mappableClients, scheduledTodaySet]);
 
   const initialRegion: Region = useMemo(() => {
     if (location) {
@@ -217,6 +228,32 @@ function MapaScreenContent() {
     }
   }, [nextStop]);
 
+  // Check-in directo de un cliente con visita "Agendado hoy" desde el panel de detalle
+  // (sin parada de ruta). Reutiliza el MISMO flujo que las paradas: performCheckIn →
+  // setCheckInTarget → CheckInPanel → handleConfirmCheckIn → createVisitaOffline, cuyo
+  // dedup (findScheduledVisitaForCliente) CUMPLE la visita agendada en vez de duplicar.
+  // stopId: null → handleConfirmCheckIn no encuentra parada y salta el .arrive().
+  const handleClientCheckIn = useCallback(async (client: MapClient) => {
+    try {
+      const result = await performCheckIn({
+        latitude: client.latitude,
+        longitude: client.longitude,
+      });
+      setCheckInTarget({
+        stopId: null,
+        clienteId: client.id,
+        clienteNombre: client.nombre,
+        clienteServerId: client.serverId,
+        distance: result.distance,
+        withinGeofence: result.withinGeofence,
+        lat: result.coords.latitude,
+        lng: result.coords.longitude,
+      });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo obtener tu ubicación' });
+    }
+  }, []);
+
   const handleConfirmCheckIn = useCallback(async () => {
     if (!checkInTarget || !user) return;
     setCheckInLoading(true);
@@ -297,6 +334,14 @@ function MapaScreenContent() {
               </Text>
             </View>
           )}
+          {mapMode === 'clients' && scheduledTodayCount > 0 && (
+            <View style={styles.scheduledBadge}>
+              <CalendarClock size={14} color="#ffffff" />
+              <Text style={styles.scheduledBadgeText}>
+                {scheduledTodayCount} agendado{scheduledTodayCount === 1 ? '' : 's'} hoy
+              </Text>
+            </View>
+          )}
           <View style={styles.headerBadge}>
             <MapPin size={14} color="rgba(255,255,255,0.8)" />
             <Text style={styles.headerBadgeText}>
@@ -336,7 +381,18 @@ function MapaScreenContent() {
                 key={client.id}
                 identifier={client.id}
                 coordinate={{ latitude: client.latitude, longitude: client.longitude }}
-                pinColor={getClientMarkerColor(client.id, routeStopMap, todayVisitSet, client.activo)}
+                pinColor={getClientMarkerColor(
+                  client.id,
+                  routeStopMap,
+                  todayVisitSet,
+                  client.activo,
+                  // "Agendado hoy": el set indexa por id local Y server id, así que
+                  // matcheamos por cualquiera de los dos (visitas pulled pueden traer
+                  // el server id si el cliente no estaba mapeado localmente).
+                  scheduledTodaySet.has(client.id) || (client.serverId != null && scheduledTodaySet.has(String(client.serverId)))
+                    ? new Set([client.id])
+                    : undefined,
+                )}
                 onPress={() => handleMarkerPress(client)}
                 tracksViewChanges={false}
               />
@@ -421,9 +477,11 @@ function MapaScreenContent() {
           client={selectedClient}
           routeStopMap={routeStopMap}
           todayVisitSet={todayVisitSet}
+          scheduledTodaySet={scheduledTodaySet}
           distance={distanceTo(selectedClient.latitude, selectedClient.longitude)}
           bottomInset={insets.bottom}
           onClose={() => setSelectedClient(null)}
+          onCheckIn={() => selectedClient && handleClientCheckIn(selectedClient)}
           onViewDetail={() => router.push(`/(tabs)/clients/${selectedClient.id}` as any)}
           onSell={() =>
             openCreateOrder({
@@ -485,6 +543,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   progressText: { fontSize: 12, fontWeight: '700', color: COLORS.headerText },
+  scheduledBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: MAP_COLORS.SCHEDULED_TODAY,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  scheduledBadgeText: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
   mapContainer: { flex: 1, position: 'relative' },
   map: { flex: 1 },
   centerBtn: {

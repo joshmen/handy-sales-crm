@@ -312,6 +312,15 @@ public static class RutaVendedorEndpoints
             return Results.Ok(new { items = resultado.Items, totalCount = resultado.TotalCount });
         });
 
+        // Mapa de operaciones: rutas activas de hoy con paradas geo-localizadas.
+        // RBAC en el service (vendedor ve solo las suyas). 2026-06-18.
+        group.MapGet("/active-map", async (
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            var rutas = await servicio.ObtenerRutasActivasParaMapaAsync();
+            return Results.Ok(rutas);
+        });
+
         group.MapGet("/{id:int}", async (
             int id,
             [FromServices] RutaVendedorService servicio) =>

@@ -25,7 +25,7 @@ interface DiscountModalProps {
 }
 
 const statusColors = {
-  [DiscountStatus.ACTIVE]: 'bg-green-100 text-green-800',
+  [DiscountStatus.ACTIVE]: 'bg-primary/10 text-primary',
   [DiscountStatus.INACTIVE]: 'bg-surface-3 text-foreground',
   [DiscountStatus.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
@@ -139,7 +139,7 @@ export function DiscountModal({
                           {range.minQuantity}
                           {range.maxQuantity ? `-${range.maxQuantity}` : '+'} {t('units')}
                         </span>
-                        <span className="text-green-600 font-medium">
+                        <span className="text-primary font-medium">
                           {range.discountValue}
                           {discount?.method === DiscountMethod.PERCENTAGE ? '%' : '$'} {t('discountLabel')}
                         </span>

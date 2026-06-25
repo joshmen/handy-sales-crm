@@ -14,9 +14,10 @@ export default function NewClientPage() {
 
   const handleSubmit = async (data: ClientFormData) => {
     const dto = mapFormToBackendDto(data);
-    await clientService.createClient(dto);
-    toast.success(tClients('clientCreated'));
+    const created = await clientService.createClient(dto);
     router.push('/clients');
+    // Toast con acción "Ver": navega al cliente recién creado (el toast persiste al navegar).
+    toast.view(tClients('clientCreated'), '', '', () => router.push(`/clients/${created.id}`));
   };
 
   return (

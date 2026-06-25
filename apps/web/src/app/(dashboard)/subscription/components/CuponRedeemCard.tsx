@@ -103,7 +103,7 @@ export function CuponRedeemCard({ onRedeemed }: CuponRedeemCardProps) {
             <Button
               onClick={handleRedeem}
               disabled={submitting || !codigo.trim()}
-              className="bg-success hover:bg-success/90 text-success-foreground shrink-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
             >
               {submitting ? (
                 <>

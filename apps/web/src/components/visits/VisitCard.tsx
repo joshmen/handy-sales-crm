@@ -103,7 +103,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             </span>
           </div>
           {visit.tienePedido && (
-            <div className="flex items-center text-green-600">
+            <div className="flex items-center text-primary">
               <ShoppingCart size={16} />
             </div>
           )}
@@ -192,7 +192,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
           )}
 
           {isCompleted && (
-            <div className="flex items-center text-green-600 px-2">
+            <div className="flex items-center text-primary px-2">
               <CheckCircle size={16} />
             </div>
           )}

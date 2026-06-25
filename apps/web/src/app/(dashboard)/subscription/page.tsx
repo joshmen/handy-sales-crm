@@ -176,7 +176,7 @@ export default function SubscriptionPage() {
   if (loading) {
     return (
       <div role="status" className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
         <span className="sr-only">Loading...</span>
       </div>
     );
@@ -198,6 +198,7 @@ export default function SubscriptionPage() {
       : t("enterPaymentDetails");
     return (
       <PageHeader
+        section="empresa"
         breadcrumbs={[
           { label: tc("home"), href: "/dashboard" },
           { label: t("title"), href: "/subscription" },
@@ -207,7 +208,7 @@ export default function SubscriptionPage() {
         subtitle={checkoutSubtitle}
         actions={
           <Button
-            variant="outline"
+            variant="wbOutline"
             size="sm"
             onClick={() => {
               setCheckoutClientSecret(null);
@@ -252,6 +253,7 @@ export default function SubscriptionPage() {
 
   return (
     <PageHeader
+      section="empresa"
       breadcrumbs={[
         { label: tc("home"), href: "/dashboard" },
         { label: t("title") },

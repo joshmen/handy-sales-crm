@@ -74,6 +74,10 @@ export interface Client extends BaseEntity {
   // Nombres de relación (para mostrar en grids)
   zoneName?: string;
   categoryName?: string;
+  vendedorName?: string;
+
+  // Métrica de actividad (pedidos en los últimos 30 días) — proyectada en el DTO de lista
+  pedidos30d?: number;
 
   // Relations
   visits?: Visit[];
@@ -103,6 +107,11 @@ export interface Product extends BaseEntity {
   maxStock?: number;
   isActive: boolean;
   images: string[];
+
+  // Fiscal (CFDI 4.0)
+  claveSat?: string;      // ClaveProdServ del SAT
+  claveUnidad?: string;   // ClaveUnidad del SAT (ej. "H87")
+  facturable?: boolean;   // si false, no entra en CFDI
 
   // Relations
   orderItems?: OrderItem[];

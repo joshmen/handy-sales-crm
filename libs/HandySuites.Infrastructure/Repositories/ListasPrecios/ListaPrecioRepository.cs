@@ -27,7 +27,9 @@ public class ListaPrecioRepository : IListaPrecioRepository
                 Descripcion = l.Descripcion,
                 Activo = l.Activo,
                 CreadoEn = l.CreadoEn,
-                ActualizadoEn = l.ActualizadoEn
+                ActualizadoEn = l.ActualizadoEn,
+                CantidadClientes = _db.Clientes.Count(c => c.ListaPreciosId == l.Id && c.TenantId == tenantId),
+                CantidadProductos = _db.PreciosPorProducto.Count(p => p.ListaPrecioId == l.Id && p.TenantId == tenantId && p.Activo)
             })
             .ToListAsync();
     }
@@ -44,7 +46,9 @@ public class ListaPrecioRepository : IListaPrecioRepository
                 Descripcion = l.Descripcion,
                 Activo = l.Activo,
                 CreadoEn = l.CreadoEn,
-                ActualizadoEn = l.ActualizadoEn
+                ActualizadoEn = l.ActualizadoEn,
+                CantidadClientes = _db.Clientes.Count(c => c.ListaPreciosId == l.Id && c.TenantId == tenantId),
+                CantidadProductos = _db.PreciosPorProducto.Count(p => p.ListaPrecioId == l.Id && p.TenantId == tenantId && p.Activo)
             })
             .FirstOrDefaultAsync();
     }

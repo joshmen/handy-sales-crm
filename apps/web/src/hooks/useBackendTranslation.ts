@@ -91,9 +91,15 @@ export function useBackendTranslation() {
       const looksLikeProse = /['{}#]|\. /.test(message) || message.length > 80;
       if (!looksLikeProse) {
         try {
-          const translated = t(message);
-          if (!translated.startsWith('backendMessages.')) {
-            return translated;
+          // `t.has` evita el error MISSING_MESSAGE en consola cuando la clave no
+          // existe (los mensajes dinámicos caen al paso 3 de patrones). Antes se
+          // llamaba `t(message)` directo, que logueaba MISSING_MESSAGE por cada
+          // texto dinámico aunque la traducción sí resolviera vía patrones.
+          if (t.has(message)) {
+            const translated = t(message);
+            if (!translated.startsWith('backendMessages.')) {
+              return translated;
+            }
           }
         } catch { /* not found */ }
       }

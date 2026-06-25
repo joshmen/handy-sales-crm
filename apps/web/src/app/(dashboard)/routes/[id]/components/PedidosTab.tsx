@@ -205,7 +205,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                 checked={allOnPageSelected}
                 onChange={toggleSelectAllOnPage}
                 aria-label={t('detail.selectAll')}
-                className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
               />
             </div>
           )}
@@ -242,7 +242,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                 <div
                   key={p.id}
                   className={`flex items-center gap-3 px-4 py-3 border-b border-border-subtle transition-colors ${
-                    isSelected ? 'bg-green-50 dark:bg-green-950/30' : 'hover:bg-surface-1'
+                    isSelected ? 'bg-primary/5 dark:bg-primary/10' : 'hover:bg-surface-1'
                   }`}
                 >
                   {isEditable && (
@@ -252,7 +252,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                         checked={isSelected}
                         onChange={() => toggleAssignedSelected(p.pedidoId)}
                         aria-label={`Seleccionar pedido ${p.pedidoId}`}
-                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
                       />
                     </div>
                   )}
@@ -269,7 +269,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                     <span className="text-[13px] text-foreground/70">{p.totalProductos}</span>
                   </div>
                   <div className="w-[110px] text-center">
-                    <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
+                    <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-primary/10 text-primary">
                       {p.estadoNombre}
                     </span>
                   </div>
@@ -332,13 +332,13 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
               value={pedidoSearch}
               onChange={(e) => setPedidoSearch(e.target.value)}
               placeholder={t('detail.searchOrderPlaceholder')}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           {loadingPedidos ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (() => {
             const filteredPedidos = availablePedidos.filter((p) => {
@@ -370,7 +370,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                         type="checkbox"
                         checked={allSelected}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                        className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
                       />
                       {allSelected ? t('detail.deselectAll') : t('detail.selectAll')}
                     </label>
@@ -390,7 +390,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                         key={p.id}
                         className={`flex items-center gap-3 px-3 py-2 border rounded-lg transition-colors cursor-pointer ${
                           isSelected
-                            ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10'
                             : 'border-border-subtle hover:bg-surface-1'
                         }`}
                       >
@@ -398,7 +398,7 @@ export function PedidosTab({ route, isEditable, onRefetch, pedidos, setPedidos }
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => togglePedidoSelected(p.id)}
-                          className="w-4 h-4 rounded border-border-subtle text-green-600 focus:ring-green-500"
+                          className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
                         />
                         <div className="flex-1">
                           <span className="text-[13px] font-medium text-foreground">

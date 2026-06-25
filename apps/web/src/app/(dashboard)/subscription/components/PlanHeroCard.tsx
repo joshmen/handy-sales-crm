@@ -18,7 +18,7 @@ import {
 
 const STATUS_COLORS: Record<string, string> = {
   Trial: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  Active: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  Active: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
   PastDue: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
   Cancelled: "bg-surface-3 text-foreground dark:bg-surface-3 dark:text-muted-foreground/60",
   Expired: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
@@ -49,7 +49,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
   const usersOver = subscription.activeUsuarios > subscription.maxUsuarios;
 
   return (
-    <Card className="border-l-4 border-l-green-600 bg-card overflow-hidden">
+    <Card className="border border-border border-l-4 border-l-primary bg-card rounded-2xl shadow-sm overflow-hidden">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -67,7 +67,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
             </div>
           </div>
 
-          <Button size="sm" onClick={onChangePlan} className="bg-success hover:bg-success/90 text-white">
+          <Button size="sm" onClick={onChangePlan} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <ArrowUpRight className="h-4 w-4 mr-1.5" />
             {t('changePlan')}
           </Button>
@@ -87,7 +87,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
                   ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
                   : usersPercent >= 80
                     ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                    : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                    : "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
               }`}>
                 {subscription.activeUsuarios}/{subscription.maxUsuarios}
               </span>
@@ -103,7 +103,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
               <div
                 aria-hidden="true"
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  usersOver ? "bg-red-500" : usersPercent >= 80 ? "bg-amber-500" : "bg-green-500"
+                  usersOver ? "bg-red-500" : usersPercent >= 80 ? "bg-amber-500" : "bg-primary"
                 }`}
                 style={{ width: `${usersPercent}%` }}
               />
@@ -159,7 +159,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   {currentPlan.incluyeReportes ? (
-                    <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
+                    <Check className="h-3.5 w-3.5 text-primary" strokeWidth={2.5} />
                   ) : (
                     <X className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-foreground/70" />
                   )}
@@ -167,7 +167,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
                 </div>
                 <div className="flex items-center gap-1.5">
                   {currentPlan.incluyeSoportePrioritario ? (
-                    <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
+                    <Check className="h-3.5 w-3.5 text-primary" strokeWidth={2.5} />
                   ) : (
                     <X className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-foreground/70" />
                   )}

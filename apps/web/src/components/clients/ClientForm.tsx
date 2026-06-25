@@ -257,7 +257,7 @@ export function ClientForm({ mode, initialValues, onSubmit, breadcrumbLabel, pag
         ]} />
 
         <div className="flex items-center justify-between">
-          <h1 className="text-[22px] font-bold text-foreground">{pageTitle}</h1>
+          <h1 className="text-[22px] font-bold tracking-tight text-foreground">{pageTitle}</h1>
           <div className="flex items-center gap-3" data-tour="client-form-actions">
             <button
               type="button"

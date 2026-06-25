@@ -36,6 +36,13 @@ public class RutaVendedor : AuditableEntity
     [Column("zona_id")]
     public int? ZonaId { get; set; }
 
+    /// <summary>
+    /// Vehículo de reparto asignado a la ruta. Opcional: una ruta puede no tener
+    /// vehículo. FK SET NULL al borrar el vehículo. 2026-06-20.
+    /// </summary>
+    [Column("vehiculo_id")]
+    public int? VehiculoId { get; set; }
+
     [Column("nombre")]
     public string Nombre { get; set; } = string.Empty;
 
@@ -105,6 +112,8 @@ public class RutaVendedor : AuditableEntity
     public Usuario? Usuario { get; set; }
     /// <summary>Legacy: primera zona de la ruta. Se mantiene para compat hacia atrás (mobile API y queries existentes). Source of truth nuevo es <see cref="Zonas"/> (junction multi-zona).</summary>
     public Zona? Zona { get; set; }
+    /// <summary>Vehículo de reparto asignado a la ruta (opcional). FK SET NULL.</summary>
+    public Vehiculo? Vehiculo { get; set; }
     /// <summary>Junction multi-zona (N:M). Una ruta puede cubrir múltiples zonas — alineado con Handy.la, Salesforce, SAP. Reportado 2026-04-27.</summary>
     public List<RutaZona> Zonas { get; set; } = new();
     public List<RutaDetalle> Detalles { get; set; } = new();

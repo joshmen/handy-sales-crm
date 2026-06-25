@@ -26,12 +26,12 @@ import {
   Trash2,
   Check,
   X,
+  Users,
 } from 'lucide-react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
-import { UsersThree } from '@phosphor-icons/react';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 
@@ -44,6 +44,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ClientCategoriesPage() {
   const t = useTranslations('clientCategories');
   const tc = useTranslations('common');
+  const tn = useTranslations('nav');
   const showApiError = useApiErrorToast();
   // State
   const [categories, setCategories] = useState<ClientCategory[]>([]);
@@ -202,8 +203,10 @@ export default function ClientCategoriesPage() {
 
   return (
       <PageHeader
+        section="catalogo"
         breadcrumbs={[
           { label: tc('home'), href: '/dashboard' },
+          { label: tn('sectionCatalog') },
           { label: t('title') },
         ]}
         title={t('title')}
@@ -244,7 +247,7 @@ export default function ClientCategoriesPage() {
             <button
               onClick={handleOpenCreate}
               data-tour="client-categories-create-btn"
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newCategory')}</span>
@@ -253,7 +256,7 @@ export default function ClientCategoriesPage() {
         }
       >
             {/* Search Row */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-5">
               <SearchBar
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -262,9 +265,9 @@ export default function ClientCategoriesPage() {
               />
               <button
                 onClick={loadCategories}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 h-10 text-xs font-medium text-foreground border border-border-strong bg-card rounded-full hover:bg-surface-2 transition-colors"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
 
@@ -281,7 +284,12 @@ export default function ClientCategoriesPage() {
               <DataGrid<ClientCategory>
                 columns={[
                   { key: 'id', label: tc('id'), width: 80, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
-                  { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-foreground">{item.nombre}</span> },
+                  { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => (
+                    <span className="flex items-center gap-2.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary/60 flex-shrink-0" />
+                      <span className="font-medium text-foreground">{item.nombre}</span>
+                    </span>
+                  ) },
                   { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-muted-foreground truncate">{item.descripcion || '-'}</span> },
                   { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                     <div onClick={e => e.stopPropagation()}>
@@ -310,14 +318,14 @@ export default function ClientCategoriesPage() {
                 sort={{ key: sortKey, direction: sortDir, onSort: handleSort }}
                 loading={loading}
                 loadingMessage={t('loadingCategories')}
-                emptyIcon={<UsersThree className="w-10 h-10 text-muted-foreground" weight="duotone" />}
+                emptyIcon={<Users className="w-10 h-10 text-muted-foreground" />}
                 emptyTitle={searchTerm ? t('emptySearchTitle') : t('emptyTitle')}
                 emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
                 mobileCardRenderer={(category) => (
                   <div className={!category.activo ? 'opacity-60' : ''}>
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded bg-foreground flex items-center justify-center flex-shrink-0">
-                        <UsersThree className="w-5 h-5 text-white" weight="duotone" />
+                        <Users className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-foreground truncate">{category.nombre}</div>
@@ -349,16 +357,16 @@ export default function ClientCategoriesPage() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title={editingCategory ? t('drawer.titleEdit') : t('drawer.titleNew')}
-          icon={<UsersThree className="w-5 h-5" weight="duotone" />}
+          icon={<Users className="w-5 h-5" />}
           width="sm"
           isDirty={isDirty}
           onSave={handleSubmit}
           footer={
             <div data-tour="client-categories-drawer-actions" className="flex items-center justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
+              <Button type="button" variant="wbOutline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
                 {tc('cancel')}
               </Button>
-              <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+              <Button type="button" variant="wbPrimary" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingCategory ? tc('saveChanges') : t('drawer.createCategory')}
               </Button>

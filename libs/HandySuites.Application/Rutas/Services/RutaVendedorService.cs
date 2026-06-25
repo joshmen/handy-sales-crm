@@ -63,6 +63,10 @@ public class RutaVendedorService
             if (!await _repo.ExisteZonaEnTenantAsync(zId, _tenant.TenantId))
                 throw new InvalidOperationException($"La zona con ID {zId} no existe o no pertenece a tu empresa.");
         }
+        // Vehiculo opcional: si se manda, validar pertenencia al tenant.
+        if (dto.VehiculoId is int vId && vId > 0
+            && !await _repo.ExisteVehiculoEnTenantAsync(vId, _tenant.TenantId))
+            throw new InvalidOperationException($"El vehículo con ID {vId} no existe o no pertenece a tu empresa.");
 
         // Para mantener compat con queries que aún filtran por r.ZonaId, persistimos
         // la primera zona como la legacy ZonaId. La junction RutasZonas tiene la lista
@@ -80,6 +84,7 @@ public class RutaVendedorService
             TenantId = _tenant.TenantId,
             UsuarioId = dto.EsTemplate ? null : dto.UsuarioId,
             ZonaId = legacyZonaId == 0 ? null : legacyZonaId,
+            VehiculoId = dto.VehiculoId is int vehId && vehId > 0 ? vehId : null,
             Codigo = codigo,
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
@@ -184,6 +189,21 @@ public class RutaVendedorService
         return await _repo.ObtenerRutaDelDiaAsync(_tenant.TenantId, usuarioId, fecha);
     }
 
+    /// <summary>
+    /// Rutas activas de hoy para el mapa de operaciones web. RBAC: admin/supervisor/SA
+    /// ven todas; vendedor ve solo las suyas (consistente con ObtenerPorFiltroAsync).
+    /// </summary>
+    public async Task<List<RutaVendedorDto>> ObtenerRutasActivasParaMapaAsync()
+    {
+        int? usuarioId = null;
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin
+            && int.TryParse(_tenant.UserId, out var vendedorId))
+        {
+            usuarioId = vendedorId;
+        }
+        return await _repo.ObtenerRutasActivasParaMapaAsync(_tenant.TenantId, usuarioId);
+    }
+
     public async Task<List<RutaVendedorDto>> ObtenerMisRutasPendientesAsync()
     {
         var usuarioId = int.Parse(_tenant.UserId);
@@ -266,6 +286,21 @@ public class RutaVendedorService
             }
             // Sync legacy field con primera zona
             ruta.ZonaId = newZonaIds.FirstOrDefault() == 0 ? null : newZonaIds.First();
+        }
+
+        // Vehiculo: si se manda VehiculoId, asigna (>0) o quita (0). Si es null, no se toca.
+        if (dto.VehiculoId.HasValue)
+        {
+            if (dto.VehiculoId.Value > 0)
+            {
+                if (!await _repo.ExisteVehiculoEnTenantAsync(dto.VehiculoId.Value, _tenant.TenantId))
+                    throw new InvalidOperationException($"El vehículo con ID {dto.VehiculoId.Value} no existe o no pertenece a tu empresa.");
+                ruta.VehiculoId = dto.VehiculoId.Value;
+            }
+            else
+            {
+                ruta.VehiculoId = null;
+            }
         }
 
         if (!string.IsNullOrEmpty(dto.Nombre)) ruta.Nombre = dto.Nombre;

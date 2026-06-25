@@ -135,7 +135,7 @@ export function ResumenTab({ route, isEditable, onRefetch, pedidos, carga, onEdi
               <span
                 className={
                   route.paradasCompletadas === route.totalParadas && route.totalParadas > 0
-                    ? 'text-green-600'
+                    ? 'text-primary'
                     : ''
                 }
               >
@@ -170,8 +170,8 @@ export function ResumenTab({ route, isEditable, onRefetch, pedidos, carga, onEdi
         </div>
 
         <div className="flex items-center gap-4 mb-4 p-3 bg-surface-1 rounded-lg">
-          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-            <User className="w-5 h-5 text-green-600" />
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="w-5 h-5 text-primary" />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">{route.usuarioNombre}</p>
@@ -188,7 +188,7 @@ export function ResumenTab({ route, isEditable, onRefetch, pedidos, carga, onEdi
               onChange={(e) => setEfectivoInicial(e.target.value)}
               placeholder="0.00"
               disabled={!isEditable}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-surface-3 disabled:text-muted-foreground"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-surface-3 disabled:text-muted-foreground"
             />
           </div>
           <div>
@@ -199,7 +199,7 @@ export function ResumenTab({ route, isEditable, onRefetch, pedidos, carga, onEdi
               onChange={(e) => setComentarios(e.target.value)}
               placeholder={tl('commentsPlaceholder')}
               disabled={!isEditable}
-              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-surface-3 disabled:text-muted-foreground"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-surface-3 disabled:text-muted-foreground"
             />
           </div>
         </div>

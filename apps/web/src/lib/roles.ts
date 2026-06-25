@@ -3,13 +3,14 @@
  * This ensures consistent role naming across the entire application
  */
 
-export type RoleType = 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'VENDEDOR' | 'USER';
+export type RoleType = 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'VENDEDOR' | 'ALMACENISTA' | 'USER';
 
 export const ROLE_DISPLAY_NAMES: Record<RoleType, string> = {
   'SUPER_ADMIN': 'Super Administrador',
   'ADMIN': 'Administrador',
   'SUPERVISOR': 'Supervisor',
   'VENDEDOR': 'Vendedor',
+  'ALMACENISTA': 'Almacenista',
   'USER': 'Usuario',
 };
 
@@ -32,6 +33,7 @@ export const getRoleColor = (role: string): string => {
     'ADMIN': 'bg-blue-100 text-blue-800',
     'SUPERVISOR': 'bg-green-100 text-green-800',
     'VENDEDOR': 'bg-yellow-100 text-yellow-800',
+    'ALMACENISTA': 'bg-amber-100 text-amber-800',
     'USER': 'bg-gray-100 text-gray-800',
   };
   

@@ -51,7 +51,11 @@ test.describe('Pedidos — crear drawer', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
-    const newBtn = page.getByRole('button', { name: /Nuevo pedido|Crear pedido/i }).first();
+    // Nombre EXACTO: el panel de Ayuda expone un botón "¿Cómo crear un pedido?…
+    // registrar un nuevo pedido" que matchea un regex laxo; exact evita ese
+    // falso positivo y apunta al CTA real del header.
+    const newBtn = page.getByRole('button', { name: 'Nuevo pedido', exact: true })
+      .or(page.getByRole('button', { name: 'Crear pedido', exact: true })).first();
     if (!await newBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
       test.skip();
       return;
@@ -59,12 +63,18 @@ test.describe('Pedidos — crear drawer', () => {
     await newBtn.click();
     await page.waitForTimeout(2000);
 
-    // Drawer puede ser sheet, dialog, o panel — verificar que la URL cambió O un sheet apareció
+    // Drawer puede ser sheet, dialog, o panel — verificar que la URL cambió O
+    // que el dialog apareció. Usamos getByRole('dialog') (rol ARIA computado),
+    // no el selector CSS [role="dialog"]: el drawer es un dialog cuyo rol es
+    // implícito (sin atributo literal), así que el selector CSS no lo detecta.
     const urlChanged = page.url().includes('orders/new') || page.url().includes('create');
-    const hasDialog = await page.locator('[role="dialog"], [role="region"]:has(input)').first().isVisible({ timeout: 3000 }).catch(() => false);
+    const hasDialog =
+      await page.getByRole('dialog').first().isVisible({ timeout: 3000 }).catch(() => false) ||
+      await page.getByRole('heading', { name: /Nuevo Pedido/i }).first().isVisible({ timeout: 1000 }).catch(() => false);
     expect(urlChanged || hasDialog).toBeTruthy();
-    // Cerrar drawer / regresar
-    const cancelBtn = page.getByRole('button', { name: /Cancelar|Cerrar/i }).first();
+    // Cerrar drawer / regresar — scopeado al dialog para no matchear el botón
+    // "Cerrar panel de ayuda" del panel lateral.
+    const cancelBtn = page.getByRole('dialog').getByRole('button', { name: /Cancelar|Cerrar/i }).first();
     if (await cancelBtn.isVisible().catch(() => false)) await cancelBtn.click();
   });
 });

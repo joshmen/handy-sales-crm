@@ -143,7 +143,7 @@ export function TenantMigration() {
                 <div className="text-sm text-muted-foreground">{t('totalTenants')}</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{summary.withCloudinary}</div>
+                <div className="text-2xl font-bold text-primary">{summary.withCloudinary}</div>
                 <div className="text-sm text-muted-foreground">{t('withCloudinary')}</div>
               </div>
               <div className="text-center">

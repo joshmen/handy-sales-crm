@@ -39,3 +39,42 @@ export function useClientNameMap(ids: string[]) {
     return map;
   }, [clientes]);
 }
+
+/** Info de cliente resuelta localmente: nombre + coords + serverId. */
+export interface ClientInfo {
+  nombre: string;
+  serverId: number | null;
+  latitud: number | null;
+  longitud: number | null;
+}
+
+/**
+ * Variante de useClientNameMap que también resuelve coords (latitud/longitud) y
+ * serverId del cliente por id local. Necesaria para flujos que requieren la
+ * ubicación del cliente, como el check-in de la agenda de visitas (performCheckIn
+ * necesita coords). Mismo patrón reactivo + key estable que useClientNameMap.
+ */
+export function useClientInfoMap(ids: string[]) {
+  const key = useMemo(() => ids.slice().sort().join(','), [ids]);
+
+  const observable = useMemo(() => {
+    if (ids.length === 0) return null;
+    return database.get<Cliente>('clientes').query(Q.where('id', Q.oneOf(ids))).observe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const { data: clientes } = useObservable(observable);
+
+  return useMemo(() => {
+    const map = new Map<string, ClientInfo>();
+    clientes?.forEach((c) =>
+      map.set(c.id, {
+        nombre: c.nombre,
+        serverId: c.serverId,
+        latitud: c.latitud,
+        longitud: c.longitud,
+      })
+    );
+    return map;
+  }, [clientes]);
+}

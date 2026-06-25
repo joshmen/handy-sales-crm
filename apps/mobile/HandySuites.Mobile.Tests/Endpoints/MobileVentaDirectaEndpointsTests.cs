@@ -704,6 +704,8 @@ public class MobileVentaDirectaEndpointsTests : IDisposable
             throw new NotImplementedException();
         public Task<InventarioPaginatedResult> ObtenerPorFiltroAsync(InventarioFiltroDto filtro, int tenantId) =>
             throw new NotImplementedException();
+        public Task<InventarioResumenDto> ObtenerResumenAsync(int tenantId) =>
+            throw new NotImplementedException();
         public Task<bool> ExisteProductoEnTenantAsync(int productoId, int tenantId) =>
             throw new NotImplementedException();
     }
