@@ -51,6 +51,17 @@ public class SyncRepositoryTests : IDisposable
         var tz = new Mock<ITenantTimeZoneService>();
         tz.Setup(t => t.GetTenantTodayMidnightUtcAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DateTime.UtcNow.Date);
+        // La imputación de VentaDirecta (ambos paths de sync) busca la ruta por la
+        // fecha-calendario del tenant del pedido. Mock UTC por defecto (sin shift).
+        tz.Setup(t => t.GetTenantDayFromUtcAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync<DateTime, CancellationToken, ITenantTimeZoneService, DateOnly>(
+                (utc, _) => DateOnly.FromDateTime(utc));
+        tz.Setup(t => t.GetCalendarDayWindowUtc(It.IsAny<DateOnly>()))
+            .Returns<DateOnly>(dia =>
+            {
+                var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
+                return (inicio, inicio.AddDays(1));
+            });
         _sut = new SyncRepository(_db, tz.Object);
 
         SeedTestData();

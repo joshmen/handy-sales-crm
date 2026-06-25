@@ -25,6 +25,7 @@ public class PedidoRepositoryRutaCargaTests : IDisposable
     private readonly SqliteConnection _connection;
     private readonly HandySuitesDbContext _db;
     private readonly PedidoRepository _sut;
+    private readonly Mock<ITenantTimeZoneService> _tzMock;
 
     public PedidoRepositoryRutaCargaTests()
     {
@@ -48,10 +49,21 @@ public class PedidoRepositoryRutaCargaTests : IDisposable
         _db = new HandySuitesDbContext(options);
         _db.Database.EnsureCreated();
 
-        var tz = new Mock<ITenantTimeZoneService>();
-        tz.Setup(t => t.GetTenantTodayMidnightUtcAsync(It.IsAny<CancellationToken>()))
+        _tzMock = new Mock<ITenantTimeZoneService>();
+        _tzMock.Setup(t => t.GetTenantTodayMidnightUtcAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DateTime.UtcNow.Date);
-        _sut = new PedidoRepository(_db, tz.Object);
+        // La imputación de VentaDirecta busca la ruta por la fecha-calendario del tenant del
+        // pedido. Mock UTC por defecto (sin shift): día = fecha UTC, window = [día 00:00, +1).
+        _tzMock.Setup(t => t.GetTenantDayFromUtcAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync<DateTime, CancellationToken, ITenantTimeZoneService, DateOnly>(
+                (utc, _) => DateOnly.FromDateTime(utc));
+        _tzMock.Setup(t => t.GetCalendarDayWindowUtc(It.IsAny<DateOnly>()))
+            .Returns<DateOnly>(dia =>
+            {
+                var inicio = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
+                return (inicio, inicio.AddDays(1));
+            });
+        _sut = new PedidoRepository(_db, _tzMock.Object);
 
         SeedFixtures();
     }
@@ -187,8 +199,8 @@ public class PedidoRepositoryRutaCargaTests : IDisposable
         // Reproduce el bug Rodrigo 27/5/2026 (cross-contamination entre rutas de días distintos).
         // ANTES del fix: un pedido de ayer entregado hoy buscaba CUALQUIER ruta activa sin
         // acotar por fecha → se imputaba a la ruta de hoy, inflando su CantidadVendida.
-        // POST-fix: la búsqueda acota por p.FechaPedido.Date == r.Fecha.Date — no encuentra
-        // ruta para el pedido de ayer, no incrementa nada.
+        // POST-fix: la búsqueda acota por la fecha-calendario del tenant del pedido == r.Fecha
+        // — no encuentra ruta para el pedido de ayer, no incrementa nada.
 
         // Arrange — pedido VentaDirecta con FechaPedido=ayer; ruta del día es de hoy.
         var pedido = CreatePedidoEnRuta(id: 1004, TipoVenta.VentaDirecta, cantidad: 9);
@@ -203,6 +215,51 @@ public class PedidoRepositoryRutaCargaTests : IDisposable
         var carga = await _db.RutasCarga.AsNoTracking().FirstAsync(c => c.RutaId == RutaId);
         carga.CantidadVendida.Should().Be(0);
         carga.CantidadEntregada.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CambiarAEntregado_VentaDirectaNocturna_MexicoTz_ImputaARutaDelDiaLocal()
+    {
+        // Regresión 2026-06-25 (cierre de ruta mostraba "Vendió 10" con 59 ventas reales):
+        // una venta directa de la noche en México (UTC-6) tiene FechaPedido al día UTC
+        // SIGUIENTE. Con .Date la imputación buscaba la ruta del día UTC siguiente y NO
+        // encontraba la ruta de hoy -> CantidadVendida nunca se incrementaba para las ventas
+        // de la tarde/noche. El fix usa la fecha-calendario del tenant (GetTenantDayFromUtcAsync).
+        // Si alguien revierte a .Date, este test falla.
+
+        // Mock tz México: convierte el instante UTC a la fecha-calendario local (-6h).
+        _tzMock.Setup(t => t.GetTenantDayFromUtcAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync<DateTime, CancellationToken, ITenantTimeZoneService, DateOnly>(
+                (utc, _) => DateOnly.FromDateTime(utc.AddHours(-6)));
+
+        // Ruta del día LOCAL 2026-06-23 (date-only a medianoche UTC), en progreso.
+        var diaLocal = new DateTime(2026, 6, 23, 0, 0, 0, DateTimeKind.Utc);
+        _db.RutasVendedor.Add(new RutaVendedor
+        {
+            Id = 110, TenantId = TenantId, UsuarioId = UsuarioId,
+            Codigo = "RT-20260623-0110",
+            Nombre = "Ruta 23", Fecha = diaLocal, Estado = EstadoRuta.EnProgreso, Activo = true,
+        });
+        _db.RutasCarga.Add(new RutaCarga
+        {
+            Id = 510, TenantId = TenantId, RutaId = 110, ProductoId = ProductoId,
+            CantidadEntrega = 50, CantidadVenta = 30, CantidadTotal = 80,
+            CantidadVendida = 0, CantidadEntregada = 0, PrecioUnitario = 10, Activo = true,
+        });
+        await _db.SaveChangesAsync();
+
+        // Venta directa de la noche: 2026-06-23 20:00 México = 2026-06-24 02:00 UTC.
+        var pedido = CreatePedidoEnRuta(id: 1006, TipoVenta.VentaDirecta, cantidad: 4);
+        pedido.FechaPedido = new DateTime(2026, 6, 24, 2, 0, 0, DateTimeKind.Utc);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var outcome = await _sut.CambiarEstadoDetalladoAsync(1006, EstadoPedido.Entregado, null, TenantId);
+
+        // Assert — la venta nocturna se imputa a la ruta del día local 23, no se pierde.
+        outcome.Status.Should().Be(CambiarEstadoStatus.Ok);
+        var carga = await _db.RutasCarga.AsNoTracking().FirstAsync(c => c.RutaId == 110);
+        carga.CantidadVendida.Should().Be(4);
     }
 
     public void Dispose()

@@ -379,8 +379,12 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         if (ruta == null || !ruta.UsuarioId.HasValue)
             return new VinculacionHuerfanosResult(0, 0);
 
-        var fechaInicio = ruta.Fecha.Date;
-        var fechaFin = fechaInicio.AddDays(1);
+        // VENTANA TZ-SHIFTED del día de la ruta. Aquí filtramos por p.FechaPedido, que es un
+        // instante REAL (no date-only). ruta.Fecha es la fecha-calendario del tenant (guardada a
+        // medianoche UTC). Con .Date la ventana era [medianoche UTC, +1) y las ventas de la
+        // tarde/noche en México (UTC-6) caían fuera -> huérfanos no recuperados. GetTenantDayWindowUtcAsync
+        // da la ventana real del día-tenant para matchear timestamps.
+        var (fechaInicio, fechaFin) = await _tenantTz.GetTenantDayWindowUtcAsync(DateOnly.FromDateTime(ruta.Fecha));
 
         // Huérfanos: VentaDirecta+Entregado del usuario en la fecha de la ruta
         // que no tengan link activo en RutasPedidos (a ninguna ruta).
@@ -459,8 +463,10 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         if (ruta == null || !ruta.UsuarioId.HasValue)
             return new VinculacionGastosHuerfanosResult(0, 0);
 
-        var fechaInicio = ruta.Fecha.Date;
-        var fechaFin = fechaInicio.AddDays(1);
+        // VENTANA TZ-SHIFTED del día de la ruta (g.FechaGasto es un instante REAL, no date-only).
+        // Mismo motivo que VincularPedidosHuerfanosAsync: con .Date los gastos de la tarde/noche
+        // en México (UTC-6) caían fuera de la ventana medianoche-UTC y no se vinculaban a la ruta.
+        var (fechaInicio, fechaFin) = await _tenantTz.GetTenantDayWindowUtcAsync(DateOnly.FromDateTime(ruta.Fecha));
 
         // Gastos huerfanos: usuario, dia, activos, estado=Activo, sin ruta_id.
         var huerfanos = await _db.Gastos
@@ -1127,8 +1133,11 @@ public class RutaVendedorRepository : IRutaVendedorRepository
 
         if (ruta == null) return new CierreRutaResumenDto();
 
-        var fechaInicio = ruta.Fecha.Date;
-        var fechaFin = fechaInicio.AddDays(1);
+        // VENTANA TZ-SHIFTED del día de la ruta. Esta ventana se aplica a p.CreadoEn y
+        // c.FechaCobro (instantes REALES). Con .Date era [medianoche UTC, +1) y la cobranza
+        // de adeudos / ventas directas sin link de la tarde-noche en México (UTC-6) quedaban
+        // fuera del resumen del cierre. Mismo bug que la imputación de CantidadVendida.
+        var (fechaInicio, fechaFin) = await _tenantTz.GetTenantDayWindowUtcAsync(DateOnly.FromDateTime(ruta.Fecha));
         var usuarioId = ruta.UsuarioId;
 
         // 1. Valor de la ruta (carga total)

@@ -705,8 +705,12 @@ public class SyncRepository : ISyncRepository
                         // correspondiente ya está Completada, el sweep en aceptar/iniciar ruta
                         // (VincularPedidosHuerfanosAsync) lo captura cuando se crea/acepta la
                         // siguiente ruta del día.
-                        var fechaInicio = pedido.FechaPedido.Date;
-                        var fechaFin = fechaInicio.AddDays(1);
+                        // FECHA-CALENDARIO DEL TENANT, no UTC (ver IncrementarRutaCargaPorPedidoEntregadoAsync
+                        // en PedidoRepository). pedido.FechaPedido es un instante real; .Date daba el día UTC
+                        // y las ventas de tarde/noche en México (UTC-6) se imputaban al día siguiente -> la
+                        // ruta de hoy no se encontraba y CantidadVendida no se incrementaba (cierre subcontaba).
+                        var diaTenant = await _tenantTz.GetTenantDayFromUtcAsync(pedido.FechaPedido);
+                        var (fechaInicio, fechaFin) = _tenantTz.GetCalendarDayWindowUtc(diaTenant);
                         // 2026-06-09 cross-DB: PG nativo, SQLite ternary explicito
                         var isPostgresInner = _db.Database.ProviderName?.Contains("Npgsql") == true;
                         var rutaQueryInner = _db.RutasVendedor
@@ -2068,8 +2072,11 @@ public class SyncRepository : ISyncRepository
             // Caso 2: VentaDirecta sin pre-link — buscar la ruta del DÍA DEL PEDIDO
             // (no "ruta activa now"). Acotado por fecha para evitar cross-contamination
             // cuando sync push llega tarde y ya hay otra ruta del mismo día.
-            var fechaInicio = pedido.FechaPedido.Date;
-            var fechaFin = fechaInicio.AddDays(1);
+            // FECHA-CALENDARIO DEL TENANT, no UTC: .Date daba el día UTC y las ventas de la
+            // tarde/noche en México (UTC-6) se imputaban al día siguiente -> la ruta de hoy no
+            // se encontraba y CantidadVendida no se incrementaba (cierre subcontaba "Vendió").
+            var diaTenant = await _tenantTz.GetTenantDayFromUtcAsync(pedido.FechaPedido);
+            var (fechaInicio, fechaFin) = _tenantTz.GetCalendarDayWindowUtc(diaTenant);
             // 2026-06-09 cross-DB: PG nativo, SQLite ternary explicito
             var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
             var rutaQuery = _db.RutasVendedor
