@@ -87,7 +87,11 @@ export default function PromotionsPage() {
   const tn = useTranslations('nav');
   const { tApi } = useBackendTranslation();
   const showApiError = useApiErrorToast();
-  const { formatDate: _fmtDate } = useFormatters();
+  const { formatDate: _fmtDate, tenantToday } = useFormatters();
+  // Día calendario del tenant (YYYY-MM-DD) para vigencia de promociones.
+  // Comparar contra `new Date()` (TZ del browser) marcaba "Finalizada"
+  // antes de tiempo en tenants de TZ negativa.
+  const hoy = tenantToday();
   const drawerRef = useRef<DrawerHandle>(null);
   const [promotions, setPromotions] = useState<PromocionDto[]>([]);
   const [productos, setProductos] = useState<ProductoSimple[]>([]);
@@ -162,9 +166,11 @@ export default function PromotionsPage() {
     return _fmtDate(dateStr, { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  // Vencida solo si su fecha-fin (calendario) es ANTERIOR a hoy-tenant.
+  // Comparación de strings YYYY-MM-DD (inclusiva del día de fechaFin).
   const isExpired = (fechaFin: string) => {
     if (!fechaFin) return false;
-    return new Date(fechaFin) < new Date();
+    return fechaFin.slice(0, 10) < hoy;
   };
 
   // Sort state
@@ -195,9 +201,11 @@ export default function PromotionsPage() {
   const getPromoEstado = useCallback((promo: PromocionDto): { label: string; tone: 'success' | 'info' | 'default' } => {
     if (!promo.activo) return { label: t('statusInactive'), tone: 'default' };
     if (isExpired(promo.fechaFin)) return { label: t('statusFinished'), tone: 'default' };
-    if (promo.fechaInicio && new Date(promo.fechaInicio) > new Date()) return { label: t('statusScheduled'), tone: 'info' };
+    // Programada solo si su fecha-inicio (calendario) es POSTERIOR a hoy-tenant.
+    if (promo.fechaInicio && promo.fechaInicio.slice(0, 10) > hoy) return { label: t('statusScheduled'), tone: 'info' };
     return { label: t('statusActive'), tone: 'success' };
-  }, [t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, hoy]);
 
   // Mecánica legible a partir del tipo de promoción.
   const getPromoMecanica = useCallback((promo: PromocionDto): string => {

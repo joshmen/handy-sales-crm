@@ -42,7 +42,8 @@ public static class TeamLocationEndpoints
         [FromServices] HandySuitesDbContext db,
         [FromServices] ICurrentTenant currentUser,
         [FromServices] IUbicacionVendedorRepository ubicacionRepo,
-        [FromServices] ISubscriptionFeatureGuard featureGuard)
+        [FromServices] ISubscriptionFeatureGuard featureGuard,
+        [FromServices] ITenantTimeZoneService tenantTz)
     {
         var role = currentUser.Role;
         if (role != RoleNames.Admin && role != RoleNames.Supervisor && role != RoleNames.SuperAdmin)
@@ -50,7 +51,7 @@ public static class TeamLocationEndpoints
 
         var tenantId = currentUser.TenantId;
 
-        var data = await BuildUltimasUbicacionesAsync(db, tenantId, ubicacionRepo, featureGuard);
+        var data = await BuildUltimasUbicacionesAsync(db, tenantId, ubicacionRepo, featureGuard, tenantTz);
 
         var usuarioIds = data.Select(d => d.UsuarioId).ToList();
         var usuarios = await db.Usuarios.AsNoTracking()
@@ -90,7 +91,8 @@ public static class TeamLocationEndpoints
         HandySuitesDbContext db,
         int tenantId,
         IUbicacionVendedorRepository ubicacionRepo,
-        ISubscriptionFeatureGuard featureGuard)
+        ISubscriptionFeatureGuard featureGuard,
+        ITenantTimeZoneService tenantTz)
     {
         // Si el plan incluye tracking_vendedor, los pings de UbicacionesVendedor
         // son la fuente PRIMARIA — más frecuentes y confiables que los 3 legacy.
@@ -103,9 +105,13 @@ public static class TeamLocationEndpoints
 
         // Sprint pre-prod #68 audit 2026-06-06: full table scan sin date filter.
         // Las "ultimas ubicaciones" del equipo solo necesitan las activities
-        // del ultimo dia — si filtramos antes del materializar (.ToListAsync()),
-        // bajamos el dataset de potencialmente millones a decenas/cientos.
-        var sinceUtc = DateTime.UtcNow.AddDays(-1);
+        // del dia tenant de HOY — si filtramos antes del materializar (.ToListAsync()),
+        // bajamos el dataset de potencialmente millones a decenas/cientos. La ventana
+        // se ancla al inicio del dia calendario del tenant (timestamps reales) en vez
+        // de UtcNow-24h, para que cerca de medianoche en TZ no-UTC (MX UTC-6) el filtro
+        // coincida con el "hoy" que ve el admin.
+        var hoyTenant = await tenantTz.GetTenantTodayAsync();
+        var (sinceUtc, _) = await tenantTz.GetTenantDayWindowUtcAsync(hoyTenant);
 
         var visitas = db.ClienteVisitas.AsNoTracking()
             .Where(v => v.TenantId == tenantId
@@ -260,7 +266,7 @@ public static class TeamLocationEndpoints
             .ToDictionary(g => g.Key, g => g.Select(x => x.Nombre).Distinct().ToList());
 
         // Última ubicación conocida (helper compartido) + nombres de cliente.
-        var ultimas = await BuildUltimasUbicacionesAsync(db, tenantId, ubicacionRepo, featureGuard);
+        var ultimas = await BuildUltimasUbicacionesAsync(db, tenantId, ubicacionRepo, featureGuard, tenantTz);
         var ultimaPorUsuario = ultimas.ToDictionary(d => d.UsuarioId);
 
         var clienteIds = ultimas.Where(d => d.ClienteId.HasValue).Select(d => d.ClienteId!.Value).Distinct().ToList();

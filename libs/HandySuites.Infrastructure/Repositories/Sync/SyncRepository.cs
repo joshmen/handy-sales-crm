@@ -1,4 +1,5 @@
 using HandySuites.Application.Common;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Common.Time;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Application.Sync.Interfaces;
@@ -13,11 +14,13 @@ namespace HandySuites.Infrastructure.Repositories.Sync;
 public class SyncRepository : ISyncRepository
 {
     private readonly HandySuitesDbContext _db;
+    private readonly ITenantTimeZoneService _tenantTz;
     private readonly ILogger<SyncRepository>? _logger;
 
-    public SyncRepository(HandySuitesDbContext db, ILogger<SyncRepository>? logger = null)
+    public SyncRepository(HandySuitesDbContext db, ITenantTimeZoneService tenantTz, ILogger<SyncRepository>? logger = null)
     {
         _db = db;
+        _tenantTz = tenantTz;
         _logger = logger;
     }
 
@@ -1080,9 +1083,13 @@ public class SyncRepository : ISyncRepository
 
     public async Task<List<SyncPromocionDto>> GetPromocionesAsync(int tenantId, DateTime? since)
     {
+        // Promocion.FechaFin es date-only (medianoche UTC). Comparar contra UtcNow
+        // dejaba de sincronizar al mobile una promo vigente HOY al cruzar medianoche
+        // UTC en vez del fin de día del tenant. Usamos medianoche UTC del día tenant.
+        var hoyMid = await _tenantTz.GetTenantTodayMidnightUtcAsync();
         var query = _db.Promociones.AsNoTracking()
             .Include(p => p.PromocionProductos)
-            .Where(p => p.TenantId == tenantId && p.Activo && p.FechaFin >= DateTime.UtcNow);
+            .Where(p => p.TenantId == tenantId && p.Activo && p.FechaFin >= hoyMid);
 
         if (since.HasValue)
             query = query.Where(p => p.ActualizadoEn > since || p.CreadoEn > since);

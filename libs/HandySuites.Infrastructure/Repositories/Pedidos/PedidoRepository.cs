@@ -1,4 +1,5 @@
 using HandySuites.Application.Common;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Pedidos.DTOs;
 using HandySuites.Application.Pedidos.Interfaces;
 using HandySuites.Domain.Common;
@@ -12,11 +13,13 @@ namespace HandySuites.Infrastructure.Repositories.Pedidos;
 public class PedidoRepository : IPedidoRepository
 {
     private readonly HandySuitesDbContext _db;
+    private readonly ITenantTimeZoneService _tenantTz;
     private readonly ILogger<PedidoRepository>? _logger;
 
-    public PedidoRepository(HandySuitesDbContext db, ILogger<PedidoRepository>? logger = null)
+    public PedidoRepository(HandySuitesDbContext db, ITenantTimeZoneService tenantTz, ILogger<PedidoRepository>? logger = null)
     {
         _db = db;
+        _tenantTz = tenantTz;
         _logger = logger;
     }
 
@@ -119,6 +122,11 @@ public class PedidoRepository : IPedidoRepository
         // Productos a auto-insertar como líneas Y (regalo de producto distinto).
         var lineasBonificacionDistinta = new List<DetallePedido>();
         var ahora = DateTime.UtcNow;
+        // Vigencia BOGO: campos date-only (Promocion.FechaInicio/FechaFin) se guardan
+        // a medianoche UTC del día calendario. Comparar contra UtcNow invalidaba una
+        // promo vigente HOY al cruzar medianoche UTC (en vez del fin de día del tenant
+        // MX UTC-6). Usamos medianoche UTC del día tenant "hoy" para la comparación.
+        var ahoraBogo = await _tenantTz.GetTenantTodayMidnightUtcAsync();
 
         // Agregar detalles
         foreach (var detalleDto in dto.Detalles)
@@ -130,8 +138,10 @@ public class PedidoRepository : IPedidoRepository
             var tasa = ResolveTasa(producto, tasas, defaultTasa);
 
             // Resolver promoción Regalo (BOGO) — recalcular en server, no confiar en cliente.
+            // Se pasa ahoraBogo (medianoche UTC del día tenant) para la validación de
+            // vigencia; los timestamps de las líneas siguen usando `ahora` (UtcNow real).
             var (cantidadBonificada, lineaY) = ResolveBogo(
-                detalleDto, producto, promociones, productos, tasas, defaultTasa, pedido.Id, ahora);
+                detalleDto, producto, promociones, productos, tasas, defaultTasa, pedido.Id, ahora, ahoraBogo);
 
             // Caso mismo producto: descuento equivale al valor de las unidades regaladas.
             // Caso producto distinto: la línea X mantiene cantidadBonificada=0; el regalo
@@ -1115,12 +1125,13 @@ public class PedidoRepository : IPedidoRepository
         Dictionary<int, decimal> tasas,
         decimal defaultTasa,
         int pedidoId,
-        DateTime ahora)
+        DateTime ahora,
+        DateTime ahoraBogo)
     {
         if (!detalleDto.PromocionId.HasValue) return (0m, null);
         if (!promociones.TryGetValue(detalleDto.PromocionId.Value, out var promo)) return (0m, null);
 
-        var bogo = BogoCalculator.Calculate(detalleDto.Cantidad, promo, producto.Id, ahora);
+        var bogo = BogoCalculator.Calculate(detalleDto.Cantidad, promo, producto.Id, ahoraBogo);
         if (bogo.CantidadBonificada == 0m) return (0m, null);
 
         // Mismo producto → descuento equivalente en la línea X.

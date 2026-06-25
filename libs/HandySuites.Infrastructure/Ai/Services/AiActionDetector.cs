@@ -185,15 +185,19 @@ public class AiActionDetector : IAiActionDetector
     {
         if (actions.Count >= MaxActions) return;
 
-        // Check if user has active goals
-        var now = DateTime.UtcNow;
+        // Check if user has active goals. MetaVendedor.FechaFin es date-only
+        // (medianoche UTC); comparar contra UtcNow descartaba una meta que vence
+        // HOY antes del fin de día del tenant. Usamos medianoche UTC del día tenant.
+        var hoyMid = await _tenantTz.GetTenantTodayMidnightUtcAsync();
         var hasActiveMeta = await _db.MetasVendedor
-            .AnyAsync(m => m.UsuarioId == userId && m.Activo && m.FechaFin >= now);
+            .AnyAsync(m => m.UsuarioId == userId && m.Activo && m.FechaFin >= hoyMid);
 
         if (hasActiveMeta) return;
 
-        // Calculate average sales from last 30 days as suggested goal
-        var thirtyDaysAgo = now.AddDays(-30);
+        // Calculate average sales from last 30 days as suggested goal.
+        // thirtyDaysAgo filtra timestamps reales (FechaPedido) → usar el ancla
+        // tz-aware mantiene la ventana de 30 días consistente con el día tenant.
+        var thirtyDaysAgo = hoyMid.AddDays(-30);
         var ventasUltimos30d = await _db.Pedidos
             .Where(p => p.UsuarioId == userId
                 && p.FechaPedido >= thirtyDaysAgo

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Sync.DTOs;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
@@ -6,6 +7,7 @@ using HandySuites.Infrastructure.Persistence;
 using HandySuites.Infrastructure.Repositories.Sync;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
 
 namespace HandySuites.Tests.Infrastructure.Sync;
@@ -45,7 +47,11 @@ public class SyncRepositoryTests : IDisposable
 
         _db = new HandySuitesDbContext(options);
         _db.Database.EnsureCreated();
-        _sut = new SyncRepository(_db);
+
+        var tz = new Mock<ITenantTimeZoneService>();
+        tz.Setup(t => t.GetTenantTodayMidnightUtcAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateTime.UtcNow.Date);
+        _sut = new SyncRepository(_db, tz.Object);
 
         SeedTestData();
     }

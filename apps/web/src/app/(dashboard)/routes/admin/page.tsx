@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { FieldError } from '@/components/forms/FieldError';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface ZoneOption {
   id: number;
@@ -61,6 +62,7 @@ type AssignFormData = z.infer<typeof assignSchema>;
 export default function RouteAdminPage() {
   const t = useTranslations('routes');
   const tc = useTranslations('common');
+  const { tenantToday } = useFormatters();
   // Data
   const [templates, setTemplates] = useState<RouteTemplate[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>([]);
@@ -111,7 +113,7 @@ export default function RouteAdminPage() {
     resolver: zodResolver(assignSchema),
     defaultValues: {
       usuarioId: 0,
-      fecha: new Date().toISOString().split('T')[0],
+      fecha: tenantToday(),
     },
   });
 
@@ -270,7 +272,7 @@ export default function RouteAdminPage() {
     setAssigningTemplate(template);
     resetAssignForm({
       usuarioId: 0,
-      fecha: new Date().toISOString().split('T')[0],
+      fecha: tenantToday(),
     });
     setIsAssignOpen(true);
   };
