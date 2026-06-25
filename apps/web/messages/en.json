@@ -1805,6 +1805,14 @@
       "emptyTitle": "No active routes today",
       "emptyHint": "Plan a route for today to see the day's progress."
     },
+    "viewTabs": {
+      "today": "Today",
+      "all": "All routes"
+    },
+    "allRoutes": {
+      "searchPlaceholder": "Search by code, name or vendor...",
+      "colCode": "Code"
+    },
     "routeCount": "{count} route{count, plural, one {} other {s}}",
     "todaySummary": "Today · {count} active route{count, plural, one {} other {s}} · {pct}% complete",
     "progressByZone": "Progress by zone",
