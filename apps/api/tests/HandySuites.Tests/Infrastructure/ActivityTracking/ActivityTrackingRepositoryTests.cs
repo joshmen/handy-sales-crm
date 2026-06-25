@@ -60,6 +60,13 @@ namespace HandySuites.Tests.Infrastructure.ActivityTracking
                 => Task.FromResult(tenantDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
             public Task<DateOnly> GetTenantDayFromUtcAsync(DateTime utcInstant, System.Threading.CancellationToken ct = default)
                 => Task.FromResult(DateOnly.FromDateTime(utcInstant));
+            public (DateTime InicioUtc, DateTime FinUtc) GetCalendarDayWindowUtc(DateOnly dia)
+            {
+                var start = dia.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                return (start, start.AddDays(1));
+            }
+            public Task<DateTime> GetTenantTodayMidnightUtcAsync(System.Threading.CancellationToken ct = default)
+                => Task.FromResult(DateOnly.FromDateTime(_frozenUtcNow).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
         }
 
         [Fact]
