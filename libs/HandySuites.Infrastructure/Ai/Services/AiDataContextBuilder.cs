@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Domain.Common;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
@@ -14,6 +15,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
     private readonly HandySuitesDbContext _db;
     private readonly IAiEmbeddingService _embeddingService;
     private readonly ILogger<AiDataContextBuilder> _logger;
+    private readonly ITenantTimeZoneService _tenantTz;
 
     // Keyword → DataCategory mappings (Spanish business terms)
     private static readonly Dictionary<string, DataCategory> KeywordMap = new(StringComparer.OrdinalIgnoreCase)
@@ -103,11 +105,12 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         ["pronostico"] = (2000, 90, 3),
     };
 
-    public AiDataContextBuilder(HandySuitesDbContext db, IAiEmbeddingService embeddingService, ILogger<AiDataContextBuilder> logger)
+    public AiDataContextBuilder(HandySuitesDbContext db, IAiEmbeddingService embeddingService, ILogger<AiDataContextBuilder> logger, ITenantTimeZoneService tenantTz)
     {
         _db = db;
         _embeddingService = embeddingService;
         _logger = logger;
+        _tenantTz = tenantTz;
     }
 
     public async Task<DataContextResult> BuildContextAsync(string prompt, string tipoAccion, int tenantId, int userId)
@@ -607,9 +610,12 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
     private async Task AppendMetasContextAsync(StringBuilder sb, int tenantId, int userId)
     {
-        var now = DateTime.UtcNow;
+        // FechaInicio/FechaFin son date-only (medianoche UTC). Comparar contra UtcNow
+        // dejaba fuera una meta vigente HOY al cruzar medianoche UTC en vez del fin de
+        // día del tenant. Usamos medianoche UTC del día tenant "hoy".
+        var hoyMid = await _tenantTz.GetTenantTodayMidnightUtcAsync();
         var metas = await _db.MetasVendedor
-            .Where(m => m.TenantId == tenantId && m.FechaInicio <= now && m.FechaFin >= now)
+            .Where(m => m.TenantId == tenantId && m.FechaInicio <= hoyMid && m.FechaFin >= hoyMid)
             .Select(m => new { m.UsuarioId, m.Tipo, m.Monto, m.FechaInicio, m.FechaFin })
             .ToListAsync();
 

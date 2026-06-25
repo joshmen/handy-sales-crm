@@ -14,6 +14,24 @@ public static class ReportEndpoints
     private record VisitaRow(int ClienteId, int UsuarioId, DateTime? FechaHoraInicio, ResultadoVisita Resultado);
     private record DetalleRow(int PedidoId, int ProductoId, string ProductoNombre, decimal Cantidad, decimal Total);
 
+    // ── Default date range anclado al calendario del tenant ──────────────
+    // Estos reportes filtran timestamps REALES (FechaPedido/CreadoEn/FechaHoraInicio)
+    // contra el rango [fechaDesde, fechaHasta]. Cuando el cliente no envía desde/hasta
+    // (rango por defecto), antes se usaba UtcNow → cerca de medianoche en TZ no-UTC
+    // (MX UTC-6) el rango "último mes/trimestre" no coincidía con el día tenant que ve
+    // el admin. Anclamos los límites al día calendario del tenant igual que /ejecutivo:
+    // límite superior = inicio del día tenant SIGUIENTE a "hoy" (fin de día, inclusivo
+    // para los filtros `<= hasta`).
+    private static async Task<(DateTime desde, DateTime hasta)> DefaultRangeAsync(
+        HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tz,
+        DateTime? desde, DateTime? hasta, int mesesAtras)
+    {
+        var hoy = await tz.GetTenantTodayAsync();
+        var fechaDesde = desde ?? await tz.ConvertTenantDateToUtcAsync(hoy.AddMonths(-mesesAtras));
+        var fechaHasta = hasta ?? await tz.ConvertTenantDateToUtcAsync(hoy.AddDays(1));
+        return (fechaDesde, fechaHasta);
+    }
+
     public static void MapReportEndpoints(this IEndpointRouteBuilder app)
     {
         // RBAC: Reports expose tenant-wide aggregates (cross-vendedor ventas,
@@ -58,13 +76,18 @@ public static class ReportEndpoints
         // ═══════════════════════════════════════════════════════
         group.MapGet("/sparklines", async (
             [FromServices] HandySuitesDbContext db,
-            [FromServices] ITenantContextService tenantContext) =>
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
             const int days = 14;
-            var since = DateTime.UtcNow.Date.AddDays(-(days - 1));
+            // Ventana anclada al día calendario del tenant (filtra timestamps reales
+            // FechaPedido/CreadoEn/FechaHoraInicio). Antes UtcNow.Date desfasaba el
+            // bucketing cerca de medianoche en TZ no-UTC.
+            var hoy = await tzService.GetTenantTodayAsync();
+            var since = await tzService.ConvertTenantDateToUtcAsync(hoy.AddDays(-(days - 1)));
 
             var ventasRows = await db.Pedidos
                 .Where(p => p.TenantId == tenantId && p.FechaPedido >= since && p.Estado != EstadoPedido.Cancelado)
@@ -113,6 +136,7 @@ public static class ReportEndpoints
         group.MapGet("/ventas-periodo", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] string agrupacion = "dia") =>
@@ -120,8 +144,7 @@ public static class ReportEndpoints
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var pedidos = await db.Pedidos
                 .Where(p => p.TenantId == tenantId
@@ -185,6 +208,7 @@ public static class ReportEndpoints
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IReportAccessService reportAccess,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
@@ -196,8 +220,7 @@ public static class ReportEndpoints
                 return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
                     statusCode: StatusCodes.Status402PaymentRequired);
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var vendedores = await db.Usuarios
                 .Where(u => u.TenantId == tenantId && u.Activo)
@@ -254,6 +277,7 @@ public static class ReportEndpoints
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IReportAccessService reportAccess,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int top = 20) =>
@@ -270,8 +294,7 @@ public static class ReportEndpoints
             if (top < 1) top = 1;
             if (top > 500) top = 500;
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var pedidoIds = await db.Pedidos
                 .Where(p => p.TenantId == tenantId
@@ -331,14 +354,14 @@ public static class ReportEndpoints
         group.MapGet("/ventas-categoria", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var pedidoIds = await db.Pedidos
                 .Where(p => p.TenantId == tenantId
@@ -376,6 +399,7 @@ public static class ReportEndpoints
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IReportAccessService reportAccess,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
@@ -387,8 +411,7 @@ public static class ReportEndpoints
                 return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
                     statusCode: StatusCodes.Status402PaymentRequired);
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var zonas = await db.Zonas
                 .Where(z => z.TenantId == tenantId)
@@ -444,6 +467,7 @@ public static class ReportEndpoints
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IReportAccessService reportAccess,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int? zonaId,
@@ -458,8 +482,7 @@ public static class ReportEndpoints
                 return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
                     statusCode: StatusCodes.Status402PaymentRequired);
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var zonasDict = await db.Zonas
                 .Where(z => z.TenantId == tenantId)
@@ -520,6 +543,7 @@ public static class ReportEndpoints
         group.MapGet("/nuevos-clientes", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int? zonaId) =>
@@ -527,8 +551,7 @@ public static class ReportEndpoints
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var zonasDict = await db.Zonas
                 .Where(z => z.TenantId == tenantId)
@@ -783,6 +806,7 @@ public static class ReportEndpoints
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IReportAccessService reportAccess,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] string? agrupar) =>
@@ -798,8 +822,7 @@ public static class ReportEndpoints
             // 'cliente' (default) | 'vendedor'
             var modoAgrupar = agrupar == "vendedor" ? "vendedor" : "cliente";
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-3);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 3);
 
             // Clients with outstanding balance
             var clientes = await db.Clientes
@@ -935,6 +958,7 @@ public static class ReportEndpoints
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IReportAccessService reportAccess,
+            [FromServices] HandySuites.Application.Common.Interfaces.ITenantTimeZoneService tzService,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] int? usuarioId) =>
@@ -947,8 +971,7 @@ public static class ReportEndpoints
                 return Results.Json(new { error = access.Message, requiredTier = access.RequiredTier },
                     statusCode: StatusCodes.Status402PaymentRequired);
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            var (fechaDesde, fechaHasta) = await DefaultRangeAsync(tzService, desde, hasta, 1);
 
             var metasQuery = db.MetasVendedor
                 .Where(m => m.TenantId == tenantId

@@ -1,3 +1,4 @@
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Contabilidad;
 using HandySuites.Domain.Entities;
 using HandySuites.Infrastructure.Persistence;
@@ -31,18 +32,26 @@ public static class GastoContableEndpoints
         group.MapGet("/", async (
             [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
+            [FromServices] ITenantTimeZoneService tz,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
 
-            var fechaDesde = desde ?? DateTime.UtcNow.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.UtcNow;
+            // GastoContable.Fecha es date-only. Defaults anclados al calendario tenant:
+            // desde = 1° del mes tenant; hasta (exclusivo) = inicio del día tenant siguiente
+            // a "hoy", para incluir el día completo. Antes los defaults UtcNow + el filtro
+            // `<= hasta` recortaban el día corriente cerca de medianoche en TZ no-UTC.
+            var hoy = await tz.GetTenantTodayAsync();
+            var defDesde = await tz.ConvertTenantDateToUtcAsync(new DateOnly(hoy.Year, hoy.Month, 1));
+            var defHasta = await tz.ConvertTenantDateToUtcAsync(hoy.AddDays(1));
+            var fechaDesde = desde ?? defDesde;
+            var fechaHasta = hasta ?? defHasta;
 
             var items = await db.GastosContables
                 .AsNoTracking()
-                .Where(g => g.TenantId == tenantId && g.Fecha >= fechaDesde && g.Fecha <= fechaHasta)
+                .Where(g => g.TenantId == tenantId && g.Fecha >= fechaDesde && g.Fecha < fechaHasta)
                 .OrderByDescending(g => g.Fecha)
                 .Select(g => new
                 {

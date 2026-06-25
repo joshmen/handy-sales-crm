@@ -47,7 +47,10 @@ public class MobilePedidoEagerSaveTests : IDisposable
             .Options;
         _db = new HandySuitesDbContext(options);
 
-        _repository = new PedidoRepository(_db);
+        var tz = new Mock<ITenantTimeZoneService>();
+        tz.Setup(t => t.GetTenantTodayMidnightUtcAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateTime.UtcNow.Date);
+        _repository = new PedidoRepository(_db, tz.Object);
 
         _tenant = new Mock<ICurrentTenant>();
         _tenant.Setup(t => t.TenantId).Returns(TenantId);
