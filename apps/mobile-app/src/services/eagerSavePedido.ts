@@ -20,11 +20,13 @@
  * ack), el server retorna el Pedido existente sin crear duplicado.
  */
 
+import { Q } from '@nozbe/watermelondb';
 import { withRetry } from '@/sync/retry';
 import { crashReporter } from '@/services/crashReporter';
 import { database } from '@/db/database';
 import { pedidosApi, type PedidoEagerSavePayload } from '@/api/orders';
 import type Pedido from '@/db/models/Pedido';
+import type DetallePedido from '@/db/models/DetallePedido';
 import type { OfflineOrderItem } from '@/db/actions';
 
 interface EagerSaveOptions {
@@ -49,6 +51,18 @@ export async function eagerSavePedido(
   // Nota: el server NO recalcula BOGO/tasas en eager-save (solo persiste como
   // Borrador). Los montos pre-calculados client-side se respetan tal cual.
   // El sync push posterior promueve el Estado y recalcula si hace falta.
+  // Leemos los detalles YA persistidos en WDB (creados en createPedidoOffline /
+  // createVentaDirectaOffline dentro del database.write previo) para mandar su
+  // id local como `mobileRecordId`. Antes el payload se armaba desde `items` SIN
+  // ese id, así que el server creaba el DetallePedido con MobileRecordId=null y el
+  // pull no podía matchearlo contra la fila local -> detalle DUPLICADO en el
+  // ticket (bug prod "5 y 5"). Con el id local, el upsert idempotente por mrid
+  // del server reconcilia la misma fila y el pull la matchea.
+  const detallesLocal = await database
+    .get<DetallePedido>('detalle_pedidos')
+    .query(Q.where('pedido_id', pedido.id))
+    .fetch();
+
   const payload: PedidoEagerSavePayload = {
     mobileRecordId: pedido.id,
     clienteId: pedido.clienteServerId ?? 0,
@@ -61,13 +75,14 @@ export async function eagerSavePedido(
     notas: pedido.notas ?? null,
     latitud: pedido.latitud ?? null,
     longitud: pedido.longitud ?? null,
-    detalles: items.map((item) => {
-      const lineSubtotal = item.precioUnitario * item.cantidad - (item.descuento ?? 0);
+    detalles: detallesLocal.map((d) => {
+      const lineSubtotal = d.precioUnitario * d.cantidad - (d.descuento ?? 0);
       return {
-        productoId: item.productoServerId ?? 0,
-        cantidad: item.cantidad,
-        precioUnitario: item.precioUnitario,
-        descuento: item.descuento ?? 0,
+        mobileRecordId: d.id, // WDB local id — idempotency key del detalle
+        productoId: d.productoServerId ?? 0,
+        cantidad: d.cantidad,
+        precioUnitario: d.precioUnitario,
+        descuento: d.descuento ?? 0,
         subtotal: lineSubtotal,
         impuesto: 0, // server reconcilia en sync push
         total: lineSubtotal,
