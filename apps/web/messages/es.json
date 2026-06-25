@@ -1805,6 +1805,14 @@
       "emptyTitle": "Sin rutas activas hoy",
       "emptyHint": "Planea una ruta para hoy para ver el avance de la jornada."
     },
+    "viewTabs": {
+      "today": "Hoy",
+      "all": "Todas las rutas"
+    },
+    "allRoutes": {
+      "searchPlaceholder": "Buscar por código, nombre o vendedor...",
+      "colCode": "Código"
+    },
     "routeCount": "{count} ruta{count, plural, one {} other {s}}",
     "todaySummary": "Hoy · {count} ruta{count, plural, one {} other {s}} activa{count, plural, one {} other {s}} · {pct}% completado",
     "progressByZone": "Avance por zona",
