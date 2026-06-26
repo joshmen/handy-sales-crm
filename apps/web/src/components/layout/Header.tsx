@@ -6,18 +6,14 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { useGlobalSettings as useGlobalSettingsContext } from '@/contexts/GlobalSettingsContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import { useTranslations } from 'next-intl';
 import {
   Bell,
   Plus,
-  Settings,
-  User,
-  LogOut,
   Menu,
   Info,
-  Building2,
   ArrowRight,
   Sun,
   Moon,
@@ -34,10 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
-import { ImpersonationModal } from '@/components/impersonation';
-import { useImpersonationStore } from '@/stores/useImpersonationStore';
-import { impersonationService } from '@/services/api/impersonation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import type { DefaultSession } from 'next-auth';
@@ -134,9 +126,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   } = useNotifications();
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState<number | null>(null);
 
   const sUser = session?.user as AppSessionUser | undefined;
@@ -193,45 +182,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
 
   const unread = unreadCount;
   const unreadDisplay = unread > 99 ? '99+' : String(unread);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      // SECURITY FIX 4.15: End any active impersonation session BEFORE logout so the
-      // backend marks ImpersonationSession as Ended (auditoría completa) and the
-      // SUPER_ADMIN does not leave an open tenant session behind on logout.
-      try {
-        const { isImpersonating, sessionId } = useImpersonationStore.getState();
-        if (isImpersonating && sessionId) {
-          await impersonationService.endSession(sessionId).catch(() => {});
-        }
-        // Clear in-memory impersonation state regardless of backend result
-        useImpersonationStore.getState().clear();
-      } catch { /* best-effort — proceed with client-side logout even if cleanup fails */ }
-
-      // Close DeviceSession on backend (marks session as LoggedOut)
-      try {
-        const { api: apiClient } = await import('@/lib/api');
-        await apiClient.post('/auth/logout', {});
-      } catch { /* best-effort — proceed with client-side logout even if API fails */ }
-
-      await signOut({ redirect: false, callbackUrl: '/' });
-      if (typeof window !== 'undefined') {
-        // Reset to light mode before clearing — landing page should never be dark
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-        localStorage.clear();
-        // Clear PWA API cache to prevent stale tenant data on shared devices
-        caches?.delete('api-cache').catch(() => {});
-      }
-      router.push('/');
-    } catch {
-      toast({ title: tc('error'), description: tc('logoutError'), variant: 'destructive' });
-    } finally {
-      setIsLoggingOut(false);
-      setIsUserMenuOpen(false);
-    }
-  };
 
   const formatTime = (date: Date) =>
     formatDate(date, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -414,8 +364,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             data-tour="header-user-menu"
             variant="ghost"
             className="flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto transition-colors duration-200"
-            onClick={() => setIsUserMenuOpen(true)}
-            aria-label={unread > 0 ? `Mi cuenta, ${unread} sin leer` : 'Mi cuenta'}
+            onClick={() => router.push('/profile')}
+            aria-label={unread > 0 ? `Mi perfil, ${unread} sin leer` : 'Mi perfil'}
           >
             <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-foreground leading-none">{currentUser.name}</p>
@@ -543,135 +493,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
         </DialogContent>
       </Dialog>
 
-      {/* Impersonation Modal (solo SUPER_ADMIN) */}
-      {currentUser.role === 'SUPER_ADMIN' && (
-        <ImpersonationModal
-          isOpen={isImpersonationOpen}
-          onClose={() => setIsImpersonationOpen(false)}
-          tenant={null}
-        />
-      )}
-
-      {/* User Menu Dialog */}
-      <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{tc('userAccount')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                <AvatarFallback className="bg-primary/15 text-primary font-semibold">
-                  {getInitials(currentUser.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground">{currentUser.name}</h3>
-                <p className="text-sm text-muted-foreground">{currentUser.email}</p>
-                <div className="mt-1">
-                  <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
-                      currentUser.role
-                    )}`}
-                  >
-                    {getRoleDisplayName(currentUser.role)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Button
-                data-testid="user-menu-notifications"
-                variant="ghost"
-                className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                onClick={() => {
-                  router.push('/notifications');
-                  setIsUserMenuOpen(false);
-                }}
-                aria-label={
-                  unread > 0
-                    ? `${tc('notificationsTitle')}, ${unread} sin leer`
-                    : undefined
-                }
-              >
-                <Bell className="h-4 w-4 mr-3 text-orange-500" />
-                <span className="flex-1 text-left">{tc('notificationsTitle')}</span>
-                {unread > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
-                  >
-                    {unreadDisplay}
-                  </span>
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                onClick={() => {
-                  router.push('/profile');
-                  setIsUserMenuOpen(false);
-                }}
-              >
-                <User className="h-4 w-4 mr-3 text-blue-500" />
-                {tc('myProfile')}
-              </Button>
-              {/* Solo SUPER_ADMIN y ADMIN pueden ver Configuración */}
-              {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                  onClick={() => {
-                    // SA sin impersonar → global-settings (no tiene acceso a /settings)
-                    const target = currentUser.role === 'SUPER_ADMIN' ? '/global-settings' : '/settings';
-                    router.push(target);
-                    setIsUserMenuOpen(false);
-                  }}
-                >
-                  <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
-                  {currentUser.role === 'SUPER_ADMIN' ? tc('globalSettings') : tc('settings')}
-                </Button>
-              )}
-              {/* Solo SUPER_ADMIN puede impersonar empresas */}
-              {currentUser.role === 'SUPER_ADMIN' && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    setIsImpersonationOpen(true);
-                  }}
-                >
-                  <Building2 className="h-4 w-4 mr-3 text-purple-500" />
-                  {tc('impersonateCompany')}
-                </Button>
-              )}
-              <div className="border-t pt-2">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-red-600 hover:bg-red-50"
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                >
-                  {isLoggingOut ? (
-                    <>
-                      <div className="h-4 w-4 mr-3 animate-spin rounded-full border-2 border-red-500 border-r-transparent" />
-                      {tc('loggingOut')}
-                    </>
-                  ) : (
-                    <>
-                      <LogOut className="h-4 w-4 mr-3" />
-                      {tc('signOut')}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </header>
   );
 };

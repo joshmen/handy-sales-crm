@@ -101,20 +101,25 @@ export default function LandingAuthModal({ open, tab, onClose, onTab }: Props) {
       const token = executeRecaptcha ? await executeRecaptcha('login') : undefined;
       const { status, data } = await callLoginApi(lEmail.trim(), lPassword, token);
       if (status === 200 && data.requiresVerification) {
+        // Cerrar el modal ANTES de navegar: nunca dejar el scrim sobre la página destino.
+        onClose();
         router.push(`/verify-email?email=${encodeURIComponent(data.email || lEmail)}`);
         return;
       }
       if (status === 200 && data.user && data.token) {
         const { ok } = await establishSession(data);
         if (ok) {
+          onClose();
           router.push('/dashboard');
           return;
         }
         setError('No se pudo iniciar sesión. Intenta de nuevo.');
         return;
       }
-      // 2FA o sesión activa: el flujo completo vive en /login
+      // 2FA o sesión activa: el flujo completo vive en /login. Cerrar el modal antes
+      // de delegar para que /login no se renderice con el modal encima.
       if ((status === 200 && data.requires2FA) || (status === 409 && data.code === 'ACTIVE_SESSION_EXISTS')) {
+        onClose();
         router.push(`/login?email=${encodeURIComponent(lEmail)}`);
         return;
       }
@@ -151,6 +156,7 @@ export default function LandingAuthModal({ open, tab, onClose, onTab }: Props) {
         return;
       }
       if (status === 200) {
+        onClose();
         router.push(`/verify-email?email=${encodeURIComponent(data.email || rEmail)}`);
         return;
       }
