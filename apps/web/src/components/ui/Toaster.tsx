@@ -146,6 +146,12 @@ export function Toaster() {
   const toasts = useToastStore(s => s.toasts);
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
+  // Hidratar el historial de toasts desde localStorage una vez (cliente). Asi el
+  // historial persiste entre refrescos y esta listo para la vista en /notifications.
+  useEffect(() => {
+    useToastStore.getState().hydrateHistory();
+  }, []);
+
   // El marco [data-dashboard] puede no existir en el primer render (o en páginas
   // fuera del dashboard como login). Resolver tras montar; fallback a <body>.
   useEffect(() => {
