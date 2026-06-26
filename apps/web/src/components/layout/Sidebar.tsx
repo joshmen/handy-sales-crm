@@ -136,7 +136,9 @@ const sidebarItems: SidebarItem[] = [
         label: 'Oportunidades de reorden',
         icon: SbAutomations,
         href: '/clients/reorder-opportunities',
-        permission: 'view_clients',
+        // Es una feature de automatizaciones (pedido-recurrente, admin-only). Igual que
+        // el backend (/api/automations/* = ADMIN/SUPER_ADMIN), se restringe a esos roles.
+        permission: 'view_automations',
       },
       {
         id: 'client-categories',

@@ -40,6 +40,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/subscription': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/zones': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/client-categories': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/clients/reorder-opportunities': [UserRole.ADMIN, UserRole.SUPER_ADMIN], // feature de automatizaciones (pedido-recurrente): solo admin, igual que /automations
   '/product-categories': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 };
 

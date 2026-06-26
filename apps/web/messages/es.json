@@ -10,6 +10,8 @@
     "retentionNote": "Datos disponibles desde {date} ({days} días)."
   },
   "common": {
+    "errorLoading": "No se pudieron cargar los datos.",
+    "errorGeneric": "Algo salió mal. Intenta de nuevo.",
     "save": "Guardar",
     "saving": "Guardando...",
     "cancel": "Cancelar",
