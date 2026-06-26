@@ -320,25 +320,24 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           {/* Divider */}
           <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
-          {/* Avatar — acceso al perfil (navega a /profile). Sin badge: las
-              notificaciones son de la campanita (que lleva a /notifications). */}
-          <Button
+          {/* Avatar — acceso al perfil (navega a /profile). Solo el circulo, como
+              el prototipo Topbar: sin nombre y sin caja de fondo. Boton plano (no
+              <Button ghost>) para que NO aparezca el bg-accent en hover; el hover
+              es un anillo primario + leve escala sobre el propio avatar. */}
+          <button
+            type="button"
             data-tour="header-user-menu"
-            variant="ghost"
-            className="group flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto transition-colors duration-200"
             onClick={() => router.push('/profile')}
             aria-label="Mi perfil"
+            className="group ml-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-2"
           >
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-foreground leading-none">{currentUser.name}</p>
-            </div>
-            <Avatar className="h-8 w-8 ring-2 ring-gray-100 dark:ring-gray-800 transition-all duration-200 group-hover:ring-primary/60 group-hover:scale-105">
+            <Avatar className="h-9 w-9 ring-2 ring-border transition-all duration-200 group-hover:ring-primary group-hover:scale-105">
               <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                 {getInitials(currentUser.name)}
               </AvatarFallback>
             </Avatar>
-          </Button>
+          </button>
         </div>
       </div>
 
