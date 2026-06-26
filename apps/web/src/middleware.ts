@@ -32,6 +32,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/roles': [UserRole.SUPER_ADMIN],
   '/automations': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/cobranza': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
+  '/gastos': [UserRole.ADMIN, UserRole.SUPER_ADMIN], // gastos contables (P&L/IVA/DIOT): solo admin, igual que el backend (RequireRole ADMIN/SUPER_ADMIN)
   '/inventory': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN, UserRole.ALMACENISTA],
   '/price-lists': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/discounts': [UserRole.ADMIN, UserRole.SUPER_ADMIN],

@@ -111,7 +111,9 @@ const sidebarItems: SidebarItem[] = [
     label: 'Gastos',
     icon: SbExpenses,
     href: '/gastos',
-    permission: 'view_orders',
+    // Gastos contables = solo ADMIN/SUPER_ADMIN (igual que el backend). manage_billing
+    // lo tienen exactamente esos dos roles; evita mostrarselo a vendedor/supervisor.
+    permission: 'manage_billing',
   },
 
   // — CATÁLOGO —

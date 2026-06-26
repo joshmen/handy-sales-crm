@@ -47,7 +47,7 @@ const PAGES_REGULAR: PageEntry[] = [
   { id: 'getting-started', label: 'Primeros pasos', route: '/getting-started', section: 'General', icon: 'getting-started', perm: 'view_company_settings' },
   { id: 'orders', label: 'Pedidos', route: '/orders', section: 'Ventas', icon: 'orders', perm: 'view_orders' },
   { id: 'cobranza', label: 'Cobranza', route: '/cobranza', section: 'Ventas', icon: 'cobranza', perm: 'view_orders' },
-  { id: 'gastos', label: 'Gastos', route: '/gastos', section: 'Ventas', icon: 'gastos', perm: 'view_orders' },
+  { id: 'gastos', label: 'Gastos', route: '/gastos', section: 'Ventas', icon: 'gastos', perm: 'manage_billing' },
   { id: 'clients', label: 'Clientes', route: '/clients', section: 'Catálogo', icon: 'clients', perm: 'view_clients' },
   { id: 'client-categories', label: 'Categorías de clientes', route: '/client-categories', section: 'Catálogo', icon: 'client-categories', perm: 'manage_catalogs' },
   { id: 'products', label: 'Productos', route: '/products', section: 'Catálogo', icon: 'products', perm: 'view_products' },
