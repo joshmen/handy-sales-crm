@@ -276,14 +276,13 @@ export default function ProfilePage() {
         </Button>
       )}
       <Button
-        variant="ghost"
+        variant="wbDanger"
         size="sm"
-        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30"
         onClick={logout}
         disabled={isLoggingOut}
       >
         {isLoggingOut ? (
-          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-red-500 border-r-transparent" />
+          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-r-transparent" />
         ) : (
           <LogOut className="h-4 w-4 mr-2" />
         )}
