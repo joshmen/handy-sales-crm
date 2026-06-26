@@ -88,6 +88,20 @@ public class SyncRepository : ISyncRepository
             : await ordered.ToListAsync();
     }
 
+    public async Task<List<int>> GetProductosEliminadosIdsSinceAsync(int tenantId, DateTime since)
+    {
+        // IgnoreQueryFilters: el filtro global excluye eliminado_en != null, pero
+        // justamente necesitamos los soft-deleted para propagar el borrado al móvil.
+        return await _db.Productos
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId
+                        && p.EliminadoEn != null
+                        && p.EliminadoEn > since)
+            .Select(p => p.Id)
+            .ToListAsync();
+    }
+
     public async Task<Dictionary<int, (decimal cantidad, decimal minimo)>> GetStockMapAsync(int tenantId)
     {
         return await _db.Set<HandySuites.Domain.Entities.Inventario>()
@@ -381,17 +395,33 @@ public class SyncRepository : ISyncRepository
                 // Update detalles if provided
                 if (dto.Detalles != null)
                 {
-                    // Remove existing detalles
-                    _db.DetallePedidos.RemoveRange(existing.Detalles);
-
+                    // RECONCILIACION IDEMPOTENTE POR MobileRecordId (anti duplicado del
+                    // ticket mobile, fix prod 2026-06-25 "5 y 5"). Antes este path hacía
+                    // RemoveRange(existing) + Add(nuevos), lo que soft-deleteaba los detalles
+                    // del eager-save y creaba filas NUEVAS. El pull traía los del eager-save
+                    // (sin mrid) ANTES de que llegara este reemplazo -> no matcheaban la fila
+                    // local -> detalle DUPLICADO en la WDB del vendedor (visible en el ticket).
+                    // Ahora: matcheamos por mrid (= WDB local id, que eager-save y sync push
+                    // mandan igual) y ACTUALIZAMOS la MISMA fila en su lugar (mrid estable),
+                    // agregando solo líneas nuevas y soft-deleteando solo las que ya no vienen.
+                    //
                     // Look up server-side product info (precio + tasa + flag IVA-incluido)
                     // para que el cálculo respete el catálogo de impuestos por producto.
-                    // Bug histórico: este path hardcodeaba 0.16m on-top y producía
-                    // doble-IVA cuando el producto ya traía IVA en el precio.
                     var productoIds = dto.Detalles.Select(d => d.ProductoId).Distinct().ToList();
                     var productosInfo = await GetProductoPricingInfoAsync(productoIds, tenantId);
 
-                    // Add new detalles with server-validated prices + correct IVA calc
+                    // Snapshot ANTES de agregar/modificar: el relationship fixup de EF mete
+                    // los detalles recién Add-eados en existing.Detalles, lo que haría que el
+                    // cálculo de detallesToRemove los soft-deletee por error.
+                    var existingDetalles = existing.Detalles.ToList();
+                    var existingByMrid = existingDetalles
+                        .Where(d => !string.IsNullOrEmpty(d.MobileRecordId))
+                        .GroupBy(d => d.MobileRecordId!)
+                        .ToDictionary(g => g.Key, g => g.First());
+                    var matchedMrids = new HashSet<string>();
+
+                    decimal sumSubtotal = 0m, sumDescuento = 0m, sumImpuesto = 0m, sumTotal = 0m;
+
                     foreach (var detalleDto in dto.Detalles)
                     {
                         var info = productosInfo.GetValueOrDefault(detalleDto.ProductoId);
@@ -403,35 +433,70 @@ public class SyncRepository : ISyncRepository
                             info.Tasa,
                             info.PrecioIncluyeIva);
 
-                        var detalle = new DetallePedido
+                        DetallePedido? detalle = null;
+                        if (!string.IsNullOrEmpty(detalleDto.LocalId)
+                            && existingByMrid.TryGetValue(detalleDto.LocalId, out var found))
                         {
-                            PedidoId = existing.Id,
-                            MobileRecordId = detalleDto.LocalId,
-                            ProductoId = detalleDto.ProductoId,
-                            Cantidad = detalleDto.Cantidad,
-                            PrecioUnitario = serverPrice,
-                            Descuento = detalleDto.Descuento,
-                            PorcentajeDescuento = detalleDto.PorcentajeDescuento,
-                            Subtotal = amounts.Subtotal,
-                            Impuesto = amounts.Impuesto,
-                            Total = amounts.Total,
-                            Notas = detalleDto.Notas,
-                            CantidadBonificada = detalleDto.CantidadBonificada,
-                            CreadoEn = DateTime.UtcNow,
-                            CreadoPor = userId,
-                            Version = 1
-                        };
-                        _db.DetallePedidos.Add(detalle);
+                            detalle = found; // UPDATE in place — misma fila, mrid estable
+                            matchedMrids.Add(detalleDto.LocalId);
+                        }
+
+                        if (detalle != null)
+                        {
+                            detalle.ProductoId = detalleDto.ProductoId;
+                            detalle.Cantidad = detalleDto.Cantidad;
+                            detalle.PrecioUnitario = serverPrice;
+                            detalle.Descuento = detalleDto.Descuento;
+                            detalle.PorcentajeDescuento = detalleDto.PorcentajeDescuento;
+                            detalle.Subtotal = amounts.Subtotal;
+                            detalle.Impuesto = amounts.Impuesto;
+                            detalle.Total = amounts.Total;
+                            detalle.Notas = detalleDto.Notas;
+                            detalle.CantidadBonificada = detalleDto.CantidadBonificada;
+                            detalle.ActualizadoEn = DateTime.UtcNow;
+                            detalle.ActualizadoPor = userId;
+                            // Version bump lo maneja el interceptor de SaveChangesAsync.
+                        }
+                        else
+                        {
+                            _db.DetallePedidos.Add(new DetallePedido
+                            {
+                                PedidoId = existing.Id,
+                                MobileRecordId = detalleDto.LocalId,
+                                ProductoId = detalleDto.ProductoId,
+                                Cantidad = detalleDto.Cantidad,
+                                PrecioUnitario = serverPrice,
+                                Descuento = detalleDto.Descuento,
+                                PorcentajeDescuento = detalleDto.PorcentajeDescuento,
+                                Subtotal = amounts.Subtotal,
+                                Impuesto = amounts.Impuesto,
+                                Total = amounts.Total,
+                                Notas = detalleDto.Notas,
+                                CantidadBonificada = detalleDto.CantidadBonificada,
+                                CreadoEn = DateTime.UtcNow,
+                                CreadoPor = userId,
+                                Version = 1
+                            });
+                        }
+
+                        sumSubtotal += amounts.Subtotal;
+                        sumDescuento += detalleDto.Descuento;
+                        sumImpuesto += amounts.Impuesto;
+                        sumTotal += amounts.Total;
                     }
 
-                    // Recalculate totals from server-validated detalles
-                    var updatedDetalles = _db.ChangeTracker.Entries<DetallePedido>()
-                        .Where(e => e.State == EntityState.Added && e.Entity.PedidoId == existing.Id)
-                        .Select(e => e.Entity).ToList();
-                    existing.Subtotal = updatedDetalles.Sum(d => d.Subtotal);
-                    existing.Descuento = updatedDetalles.Sum(d => d.Descuento);
-                    existing.Impuestos = updatedDetalles.Sum(d => d.Impuesto);
-                    existing.Total = updatedDetalles.Sum(d => d.Total);
+                    // Soft-delete las líneas existentes que ya NO vienen en el push (removidas
+                    // localmente) o que no tienen mrid (legacy eager-save pre-fix).
+                    var detallesToRemove = existingDetalles
+                        .Where(d => string.IsNullOrEmpty(d.MobileRecordId) || !matchedMrids.Contains(d.MobileRecordId!))
+                        .ToList();
+                    if (detallesToRemove.Count > 0)
+                        _db.DetallePedidos.RemoveRange(detallesToRemove);
+
+                    existing.Subtotal = sumSubtotal;
+                    existing.Descuento = sumDescuento;
+                    existing.Impuestos = sumImpuesto;
+                    existing.Total = sumTotal;
                 }
 
                 return (existing, wasConflict);

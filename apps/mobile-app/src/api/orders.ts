@@ -184,6 +184,9 @@ export const pedidosApi = new MobilePedidosApi();
 // Mantenido aquí (no en @/types) porque es exclusivo de la durabilidad path,
 // no del CRUD normal de pedidos.
 export interface PedidoEagerSaveDetallePayload {
+  /** WDB local id del detalle — idempotency key para que el server cree el
+   *  DetallePedido con MobileRecordId y el pull lo matchee (anti-duplicado). */
+  mobileRecordId: string;
   productoId: number;
   cantidad: number;
   precioUnitario: number;

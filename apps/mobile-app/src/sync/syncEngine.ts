@@ -8,6 +8,7 @@ import { crashReporter } from '@/services/crashReporter';
 import { useAuthStore } from '@/stores/authStore';
 import { withRetry } from './retry';
 import { resolveConflict } from './conflictResolver';
+import { reconcileProductCatalogOnce } from './catalogReconcile';
 
 /**
  * Strips records whose tenantId doesn't match the authenticated user's tenant.
@@ -343,6 +344,16 @@ async function doPerformSync(options?: SyncOptions): Promise<void> {
     } catch (notificationSyncError) {
       // Never block sync for notification history fetch
       if (__DEV__) console.warn('[Sync] Notification history fetch failed (non-fatal):', notificationSyncError);
+    }
+
+    // Phase 7: Reconciliación one-shot del catálogo (Bug 3 fix 2026-06-25).
+    // Cura dispositivos con catálogo stale/renumerado: trae el catálogo completo
+    // y purga productos cuyo server_id ya no existe. Guardada por versión →
+    // corre una sola vez. Best-effort: nunca bloquea ni falla el sync.
+    try {
+      await reconcileProductCatalogOnce();
+    } catch (reconcileError) {
+      if (__DEV__) console.warn('[Sync] Catalog reconcile failed (non-fatal):', reconcileError);
     }
 
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount, errors: errorCount };
