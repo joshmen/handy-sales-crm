@@ -335,6 +335,10 @@ public class PedidoRepository : IPedidoRepository
             _db.DetallePedidos.Add(new DetallePedido
             {
                 PedidoId = pedido.Id,
+                // mrid del detalle (WDB local id) — clave de idempotencia para que el
+                // sync push reconcilie esta misma fila por mrid en vez de borrar+recrear
+                // (anti duplicado del ticket mobile). Ver SyncRepository.UpsertPedidoAsync.
+                MobileRecordId = detalleDto.MobileRecordId,
                 ProductoId = detalleDto.ProductoId,
                 Cantidad = detalleDto.Cantidad,
                 PrecioUnitario = detalleDto.PrecioUnitario,

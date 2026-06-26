@@ -11,6 +11,12 @@ public interface ISyncRepository
     // Id > afterId (cursor) y limita a maxRecords resultados.
     Task<List<Cliente>> GetClientesModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null);
     Task<List<Producto>> GetProductosModifiedSinceAsync(int tenantId, DateTime? since, int? maxRecords = null, int? afterId = null);
+    /// <summary>
+    /// Bug 3 fix 2026-06-25: ids de productos soft-deleted (eliminado_en &gt; since) para
+    /// propagar el borrado al móvil (que de otro modo los retiene como fantasmas).
+    /// Usa IgnoreQueryFilters porque el filtro global excluye los soft-deleted.
+    /// </summary>
+    Task<List<int>> GetProductosEliminadosIdsSinceAsync(int tenantId, DateTime since);
     Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since, int? maxRecords = null, int? afterId = null);
     Task<List<ClienteVisita>> GetVisitasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<List<RutaVendedor>> GetRutasModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);

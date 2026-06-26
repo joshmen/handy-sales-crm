@@ -521,6 +521,104 @@ public class SyncRepositoryTests : IDisposable
         count.Should().Be(2);
     }
 
+    // === Reconciliacion idempotente de detalles por MobileRecordId ===
+    // (fix prod 2026-06-25 "5 y 5": el eager-save crea el detalle CON mrid y el sync
+    //  push UPDATE-by-Id debe ACTUALIZAR esa misma fila, no borrar+recrear. El churn
+    //  Remove+Add dejaba filas soft-deleted que duplicaban el detalle en la WDB mobile.)
+
+    [Fact]
+    public async Task UpsertPedido_UpdatePorId_ReconciliaDetallePorMrid_ActualizaEnSuLugarSinChurn()
+    {
+        // Arrange: pedido ya creado por eager-save (Borrador) con UN detalle que YA trae
+        // su mobile_record_id ("det-A") e impuesto 0 (eager-save no recalcula IVA).
+        _db.Pedidos.Add(new Pedido
+        {
+            Id = 8300, TenantId = TenantId, ClienteId = ClienteId, UsuarioId = UsuarioId,
+            NumeroPedido = "PED-RECON", TipoVenta = TipoVenta.VentaDirecta, Estado = EstadoPedido.Borrador,
+            Subtotal = 200m, Impuestos = 0m, Total = 200m, Activo = true, Version = 1,
+            MobileRecordId = "vd-recon",
+        });
+        _db.DetallePedidos.Add(new DetallePedido
+        {
+            Id = 9300, PedidoId = 8300, MobileRecordId = "det-A", ProductoId = ProductoId,
+            Cantidad = 2m, PrecioUnitario = 100m, Subtotal = 200m, Impuesto = 0m, Total = 200m,
+            Activo = true, Version = 1,
+        });
+        await _db.SaveChangesAsync();
+
+        // Act: el sync push llega como UPDATE (dto.Id = pedido existente) con el MISMO
+        // detalle (LocalId="det-A") y cantidad nueva = 4.
+        var dto = new SyncPedidoDto
+        {
+            Id = 8300, Version = 1, LocalId = "vd-recon",
+            ClienteId = ClienteId, TipoVenta = (int)TipoVenta.VentaDirecta, Estado = (int)EstadoPedido.Entregado,
+            FechaPedido = DateTime.UtcNow, Operation = SyncOperation.Update,
+            Detalles = new List<SyncDetallePedidoDto>
+            {
+                new() { LocalId = "det-A", ProductoId = ProductoId, Cantidad = 4m, PrecioUnitario = 100m, Descuento = 0m },
+            },
+        };
+
+        var (_, conflict) = await _sut.UpsertPedidoAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        // Assert
+        conflict.Should().BeFalse();
+
+        // SIN churn: exactamente UNA fila de detalle (incluyendo soft-deleted) para el pedido.
+        var allRows = await _db.DetallePedidos.IgnoreQueryFilters().AsNoTracking()
+            .Where(d => d.PedidoId == 8300).ToListAsync();
+        allRows.Should().HaveCount(1, "se actualiza la misma fila por mrid: ni soft-delete ni fila nueva");
+        allRows[0].Id.Should().Be(9300, "misma fila (id estable) reconciliada por mobile_record_id");
+        allRows[0].EliminadoEn.Should().BeNull("la fila NO se soft-deletea");
+        allRows[0].MobileRecordId.Should().Be("det-A");
+        allRows[0].Cantidad.Should().Be(4m, "cantidad actualizada en su lugar");
+        allRows[0].Impuesto.Should().BeGreaterThan(0m,
+            "el server recalcula el IVA (el eager-save lo dejaba en 0)");
+    }
+
+    [Fact]
+    public async Task UpsertPedido_UpdatePorId_SoftDeleteaLineaQueYaNoVieneYAgregaNueva()
+    {
+        // Pedido con 2 detalles (mrid det-A, det-B). El push trae det-A (update) y det-C (nuevo),
+        // pero NO det-B -> det-B se soft-deletea, det-A se actualiza, det-C se agrega.
+        _db.Pedidos.Add(new Pedido
+        {
+            Id = 8301, TenantId = TenantId, ClienteId = ClienteId, UsuarioId = UsuarioId,
+            NumeroPedido = "PED-RECON2", TipoVenta = TipoVenta.Preventa, Estado = EstadoPedido.Borrador,
+            Subtotal = 200m, Total = 200m, Activo = true, Version = 1, MobileRecordId = "pv-recon",
+        });
+        _db.DetallePedidos.AddRange(
+            new DetallePedido { Id = 9311, PedidoId = 8301, MobileRecordId = "det-A", ProductoId = ProductoId, Cantidad = 1m, PrecioUnitario = 100m, Subtotal = 100m, Total = 100m, Activo = true, Version = 1 },
+            new DetallePedido { Id = 9312, PedidoId = 8301, MobileRecordId = "det-B", ProductoId = ProductoId, Cantidad = 1m, PrecioUnitario = 100m, Subtotal = 100m, Total = 100m, Activo = true, Version = 1 });
+        await _db.SaveChangesAsync();
+
+        var dto = new SyncPedidoDto
+        {
+            Id = 8301, Version = 1, LocalId = "pv-recon",
+            ClienteId = ClienteId, TipoVenta = (int)TipoVenta.Preventa, Estado = (int)EstadoPedido.Confirmado,
+            FechaPedido = DateTime.UtcNow, Operation = SyncOperation.Update,
+            Detalles = new List<SyncDetallePedidoDto>
+            {
+                new() { LocalId = "det-A", ProductoId = ProductoId, Cantidad = 2m, PrecioUnitario = 100m },
+                new() { LocalId = "det-C", ProductoId = ProductoId, Cantidad = 1m, PrecioUnitario = 100m },
+            },
+        };
+
+        await _sut.UpsertPedidoAsync(TenantId, UsuarioId, dto, userId: "10");
+        await _sut.SaveChangesAsync();
+
+        var all = await _db.DetallePedidos.IgnoreQueryFilters().AsNoTracking()
+            .Where(d => d.PedidoId == 8301).ToListAsync();
+
+        all.Count(d => d.EliminadoEn == null).Should().Be(2, "activos: det-A (actualizado) + det-C (nuevo)");
+        all.Should().Contain(d => d.Id == 9311 && d.Cantidad == 2m && d.EliminadoEn == null,
+            "det-A se actualiza en su lugar (id estable)");
+        all.Should().Contain(d => d.MobileRecordId == "det-C" && d.EliminadoEn == null, "det-C agregado");
+        all.Should().Contain(d => d.Id == 9312 && d.EliminadoEn != null,
+            "det-B (no vino en el push) se soft-deletea, no queda activo");
+    }
+
     [Fact]
     public async Task UpsertCobro_ColapsaSegundoCobroDeVentaDirecta_MismoPedido()
     {
@@ -797,6 +895,35 @@ public class SyncRepositoryTests : IDisposable
 
         var todos = pagina1.Concat(pagina2).Select(p => p.Id).ToList();
         todos.Should().BeEquivalentTo(new[] { ProductoId, 2300, 2301 });
+    }
+
+    // === GetProductosEliminadosIdsSinceAsync (Bug 3 fix 2026-06-25) ===
+
+    [Fact]
+    public async Task GetProductosEliminadosIdsSince_RetornaSoloSoftDeletedDelTenantDespuesDeSince()
+    {
+        var since = DateTime.UtcNow.AddMinutes(-10);
+
+        // Producto activo (ProductoId=200 del seed) NO debe aparecer.
+        _db.Productos.Add(new Producto { Id = 2400, TenantId = TenantId, Nombre = "Del", CodigoBarra = "D1", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        _db.Productos.Add(new Producto { Id = 2401, TenantId = OtherTenantId, Nombre = "DelOtro", CodigoBarra = "D2", Descripcion = "d", PrecioBase = 10m, Activo = true });
+        await _db.SaveChangesAsync();
+
+        // Soft-delete ambos: el override de SaveChanges pone EliminadoEn = UtcNow.
+        var aBorrar = await _db.Productos.IgnoreQueryFilters()
+            .Where(p => p.Id == 2400 || p.Id == 2401)
+            .ToListAsync();
+        _db.Productos.RemoveRange(aBorrar);
+        await _db.SaveChangesAsync();
+
+        // since ANTES del borrado → trae el soft-deleted del tenant; NO el de otro
+        // tenant, NO el activo.
+        var result = await _sut.GetProductosEliminadosIdsSinceAsync(TenantId, since);
+        result.Should().BeEquivalentTo(new[] { 2400 });
+
+        // since DESPUÉS del borrado → vacío (no re-propaga borrados viejos).
+        var resultFuturo = await _sut.GetProductosEliminadosIdsSinceAsync(TenantId, DateTime.UtcNow.AddMinutes(10));
+        resultFuturo.Should().BeEmpty();
     }
 
     // === UpsertRutaDetalleAsync (estado de parada, fix sync jun 2026) ===

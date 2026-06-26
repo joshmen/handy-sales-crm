@@ -54,6 +54,11 @@ public class PedidoEagerSaveDto
 /// </summary>
 public class PedidoEagerSaveDetalleDto
 {
+    /// <summary>WatermelonDB local id del detalle (idempotency key). Permite que el
+    /// sync push reconcilie ESTE mismo DetallePedido por MobileRecordId en vez de
+    /// borrar+recrear, evitando el duplicado transitorio en el ticket del mobile.</summary>
+    public string? MobileRecordId { get; set; }
+
     public int ProductoId { get; set; }
     public decimal Cantidad { get; set; }
     public decimal PrecioUnitario { get; set; }
