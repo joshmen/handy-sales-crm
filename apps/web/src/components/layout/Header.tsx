@@ -22,6 +22,7 @@ import { cn, getInitials } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useToastStore } from '@/hooks/useToast';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import type { DefaultSession } from 'next-auth';
 
@@ -150,6 +151,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   }, [theme, mounted]);
 
   const unread = unreadCount;
+  // Mensajes (toasts) no vistos desde la ultima revision de "Mensajes de la app":
+  // el badge de la campanita tambien reacciona a ellos, no solo a las no-leidas del server.
+  const toastHistory = useToastStore(s => s.history);
+  const toastLastSeen = useToastStore(s => s.lastSeen);
+  const unseenMsgs = toastHistory.filter(h => h.time > toastLastSeen).length;
 
   if (!mounted || !isClient) {
     return (
@@ -276,7 +282,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             aria-label={tc('notificationsTitle')}
           >
             <Bell className="h-[18px] w-[18px] text-amber-500" strokeWidth={2} />
-            {unread > 0 && (
+            {(unread > 0 || unseenMsgs > 0) && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-card" />
             )}
           </Button>

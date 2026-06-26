@@ -150,6 +150,11 @@ export default function NotificationsPage() {
     useToastStore.getState().hydrateHistory();
   }, []);
 
+  // Al ver "Mensajes de la app", marcar como visto (apaga el badge de la campanita).
+  useEffect(() => {
+    if (view === 'app') useToastStore.getState().markHistorySeen();
+  }, [view, toastHistory.length]);
+
   const handleMarkAsRead = async (id: number) => {
     setActionLoading(id);
     try {

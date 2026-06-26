@@ -66,6 +66,29 @@ function saveHistory(h: ToastHistoryItem[]): void {
   }
 }
 
+// Marca de tiempo de la ultima vez que el usuario reviso "Mensajes de la app".
+// Los toasts con time > lastSeen cuentan como "no vistos" (badge de la campanita).
+const LASTSEEN_KEY = 'handy_toast_last_seen';
+
+function loadLastSeen(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const n = Number(localStorage.getItem(LASTSEEN_KEY));
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveLastSeen(t: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(LASTSEEN_KEY, String(t));
+  } catch {
+    /* localStorage no disponible */
+  }
+}
+
 const MAX_VISIBLE = 4;
 const EXIT_MS = 320;
 
@@ -73,17 +96,21 @@ const EXIT_MS = 320;
 interface ToastStore {
   toasts: ToastItem[];
   history: ToastHistoryItem[];
+  /** epoch ms de la ultima revision de "Mensajes de la app" (para el badge). */
+  lastSeen: number;
   add: (item: ToastItem) => void;
   startClose: (id: number) => void;
   remove: (id: number) => void;
   pushHistory: (item: ToastHistoryItem) => void;
   clearHistory: () => void;
   hydrateHistory: () => void;
+  markHistorySeen: () => void;
 }
 
 export const useToastStore = create<ToastStore>(set => ({
   toasts: [],
   history: [],
+  lastSeen: 0,
   add: item =>
     set(s => {
       // Cap a MAX_VISIBLE: descartar los más viejos si se acumulan.
@@ -108,7 +135,13 @@ export const useToastStore = create<ToastStore>(set => ({
       saveHistory([]);
       return { history: [] };
     }),
-  hydrateHistory: () => set(() => ({ history: loadHistory() })),
+  hydrateHistory: () => set(() => ({ history: loadHistory(), lastSeen: loadLastSeen() })),
+  markHistorySeen: () =>
+    set(() => {
+      const t = Date.now();
+      saveLastSeen(t);
+      return { lastSeen: t };
+    }),
 }));
 
 // ── Locale (misma fuente que CompanyContext) ────────────────────────────────
