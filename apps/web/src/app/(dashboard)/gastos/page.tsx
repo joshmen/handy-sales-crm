@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Plus, Edit2, Trash2, Check, X, RefreshCw, Loader2, Receipt } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Loader2, Receipt } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SearchBar } from '@/components/common/SearchBar';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { startOfMonthIso } from '@/components/ui/dateFilterUtils';
 import { ReportKPICards } from '@/components/reports/ReportKPICards';
 import { useFormatters } from '@/hooks/useFormatters';
 import { toast } from '@/hooks/useToast';
@@ -38,16 +40,13 @@ const formSchema = z.object({
 });
 type FormData = z.infer<typeof formSchema>;
 
-// "Hoy" y "1° del mes" calculados sobre el día calendario del tenant
-// (se inyecta `today` desde `useFormatters().tenantToday()`).
-// Antes usaban `new Date()` (TZ del browser), desfasando los defaults
-// del filtro para tenants en TZ distinta a la del navegador.
-function defaultDates(today: string) {
-  const [y, m] = today.split('-').map(Number);
-  const desde = `${String(y ?? 0).padStart(4, '0')}-${String(m ?? 1).padStart(2, '0')}-01`;
-  return { desde, hasta: today };
-}
+// Retención del filtro de rango (un año, igual que el resto del backoffice).
+const RET = 365;
 
+// "Hoy" calculado sobre el día calendario del tenant (se inyecta `today`
+// desde `useFormatters().tenantToday()`). Antes usaba `new Date()` (TZ del
+// browser), desfasando el default del form para tenants en TZ distinta a la
+// del navegador.
 function todayIso(today: string) {
   return today;
 }
@@ -59,7 +58,12 @@ export default function GastosPage() {
   const showApiError = useApiErrorToast();
   const fmt = (n: number) => formatCurrency(n);
 
-  const [dates, setDates] = useState(() => defaultDates(tenantToday()));
+  // Filtro de rango — default "este mes" (día 1 del mes a hoy), tenant-aware.
+  // Reemplaza los dos <input type="date"> + botón Aplicar previos.
+  const [rango, setRango] = useState<DateRangeValue>(() => {
+    const hoy = tenantToday();
+    return { mode: 'mes', from: startOfMonthIso(hoy), to: hoy };
+  });
   const [data, setData] = useState<GastosContablesListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,18 +82,20 @@ export default function GastosPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      setData(await getGastosContables(dates));
+      // El backend espera { desde, hasta }; mapeamos el rango del filtro.
+      setData(await getGastosContables({ desde: rango.from, hasta: rango.to }));
     } catch (err) {
       showApiError(err, t('errorLoading'));
     } finally {
       setLoading(false);
     }
-  }, [dates, showApiError, t]);
+  }, [rango, showApiError, t]);
 
+  // Carga reactiva: al cambiar el rango (atajos o personalizado) se recarga
+  // el grid y, con él, los KPIs del resumen inline del backend.
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadData]);
 
   const items = data?.items ?? [];
 
@@ -166,7 +172,7 @@ export default function GastosPage() {
     <PageHeader
       section="ventas"
       title={t('title')}
-      subtitle={data ? t('subtitleRange', { from: formatDateOnly(dates.desde), to: formatDateOnly(dates.hasta), count: data.total, plural: data.total !== 1 ? 's' : '' }) : t('subtitle')}
+      subtitle={data ? t('subtitleRange', { from: formatDateOnly(rango.from), to: formatDateOnly(rango.to), count: data.total, plural: data.total !== 1 ? 's' : '' }) : t('subtitle')}
       actions={
         <button
           onClick={handleOpenCreate}
@@ -177,34 +183,9 @@ export default function GastosPage() {
         </button>
       }
     >
-      {/* Filtros de rango */}
-      <div className="flex flex-wrap items-end gap-3 p-4 bg-surface-1 rounded-lg border border-border-subtle mb-5">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-foreground/70">{t('from')}</label>
-          <input
-            type="date"
-            value={dates.desde}
-            onChange={e => setDates(d => ({ ...d, desde: e.target.value }))}
-            className="px-3 py-2 text-sm border border-border-default rounded-md"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-foreground/70">{t('to')}</label>
-          <input
-            type="date"
-            value={dates.hasta}
-            onChange={e => setDates(d => ({ ...d, hasta: e.target.value }))}
-            className="px-3 py-2 text-sm border border-border-default rounded-md"
-          />
-        </div>
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          {loading ? tc('loading') : t('apply')}
-        </button>
+      {/* Filtro de rango (Esta semana / Este mes / Trimestre / Personalizado) */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <DateRangeFilter value={rango} onChange={setRango} retentionDays={RET} />
       </div>
 
       {/* KPIs */}

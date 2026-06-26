@@ -78,7 +78,10 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         };
     }
 
-    public async Task<PaginatedResult<ClienteVisitaListaDto>> ObtenerPorFiltroAsync(ClienteVisitaFiltroDto filtro, int tenantId)
+    // Predicados de filtro compartidos por el list (ObtenerPorFiltroAsync) y el agregado
+    // de KPIs (ObtenerResumenPorFiltroAsync), para que el resumen describa EXACTAMENTE el
+    // mismo set filtrado que la lista (no la página).
+    private IQueryable<ClienteVisita> AplicarFiltros(ClienteVisitaFiltroDto filtro, int tenantId)
     {
         var query = _db.ClienteVisitas
             .AsNoTracking()
@@ -104,6 +107,13 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
 
         if (filtro.SoloPendientes == true)
             query = query.Where(v => v.Resultado == ResultadoVisita.Pendiente);
+
+        return query;
+    }
+
+    public async Task<PaginatedResult<ClienteVisitaListaDto>> ObtenerPorFiltroAsync(ClienteVisitaFiltroDto filtro, int tenantId)
+    {
+        var query = AplicarFiltros(filtro, tenantId);
 
         var totalItems = await query.CountAsync();
         var pagina = (filtro.Pagina is int p && p > 0) ? p : 1;
@@ -146,6 +156,40 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
             TotalItems = totalItems,
             Pagina = pagina,
             TamanoPagina = tamano
+        };
+    }
+
+    public async Task<VisitaResumenDto> ObtenerResumenPorFiltroAsync(ClienteVisitaFiltroDto filtro, int tenantId)
+    {
+        var query = AplicarFiltros(filtro, tenantId);
+
+        // Conteos agregados en SQL sobre TODO el set filtrado (no la página). Un único
+        // GROUP BY constante → COUNT condicional por columna (se traduce a COUNT(*) FILTER
+        // en PostgreSQL / SUM(CASE ...) en otros providers).
+        var conteos = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total = g.Count(),
+                Completadas = g.Count(v => v.FechaHoraFin != null),
+                ConVenta = g.Count(v => v.Resultado == ResultadoVisita.Venta),
+                SinVenta = g.Count(v => v.Resultado == ResultadoVisita.SinVenta),
+            })
+            .FirstOrDefaultAsync();
+
+        // AVG en SQL solo sobre visitas con duración > 0 (excluye nulos y ceros para no
+        // sesgar el promedio con visitas sin check-out). AVG sobre conjunto vacío → null.
+        var duracionPromedio = await query
+            .Where(v => v.DuracionMinutos != null && v.DuracionMinutos > 0)
+            .AverageAsync(v => (double?)v.DuracionMinutos) ?? 0;
+
+        return new VisitaResumenDto
+        {
+            Total = conteos?.Total ?? 0,
+            Completadas = conteos?.Completadas ?? 0,
+            ConVenta = conteos?.ConVenta ?? 0,
+            SinVenta = conteos?.SinVenta ?? 0,
+            DuracionPromedio = (int)Math.Round(duracionPromedio)
         };
     }
 

@@ -483,61 +483,83 @@ public class PedidoRepository : IPedidoRepository
         return await ObtenerPorIdAsync(pedido, tenantId);
     }
 
-    public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId, List<int>? filterByUsuarioIds = null)
+    public async Task<PedidoListaResultDto> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId, List<int>? filterByUsuarioIds = null)
     {
-        var query = _db.Pedidos
-            .AsNoTracking()
-            .Where(p => p.TenantId == tenantId && p.Activo);
-
-        if (filtro.ClienteId.HasValue)
-            query = query.Where(p => p.ClienteId == filtro.ClienteId.Value);
-
-        if (filterByUsuarioIds is { Count: > 0 })
-            query = query.Where(p => filterByUsuarioIds.Contains(p.UsuarioId));
-        else if (filtro.UsuarioId.HasValue)
-            query = query.Where(p => p.UsuarioId == filtro.UsuarioId.Value);
-
-        if (filtro.Estado.HasValue)
-            query = query.Where(p => p.Estado == filtro.Estado.Value);
-
-        if (filtro.TipoVenta.HasValue)
-            query = query.Where(p => p.TipoVenta == filtro.TipoVenta.Value);
-
+        // Rango fecha tz-correcto del tenant. FechaPedido es un timestamp REAL de
+        // evento → convertimos la fecha-local del tenant (YYYY-MM-DD que llega en
+        // FechaDesde/FechaHasta) a su window UTC con ConvertTenantDateToUtcAsync,
+        // mismo patron que ReportEndpoints.DefaultRangeAsync. Antes el filtro
+        // comparaba contra el .Date naive (UTC), por lo que cerca de medianoche en
+        // TZ no-UTC (MX UTC-6/7) un pedido de "hoy" del tenant caia fuera del rango.
+        DateTime? desdeUtc = null;
+        DateTime? hastaUtc = null;
         if (filtro.FechaDesde.HasValue)
-            query = query.Where(p => p.FechaPedido >= filtro.FechaDesde.Value);
-
+        {
+            var diaDesde = DateOnly.FromDateTime(filtro.FechaDesde.Value);
+            desdeUtc = await _tenantTz.ConvertTenantDateToUtcAsync(diaDesde);
+        }
         if (filtro.FechaHasta.HasValue)
         {
-            var fechaFin = filtro.FechaHasta.Value.Date < DateTime.MaxValue.Date
-                ? filtro.FechaHasta.Value.Date.AddDays(1)
-                : DateTime.MaxValue;
-            query = query.Where(p => p.FechaPedido < fechaFin);
+            // hastaUtc = inicio del dia tenant SIGUIENTE (rango [desde, hasta) exclusivo).
+            var diaHasta = DateOnly.FromDateTime(filtro.FechaHasta.Value);
+            hastaUtc = await _tenantTz.ConvertTenantDateToUtcAsync(diaHasta.AddDays(1));
         }
 
-        if (!string.IsNullOrWhiteSpace(filtro.Busqueda))
+        // Filtros compartidos: list (items) y resumen (agregado) DEBEN aplicar el
+        // MISMO predicado para que los KPIs reflejen el conjunto filtrado completo.
+        IQueryable<Pedido> AplicarFiltros(IQueryable<Pedido> q)
         {
-            var busqueda = filtro.Busqueda.ToLower();
-            query = query.Where(p =>
-                p.NumeroPedido.ToLower().Contains(busqueda) ||
-                p.Cliente.Nombre.ToLower().Contains(busqueda));
+            q = q.Where(p => p.TenantId == tenantId && p.Activo);
+
+            if (filtro.ClienteId.HasValue)
+                q = q.Where(p => p.ClienteId == filtro.ClienteId.Value);
+
+            if (filterByUsuarioIds is { Count: > 0 })
+                q = q.Where(p => filterByUsuarioIds.Contains(p.UsuarioId));
+            else if (filtro.UsuarioId.HasValue)
+                q = q.Where(p => p.UsuarioId == filtro.UsuarioId.Value);
+
+            if (filtro.Estado.HasValue)
+                q = q.Where(p => p.Estado == filtro.Estado.Value);
+
+            if (filtro.TipoVenta.HasValue)
+                q = q.Where(p => p.TipoVenta == filtro.TipoVenta.Value);
+
+            if (desdeUtc.HasValue)
+                q = q.Where(p => p.FechaPedido >= desdeUtc.Value);
+
+            if (hastaUtc.HasValue)
+                q = q.Where(p => p.FechaPedido < hastaUtc.Value);
+
+            if (!string.IsNullOrWhiteSpace(filtro.Busqueda))
+            {
+                var busqueda = filtro.Busqueda.ToLower();
+                q = q.Where(p =>
+                    p.NumeroPedido.ToLower().Contains(busqueda) ||
+                    p.Cliente.Nombre.ToLower().Contains(busqueda));
+            }
+
+            // Excluir pedidos ya asignados a cualquier ruta activa (Planificada,
+            // PendienteAceptar, CargaAceptada, EnProgreso). Sin esto, el modal
+            // de "Asignar pedidos a ruta" mostraba pedidos que ya estaban tomados
+            // por otra ruta (reportado 2026-04-27).
+            if (filtro.ExcluirAsignadosARutas == true)
+            {
+                q = q.Where(p => !_db.Set<RutaPedido>()
+                    .Any(rp => rp.PedidoId == p.Id
+                            && rp.Activo
+                            && rp.TenantId == tenantId
+                            && rp.Ruta != null
+                            && (rp.Ruta.Estado == EstadoRuta.Planificada
+                             || rp.Ruta.Estado == EstadoRuta.PendienteAceptar
+                             || rp.Ruta.Estado == EstadoRuta.CargaAceptada
+                             || rp.Ruta.Estado == EstadoRuta.EnProgreso)));
+            }
+
+            return q;
         }
 
-        // Excluir pedidos ya asignados a cualquier ruta activa (Planificada,
-        // PendienteAceptar, CargaAceptada, EnProgreso). Sin esto, el modal
-        // de "Asignar pedidos a ruta" mostraba pedidos que ya estaban tomados
-        // por otra ruta (reportado 2026-04-27).
-        if (filtro.ExcluirAsignadosARutas == true)
-        {
-            query = query.Where(p => !_db.Set<RutaPedido>()
-                .Any(rp => rp.PedidoId == p.Id
-                        && rp.Activo
-                        && rp.TenantId == tenantId
-                        && rp.Ruta != null
-                        && (rp.Ruta.Estado == EstadoRuta.Planificada
-                         || rp.Ruta.Estado == EstadoRuta.PendienteAceptar
-                         || rp.Ruta.Estado == EstadoRuta.CargaAceptada
-                         || rp.Ruta.Estado == EstadoRuta.EnProgreso)));
-        }
+        var query = AplicarFiltros(_db.Pedidos.AsNoTracking());
 
         var totalItems = await query.CountAsync();
 
@@ -562,12 +584,41 @@ public class PedidoRepository : IPedidoRepository
             })
             .ToListAsync();
 
-        return new PaginatedResult<PedidoListaDto>
+        // Agregado server-side sobre TODO el conjunto filtrado (NO la pagina): un
+        // unico round-trip que proyecta SUM/COUNT condicionales a SQL. Total NO
+        // cancelado se suma con un CASE (Total cuando estado != Cancelado, si no 0)
+        // para no traer filas. Igual estrategia COUNT(CASE...) para los conteos por
+        // estado. Mismo patron que GastosEndpoints (KPI en la misma respuesta).
+        var agg = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                TotalVendido = g.Sum(p => p.Estado == EstadoPedido.Cancelado ? 0m : p.Total),
+                NoCancelados = g.Sum(p => p.Estado == EstadoPedido.Cancelado ? 0 : 1),
+                Confirmados = g.Sum(p => p.Estado == EstadoPedido.Confirmado ? 1 : 0),
+                Borradores = g.Sum(p => p.Estado == EstadoPedido.Borrador ? 1 : 0),
+                TotalPedidos = g.Count()
+            })
+            .FirstOrDefaultAsync();
+
+        var resumen = new PedidoResumenDto
+        {
+            TotalVendido = agg?.TotalVendido ?? 0m,
+            TicketPromedio = agg != null && agg.NoCancelados > 0
+                ? agg.TotalVendido / agg.NoCancelados
+                : 0m,
+            Confirmados = agg?.Confirmados ?? 0,
+            Borradores = agg?.Borradores ?? 0,
+            TotalPedidos = agg?.TotalPedidos ?? 0
+        };
+
+        return new PedidoListaResultDto
         {
             Items = items,
             TotalItems = totalItems,
             Pagina = filtro.PaginaEfectiva,
-            TamanoPagina = filtro.TamanoPaginaEfectivo
+            TamanoPagina = filtro.TamanoPaginaEfectivo,
+            Resumen = resumen
         };
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
@@ -41,8 +41,8 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { NameAvatar } from '@/components/ui/NameAvatar';
-import { DateFilter } from '@/components/ui/DateFilter';
-import { dayFilterLabel, addDaysIso } from '@/components/ui/dateFilterUtils';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { rangeFilterLabel, startOfMonthIso } from '@/components/ui/dateFilterUtils';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -151,6 +151,7 @@ export default function OrdersPage() {
   const t = useTranslations('orders');
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
+  const td = useTranslations('dateFilters');
   const locale = useLocale();
   const intlLocale = locale === 'en' ? 'en-US' : 'es-MX';
   const showApiError = useApiErrorToast();
@@ -178,7 +179,12 @@ export default function OrdersPage() {
   const [filterUser, setFilterUser] = useState('all');
   const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
   const [estadoFilter, setEstadoFilter] = useState('');
-  const [diaFiltro, setDiaFiltro] = useState(() => tenantToday());
+  // Filtro de RANGO (Esta semana / Este mes / Trimestre / Personalizado).
+  // Default "Este mes" = día 1 del mes en curso hasta hoy (tenant-aware).
+  const [rango, setRango] = useState<DateRangeValue>(() => {
+    const hoy = tenantToday();
+    return { mode: 'mes', from: startOfMonthIso(hoy), to: hoy };
+  });
   const [summary, setSummary] = useState({ totalVendido: 0, ticketPromedio: 0, confirmados: 0, borradores: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -191,12 +197,9 @@ export default function OrdersPage() {
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
   const router = useRouter();
 
-  // Etiqueta del día seleccionado para el subtítulo (Hoy / Ayer / fecha corta).
-  const today = tenantToday();
-  const yesterday = addDaysIso(today, -1);
-  const dateLabel = dayFilterLabel(diaFiltro, {
-    todayIso: today, yesterdayIso: yesterday,
-    todayLabel: tc('today'), yesterdayLabel: tc('yesterday'), locale: intlLocale,
+  // Etiqueta del rango seleccionado para el subtítulo (Esta semana / Este mes / rango).
+  const dateLabel = rangeFilterLabel(rango, {
+    locale: intlLocale, weekLabel: td('week'), monthLabel: td('month'), quarterLabel: td('quarter'),
   });
 
   const fetchOrders = useCallback(async () => {
@@ -207,12 +210,26 @@ export default function OrdersPage() {
       if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
       if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
       if (estadoFilter) params.estado = estadoFilter;
-      if (diaFiltro) { params.fechaInicio = diaFiltro; params.fechaFin = diaFiltro; }
+      if (rango.from) params.fechaInicio = rango.from;
+      if (rango.to) params.fechaFin = rango.to;
       const response = await orderService.getOrders(params);
       const mappedOrders = response.items.map(mapApiOrderToOrder);
       setOrders(mappedOrders);
       setTotalItems(response.totalCount);
       setTotalPages(Math.ceil(response.totalCount / response.pageSize));
+      // KPIs: agregado server-side sobre TODO el rango filtrado (no la página).
+      // `resumen` (PedidoResumenDto) viene en la respuesta; si falta, dejamos en 0.
+      if (response.resumen) {
+        const r = response.resumen;
+        setSummary({
+          totalVendido: r.totalVendido,
+          ticketPromedio: r.ticketPromedio,
+          confirmados: r.confirmados,
+          borradores: r.borradores,
+        });
+      } else {
+        setSummary({ totalVendido: 0, ticketPromedio: 0, confirmados: 0, borradores: 0 });
+      }
       // Load invoiced orders (best-effort, don't block)
       getInvoicedOrders().then(data => {
         setInvoicedOrders(data);
@@ -226,7 +243,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, diaFiltro]);
+  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, rango]);
 
   const fetchFormData = useCallback(async () => {
     // Load clients and products independently so one failure doesn't block the other
@@ -248,36 +265,13 @@ export default function OrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Resumen del DÍA seleccionado para las KPI cards (no de la página): hasta 200
-  // pedidos del día (tope backend). Sin `estado` para que Confirmados/Borradores
-  // muestren el desglose completo aunque el tab de estado esté en otro valor.
-  const fetchSummary = useCallback(async () => {
-    try {
-      const params: { page: number; pageSize: number; usuarioId?: number; tipoVenta?: number; fechaInicio?: string; fechaFin?: string } = { page: 1, pageSize: 200 };
-      if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
-      if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
-      if (diaFiltro) { params.fechaInicio = diaFiltro; params.fechaFin = diaFiltro; }
-      const res = await orderService.getOrders(params);
-      const items = res.items.map(mapApiOrderToOrder);
-      const noCancel = items.filter((o) => o.status !== 'cancelled');
-      const totalVendido = noCancel.reduce((s, o) => s + o.total, 0);
-      setSummary({
-        totalVendido,
-        ticketPromedio: noCancel.length ? totalVendido / noCancel.length : 0,
-        confirmados: items.filter((o) => o.status === 'confirmed').length,
-        borradores: items.filter((o) => o.status === 'draft').length,
-      });
-    } catch { /* best-effort: las cards conservan su último valor */ }
-  }, [diaFiltro, filterUser, tipoVentaFilter]);
-
-  useEffect(() => { fetchSummary(); }, [fetchSummary]);
-
-  // Real-time: refresh orders when mobile creates/updates pedidos
+  // Real-time: refresh orders when mobile creates/updates pedidos.
+  // Los KPIs se recalculan dentro de fetchOrders (resumen server-side).
   const { on, off } = useSignalR();
   useEffect(() => {
     const handleUpdate = (...args: unknown[]) => {
       const data = args[0] as { tipo?: string } | undefined;
-      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') { fetchOrders(); fetchSummary(); }
+      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') { fetchOrders(); }
     };
     on('DashboardUpdate', handleUpdate);
     on('PedidoCreated', handleUpdate);
@@ -285,7 +279,7 @@ export default function OrdersPage() {
       off('DashboardUpdate', handleUpdate);
       off('PedidoCreated', handleUpdate);
     };
-  }, [on, off, fetchOrders, fetchSummary]);
+  }, [on, off, fetchOrders]);
 
   // Cargar lista de vendedores (solo para admin)
   useEffect(() => {
@@ -307,6 +301,17 @@ export default function OrdersPage() {
     setEditingOrder(null);
     setShowOrderForm(true);
   };
+
+  // Abrir el drawer de nuevo pedido al llegar con ?new=1 (desde el command
+  // palette / botón "Nuevo pedido" del topbar, desde cualquier página).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      void handleCreateOrder();
+      router.replace('/orders');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Abre el drawer cargando el pedido completo (cliente, items reales, notas, totales).
   // Reglas de negocio (confirmar con backend PedidoService):
@@ -654,9 +659,9 @@ export default function OrdersPage() {
         actions={
           <>
             <div data-tour="orders-date-filter">
-              <DateFilter value={diaFiltro} onChange={(iso) => { setDiaFiltro(iso); setCurrentPage(1); }} retentionDays={365} />
+              <DateRangeFilter value={rango} onChange={(v) => { setRango(v); setCurrentPage(1); }} retentionDays={365} />
             </div>
-            <ExportButton entity="pedidos" params={{ desde: diaFiltro, hasta: diaFiltro }} />
+            <ExportButton entity="pedidos" params={{ desde: rango.from, hasta: rango.to }} />
             <Button variant="wbPrimary" data-tour="orders-create-btn" onClick={handleCreateOrder}>
               <Plus className="w-4 h-4 mr-2" />
               <span>{t('newOrder')}</span>

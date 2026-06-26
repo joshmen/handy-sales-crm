@@ -115,6 +115,25 @@ public class CoberturaClienteDto
     public required string Estado { get; set; }
 }
 
+/// <summary>
+/// Agregado de KPIs calculado sobre el MISMO set filtrado del list GET /visitas
+/// (rango FechaDesde/FechaHasta + usuarioId + demás filtros), no sobre la página.
+/// Todos los conteos y el promedio se calculan en SQL (COUNT/AVG) sobre el rango completo.
+/// </summary>
+public class VisitaResumenDto
+{
+    /// <summary>Total de visitas que cumplen el filtro.</summary>
+    public int Total { get; set; }
+    /// <summary>Visitas completadas (con check-out / FechaHoraFin).</summary>
+    public int Completadas { get; set; }
+    /// <summary>Visitas con resultado Venta.</summary>
+    public int ConVenta { get; set; }
+    /// <summary>Visitas con resultado SinVenta.</summary>
+    public int SinVenta { get; set; }
+    /// <summary>Promedio de DuracionMinutos sobre las visitas con duración > 0 (0 si no hay).</summary>
+    public int DuracionPromedio { get; set; }
+}
+
 public class VisitaResumenDiarioDto
 {
     public DateTime Fecha { get; set; }

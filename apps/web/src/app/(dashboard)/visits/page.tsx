@@ -12,7 +12,8 @@ import { SoftBadge, SoftBadgeTone } from '@/components/ui/SoftBadge';
 import { NameAvatar } from '@/components/ui/NameAvatar';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { VisitForm } from '@/components/visits';
-import { DateFilter } from '@/components/ui/DateFilter';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { startOfMonthIso } from '@/components/ui/dateFilterUtils';
 import { GoogleMapWrapper, MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { Client } from '@/types';
 import {
@@ -22,6 +23,7 @@ import {
   CoberturaCliente,
   ResultadoVisita,
   TipoVisita,
+  VisitaResumen,
 } from '@/types/visits';
 import { visitService } from '@/services/api/visits';
 import { clientService } from '@/services/api/clients';
@@ -92,10 +94,17 @@ function VisitsPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-  const [diaFiltro, setDiaFiltro] = useState<string>(() => tenantToday());
 
-  // Resumen diario (KPIs vendedor)
-  const [summary, setSummary] = useState({ totalVisitas: 0, visitasCompletadas: 0, visitasConVenta: 0, visitasPendientes: 0, visitasCanceladas: 0, tasaConversion: 0 });
+  // Filtro de RANGO — por defecto "este mes" (día 1 del mes a hoy). Reemplaza al
+  // antiguo filtro de un solo día (`diaFiltro`).
+  const [rango, setRango] = useState<DateRangeValue>(() => {
+    const hoy = tenantToday();
+    return { mode: 'mes', from: startOfMonthIso(hoy), to: hoy };
+  });
+
+  // Resumen (KPIs) del rango filtrado completo — lo calcula el backend sobre TODO
+  // el set, no la página. Se hidrata desde `getVisits().resumen`.
+  const [resumen, setResumen] = useState<VisitaResumen>({ total: 0, completadas: 0, conVenta: 0, sinVenta: 0, duracionPromedio: 0 });
 
   // Cobertura — datos
   const [cobertura, setCobertura] = useState<CoberturaCliente[]>([]);
@@ -147,7 +156,8 @@ function VisitsPageContent() {
     })();
   }, [searchParams, clients]);
 
-  // Fetch del día (registro de hoy)
+  // Fetch del rango (registro de visitas). El backend devuelve `resumen` con los
+  // KPIs del rango completo (no la página), que hidratamos para las MetricCards.
   const fetchVisits = useCallback(async () => {
     try {
       setLoading(true);
@@ -155,11 +165,12 @@ function VisitsPageContent() {
       const response = await visitService.getVisits({
         pagina: currentPage,
         tamanoPagina: PAGE_SIZE,
-        fechaDesde: diaFiltro ? `${diaFiltro}T00:00:00` : undefined,
-        fechaHasta: diaFiltro ? `${diaFiltro}T23:59:59` : undefined,
+        fechaDesde: `${rango.from}T00:00:00`,
+        fechaHasta: `${rango.to}T23:59:59`,
       });
       setVisits(response.items);
       setTotalItems(response.totalItems);
+      if (response.resumen) setResumen(response.resumen);
     } catch (err) {
       console.error('Error al cargar visitas:', err);
       setError(t('errorLoadingRetry'));
@@ -167,16 +178,7 @@ function VisitsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, diaFiltro]);
-
-  const fetchSummary = useCallback(async () => {
-    try {
-      const data = await visitService.getMyDailySummary();
-      setSummary(data);
-    } catch {
-      // non-critical
-    }
-  }, []);
+  }, [currentPage, rango]);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -201,26 +203,25 @@ function VisitsPageContent() {
   }, []);
 
   useEffect(() => { fetchVisits(); }, [fetchVisits]);
-  useEffect(() => { fetchSummary(); fetchClients(); }, [fetchSummary, fetchClients]);
+  useEffect(() => { fetchClients(); }, [fetchClients]);
 
   // Carga la cobertura la primera vez que se abre esa pestaña.
   useEffect(() => {
     if (segment === 'coverage' && !coberturaLoaded) fetchCobertura();
   }, [segment, coberturaLoaded, fetchCobertura]);
 
-  useEffect(() => { setCurrentPage(1); }, [diaFiltro]);
+  useEffect(() => { setCurrentPage(1); }, [rango]);
   useEffect(() => { setCoberturaPage(1); }, [cobertura]);
 
-  // KPIs "Registro de hoy" derivados del resumen diario.
+  // KPIs derivados del `resumen` agregado del backend (rango completo, NO la página).
   const todayMetrics = useMemo(() => {
-    const total = summary.totalVisitas;
-    const done = summary.visitasCompletadas;
-    const effectiveness = done > 0 ? Math.round((summary.visitasConVenta / done) * 100) : 0;
-    const durations = visits.map(v => v.duracionMinutos).filter((d): d is number => typeof d === 'number' && d > 0);
-    const avg = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
-    const noSale = visits.filter(v => v.resultado === ResultadoVisita.SinVenta).length;
+    const total = resumen.total;
+    const done = resumen.completadas;
+    const effectiveness = done > 0 ? Math.round((resumen.conVenta / done) * 100) : 0;
+    const avg = Math.round(resumen.duracionPromedio);
+    const noSale = resumen.sinVenta;
     return { total, done, effectiveness, avg, noSale };
-  }, [summary, visits]);
+  }, [resumen]);
 
   // KPIs "Cobertura" derivados del dataset de cobertura.
   const coverageMetrics = useMemo(() => {
@@ -451,7 +452,6 @@ function VisitsPageContent() {
       await visitService.createVisit({ ...data, fechaProgramada });
       toast.success(t('visitCreated'));
       await fetchVisits();
-      await fetchSummary();
       if (coberturaLoaded) await fetchCobertura();
       setShowVisitForm(false);
       setPrefilledClienteId(undefined);
@@ -490,11 +490,10 @@ function VisitsPageContent() {
 
   const headerActions = (
     <>
-      <DateFilter
-        value={diaFiltro}
-        onChange={(iso) => { setDiaFiltro(iso); setCurrentPage(1); }}
+      <DateRangeFilter
+        value={rango}
+        onChange={setRango}
         retentionDays={180}
-        note={t('retentionNote')}
       />
       {canSchedule && (
         <Button variant="wbPrimary" onClick={handleOpenSchedule}>
@@ -521,7 +520,7 @@ function VisitsPageContent() {
         { label: t('title') },
       ]}
       title={t('title')}
-      subtitle={t('subtitleToday', { count: summary.totalVisitas })}
+      subtitle={t('subtitleToday', { count: resumen.total })}
       actions={headerActions}
     >
       <div className="space-y-4">

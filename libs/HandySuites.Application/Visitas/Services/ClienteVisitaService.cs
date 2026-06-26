@@ -39,14 +39,31 @@ public class ClienteVisitaService
 
     public async Task<PaginatedResult<ClienteVisitaListaDto>> ObtenerPorFiltroAsync(ClienteVisitaFiltroDto filtro)
     {
-        // RBAC: Vendedor solo ve sus visitas
+        AplicarRbacFiltro(filtro);
+        return await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+    }
+
+    /// <summary>
+    /// Lista paginada + KPIs del MISMO set filtrado en un solo paso. El resumen se
+    /// calcula sobre todo el rango (FechaDesde/FechaHasta + filtros), no sobre la página,
+    /// aplicando el mismo RBAC (vendedor solo ve sus visitas) que la lista.
+    /// </summary>
+    public async Task<(PaginatedResult<ClienteVisitaListaDto> Lista, VisitaResumenDto Resumen)> ObtenerPorFiltroConResumenAsync(ClienteVisitaFiltroDto filtro)
+    {
+        AplicarRbacFiltro(filtro);
+        var lista = await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+        var resumen = await _repository.ObtenerResumenPorFiltroAsync(filtro, _tenant.TenantId);
+        return (lista, resumen);
+    }
+
+    // RBAC: Vendedor/Viewer solo ve sus propias visitas → forzar UsuarioId al usuario actual.
+    private void AplicarRbacFiltro(ClienteVisitaFiltroDto filtro)
+    {
         if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 filtro.UsuarioId = vendedorId;
         }
-
-        return await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
     }
 
     public async Task<bool> EliminarAsync(int id)
