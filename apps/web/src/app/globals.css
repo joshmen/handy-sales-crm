@@ -53,7 +53,8 @@ body {
 
     /* Muted — subtle background for disabled/secondary areas */
     --muted: 220 27% 96%;
-    --muted-foreground: 226 16% 50%;    /* #6E789A */
+    --muted-foreground: 226 16% 50%;    /* #6E789A — texto secundario (= --text-3 del prototipo) */
+    --text-4: 225 22% 67%;              /* #9AA3BE — texto terciario/iconos tenues (command palette) */
 
     /* Accent — blue for links, info, interactive highlights */
     --accent: 206 92% 50%;
@@ -131,7 +132,8 @@ body {
     --secondary-foreground: 218 22% 10%;
 
     --muted: 218 16% 16%;            /* muted backgrounds */
-    --muted-foreground: 218 12% 60%; /* secondary text */
+    --muted-foreground: 218 12% 60%; /* secondary text (= --text-3 del prototipo) */
+    --text-4: 218 12% 52%;           /* texto terciario/iconos tenues (command palette) */
 
     --accent: 205 88% 62%;           /* blue accent, slightly lighter for dark bg */
     --accent-foreground: 0 0% 100%;

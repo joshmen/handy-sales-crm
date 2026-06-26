@@ -11,7 +11,7 @@ import { toast } from '@/hooks/useToast';
 import { useTranslations } from 'next-intl';
 import {
   Bell,
-  Search,
+  Plus,
   Settings,
   User,
   LogOut,
@@ -115,7 +115,6 @@ export interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpersonating }) => {
   const tc = useTranslations('common');
-  const tcp = useTranslations('commandPalette');
   const { formatDate } = useFormatters();
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
@@ -134,7 +133,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     markAllAsRead,
   } = useNotifications();
 
-  const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
@@ -300,33 +298,38 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           </div>
         </div>
 
-        {/* Center: Search Bar (opens command palette) */}
-        {/* Mobile: just a search icon button */}
-        <div className="flex-1 flex justify-center md:px-6 lg:px-12">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200"
-            onClick={() => setIsCommandOpen(true)}
-            data-tour="header-search"
-          >
-            <Search className="h-[18px] w-[18px] text-blue-400" strokeWidth={2} />
-          </Button>
-          {/* Desktop: full search bar */}
-          <div
-            className="hidden md:flex relative w-full max-w-md cursor-pointer group"
-            data-tour="header-search-desktop"
-            onClick={() => setIsCommandOpen(true)}
-          >
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
-            <div className="w-full h-10 pl-11 pr-20 flex items-center text-muted-foreground bg-muted border border-border rounded-full group-hover:shadow-md transition-all duration-200 text-sm">
-              {tcp('searchPlaceholder')}
-            </div>
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              {typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl K'}
-            </kbd>
+        {/* Center-left: Command palette (inline) — buscador global con navegación real */}
+        <div
+          className="flex-1 flex items-center min-w-0 md:px-4 lg:px-8"
+          data-tour="header-search"
+          data-tour-id="header-search-desktop"
+        >
+          <div className="w-full max-w-[420px]">
+            <CommandPalette
+              role={currentUser.role}
+              onNewOrder={() => router.push('/orders?new=1')}
+            />
           </div>
         </div>
+
+        {/* Acción principal por rol */}
+        {currentUser.role === 'SUPER_ADMIN' ? (
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 mr-1 rounded-full text-xs font-semibold text-success bg-success/10 whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-success" />
+            Sistemas operativos
+          </span>
+        ) : (
+          <Button
+            data-tour="new-order"
+            variant="wbPrimary"
+            size="sm"
+            className="hidden sm:inline-flex gap-1.5 mr-1 whitespace-nowrap"
+            onClick={() => router.push('/orders?new=1')}
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo pedido
+          </Button>
+        )}
 
         {/* Right: User controls */}
         <div className="flex items-center gap-0.5">
@@ -548,9 +551,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           tenant={null}
         />
       )}
-
-      {/* Command Palette (Ctrl+K) */}
-      <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} />
 
       {/* User Menu Dialog */}
       <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>

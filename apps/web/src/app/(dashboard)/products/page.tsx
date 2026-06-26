@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
@@ -328,6 +329,21 @@ export default function ProductsPage() {
 
     setShowProductForm(true);
   };
+
+  // Abrir el drawer de edición al llegar con ?edit=<id> (desde el command
+  // palette). Trae el producto por id y abre su formulario.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId) {
+      productService.getProductById(editId)
+        .then((p) => handleEditProduct(p))
+        .catch(() => { /* producto no encontrado / sin permiso */ });
+      router.replace('/products');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleSaveProduct = rhfSubmit(async (data) => {
     try {

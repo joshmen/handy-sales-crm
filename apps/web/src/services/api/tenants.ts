@@ -15,9 +15,9 @@ import type {
 class TenantService {
   private basePath = '/api/tenants';
 
-  async getAll(): Promise<Tenant[]> {
+  async getAll(signal?: AbortSignal): Promise<Tenant[]> {
     try {
-      const response = await api.get<Tenant[]>(this.basePath);
+      const response = await api.get<Tenant[]>(this.basePath, { signal });
       return response.data;
     } catch (error) {
       throw handleApiError(error);
