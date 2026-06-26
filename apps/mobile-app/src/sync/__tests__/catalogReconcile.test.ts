@@ -58,4 +58,34 @@ describe('planCatalogReconcile — Bug 3 (catálogo stale/renumerado)', () => {
     const plan = planCatalogReconcile([{ id: 110 }, { id: 7 }], ['110', '7', '8']);
     expect(plan.deleteLocalIds).toEqual(['8']);
   });
+
+  it('dedup: ids duplicados en el server no inflan ni rompen (Set unico)', () => {
+    // El server puede emitir el mismo id 2 veces (joins sin DISTINCT). El plan
+    // usa un Set, asi que '1' duplicado cuenta una sola vez.
+    const plan = planCatalogReconcile([{ id: 1 }, { id: 1 }, { id: 2 }], ['1', '2', '9']);
+    expect(plan.skipped).toBe(false);
+    expect(plan.deleteLocalIds).toEqual(['9']);
+  });
+
+  it('GUARD ratio: local grande + server devuelve fraccion minima → skip (truncado)', () => {
+    // Catalogo local de 20, server devuelve 2 (<25%): respuesta truncada → no borrar.
+    const localIds = Array.from({ length: 20 }, (_, i) => String(i));
+    const plan = planCatalogReconcile([{ id: 100 }, { id: 101 }], localIds);
+    expect(plan.skipped).toBe(true);
+    expect(plan.deleteLocalIds).toEqual([]);
+  });
+
+  it('GUARD ratio NO aplica a catalogos chicos (< umbral) ni a borrados legitimos', () => {
+    // Catalogo chico (6 productos jeyma): el guard de ratio no debe dispararse.
+    const plan1 = planCatalogReconcile([{ id: 1 }], ['1', '2', '3', '4', '5', '6']);
+    expect(plan1.skipped).toBe(false); // 6 < umbral 8 → procede
+    expect(plan1.deleteLocalIds).toEqual(['2', '3', '4', '5', '6']);
+
+    // Borrado legitimo moderado: local 100, server 70 (>=25%) → procede.
+    const local100 = Array.from({ length: 100 }, (_, i) => String(i));
+    const server70 = Array.from({ length: 70 }, (_, i) => ({ id: i }));
+    const plan2 = planCatalogReconcile(server70, local100);
+    expect(plan2.skipped).toBe(false);
+    expect(plan2.deleteLocalIds).toHaveLength(30);
+  });
 });
