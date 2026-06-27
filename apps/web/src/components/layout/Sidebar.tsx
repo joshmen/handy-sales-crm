@@ -49,6 +49,12 @@ import {
   Plug as SbIntegrations,
   Receipt as SbBilling,
   Banknote as SbExpenses,
+  // Consola de plataforma (Super Admin) — iconos de los modulos nuevos
+  Inbox as SbOnboarding,
+  Gift as SbChangelog,
+  RefreshCw as SbSubscriptions,
+  Flag as SbModules,
+  Gauge as SbStatus,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -416,19 +422,32 @@ const sidebarItems: SidebarItem[] = [
   },
 ];
 
-// Sidebar simplificado para SuperAdmin (cuando NO está impersonando)
+// Consola de plataforma (Super Admin, cuando NO está impersonando).
+// Nav reorganizada en 4 grupos: Administración (Dashboard) / Plataforma / Ingresos / Sistema.
+// Los badges (Soporte/Cobros/Monitor) se inyectan dinámicamente con conteos reales (Fase I);
+// no se hardcodean números (sin datos falsos).
 const superAdminItems: SidebarItem[] = [
+  // — Administración (sin label de sección; usa el header del nav) —
   {
     id: 'sa-dashboard',
     label: 'Dashboard',
     icon: SbDashboard,
     href: '/admin/system-dashboard',
   },
+
+  // — Plataforma —
   {
     id: 'sa-tenants',
     label: 'Empresas',
     icon: SbBuildings,
     href: '/admin/tenants',
+    section: 'Plataforma',
+  },
+  {
+    id: 'sa-onboarding',
+    label: 'Onboarding',
+    icon: SbOnboarding,
+    href: '/admin/onboarding',
   },
   {
     id: 'sa-global-users',
@@ -437,10 +456,37 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/global-users',
   },
   {
+    id: 'sa-support',
+    label: 'Soporte',
+    icon: SbHelp,
+    href: '/admin/support',
+  },
+  {
     id: 'sa-announcements',
     label: 'Anuncios',
     icon: SbAnnouncements,
     href: '/admin/announcements',
+  },
+  {
+    id: 'sa-changelog',
+    label: 'Novedades',
+    icon: SbChangelog,
+    href: '/admin/changelog',
+  },
+  {
+    id: 'sa-analytics',
+    label: 'Analítica',
+    icon: SbReports,
+    href: '/admin/analytics',
+  },
+
+  // — Ingresos —
+  {
+    id: 'sa-subscriptions',
+    label: 'Suscripciones',
+    icon: SbSubscriptions,
+    href: '/admin/subscriptions',
+    section: 'Ingresos',
   },
   {
     id: 'sa-plans',
@@ -449,28 +495,49 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/subscription-plans',
   },
   {
-    id: 'sa-finkok',
-    label: 'Integración Finkok',
-    icon: SbBilling,
-    href: '/admin/finkok',
-  },
-  {
     id: 'sa-cupones',
     label: 'Cupones',
     icon: SbDiscounts,
     href: '/admin/cupones',
   },
   {
-    id: 'sa-activity-logs',
-    label: 'Registro de actividad',
-    icon: SbActivityLog,
-    href: '/activity-logs',
+    id: 'sa-dunning',
+    label: 'Cobros',
+    icon: SbExpenses,
+    href: '/admin/dunning',
+  },
+
+  // — Sistema —
+  {
+    id: 'sa-finkok',
+    label: 'Integración Finkok',
+    icon: SbBilling,
+    href: '/admin/finkok',
+    section: 'Sistema',
+  },
+  {
+    id: 'sa-modules',
+    label: 'Módulos',
+    icon: SbModules,
+    href: '/admin/modules',
+  },
+  {
+    id: 'sa-status',
+    label: 'Estado del sistema',
+    icon: SbStatus,
+    href: '/admin/status',
   },
   {
     id: 'sa-crash-reports',
     label: 'Monitor de Errores',
     icon: SbBug,
     href: '/admin/crash-reports',
+  },
+  {
+    id: 'sa-activity-logs',
+    label: 'Registro de actividad',
+    icon: SbActivityLog,
+    href: '/activity-logs',
   },
   {
     id: 'sa-settings',
@@ -508,9 +575,14 @@ const LABEL_KEYS: Record<string, string> = {
   'Dashboard': 'nav.dashboard', 'Empresas': 'nav.saCompanies', 'Usuarios Global': 'nav.saGlobalUsers',
   'Anuncios': 'nav.saAnnouncements', 'Planes': 'nav.saPlans', 'Cupones': 'nav.saCoupons',
   'Monitor de Errores': 'nav.saCrashReports',
+  // Consola de plataforma (SA) — modulos nuevos
+  'Onboarding': 'nav.saOnboarding', 'Soporte': 'nav.saSupport', 'Novedades': 'nav.saChangelog',
+  'Analítica': 'nav.saAnalytics', 'Suscripciones': 'nav.saSubscriptions', 'Cobros': 'nav.saDunning',
+  'Integración Finkok': 'nav.saFinkok', 'Módulos': 'nav.saModules', 'Estado del sistema': 'nav.saStatus',
   // Sections
   'Ventas': 'nav.sectionSales', 'Catálogo': 'nav.sectionCatalog', 'Operación': 'nav.sectionOperations',
   'Herramientas': 'nav.sectionTools', 'Empresa': 'nav.sectionCompany',
+  'Plataforma': 'nav.sectionPlatform', 'Ingresos': 'nav.sectionRevenue', 'Sistema': 'nav.sectionSystem',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonatingProp }) => {
@@ -727,9 +799,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       'group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200',
       !item.href && 'w-full',
       level > 0 && 'ml-6 py-2',
-      activeState
-        ? item.href ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-primary/10 text-primary'
-        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+      isSuperAdminDirect
+        // Consola de plataforma (dark): pill activa con gradiente azul + sombra
+        ? activeState
+          ? item.href
+            ? 'bg-gradient-to-r from-primary to-[#2A8FE0] text-white shadow-[0_6px_18px_rgba(1,118,211,0.38)]'
+            : 'bg-white/10 text-white'
+          : 'text-[#B4C2D4] hover:bg-white/[0.06] hover:text-white'
+        : activeState
+          ? item.href ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-primary/10 text-primary'
+          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
       !showLabels && 'justify-center px-2'
     );
 
@@ -779,7 +858,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       {/* Modern Google-style Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 z-30 bg-surface-2 border-r border-border-subtle transition-all duration-300 ease-in-out',
+          'fixed left-0 z-30 transition-all duration-300 ease-in-out',
+          // Consola de plataforma (SA sin impersonar): gradiente navy + texto claro
+          isSuperAdminDirect
+            ? 'bg-gradient-to-b from-[#122036] to-[#0A1320] border-r border-white/10 text-slate-100'
+            : 'bg-surface-2 border-r border-border-subtle',
           isImpersonatingProp
             ? 'top-[calc(4rem+2.5rem)] h-[calc(100vh-4rem-2.5rem)]'
             : 'top-16 h-[calc(100vh-4rem)]',
@@ -795,10 +878,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       >
         <div className="flex h-full flex-col">
           {/* Navigation Header */}
-          <div className="p-4 border-b border-border">
+          <div className={cn('p-4 border-b', isSuperAdminDirect ? 'border-white/10' : 'border-border')}>
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
-                <h2 className="text-sm font-semibold text-foreground">
+                <h2 className={cn('text-sm font-semibold', isSuperAdminDirect ? 'text-slate-100' : 'text-foreground')}>
                   {isSuperAdminDirect ? t('nav.administration') : t('nav.navigation')}
                 </h2>
               )}
@@ -824,6 +907,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
             </div>
           </div>
 
+          {/* Consola de plataforma: barra de entorno (SA sin impersonar) */}
+          {isSuperAdminDirect && !sidebarCollapsed && (
+            <div className="flex flex-wrap items-center gap-2 px-4 pt-3 pb-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#B9C8DC]">
+                <SbAdmin size={12} /> {t('nav.platformConsole')}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-success">
+                <span className="h-2 w-2 rounded-full bg-success" /> {t('nav.production')}
+              </span>
+            </div>
+          )}
+
           {/* Navigation Items */}
           <nav
             data-tour="sidebar-nav"
@@ -837,10 +932,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     {item.section && showLabels && (
                       <div className="pt-4 pb-1 px-3 first:pt-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold text-muted-foreground/70">
+                          <span className={cn(
+                            'text-[10px] font-semibold uppercase tracking-wide',
+                            isSuperAdminDirect ? 'text-[#6F8296]' : 'text-muted-foreground/70'
+                          )}>
                             {tl(item.section)}
                           </span>
-                          <div className="flex-1 h-px bg-border" />
+                          <div className={cn('flex-1 h-px', isSuperAdminDirect ? 'bg-white/10' : 'bg-border')} />
                         </div>
                       </div>
                     )}
@@ -852,24 +950,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
 
           {/* Bottom User Section */}
           {!sidebarCollapsed && session?.user && (
-            <div className="border-t border-border p-4">
+            <div className={cn('border-t p-4', isSuperAdminDirect ? 'border-white/10' : 'border-border')}>
               {isSuperAdminDirect ? (
-                // SuperAdmin (not impersonating) sees their profile
-                <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-accent/50 transition-colors">
+                // SuperAdmin (not impersonating) sees their profile — estilos consola dark
+                <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/[0.05] transition-colors">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-violet-600/15 text-violet-700 dark:text-violet-400 text-sm font-semibold">
+                    <AvatarFallback className="bg-white/10 text-[#C9D6E6] text-sm font-semibold">
                       SA
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
+                    <p className="text-sm font-semibold text-slate-100 truncate">
                       {profile?.nombre || session.user.name || 'Super Admin'}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-[#93A4B8] truncate">
                       {session.user.email}
                     </p>
                     <div className="mt-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-foreground/5 text-muted-foreground">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/10 text-[#B9C8DC]">
                         Super Admin
                       </span>
                     </div>
