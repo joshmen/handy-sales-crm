@@ -302,6 +302,7 @@ app.MapDunningEndpoints();
 app.MapOnboardingEndpoints();
 app.MapSubscriptionsAdminEndpoints();
 app.MapSaasAnalyticsEndpoints();
+app.MapConsoleEndpoints();
 
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");

@@ -63,6 +63,7 @@ import { Button } from '@/components/ui/Button';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
+import { consoleAdminService } from '@/services/api/consoleAdmin';
 
 interface SidebarItem {
   id: string;
@@ -642,6 +643,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     };
   }, []);
 
+  // Badges de la consola de plataforma (Super Admin): conteos reales de Soporte,
+  // Cobros y Monitor de Errores. Solo se cargan para el SA sin impersonar.
+  const [consoleBadges, setConsoleBadges] = useState<{ support: number; dunning: number; crashReports: number } | null>(null);
+  useEffect(() => {
+    if (!isSuperAdminDirect) { setConsoleBadges(null); return; }
+    let alive = true;
+    consoleAdminService.getBadges()
+      .then(b => { if (alive) setConsoleBadges(b); })
+      .catch(() => { /* sin badges si falla */ });
+    return () => { alive = false; };
+  }, [isSuperAdminDirect]);
+
+  // Resuelve el badge (conteo) de un item del nav: onboarding o consola SA.
+  const badgeForItem = (item: SidebarItem): SidebarItem => {
+    if (item.id === 'getting-started' && onboardingBadge) return { ...item, badge: onboardingBadge };
+    if (consoleBadges) {
+      const c = item.id === 'sa-support' ? consoleBadges.support
+        : item.id === 'sa-dunning' ? consoleBadges.dunning
+        : item.id === 'sa-crash-reports' ? consoleBadges.crashReports
+        : undefined;
+      if (c && c > 0) return { ...item, badge: c };
+    }
+    return item;
+  };
+
   // Scroll to active sidebar item on mount
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -942,7 +968,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                         </div>
                       </div>
                     )}
-                    {renderSidebarItem(item.id === 'getting-started' && onboardingBadge ? { ...item, badge: onboardingBadge } : item)}
+                    {renderSidebarItem(badgeForItem(item))}
                   </React.Fragment>
                 );
               })}
