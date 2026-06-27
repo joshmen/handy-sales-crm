@@ -129,6 +129,7 @@ export default auth((req) => {
       pathname.startsWith('/global-settings') ||
       pathname.startsWith('/activity-logs') || // SA puede ver logs sin impersonar
       pathname === '/dashboard' || // dashboard redirige a system-dashboard via page logic
+      pathname === '/notifications' || // SA tiene la campanita en el header (sus notifs + mensajes de la app)
       pathname === '/profile'; // SA necesita acceder a su perfil
 
     if (!isSuperAdminRoute) {
