@@ -38,10 +38,14 @@ public class NotificationService : INotificationService
             // Parsear tipo de notificación
             var tipo = Enum.TryParse<NotificationType>(dto.Tipo, true, out var t) ? t : NotificationType.General;
 
+            // Tenant del destinatario: el override (ej. SuperAdmin respondiendo un ticket de
+            // otra empresa) o, por defecto, el tenant actual del emisor.
+            var targetTenantId = dto.TenantIdOverride ?? _tenant.TenantId;
+
             // Crear registro de notificación
             var notification = new NotificationHistory
             {
-                TenantId = _tenant.TenantId,
+                TenantId = targetTenantId,
                 UsuarioId = dto.UsuarioId,
                 Titulo = dto.Titulo,
                 Mensaje = dto.Mensaje,
@@ -70,8 +74,8 @@ public class NotificationService : INotificationService
                 catch { /* SignalR failure should not block notification flow */ }
             }
 
-            // Obtener push tokens del usuario
-            var tokens = await _repository.ObtenerPushTokensAsync(_tenant.TenantId, new List<int> { dto.UsuarioId });
+            // Obtener push tokens del usuario (en el tenant del destinatario)
+            var tokens = await _repository.ObtenerPushTokensAsync(targetTenantId, new List<int> { dto.UsuarioId });
 
             if (!tokens.Any())
             {

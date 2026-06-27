@@ -10,6 +10,11 @@ public class SendNotificationDto
     public required string Mensaje { get; set; }
     public string Tipo { get; set; } = "General";
     public Dictionary<string, string>? Data { get; set; }
+    /// <summary>
+    /// Tenant del destinatario cuando difiere del tenant del emisor (ej. un SuperAdmin
+    /// respondiendo un ticket de otra empresa). Si es null se usa el tenant actual.
+    /// </summary>
+    public int? TenantIdOverride { get; set; }
 }
 
 /// <summary>

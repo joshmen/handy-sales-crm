@@ -293,6 +293,16 @@ app.MapAnalyticsEndpoints();
 app.MapIntegrationEndpoints();
 app.MapCuponEndpoints();
 
+// Consola de plataforma (Super Admin)
+app.MapSupportEndpoints();
+app.MapChangelogEndpoints();
+app.MapModulesEndpoints();
+app.MapStatusEndpoints();
+app.MapDunningEndpoints();
+app.MapOnboardingEndpoints();
+app.MapSubscriptionsAdminEndpoints();
+app.MapSaasAnalyticsEndpoints();
+
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");
 

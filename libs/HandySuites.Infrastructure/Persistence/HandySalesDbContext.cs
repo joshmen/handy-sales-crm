@@ -109,6 +109,17 @@ public class HandySuitesDbContext : DbContext
     // See NotificationOutbox.cs for full design notes.
     public DbSet<NotificationOutbox> NotificationOutbox => Set<NotificationOutbox>();
 
+    // ===== Consola de plataforma (Super Admin) =====
+    public DbSet<TicketSoporte> TicketsSoporte => Set<TicketSoporte>();
+    public DbSet<MensajeTicketSoporte> MensajesTicketSoporte => Set<MensajeTicketSoporte>();
+    public DbSet<Novedad> Novedades => Set<Novedad>();
+    public DbSet<ModuloPlataforma> ModulosPlataforma => Set<ModuloPlataforma>();
+    public DbSet<ModuloOverride> ModulosOverride => Set<ModuloOverride>();
+    public DbSet<Incidente> Incidentes => Set<Incidente>();
+    public DbSet<IncidenteActualizacion> IncidenteActualizaciones => Set<IncidenteActualizacion>();
+    public DbSet<CobranzaSuscripcion> CobranzasSuscripcion => Set<CobranzaSuscripcion>();
+    public DbSet<CasoOnboarding> CasosOnboarding => Set<CasoOnboarding>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var currentUser = _tenantContext?.CurrentUserEmail;
@@ -1423,6 +1434,59 @@ public class HandySuitesDbContext : DbContext
             // Truncamos LastError en el processor para evitar payloads gigantes;
             // límite a nivel DB como seguro adicional.
             entity.Property(e => e.LastError).HasMaxLength(1000);
+        });
+
+        // ===== Consola de plataforma (Super Admin) =====
+        // Soporte: TicketSoporte filtrado por tenant (el tenant ve solo los suyos; el SA usa
+        // IgnoreQueryFilters). MensajeTicketSoporte NO tiene TenantId: filtro solo soft-delete
+        // (su aislamiento por tenant se garantiza via el ticket padre ya filtrado).
+        modelBuilder.Entity<TicketSoporte>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            entity.HasMany(t => t.Mensajes).WithOne().HasForeignKey(m => m.TicketId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.TenantId, e.Estado });
+        });
+        modelBuilder.Entity<MensajeTicketSoporte>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+        });
+
+        // Entidades de plataforma (cross-tenant, solo SA): solo filtro de soft-delete.
+        modelBuilder.Entity<Novedad>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+        });
+        modelBuilder.Entity<ModuloPlataforma>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+            // Indice unico parcial: permite recrear una clave previamente soft-deleted.
+            entity.HasIndex(e => e.Clave).IsUnique().HasFilter("\"eliminado_en\" IS NULL");
+            entity.HasMany(m => m.Overrides).WithOne().HasForeignKey(o => o.ModuloPlataformaId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<ModuloOverride>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+            entity.HasIndex(e => new { e.ModuloPlataformaId, e.TenantId }).IsUnique().HasFilter("\"eliminado_en\" IS NULL");
+        });
+        modelBuilder.Entity<Incidente>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+            entity.HasMany(i => i.Actualizaciones).WithOne().HasForeignKey(a => a.IncidenteId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<IncidenteActualizacion>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+        });
+        // CobranzaSuscripcion y CasoOnboarding llevan TenantId como FK plana (sin filtro de tenant).
+        modelBuilder.Entity<CobranzaSuscripcion>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+            entity.HasIndex(e => new { e.TenantId, e.Estado });
+        });
+        modelBuilder.Entity<CasoOnboarding>(entity =>
+        {
+            entity.HasQueryFilter(e => e.EliminadoEn == null);
+            entity.HasIndex(e => e.TenantId);
         });
     }
 }
