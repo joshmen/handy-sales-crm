@@ -9,13 +9,16 @@ public class KbDocument
 {
     public int Id { get; set; }
 
+    /// <summary>Identificador estable y unico para upsert idempotente del ingest (ej. "precios-planes").</summary>
+    public string Slug { get; set; } = "";
+
     /// <summary>Titulo legible del documento.</summary>
     public string Title { get; set; } = "";
 
     /// <summary>URL de origen (si aplica): pagina web, PDF, etc.</summary>
     public string? SourceUrl { get; set; }
 
-    /// <summary>Categoria/etiqueta para filtrar (ej. "precios", "soporte").</summary>
+    /// <summary>Categoria/etiqueta para filtrar (faq / pricing / product / policy).</summary>
     public string? Category { get; set; }
 
     /// <summary>Contenido completo del documento antes de trocear.</summary>

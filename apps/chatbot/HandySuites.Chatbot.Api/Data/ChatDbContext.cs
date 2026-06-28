@@ -23,6 +23,8 @@ public class ChatDbContext : DbContext
 
         b.Entity<KbDocument>(e =>
         {
+            e.Property(d => d.Slug).HasMaxLength(160);
+            e.HasIndex(d => d.Slug).IsUnique();
             e.HasMany(d => d.Embeddings).WithOne(x => x.Document!)
                 .HasForeignKey(x => x.DocumentId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -38,6 +40,8 @@ public class ChatDbContext : DbContext
         {
             e.HasIndex(x => x.PublicId).IsUnique();
             e.HasIndex(x => new { x.Status, x.ActualizadoEn });
+            // Barrido de auto-reanudacion del bot (BackgroundService): human vencido.
+            e.HasIndex(x => new { x.Mode, x.ModeExpiresAt });
             e.HasMany(x => x.Messages).WithOne(m => m.Conversation!)
                 .HasForeignKey(m => m.ConversationId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -46,6 +50,8 @@ public class ChatDbContext : DbContext
 
         b.Entity<Lead>(e =>
         {
+            // Un lead por conversacion (PG permite multiples NULL en indice unico).
+            e.HasIndex(x => x.ConversationId).IsUnique();
             e.HasOne(x => x.Conversation).WithMany()
                 .HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.SetNull);
         });

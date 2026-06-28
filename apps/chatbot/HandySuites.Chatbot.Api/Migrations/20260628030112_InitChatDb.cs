@@ -23,14 +23,23 @@ namespace HandySuites.Chatbot.Api.Migrations
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     public_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    visitor_id = table.Column<string>(type: "text", nullable: true),
                     channel = table.Column<int>(type: "integer", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     mode = table.Column<int>(type: "integer", nullable: false),
+                    mode_expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     assigned_agent_id = table.Column<string>(type: "text", nullable: true),
+                    taken = table.Column<bool>(type: "boolean", nullable: false),
+                    resolved_by_bot = table.Column<bool>(type: "boolean", nullable: false),
                     visitor_name = table.Column<string>(type: "text", nullable: true),
                     visitor_email = table.Column<string>(type: "text", nullable: true),
                     visitor_ip = table.Column<string>(type: "text", nullable: true),
+                    origin_page = table.Column<string>(type: "text", nullable: true),
+                    device = table.Column<string>(type: "text", nullable: true),
+                    location = table.Column<string>(type: "text", nullable: true),
                     unread_for_agent = table.Column<int>(type: "integer", nullable: false),
+                    last_visitor_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    last_agent_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     actualizado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     cerrado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -46,6 +55,7 @@ namespace HandySuites.Chatbot.Api.Migrations
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    slug = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
                     title = table.Column<string>(type: "text", nullable: false),
                     source_url = table.Column<string>(type: "text", nullable: true),
                     category = table.Column<string>(type: "text", nullable: true),
@@ -67,14 +77,22 @@ namespace HandySuites.Chatbot.Api.Migrations
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     conversation_id = table.Column<int>(type: "integer", nullable: true),
-                    name = table.Column<string>(type: "text", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: true),
                     email = table.Column<string>(type: "text", nullable: true),
                     phone = table.Column<string>(type: "text", nullable: true),
                     company = table.Column<string>(type: "text", nullable: true),
+                    company_size = table.Column<string>(type: "text", nullable: true),
                     message = table.Column<string>(type: "text", nullable: true),
+                    intent = table.Column<string>(type: "text", nullable: true),
+                    reason = table.Column<string>(type: "text", nullable: true),
                     source = table.Column<string>(type: "text", nullable: true),
+                    consent = table.Column<bool>(type: "boolean", nullable: false),
+                    consent_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    converted_cliente_id = table.Column<int>(type: "integer", nullable: true),
+                    converted_tenant_id = table.Column<int>(type: "integer", nullable: true),
                     notificado = table.Column<bool>(type: "boolean", nullable: false),
-                    creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    actualizado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -96,6 +114,8 @@ namespace HandySuites.Chatbot.Api.Migrations
                     conversation_id = table.Column<int>(type: "integer", nullable: false),
                     role = table.Column<int>(type: "integer", nullable: false),
                     content = table.Column<string>(type: "text", nullable: false),
+                    confidence = table.Column<double>(type: "double precision", nullable: true),
+                    sources = table.Column<string>(type: "jsonb", nullable: true),
                     agent_id = table.Column<string>(type: "text", nullable: true),
                     tokens_used = table.Column<int>(type: "integer", nullable: true),
                     creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -135,6 +155,11 @@ namespace HandySuites.Chatbot.Api.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "ix_conversations_mode_mode_expires_at",
+                table: "conversations",
+                columns: new[] { "mode", "mode_expires_at" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_conversations_public_id",
                 table: "conversations",
                 column: "public_id",
@@ -144,6 +169,12 @@ namespace HandySuites.Chatbot.Api.Migrations
                 name: "ix_conversations_status_actualizado_en",
                 table: "conversations",
                 columns: new[] { "status", "actualizado_en" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_kb_documents_slug",
+                table: "kb_documents",
+                column: "slug",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_kb_embeddings_document_id_chunk_index",
@@ -161,7 +192,8 @@ namespace HandySuites.Chatbot.Api.Migrations
             migrationBuilder.CreateIndex(
                 name: "ix_leads_conversation_id",
                 table: "leads",
-                column: "conversation_id");
+                column: "conversation_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_messages_conversation_id_creado_en",

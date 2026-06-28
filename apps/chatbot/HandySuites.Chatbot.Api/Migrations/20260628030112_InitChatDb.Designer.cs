@@ -13,7 +13,7 @@ using Pgvector;
 namespace HandySuites.Chatbot.Api.Migrations
 {
     [DbContext(typeof(ChatDbContext))]
-    [Migration("20260628024358_InitChatDb")]
+    [Migration("20260628030112_InitChatDb")]
     partial class InitChatDb
     {
         /// <inheritdoc />
@@ -40,6 +40,10 @@ namespace HandySuites.Chatbot.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("agent_id");
 
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("double precision")
+                        .HasColumnName("confidence");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text")
@@ -56,6 +60,10 @@ namespace HandySuites.Chatbot.Api.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("integer")
                         .HasColumnName("role");
+
+                    b.Property<string>("Sources")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("sources");
 
                     b.Property<int?>("TokensUsed")
                         .HasColumnType("integer")
@@ -99,17 +107,49 @@ namespace HandySuites.Chatbot.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
+                    b.Property<string>("Device")
+                        .HasColumnType("text")
+                        .HasColumnName("device");
+
+                    b.Property<DateTime?>("LastAgentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_agent_at");
+
+                    b.Property<DateTime?>("LastVisitorAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_visitor_at");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("text")
+                        .HasColumnName("location");
+
                     b.Property<int>("Mode")
                         .HasColumnType("integer")
                         .HasColumnName("mode");
+
+                    b.Property<DateTime?>("ModeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("mode_expires_at");
+
+                    b.Property<string>("OriginPage")
+                        .HasColumnType("text")
+                        .HasColumnName("origin_page");
 
                     b.Property<Guid>("PublicId")
                         .HasColumnType("uuid")
                         .HasColumnName("public_id");
 
+                    b.Property<bool>("ResolvedByBot")
+                        .HasColumnType("boolean")
+                        .HasColumnName("resolved_by_bot");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
+
+                    b.Property<bool>("Taken")
+                        .HasColumnType("boolean")
+                        .HasColumnName("taken");
 
                     b.Property<int>("UnreadForAgent")
                         .HasColumnType("integer")
@@ -118,6 +158,10 @@ namespace HandySuites.Chatbot.Api.Migrations
                     b.Property<string>("VisitorEmail")
                         .HasColumnType("text")
                         .HasColumnName("visitor_email");
+
+                    b.Property<string>("VisitorId")
+                        .HasColumnType("text")
+                        .HasColumnName("visitor_id");
 
                     b.Property<string>("VisitorIp")
                         .HasColumnType("text")
@@ -133,6 +177,9 @@ namespace HandySuites.Chatbot.Api.Migrations
                     b.HasIndex("PublicId")
                         .IsUnique()
                         .HasDatabaseName("ix_conversations_public_id");
+
+                    b.HasIndex("Mode", "ModeExpiresAt")
+                        .HasDatabaseName("ix_conversations_mode_mode_expires_at");
 
                     b.HasIndex("Status", "ActualizadoEn")
                         .HasDatabaseName("ix_conversations_status_actualizado_en");
@@ -174,6 +221,12 @@ namespace HandySuites.Chatbot.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("slug");
+
                     b.Property<string>("SourceUrl")
                         .HasColumnType("text")
                         .HasColumnName("source_url");
@@ -185,6 +238,10 @@ namespace HandySuites.Chatbot.Api.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_kb_documents");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kb_documents_slug");
 
                     b.ToTable("kb_documents", (string)null);
                 });
@@ -245,13 +302,37 @@ namespace HandySuites.Chatbot.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizado_en");
+
                     b.Property<string>("Company")
                         .HasColumnType("text")
                         .HasColumnName("company");
 
+                    b.Property<string>("CompanySize")
+                        .HasColumnType("text")
+                        .HasColumnName("company_size");
+
+                    b.Property<bool>("Consent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("consent");
+
+                    b.Property<DateTime?>("ConsentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("consent_at");
+
                     b.Property<int?>("ConversationId")
                         .HasColumnType("integer")
                         .HasColumnName("conversation_id");
+
+                    b.Property<int?>("ConvertedClienteId")
+                        .HasColumnType("integer")
+                        .HasColumnName("converted_cliente_id");
+
+                    b.Property<int?>("ConvertedTenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("converted_tenant_id");
 
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp with time zone")
@@ -261,12 +342,15 @@ namespace HandySuites.Chatbot.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("email");
 
+                    b.Property<string>("Intent")
+                        .HasColumnType("text")
+                        .HasColumnName("intent");
+
                     b.Property<string>("Message")
                         .HasColumnType("text")
                         .HasColumnName("message");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
 
@@ -278,6 +362,10 @@ namespace HandySuites.Chatbot.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
                     b.Property<string>("Source")
                         .HasColumnType("text")
                         .HasColumnName("source");
@@ -286,6 +374,7 @@ namespace HandySuites.Chatbot.Api.Migrations
                         .HasName("pk_leads");
 
                     b.HasIndex("ConversationId")
+                        .IsUnique()
                         .HasDatabaseName("ix_leads_conversation_id");
 
                     b.ToTable("leads", (string)null);
