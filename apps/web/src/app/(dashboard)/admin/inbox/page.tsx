@@ -144,12 +144,15 @@ export default function BotInboxPage() {
 
   // ── SignalR: hub del chatbot (cliente propio, no el del Main API) ──
   const connRef = useRef<HubConnection | null>(null);
+  // Token por ref (no closure): la reconexion usa el JWT vigente si NextAuth lo refresca.
+  const tokenRef = useRef<string | null>(null);
+  tokenRef.current = session?.accessToken ?? null;
   useEffect(() => {
     const token = session?.accessToken;
     if (!token || token.startsWith('mock-')) return;
 
     const conn = new HubConnectionBuilder()
-      .withUrl(`${CHATBOT_URL}/hubs/inbox`, { accessTokenFactory: () => token })
+      .withUrl(`${CHATBOT_URL}/hubs/inbox`, { accessTokenFactory: () => tokenRef.current || '' })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
       .configureLogging(LogLevel.Warning)
       .build();

@@ -194,16 +194,24 @@ public static class ChatbotEndpoints
     private static void MapInternal(IEndpointRouteBuilder app)
     {
         app.MapPost("/kb/ingest", async (
-            KbIngestRequest? body, HttpRequest req, IConfiguration cfg, KbIngestService ingest, CancellationToken ct) =>
+            KbIngestRequest? body, HttpRequest req, IConfiguration cfg, KbIngestService ingest,
+            ILoggerFactory lf, CancellationToken ct) =>
         {
+            var log = lf.CreateLogger("kb-ingest-audit");
+            var ip = req.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var provided = req.Headers["X-Internal-Api-Key"].ToString();
             var expected = cfg["INTERNAL_API_KEY"] ?? Environment.GetEnvironmentVariable("INTERNAL_API_KEY");
             if (string.IsNullOrEmpty(provided) || string.IsNullOrEmpty(expected) || !FixedEquals(provided, expected))
+            {
+                log.LogWarning("kb/ingest: intento NO autorizado desde {Ip}", ip);
                 return Results.Unauthorized();
+            }
             if (body?.Documents is null || body.Documents.Count == 0)
                 return Results.BadRequest(new { error = "documents requerido" });
 
             var result = await ingest.IngestAsync(body.Documents, ct);
+            log.LogInformation("kb/ingest: aceptado desde {Ip} docs={Docs} chunks={Chunks} skipped={Skipped}",
+                ip, result.Documents, result.Chunks, result.Skipped);
             return Results.Ok(result);
         });
     }

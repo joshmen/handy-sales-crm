@@ -116,8 +116,8 @@ public class OpenAiClient
         using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
         if (!resp.IsSuccessStatusCode)
         {
-            var body = await resp.Content.ReadAsStringAsync(ct);
-            _log.LogError("OpenAI chat error {Code}: {Body}", resp.StatusCode, body);
+            // No volcar el body completo (puede llevar info operativa/sensible a logs centralizados).
+            _log.LogError("OpenAI chat error {Code}", resp.StatusCode);
             yield break;
         }
 

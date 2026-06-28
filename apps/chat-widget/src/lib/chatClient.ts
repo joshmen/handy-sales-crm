@@ -218,6 +218,7 @@ export async function sendMessage(
     let buffer = "";
     let doneInfo: SendDoneInfo = {};
 
+    try {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const { value, done } = await reader.read();
@@ -263,6 +264,10 @@ export async function sendMessage(
 
     // Stream cerrado sin frame [DONE]/done explicito.
     onDone?.(doneInfo);
+    } finally {
+      // Senala al servidor que el cliente termina el stream (libera el SSE del lado servidor).
+      reader.cancel().catch(() => {});
+    }
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     if (onError) onError(error);
@@ -360,7 +365,8 @@ export async function requestHandoff(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lead: lead ?? null }),
+      // consent=false explicito: sin UI de consentimiento aun, el backend NO persiste PII (LFPDPPP).
+      body: JSON.stringify({ lead: lead ?? null, consent: false }),
     }
   );
 

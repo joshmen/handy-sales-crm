@@ -60,7 +60,8 @@ public class BotResumeWorker : BackgroundService
         {
             c.Mode = ConversationMode.Bot;
             c.ModeExpiresAt = null;
-            if (c.Status == ConversationStatus.Active) c.Status = ConversationStatus.Bot;
+            c.UnreadForAgent = 0; // el bot retoma: no dejar contador de no-leidos stale en la bandeja
+            if (c.Status != ConversationStatus.Closed) c.Status = ConversationStatus.Bot;
             c.ActualizadoEn = now;
             db.Messages.Add(new ChatMessage
             {

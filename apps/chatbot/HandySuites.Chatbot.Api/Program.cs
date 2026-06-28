@@ -22,7 +22,9 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 // ── DB handy_chat (pgvector, snake_case) ──
 var chatConn = builder.Configuration.GetConnectionString("ChatDb")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__ChatDb")
-    ?? "Host=localhost;Port=5432;Database=handy_chat;Username=handy_user;Password=handy_pass;";
+    ?? (builder.Environment.IsDevelopment()
+        ? "Host=localhost;Port=5432;Database=handy_chat;Username=handy_user;Password=handy_pass;"
+        : throw new InvalidOperationException("ConnectionStrings__ChatDb es obligatorio fuera de Development."));
 builder.Services.AddDbContext<ChatDbContext>(opt =>
     opt.UseNpgsql(chatConn, o => o.UseVector()).UseSnakeCaseNamingConvention());
 
@@ -41,6 +43,8 @@ builder.Services.AddHttpClient("OpenAI", c =>
 var allowedOrigins = (builder.Configuration["Chat:AllowedOrigins"]
         ?? Environment.GetEnvironmentVariable("CHAT__ALLOWED_ORIGINS") ?? "")
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+if (!builder.Environment.IsDevelopment() && allowedOrigins.Length == 0)
+    throw new InvalidOperationException("CHAT__ALLOWED_ORIGINS es obligatorio fuera de Development (CORS quedaria sin origenes).");
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ChatbotPublic", p =>
@@ -61,7 +65,13 @@ builder.Services.AddCors(options =>
 
 // ── JWT bearer (mismo secreto compartido que el Main API) + access_token por query para /hubs ──
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "";
-if (jwtSecret.Length < 32) jwtSecret = jwtSecret.PadRight(32, '0'); // fallback dev (el env real lo provee)
+if (jwtSecret.Length < 32)
+{
+    if (builder.Environment.IsDevelopment())
+        jwtSecret = jwtSecret.PadRight(32, '0'); // solo dev; en prod el secreto real (>=32) lo provee el env
+    else
+        throw new InvalidOperationException("Jwt:Secret debe tener al menos 32 caracteres fuera de Development (evita forja de tokens).");
+}
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
@@ -118,6 +128,7 @@ builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<AgentService>();
 builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.BotResumeWorker>();
 builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.KbSeeder>();
+builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.DataRetentionWorker>();
 
 builder.Services.AddHealthChecks().AddDbContextCheck<ChatDbContext>();
 builder.Services.AddEndpointsApiExplorer();
@@ -136,9 +147,12 @@ if (!string.Equals(Environment.GetEnvironmentVariable("RUN_MIGRATIONS"), "false"
     catch (Exception ex)
     {
         Log.Error(ex, "No se pudo aplicar la migracion de handy_chat al arrancar");
+        if (!app.Environment.IsDevelopment()) throw; // prod: fail-fast, no arrancar con esquema stale
     }
 }
 
+// Detras de un proxy/PaaS (Railway) configurar KnownProxies/KnownNetworks o la red del
+// proveedor para que el rate-limit particione por la IP real del cliente (X-Forwarded-For).
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto

@@ -28,8 +28,14 @@ public class RecaptchaVerifier
     public async Task<bool> VerifyAsync(string? token, string expectedAction, CancellationToken ct = default)
     {
         if (_env.IsDevelopment()) return true; // dev: no se exige captcha (el widget aun no lo envia)
+        // Enforcement OPT-IN: hasta que el widget genere tokens reCAPTCHA, activar con
+        // RECAPTCHA_ENABLED=true; de lo contrario no se exige (evita romper handoff/lead en prod).
+        var enabled = string.Equals(
+            _cfg["RECAPTCHA_ENABLED"] ?? Environment.GetEnvironmentVariable("RECAPTCHA_ENABLED"),
+            "true", StringComparison.OrdinalIgnoreCase);
+        if (!enabled) return true;
         var secret = _cfg["RECAPTCHA_SECRET_KEY"] ?? Environment.GetEnvironmentVariable("RECAPTCHA_SECRET_KEY");
-        if (string.IsNullOrWhiteSpace(secret)) return true; // no configurado => permitir
+        if (string.IsNullOrWhiteSpace(secret)) return true; // habilitado pero sin secreto => permitir (no romper)
         if (string.IsNullOrWhiteSpace(token)) return false;
 
         try

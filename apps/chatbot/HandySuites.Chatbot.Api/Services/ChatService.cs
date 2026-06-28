@@ -58,7 +58,8 @@ public class ChatService
         {
             conv.Mode = ConversationMode.Bot;
             conv.ModeExpiresAt = null;
-            if (conv.Status == ConversationStatus.Active) conv.Status = ConversationStatus.Bot;
+            // Normaliza el estado: cualquier no-cerrada vuelve a bot (evita Waiting+Mode=Bot incoherente).
+            if (conv.Status != ConversationStatus.Closed) conv.Status = ConversationStatus.Bot;
             _reg.Publish(conv.Id, new VisitorEvent("system", "El asistente retoma la conversacion."));
             await _hub.Clients.Group("agents").SendAsync("ConversationResumed", new { conversationId = conv.Id }, ct);
         }
@@ -164,6 +165,10 @@ public class ChatService
     {
         var now = DateTime.UtcNow;
         conv.Status = ConversationStatus.Waiting;
+        // Libera el lock human: si un agente estaba activo y el visitante re-solicita asesor,
+        // no dejar Waiting+Mode=Human (estado zombie que silencia al bot sin agente asignado).
+        conv.Mode = ConversationMode.Bot;
+        conv.ModeExpiresAt = null;
         conv.ResolvedByBot = false;
         conv.ActualizadoEn = now;
 
