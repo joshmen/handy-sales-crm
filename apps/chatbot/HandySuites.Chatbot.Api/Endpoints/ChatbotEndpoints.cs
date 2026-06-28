@@ -27,7 +27,7 @@ public static class ChatbotEndpoints
         })).WithName("Health");
 
         MapPublic(app);
-        MapAgentStubs(app);
+        MapAgent(app);
         MapInternal(app);
     }
 
@@ -147,19 +147,44 @@ public static class ChatbotEndpoints
         });
     }
 
-    // ── AGENT (consola SA, JWT SUPER_ADMIN) — Fase 1c ──
-    private static void MapAgentStubs(IEndpointRouteBuilder app)
+    // ── AGENT (consola SA, JWT SUPER_ADMIN) ──
+    private static void MapAgent(IEndpointRouteBuilder app)
     {
         var agent = app.MapGroup("/agent")
             .RequireAuthorization(p => p.RequireRole("SUPER_ADMIN"))
             .RequireCors("ChatbotAgent");
-        agent.MapGet("/conversations", () => Results.Problem(statusCode: 501, title: "Fase 1c: lista bandeja + KPIs"));
-        agent.MapGet("/conversations/{id:int}", (int id) => Results.Problem(statusCode: 501, title: "Fase 1c: hilo + lead"));
-        agent.MapPost("/conversations/{id:int}/take", (int id) => Results.Problem(statusCode: 501, title: "Fase 1c: tomar"));
-        agent.MapPost("/conversations/{id:int}/messages", (int id) => Results.Problem(statusCode: 501, title: "Fase 1c: responder"));
-        agent.MapPost("/conversations/{id:int}/close", (int id) => Results.Problem(statusCode: 501, title: "Fase 1c: cerrar"));
-        agent.MapGet("/badges", () => Results.Problem(statusCode: 501, title: "Fase 1c: conteo waiting"));
+
+        agent.MapGet("/conversations", async (string? tab, AgentService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListAsync(tab, ct)));
+
+        agent.MapGet("/conversations/{id:int}", async (int id, AgentService svc, CancellationToken ct) =>
+            await svc.GetThreadAsync(id, ct) is { } thread ? Results.Ok(thread) : Results.NotFound());
+
+        agent.MapPost("/conversations/{id:int}/take", async (int id, AgentService svc, HttpContext ctx, CancellationToken ct) =>
+            await svc.TakeAsync(id, AgentId(ctx), ct) is { } thread ? Results.Ok(thread) : Results.NotFound());
+
+        agent.MapPost("/conversations/{id:int}/messages", async (
+            int id, AgentSendRequest? body, AgentService svc, HttpContext ctx, CancellationToken ct) =>
+        {
+            if (body is null || string.IsNullOrWhiteSpace(body.Message))
+                return Results.BadRequest(new { error = "message requerido" });
+            return await svc.SendAsync(id, AgentId(ctx), body.Message, ct)
+                ? Results.Ok(new { status = "sent" })
+                : Results.Conflict(new { error = "conversacion no disponible" });
+        });
+
+        agent.MapPost("/conversations/{id:int}/close", async (int id, AgentService svc, HttpContext ctx, CancellationToken ct) =>
+            await svc.CloseAsync(id, AgentId(ctx), ct) ? Results.Ok(new { status = "closed" }) : Results.NotFound());
+
+        agent.MapGet("/badges", async (AgentService svc, CancellationToken ct) =>
+            Results.Ok(new BadgesResponse(await svc.WaitingCountAsync(ct))));
     }
+
+    private static string AgentId(HttpContext ctx)
+        => ctx.User.FindFirst("sub")?.Value
+           ?? ctx.User.FindFirst("nameid")?.Value
+           ?? ctx.User.Identity?.Name
+           ?? "agent";
 
     // ── INTERNAL (carga de KB, api key en tiempo constante) ──
     private static void MapInternal(IEndpointRouteBuilder app)

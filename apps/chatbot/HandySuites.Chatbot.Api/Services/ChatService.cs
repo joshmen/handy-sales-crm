@@ -26,17 +26,19 @@ public class ChatService
     private readonly OpenAiClient _ai;
     private readonly ConversationStreamRegistry _reg;
     private readonly IHubContext<InboxHub> _hub;
+    private readonly AgentNotifier _notifier;
     private readonly IConfiguration _cfg;
     private readonly ILogger<ChatService> _log;
 
     public ChatService(
         ChatDbContext db, OpenAiClient ai, ConversationStreamRegistry reg,
-        IHubContext<InboxHub> hub, IConfiguration cfg, ILogger<ChatService> log)
+        IHubContext<InboxHub> hub, AgentNotifier notifier, IConfiguration cfg, ILogger<ChatService> log)
     {
         _db = db;
         _ai = ai;
         _reg = reg;
         _hub = hub;
+        _notifier = notifier;
         _cfg = cfg;
         _log = log;
     }
@@ -175,7 +177,7 @@ public class ChatService
         _reg.Publish(conv.Id, new VisitorEvent("system", "Te estamos pasando con un asesor. En breve te atienden."));
         await _hub.Clients.Group("agents")
             .SendAsync("InboxWaiting", new { conversationId = conv.Id, publicId = conv.PublicId, at = now }, ct);
-        // Notificacion por SendGrid al asesor: Fase 1c.
+        await _notifier.NotifyHandoffAsync(conv, ct);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

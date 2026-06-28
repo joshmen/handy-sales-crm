@@ -107,11 +107,14 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddSignalR();
 
-// ── Servicios del chatbot (RAG + KB + canal SSE del visitante) ──
+// ── Servicios del chatbot (RAG + KB + canal SSE del visitante + bandeja del agente) ──
 builder.Services.AddSingleton<ConversationStreamRegistry>();
 builder.Services.AddScoped<OpenAiClient>();
 builder.Services.AddScoped<KbIngestService>();
+builder.Services.AddScoped<AgentNotifier>();
 builder.Services.AddScoped<ChatService>();
+builder.Services.AddScoped<AgentService>();
+builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.BotResumeWorker>();
 
 builder.Services.AddHealthChecks().AddDbContextCheck<ChatDbContext>();
 builder.Services.AddEndpointsApiExplorer();
