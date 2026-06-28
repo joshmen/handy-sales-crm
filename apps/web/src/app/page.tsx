@@ -1,7 +1,11 @@
 import { Metadata } from 'next';
+import Script from 'next/script';
 import { Figtree } from 'next/font/google';
 import HandyLanding from '@/components/landing/HandyLanding';
 import './landing.css';
+
+// Origen del widget "Preguntale a Handy" (app propia). En prod: dominio Vercel del widget.
+const WIDGET_URL = process.env.NEXT_PUBLIC_WIDGET_URL || 'http://localhost:1084';
 
 const figtree = Figtree({
   subsets: ['latin'],
@@ -44,6 +48,8 @@ export default function LandingPage() {
     <main id="main-content" tabIndex={-1} className={figtree.variable}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <HandyLanding />
+      {/* Widget del bot: loader aislado por iframe, carga diferida (sin regresion de CWV). */}
+      <Script src={`${WIDGET_URL}/embed.js`} strategy="lazyOnload" />
     </main>
   );
 }

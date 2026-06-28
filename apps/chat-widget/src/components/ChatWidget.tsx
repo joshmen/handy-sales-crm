@@ -23,7 +23,7 @@ interface Msg {
 let _seq = 0;
 const nextId = () => `m${++_seq}`;
 
-export function ChatWidget() {
+export function ChatWidget({ embed = false }: { embed?: boolean } = {}) {
   const [open, setOpen] = useState(false);
   const [publicId, setPublicId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -32,6 +32,13 @@ export function ChatWidget() {
   const [agentJoined, setAgentJoined] = useState(false);
   const subRef = useRef<ReceiveSubscription | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+
+  // Modo embed (iframe): avisa al loader del padre para redimensionar el iframe
+  // segun abierto/cerrado. Solo se manda el booleano (sin datos sensibles).
+  useEffect(() => {
+    if (!embed || typeof window === 'undefined' || !window.parent) return;
+    window.parent.postMessage({ source: 'handysuites-widget', open }, '*');
+  }, [open, embed]);
 
   // Inicia la conversacion al abrir por primera vez.
   useEffect(() => {
