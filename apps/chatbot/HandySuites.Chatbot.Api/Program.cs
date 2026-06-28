@@ -115,6 +115,7 @@ builder.Services.AddScoped<AgentNotifier>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<AgentService>();
 builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.BotResumeWorker>();
+builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.KbSeeder>();
 
 builder.Services.AddHealthChecks().AddDbContextCheck<ChatDbContext>();
 builder.Services.AddEndpointsApiExplorer();
