@@ -1,0 +1,2 @@
+# Cache incremental de TypeScript (no versionar)
+*.tsbuildinfo
