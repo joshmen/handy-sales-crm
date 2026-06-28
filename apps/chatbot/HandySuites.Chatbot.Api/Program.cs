@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using HandySuites.Chatbot.Api.Data;
 using HandySuites.Chatbot.Api.Endpoints;
 using HandySuites.Chatbot.Api.Hubs;
+using HandySuites.Chatbot.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -105,6 +106,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddSignalR();
+
+// ── Servicios del chatbot (RAG + KB + canal SSE del visitante) ──
+builder.Services.AddSingleton<ConversationStreamRegistry>();
+builder.Services.AddScoped<OpenAiClient>();
+builder.Services.AddScoped<KbIngestService>();
+builder.Services.AddScoped<ChatService>();
+
 builder.Services.AddHealthChecks().AddDbContextCheck<ChatDbContext>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
