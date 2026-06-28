@@ -84,8 +84,12 @@ public class ChatService
             yield break;
         }
 
+        // PII: el LLM (moderacion, embeddings, chat, historial) NUNCA recibe PII cruda.
+        // El mensaje original ya quedo persistido arriba para que el asesor lo vea.
+        var safeMessage = PiiRedactor.Redact(message);
+
         // MODO BOT — moderacion de entrada (bloquea ANTES de generar).
-        if (await _ai.IsFlaggedAsync(message, ct))
+        if (await _ai.IsFlaggedAsync(safeMessage, ct))
         {
             const string neutral = "Lo siento, no puedo ayudarte con eso. Puedo responder dudas sobre Handy Suites, sus funciones y precios.";
             _db.Messages.Add(new ChatMessage
@@ -99,7 +103,7 @@ public class ChatService
         }
 
         // RAG: recuperar contexto.
-        var hits = await SearchKbAsync(message, ct);
+        var hits = await SearchKbAsync(safeMessage, ct);
         var topScore = hits.Count > 0 ? hits[0].Score : 0.0;
         var handoff = hits.Count == 0 || topScore < HandoffThreshold;
 
@@ -124,6 +128,9 @@ public class ChatService
             answer = "Prefiero no responder eso. Puedo ayudarte con dudas sobre Handy Suites o pasarte con un asesor.";
             handoff = true;
         }
+
+        // Redaccion de PII en la SALIDA (el bot nunca emite/persiste correo/telefono/RFC/etc.).
+        answer = PiiRedactor.Redact(answer);
 
         // Emitir la respuesta ya moderada en trozos (efecto de escritura).
         foreach (var part in ChunkForTyping(answer))
@@ -274,8 +281,9 @@ public class ChatService
             .ToListAsync(ct);
 
         recent.Reverse();
+        // Redacta PII del historial antes de mandarlo al modelo.
         return recent
-            .Select(m => new ChatTurn(m.Role == MessageRole.Visitor ? "user" : "assistant", m.Content))
+            .Select(m => new ChatTurn(m.Role == MessageRole.Visitor ? "user" : "assistant", PiiRedactor.Redact(m.Content)))
             .ToList();
     }
 

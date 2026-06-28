@@ -125,23 +125,27 @@ public static class ChatbotEndpoints
             return Results.Empty;
         });
 
-        // Handoff a un asesor humano.
+        // Handoff a un asesor humano (anti-bot: reCAPTCHA v3).
         pub.MapPost("/{publicId:guid}/handoff", async (
-            Guid publicId, HandoffRequest? body, ChatService chat, ChatDbContext db, CancellationToken ct) =>
+            Guid publicId, HandoffRequest? body, ChatService chat, RecaptchaVerifier recaptcha, ChatDbContext db, CancellationToken ct) =>
         {
             var conv = await db.Conversations.FirstOrDefaultAsync(c => c.PublicId == publicId, ct);
             if (conv is null) return Results.NotFound();
+            if (!await recaptcha.VerifyAsync(body?.RecaptchaToken, "chatbot_handoff", ct))
+                return Results.Json(new { error = "verificacion fallida" }, statusCode: 403);
             await chat.RequestHandoffAsync(conv, body ?? new HandoffRequest(null, null), ct);
             return Results.Ok(new { status = "waiting" });
         });
 
-        // Captura progresiva de lead.
+        // Captura progresiva de lead (anti-bot: reCAPTCHA v3).
         pub.MapPost("/{publicId:guid}/lead", async (
-            Guid publicId, LeadRequest? body, ChatService chat, ChatDbContext db, CancellationToken ct) =>
+            Guid publicId, LeadRequest? body, ChatService chat, RecaptchaVerifier recaptcha, ChatDbContext db, CancellationToken ct) =>
         {
             if (body is null) return Results.BadRequest(new { error = "datos requeridos" });
             var conv = await db.Conversations.FirstOrDefaultAsync(c => c.PublicId == publicId, ct);
             if (conv is null) return Results.NotFound();
+            if (!await recaptcha.VerifyAsync(body.RecaptchaToken, "chatbot_lead", ct))
+                return Results.Json(new { error = "verificacion fallida" }, statusCode: 403);
             await chat.CaptureLeadAsync(conv, body, ct);
             return Results.Ok(new { status = "ok" });
         });

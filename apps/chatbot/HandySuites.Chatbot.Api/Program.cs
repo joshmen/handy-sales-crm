@@ -109,9 +109,11 @@ builder.Services.AddSignalR();
 
 // ── Servicios del chatbot (RAG + KB + canal SSE del visitante + bandeja del agente) ──
 builder.Services.AddSingleton<ConversationStreamRegistry>();
+builder.Services.AddHttpClient(); // cliente por defecto (reCAPTCHA verify)
 builder.Services.AddScoped<OpenAiClient>();
 builder.Services.AddScoped<KbIngestService>();
 builder.Services.AddScoped<AgentNotifier>();
+builder.Services.AddScoped<RecaptchaVerifier>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<AgentService>();
 builder.Services.AddHostedService<HandySuites.Chatbot.Api.Workers.BotResumeWorker>();
