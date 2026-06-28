@@ -55,6 +55,7 @@ import {
   RefreshCw as SbSubscriptions,
   Flag as SbModules,
   Gauge as SbStatus,
+  MessagesSquare as SbBotInbox,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -64,6 +65,7 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
 import { consoleAdminService } from '@/services/api/consoleAdmin';
+import { inboxAdminService } from '@/services/api/inboxAdmin';
 
 interface SidebarItem {
   id: string;
@@ -457,6 +459,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/global-users',
   },
   {
+    id: 'sa-bot-inbox',
+    label: 'Bandeja del bot',
+    icon: SbBotInbox,
+    href: '/admin/inbox',
+  },
+  {
     id: 'sa-support',
     label: 'Soporte',
     icon: SbHelp,
@@ -655,9 +663,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     return () => { alive = false; };
   }, [isSuperAdminDirect]);
 
+  // Badge de la Bandeja del bot: conversaciones esperando agente (servicio del chatbot :1054).
+  const [inboxWaiting, setInboxWaiting] = useState(0);
+  useEffect(() => {
+    if (!isSuperAdminDirect) { setInboxWaiting(0); return; }
+    let alive = true;
+    const load = () => inboxAdminService.badges()
+      .then(b => { if (alive) setInboxWaiting(b.inboxWaiting); })
+      .catch(() => { /* sin badge si falla */ });
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, [isSuperAdminDirect]);
+
   // Resuelve el badge (conteo) de un item del nav: onboarding o consola SA.
   const badgeForItem = (item: SidebarItem): SidebarItem => {
     if (item.id === 'getting-started' && onboardingBadge) return { ...item, badge: onboardingBadge };
+    if (item.id === 'sa-bot-inbox' && inboxWaiting > 0) return { ...item, badge: inboxWaiting };
     if (consoleBadges) {
       const c = item.id === 'sa-support' ? consoleBadges.support
         : item.id === 'sa-dunning' ? consoleBadges.dunning
