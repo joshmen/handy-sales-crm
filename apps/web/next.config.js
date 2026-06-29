@@ -51,6 +51,11 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   },
 });
 
+// Origen del widget "Preguntale a Handy" (embed.js + iframe). Se permite en el
+// CSP (script-src + frame-src) para que la landing pueda cargar el bot. Deriva
+// de NEXT_PUBLIC_WIDGET_URL (staging/prod) con fallback a localhost en dev.
+const WIDGET_ORIGIN = process.env.NEXT_PUBLIC_WIDGET_URL || "http://localhost:1084";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Optimizaciones de performance
@@ -137,14 +142,14 @@ const nextConfig = {
             // dev — esa parte funciona OK y no causa el bloqueo.
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'" + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "") + " https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com",
+              "script-src 'self' 'unsafe-inline'" + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "") + " https://accounts.google.com https://www.google.com https://www.gstatic.com https://js.stripe.com https://maps.googleapis.com https://maps.gstatic.com " + WIDGET_ORIGIN,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com https://*.tile.openstreetmap.org",
               "font-src 'self' data: https://fonts.gstatic.com",
               process.env.NODE_ENV === "development"
                 ? "connect-src 'self' http://localhost:* https://*.railway.app https://accounts.google.com https://www.google.com https://www.gstatic.com https://res.cloudinary.com https://maps.googleapis.com https://maps.gstatic.com wss: ws:"
                 : "connect-src 'self' https://*.railway.app https://accounts.google.com https://www.google.com https://www.gstatic.com https://res.cloudinary.com https://maps.googleapis.com https://maps.gstatic.com wss://*.railway.app wss://handysuites.com",
-              "frame-src 'self' https://accounts.google.com https://www.google.com https://js.stripe.com https://*.stripe.com",
+              "frame-src 'self' https://accounts.google.com https://www.google.com https://js.stripe.com https://*.stripe.com " + WIDGET_ORIGIN,
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
