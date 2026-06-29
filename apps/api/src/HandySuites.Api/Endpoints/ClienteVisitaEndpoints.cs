@@ -54,11 +54,20 @@ public static class ClienteVisitaEndpoints
             [AsParameters] ClienteVisitaFiltroDto filtro,
             [FromServices] ClienteVisitaService servicio) =>
         {
-            var resultado = await servicio.ObtenerPorFiltroAsync(filtro);
-            return Results.Ok(resultado);
+            // KPIs (resumen) calculados sobre el set filtrado COMPLETO (todo el rango),
+            // no la página, y devueltos en la misma respuesta del list.
+            var (lista, resumen) = await servicio.ObtenerPorFiltroConResumenAsync(filtro);
+            return Results.Ok(new
+            {
+                lista.Items,
+                lista.TotalItems,
+                lista.Pagina,
+                lista.TamanoPagina,
+                resumen
+            });
         })
         .WithSummary("Listar visitas con filtros")
-        .WithDescription("Obtiene lista paginada de visitas. Filtros: cliente, usuario, fecha, resultado.")
+        .WithDescription("Obtiene lista paginada de visitas + resumen (KPIs del rango filtrado). Filtros: cliente, usuario, fecha, resultado.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 

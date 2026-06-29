@@ -10,6 +10,11 @@ public interface IClienteVisitaRepository
     Task<int> CrearAsync(ClienteVisitaCreateDto dto, int usuarioId, int tenantId);
     Task<ClienteVisitaDto?> ObtenerPorIdAsync(int id, int tenantId);
     Task<PaginatedResult<ClienteVisitaListaDto>> ObtenerPorFiltroAsync(ClienteVisitaFiltroDto filtro, int tenantId);
+    /// <summary>
+    /// KPIs (Total/Completadas/ConVenta/SinVenta/DuracionPromedio) sobre el MISMO set
+    /// filtrado que <see cref="ObtenerPorFiltroAsync"/>, agregados en SQL (sin paginar).
+    /// </summary>
+    Task<VisitaResumenDto> ObtenerResumenPorFiltroAsync(ClienteVisitaFiltroDto filtro, int tenantId);
     Task<bool> EliminarAsync(int id, int tenantId);
 
     // Check-in / Check-out

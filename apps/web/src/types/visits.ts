@@ -137,12 +137,24 @@ export interface VisitaResumenDiarioDto {
   tasaConversion: number;
 }
 
+// Resumen (KPIs) del rango filtrado del list GET /visitas — espejo de VisitaResumenDto.
+// Calculado en backend sobre TODO el set filtrado (no la página).
+export interface VisitaResumen {
+  total: number;
+  completadas: number;
+  conVenta: number;
+  sinVenta: number;
+  duracionPromedio: number;
+}
+
 // Respuesta paginada
 export interface VisitasPaginatedResult {
   items: ClienteVisitaListaDto[];
   totalItems: number;
   pagina: number;
   tamanoPagina: number;
+  /** KPIs del rango filtrado completo (no la página). Presente desde el list con resumen. */
+  resumen?: VisitaResumen;
 }
 
 // Tipo para uso en componentes (mapeado desde API)

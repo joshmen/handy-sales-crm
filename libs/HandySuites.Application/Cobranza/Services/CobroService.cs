@@ -55,6 +55,23 @@ public class CobroService
         return _repo.ObtenerCobrosAsync(_tenant.TenantId, clienteId, desde, hasta, usuarioId);
     }
 
+    /// <summary>
+    /// Agregado del periodo para el list GET /cobros. Aplica los MISMOS filtros
+    /// y la MISMA regla RBAC que ObtenerCobrosAsync (vendedor solo ve sus cobros)
+    /// para que `resumen` coincida exactamente con el set que `items` muestra.
+    /// </summary>
+    public Task<CobroPeriodoResumenDto> ObtenerResumenPeriodoAsync(int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
+    {
+        // RBAC: Vendedor solo ve sus cobros (mismo guard que ObtenerCobrosAsync).
+        if (!_tenant.IsAdminOrAbove && !_tenant.IsSuperAdmin)
+        {
+            if (int.TryParse(_tenant.UserId, out var vendedorId))
+                usuarioId = vendedorId;
+        }
+
+        return _repo.ObtenerResumenPeriodoAsync(_tenant.TenantId, clienteId, desde, hasta, usuarioId);
+    }
+
     public Task<CobroDto?> ObtenerPorIdAsync(int id)
         => _repo.ObtenerPorIdAsync(id, _tenant.TenantId);
 

@@ -381,7 +381,7 @@ public class MobilePedidoEndpointsTests
         var service = BuildServiceAsAdmin();
         var filtro = new PedidoFiltroDto { Pagina = 1, TamanoPagina = 20 };
         _repo.Setup(r => r.ObtenerPorFiltroAsync(filtro, TenantId, null))
-            .ReturnsAsync(new PaginatedResult<PedidoListaDto>
+            .ReturnsAsync(new PedidoListaResultDto
             {
                 Items = new List<PedidoListaDto>(),
                 TotalItems = 0

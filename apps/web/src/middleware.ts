@@ -32,6 +32,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/roles': [UserRole.SUPER_ADMIN],
   '/automations': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/cobranza': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
+  '/gastos': [UserRole.ADMIN, UserRole.SUPER_ADMIN], // gastos contables (P&L/IVA/DIOT): solo admin, igual que el backend (RequireRole ADMIN/SUPER_ADMIN)
   '/inventory': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN, UserRole.ALMACENISTA],
   '/price-lists': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/discounts': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
@@ -39,6 +40,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/subscription': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/zones': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/client-categories': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/clients/reorder-opportunities': [UserRole.ADMIN, UserRole.SUPER_ADMIN], // feature de automatizaciones (pedido-recurrente): solo admin, igual que /automations
   '/product-categories': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 };
 
@@ -127,6 +129,7 @@ export default auth((req) => {
       pathname.startsWith('/global-settings') ||
       pathname.startsWith('/activity-logs') || // SA puede ver logs sin impersonar
       pathname === '/dashboard' || // dashboard redirige a system-dashboard via page logic
+      pathname === '/notifications' || // SA tiene la campanita en el header (sus notifs + mensajes de la app)
       pathname === '/profile'; // SA necesita acceder a su perfil
 
     if (!isSuperAdminRoute) {

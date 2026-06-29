@@ -24,15 +24,23 @@ namespace HandySuites.Tests.Application.Cobros
         }
 
         [Fact]
-        public async Task GetCobros_DeberiaRetornarLista_CuandoAutenticado()
+        public async Task GetCobros_DeberiaRetornarListaConResumen_CuandoAutenticado()
         {
             _client.DefaultRequestHeaders.Add("Authorization", "Bearer fake-jwt-token");
             var response = await _client.GetAsync("/cobros");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
+            // El list ahora responde { items, resumen } (agregado del periodo).
             var content = await response.Content.ReadAsStringAsync();
             var result = JsonSerializer.Deserialize<JsonElement>(content);
-            result.ValueKind.Should().Be(JsonValueKind.Array);
+            result.ValueKind.Should().Be(JsonValueKind.Object);
+
+            result.TryGetProperty("items", out var items).Should().BeTrue();
+            items.ValueKind.Should().Be(JsonValueKind.Array);
+
+            result.TryGetProperty("resumen", out var resumen).Should().BeTrue();
+            resumen.TryGetProperty("cobradoTotal", out _).Should().BeTrue();
+            resumen.TryGetProperty("count", out _).Should().BeTrue();
         }
 
         [Fact]

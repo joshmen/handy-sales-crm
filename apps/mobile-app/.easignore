@@ -1,6 +1,16 @@
 # EAS Build ignore file
-# NOTE: This overrides .gitignore for EAS uploads
-# android/ and ios/ must NOT be ignored here (EAS needs them to build)
+# NOTE: This overrides .gitignore for EAS uploads.
+#
+# Workflow MANAGED: android/ y ios/ los genera `expo prebuild`, por lo que DEBEN
+# ignorarse aqui. Asi EAS prebuildea FRESCO desde app.config.ts/app.json en cada
+# build, manteniendo correctos `version`/`versionCode` (app.json es la fuente de
+# verdad) y la Google Maps API key inyectada por app.config.ts.
+#
+# Incidente 2026-06-26: un android/ stray (de un `expo prebuild` local del 17-jun)
+# se subia con requireCommit:false y EAS, al detectarlo, OMITIA el prebuild y usaba
+# el nativo congelado -> APK salia con versionCode 12 viejo y sin la key fresca.
+# Ignorar android/ + ios/ lo evita de raiz. (Mismo class de bug que el "incidente
+# Rodrigo" documentado en app.config.ts.)
 
 # dependencies
 node_modules/
@@ -9,6 +19,10 @@ node_modules/
 .expo/
 dist/
 web-build/
+
+# Native projects (EAS los regenera con prebuild; nunca subir copias locales stale)
+android/
+ios/
 
 # Metro
 .metro-health-check*
@@ -30,11 +44,6 @@ firebase-service-account-key.json
 
 # typescript
 *.tsbuildinfo
-
-# Gradle build cache (EAS builds from scratch)
-android/build/
-android/.gradle/
-android/app/build/
 
 # Maestro tests (not needed for build)
 .maestro/

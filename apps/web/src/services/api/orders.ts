@@ -22,11 +22,22 @@ export function estadoIntToStatus(estado: number | OrderStatus): OrderStatus {
 
 // ============ TIPOS ============
 
+// Agregado server-side calculado sobre TODO el rango filtrado (no la pagina).
+// Backend: PedidoResumenDto. Alimenta los KPIs de la pantalla de Pedidos.
+export interface PedidoResumen {
+  totalVendido: number;
+  ticketPromedio: number;
+  confirmados: number;
+  borradores: number;
+  totalPedidos: number;
+}
+
 export interface OrdersListResponse {
   items: OrderListItem[];
   totalCount: number;
   page: number;
   pageSize: number;
+  resumen?: PedidoResumen;
 }
 
 export interface OrderListItem {
@@ -149,7 +160,13 @@ class OrderService {
         }
       });
 
-      const response = await api.get<{ items: OrderListItem[]; totalItems: number; pagina: number; tamanoPagina: number }>(
+      const response = await api.get<{
+        items: OrderListItem[];
+        totalItems: number;
+        pagina: number;
+        tamanoPagina: number;
+        resumen?: PedidoResumen;
+      }>(
         `${this.basePath}?${queryParams.toString()}`,
         { signal }
       );
@@ -160,6 +177,7 @@ class OrderService {
         totalCount: data.totalItems,
         page: data.pagina,
         pageSize: data.tamanoPagina,
+        resumen: data.resumen,
       };
     } catch (error) {
       throw handleApiError(error);

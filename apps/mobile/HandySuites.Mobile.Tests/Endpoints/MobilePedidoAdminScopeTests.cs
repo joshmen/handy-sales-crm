@@ -214,7 +214,7 @@ public class MobilePedidoAdminScopeTests
         // automatico. Solo VENDEDOR autofiltra a sus pedidos; ADMIN ve tenant-wide.
         var filtro = new PedidoFiltroDto { Pagina = 1, TamanoPagina = 20 };
         _repo.Setup(r => r.ObtenerPorFiltroAsync(filtro, TenantId, null))
-            .ReturnsAsync(new PaginatedResult<PedidoListaDto>
+            .ReturnsAsync(new PedidoListaResultDto
             {
                 Items = new List<PedidoListaDto>(),
                 TotalItems = 0
@@ -240,7 +240,7 @@ public class MobilePedidoAdminScopeTests
             UsuarioId = OtroVendedorId
         };
         _repo.Setup(r => r.ObtenerPorFiltroAsync(filtro, TenantId, null))
-            .ReturnsAsync(new PaginatedResult<PedidoListaDto>
+            .ReturnsAsync(new PedidoListaResultDto
             {
                 Items = new List<PedidoListaDto>(),
                 TotalItems = 0
@@ -306,7 +306,7 @@ public class MobilePedidoAdminScopeTests
 
         var filtro = new PedidoFiltroDto { Pagina = 1, TamanoPagina = 20 };
         _repo.Setup(r => r.ObtenerPorFiltroAsync(filtro, TenantId, null))
-            .ReturnsAsync(new PaginatedResult<PedidoListaDto>
+            .ReturnsAsync(new PedidoListaResultDto
             {
                 Items = new List<PedidoListaDto>(),
                 TotalItems = 0
@@ -331,7 +331,7 @@ public class MobilePedidoAdminScopeTests
 
         var filtro = new PedidoFiltroDto { Pagina = 1, TamanoPagina = 20 };
         _repo.Setup(r => r.ObtenerPorFiltroAsync(filtro, TenantId, null))
-            .ReturnsAsync(new PaginatedResult<PedidoListaDto>
+            .ReturnsAsync(new PedidoListaResultDto
             {
                 Items = new List<PedidoListaDto>(),
                 TotalItems = 0

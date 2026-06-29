@@ -14,6 +14,8 @@ import {
   CheckCheck,
   Trash2,
   Check,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -21,7 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useFormatters } from '@/hooks/useFormatters';
 import { notificationService, NotificationDto } from '@/services/api/notificationService';
-import { toast } from '@/hooks/useToast';
+import { toast, useToastStore, type ToastType } from '@/hooks/useToast';
 
 type NotificationType = 'order' | 'alert' | 'route' | 'inventory' | 'general';
 
@@ -54,6 +56,22 @@ const statusColors: Record<string, string> = {
 
 const PAGE_SIZE = 10;
 
+// Iconos + tonos para el historial de toasts (vista "Mensajes de la app").
+const TOAST_ICON: Record<ToastType, React.ElementType> = {
+  success: CheckCircle2,
+  error: XCircle,
+  info: Info,
+  warning: AlertTriangle,
+  loading: Info,
+};
+const TOAST_TONE: Record<ToastType, string> = {
+  success: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+  error: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  info: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  warning: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  loading: 'bg-surface-3 text-muted-foreground',
+};
+
 export default function NotificationsPage() {
   const t = useTranslations('notifications');
   const tc = useTranslations('common');
@@ -83,6 +101,9 @@ export default function NotificationsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [view, setView] = useState<'system' | 'app'>('system');
+  const toastHistory = useToastStore(s => s.history);
+  const clearToastHistory = useToastStore(s => s.clearHistory);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -123,6 +144,16 @@ export default function NotificationsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filterType, filterUnread, searchTerm]);
+
+  // Hidratar el historial de toasts (por si se entra directo a /notifications).
+  useEffect(() => {
+    useToastStore.getState().hydrateHistory();
+  }, []);
+
+  // Al ver "Mensajes de la app", marcar como visto (apaga el badge de la campanita).
+  useEffect(() => {
+    if (view === 'app') useToastStore.getState().markHistorySeen();
+  }, [view, toastHistory.length]);
 
   const handleMarkAsRead = async (id: number) => {
     setActionLoading(id);
@@ -213,9 +244,20 @@ export default function NotificationsPage() {
         { label: t('breadcrumbNotifications') },
       ]}
       title={t('title')}
-      subtitle={unreadCount > 0 ? `${unreadCount} sin leer` : 'Estás al día'}
+      subtitle={
+        view === 'app'
+          ? (toastHistory.length > 0 ? `${toastHistory.length} mensajes` : 'Sin mensajes')
+          : unreadCount > 0 ? `${unreadCount} sin leer` : 'Estás al día'
+      }
       actions={
-        unreadCount > 0 ? (
+        view === 'app' ? (
+          toastHistory.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={clearToastHistory}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Limpiar
+            </Button>
+          ) : undefined
+        ) : unreadCount > 0 ? (
           <Button
             variant="outline"
             size="sm"
@@ -228,6 +270,30 @@ export default function NotificationsPage() {
       }
     >
       <div className="space-y-5">
+        {/* Toggle: notificaciones del sistema vs mensajes (toasts) de la app */}
+        <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface-1 p-1">
+          {([
+            { value: 'system' as const, label: 'Del sistema' },
+            { value: 'app' as const, label: 'Mensajes de la app' },
+          ]).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setView(opt.value)}
+              aria-pressed={view === opt.value}
+              className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                view === opt.value
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {view === 'system' && (
+        <>
         {/* Filtros segmentados (tipo) + búsqueda + estado leído */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface-1 p-1" data-tour="notifications-filter-type">
@@ -432,6 +498,42 @@ export default function NotificationsPage() {
             </div>
           )}
         </div>
+        </>
+        )}
+
+        {view === 'app' && (
+          toastHistory.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 py-20">
+              <Bell className="w-16 h-16 text-muted-foreground/60 dark:text-foreground/70 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground/80 dark:text-muted-foreground/60 mb-2">No hay mensajes</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Aquí se guardan los avisos (toasts) que muestra la app, por si te perdiste alguno.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {toastHistory.map(h => {
+                const Icon = TOAST_ICON[h.type];
+                return (
+                  <div key={h.id} className="border border-border rounded-2xl p-5 shadow-sm bg-card flex gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${TOAST_TONE[h.type]}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-1">
+                        <h3 className="text-[15px] font-medium text-foreground">{h.title}</h3>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {formatRelativeTime(new Date(h.time).toISOString())}
+                        </span>
+                      </div>
+                      {h.desc ? <p className="text-[13px] text-foreground/70">{h.desc}</p> : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
       </div>
     </PageHeader>
   );

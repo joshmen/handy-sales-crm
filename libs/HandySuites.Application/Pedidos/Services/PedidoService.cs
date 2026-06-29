@@ -173,7 +173,7 @@ public class PedidoService
         return await _repository.ObtenerPorNumeroAsync(numeroPedido, _tenant.TenantId);
     }
 
-    public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro)
+    public async Task<PedidoListaResultDto> ObtenerPorFiltroAsync(PedidoFiltroDto filtro)
     {
         // Sanitizar paginación (evita 500 por offset negativo y overflow en totalPaginas).
         if ((filtro.Pagina ?? 1) < 1) filtro.Pagina = 1;

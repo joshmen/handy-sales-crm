@@ -137,3 +137,16 @@ public class CobroResumenDto
     public DateTime FechaCobro { get; set; }
     public string? Referencia { get; set; }
 }
+
+/// <summary>
+/// Agregado server-side del PERIODO para el list GET /cobros. Calcula
+/// CobradoTotal = SUM(Monto) y Count = COUNT sobre el SET FILTRADO COMPLETO
+/// (rango tz-correcto sobre FechaCobro + clienteId + usuarioId), no sobre la
+/// pagina. Espeja el patron de KPIs de GastosEndpoints. Distinto de
+/// ResumenCarteraDto (cartera = snapshot global point-in-time de saldos).
+/// </summary>
+public class CobroPeriodoResumenDto
+{
+    public decimal CobradoTotal { get; set; }
+    public int Count { get; set; }
+}

@@ -28,8 +28,6 @@ import {
   BarChart3,
   Activity,
   Keyboard,
-  Phone,
-  Mail,
   HelpCircle,
 } from 'lucide-react';
 import {
@@ -39,6 +37,7 @@ import {
   SYSTEM_SERVICES,
   SHORTCUTS,
 } from './_mock';
+import { SoporteTickets } from '@/components/ayuda/SoporteTickets';
 
 // Mapa de la clave de icono (mock) al componente Lucide.
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -226,33 +225,8 @@ export default function AyudaPage() {
             </ul>
           </div>
 
-          {/* Contacto a soporte */}
-          <div className={CARD}>
-            <h3 className="font-semibold text-foreground">¿Necesitas más ayuda?</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Nuestro equipo de soporte está listo para ayudarte.
-            </p>
-            <div className="mt-4 flex flex-col gap-2">
-              <Button
-                variant="wbOutline"
-                size="sm"
-                className="w-full"
-                onClick={() => toast.success(t('comingSoonCall'))}
-              >
-                <Phone size={15} className="mr-2" />
-                Llamar
-              </Button>
-              <Button
-                variant="wbPrimary"
-                size="sm"
-                className="w-full"
-                onClick={() => toast.success(t('comingSoonWrite'))}
-              >
-                <Mail size={15} className="mr-2" />
-                Escribir
-              </Button>
-            </div>
-          </div>
+          {/* Soporte: tickets reales (crear + mis tickets) */}
+          <SoporteTickets />
         </aside>
       </div>
     </PageHeader>
