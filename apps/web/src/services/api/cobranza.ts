@@ -134,12 +134,36 @@ export const METODO_PAGO_OPTIONS = [
 // API FUNCTIONS
 // ═══════════════════════════════════════════════════════
 
+/**
+ * 2026-06: agregado del PERIODO que el backend devuelve junto al list de cobros.
+ * CobradoTotal = SUM(monto) y count = COUNT sobre el set FILTRADO COMPLETO
+ * (rango tz-correcto sobre fechaCobro + clienteId + usuarioId), no la pagina.
+ * Distinto de ResumenCartera (cartera = snapshot global de saldos pendientes).
+ */
+export interface CobroPeriodoResumen {
+  cobradoTotal: number;
+  count: number;
+}
+
+/**
+ * El backend ahora responde `{ items, resumen }`. Para no romper los callers
+ * que tratan getCobros como un array (p.ej. cobranza/page.tsx hace
+ * setCobros(await getCobros(...))), retornamos el array de items con `resumen`
+ * adjunto como propiedad — sigue siendo asignable a Cobro[].
+ */
+export type CobrosResult = Cobro[] & { resumen?: CobroPeriodoResumen };
+
+interface CobrosListResponse {
+  items: Cobro[];
+  resumen?: CobroPeriodoResumen;
+}
+
 export async function getCobros(params?: {
   clienteId?: number;
   desde?: string;
   hasta?: string;
   usuarioId?: number;
-}): Promise<Cobro[]> {
+}): Promise<CobrosResult> {
   try {
     const searchParams = new URLSearchParams();
     if (params?.clienteId) searchParams.append('clienteId', String(params.clienteId));
@@ -147,8 +171,10 @@ export async function getCobros(params?: {
     if (params?.hasta) searchParams.append('hasta', params.hasta);
     if (params?.usuarioId) searchParams.append('usuarioId', String(params.usuarioId));
     const qs = searchParams.toString();
-    const res = await api.get<Cobro[]>(`/cobros${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await api.get<CobrosListResponse>(`/cobros${qs ? `?${qs}` : ''}`);
+    const items = (res.data?.items ?? []) as CobrosResult;
+    items.resumen = res.data?.resumen;
+    return items;
   } catch (error) {
     throw handleApiError(error);
   }

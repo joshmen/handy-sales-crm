@@ -194,7 +194,7 @@ public class PedidoServiceUnitTests
         var subs = new List<int> { 11, 12, 13 };
         _usuarioRepo.Setup(u => u.ObtenerSubordinadoIdsAsync(7, 1)).ReturnsAsync(subs);
 
-        var expected = new PaginatedResult<PedidoListaDto>
+        var expected = new PedidoListaResultDto
         {
             Items = new(), TotalItems = 0, Pagina = 1, TamanoPagina = 20
         };
@@ -224,7 +224,7 @@ public class PedidoServiceUnitTests
         _tenant.SetupGet(t => t.UserId).Returns("55");
         _tenant.SetupGet(t => t.Role).Returns("VENDEDOR");
 
-        var expected = new PaginatedResult<PedidoListaDto>
+        var expected = new PedidoListaResultDto
         {
             Items = new(), TotalItems = 0, Pagina = 1, TamanoPagina = 20
         };
@@ -246,7 +246,7 @@ public class PedidoServiceUnitTests
     public async Task ObtenerPorFiltroAsync_DeberiaSanitizarPaginacion_CuandoValoresInvalidos()
     {
         // Admin path (sin forzado de UsuarioId, sin lookup de subordinados).
-        var expected = new PaginatedResult<PedidoListaDto>
+        var expected = new PedidoListaResultDto
         {
             Items = new(), TotalItems = 0, Pagina = 1, TamanoPagina = 200
         };

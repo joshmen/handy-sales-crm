@@ -59,8 +59,8 @@ public static class PedidoEndpoints
             return Results.Ok(resultado);
         })
         .WithSummary("Listar pedidos con filtros")
-        .WithDescription("Obtiene lista paginada de pedidos. Permite filtrar por cliente, estado, fecha y texto de búsqueda.")
-        .Produces<PaginatedResult<PedidoListaDto>>(StatusCodes.Status200OK)
+        .WithDescription("Obtiene lista paginada de pedidos + resumen agregado (totalVendido, ticketPromedio, confirmados, borradores, totalPedidos) calculado sobre TODO el rango filtrado. Permite filtrar por cliente, estado, fecha y texto de búsqueda.")
+        .Produces<PedidoListaResultDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet("/{id:int}", async (

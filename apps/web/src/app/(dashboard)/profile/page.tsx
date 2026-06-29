@@ -10,6 +10,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from '@/hooks/useToast';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
 import { deviceSessionService, type DeviceSessionDto } from '@/services/api/deviceSessions';
 import { dashboardService, type ActivityLogEntry } from '@/services/dashboardService';
@@ -18,6 +19,8 @@ import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { SecurityTab } from '@/app/(dashboard)/settings/components/SecurityTab';
 import { NotificationsTab } from '@/app/(dashboard)/settings/components/NotificationsTab';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ImpersonationModal } from '@/components/impersonation';
+import { useLogout } from '@/hooks/useLogout';
 import Link from 'next/link';
 import {
   User,
@@ -27,9 +30,12 @@ import {
   Save,
   MapPin,
   Building,
+  Building2,
   Clock,
   Bell,
   ArrowRight,
+  Settings,
+  LogOut,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { getInitials } from '@/lib/utils';
@@ -59,6 +65,9 @@ export default function ProfilePage() {
   } = useProfile();
   const { unreadCount } = useNotifications();
   const unreadDisplay = unreadCount > 99 ? '99+' : String(unreadCount);
+  const router = useRouter();
+  const { logout, isLoggingOut } = useLogout();
+  const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
 
   const [devices, setDevices] = useState<DeviceSessionDto[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
@@ -242,6 +251,46 @@ export default function ProfilePage() {
     });
   };
 
+  // Acciones de cuenta (antes vivían en el menú del avatar del header; ahora el
+  // avatar navega aquí y estas acciones viven en el perfil).
+  const accountActions = (
+    <>
+      {(isSuperAdmin || isAdmin) && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push(isSuperAdmin ? '/global-settings' : '/settings')}
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          {isSuperAdmin ? tc('globalSettings') : tc('settings')}
+        </Button>
+      )}
+      {isSuperAdmin && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsImpersonationOpen(true)}
+        >
+          <Building2 className="h-4 w-4 mr-2" />
+          {tc('impersonateCompany')}
+        </Button>
+      )}
+      <Button
+        variant="wbDanger"
+        size="sm"
+        onClick={logout}
+        disabled={isLoggingOut}
+      >
+        {isLoggingOut ? (
+          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-r-transparent" />
+        ) : (
+          <LogOut className="h-4 w-4 mr-2" />
+        )}
+        {tc('signOut')}
+      </Button>
+    </>
+  );
+
   return (
     <PageHeader
       section="equipo"
@@ -252,6 +301,7 @@ export default function ProfilePage() {
       ]}
       title={t('title')}
       subtitle={t('subtitle')}
+      actions={accountActions}
     >
     <div className="space-y-6">
       {/* Profile Overview */}
@@ -635,6 +685,15 @@ export default function ProfilePage() {
         showSaveOption={false}
         isLoading={isUpdating}
       />
+
+      {/* Impersonar empresa (solo SUPER_ADMIN) — movido desde el menú del header */}
+      {isSuperAdmin && (
+        <ImpersonationModal
+          isOpen={isImpersonationOpen}
+          onClose={() => setIsImpersonationOpen(false)}
+          tenant={null}
+        />
+      )}
     </div>
     </PageHeader>
   );

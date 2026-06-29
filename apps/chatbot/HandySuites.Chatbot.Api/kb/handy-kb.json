@@ -1,0 +1,58 @@
+{
+  "documents": [
+    {
+      "slug": "precios-planes",
+      "title": "Planes y precios",
+      "category": "pricing",
+      "content": "Handy Suites tiene tres planes mensuales:\n\nPlan Gratis: 0 pesos al mes. Incluye hasta 2 usuarios, 50 productos y 20 clientes. Ideal para empezar y probar la plataforma. No incluye facturacion ni reportes avanzados.\n\nPlan Basico: 499 pesos al mes (o 4,990 pesos al ano, equivalente a unos dos meses gratis). Incluye hasta 5 usuarios, 500 productos, 100 clientes, reportes y un paquete de timbres CFDI para empezar a facturar.\n\nPlan Profesional: 999 pesos al mes (o 9,990 pesos al ano). Incluye hasta 20 usuarios, 5,000 productos, 500 clientes, reportes avanzados, 100 timbres CFDI al mes, asistente de inteligencia artificial, cobros en campo y soporte prioritario.\n\nTodos los planes se pagan en pesos mexicanos. Puedes cambiar de plan cuando quieras y no hay permanencia minima."
+    },
+    {
+      "slug": "prueba-gratis",
+      "title": "Prueba gratis",
+      "category": "faq",
+      "content": "Handy Suites ofrece 14 dias de prueba gratis, sin necesidad de tarjeta de credito. Durante la prueba tienes acceso completo al plan que elijas para que evalues la plataforma con tu equipo. El registro toma un par de minutos. Si decides continuar, eliges tu plan; si no, simplemente no se te cobra nada."
+    },
+    {
+      "slug": "facturacion-cfdi",
+      "title": "Facturacion CFDI 4.0 y SAT",
+      "category": "product",
+      "content": "Handy Suites incluye facturacion electronica CFDI 4.0 integrada, timbrada ante el SAT con un PAC autorizado, sin necesidad de software extra. Solo necesitas tu Certificado de Sello Digital (CSD) para empezar a timbrar. La plataforma administra series y folios automaticamente, genera facturas a partir de los pedidos capturados y ofrece un portal de autofactura para tus clientes. Tus clientes reciben el CFDI por correo al momento. La facturacion CFDI esta disponible solo para Mexico.\n\nLos timbres se venden en paquetes: 25 timbres por 50 pesos, 50 timbres por 85 pesos y 100 timbres por 150 pesos. El plan Profesional incluye 100 timbres al mes."
+    },
+    {
+      "slug": "funciones-ventas",
+      "title": "Pedidos, cobranza y rutas",
+      "category": "product",
+      "content": "Handy Suites cubre el ciclo de venta en campo:\n\nPedidos en segundos: catalogo, precios y descuentos por volumen automaticos, para que el vendedor cierre sin calculadora.\n\nCobranza a tiempo: alertas de cobranza y estado de cuenta al dia. Los negocios que usan Handy recuperan su cartera hasta 40 por ciento mas rapido.\n\nRutas claras: asignas recorridos, monitoreas visitas y ajustas sobre el mapa en vivo, con GPS y check-in por geocerca.\n\nTambien incluye control de inventario, catalogo de productos con listas de precios, clientes por zona y categoria, y reportes de ventas, cobranza y visitas."
+    },
+    {
+      "slug": "app-movil-offline",
+      "title": "App movil y modo sin conexion",
+      "category": "product",
+      "content": "Handy Suites tiene una app movil para iOS y Android (disponible en App Store y Google Play) pensada para el equipo en campo. La app funciona sin conexion: captura pedidos, visitas y cobros aunque no haya senal, y sincroniza todo automaticamente cuando vuelve el internet. Incluye la ruta del dia con mapa y check-in, registro de cobros e impresion de ticket de 80 milimetros por bluetooth. La plataforma web, para oficina y administradores, funciona desde cualquier navegador sin instalar nada."
+    },
+    {
+      "slug": "para-quien",
+      "title": "Para quien es Handy Suites",
+      "category": "product",
+      "content": "Handy Suites es una plataforma todo en uno para PYMES de Latinoamerica, con enfoque en Mexico, especialmente negocios con equipos de venta en ruta: distribuidoras de bebidas, alimentos y productos de cuidado personal, ventas puerta a puerta y negocios con cobranza en campo. La propuesta es: vende en la calle y cobra hoy. Tu equipo en campo y tu oficina ven lo mismo, al mismo tiempo, y funciona aunque no haya senal.\n\nHay vistas por rol: el Administrador en oficina ve tablero, reportes, catalogo, clientes, facturacion y cobranza; el Supervisor monitorea rutas, metas y desempeno del equipo con GPS; el Vendedor levanta pedidos, cobra, sigue su ruta del dia e imprime ticket, incluso offline."
+    },
+    {
+      "slug": "migracion-soporte-permanencia",
+      "title": "Migracion, soporte y permanencia",
+      "category": "faq",
+      "content": "Puedes migrar tus datos importando clientes, productos e inventario desde archivos Excel o CSV, y el equipo de Handy Suites te ayuda con la migracion sin costo adicional.\n\nNo hay contrato ni permanencia minima: puedes cancelar cuando quieras, sin penalizaciones. Tu informacion siempre es tuya y puedes exportarla en cualquier momento.\n\nHandy Suites ofrece soporte incluido. El plan Profesional incluye soporte prioritario."
+    },
+    {
+      "slug": "instalacion-plataforma",
+      "title": "Necesito instalar algo",
+      "category": "faq",
+      "content": "No necesitas instalar nada para la parte de oficina: la plataforma web funciona desde cualquier navegador, ideal para administradores y gerentes. Para el equipo en campo (vendedores y supervisores) hay una app movil que se descarga gratis desde App Store y Google Play."
+    },
+    {
+      "slug": "asistente-ia",
+      "title": "Asistente de inteligencia artificial",
+      "category": "product",
+      "content": "Handy Suites ofrece un asistente de inteligencia artificial. El plan Profesional incluye acceso al asistente. Ademas hay paquetes de IA opcionales que se pueden contratar por separado para ventas (recomendaciones y prediccion de recompra), cobranza (scoring de riesgo y mensajes personalizados), automatizacion (resumenes de visitas y busqueda) e inteligencia (deteccion de anomalias y pronostico de ventas). El uso de IA funciona con un modelo de creditos mensuales."
+    }
+  ]
+}

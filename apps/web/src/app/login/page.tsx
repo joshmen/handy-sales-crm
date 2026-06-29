@@ -104,6 +104,13 @@ function LoginContent() {
       }
     } catch { /* ignore */ }
 
+    // Prefill del correo cuando se llega desde el handoff del modal de la landing
+    // (LandingAuthModal delega a /login?email=... para 2FA/sesión-activa).
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setValue('email', emailParam);
+    }
+
     // Handle OAuth 2FA redirect — exchange opaque ref for actual temp token
     const requires2FA = searchParams.get('requires2FA');
     const t2faRef = searchParams.get('t2fa_ref');
@@ -142,7 +149,7 @@ function LoginContent() {
         variant: 'destructive',
       });
     }
-  }, [searchParams]);
+  }, [searchParams, setValue]);
 
   // Auto-focus TOTP input when step changes
   useEffect(() => {

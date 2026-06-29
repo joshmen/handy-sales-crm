@@ -19,7 +19,14 @@ public class CobroRepository : ICobroRepository
 
     public CobroRepository(HandySuitesDbContext db) => _db = db;
 
-    public async Task<List<CobroDto>> ObtenerCobrosAsync(int tenantId, int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
+    /// <summary>
+    /// Filtros compartidos por el list y el agregado del periodo, para garantizar
+    /// que `resumen` se calcule sobre EXACTAMENTE el mismo set que `items`.
+    /// `hasta` se interpreta como bound superior half-open exclusivo [desde, hasta):
+    /// el endpoint ya convierte la fecha-local del tenant a una window UTC donde
+    /// `hasta` = inicio del dia SIGUIENTE (medianoche tenant en UTC).
+    /// </summary>
+    private IQueryable<Cobro> AplicarFiltrosCobros(int tenantId, int? clienteId, DateTime? desde, DateTime? hasta, int? usuarioId)
     {
         var query = _db.Cobros
             .AsNoTracking()
@@ -31,9 +38,16 @@ public class CobroRepository : ICobroRepository
         if (desde.HasValue)
             query = query.Where(c => c.FechaCobro >= desde.Value);
         if (hasta.HasValue)
-            query = query.Where(c => c.FechaCobro <= hasta.Value.Date.AddDays(1));
+            query = query.Where(c => c.FechaCobro < hasta.Value);
         if (usuarioId.HasValue)
             query = query.Where(c => c.UsuarioId == usuarioId.Value);
+
+        return query;
+    }
+
+    public async Task<List<CobroDto>> ObtenerCobrosAsync(int tenantId, int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
+    {
+        var query = AplicarFiltrosCobros(tenantId, clienteId, desde, hasta, usuarioId);
 
         return await query
             .OrderByDescending(c => c.FechaCobro)
@@ -61,6 +75,20 @@ public class CobroRepository : ICobroRepository
                 CreadoEn = c.CreadoEn,
             })
             .ToListAsync();
+    }
+
+    public async Task<CobroPeriodoResumenDto> ObtenerResumenPeriodoAsync(int tenantId, int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
+    {
+        // Mismos filtros que el list → resumen sobre el set FILTRADO COMPLETO.
+        // SUM/COUNT se ejecutan en SQL (no se materializan filas). SumAsync sobre
+        // (decimal?) para evitar excepcion cuando el set esta vacio (devuelve null → 0).
+        var query = AplicarFiltrosCobros(tenantId, clienteId, desde, hasta, usuarioId);
+
+        return new CobroPeriodoResumenDto
+        {
+            CobradoTotal = await query.SumAsync(c => (decimal?)c.Monto) ?? 0m,
+            Count = await query.CountAsync(),
+        };
     }
 
     public async Task<CobroDto?> ObtenerPorIdAsync(int id, int tenantId)

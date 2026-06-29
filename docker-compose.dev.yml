@@ -180,6 +180,47 @@ services:
     networks:
       - handysuites_dev_network
 
+  # API del Chatbot público (HandySuites.Chatbot.Api) — bot de la landing + bandeja del agente
+  # Servicio autónomo, DB propia handy_chat (misma instancia Postgres), pgvector.
+  api_chatbot:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.Chatbot.Dev
+    container_name: handysuites_api_chatbot_dev
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:1054
+      ConnectionStrings__ChatDb: "Host=postgres;Port=5432;Database=handy_chat;Username=handy_user;Password=handy_pass;"
+      Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      Jwt__Issuer: "HandySuites"
+      Jwt__Audience: "HandySuitesUsers"
+      Seq__ServerUrl: "http://seq:5341"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      INTERNAL_API_KEY: "dev-chatbot-internal-key-change-in-prod-0123456789"
+      CHAT__ALLOWED_ORIGINS: "http://localhost:1083,http://localhost:3000"
+      CHAT__AGENT_EMAILS: "${CHAT_AGENT_EMAILS:-soporte@handysuites.com}"
+      SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
+      SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL:-no-reply@handysuites.com}"
+      RECAPTCHA_SECRET_KEY: "${RECAPTCHA_SECRET_KEY}"
+    ports:
+      - "127.0.0.1:1054:1054"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    volumes:
+      - ./apps/chatbot/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1054/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - handysuites_dev_network
+
   # API Móvil (HandySuites.Mobile.Api)
   api_mobile:
     build:

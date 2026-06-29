@@ -20,6 +20,14 @@ export function setApiAccessToken(token: string | null) {
   _cachedAccessToken = token;
 }
 
+/**
+ * Token de acceso en memoria (mismo JWT que usa el Main API). Lo consumen clientes
+ * que apuntan a OTROS servicios con el secreto JWT compartido (ej. el chatbot :1054).
+ */
+export function getApiAccessToken(): string | null {
+  return _cachedAccessToken;
+}
+
 // Request interceptor for auth token and content type handling
 apiInstance.interceptors.request.use(
   async config => {

@@ -6,19 +6,13 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { useGlobalSettings as useGlobalSettingsContext } from '@/contexts/GlobalSettingsContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
-import { toast } from '@/hooks/useToast';
+import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import {
   Bell,
-  Search,
-  Settings,
-  User,
-  LogOut,
+  Plus,
   Menu,
   Info,
-  Building2,
-  ArrowRight,
   Sun,
   Moon,
   LayoutGrid,
@@ -27,21 +21,10 @@ import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
-import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
-import { ImpersonationModal } from '@/components/impersonation';
-import { useImpersonationStore } from '@/stores/useImpersonationStore';
-import { impersonationService } from '@/services/api/impersonation';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useToastStore } from '@/hooks/useToast';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import type { DefaultSession } from 'next-auth';
-import { useFormatters } from '@/hooks/useFormatters';
 
 // Extiende el user de NextAuth con los campos que usas en tu app
 type AppSessionUser = DefaultSession['user'] & {
@@ -94,16 +77,6 @@ const routeLabels: Record<string, string> = {
   '/getting-started': 'Guía de Configuración',
 };
 
-// Notification type icons/colors
-const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
-  System: 'Sistema',
-  Order: 'Pedido',
-  Route: 'Ruta',
-  Visit: 'Visita',
-  Alert: 'Alerta',
-  General: 'General',
-};
-
 export interface HeaderProps {
   /** Para abrir/cerrar menú móvil desde el layout */
   onMenuClick?: () => void;
@@ -115,8 +88,6 @@ export interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpersonating }) => {
   const tc = useTranslations('common');
-  const tcp = useTranslations('commandPalette');
-  const { formatDate } = useFormatters();
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
   const { toggle } = useSidebar(); // fallback
@@ -125,21 +96,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const router = useRouter();
   const { data: session } = useSession();
 
-  const {
-    unreadCount,
-    notifications,
-    loading: notificationsLoading,
-    fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
-
-  const [isCommandOpen, setIsCommandOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [expandedNotifId, setExpandedNotifId] = useState<number | null>(null);
+  const { unreadCount } = useNotifications();
 
   const sUser = session?.user as AppSessionUser | undefined;
   const { settings: companySettings } = useCompany();
@@ -194,49 +151,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   }, [theme, mounted]);
 
   const unread = unreadCount;
-  const unreadDisplay = unread > 99 ? '99+' : String(unread);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      // SECURITY FIX 4.15: End any active impersonation session BEFORE logout so the
-      // backend marks ImpersonationSession as Ended (auditoría completa) and the
-      // SUPER_ADMIN does not leave an open tenant session behind on logout.
-      try {
-        const { isImpersonating, sessionId } = useImpersonationStore.getState();
-        if (isImpersonating && sessionId) {
-          await impersonationService.endSession(sessionId).catch(() => {});
-        }
-        // Clear in-memory impersonation state regardless of backend result
-        useImpersonationStore.getState().clear();
-      } catch { /* best-effort — proceed with client-side logout even if cleanup fails */ }
-
-      // Close DeviceSession on backend (marks session as LoggedOut)
-      try {
-        const { api: apiClient } = await import('@/lib/api');
-        await apiClient.post('/auth/logout', {});
-      } catch { /* best-effort — proceed with client-side logout even if API fails */ }
-
-      await signOut({ redirect: false, callbackUrl: '/' });
-      if (typeof window !== 'undefined') {
-        // Reset to light mode before clearing — landing page should never be dark
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-        localStorage.clear();
-        // Clear PWA API cache to prevent stale tenant data on shared devices
-        caches?.delete('api-cache').catch(() => {});
-      }
-      router.push('/');
-    } catch {
-      toast({ title: tc('error'), description: tc('logoutError'), variant: 'destructive' });
-    } finally {
-      setIsLoggingOut(false);
-      setIsUserMenuOpen(false);
-    }
-  };
-
-  const formatTime = (date: Date) =>
-    formatDate(date, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  // Mensajes (toasts) no vistos desde la ultima revision de "Mensajes de la app":
+  // el badge de la campanita tambien reacciona a ellos, no solo a las no-leidas del server.
+  const toastHistory = useToastStore(s => s.history);
+  const toastLastSeen = useToastStore(s => s.lastSeen);
+  const unseenMsgs = toastHistory.filter(h => h.time > toastLastSeen).length;
 
   if (!mounted || !isClient) {
     return (
@@ -300,33 +219,38 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           </div>
         </div>
 
-        {/* Center: Search Bar (opens command palette) */}
-        {/* Mobile: just a search icon button */}
-        <div className="flex-1 flex justify-center md:px-6 lg:px-12">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200"
-            onClick={() => setIsCommandOpen(true)}
-            data-tour="header-search"
-          >
-            <Search className="h-[18px] w-[18px] text-blue-400" strokeWidth={2} />
-          </Button>
-          {/* Desktop: full search bar */}
-          <div
-            className="hidden md:flex relative w-full max-w-md cursor-pointer group"
-            data-tour="header-search-desktop"
-            onClick={() => setIsCommandOpen(true)}
-          >
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
-            <div className="w-full h-10 pl-11 pr-20 flex items-center text-muted-foreground bg-muted border border-border rounded-full group-hover:shadow-md transition-all duration-200 text-sm">
-              {tcp('searchPlaceholder')}
-            </div>
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              {typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl K'}
-            </kbd>
+        {/* Center-left: Command palette (inline) — buscador global con navegación real */}
+        <div
+          className="flex-1 flex items-center min-w-0 md:px-4 lg:px-8"
+          data-tour="header-search"
+          data-tour-id="header-search-desktop"
+        >
+          <div className="w-full max-w-[420px]">
+            <CommandPalette
+              role={currentUser.role}
+              onNewOrder={() => router.push('/orders?new=1')}
+            />
           </div>
         </div>
+
+        {/* Acción principal por rol */}
+        {currentUser.role === 'SUPER_ADMIN' ? (
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 mr-1 rounded-full text-xs font-semibold text-success bg-success/10 whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-success" />
+            Sistemas operativos
+          </span>
+        ) : (
+          <Button
+            data-tour="new-order"
+            variant="wbPrimary"
+            size="sm"
+            className="hidden sm:inline-flex gap-1.5 mr-1 whitespace-nowrap"
+            onClick={() => router.push('/orders?new=1')}
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo pedido
+          </Button>
+        )}
 
         {/* Right: User controls */}
         <div className="flex items-center gap-0.5">
@@ -347,22 +271,19 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             </button>
           )}
 
-          {/* Notifications */}
+          {/* Notifications — navega a la pagina de notificaciones (como el
+              prototipo Topbar). Punto rojo cuando hay no-leidas. */}
           <Button
             data-tour="header-notifications"
             variant="ghost"
             size="icon"
             className="relative rounded-full hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors duration-200"
-            onClick={() => {
-              fetchNotifications();
-              setIsNotificationsOpen(true);
-            }}
+            onClick={() => router.push('/notifications')}
+            aria-label={tc('notificationsTitle')}
           >
             <Bell className="h-[18px] w-[18px] text-amber-500" strokeWidth={2} />
-            {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-900">
-                <span className="text-[9px] text-white font-bold leading-none">{unreadDisplay}</span>
-              </span>
+            {(unread > 0 || unseenMsgs > 0) && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-card" />
             )}
           </Button>
 
@@ -405,273 +326,27 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           {/* Divider */}
           <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
-          {/* User menu — avatar con badge de notif no leídas (mismo dato que
-              el Bell icon, doble entrada visual por decisión del owner) */}
-          <Button
+          {/* Avatar — acceso al perfil (navega a /profile). Solo el circulo, como
+              el prototipo Topbar: sin nombre y sin caja de fondo. Boton plano (no
+              <Button ghost>) para que NO aparezca el bg-accent en hover; el hover
+              es un anillo primario + leve escala sobre el propio avatar. */}
+          <button
+            type="button"
             data-tour="header-user-menu"
-            variant="ghost"
-            className="flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto transition-colors duration-200"
-            onClick={() => setIsUserMenuOpen(true)}
-            aria-label={unread > 0 ? `Mi cuenta, ${unread} sin leer` : 'Mi cuenta'}
+            onClick={() => router.push('/profile')}
+            aria-label="Mi perfil"
+            className="group ml-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-2"
           >
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-foreground leading-none">{currentUser.name}</p>
-            </div>
-            <span className="relative inline-flex overflow-visible">
-              <Avatar className="h-8 w-8 ring-2 ring-gray-100 dark:ring-gray-800">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                  {getInitials(currentUser.name)}
-                </AvatarFallback>
-              </Avatar>
-              {unread > 0 && (
-                <span
-                  data-testid="avatar-unread-badge"
-                  className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white dark:ring-gray-900"
-                  aria-label={`${unread} notificaciones sin leer`}
-                >
-                  {unreadDisplay}
-                </span>
-              )}
-            </span>
-          </Button>
+            <Avatar className="h-9 w-9 ring-2 ring-border transition-all duration-200 group-hover:ring-primary group-hover:scale-105">
+              <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                {getInitials(currentUser.name)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
         </div>
       </div>
 
-      {/* Notifications Dialog */}
-      <Dialog open={isNotificationsOpen} onOpenChange={(open) => { setIsNotificationsOpen(open); if (!open) setExpandedNotifId(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>{tc('notificationsTitle')}</DialogTitle>
-              {notifications.length > 0 && unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    const res = await markAllAsRead();
-                    if (res.success) {
-                      toast({ title: tc('done'), description: tc('allMarkedRead') });
-                    }
-                  }}
-                  className="text-xs text-blue-600 hover:text-blue-700 -mr-2"
-                >
-                  {tc('markAllAsRead')}
-                </Button>
-              )}
-            </div>
-          </DialogHeader>
-
-          {notificationsLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-r-transparent" />
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-              <p>{tc('noNotifications')}</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {notifications.map(n => {
-                const isUnread = !n.leidoEn;
-                const createdDate = new Date(n.creadoEn);
-                const typeLabel = NOTIFICATION_TYPE_LABELS[n.tipo] || n.tipo;
-
-                return (
-                  <div
-                    key={n.id}
-                    className={cn(
-                      'p-3 rounded-lg border transition-colors cursor-pointer',
-                      isUnread
-                        ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
-                        : 'hover:bg-accent'
-                    )}
-                    onClick={async () => {
-                      if (isUnread) await markAsRead(n.id);
-                      const url = n.data?.['url'];
-                      if (url) {
-                        router.push(url);
-                        setIsNotificationsOpen(false);
-                      } else {
-                        setExpandedNotifId(prev => prev === n.id ? null : n.id);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium text-foreground truncate">
-                            {n.titulo}
-                          </h4>
-                          {n.tipo !== 'General' && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 flex-shrink-0"
-                            >
-                              {typeLabel}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className={cn(
-                          'text-sm text-muted-foreground mt-1 transition-all',
-                          expandedNotifId === n.id ? '' : 'line-clamp-2'
-                        )}>
-                          {n.mensaje}
-                        </p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground/70">{formatTime(createdDate)}</span>
-                          {n.data?.['url'] && (
-                            <span className="text-xs text-blue-500 font-medium flex items-center gap-0.5">
-                              {tc('viewDetails')} <ArrowRight className="h-3 w-3" />
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {isUnread && (
-                        <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Impersonation Modal (solo SUPER_ADMIN) */}
-      {currentUser.role === 'SUPER_ADMIN' && (
-        <ImpersonationModal
-          isOpen={isImpersonationOpen}
-          onClose={() => setIsImpersonationOpen(false)}
-          tenant={null}
-        />
-      )}
-
-      {/* Command Palette (Ctrl+K) */}
-      <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} />
-
-      {/* User Menu Dialog */}
-      <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{tc('userAccount')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                <AvatarFallback className="bg-primary/15 text-primary font-semibold">
-                  {getInitials(currentUser.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground">{currentUser.name}</h3>
-                <p className="text-sm text-muted-foreground">{currentUser.email}</p>
-                <div className="mt-1">
-                  <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
-                      currentUser.role
-                    )}`}
-                  >
-                    {getRoleDisplayName(currentUser.role)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Button
-                data-testid="user-menu-notifications"
-                variant="ghost"
-                className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                onClick={() => {
-                  router.push('/notifications');
-                  setIsUserMenuOpen(false);
-                }}
-                aria-label={
-                  unread > 0
-                    ? `${tc('notificationsTitle')}, ${unread} sin leer`
-                    : undefined
-                }
-              >
-                <Bell className="h-4 w-4 mr-3 text-orange-500" />
-                <span className="flex-1 text-left">{tc('notificationsTitle')}</span>
-                {unread > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
-                  >
-                    {unreadDisplay}
-                  </span>
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                onClick={() => {
-                  router.push('/profile');
-                  setIsUserMenuOpen(false);
-                }}
-              >
-                <User className="h-4 w-4 mr-3 text-blue-500" />
-                {tc('myProfile')}
-              </Button>
-              {/* Solo SUPER_ADMIN y ADMIN pueden ver Configuración */}
-              {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                  onClick={() => {
-                    // SA sin impersonar → global-settings (no tiene acceso a /settings)
-                    const target = currentUser.role === 'SUPER_ADMIN' ? '/global-settings' : '/settings';
-                    router.push(target);
-                    setIsUserMenuOpen(false);
-                  }}
-                >
-                  <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
-                  {currentUser.role === 'SUPER_ADMIN' ? tc('globalSettings') : tc('settings')}
-                </Button>
-              )}
-              {/* Solo SUPER_ADMIN puede impersonar empresas */}
-              {currentUser.role === 'SUPER_ADMIN' && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-foreground hover:bg-accent"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    setIsImpersonationOpen(true);
-                  }}
-                >
-                  <Building2 className="h-4 w-4 mr-3 text-purple-500" />
-                  {tc('impersonateCompany')}
-                </Button>
-              )}
-              <div className="border-t pt-2">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-red-600 hover:bg-red-50"
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                >
-                  {isLoggingOut ? (
-                    <>
-                      <div className="h-4 w-4 mr-3 animate-spin rounded-full border-2 border-red-500 border-r-transparent" />
-                      {tc('loggingOut')}
-                    </>
-                  ) : (
-                    <>
-                      <LogOut className="h-4 w-4 mr-3" />
-                      {tc('signOut')}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </header>
   );
 };

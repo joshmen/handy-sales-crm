@@ -10,6 +10,8 @@
     "retentionNote": "Datos disponibles desde {date} ({days} días)."
   },
   "common": {
+    "errorLoading": "No se pudieron cargar los datos.",
+    "errorGeneric": "Algo salió mal. Intenta de nuevo.",
     "save": "Guardar",
     "saving": "Guardando...",
     "cancel": "Cancelar",
@@ -773,7 +775,21 @@
     "saCrashReports": "Monitor de Errores",
     "saSettings": "Configuración",
     "saActivityLog": "Registro de actividad",
-    "administration": "Administración"
+    "administration": "Administración",
+    "saOnboarding": "Onboarding",
+    "saSupport": "Soporte",
+    "saChangelog": "Novedades",
+    "saAnalytics": "Analítica",
+    "saSubscriptions": "Suscripciones",
+    "saDunning": "Cobros",
+    "saFinkok": "Integración Finkok",
+    "saModules": "Módulos",
+    "saStatus": "Estado del sistema",
+    "sectionPlatform": "Plataforma",
+    "sectionRevenue": "Ingresos",
+    "sectionSystem": "Sistema",
+    "platformConsole": "Consola de plataforma",
+    "production": "Producción"
   },
   "auth": {
     "layout": {

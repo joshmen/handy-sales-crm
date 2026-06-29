@@ -16,8 +16,8 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { SearchBar } from '@/components/common/SearchBar';
-import { DateFilter } from '@/components/ui/DateFilter';
-import { dayFilterLabel, addDaysIso } from '@/components/ui/dateFilterUtils';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { rangeFilterLabel, startOfMonthIso } from '@/components/ui/dateFilterUtils';
 import {
   AlertCircle,
   Users,
@@ -49,6 +49,7 @@ import {
   createCobro,
   deleteCobro,
   Cobro,
+  CobroPeriodoResumen,
   ResumenCartera,
   SaldoCliente,
   EstadoCuenta,
@@ -105,6 +106,7 @@ export default function CobranzaPage() {
   const t = useTranslations('collections');
   const tc = useTranslations('common');
   const tn = useTranslations('nav');
+  const td = useTranslations('dateFilters');
   const { formatCurrency, formatDate, tenantToday } = useFormatters();
   const locale = useLocale();
   const intlLocale = locale === 'en' ? 'en-US' : 'es-MX';
@@ -136,9 +138,18 @@ export default function CobranzaPage() {
   // (Historial). Owner reportó que al cargar /cobranza esperaba ver
   // primero los pagos recibidos del día.
   const [tab, setTab] = useState<Tab>('cobros');
-  // Filtro de día único (solo afecta el tab 'cobros'). Default: hoy del tenant.
-  const [diaFiltro, setDiaFiltro] = useState<string>(() => tenantToday());
+  // Filtro de RANGO (solo afecta el tab 'cobros'). Default: 'mes' = día 1 del
+  // mes en curso a hoy (tenant-aware). El backend devuelve los cobros del rango
+  // + un `resumen` agregado (cobradoTotal/count) sobre el set FILTRADO COMPLETO.
+  const [rango, setRango] = useState<DateRangeValue>(() => {
+    const hoy = tenantToday();
+    return { mode: 'mes', from: startOfMonthIso(hoy), to: hoy };
+  });
   const [resumen, setResumen] = useState<ResumenCartera | null>(null);
+  // 2026-06: agregado del PERIODO (cobradoTotal + count) que getCobros adjunta
+  // al array. Las KPIs de "Cobrado (periodo)" / conteo lo leen de aquí — NO de
+  // sumar la página renderizada. Distinto de ResumenCartera (cartera global).
+  const [cobrosResumen, setCobrosResumen] = useState<CobroPeriodoResumen | null>(null);
 
   // Cobros
   const [cobros, setCobros] = useState<Cobro[]>([]);
@@ -208,10 +219,13 @@ export default function CobranzaPage() {
   const fetchCobros = useCallback(async () => {
     try {
       setCobrosLoading(true);
-      setCobros(await getCobros({ desde: diaFiltro, hasta: diaFiltro }));
+      const result = await getCobros({ desde: rango.from, hasta: rango.to });
+      setCobros(result);
+      // `resumen` viene adjunto al array (cobradoTotal/count del rango completo).
+      setCobrosResumen(result.resumen ?? null);
     } catch { toast.error(t('errorLoadingPayments')); }
     finally { setCobrosLoading(false); }
-  }, [diaFiltro]);
+  }, [rango.from, rango.to]);
 
   const fetchSaldos = useCallback(async () => {
     try {
@@ -234,14 +248,15 @@ export default function CobranzaPage() {
     if (tab === 'cobros') fetchCobros(); else fetchSaldos();
   }, [tab, fetchCobros, fetchSaldos]);
 
-  // Day change: refresh cobros + resumen (skip initial mount). El DateFilter
-  // emite selecciones discretas (Hoy/Ayer/Fecha…), no necesita debounce.
-  const diaInitialized = useRef(false);
+  // Range change: refresh cobros + resumen (skip initial mount). El
+  // DateRangeFilter emite selecciones discretas (atajos / rango custom), no
+  // necesita debounce.
+  const rangoInitialized = useRef(false);
   useEffect(() => {
-    if (!diaInitialized.current) { diaInitialized.current = true; return; }
+    if (!rangoInitialized.current) { rangoInitialized.current = true; return; }
     fetchCobros();
     fetchResumen();
-  }, [diaFiltro, fetchCobros, fetchResumen]);
+  }, [rango.from, rango.to, fetchCobros, fetchResumen]);
 
   // Load clients for the new cobro dropdown
   useEffect(() => {
@@ -504,7 +519,7 @@ export default function CobranzaPage() {
   // quedar en una página inexistente del nuevo conjunto.
   useEffect(() => {
     setCobrosPage(1);
-  }, [searchCobros, diaFiltro, tab]);
+  }, [searchCobros, rango.from, rango.to, tab]);
 
   const totalPagesCobros = Math.max(1, Math.ceil(filteredCobros.length / PAGE_SIZE));
   const paginatedCobros = useMemo(
@@ -512,13 +527,19 @@ export default function CobranzaPage() {
     [filteredCobros, cobrosPage]
   );
 
-  // Totals
+  // Total de la PÁGINA cargada (footer de la tabla). El KPI "Cobrado (periodo)"
+  // NO usa esto: lee `cobrosResumen.cobradoTotal` (agregado del rango completo).
   const totalCobros = useMemo(() => cobros.reduce((s, c) => s + c.monto, 0), [cobros]);
 
-  // Etiqueta del día seleccionado para el subtítulo (Hoy / Ayer / fecha corta).
-  const dateLabel = dayFilterLabel(diaFiltro, {
-    todayIso: tenantToday(), yesterdayIso: addDaysIso(tenantToday(), -1),
-    todayLabel: tc('today'), yesterdayLabel: tc('yesterday'), locale: intlLocale,
+  // Cobrado y conteo del PERIODO completo (rango), leídos del agregado del
+  // backend. Fallback a la página solo si el backend aún no responde `resumen`.
+  const cobradoPeriodo = cobrosResumen?.cobradoTotal ?? totalCobros;
+  const conteoPeriodo = cobrosResumen?.count ?? cobros.length;
+
+  // Etiqueta del rango seleccionado para el subtítulo (Esta semana / Este mes /
+  // Este trimestre / rango corto).
+  const dateLabel = rangeFilterLabel(rango, {
+    locale: intlLocale, weekLabel: td('week'), monthLabel: td('month'), quarterLabel: td('quarter'),
   });
 
   // Recuperación = cobrado / facturado (data REAL de resumen de cartera).
@@ -554,10 +575,10 @@ export default function CobranzaPage() {
           <>
             {tab === 'cobros' && (
               <div data-tour="cobranza-date-filter">
-                <DateFilter value={diaFiltro} onChange={setDiaFiltro} retentionDays={365} />
+                <DateRangeFilter value={rango} onChange={setRango} retentionDays={365} />
               </div>
             )}
-            <ExportButton entity="cobros" label={tc('export')} params={{ desde: diaFiltro, hasta: diaFiltro }} />
+            <ExportButton entity="cobros" label={tc('export')} params={{ desde: rango.from, hasta: rango.to }} />
             <Button variant="wbPrimary" data-tour="cobranza-new-btn" onClick={() => setShowNewCobro(true)}>
               <Plus className="w-4 h-4 mr-2" />
               <span>{t('newPayment')}</span>
@@ -579,7 +600,7 @@ export default function CobranzaPage() {
                 },
                 {
                   title: t('kpisCards.collectedPeriod'),
-                  value: formatCurrency(totalCobros),
+                  value: formatCurrency(cobradoPeriodo),
                   hint: t('kpisCards.collectedPeriodHint'),
                   icon: CreditCard,
                   tone: 'primary',
@@ -823,18 +844,19 @@ export default function CobranzaPage() {
                         </div>
                       ))}
 
-                      {/* Footer total */}
+                      {/* Footer total — agregado del PERIODO completo (rango)
+                          leído del `resumen` del backend, no de sumar la página. */}
                       {cobros.length > 0 && (
                         <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-border-default min-w-[800px]">
                           <div className="w-[100px] text-xs font-semibold text-foreground/80">
                             {tc('total')}
                           </div>
                           <div className="flex-1 text-xs text-muted-foreground">
-                            {t('paymentCount', { count: cobros.length })}
+                            {t('paymentCount', { count: conteoPeriodo })}
                           </div>
                           <div className="w-[100px]" />
                           <div className="w-[110px] text-[13px] font-bold text-foreground text-right">
-                            {formatCurrency(totalCobros)}
+                            {formatCurrency(cobradoPeriodo)}
                           </div>
                           <div className="w-[120px]" />
                           <div className="w-[100px]" />

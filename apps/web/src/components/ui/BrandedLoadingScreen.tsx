@@ -28,28 +28,39 @@ export function BrandedLoadingScreen({ message }: BrandedLoadingScreenProps) {
     setDisplayMessage(resolvedMessage);
   }, [resolvedMessage, tc]);
 
-  // Uses CSS variable set by inline script in <head> — available before React hydrates
-  // Falls back to default green if variable not set
+  // Loader minimal (Claude Design): fondo neutro + tile con el logo + un anillo delgado
+  // girando en el color de marca. `--company-primary-color` lo setea el script inline en
+  // <head> (disponible antes de hidratar); el fondo usa --background y respeta dark mode.
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'var(--company-primary-color, #0176D3)' }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-[18px]"
+      style={{ background: 'var(--background, #ffffff)' }}
     >
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-3">
-          <img src="/logo-icon.svg" alt="Handy Suites" className="w-20 h-20" />
-          <span className="text-white text-4xl font-bold">
-            Handy Suites<sup className="text-lg font-normal ml-0.5">®</sup>
-          </span>
+      <div className="relative h-16 w-16">
+        {/* Tile con el logo de la marca */}
+        <div className="absolute inset-0 flex items-center justify-center rounded-[18px] bg-card shadow-sm ring-1 ring-border">
+          <img src="/logo-icon.svg" alt="Handy Suites" className="h-9 w-9" />
         </div>
-        <div className="flex items-center gap-3">
-          <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <span className="text-white/90 text-sm">{displayMessage}</span>
-        </div>
+        {/* Anillo girando en el color de marca */}
+        <svg
+          viewBox="0 0 64 64"
+          className="absolute -inset-2 h-20 w-20 animate-spin"
+          style={{ animationDuration: '1.1s' }}
+        >
+          <circle
+            cx="32"
+            cy="32"
+            r="30"
+            fill="none"
+            stroke="var(--company-primary-color, #0176D3)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray="48 140"
+            opacity="0.6"
+          />
+        </svg>
       </div>
+      <span className="text-sm font-medium text-muted-foreground">{displayMessage}</span>
     </div>
   );
 }

@@ -39,7 +39,12 @@ class VisitService {
       const response = await api.get<VisitasPaginatedResult>(
         `${this.basePath}?${queryParams.toString()}`
       );
-      return response.data;
+      // El backend devuelve `resumen` (KPIs del rango filtrado completo) junto al list.
+      // Se expone tal cual en el resultado paginado para reemplazar getMyDailySummary().
+      return {
+        ...response.data,
+        resumen: response.data.resumen,
+      };
     } catch (error) {
       throw handleApiError(error);
     }

@@ -10,6 +10,8 @@
     "retentionNote": "Data available from {date} ({days} days)."
   },
   "common": {
+    "errorLoading": "Could not load data.",
+    "errorGeneric": "Something went wrong. Please try again.",
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
@@ -773,7 +775,21 @@
     "saCrashReports": "Error Monitor",
     "saSettings": "Settings",
     "saActivityLog": "Activity log",
-    "administration": "Administration"
+    "administration": "Administration",
+    "saOnboarding": "Onboarding",
+    "saSupport": "Support",
+    "saChangelog": "What's new",
+    "saAnalytics": "Analytics",
+    "saSubscriptions": "Subscriptions",
+    "saDunning": "Collections",
+    "saFinkok": "Finkok Integration",
+    "saModules": "Modules",
+    "saStatus": "System status",
+    "sectionPlatform": "Platform",
+    "sectionRevenue": "Revenue",
+    "sectionSystem": "System",
+    "platformConsole": "Platform console",
+    "production": "Production"
   },
   "auth": {
     "layout": {

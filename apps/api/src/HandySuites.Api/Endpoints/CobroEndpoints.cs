@@ -2,6 +2,7 @@ using FluentValidation;
 using HandySuites.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using HandySuites.Infrastructure.Persistence;
+using HandySuites.Application.Common.Interfaces;
 using HandySuites.Application.Cobranza.DTOs;
 using HandySuites.Application.Cobranza.Interfaces;
 using HandySuites.Application.Cobranza.Services;
@@ -18,31 +19,43 @@ public static class CobroEndpoints
             .WithTags("Cobros")
             .WithOpenApi();
 
-        // Listar cobros con filtros
+        // Listar cobros con filtros + agregado del periodo (`resumen`).
+        //
+        // TZ (critico): `desde`/`hasta` llegan como fecha-local del tenant (YYYY-MM-DD).
+        // FechaCobro es un timestamp REAL de evento → se convierte a una window UTC del
+        // tenant via ITenantTimeZoneService.ConvertTenantDateToUtcAsync (NO parse naive
+        // a UTC, que desfasaba los limites cerca de medianoche en TZ no-UTC). La window
+        // es half-open [desdeUtc, hastaUtc) donde hastaUtc = inicio del dia SIGUIENTE a
+        // `hasta`. El list y el `resumen` usan EXACTAMENTE los mismos bounds → el agregado
+        // (SUM/COUNT en SQL) cubre todo el set filtrado, no la pagina.
         group.MapGet("/", async (
             [FromQuery] int? clienteId,
             [FromQuery] string? desde,
             [FromQuery] string? hasta,
             [FromQuery] int? usuarioId,
-            [FromServices] CobroService servicio) =>
+            [FromServices] CobroService servicio,
+            [FromServices] ITenantTimeZoneService tz) =>
         {
-            DateTime? desdeDate = null, hastaDate = null;
+            DateTime? desdeUtc = null, hastaUtc = null;
             if (!string.IsNullOrEmpty(desde))
             {
-                if (!DateTime.TryParse(desde, out var d))
+                if (!DateOnly.TryParse(desde, out var d))
                     return Results.BadRequest(new { error = "El parámetro 'desde' no es una fecha válida." });
-                desdeDate = d;
+                desdeUtc = await tz.ConvertTenantDateToUtcAsync(d);
             }
             if (!string.IsNullOrEmpty(hasta))
             {
-                if (!DateTime.TryParse(hasta, out var h))
+                if (!DateOnly.TryParse(hasta, out var h))
                     return Results.BadRequest(new { error = "El parámetro 'hasta' no es una fecha válida." });
-                hastaDate = h;
+                // Bound superior exclusivo: inicio del dia siguiente (incluye todo el dia 'hasta').
+                hastaUtc = await tz.ConvertTenantDateToUtcAsync(h.AddDays(1));
             }
-            var cobros = await servicio.ObtenerCobrosAsync(clienteId, desdeDate, hastaDate, usuarioId);
-            return Results.Ok(cobros);
+
+            var items = await servicio.ObtenerCobrosAsync(clienteId, desdeUtc, hastaUtc, usuarioId);
+            var resumen = await servicio.ObtenerResumenPeriodoAsync(clienteId, desdeUtc, hastaUtc, usuarioId);
+            return Results.Ok(new { items, resumen });
         })
-        .WithSummary("Listar cobros con filtros opcionales");
+        .WithSummary("Listar cobros con filtros opcionales + agregado del periodo");
 
         // Obtener cobro por ID
         group.MapGet("/{id:int}", async (

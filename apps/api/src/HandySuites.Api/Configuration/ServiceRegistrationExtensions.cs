@@ -386,6 +386,14 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
         services.AddScoped<ISubscriptionEnforcementService, SubscriptionEnforcementService>();
 
+        // Consola de plataforma (Super Admin) — repos de los modulos nuevos
+        services.AddScoped<HandySuites.Application.Support.Interfaces.ISupportRepository, HandySuites.Infrastructure.Repositories.Support.SupportRepository>();
+        services.AddScoped<HandySuites.Application.Changelog.Interfaces.INovedadRepository, HandySuites.Infrastructure.Repositories.Changelog.NovedadRepository>();
+        services.AddScoped<HandySuites.Application.Modulos.Interfaces.IModuloRepository, HandySuites.Infrastructure.Repositories.Modulos.ModuloRepository>();
+        services.AddScoped<HandySuites.Application.SystemStatus.Interfaces.IIncidenteRepository, HandySuites.Infrastructure.Repositories.SystemStatus.IncidenteRepository>();
+        services.AddScoped<HandySuites.Application.Cobros.Interfaces.ICobranzaRepository, HandySuites.Infrastructure.Repositories.Cobros.CobranzaRepository>();
+        services.AddScoped<HandySuites.Application.Onboarding.Interfaces.IOnboardingRepository, HandySuites.Infrastructure.Repositories.Onboarding.OnboardingRepository>();
+
         // Automations
         services.AddScoped<IAutomationRepository, AutomationRepository>();
         services.AddScoped<AutomationAppService>();

@@ -34,19 +34,83 @@ export interface ToastItem {
   closing?: boolean;
 }
 
+/** Item del historial de toasts (persiste en localStorage para revisarlos luego). */
+export interface ToastHistoryItem {
+  id: number;
+  type: ToastType;
+  title: string;
+  desc?: string;
+  /** epoch ms */
+  time: number;
+}
+
+const HISTORY_KEY = 'handy_toast_history';
+const HISTORY_MAX = 50;
+
+function loadHistory(): ToastHistoryItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(h: ToastHistoryItem[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+  } catch {
+    /* localStorage no disponible */
+  }
+}
+
+// Marca de tiempo de la ultima vez que el usuario reviso "Mensajes de la app".
+// Los toasts con time > lastSeen cuentan como "no vistos" (badge de la campanita).
+const LASTSEEN_KEY = 'handy_toast_last_seen';
+
+function loadLastSeen(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const n = Number(localStorage.getItem(LASTSEEN_KEY));
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveLastSeen(t: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(LASTSEEN_KEY, String(t));
+  } catch {
+    /* localStorage no disponible */
+  }
+}
+
 const MAX_VISIBLE = 4;
 const EXIT_MS = 320;
 
 // ── Store ──────────────────────────────────────────────────────────────────
 interface ToastStore {
   toasts: ToastItem[];
+  history: ToastHistoryItem[];
+  /** epoch ms de la ultima revision de "Mensajes de la app" (para el badge). */
+  lastSeen: number;
   add: (item: ToastItem) => void;
   startClose: (id: number) => void;
   remove: (id: number) => void;
+  pushHistory: (item: ToastHistoryItem) => void;
+  clearHistory: () => void;
+  hydrateHistory: () => void;
+  markHistorySeen: () => void;
 }
 
 export const useToastStore = create<ToastStore>(set => ({
   toasts: [],
+  history: [],
+  lastSeen: 0,
   add: item =>
     set(s => {
       // Cap a MAX_VISIBLE: descartar los más viejos si se acumulan.
@@ -56,6 +120,28 @@ export const useToastStore = create<ToastStore>(set => ({
   startClose: id =>
     set(s => ({ toasts: s.toasts.map(t => (t.id === id ? { ...t, closing: true } : t)) })),
   remove: id => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+  // Historial persistente (localStorage): mas nuevo primero, cap a HISTORY_MAX.
+  // Si el store aun no se hidrato, parte de lo que haya en localStorage para no
+  // pisarlo (un toast podria dispararse antes de hydrateHistory).
+  pushHistory: item =>
+    set(s => {
+      const base = s.history.length ? s.history : loadHistory();
+      const next = [item, ...base].slice(0, HISTORY_MAX);
+      saveHistory(next);
+      return { history: next };
+    }),
+  clearHistory: () =>
+    set(() => {
+      saveHistory([]);
+      return { history: [] };
+    }),
+  hydrateHistory: () => set(() => ({ history: loadHistory(), lastSeen: loadLastSeen() })),
+  markHistorySeen: () =>
+    set(() => {
+      const t = Date.now();
+      saveLastSeen(t);
+      return { lastSeen: t };
+    }),
 }));
 
 // ── Locale (misma fuente que CompanyContext) ────────────────────────────────
@@ -99,7 +185,8 @@ let seq = 0;
 
 function computeDuration(type: ToastType, hasAction: boolean, explicit?: number): number {
   if (explicit != null) return explicit;
-  if (type === 'loading' || type === 'error') return Infinity;
+  if (type === 'loading') return Infinity;   // placeholder: persiste hasta .resolve()
+  if (type === 'error') return 8000;          // el error tambien auto-cierra, con mas tiempo de lectura
   if (hasAction) return 6000;
   return 4500;
 }
@@ -115,7 +202,13 @@ function showToast(input: {
   const title = input.title || DEFAULT_TITLES[getToastLocale()][type];
   const duration = computeDuration(type, !!input.action, input.duration);
   const id = ++seq;
-  useToastStore.getState().add({ id, type, title, desc: input.desc, action: input.action, duration });
+  const store = useToastStore.getState();
+  store.add({ id, type, title, desc: input.desc, action: input.action, duration });
+  // Historial: registrar todos los tipos excepto loading (placeholder; su
+  // resolucion success/error si entra). Date.now() es codigo de cliente.
+  if (type !== 'loading') {
+    store.pushHistory({ id, type, title, desc: input.desc, time: Date.now() });
+  }
   return id;
 }
 

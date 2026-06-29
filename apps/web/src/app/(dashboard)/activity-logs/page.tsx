@@ -22,7 +22,8 @@ import {
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { DateFilter } from '@/components/ui/DateFilter';
+import { DateRangeFilter, type DateRangeValue } from '@/components/ui/DateRangeFilter';
+import { startOfMonthIso } from '@/components/ui/dateFilterUtils';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { Drawer } from '@/components/ui/Drawer';
 import { useTranslations } from 'next-intl';
@@ -131,7 +132,10 @@ export default function ActivityLogsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [diaFiltro, setDiaFiltro] = useState(() => tenantToday());
+  const [rango, setRango] = useState<DateRangeValue>(() => {
+    const hoy = tenantToday();
+    return { mode: 'mes', from: startOfMonthIso(hoy), to: hoy };
+  });
   const [filterTenant, setFilterTenant] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<ActivityLogDto | null>(null);
@@ -155,8 +159,8 @@ export default function ActivityLogsPage() {
         activityCategory: filterCategory !== 'all' ? filterCategory : undefined,
         search: searchTerm || undefined,
         tenantId: isSuperAdmin && filterTenant !== 'all' ? Number(filterTenant) : undefined,
-        dateFrom: diaFiltro,
-        dateTo: diaFiltro,
+        dateFrom: rango.from,
+        dateTo: rango.to,
       });
       setLogs(result.items);
       setTotalCount(result.totalCount);
@@ -169,7 +173,7 @@ export default function ActivityLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterCategory, diaFiltro, filterTenant, searchTerm, isSuperAdmin]);
+  }, [currentPage, filterCategory, rango, filterTenant, searchTerm, isSuperAdmin]);
 
   useEffect(() => {
     fetchLogs();
@@ -178,7 +182,7 @@ export default function ActivityLogsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterCategory, diaFiltro, filterTenant, searchTerm]);
+  }, [filterCategory, rango, filterTenant, searchTerm]);
 
   const handleExport = () => {
     if (logs.length === 0) {
@@ -223,7 +227,7 @@ export default function ActivityLogsPage() {
       title={t('title')}
       actions={
         <div className="flex items-center gap-3">
-          <DateFilter value={diaFiltro} onChange={setDiaFiltro} retentionDays={730} />
+          <DateRangeFilter value={rango} onChange={setRango} retentionDays={730} />
           <button
             data-tour="logs-export-btn"
             onClick={handleExport}
