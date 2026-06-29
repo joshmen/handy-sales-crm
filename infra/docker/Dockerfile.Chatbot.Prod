@@ -1,0 +1,41 @@
+# =============================================================
+# HandySuites Chatbot API — Production Dockerfile (.NET 9)
+# Servicio AUTONOMO (sin libs compartidas). Bot de la landing.
+# Build context: raiz del repo (HandySuites/)
+# =============================================================
+
+# --- Stage 1: Build ---
+FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+WORKDIR /src
+
+# Project file + restore
+COPY ["apps/chatbot/HandySuites.Chatbot.Api/HandySuites.Chatbot.Api.csproj", "apps/chatbot/HandySuites.Chatbot.Api/"]
+RUN dotnet restore "apps/chatbot/HandySuites.Chatbot.Api/HandySuites.Chatbot.Api.csproj"
+
+# Source + publish (incluye kb/handy-kb.json via CopyToOutputDirectory del csproj)
+COPY apps/chatbot/ apps/chatbot/
+WORKDIR "/src/apps/chatbot/HandySuites.Chatbot.Api"
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+# --- Stage 2: Runtime ---
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
+WORKDIR /app
+
+# ICU para CultureInfo es-MX (respuestas/formatos en espanol) + curl (health) + tzdata.
+RUN apk add --no-cache icu-libs icu-data-full curl tzdata
+
+# Usuario no-root.
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
+COPY --from=build --chown=appuser:appgroup /app/publish .
+USER appuser
+
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV ASPNETCORE_URLS=http://+:${PORT:-1054}
+
+# Railway asigna PORT dinamicamente.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-1054}/health || exit 1
+
+ENTRYPOINT ["dotnet", "HandySuites.Chatbot.Api.dll"]
